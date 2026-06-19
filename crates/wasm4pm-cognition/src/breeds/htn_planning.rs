@@ -1,3 +1,4 @@
+use crate::breeds::support::breed_class::PlannerBreed;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Rule, StateAtom, TraceStep,
 };

@@ -111,3 +111,8 @@ apps/wasm4pm/nul
 
 # Scratch run outputs
 soar-output*.json
+
+# Generated benchmark reports (regenerate with `bench-tools report|attest`)
+docs/benchmarks/REPORT.md
+docs/benchmarks/report.csv
+docs/benchmarks/ATTESTATION.md

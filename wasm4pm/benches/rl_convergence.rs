@@ -11,7 +11,9 @@
 //! 5. State space coverage: % of 460K states explored
 //! 6. Reward sensitivity: scaling and perturbation analysis
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{
+    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+};
 use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
 use wasm4pm::{RlAction, RlState};
 
@@ -120,6 +122,9 @@ fn rl_convergence_curves(c: &mut Criterion) {
         helpers::full_group(&mut group);
     } // 10 samples (5 seeds each)
 
+    const CONVERGENCE_CYCLES: usize = 500;
+    group.throughput(Throughput::Elements(CONVERGENCE_CYCLES as u64));
+
     let agents = vec![
         ("QLearning", AgentType::QLearning),
         ("SARSA", AgentType::SARSA),
@@ -131,14 +136,14 @@ fn rl_convergence_curves(c: &mut Criterion) {
     for (agent_name, agent_type) in agents {
         group.bench_function(BenchmarkId::from_parameter(agent_name), |b| {
             b.iter(|| {
-                let mut orchestrator = RlOrchestrator::new_with_seed(42);
-                orchestrator.switch_agent(agent_type);
+                let mut orchestrator = RlOrchestrator::new_with_seed(black_box(42));
+                orchestrator.switch_agent(black_box(agent_type));
 
-                let mut rewards = vec![];
+                let mut rewards = Vec::with_capacity(CONVERGENCE_CYCLES);
 
-                for cycle in 0..500 {
-                    let state = generate_test_state(42, cycle);
-                    let next_state = generate_test_state(43, cycle);
+                for cycle in 0..CONVERGENCE_CYCLES {
+                    let state = generate_test_state(42, black_box(cycle));
+                    let next_state = generate_test_state(43, black_box(cycle));
 
                     let reward = run_cycle(&mut orchestrator, &state, &next_state);
                     rewards.push(black_box(reward));
@@ -162,6 +167,9 @@ fn rl_sample_efficiency(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
+    const EFFICIENCY_CYCLES: usize = 100;
+    group.throughput(Throughput::Elements(EFFICIENCY_CYCLES as u64));
+
     let agents = vec![
         ("QLearning", AgentType::QLearning),
         ("SARSA", AgentType::SARSA),
@@ -173,14 +181,14 @@ fn rl_sample_efficiency(c: &mut Criterion) {
     for (agent_name, agent_type) in agents {
         group.bench_function(BenchmarkId::from_parameter(agent_name), |b| {
             b.iter(|| {
-                let mut orchestrator = RlOrchestrator::new_with_seed(42);
-                orchestrator.switch_agent(agent_type);
+                let mut orchestrator = RlOrchestrator::new_with_seed(black_box(42));
+                orchestrator.switch_agent(black_box(agent_type));
 
                 let mut total_reward = 0.0_f32;
 
-                for cycle in 0..100 {
-                    let state = generate_test_state(42, cycle);
-                    let next_state = generate_test_state(43, cycle);
+                for cycle in 0..EFFICIENCY_CYCLES {
+                    let state = generate_test_state(42, black_box(cycle));
+                    let next_state = generate_test_state(43, black_box(cycle));
 
                     let reward = run_cycle(&mut orchestrator, &state, &next_state);
                     total_reward += reward;
@@ -371,6 +379,9 @@ fn rl_state_space_coverage(c: &mut Criterion) {
         helpers::full_group(&mut group);
     } // 10 samples for consistency
 
+    const COVERAGE_CYCLES: usize = 1000;
+    group.throughput(Throughput::Elements(COVERAGE_CYCLES as u64));
+
     let agents = vec![
         ("QLearning", AgentType::QLearning),
         ("SARSA", AgentType::SARSA),
@@ -388,7 +399,7 @@ fn rl_state_space_coverage(c: &mut Criterion) {
                 // Track visited states (use a simple set simulation)
                 let mut visited_count = 0u32;
 
-                for cycle in 0..1000 {
+                for cycle in 0..COVERAGE_CYCLES {
                     let state = generate_test_state(42, cycle);
                     let next_state = generate_test_state(43, cycle);
 
@@ -521,6 +532,14 @@ fn rl_health_scenario_convergence(c: &mut Criterion) {
 /// Measure exploration rate decay over time.
 fn rl_exploration_decay(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_exploration");
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
+
+    const EXPLORATION_CYCLES: usize = 500;
+    group.throughput(Throughput::Elements(EXPLORATION_CYCLES as u64));
 
     let agents = vec![
         ("QLearning", AgentType::QLearning),
@@ -532,12 +551,12 @@ fn rl_exploration_decay(c: &mut Criterion) {
     for (agent_name, agent_type) in agents {
         group.bench_function(BenchmarkId::from_parameter(agent_name), |b| {
             b.iter(|| {
-                let mut orchestrator = RlOrchestrator::new_with_seed(42);
-                orchestrator.switch_agent(agent_type);
+                let mut orchestrator = RlOrchestrator::new_with_seed(black_box(42));
+                orchestrator.switch_agent(black_box(agent_type));
 
                 let mut cycle_count = 0u32;
 
-                for cycle in 0..500 {
+                for cycle in 0..EXPLORATION_CYCLES {
                     let state = generate_test_state(42, cycle);
                     let next_state = generate_test_state(43, cycle);
 

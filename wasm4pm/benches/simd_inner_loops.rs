@@ -5,7 +5,7 @@
 //!
 //! Target speedups: 4-8x depending on CPU SIMD support (SSE4.2, AVX-2, AVX-512).
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use wasm4pm::simd_inner_loops::*;
@@ -122,6 +122,7 @@ fn bench_activity_counter_scalar(c: &mut Criterion) {
     for num_activities in [10, 100, 1000].iter() {
         let sequence_len = 10000;
         let activities = black_box(generate_activity_sequence(*num_activities, sequence_len));
+        group.throughput(Throughput::Elements(sequence_len as u64));
 
         group.bench_with_input(
             BenchmarkId::from_parameter(num_activities),
@@ -129,7 +130,7 @@ fn bench_activity_counter_scalar(c: &mut Criterion) {
             |b, &num_activities| {
                 b.iter(|| {
                     let mut counts = vec![0u32; num_activities as usize];
-                    scalar_increment_activities(&mut counts, &activities);
+                    scalar_increment_activities(&mut counts, black_box(&activities));
                     black_box(counts);
                 })
             },
@@ -151,6 +152,7 @@ fn bench_activity_counter_simd(c: &mut Criterion) {
     for num_activities in [10, 100, 1000].iter() {
         let sequence_len = 10000;
         let activities = black_box(generate_activity_sequence(*num_activities, sequence_len));
+        group.throughput(Throughput::Elements(sequence_len as u64));
 
         group.bench_with_input(
             BenchmarkId::from_parameter(num_activities),
@@ -158,7 +160,7 @@ fn bench_activity_counter_simd(c: &mut Criterion) {
             |b, &num_activities| {
                 b.iter(|| {
                     let mut counter = SimdActivityCounter::new(num_activities as usize);
-                    counter.increment_batch(&activities);
+                    counter.increment_batch(black_box(&activities));
                     black_box(counter.counts().to_vec());
                 })
             },
@@ -191,12 +193,13 @@ fn bench_edge_aggregator_scalar(c: &mut Criterion) {
             })
             .collect();
         let edges = black_box(edges);
+        group.throughput(Throughput::Elements(*num_edges as u64));
 
         group.bench_with_input(BenchmarkId::from_parameter(num_edges), num_edges, |b, _| {
             b.iter(|| {
                 let mut edge_counts: std::collections::HashMap<(u32, u32), u64> =
                     std::collections::HashMap::new();
-                for (from, to) in &edges {
+                for (from, to) in black_box(&edges) {
                     *edge_counts.entry((*from, *to)).or_insert(0) += 1;
                 }
                 black_box(edge_counts);
@@ -226,11 +229,12 @@ fn bench_edge_aggregator_simd(c: &mut Criterion) {
             })
             .collect();
         let edges = black_box(edges);
+        group.throughput(Throughput::Elements(*num_edges as u64));
 
         group.bench_with_input(BenchmarkId::from_parameter(num_edges), num_edges, |b, _| {
             b.iter(|| {
                 let mut agg = SimdEdgeAggregator::new();
-                agg.increment_batch(&edges);
+                agg.increment_batch(black_box(&edges));
                 black_box(agg.edges().clone());
             })
         });
@@ -254,11 +258,12 @@ fn bench_variant_hash_scalar(c: &mut Criterion) {
 
     for trace_len in [10, 50, 200].iter() {
         let variants = black_box(generate_trace_variants(1000, *trace_len));
+        group.throughput(Throughput::Elements((1000 * *trace_len) as u64));
 
         group.bench_with_input(BenchmarkId::from_parameter(trace_len), trace_len, |b, _| {
             b.iter(|| {
                 let mut hashes = Vec::new();
-                for variant in &variants {
+                for variant in black_box(&variants) {
                     hashes.push(scalar_compute_variant_hash(variant));
                 }
                 black_box(hashes);
@@ -280,11 +285,12 @@ fn bench_variant_hash_simd(c: &mut Criterion) {
 
     for trace_len in [10, 50, 200].iter() {
         let variants = black_box(generate_trace_variants(1000, *trace_len));
+        group.throughput(Throughput::Elements((1000 * *trace_len) as u64));
 
         group.bench_with_input(BenchmarkId::from_parameter(trace_len), trace_len, |b, _| {
             b.iter(|| {
                 let mut dedup = SimdVariantDeduplicator::new();
-                for variant in &variants {
+                for variant in black_box(&variants) {
                     dedup.add_variant(variant);
                 }
                 black_box(dedup.variants().clone());
@@ -310,6 +316,7 @@ fn bench_marking_update_scalar(c: &mut Criterion) {
 
     for num_places in [10, 100, 1000].iter() {
         let transitions = black_box(generate_petri_transitions(*num_places, 5000));
+        group.throughput(Throughput::Elements(5000));
 
         group.bench_with_input(
             BenchmarkId::from_parameter(num_places),
@@ -317,7 +324,7 @@ fn bench_marking_update_scalar(c: &mut Criterion) {
             |b, &num_places| {
                 b.iter(|| {
                     let mut marking = vec![1u32; num_places];
-                    for (preset, postset) in &transitions {
+                    for (preset, postset) in black_box(&transitions) {
                         let _ = scalar_fire_transition(&mut marking, preset, postset);
                     }
                     black_box(marking);
@@ -340,6 +347,7 @@ fn bench_marking_update_simd(c: &mut Criterion) {
 
     for num_places in [10, 100, 1000].iter() {
         let transitions = black_box(generate_petri_transitions(*num_places, 5000));
+        group.throughput(Throughput::Elements(5000));
 
         group.bench_with_input(
             BenchmarkId::from_parameter(num_places),
@@ -351,7 +359,7 @@ fn bench_marking_update_simd(c: &mut Criterion) {
                     for i in 0..num_places {
                         updater.set(i, 1);
                     }
-                    for (preset, postset) in &transitions {
+                    for (preset, postset) in black_box(&transitions) {
                         let _ = updater.fire_transition(preset, postset);
                     }
                     black_box(updater.marking().to_vec());
@@ -389,6 +397,7 @@ fn bench_token_accumulation_scalar(c: &mut Criterion) {
             })
             .collect();
         let operations = black_box(operations);
+        group.throughput(Throughput::Elements(*num_operations as u64));
 
         group.bench_with_input(
             BenchmarkId::from_parameter(num_operations),
@@ -400,7 +409,7 @@ fn bench_token_accumulation_scalar(c: &mut Criterion) {
                     let mut missing = 0u64;
                     let mut remaining = 0u64;
 
-                    for (p, c, m, r) in &operations {
+                    for (p, c, m, r) in black_box(&operations) {
                         produced = produced.wrapping_add(*p);
                         consumed = consumed.wrapping_add(*c);
                         missing = missing.wrapping_add(*m);
@@ -438,6 +447,7 @@ fn bench_token_accumulation_simd(c: &mut Criterion) {
             })
             .collect();
         let operations = black_box(operations);
+        group.throughput(Throughput::Elements(*num_operations as u64));
 
         group.bench_with_input(
             BenchmarkId::from_parameter(num_operations),
@@ -445,7 +455,7 @@ fn bench_token_accumulation_simd(c: &mut Criterion) {
             |b, _| {
                 b.iter(|| {
                     let mut acc = SimdTokenAccumulator::new();
-                    for (p, c, m, r) in &operations {
+                    for (p, c, m, r) in black_box(&operations) {
                         acc.add_produced(*p);
                         acc.add_consumed(*c);
                         acc.add_missing(*m);

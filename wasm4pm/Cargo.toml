@@ -151,6 +151,7 @@ harness = false
 [[bench]]
 name = "jtbd_benchmark"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "autonomy_jtbd_validation"
@@ -203,6 +204,7 @@ harness = false
 [[bench]]
 name = "rl_convergence"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "prediction_accuracy"
@@ -242,6 +244,31 @@ harness = false
 
 [[bench]]
 name = "autonomic_real_data_bench"
+harness = false
+required-features = ["cloud"]
+
+[[bench]]
+name = "anti_fake"
+harness = false
+
+[[bench]]
+name = "native_api_bench"
+harness = false
+
+[[bench]]
+name = "ocel_export"
+harness = false
+
+[[bench]]
+name = "parser_bench"
+harness = false
+
+[[bench]]
+name = "route_driven_tdd"
+harness = false
+
+[[bench]]
+name = "self_conformance"
 harness = false
 
 [[example]]

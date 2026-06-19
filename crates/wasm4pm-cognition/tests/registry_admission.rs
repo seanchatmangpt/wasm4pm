@@ -1,5 +1,13 @@
+use std::collections::BTreeSet;
 use std::fs;
+use std::path::Path;
 use serde_json::Value;
+
+/// Load and parse `breeds/registry.json` into a JSON value.
+fn registry() -> Value {
+    let data = fs::read_to_string("breeds/registry.json").expect("failed to read registry.json");
+    serde_json::from_str(&data).expect("failed to parse registry.json")
+}
 
 #[test]
 fn test_registry_admission_gate() {

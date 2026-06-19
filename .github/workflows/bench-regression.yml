@@ -96,7 +96,42 @@ jobs:
 
           echo "Benchmark runs completed"
 
-      # Run regression detection
+      # Performance provenance: emit a BLAKE3 benchmark receipt binding the
+      # environment + result set, then verify its integrity. Makes every CI
+      # benchmark run auditable and tamper-evident (Wasm4pmBenchmarkReceipt.v1).
+      - name: Performance receipt + integrity
+        id: bench_receipt
+        continue-on-error: true
+        run: |
+          echo "=== Benchmark receipt (provenance) ==="
+          cargo run -q -p bench-tools -- receipt --print
+          echo "=== Receipt integrity verification ==="
+          cargo run -q -p bench-tools -- verify --allow-dirty
+
+      # Statistical regression gate (95% CI non-overlap aware) on the receipt baseline.
+      - name: Regression gate (bench-tools)
+        id: regression_gate
+        continue-on-error: true
+        run: cargo run -q -p bench-tools -- regress
+
+      # Correctness × performance attestation: a benchmark must not vouch for a
+      # breed that is not provably correct. Runs the paper-grounded + falsification
+      # gates and FAILS on any FAST-BUT-WRONG breed. continue-on-error during
+      # adoption; flip to a required check once all breeds are benchmarked.
+      - name: Attestation gate (bench-tools)
+        id: attestation_gate
+        continue-on-error: true
+        run: cargo run -q -p bench-tools -- attest
+
+      # Performance budgets: machine-independent latency SLOs (median/calibration
+      # ratio). Fails if any bench exceeds its declared ceiling, however the
+      # baseline drifts. continue-on-error during adoption.
+      - name: Budget gate (bench-tools)
+        id: budget_gate
+        continue-on-error: true
+        run: cargo run -q -p bench-tools -- budget
+
+      # Run regression detection (legacy bash gate, retained during adoption)
       - name: Detect regressions
         id: regression
         working-directory: ./wasm4pm

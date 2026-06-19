@@ -131,7 +131,7 @@ fn analyze_deploy_status(repo: &Repository) -> Result<(String, f64)> {
     for reference in references {
         let reference = reference?;
         // Check if this is a tag reference
-        if let Some(ref_name) = reference.name() {
+        if let Ok(ref_name) = reference.name() {
             if ref_name.starts_with("refs/tags/") {
                 // Try to peel the tag to get the commit
                 if let Ok(target) = reference.peel_to_commit() {

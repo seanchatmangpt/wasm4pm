@@ -11,7 +11,7 @@
 ///   2. `jaccard_distance`            — Jaccard distance on two edge key sets
 ///   3. `fitness_token_replay`        — token_replay_pure on a simple Petri net
 ///   4. `heuristic_threshold_sweep`   — heuristic miner at 4 thresholds
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use rustc_hash::FxHashMap;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
@@ -225,12 +225,12 @@ fn bench_dfg_edge_map_comparison(c: &mut Criterion) {
     group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
         b.iter(|| {
             // Build two edge maps and compare — this is exactly what the oracle does
-            let batch = batch_dfg(l, ACTIVITY_KEY);
-            let streaming = streaming_dfg(l, ACTIVITY_KEY);
-            let batch_map = edges_to_map(&batch);
-            let streaming_map = edges_to_map(&streaming);
-            let _equal = batch_map == streaming_map;
-            batch_map.len() + streaming_map.len()
+            let batch = batch_dfg(black_box(l), black_box(ACTIVITY_KEY));
+            let streaming = streaming_dfg(black_box(l), black_box(ACTIVITY_KEY));
+            let batch_map = edges_to_map(black_box(&batch));
+            let streaming_map = edges_to_map(black_box(&streaming));
+            let equal = black_box(&batch_map) == black_box(&streaming_map);
+            black_box((batch_map.len() + streaming_map.len(), equal))
         })
     });
     group.finish();
@@ -270,7 +270,9 @@ fn bench_jaccard_distance(c: &mut Criterion) {
     group.bench_with_input(
         BenchmarkId::new("cases", shape.num_cases),
         &(map_a, map_b),
-        |b, (a, b_map)| b.iter(|| jaccard_distance(a, b_map)),
+        |b, (a, b_map)| {
+            b.iter(|| black_box(jaccard_distance(black_box(a), black_box(b_map))))
+        },
     );
     group.finish();
 }
@@ -297,7 +299,13 @@ fn bench_fitness_token_replay(c: &mut Criterion) {
 
     group.throughput(Throughput::Elements(events as u64));
     group.bench_function("replay_100_traces", |b| {
-        b.iter(|| token_replay_pure(&log, &net, ACTIVITY_KEY))
+        b.iter(|| {
+            black_box(token_replay_pure(
+                black_box(&log),
+                black_box(&net),
+                black_box(ACTIVITY_KEY),
+            ))
+        })
     });
     group.finish();
 }
@@ -327,7 +335,18 @@ fn bench_heuristic_threshold_sweep(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("threshold", format!("{:.1}", threshold)),
             &handle,
-            |b, h| b.iter(|| discover_heuristic_miner(h, ACTIVITY_KEY, threshold).unwrap()),
+            |b, h| {
+                b.iter(|| {
+                    black_box(
+                        discover_heuristic_miner(
+                            black_box(h),
+                            black_box(ACTIVITY_KEY),
+                            black_box(threshold),
+                        )
+                        .unwrap(),
+                    )
+                })
+            },
         );
     }
     group.finish();

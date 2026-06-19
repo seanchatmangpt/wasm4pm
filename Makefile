@@ -13,6 +13,7 @@ export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
+        bench-regress bench-receipt bench-verify bench-ledger bench-attest bench-budget bench-report \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test test-proof verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
@@ -220,6 +221,36 @@ bench-compare:
 # ── Regression Detection: Compare PR to main baseline ────────────────────────
 bench-regression:
 	@bash .wasm4pm/benchmarks/detect-regression.sh .wasm4pm/benchmarks/baselines/main-latest.json
+
+# ── Criterion median regression gate (crates/bench-tools) ────────────────────
+# Compares current Criterion medians against the committed baseline and fails
+# (exit 1) when any benchmark regresses beyond the threshold (default 10%).
+bench-regress:
+	@cargo run -q -p bench-tools -- regress
+
+# ── BLAKE3 performance receipt → refreshes the committed CI baseline ─────────
+bench-receipt:
+	@cargo run -q -p bench-tools -- receipt
+
+# ── Verify a receipt's BLAKE3 integrity (tamper + dirty-tree detection) ──────
+bench-verify:
+	@cargo run -q -p bench-tools -- verify --allow-dirty
+
+# ── Receipt-chain ledger: chain integrity + per-bench median trend over time ─
+bench-ledger:
+	@cargo run -q -p bench-tools -- ledger
+
+# ── Attestation: correctness × performance — fails on any fast-but-wrong breed ─
+bench-attest:
+	@cargo run -q -p bench-tools -- attest
+
+# ── Performance budgets: machine-independent latency SLOs (ratio to calibration) ─
+bench-budget:
+	@cargo run -q -p bench-tools -- budget
+
+# ── Unified Criterion report → docs/benchmarks/REPORT.md + report.csv ────────
+bench-report:
+	@cargo run -q -p bench-tools -- report
 
 # ── Unified Benchmarking: Runs both Rust and WASM and unifies reports ───────
 bench-all: bench-data

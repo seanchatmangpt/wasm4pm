@@ -9,25 +9,189 @@
 /// A fourth group measures the overhead of the "parity check" oracle itself:
 /// constructing edge maps from two streaming results and comparing them.
 ///
-/// All groups use 4 standard input sizes from `bench_sizes()` and report
-/// `Throughput::Elements(events)` so criterion reports events/second.
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+/// All groups run against REAL, publicly sourced process-mining event logs
+/// (sepsis, road-traffic, BPI Challenge 2020 travel permits) loaded from
+/// `bench_data/`. Throughput is reported as `Throughput::Elements(events)`,
+/// so criterion reports events/second. Synthetic data generation is a TPS
+/// violation in this crate (see `helpers::generate_event_log`) and is not used.
+use criterion::{
+    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
+use std::fs;
 use std::time::Duration;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::models::{
     AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsRelation, Event, EventLog, Trace, DFG,
 };
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
-#[path = "helpers.rs"]
-mod helpers;
-use helpers::{bench_sizes, generate_event_log, make_handle, ACTIVITY_KEY};
+const ACTIVITY_KEY: &str = "concept:name";
 
 // ---------------------------------------------------------------------------
-// Internal helpers (mirror the test file patterns exactly)
+// Real-data loading — inline XES parser (mirrors real_data_bench.rs:46-105).
+// Synthetic generation is prohibited in this crate; every group exercises a
+// real published event log.
+// ---------------------------------------------------------------------------
+
+fn parse_xes(content: &str) -> EventLog {
+    let mut log = EventLog::new();
+    let mut current_trace: Option<Trace> = None;
+    let mut current_event: Option<Event> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
+        }
+        if trimmed.starts_with("</trace>") {
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
+        }
+        if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
+        }
+        if trimmed.starts_with("</event>") {
+            if let Some(ev) = current_event.take() {
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
+            }
+        }
+        if trimmed.starts_with("<string") {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
+                if let Some(ref mut ev) = current_event {
+                    ev.attributes.insert(k, AttributeValue::String(v));
+                } else if let Some(ref mut t) = current_trace {
+                    t.attributes.insert(k, AttributeValue::String(v));
+                }
+            }
+        }
+        if trimmed.starts_with("<date") {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
+                if let Some(ref mut ev) = current_event {
+                    ev.attributes.insert(k, AttributeValue::Date(v));
+                }
+            }
+        }
+    }
+    log
+}
+
+fn extract_attr(s: &str, attr: &str) -> Option<String> {
+    let needle = format!("{}=\"", attr);
+    let start = s.find(&needle)? + needle.len();
+    let end = s[start..].find('"')?;
+    Some(s[start..start + end].to_string())
+}
+
+struct Dataset {
+    label: &'static str,
+    log: EventLog,
+    event_count: u64,
+}
+
+/// Load one real dataset from the first candidate path that resolves.
+/// Panics if absent — synthetic fallback is prohibited in this crate.
+fn load_dataset(candidates: &[&str], label: &'static str) -> Dataset {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let log = candidates
+        .iter()
+        .filter_map(|p| {
+            let resolved = p.replace('~', &home);
+            let content = fs::read_to_string(&resolved).ok()?;
+            if content.len() < 200 {
+                return None;
+            }
+            let l = parse_xes(&content);
+            if l.traces.is_empty() {
+                return None;
+            }
+            Some(l)
+        })
+        .next()
+        .unwrap_or_else(|| {
+            panic!(
+                "Required dataset '{}' not found at any of: {:?}\n\
+                 Download from https://data.4tu.nl/ (Sepsis/RoadTraffic/BPI2020)",
+                label, candidates
+            )
+        });
+    let event_count = log.traces.iter().map(|t| t.events.len()).sum::<usize>() as u64;
+    Dataset {
+        label,
+        log,
+        event_count,
+    }
+}
+
+/// Representative real logs spanning small → large.
+///   - roadtraffic (100 traces)  — small, dense
+///   - sepsis                     — medium, high variant count
+///   - bpi2020 travel             — large (~87K events); capped to keep
+///                                  per-binary runtime bounded
+fn real_datasets() -> Vec<Dataset> {
+    let mut sets = vec![
+        load_dataset(
+            &[
+                "bench_data/roadtraffic100traces.xes",
+                "../bench_data/roadtraffic100traces.xes",
+            ],
+            "roadtraffic",
+        ),
+        load_dataset(
+            &["bench_data/sepsis.xes", "../bench_data/sepsis.xes"],
+            "sepsis",
+        ),
+    ];
+    // BPI2020 is ~87K events; cap traces so the streaming/SIMD/parity groups
+    // stay reproducible within the configured measurement window.
+    let mut bpi = load_dataset(
+        &[
+            "bench_data/bpi2020_travel.xes",
+            "../bench_data/bpi2020_travel.xes",
+        ],
+        "bpi2020",
+    );
+    const BPI_TRACE_CAP: usize = 2_000;
+    if bpi.log.traces.len() > BPI_TRACE_CAP {
+        bpi.log.traces.truncate(BPI_TRACE_CAP);
+        bpi.event_count = bpi.log.traces.iter().map(|t| t.events.len()).sum::<usize>() as u64;
+    }
+    sets.push(bpi);
+    sets
+}
+
+/// Apply stable, reproducible sampling parameters to a group.
+fn configure(group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>) {
+    group.measurement_time(Duration::from_secs(5));
+    group.warm_up_time(Duration::from_secs(2));
+    group.sample_size(50);
+}
+
+/// Store an `EventLog` in global state, returning its handle (for the
+/// wasm_bindgen `discover_dfg` path).
+fn store_log(log: EventLog) -> String {
+    get_or_init_state()
+        .store_object(StoredObject::EventLog(log))
+        .expect("bench: store_object failed")
+}
+
+// ---------------------------------------------------------------------------
+// Internal DFG builders (mirror streaming_batch_equivalence_tests.rs patterns)
 // ---------------------------------------------------------------------------
 
 /// Build a DFG using `StreamingDfgBuilder` (scalar streaming path).
@@ -56,7 +220,6 @@ fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
 
 /// Compute a batch DFG directly from an EventLog using the columnar approach
 /// (mirrors `batch_dfg_from_log` in streaming_batch_equivalence_tests.rs).
-/// This is the pure-Rust path — no JsValue overhead.
 fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
@@ -119,23 +282,17 @@ fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
 // ---------------------------------------------------------------------------
 
 fn bench_dfg_batch(c: &mut Criterion) {
+    let datasets = real_datasets();
     let mut group = c.benchmark_group("streaming_vs_batch/dfg_batch");
-    group.measurement_time(Duration::from_secs(5));
-    group.warm_up_time(Duration::from_secs(2));
-    group.sample_size(50);
-    if helpers::is_fast_mode() {
-        helpers::fast_group(&mut group);
-    } else {
-        helpers::full_group(&mut group);
-    }
+    configure(&mut group);
 
-    for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
-        group.throughput(Throughput::Elements(events as u64));
+    for ds in &datasets {
+        let handle = store_log(ds.log.clone());
+        group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(
-            BenchmarkId::new("cases", shape.num_cases),
+            BenchmarkId::new("dataset", ds.label),
             &handle,
-            |b, h| b.iter(|| discover_dfg(h, ACTIVITY_KEY).unwrap()),
+            |b, h| b.iter(|| black_box(discover_dfg(black_box(h), ACTIVITY_KEY).unwrap())),
         );
     }
     group.finish();
@@ -146,23 +303,17 @@ fn bench_dfg_batch(c: &mut Criterion) {
 // ---------------------------------------------------------------------------
 
 fn bench_dfg_streaming(c: &mut Criterion) {
+    let datasets = real_datasets();
     let mut group = c.benchmark_group("streaming_vs_batch/dfg_streaming");
-    group.measurement_time(Duration::from_secs(5));
-    group.warm_up_time(Duration::from_secs(2));
-    group.sample_size(50);
-    if helpers::is_fast_mode() {
-        helpers::fast_group(&mut group);
-    } else {
-        helpers::full_group(&mut group);
-    }
+    configure(&mut group);
 
-    for shape in bench_sizes() {
-        let log = generate_event_log(&shape);
-        let events = log.event_count();
-        group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
-            b.iter(|| streaming_dfg_from_log(l, ACTIVITY_KEY))
-        });
+    for ds in &datasets {
+        group.throughput(Throughput::Elements(ds.event_count));
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &ds.log,
+            |b, l| b.iter(|| black_box(streaming_dfg_from_log(black_box(l), ACTIVITY_KEY))),
+        );
     }
     group.finish();
 }
@@ -172,23 +323,17 @@ fn bench_dfg_streaming(c: &mut Criterion) {
 // ---------------------------------------------------------------------------
 
 fn bench_dfg_simd(c: &mut Criterion) {
+    let datasets = real_datasets();
     let mut group = c.benchmark_group("streaming_vs_batch/dfg_simd");
-    group.measurement_time(Duration::from_secs(5));
-    group.warm_up_time(Duration::from_secs(2));
-    group.sample_size(50);
-    if helpers::is_fast_mode() {
-        helpers::fast_group(&mut group);
-    } else {
-        helpers::full_group(&mut group);
-    }
+    configure(&mut group);
 
-    for shape in bench_sizes() {
-        let log = generate_event_log(&shape);
-        let events = log.event_count();
-        group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
-            b.iter(|| simd_dfg_from_log(l, ACTIVITY_KEY))
-        });
+    for ds in &datasets {
+        group.throughput(Throughput::Elements(ds.event_count));
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &ds.log,
+            |b, l| b.iter(|| black_box(simd_dfg_from_log(black_box(l), ACTIVITY_KEY))),
+        );
     }
     group.finish();
 }
@@ -200,37 +345,29 @@ fn bench_dfg_simd(c: &mut Criterion) {
 //   1. Build both batch and streaming DFGs from the same EventLog.
 //   2. Convert both results to edge maps (HashMap).
 //   3. Assert equality (compare map lengths — the comparand itself).
-//
-// All paths use the pure-Rust internal types (no JsValue), mirroring how
-// the streaming_batch_equivalence_tests.rs oracle is implemented.
 // ---------------------------------------------------------------------------
 
 fn bench_parity_check(c: &mut Criterion) {
+    let datasets = real_datasets();
     let mut group = c.benchmark_group("streaming_vs_batch/parity_check");
-    group.measurement_time(Duration::from_secs(5));
-    group.warm_up_time(Duration::from_secs(2));
-    group.sample_size(50);
-    if helpers::is_fast_mode() {
-        helpers::fast_group(&mut group);
-    } else {
-        helpers::full_group(&mut group);
-    }
+    configure(&mut group);
 
-    for shape in bench_sizes() {
-        let log = generate_event_log(&shape);
-        let events = log.event_count();
-        group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
-            b.iter(|| {
-                let batch = batch_dfg_from_log(l, ACTIVITY_KEY);
-                let streaming = streaming_dfg_from_log(l, ACTIVITY_KEY);
-                let batch_map = edges_to_map(&batch);
-                let streaming_map = edges_to_map(&streaming);
-                // Perform the comparison (this is what the oracle does)
-                let _equal = batch_map.len() == streaming_map.len();
-                batch_map.len() + streaming_map.len()
-            })
-        });
+    for ds in &datasets {
+        group.throughput(Throughput::Elements(ds.event_count));
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &ds.log,
+            |b, l| {
+                b.iter(|| {
+                    let batch = batch_dfg_from_log(black_box(l), ACTIVITY_KEY);
+                    let streaming = streaming_dfg_from_log(black_box(l), ACTIVITY_KEY);
+                    let batch_map = edges_to_map(&batch);
+                    let streaming_map = edges_to_map(&streaming);
+                    let _equal = batch_map.len() == streaming_map.len();
+                    black_box(batch_map.len() + streaming_map.len())
+                })
+            },
+        );
     }
     group.finish();
 }

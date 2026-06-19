@@ -4,7 +4,8 @@
     "paper": "Pearl-1988-Bayesian-Networks.pdf",
     "citation": "J. Pearl (1988). Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference. Morgan Kaufmann.",
     "locus": "\u00a74.1 Exact Inference by Enumeration",
-    "extraction": "grounded"
+    "extraction": "grounded",
+    "derivation": "P(Burglary=true | Alarm=true) by exact enumeration over the Pearl (1988) alarm network CPTs in input.rules: P(B=t,A=t)=P(B)*[P(E)*P(A|B,E)+P(~E)*P(A|B,~E)] = 0.001*(0.002*0.95+0.998*0.94)=0.00094002; P(B=f,A=t)=0.999*(0.002*0.29+0.998*0.001)=0.001576422; posterior=0.00094002/0.002516442=0.373551228281836. Pearl 1988 \u00a74.1."
   },
   "input": {
     "intent": "Bayesian network exact query",
@@ -76,6 +77,9 @@
     "state": []
   },
   "expected": {
-    "query": "Burglary"
+    "query": "Burglary",
+    "value": 0.373551228281836,
+    "posterior_burglary_given_alarm": 0.373551228281836,
+    "tolerance": 0.0001
   }
 }

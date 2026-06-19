@@ -194,6 +194,597 @@ fn autoinstinct_learning_input() -> BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// 13 additional breed input builders (P3/P4 tier breeds)
+// ---------------------------------------------------------------------------
+
+fn abductive_ibe_input() -> BreedInput {
+    // Thagard 1989 ECHO coherence model: evidence/hypothesis/contradicts facts.
+    BreedInput {
+        intent: "coherence".into(),
+        candidates: vec![
+            Candidate {
+                id: "H1".into(),
+                score: 0.5,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "H2".into(),
+                score: 0.5,
+                eliminated: false,
+                elimination_reason: None,
+            },
+        ],
+        facts: vec![
+            Fact {
+                key: "evidence".into(),
+                value: "E1".into(),
+            },
+            Fact {
+                key: "evidence".into(),
+                value: "E2".into(),
+            },
+            Fact {
+                key: "hypothesis".into(),
+                value: "H1".into(),
+            },
+            Fact {
+                key: "hypothesis".into(),
+                value: "H2".into(),
+            },
+            Fact {
+                key: "contradicts".into(),
+                value: "H1,H2".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "expl1".into(),
+                premise: vec!["H1".into()],
+                conclusion: "E1".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "expl2".into(),
+                premise: vec!["H1".into()],
+                conclusion: "E2".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "expl3".into(),
+                premise: vec!["H2".into()],
+                conclusion: "E1".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn abductive_lp_input() -> BreedInput {
+    // Kakas et al. 1992: abducibles, rules, integrity constraint, goal to explain.
+    BreedInput {
+        intent: "abduce".into(),
+        candidates: vec![Candidate {
+            id: "c".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        }],
+        facts: vec![
+            Fact {
+                key: "abducible".into(),
+                value: "a".into(),
+            },
+            Fact {
+                key: "abducible".into(),
+                value: "b".into(),
+            },
+            Fact {
+                key: "abducible".into(),
+                value: "c".into(),
+            },
+            Fact {
+                key: "abducible".into(),
+                value: "d".into(),
+            },
+            Fact {
+                key: "context".into(),
+                value: "d".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["a".into(), "b".into()],
+                conclusion: "g".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".into(),
+                premise: vec!["c".into()],
+                conclusion: "g".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r_ic".into(),
+                premise: vec!["a".into(), "d".into()],
+                conclusion: "false".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "goal".into(),
+            value: "g".into(),
+        }],
+        state: vec![],
+    }
+}
+
+fn allen_temporal_input() -> BreedInput {
+    // Path-consistent temporal network: A before B, B meets C.
+    BreedInput {
+        intent: "allen".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "relation".into(),
+                value: "A,B,p".into(),
+            },
+            Fact {
+                key: "relation".into(),
+                value: "B,C,m".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn asp_input() -> BreedInput {
+    // Gelfond & Lifschitz 1988: two-rule negation cycle yielding stable models.
+    BreedInput {
+        intent: "solve".into(),
+        candidates: vec![
+            Candidate {
+                id: "a".into(),
+                score: 0.5,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "b".into(),
+                score: 0.5,
+                eliminated: false,
+                elimination_reason: None,
+            },
+        ],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["not b".into()],
+                conclusion: "a".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".into(),
+                premise: vec!["not a".into()],
+                conclusion: "b".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn bayesian_network_input() -> BreedInput {
+    // Pearl 1988 burglary/earthquake/alarm network with a query goal.
+    BreedInput {
+        intent: "diagnose burglary from phone calls".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "cpt:B".into(),
+                value: "0.001".into(),
+            },
+            Fact {
+                key: "cpt:E".into(),
+                value: "0.002".into(),
+            },
+            Fact {
+                key: "cpt:A|B,E".into(),
+                value: "0.001,0.29,0.94,0.95".into(),
+            },
+            Fact {
+                key: "cpt:J|A".into(),
+                value: "0.05,0.90".into(),
+            },
+            Fact {
+                key: "cpt:M|A".into(),
+                value: "0.01,0.70".into(),
+            },
+            Fact {
+                key: "evidence:J".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "evidence:M".into(),
+                value: "true".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "query".into(),
+            value: "prob:B".into(),
+        }],
+        state: vec![],
+    }
+}
+
+fn default_logic_input() -> BreedInput {
+    // Reiter default logic: wibble glows unless dark_wibble.
+    BreedInput {
+        intent: "test".into(),
+        candidates: vec![],
+        facts: vec![Fact {
+            key: "wibble".into(),
+            value: "wibble".into(),
+        }],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["wibble".into(), "unless:dark_wibble".into()],
+                conclusion: "glows".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".into(),
+                premise: vec!["dark_wibble".into()],
+                conclusion: "not_glows".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn dempster_shafer_input() -> BreedInput {
+    // Shafer 1976: two evidence sources, query subset.
+    BreedInput {
+        intent: "evaluate belief".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "source1".into(),
+                premise: vec![],
+                conclusion: "flim".into(),
+                certainty: 0.6,
+            },
+            Rule {
+                id: "source2".into(),
+                premise: vec![],
+                conclusion: "flam".into(),
+                certainty: 0.7,
+            },
+        ],
+        goals: vec![Goal {
+            id: "query".into(),
+            predicate: "query".into(),
+            value: "flim".into(),
+        }],
+        state: vec![],
+    }
+}
+
+fn description_logic_input() -> BreedInput {
+    // Baader et al. 2003: subclass/class/disjoint TBox+ABox facts.
+    BreedInput {
+        intent: "classify".into(),
+        candidates: vec![Candidate {
+            id: "x".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        }],
+        facts: vec![
+            Fact {
+                key: "subclass".into(),
+                value: "A,B".into(),
+            },
+            Fact {
+                key: "subclass".into(),
+                value: "B,C".into(),
+            },
+            Fact {
+                key: "class".into(),
+                value: "x,A".into(),
+            },
+            Fact {
+                key: "disjoint".into(),
+                value: "C,D".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn ebl_input() -> BreedInput {
+    // Explanation-based learning: domain theory + goal, cup/drinkable example.
+    BreedInput {
+        intent: "learn".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "has_handle(obj1)".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "concave(obj1)".into(),
+                value: "true".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["cup(?x)".into()],
+                conclusion: "drinkable(?x)".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".into(),
+                premise: vec!["has_handle(?y)".into(), "concave(?y)".into()],
+                conclusion: "cup(?y)".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "drinkable(obj1)".into(),
+            value: "true".into(),
+        }],
+        state: vec![],
+    }
+}
+
+fn frames_inheritance_input() -> BreedInput {
+    // Frame inheritance: resolve color slot via isa chain.
+    BreedInput {
+        intent: "resolve zilk color".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "frame:zilk:isa".into(),
+                value: "welp".into(),
+            },
+            Fact {
+                key: "frame:welp:isa".into(),
+                value: "snorf".into(),
+            },
+            Fact {
+                key: "frame:snorf:slot:color:default".into(),
+                value: "blue".into(),
+            },
+            Fact {
+                key: "frame:welp:slot:color:default".into(),
+                value: "red".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn fuzzy_logic_input() -> BreedInput {
+    // Mamdani fuzzy controller with a single fuzzified input term and a single
+    // aggregated output term. Using exactly one input term and one rule keeps the
+    // breed's HashMap-iteration trace order unambiguous (single fuzzify + single
+    // aggregate step), so the output is bit-exact deterministic across runs.
+    BreedInput {
+        intent: "Fuzzy Logic inference".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "fuzzy:temperature:cold".into(),
+                value: "tri:0,0,20".into(),
+            },
+            Fact {
+                key: "fuzzy:fan:slow".into(),
+                value: "tri:0,0,50".into(),
+            },
+            Fact {
+                key: "fuzzy:input:temperature".into(),
+                value: "15.0".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![Rule {
+            id: "r1".into(),
+            premise: vec!["fuzzy:temperature:cold".into()],
+            conclusion: "fuzzy:fan:slow".into(),
+            certainty: 1.0,
+        }],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn htn_planning_input() -> BreedInput {
+    // HTN: one task goal, one method, one operator.
+    BreedInput {
+        intent: "simple".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "method:t1:m1".into(),
+                premise: vec![],
+                conclusion: "op:o1".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "op:o1".into(),
+                premise: vec![],
+                conclusion: "done=yes".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "task".into(),
+            value: "t1".into(),
+        }],
+        state: vec![],
+    }
+}
+
+fn ltl_monitor_input() -> BreedInput {
+    // LTL runtime monitor: "G zorp" over a trace.
+    BreedInput {
+        intent: "".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "ltl:formula".into(),
+                value: "G zorp".into(),
+            },
+            Fact {
+                key: "trace:0".into(),
+                value: "zorp".into(),
+            },
+            Fact {
+                key: "trace:1".into(),
+                value: "zorp".into(),
+            },
+            Fact {
+                key: "trace:2".into(),
+                value: "zorp".into(),
+            },
+            Fact {
+                key: "trace:3".into(),
+                value: "foo".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn csp_ac3_input() -> BreedInput {
+    // Mackworth 1977 AC-3: map-coloring-style CSP, V1 != V2 over {R,G,B}.
+    BreedInput {
+        intent: "solve".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "csp-var".into(),
+                value: "V1:R,G,B".into(),
+            },
+            Fact {
+                key: "csp-var".into(),
+                value: "V2:R,G,B".into(),
+            },
+            Fact {
+                key: "csp-constraint".into(),
+                value: "V1!=V2".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn p3_input(breed: &str) -> BreedInput {
+    let mut input = BreedInput {
+        intent: format!("p3 {} exercise", breed),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    match breed {
+        "problog" => {
+            input.facts = vec![p4_fact("pfact:burglary", "0.1"), p4_fact("pfact:quake", "0.2")];
+            input.rules = vec![
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["burglary".into()],
+                    conclusion: "alarm".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["quake".into()],
+                    conclusion: "alarm".into(),
+                    certainty: 1.0,
+                },
+            ];
+            input.goals = vec![Goal {
+                id: "g1".into(),
+                predicate: "query".into(),
+                value: "alarm".into(),
+            }];
+        }
+        "rl_symbolic" => {
+            input.facts = vec![
+                p4_fact("mdp:gamma", "0.9"),
+                p4_fact("mdp:start", "s0"),
+                p4_fact("mdp:terminal:goal", "true"),
+                p4_fact("mdp:t:s0:go", "goal"),
+                p4_fact("mdp:t:s0:stay", "s0"),
+                p4_fact("mdp:r:s0:go", "1.0"),
+                p4_fact("rl:episodes", "50"),
+            ];
+        }
+        "sat_cdcl" => {
+            input.facts = vec![
+                p4_fact("clause:00", "1 2"),
+                p4_fact("clause:01", "-1 2"),
+                p4_fact("clause:02", "1 -2"),
+                p4_fact("clause:03", "-1 -2"),
+            ];
+        }
+        "naive_physics" => {
+            input.facts = vec![
+                p4_fact("np:ground:floor", "true"),
+                p4_fact("np:on:box", "floor"),
+                p4_fact("np:on:vase", "box"),
+                p4_fact("np:remove:box", "true"),
+            ];
+        }
+        other => panic!("unknown p3 breed {}", other),
+    }
+    input
+}
+
+// ---------------------------------------------------------------------------
 // Helper: run breed twice, assert serialized output is identical
 // ---------------------------------------------------------------------------
 
@@ -664,7 +1255,9 @@ fn meta_reasoning_deterministic() {
 
 #[test]
 fn test_clp_determinism() {
-    let input: BreedInput = serde_json::from_str(include_str!("fixtures/papers/clp.json")).unwrap();
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/papers/clp.json")).unwrap();
+    let input: BreedInput = serde_json::from_value(fixture["input"].clone()).unwrap();
     let breed = wasm4pm_cognition::breeds::clp::Clp;
     let out1 = breed.run(&input).unwrap();
     let out2 = breed.run(&input).unwrap();
@@ -756,34 +1349,34 @@ fn partial_order_plan_determinism_test() {
 #[test]
 fn test_analogy_sme_determinism() {
     let fixture_str = std::fs::read_to_string("tests/fixtures/papers/analogy_sme.json").unwrap();
-    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    let fixture: serde_json::Value = serde_json::from_str(&fixture_str).unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput =
+        serde_json::from_value(fixture["input"].clone()).unwrap();
     assert_deterministic("analogy_sme", &input);
 }
 
 #[test]
 fn test_act_r_determinism() {
     let fixture_str = std::fs::read_to_string("tests/fixtures/papers/act_r.json").unwrap();
-    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    let fixture: serde_json::Value = serde_json::from_str(&fixture_str).unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput =
+        serde_json::from_value(fixture["input"].clone()).unwrap();
     assert_deterministic("act_r", &input);
 }
 
 #[test]
 fn ctl_check_determinism() {
     let breed = wasm4pm_cognition::breeds::ctl_check::CtlCheck;
-    let mut facts = vec![
-        wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "A G (p -> A F q)".into() },
-        wasm4pm_cognition::breeds::Fact { key: "ctl:initial".into(), value: "s0".into() },
+    // Transition system in the format ctl_check actually parses: `ts:init`,
+    // `ts:edge:<s>` (successor), `ts:label:<s>` (atomic propositions).
+    let facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "A F q".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ts:init".into(), value: "s0".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ts:edge:s0".into(), value: "s1".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ts:edge:s1".into(), value: "s1".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ts:label:s0".into(), value: "p".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ts:label:s1".into(), value: "q".into() },
     ];
-    let states = vec!["s0", "s1", "s2"];
-    let trans = vec![("s0", "s1"), ("s1", "s2"), ("s2", "s2")];
-    for s in &states {
-        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("state:{}", s), value: "".into() });
-    }
-    for (u, v) in &trans {
-        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("transition:{}:{}", u, v), value: "".into() });
-    }
-    facts.push(wasm4pm_cognition::breeds::Fact { key: "label:s0:p".into(), value: "".into() });
-    facts.push(wasm4pm_cognition::breeds::Fact { key: "label:s2:q".into(), value: "".into() });
 
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
@@ -799,13 +1392,16 @@ fn ctl_check_determinism() {
 #[test]
 fn ilp_determinism() {
     let breed = wasm4pm_cognition::breeds::ilp::Ilp;
+    // ilp parses `pos:<atom>` / `neg:<atom>` / `bg:<atom>` where the atom lives
+    // in the fact KEY (not the value).
     let facts = vec![
-        wasm4pm_cognition::breeds::Fact { key: "ilp:target".into(), value: "grandparent".into() },
-        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "a,b".into() },
-        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "b,c".into() },
-        wasm4pm_cognition::breeds::Fact { key: "pos".into(), value: "a,c".into() },
-        wasm4pm_cognition::breeds::Fact { key: "neg".into(), value: "c,a".into() },
-        wasm4pm_cognition::breeds::Fact { key: "neg".into(), value: "b,c".into() },
+        wasm4pm_cognition::breeds::Fact { key: "pos:target(1)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact { key: "pos:target(2)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact { key: "pos:target(3)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact { key: "neg:target(4)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:good(1)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:good(2)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:good(3)".into(), value: "".into() },
     ];
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
@@ -819,12 +1415,16 @@ fn ilp_determinism() {
 
 #[test]
 fn naive_physics_determinism() {
-    let breed = wasm4pm_cognition::breeds::naive_physics::NaivePhysicsBreed;
+    let breed = wasm4pm_cognition::breeds::naive_physics::NaivePhysics;
+    // naive_physics parses `np:on:<x>`, `np:in:<x>`, `np:liquid:<x>`,
+    // `np:ground:<x>`, `np:remove:<x>` — a containment-transport scene.
     let facts = vec![
-        wasm4pm_cognition::breeds::Fact { key: "np:object:cup".into(), value: "container".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:object:water".into(), value: "liquid".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:relation:contains:cup".into(), value: "water".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:state:cup".into(), value: "tilted".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:on:table".into(), value: "floor".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:ground:floor".into(), value: "true".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:on:cup".into(), value: "table".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:in:water".into(), value: "cup".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:liquid:water".into(), value: "cup".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:remove:table".into(), value: "true".into() },
     ];
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]

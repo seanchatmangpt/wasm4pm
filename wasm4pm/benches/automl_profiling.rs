@@ -3,11 +3,32 @@
 //! Target: Vision 2030 Nanosecond Architecture efficiency.
 //! Validation: 100-trace sweep must complete in < 100 microseconds.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use std::time::Duration;
 use wasm4pm::ml_algorithms::*;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::state::{get_or_init_state, StoredObject};
+use wasm4pm::xes_format::validate_and_parse_xes;
+
+/// Load a real XES log from bench_data/ and store it, returning the state
+/// handle plus the trace count. Returns None if the file is unavailable so the
+/// real-data benches are skipped cleanly rather than fabricating input.
+fn setup_real_log(path: &str, max_traces: usize) -> Option<(String, usize)> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let mut log = validate_and_parse_xes(&content).ok()?;
+    // Cap traces so the timed sweep stays bounded on large real logs.
+    if log.traces.len() > max_traces {
+        log.traces.truncate(max_traces);
+    }
+    let count = log.traces.len();
+    if count < 10 {
+        return None; // automl requires >= 10 traces for 5-fold CV
+    }
+    let handle = get_or_init_state()
+        .store_object(StoredObject::EventLog(log))
+        .unwrap();
+    Some((handle, count))
+}
 
 fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
     let mut log = EventLog {
@@ -48,10 +69,20 @@ fn bench_automl_forecast(c: &mut Criterion) {
 
     for &size in &[10, 100, 1000] {
         let handle = setup_mock_log(size, 10);
-        group.bench_with_input(format!("{}_traces", size), &handle, |b, h| {
-            b.iter(|| discover_automl_forecast(black_box(h), black_box("concept:name")))
+        group.throughput(Throughput::Elements(size as u64));
+        group.bench_with_input(format!("synthetic_{}_traces", size), &handle, |b, h| {
+            b.iter(|| black_box(discover_automl_forecast(black_box(h), black_box("concept:name"))))
         });
     }
+
+    // Ground on a real process-mining log (sepsis: ~1050 patient traces).
+    if let Some((handle, count)) = setup_real_log("bench_data/sepsis.xes", 1000) {
+        group.throughput(Throughput::Elements(count as u64));
+        group.bench_with_input(format!("sepsis_real_{}_traces", count), &handle, |b, h| {
+            b.iter(|| black_box(discover_automl_forecast(black_box(h), black_box("concept:name"))))
+        });
+    }
+
     group.finish();
 }
 
@@ -60,10 +91,20 @@ fn bench_automl_classify(c: &mut Criterion) {
 
     for &size in &[10, 100, 1000] {
         let handle = setup_mock_log(size, 10);
-        group.bench_with_input(format!("{}_traces", size), &handle, |b, h| {
-            b.iter(|| discover_automl_classify(black_box(h), black_box("concept:name")))
+        group.throughput(Throughput::Elements(size as u64));
+        group.bench_with_input(format!("synthetic_{}_traces", size), &handle, |b, h| {
+            b.iter(|| black_box(discover_automl_classify(black_box(h), black_box("concept:name"))))
         });
     }
+
+    // Ground on a real process-mining log (sepsis: ~1050 patient traces).
+    if let Some((handle, count)) = setup_real_log("bench_data/sepsis.xes", 1000) {
+        group.throughput(Throughput::Elements(count as u64));
+        group.bench_with_input(format!("sepsis_real_{}_traces", count), &handle, |b, h| {
+            b.iter(|| black_box(discover_automl_classify(black_box(h), black_box("concept:name"))))
+        });
+    }
+
     group.finish();
 }
 

@@ -641,7 +641,8 @@ fn event_calculus_empty_refused() {
     let input = empty_base();
     let result = EventCalculus.preconditions(&input);
     assert!(result.is_err(), "EventCalculus must refuse empty inputs");
-    assert!(result.unwrap_err().contains("initially") || result.unwrap_err().contains("happens"));
+    let err = result.unwrap_err();
+    assert!(err.contains("initially") || err.contains("happens"));
 }
 
 #[test]

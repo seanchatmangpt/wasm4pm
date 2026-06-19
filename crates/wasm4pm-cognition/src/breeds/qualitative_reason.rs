@@ -108,15 +108,45 @@ impl CognitionBreed for QualitativeReason {
         // 1. Parse confluences and variables
         let mut variables = HashSet::new();
         let mut initial_signs = HashMap::new();
-        
+        let mut confluences = Vec::new();
+
+        // Fact-encoded inputs (de Kleer & Brown fixture convention):
+        //   qr:confluence:<id> = "+p,+a,-q"  → [dP] + [dA] - [dQ] = 0
+        //   qr:sign:<var>       = "+"/"-"/"0" → initial sign of variable <var>
         for f in &input.facts {
-            if let Some(sign) = Sign::from_str(&f.value) {
+            if let Some(conf_id) = f.key.strip_prefix("qr:confluence:") {
+                let mut left = Vec::new();
+                for term in f.value.split(',') {
+                    let term = term.trim();
+                    if term.is_empty() {
+                        continue;
+                    }
+                    let (var, is_pos) = if let Some(stripped) = term.strip_prefix('-') {
+                        (stripped.to_string(), false)
+                    } else if let Some(stripped) = term.strip_prefix('+') {
+                        (stripped.to_string(), true)
+                    } else {
+                        (term.to_string(), true)
+                    };
+                    variables.insert(var.clone());
+                    left.push((var, is_pos));
+                }
+                confluences.push(Confluence {
+                    id: conf_id.to_string(),
+                    left,
+                    right: "0".to_string(),
+                });
+            } else if let Some(var) = f.key.strip_prefix("qr:sign:") {
+                if let Some(sign) = Sign::from_str(&f.value) {
+                    initial_signs.insert(var.to_string(), sign);
+                    variables.insert(var.to_string());
+                }
+            } else if let Some(sign) = Sign::from_str(&f.value) {
                 initial_signs.insert(f.key.clone(), sign);
                 variables.insert(f.key.clone());
             }
         }
 
-        let mut confluences = Vec::new();
         for r in &input.rules {
             let mut left = Vec::new();
             for p in &r.premise {
@@ -145,7 +175,7 @@ impl CognitionBreed for QualitativeReason {
 
         trace.push(TraceStep {
             step: step_count,
-            kind: "qr-load".to_string(),
+            kind: "limit-analysis".to_string(),
             detail: format!("Loaded {} variables and {} confluences", var_list.len(), confluences.len()),
             depth: 0,
             objects: vec![],
@@ -214,7 +244,7 @@ impl CognitionBreed for QualitativeReason {
 
         trace.push(TraceStep {
             step: step_count,
-            kind: "qr-envision".to_string(),
+            kind: "branch-ambiguity".to_string(),
             detail: format!("Envisionment produced {} valid qualitative states", valid_states.len()),
             depth: 0,
             objects: vec![],
@@ -243,8 +273,16 @@ impl CognitionBreed for QualitativeReason {
             }
             out_facts.push(Fact {
                 key: format!("state_{}", idx),
-                value: state_str,
+                value: state_str.clone(),
             });
+            trace.push(TraceStep {
+                step: step_count,
+                kind: "envision-state".to_string(),
+                detail: format!("Qualitative state {}: {}", idx, state_str.trim_end_matches(',')),
+                depth: 1,
+                objects: vec![],
+            });
+            step_count += 1;
         }
 
         let explanation = format!(

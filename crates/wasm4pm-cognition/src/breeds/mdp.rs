@@ -22,12 +22,19 @@ impl CognitionBreed for Mdp {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        // Two accepted encodings:
+        //   (a) explicit `state` + `action` facts, or
+        //   (b) the `mdp:trans:<state>:<action>` transition encoding from which
+        //       states and actions are derived (Bellman 1957 chain fixtures).
         let has_states = input.facts.iter().any(|f| f.key == "state");
         let has_actions = input.facts.iter().any(|f| f.key == "action");
-        if !has_states || !has_actions {
-            return Err("MDP requires state and action facts".to_string());
+        let has_transitions =
+            input.facts.iter().any(|f| f.key.starts_with("mdp:trans:"));
+        if (has_states && has_actions) || has_transitions {
+            Ok(())
+        } else {
+            Err("MDP requires state+action facts or mdp:trans: transitions".to_string())
         }
-        Ok(())
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
@@ -39,14 +46,55 @@ impl CognitionBreed for Mdp {
         let mut reward_facts = Vec::new();
         let mut gamma = 0.9;
 
+        // Prefixed encoding (Bellman 1957 chain fixtures):
+        //   mdp:gamma                       -> "0.9"
+        //   mdp:trans:<state>:<action>      -> "<next_state>:<prob>" (';'-sep for multiple)
+        //   mdp:reward:<state>:<action>     -> "<reward>"
+        // States and actions are derived from the transition keys/values in
+        // first-seen order. Normalised into the same comma-separated
+        // `transition_facts`/`reward_facts` form the loops below consume.
+        let mut register_state = |s: &str, states: &mut Vec<String>| {
+            if !states.iter().any(|e| e == s) {
+                states.push(s.to_string());
+            }
+        };
+
         for fact in &input.facts {
-            if fact.key == "state" {
-                states.push(fact.value.clone());
-            } else if fact.key == "action" {
-                actions.push(fact.value.clone());
-            } else if fact.key == "gamma" {
+            if let Some(rest) = fact.key.strip_prefix("mdp:trans:") {
+                // rest = "<state>:<action>"
+                if let Some((s_from, action)) = rest.split_once(':') {
+                    register_state(s_from, &mut states);
+                    if !actions.iter().any(|a| a == action) {
+                        actions.push(action.to_string());
+                    }
+                    // value = "<next_state>:<prob>[;<next_state>:<prob>...]"
+                    for outcome in fact.value.split(';') {
+                        if let Some((s_to, prob)) = outcome.rsplit_once(':') {
+                            register_state(s_to, &mut states);
+                            transition_facts.push(format!(
+                                "{},{},{},{}",
+                                s_from,
+                                action,
+                                s_to,
+                                prob.trim()
+                            ));
+                        }
+                    }
+                }
+            } else if let Some(rest) = fact.key.strip_prefix("mdp:reward:") {
+                // rest = "<state>:<action>"
+                if let Some((state, action)) = rest.split_once(':') {
+                    reward_facts.push(format!("{},{},{}", state, action, fact.value.trim()));
+                }
+            } else if fact.key == "mdp:gamma" || fact.key == "gamma" {
                 if let Ok(g) = fact.value.parse::<f64>() {
                     gamma = g;
+                }
+            } else if fact.key == "state" {
+                register_state(&fact.value, &mut states);
+            } else if fact.key == "action" {
+                if !actions.iter().any(|a| a == &fact.value) {
+                    actions.push(fact.value.clone());
                 }
             } else if fact.key == "transition" {
                 transition_facts.push(fact.value.clone());

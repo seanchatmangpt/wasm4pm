@@ -10,8 +10,11 @@
 /// - OCEL flatten to eventlog
 ///
 /// Note: Uses internal Rust APIs directly, not WASM bindings.
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{
+    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+};
 use std::collections::HashMap;
+use std::fs;
 use std::time::Duration;
 use wasm4pm::models::{
     AttributeValue, Event, EventLog, NGramPredictor, OCELEvent, OCELObject, Trace, OCEL,
@@ -178,6 +181,84 @@ fn generate_event_log_with_timestamps(shape: &LogShape) -> EventLog {
     log
 }
 
+// ---------------------------------------------------------------------------
+// Real-data XES loader (grounds streaming + ML benches on bench_data/sepsis.xes)
+// Minimal streaming parser — same pattern as conformance_bench.rs / real_data_bench.rs.
+// ---------------------------------------------------------------------------
+
+fn extract_attr(s: &str, attr: &str) -> Option<String> {
+    let needle = format!("{}=\"", attr);
+    let start = s.find(&needle)? + needle.len();
+    let end = s[start..].find('"')?;
+    Some(s[start..start + end].to_string())
+}
+
+fn parse_xes(content: &str) -> EventLog {
+    let mut log = EventLog::new();
+    let mut current_trace: Option<Trace> = None;
+    let mut current_event: Option<Event> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
+        }
+        if trimmed.starts_with("</trace>") {
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
+        }
+        if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
+        }
+        if trimmed.starts_with("</event>") {
+            if let Some(ev) = current_event.take() {
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
+            }
+        }
+        if trimmed.starts_with("<string") || trimmed.starts_with("<date") {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
+                if let Some(ref mut ev) = current_event {
+                    ev.attributes.insert(k, AttributeValue::String(v));
+                } else if let Some(ref mut t) = current_trace {
+                    t.attributes.insert(k, AttributeValue::String(v));
+                }
+            }
+        }
+    }
+    log
+}
+
+/// Load the real Sepsis log, capping traces for reproducible runtime.
+/// Returns None if the dataset is absent (e.g. CI) so callers can fall back
+/// to synthetic input rather than panicking the whole binary.
+fn load_real_log(max_traces: usize) -> Option<EventLog> {
+    let candidates = ["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"];
+    for path in candidates {
+        if let Ok(content) = fs::read_to_string(path) {
+            if content.len() < 200 {
+                continue;
+            }
+            let mut log = parse_xes(&content);
+            if log.traces.is_empty() {
+                continue;
+            }
+            log.traces.truncate(max_traces);
+            return Some(log);
+        }
+    }
+    None
+}
+
 fn store_log(log: EventLog) -> String {
     get_or_init_state()
         .store_object(StoredObject::EventLog(log))
@@ -308,19 +389,46 @@ fn bench_next_activity_prediction(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    for shape in ml_bench_sizes() {
-        let log = generate_event_log_with_timestamps(&shape);
-        let events = log.event_count();
-        let n = 3;
+    // Prefer the REAL Sepsis log for predictor training (next-activity
+    // prediction is a process-mining domain match); fall back to synthetic.
+    let n = 3;
+    let cases: Vec<(String, EventLog)> = match load_real_log(1_050) {
+        Some(log) => vec![("sepsis".to_string(), log)],
+        None => {
+            eprintln!(
+                "ml_streaming_sim_bench: bench_data/sepsis.xes not found — \
+                 falling back to synthetic next-activity sizes"
+            );
+            ml_bench_sizes()
+                .into_iter()
+                .map(|shape| {
+                    (
+                        format!("synthetic_c{}", shape.num_cases),
+                        generate_event_log_with_timestamps(&shape),
+                    )
+                })
+                .collect()
+        }
+    };
 
+    for (label, log) in cases {
+        let events = log.event_count();
         let predictor = build_ngram_predictor_internal(&log, ACTIVITY_KEY, n);
-        let prefix = vec!["Register".to_string(), "Validate".to_string()];
+
+        // Derive a real, observed prefix from the trained model so prediction
+        // exercises a populated context rather than an empty lookup.
+        let prefix: Vec<String> = predictor
+            .counts
+            .keys()
+            .max_by_key(|k| k.len())
+            .cloned()
+            .unwrap_or_else(|| vec!["Register".to_string(), "Validate".to_string()]);
 
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
-            BenchmarkId::new(format!("c{}_n{}", shape.num_cases, n), shape.num_cases),
+            BenchmarkId::new(format!("{}_n{}", label, n), events),
             &(&predictor, &prefix),
-            |b, (pred, pref)| b.iter(|| pred.predict(pref)),
+            |b, (pred, pref)| b.iter(|| black_box(pred.predict(black_box(pref)))),
         );
     }
     group.finish();
@@ -348,13 +456,14 @@ fn bench_remaining_time_build(c: &mut Criterion) {
             |b, log| {
                 b.iter(|| {
                     // Simulate remaining time model building
+                    let log = black_box(log);
                     let mut case_durations: Vec<f64> = Vec::new();
                     for trace in &log.traces {
                         // Simple duration estimation based on event count
                         let duration = trace.events.len() as f64 * 1000.0;
                         case_durations.push(duration);
                     }
-                    case_durations
+                    black_box(case_durations)
                 })
             },
         );
@@ -388,6 +497,8 @@ fn bench_anomaly_scoring(c: &mut Criterion) {
                 ];
                 b.iter(|| {
                     // Simulate anomaly scoring
+                    let dfg = black_box(dfg);
+                    let trace = black_box(&trace);
                     let total_edges: usize = dfg.edges.iter().map(|e| e.frequency).sum();
                     let total_f = total_edges.max(1) as f64;
                     let mut cost_sum = 0.0_f64;
@@ -404,7 +515,7 @@ fn bench_anomaly_scoring(c: &mut Criterion) {
                             -(edge_freq as f64 / total_f).log2()
                         };
                     }
-                    cost_sum / (trace.len() - 1) as f64
+                    black_box(cost_sum / (trace.len() - 1) as f64)
                 })
             },
         );
@@ -441,6 +552,8 @@ fn bench_outcome_prediction(c: &mut Criterion) {
             "Approve_Basic".to_string(),
         ];
         b.iter(|| {
+            let dfg = black_box(dfg);
+            let trace = black_box(&trace);
             let total_edges: usize = dfg.edges.iter().map(|e| e.frequency).sum();
             let total_f = total_edges.max(1) as f64;
             let mut cost_sum = 0.0_f64;
@@ -457,7 +570,7 @@ fn bench_outcome_prediction(c: &mut Criterion) {
                     -(edge_freq as f64 / total_f).log2()
                 };
             }
-            cost_sum / (trace.len() - 1) as f64
+            black_box(cost_sum / (trace.len() - 1) as f64)
         })
     });
 
@@ -473,6 +586,8 @@ fn bench_outcome_prediction(c: &mut Criterion) {
         ];
         b.iter(|| {
             // Simulate trace likelihood calculation
+            let pred = black_box(pred);
+            let trace = black_box(&trace);
             let mut log_prob = 0.0_f64;
             for i in 0..trace.len() - 1 {
                 let context_len = (pred.n - 1).min(i + 1);
@@ -485,7 +600,7 @@ fn bench_outcome_prediction(c: &mut Criterion) {
                     .unwrap_or(1e-10);
                 log_prob += prob.ln();
             }
-            log_prob
+            black_box(log_prob)
         })
     });
 
@@ -515,8 +630,9 @@ fn bench_streaming_dfg_single_event(c: &mut Criterion) {
 
         b.iter(|| {
             let mut stream = StreamingDfgBuilder::new();
-            stream.add_event(case_id, activity);
-            stream.close_trace(case_id);
+            stream.add_event(black_box(case_id), black_box(activity));
+            stream.close_trace(black_box(case_id));
+            black_box(stream.snapshot())
         });
     });
 
@@ -528,10 +644,11 @@ fn bench_streaming_dfg_single_event(c: &mut Criterion) {
 
         b.iter(|| {
             let mut stream = StreamingDfgBuilder::new();
-            stream.add_batch(&batch);
+            stream.add_batch(black_box(&batch));
             for (case_id, _) in &batch {
                 stream.close_trace(case_id);
             }
+            black_box(stream.snapshot())
         });
     });
 
@@ -556,8 +673,9 @@ fn bench_streaming_skeleton_single_event(c: &mut Criterion) {
 
         b.iter(|| {
             let mut stream = StreamingSkeletonBuilder::new();
-            stream.add_event(case_id, activity);
-            stream.close_trace(case_id);
+            stream.add_event(black_box(case_id), black_box(activity));
+            stream.close_trace(black_box(case_id));
+            black_box(stream.snapshot())
         });
     });
 
@@ -574,13 +692,43 @@ fn bench_streaming_dfg_throughput(c: &mut Criterion) {
     } else {
         helpers::full_group(&mut group);
     }
-    group.throughput(Throughput::Elements(1_000_000));
+    // Build the set of logs to ingest. Prefer the REAL Sepsis log (streaming
+    // ingestion is a process-mining domain match) truncated to representative
+    // sizes for reproducible runtime; fall back to synthetic shapes only when
+    // bench_data/sepsis.xes is absent (e.g. CI).
+    let real_caps = [100_usize, 500, 1_050];
+    let logs: Vec<(String, EventLog)> = match load_real_log(usize::MAX) {
+        Some(full) => real_caps
+            .iter()
+            .map(|&cap| {
+                let mut l = EventLog::new();
+                l.traces = full.traces.iter().take(cap).cloned().collect();
+                (format!("sepsis_{}t", l.traces.len()), l)
+            })
+            .collect(),
+        None => {
+            eprintln!(
+                "ml_streaming_sim_bench: bench_data/sepsis.xes not found — \
+                 falling back to synthetic streaming sizes"
+            );
+            streaming_bench_sizes()
+                .into_iter()
+                .map(|shape| {
+                    let log = generate_event_log_with_timestamps(&shape);
+                    (format!("synthetic_{}c", shape.num_cases), log)
+                })
+                .collect()
+        }
+    };
 
-    for shape in streaming_bench_sizes() {
-        let log = generate_event_log_with_timestamps(&shape);
+    for (label, log) in logs {
         let total_events = log.event_count();
+        // Throughput is events/sec for THIS input, so results are comparable
+        // across input sizes regardless of trace count.
+        group.throughput(Throughput::Elements(total_events as u64));
 
-        group.bench_with_input(BenchmarkId::new("events", total_events), &log, |b, log| {
+        group.bench_with_input(BenchmarkId::new("events", label), &log, |b, log| {
+            let log = black_box(log);
             let case_ids: Vec<String> = (0..log.traces.len())
                 .map(|i| format!("case_{}", i))
                 .collect();
@@ -597,7 +745,7 @@ fn bench_streaming_dfg_throughput(c: &mut Criterion) {
                     }
                     local_stream.close_trace(&case_ids[trace_idx]);
                 }
-                local_stream.snapshot()
+                black_box(local_stream.snapshot())
             });
         });
     }
@@ -638,7 +786,7 @@ fn bench_monte_carlo_simulation(c: &mut Criterion) {
                 random_seed: 42,
             };
 
-            b.iter(|| run_monte_carlo_simulation(log, &config).unwrap());
+            b.iter(|| black_box(run_monte_carlo_simulation(black_box(log), &config).unwrap()));
         });
     }
     group.finish();
@@ -711,12 +859,15 @@ fn bench_ocel_flatten(c: &mut Criterion) {
         let events_per_object = 5;
         let ocel = create_synthetic_ocel(num_objects, events_per_object);
 
+        // Flattening is O(objects * events); report per-event throughput.
+        group.throughput(Throughput::Elements(ocel.events.len() as u64));
         group.bench_with_input(
             BenchmarkId::new("objects", num_objects),
             &ocel,
             |b, ocel| {
                 b.iter(|| {
                     // Simulate OCEL flattening (projecting objects to traces)
+                    let ocel = black_box(ocel);
                     let mut event_log = EventLog::new();
                     for obj in &ocel.objects {
                         if obj.object_type != "Order" {
@@ -749,7 +900,7 @@ fn bench_ocel_flatten(c: &mut Criterion) {
                         }
                         event_log.traces.push(trace);
                     }
-                    event_log
+                    black_box(event_log)
                 })
             },
         );

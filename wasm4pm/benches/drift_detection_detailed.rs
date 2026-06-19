@@ -23,8 +23,9 @@
 //!
 //! 6. **Determinism Verification** — Reproducibility across runs with seeded RNG
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use std::time::Duration;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::prediction_drift::{classify_trend, ewma_series, jaccard_distance};
@@ -282,6 +283,149 @@ fn generate_stable_log(num_cases: usize, events_per_case: usize) -> EventLog {
 }
 
 // ---------------------------------------------------------------------------
+// Real-data XES loading (grounds drift detection on a genuine event log)
+// ---------------------------------------------------------------------------
+
+fn extract_attr(s: &str, attr: &str) -> Option<String> {
+    let needle = format!("{}=\"", attr);
+    let start = s.find(&needle)? + needle.len();
+    let end = s[start..].find('"')?;
+    Some(s[start..start + end].to_string())
+}
+
+/// Minimal streaming XES parser (matches `real_data_bench.rs`).
+fn parse_xes(content: &str) -> EventLog {
+    let mut log = EventLog::new();
+    let mut current_trace: Option<Trace> = None;
+    let mut current_event: Option<Event> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
+        }
+        if trimmed.starts_with("</trace>") {
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
+        }
+        if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
+        }
+        if trimmed.starts_with("</event>") {
+            if let Some(ev) = current_event.take() {
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
+            }
+        }
+        if trimmed.starts_with("<string") {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
+                if let Some(ref mut ev) = current_event {
+                    ev.attributes.insert(k, AttributeValue::String(v));
+                } else if let Some(ref mut t) = current_trace {
+                    t.attributes.insert(k, AttributeValue::String(v));
+                }
+            }
+        }
+        if trimmed.starts_with("<date") {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
+                if let Some(ref mut ev) = current_event {
+                    ev.attributes.insert(k, AttributeValue::Date(v));
+                }
+            }
+        }
+    }
+    log
+}
+
+/// Load the real Sepsis event log (1,050 cases, ~15K events).
+/// Returns `None` when the dataset is absent so synthetic benches still run.
+fn load_real_log() -> Option<EventLog> {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let candidates = [
+        "bench_data/sepsis.xes",
+        "../bench_data/sepsis.xes",
+        "../../bench_data/sepsis.xes",
+        "~/chatmangpt/pm4py/tests/input_data/sepsis.xes",
+    ];
+    candidates.iter().find_map(|p| {
+        let resolved = p.replace('~', &home);
+        let content = fs::read_to_string(&resolved).ok()?;
+        if content.len() < 200 {
+            return None;
+        }
+        let log = parse_xes(&content);
+        if log.traces.is_empty() {
+            None
+        } else {
+            Some(log)
+        }
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Real-data drift detection (grounded on Sepsis ICU patient flow)
+// ---------------------------------------------------------------------------
+
+fn bench_real_data_drift(c: &mut Criterion) {
+    let log = match load_real_log() {
+        Some(l) => l,
+        None => {
+            eprintln!(
+                "drift/real_data: sepsis.xes not found in bench_data/ — skipping real-data bench"
+            );
+            return;
+        }
+    };
+
+    let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
+    let handle = get_or_init_state()
+        .store_object(StoredObject::EventLog(log))
+        .expect("Failed to store real log");
+
+    let mut group = c.benchmark_group("drift/real_data");
+    group.measurement_time(Duration::from_secs(5));
+    group.warm_up_time(Duration::from_secs(1));
+    group.sample_size(20);
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
+
+    for window_size in [10usize, 50, 100, 500] {
+        group.throughput(Throughput::Elements(
+            (total_events / window_size.max(1)) as u64,
+        ));
+        group.bench_with_input(
+            BenchmarkId::new("sepsis_window", window_size),
+            &window_size,
+            |b, &ws| {
+                b.iter(|| {
+                    let result = wasm4pm::prediction_drift::detect_drift(
+                        black_box(&handle),
+                        black_box(ACTIVITY_KEY),
+                        black_box(ws),
+                    );
+                    black_box(result)
+                });
+            },
+        );
+    }
+    group.finish();
+}
+
+// ---------------------------------------------------------------------------
 // Window size parameter sweep
 // ---------------------------------------------------------------------------
 
@@ -311,7 +455,12 @@ fn bench_window_sizes(c: &mut Criterion) {
             &window_size,
             |b, &ws| {
                 b.iter(|| {
-                    let _ = wasm4pm::prediction_drift::detect_drift(&handle, ACTIVITY_KEY, ws);
+                    let result = wasm4pm::prediction_drift::detect_drift(
+                        black_box(&handle),
+                        black_box(ACTIVITY_KEY),
+                        black_box(ws),
+                    );
+                    black_box(result)
                 });
             },
         );
@@ -341,7 +490,7 @@ fn bench_alpha_tuning(c: &mut Criterion) {
     for alpha in [0.1f64, 0.2, 0.3, 0.5] {
         group.throughput(Throughput::Elements(series.len() as u64));
         group.bench_with_input(BenchmarkId::new("alpha", alpha), &alpha, |b, &a| {
-            b.iter(|| ewma_series(&series, a));
+            b.iter(|| black_box(ewma_series(black_box(&series), black_box(a))));
         });
     }
     group.finish();
@@ -384,7 +533,12 @@ fn bench_drift_scenarios(c: &mut Criterion) {
         group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(BenchmarkId::new("scenario", name), &handle, |b, h| {
             b.iter(|| {
-                let _ = wasm4pm::prediction_drift::detect_drift(h, ACTIVITY_KEY, 10);
+                let result = wasm4pm::prediction_drift::detect_drift(
+                    black_box(h),
+                    black_box(ACTIVITY_KEY),
+                    black_box(10),
+                );
+                black_box(result)
             });
         });
     }
@@ -407,12 +561,6 @@ fn bench_threshold_sensitivity(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    // Use abrupt drift scenario for clear signal.
-    let log = generate_abrupt_drift_log(200, 10);
-    let handle = get_or_init_state()
-        .store_object(StoredObject::EventLog(log))
-        .expect("Failed to store log");
-
     // Instead of benchmarking threshold directly (API doesn't support it),
     // we benchmark the core Jaccard distance operation at varying set overlap levels.
     for overlap_percent in [0usize, 25, 50, 75, 100] {
@@ -428,7 +576,7 @@ fn bench_threshold_sensitivity(c: &mut Criterion) {
             BenchmarkId::new("overlap", format!("{}%", overlap_percent)),
             &(a, b),
             |bench, (a, b)| {
-                bench.iter(|| jaccard_distance(a, b));
+                bench.iter(|| black_box(jaccard_distance(black_box(a), black_box(b))));
             },
         );
     }
@@ -454,14 +602,14 @@ fn bench_edge_cases(c: &mut Criterion) {
     let empty_a: HashSet<String> = HashSet::new();
     let empty_b: HashSet<String> = HashSet::new();
     group.bench_function("empty_sets", |b| {
-        b.iter(|| jaccard_distance(&empty_a, &empty_b));
+        b.iter(|| black_box(jaccard_distance(black_box(&empty_a), black_box(&empty_b))));
     });
 
     // Single activity in both sets
     let single_a = ["A"].iter().map(|s| s.to_string()).collect::<HashSet<_>>();
     let single_b = ["A"].iter().map(|s| s.to_string()).collect::<HashSet<_>>();
     group.bench_function("single_activity", |b| {
-        b.iter(|| jaccard_distance(&single_a, &single_b));
+        b.iter(|| black_box(jaccard_distance(black_box(&single_a), black_box(&single_b))));
     });
 
     // All different activities (maximum disjointness)
@@ -472,7 +620,7 @@ fn bench_edge_cases(c: &mut Criterion) {
         .map(|i| format!("act_b_{}", i))
         .collect::<HashSet<_>>();
     group.bench_function("all_different_activities", |b| {
-        b.iter(|| jaccard_distance(&all_diff_a, &all_diff_b));
+        b.iter(|| black_box(jaccard_distance(black_box(&all_diff_a), black_box(&all_diff_b))));
     });
 
     group.finish();
@@ -499,11 +647,11 @@ fn bench_determinism(c: &mut Criterion) {
     // Bench the same computation multiple times to ensure stable timing.
     group.bench_function("ewma_deterministic", |b| {
         b.iter(|| {
-            let result1 = ewma_series(&series, alpha);
-            let result2 = ewma_series(&series, alpha);
+            let result1 = ewma_series(black_box(&series), black_box(alpha));
+            let result2 = ewma_series(black_box(&series), black_box(alpha));
             // Verify results are identical (not benchmarking equality check, just the computation).
             assert_eq!(result1, result2);
-            result1
+            black_box(result1)
         });
     });
 
@@ -512,6 +660,7 @@ fn bench_determinism(c: &mut Criterion) {
 
 criterion_group!(
     drift_detailed,
+    bench_real_data_drift,
     bench_window_sizes,
     bench_alpha_tuning,
     bench_drift_scenarios,

@@ -70,8 +70,14 @@ impl CognitionBreed for VersionSpace {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let has_attributes = input.facts.iter().any(|f| f.key == "attribute");
-        let has_examples = input.facts.iter().any(|f| f.key == "example");
+        let has_attributes = input
+            .facts
+            .iter()
+            .any(|f| f.key == "attribute" || f.key == "vs:attrs");
+        let has_examples = input
+            .facts
+            .iter()
+            .any(|f| f.key == "example" || f.key.starts_with("vs:example"));
         if !has_attributes || !has_examples {
             return Err("Version Space requires attribute declarations and example facts".to_string());
         }
@@ -81,11 +87,24 @@ impl CognitionBreed for VersionSpace {
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
 
-        // Parse attributes and their domains
+        // Parse attributes and their domains.
+        // Two encodings supported:
+        //  (1) legacy: key="attribute", value="Name:val1,val2,..." (explicit domain)
+        //  (2) fixture: key="vs:attrs", value="name1,name2,..." (positional, domains
+        //      inferred from observed example values)
         let mut attr_names = Vec::new();
-        let mut attr_domains = HashMap::new();
+        let mut attr_domains: HashMap<String, Vec<String>> = HashMap::new();
+        let mut positional = false;
         for fact in &input.facts {
-            if fact.key == "attribute" {
+            if fact.key == "vs:attrs" {
+                positional = true;
+                for name in fact.value.split(',').map(|s| s.trim().to_string()) {
+                    if !name.is_empty() {
+                        attr_names.push(name.clone());
+                        attr_domains.entry(name).or_default();
+                    }
+                }
+            } else if fact.key == "attribute" {
                 if let Some(colon) = fact.value.find(':') {
                     let name = fact.value[..colon].trim().to_string();
                     let values: Vec<String> = fact
@@ -110,34 +129,67 @@ impl CognitionBreed for VersionSpace {
             objects: vec![],
         });
 
-        // Parse examples
-        let mut examples = Vec::new();
+        // Parse examples. Collect (index, fact) so positional examples are processed
+        // in declared order (vs:example:1..N).
+        let mut example_facts: Vec<(u64, &Fact)> = Vec::new();
         for fact in &input.facts {
             if fact.key == "example" {
-                let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
-                if parts.len() > 1 {
-                    let label_str = parts.last().unwrap().to_lowercase();
-                    let label = label_str == "positive"
-                        || label_str == "+"
-                        || label_str == "1"
-                        || label_str == "true";
+                example_facts.push((example_facts.len() as u64, fact));
+            } else if let Some(suffix) = fact.key.strip_prefix("vs:example") {
+                let idx = suffix.trim_start_matches(':').parse::<u64>().unwrap_or(0);
+                example_facts.push((idx, fact));
+            }
+        }
+        example_facts.sort_by_key(|(i, _)| *i);
 
-                    let mut val_map = HashMap::new();
-                    for part in &parts[..parts.len() - 1] {
-                        if let Some(eq) = part.find('=') {
-                            let k = part[..eq].trim().to_string();
-                            let v = part[eq + 1..].trim().to_string();
-                            val_map.insert(k, v);
+        let mut examples = Vec::new();
+        for (_, fact) in &example_facts {
+            // Positional fixture encoding: "v1,v2,...,vN:label"
+            if positional {
+                let (vals_str, label_str) = match fact.value.rsplit_once(':') {
+                    Some((v, l)) => (v, l.trim().to_lowercase()),
+                    None => (fact.value.as_str(), String::new()),
+                };
+                let label = matches!(label_str.as_str(), "positive" | "+" | "1" | "true");
+                let values: Vec<String> =
+                    vals_str.split(',').map(|s| s.trim().to_string()).collect();
+                // Infer domains from observed values.
+                for (i, v) in values.iter().enumerate() {
+                    if let Some(name) = attr_names.get(i) {
+                        let dom = attr_domains.entry(name.clone()).or_default();
+                        if !dom.contains(v) {
+                            dom.push(v.clone());
                         }
                     }
-
-                    let mut values = Vec::new();
-                    for attr in &attr_names {
-                        let val = val_map.get(attr).cloned().unwrap_or_else(|| "?".to_string());
-                        values.push(val);
-                    }
-                    examples.push(Example { values, label });
                 }
+                examples.push(Example { values, label });
+                continue;
+            }
+
+            // Legacy "k=v,...,label" encoding.
+            let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
+            if parts.len() > 1 {
+                let label_str = parts.last().unwrap().to_lowercase();
+                let label = label_str == "positive"
+                    || label_str == "+"
+                    || label_str == "1"
+                    || label_str == "true";
+
+                let mut val_map = HashMap::new();
+                for part in &parts[..parts.len() - 1] {
+                    if let Some(eq) = part.find('=') {
+                        let k = part[..eq].trim().to_string();
+                        let v = part[eq + 1..].trim().to_string();
+                        val_map.insert(k, v);
+                    }
+                }
+
+                let mut values = Vec::new();
+                for attr in &attr_names {
+                    let val = val_map.get(attr).cloned().unwrap_or_else(|| "?".to_string());
+                    values.push(val);
+                }
+                examples.push(Example { values, label });
             }
         }
 
@@ -152,7 +204,8 @@ impl CognitionBreed for VersionSpace {
             constraints: vec!["?".to_string(); attr_names.len()],
         });
 
-        // Update loop
+        // Update loop. Track |G| after each example for intermediate-boundary evidence.
+        let mut g_sizes: Vec<usize> = Vec::new();
         for (idx, example) in examples.iter().enumerate() {
             if example.label {
                 // Positive example
@@ -241,6 +294,8 @@ impl CognitionBreed for VersionSpace {
                 g_set = maximal_g;
             }
 
+            g_sizes.push(g_set.len());
+
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "vs-update".to_string(),
@@ -288,10 +343,58 @@ impl CognitionBreed for VersionSpace {
             }
         }
 
+        // Deterministic, sorted boundary snapshots (BTreeSet ordering via sorted Vec).
+        let mut s_strs: Vec<String> = s_set
+            .iter()
+            .map(|h| h.constraints.join(","))
+            .collect();
+        s_strs.sort();
+        let mut g_strs: Vec<String> = g_set
+            .iter()
+            .map(|h| h.constraints.join(","))
+            .collect();
+        g_strs.sort();
+
+        // |G| immediately after the final negative example (intermediate G3 in
+        // Mitchell's worked EnjoySport derivation).
+        let intermediate_g_size = examples
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| !e.label)
+            .last()
+            .and_then(|(i, _)| g_sizes.get(i).copied())
+            .unwrap_or_else(|| g_sizes.last().copied().unwrap_or(0));
+
+        // The candidate-elimination algorithm has converged iff S == G.
+        let converged = s_strs == g_strs;
+
+        let mut out_facts = input.facts.clone();
+        out_facts.push(Fact {
+            key: "vs:S".to_string(),
+            value: s_strs.join(" | "),
+        });
+        out_facts.push(Fact {
+            key: "vs:G".to_string(),
+            value: g_strs.join(" | "),
+        });
+        out_facts.push(Fact {
+            key: "vs:intermediate_g_size".to_string(),
+            value: intermediate_g_size.to_string(),
+        });
+        out_facts.push(Fact {
+            key: "vs:converged".to_string(),
+            value: converged.to_string(),
+        });
+
         let explanation = format!(
-            "Version Space boundaries: S_size={}, G_size={}. Classification: {}",
+            "Version Space boundaries: S_size={}, G_size={}. S={}; G={}; \
+             intermediate_g_size={}; converged={}. Classification: {}",
             s_set.len(),
             g_set.len(),
+            s_strs.join(" | "),
+            g_strs.join(" | "),
+            intermediate_g_size,
+            converged,
             verdict
         );
 
@@ -306,7 +409,7 @@ impl CognitionBreed for VersionSpace {
         Ok(BreedOutput {
             breed: self.id(),
             candidates: input.candidates.clone(),
-            facts: input.facts.clone(),
+            facts: out_facts,
             selected: Some(verdict),
             explanation,
             inference_trace: trace,

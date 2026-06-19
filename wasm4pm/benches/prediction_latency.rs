@@ -1,145 +1,155 @@
 //! Prediction Task Latency Benchmarks
 //!
-//! Comprehensive latency evaluation for all 6 prediction perspectives:
-//! Measures end-to-end latency (p50, p95, p99) across multiple input sizes.
+//! Latency evaluation for the 6 prediction perspectives (next-activity,
+//! remaining-time, outcome, drift, feature-importance, resource) plus an
+//! end-to-end breakdown, batch throughput, and scaling sweeps.
 //!
-//! **Methodology:**
-//! 1. Train models on 1K-trace logs
-//! 2. Measure per-task latency: 10, 100, 1K events in trace
-//! 3. Report median, p95, p99 percentiles
-//! 4. Throughput: tasks per second, events per second
-//! 5. Breakdown: model building, prefix extraction, inference, serialization
+//! **Grounded on REAL data.** Synthetic event-log generation is a TPS
+//! violation (`helpers::generate_event_log` panics by design), so every
+//! benchmark trains and infers over real XES logs loaded from `bench_data/`
+//! (sepsis required; bpi2020 / roadtraffic enrich the sweep when present).
+//!
+//! Every measured input and every returned result is wrapped in `black_box`
+//! so the optimizer cannot elide the timed work, and size-parameterized
+//! workloads use `Throughput` so results are comparable across datasets.
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{
+    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+};
 use std::collections::HashMap;
-use std::time::Duration;
+use std::fs;
 
 mod helpers;
 use helpers::*;
 
+use wasm4pm::models::EventLog;
+use wasm4pm::xes_format::validate_and_parse_xes;
+
 // ============================================================================
-// LATENCY MEASUREMENT UTILITIES
+// REAL DATASET LOADING
 // ============================================================================
 
-/// Measure latencies for a repeated operation.
-#[allow(dead_code)]
-struct LatencyProfile {
-    samples: Vec<Duration>,
+/// A real event log paired with a human-readable label.
+struct RealLog {
+    label: &'static str,
+    log: EventLog,
 }
 
-#[allow(dead_code)]
-impl LatencyProfile {
-    fn new() -> Self {
-        Self {
-            samples: Vec::new(),
+/// Load and parse the first existing candidate path with the crate's real XES
+/// parser. Returns `None` when the dataset is absent (optional datasets) so
+/// callers can skip without falling back to synthetic data.
+fn load_real_log(label: &'static str, candidates: &[&str]) -> Option<RealLog> {
+    for path in candidates {
+        let content = match fs::read_to_string(path) {
+            Ok(c) if c.len() > 200 => c,
+            _ => continue,
+        };
+        match validate_and_parse_xes(&content) {
+            Ok(log) if !log.traces.is_empty() => return Some(RealLog { label, log }),
+            _ => continue,
         }
     }
+    None
+}
 
-    fn p50(&self) -> Duration {
-        if self.samples.is_empty() {
-            Duration::ZERO
-        } else {
-            let mut sorted = self.samples.clone();
-            sorted.sort();
-            sorted[sorted.len() / 2]
+/// Required + optional real datasets. Sepsis is required (small, always shipped
+/// in `bench_data/`); the others enrich the sweep when available.
+fn real_logs() -> Vec<RealLog> {
+    let mut sets = Vec::new();
+    if let Some(ds) = load_real_log("sepsis", &["bench_data/sepsis.xes", "../bench_data/sepsis.xes"])
+    {
+        sets.push(ds);
+    }
+    if !is_fast_mode() {
+        if let Some(ds) = load_real_log(
+            "bpi2020",
+            &[
+                "bench_data/bpi2020_travel.xes",
+                "../bench_data/bpi2020_travel.xes",
+            ],
+        ) {
+            sets.push(ds);
+        }
+        if let Some(ds) = load_real_log(
+            "roadtraffic",
+            &[
+                "bench_data/roadtraffic100traces.xes",
+                "../bench_data/roadtraffic100traces.xes",
+            ],
+        ) {
+            sets.push(ds);
         }
     }
+    assert!(
+        !sets.is_empty(),
+        "prediction_latency bench requires at least bench_data/sepsis.xes — no real dataset found"
+    );
+    sets
+}
 
-    fn p95(&self) -> Duration {
-        if self.samples.is_empty() {
-            Duration::ZERO
-        } else {
-            let mut sorted = self.samples.clone();
-            sorted.sort();
-            sorted[(sorted.len() * 95) / 100]
-        }
-    }
+/// Extract the activity sequence (`concept:name`) for a trace.
+fn trace_activities(trace: &wasm4pm::models::Trace) -> Vec<String> {
+    trace
+        .events
+        .iter()
+        .filter_map(|e| {
+            e.attributes
+                .get(ACTIVITY_KEY)
+                .and_then(|v| v.as_string())
+                .map(str::to_owned)
+        })
+        .collect()
+}
 
-    fn p99(&self) -> Duration {
-        if self.samples.is_empty() {
-            Duration::ZERO
-        } else {
-            let mut sorted = self.samples.clone();
-            sorted.sort();
-            sorted[(sorted.len() * 99) / 100]
+/// Train a bigram next-activity model (prefix -> ranked predictions) over a log.
+fn build_bigram_model(log: &EventLog) -> HashMap<Vec<String>, Vec<(String, f64)>> {
+    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
+    for trace in &log.traces {
+        let acts = trace_activities(trace);
+        for i in 0..acts.len().saturating_sub(1) {
+            *counts
+                .entry(vec![acts[i].clone()])
+                .or_default()
+                .entry(acts[i + 1].clone())
+                .or_insert(0) += 1;
         }
     }
-
-    fn mean(&self) -> Duration {
-        if self.samples.is_empty() {
-            Duration::ZERO
-        } else {
-            let sum: Duration = self.samples.iter().sum();
-            sum / self.samples.len() as u32
-        }
+    let mut model: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
+    for (prefix, c) in &counts {
+        let total: usize = c.values().sum();
+        let mut preds: Vec<_> = c
+            .iter()
+            .map(|(act, n)| (act.clone(), *n as f64 / total as f64))
+            .collect();
+        preds.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        model.insert(prefix.clone(), preds);
     }
-
-    fn throughput_per_sec(&self) -> f64 {
-        if self.samples.is_empty() {
-            0.0
-        } else {
-            1_000_000_000.0 / self.mean().as_nanos() as f64
-        }
-    }
+    model
 }
 
 // ============================================================================
 // NEXT-ACTIVITY PREDICTION LATENCY
 // ============================================================================
 
-/// Benchmark next-activity prediction inference latency.
-/// Measures time to predict from a given prefix.
-fn benchmark_next_activity_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
-    let log = generate_event_log(shape);
-
-    // Build predictor
-    let mut bigram_counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
-    for trace in &log.traces {
-        let activities: Vec<String> = trace
-            .events
-            .iter()
-            .filter_map(|e| {
-                e.attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| v.as_string())
-                    .map(str::to_owned)
-            })
-            .collect();
-
-        for i in 0..activities.len().saturating_sub(1) {
-            let prefix = vec![activities[i].clone()];
-            let next = activities[i + 1].clone();
-            *bigram_counts
-                .entry(prefix)
-                .or_default()
-                .entry(next)
-                .or_insert(0) += 1;
-        }
-    }
-
-    // Normalize to probabilities
-    let mut probabilities: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
-    for (prefix, counts) in &bigram_counts {
-        let total: usize = counts.values().sum();
-        let mut preds: Vec<_> = counts
-            .iter()
-            .map(|(act, count)| (act.clone(), *count as f64 / total as f64))
-            .collect();
-        preds.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        probabilities.insert(prefix.clone(), preds);
-    }
-
+fn benchmark_next_activity_latency(c: &mut Criterion, ds: &RealLog) {
+    let probabilities = build_bigram_model(&ds.log);
     let test_prefixes: Vec<Vec<String>> =
-        probabilities.keys().take(100).map(|p| p.clone()).collect();
+        probabilities.keys().take(100).cloned().collect();
 
     c.bench_with_input(
-        BenchmarkId::new("prediction_next_activity/inference", label),
+        BenchmarkId::new("prediction_next_activity/inference", ds.label),
         &test_prefixes,
         |b, prefixes| {
             b.iter(|| {
-                for prefix in prefixes {
-                    let _ = probabilities.get(prefix).map(|preds| preds.first());
+                let mut hits = 0usize;
+                for prefix in black_box(prefixes) {
+                    if let Some(preds) = probabilities.get(prefix) {
+                        if preds.first().is_some() {
+                            hits += 1;
+                        }
+                    }
                 }
+                black_box(hits)
             })
         },
     );
@@ -149,54 +159,40 @@ fn benchmark_next_activity_latency(c: &mut Criterion, shape: &LogShape, label: &
 // REMAINING-TIME PREDICTION LATENCY
 // ============================================================================
 
-fn benchmark_remaining_time_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
-    let log = generate_event_log(shape);
-
-    // Build model: bucket stats
+fn benchmark_remaining_time_latency(c: &mut Criterion, ds: &RealLog) {
+    // Build model: per (activity, prefix-len) bucket mean remaining length.
     let mut bucket_times: HashMap<String, Vec<f64>> = HashMap::new();
-
-    for trace in &log.traces {
-        let activities: Vec<String> = trace
-            .events
-            .iter()
-            .filter_map(|e| {
-                e.attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| v.as_string())
-                    .map(str::to_owned)
-            })
-            .collect();
-
-        for (prefix_len, _) in activities.iter().enumerate() {
-            if let Some(activity) = activities.get(prefix_len) {
-                let key = format!("{}|{}", activity, prefix_len);
-                bucket_times
-                    .entry(key)
-                    .or_insert_with(Vec::new)
-                    .push(1000.0); // Mock time value
-            }
+    for trace in &ds.log.traces {
+        let acts = trace_activities(trace);
+        let n = acts.len();
+        for (prefix_len, activity) in acts.iter().enumerate() {
+            let key = format!("{}|{}", activity, prefix_len);
+            bucket_times
+                .entry(key)
+                .or_default()
+                .push((n - prefix_len) as f64);
         }
     }
-
-    // Compute means
     let mut bucket_means: HashMap<String, f64> = HashMap::new();
     for (key, times) in &bucket_times {
         if !times.is_empty() {
-            let mean = times.iter().sum::<f64>() / times.len() as f64;
-            bucket_means.insert(key.clone(), mean);
+            bucket_means.insert(key.clone(), times.iter().sum::<f64>() / times.len() as f64);
         }
     }
-
-    let test_keys: Vec<String> = bucket_means.keys().take(100).map(|k| k.clone()).collect();
+    let test_keys: Vec<String> = bucket_means.keys().take(100).cloned().collect();
 
     c.bench_with_input(
-        BenchmarkId::new("prediction_remaining_time/inference", label),
+        BenchmarkId::new("prediction_remaining_time/inference", ds.label),
         &test_keys,
         |b, keys| {
             b.iter(|| {
-                for key in keys {
-                    let _ = bucket_means.get(key);
+                let mut acc = 0.0f64;
+                for key in black_box(keys) {
+                    if let Some(&m) = bucket_means.get(key) {
+                        acc += m;
+                    }
                 }
+                black_box(acc)
             })
         },
     );
@@ -206,30 +202,26 @@ fn benchmark_remaining_time_latency(c: &mut Criterion, shape: &LogShape, label: 
 // OUTCOME PREDICTION LATENCY
 // ============================================================================
 
-fn benchmark_outcome_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
-    let log = generate_event_log(shape);
-
+fn benchmark_outcome_latency(c: &mut Criterion, ds: &RealLog) {
     let train_median_events = {
-        let mut event_counts: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
-        event_counts.sort();
+        let mut event_counts: Vec<usize> = ds.log.traces.iter().map(|t| t.events.len()).collect();
+        event_counts.sort_unstable();
         event_counts[event_counts.len() / 2]
     };
-
-    let test_traces: Vec<usize> = log
-        .traces
-        .iter()
-        .take(100)
-        .map(|t| t.events.len())
-        .collect();
+    let test_traces: Vec<usize> = ds.log.traces.iter().take(100).map(|t| t.events.len()).collect();
 
     c.bench_with_input(
-        BenchmarkId::new("prediction_outcome/inference", label),
+        BenchmarkId::new("prediction_outcome/inference", ds.label),
         &test_traces,
         |b, traces| {
             b.iter(|| {
-                for &event_count in traces {
-                    let _ = event_count > train_median_events;
+                let mut positive = 0usize;
+                for &event_count in black_box(traces) {
+                    if event_count > train_median_events {
+                        positive += 1;
+                    }
                 }
+                black_box(positive)
             })
         },
     );
@@ -239,50 +231,32 @@ fn benchmark_outcome_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
 // DRIFT DETECTION LATENCY
 // ============================================================================
 
-fn benchmark_drift_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
-    let log = generate_event_log(shape);
-
-    // Activity frequency stats
+fn benchmark_drift_latency(c: &mut Criterion, ds: &RealLog) {
     let mut activity_freq: HashMap<String, usize> = HashMap::new();
-    for trace in &log.traces {
-        for event in &trace.events {
-            if let Some(attr) = event.attributes.get(ACTIVITY_KEY) {
-                if let Some(act_name) = attr.as_string() {
-                    *activity_freq.entry(act_name.to_owned()).or_insert(0) += 1;
-                }
-            }
+    for trace in &ds.log.traces {
+        for act in trace_activities(trace) {
+            *activity_freq.entry(act).or_insert(0) += 1;
         }
     }
-
-    let test_activities: Vec<Vec<String>> = log
-        .traces
-        .iter()
-        .take(100)
-        .map(|t| {
-            t.events
-                .iter()
-                .filter_map(|e| {
-                    e.attributes
-                        .get(ACTIVITY_KEY)
-                        .and_then(|v| v.as_string())
-                        .map(str::to_owned)
-                })
-                .collect()
-        })
-        .collect();
+    let test_activities: Vec<Vec<String>> =
+        ds.log.traces.iter().take(100).map(trace_activities).collect();
 
     c.bench_with_input(
-        BenchmarkId::new("prediction_drift/inference", label),
+        BenchmarkId::new("prediction_drift/inference", ds.label),
         &test_activities,
         |b, traces| {
             b.iter(|| {
-                for trace in traces {
+                let mut drifted = 0usize;
+                for trace in black_box(traces) {
                     let rare = trace
                         .iter()
                         .filter(|a| activity_freq.get(*a).map(|&f| f < 5).unwrap_or(true))
                         .count();
-                    let _ = rare > trace.len() / 2;
+                    if rare > trace.len() / 2 {
+                        drifted += 1;
+                    }
                 }
+                black_box(drifted)
             })
         },
     );
@@ -292,34 +266,22 @@ fn benchmark_drift_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
 // FEATURE IMPORTANCE LATENCY
 // ============================================================================
 
-fn benchmark_features_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
-    let log = generate_event_log(shape);
-
-    // Extract all activities
+fn benchmark_features_latency(c: &mut Criterion, ds: &RealLog) {
     let mut activities: Vec<String> = Vec::new();
-    for trace in &log.traces {
-        for event in &trace.events {
-            if let Some(attr) = event.attributes.get(ACTIVITY_KEY) {
-                if let Some(act_name) = attr.as_string() {
-                    activities.push(act_name.to_owned());
-                }
-            }
-        }
+    for trace in &ds.log.traces {
+        activities.extend(trace_activities(trace));
     }
 
-    let test_batch_size = 100;
-
     c.bench_with_input(
-        BenchmarkId::new("prediction_features/importance", label),
-        &test_batch_size,
-        |b, _| {
+        BenchmarkId::new("prediction_features/importance", ds.label),
+        &activities,
+        |b, acts| {
             b.iter(|| {
-                // Compute frequencies
-                let mut freq: HashMap<String, usize> = HashMap::new();
-                for act in &activities {
-                    *freq.entry(act.clone()).or_insert(0) += 1;
+                let mut freq: HashMap<&str, usize> = HashMap::new();
+                for act in black_box(acts) {
+                    *freq.entry(act.as_str()).or_insert(0) += 1;
                 }
-                let _ = freq.len();
+                black_box(freq.len())
             })
         },
     );
@@ -329,26 +291,21 @@ fn benchmark_features_latency(c: &mut Criterion, shape: &LogShape, label: &str) 
 // RESOURCE PREDICTION LATENCY
 // ============================================================================
 
-fn benchmark_resource_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
-    let log = generate_event_log(shape);
-
-    let test_traces: Vec<usize> = log
-        .traces
-        .iter()
-        .take(100)
-        .map(|t| t.events.len())
-        .collect();
-
-    let mean_trace_len: f64 = test_traces.iter().sum::<usize>() as f64 / test_traces.len() as f64;
+fn benchmark_resource_latency(c: &mut Criterion, ds: &RealLog) {
+    let test_traces: Vec<usize> = ds.log.traces.iter().take(100).map(|t| t.events.len()).collect();
+    let mean_trace_len: f64 =
+        test_traces.iter().sum::<usize>() as f64 / test_traces.len().max(1) as f64;
 
     c.bench_with_input(
-        BenchmarkId::new("prediction_resource/inference", label),
+        BenchmarkId::new("prediction_resource/inference", ds.label),
         &test_traces,
         |b, traces| {
             b.iter(|| {
-                for &len in traces {
-                    let _ = (len as f64 * 10.0) - (mean_trace_len * 10.0);
+                let mut acc = 0.0f64;
+                for &len in black_box(traces) {
+                    acc += (len as f64 * 10.0) - (mean_trace_len * 10.0);
                 }
+                black_box(acc)
             })
         },
     );
@@ -359,93 +316,36 @@ fn benchmark_resource_latency(c: &mut Criterion, shape: &LogShape, label: &str) 
 // ============================================================================
 
 fn bench_end_to_end_breakdown(c: &mut Criterion) {
+    let datasets = real_logs();
+    let ds = &datasets[0];
+    let log = &ds.log;
+
     let mut group = c.benchmark_group("prediction_e2e_breakdown");
-    group.sample_size(30);
     if helpers::is_fast_mode() {
         helpers::fast_group(&mut group);
     } else {
         helpers::full_group(&mut group);
-    } // Smaller sample size for slower operations
-
-    let shape = LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 20,
-        num_activities: 15,
-        noise_factor: 0.10,
-    };
-
-    let log = generate_event_log(&shape);
-
-    // Model building (training)
-    group.bench_function("model_building", |b| {
-        b.iter(|| {
-            let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
-            for trace in black_box(&log.traces) {
-                let acts: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(ACTIVITY_KEY)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)
-                    })
-                    .collect();
-
-                for i in 0..acts.len().saturating_sub(1) {
-                    let prefix = vec![acts[i].clone()];
-                    let next = acts[i + 1].clone();
-                    *counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
-                }
-            }
-            counts.len()
-        })
-    });
-
-    // Prefix extraction (from a trace)
-    group.bench_function("prefix_extraction", |b| {
-        b.iter(|| {
-            let trace = black_box(&log.traces[0]);
-            let mut acts: Vec<String> = Vec::new();
-            for event in &trace.events {
-                if let Some(attr) = event.attributes.get(ACTIVITY_KEY) {
-                    if let Some(a) = attr.as_string() {
-                        acts.push(a.to_owned());
-                    }
-                }
-            }
-            acts.len()
-        })
-    });
-
-    // Inference (lookup in model)
-    let mut model: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
-    for trace in &log.traces {
-        let acts: Vec<String> = trace
-            .events
-            .iter()
-            .filter_map(|e| {
-                e.attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| v.as_string())
-                    .map(str::to_owned)
-            })
-            .collect();
-
-        for i in 0..acts.len().saturating_sub(1) {
-            let prefix = vec![acts[i].clone()];
-            model
-                .entry(prefix)
-                .or_insert_with(Vec::new)
-                .push((acts[i + 1].clone(), 0.5));
-        }
     }
 
-    group.bench_function("inference", |b| {
-        b.iter(|| {
-            let prefix = black_box(vec!["Register".to_string()]);
-            let _ = model.get(&prefix);
-        })
+    // Model building (training)
+    group.bench_function(BenchmarkId::new("model_building", ds.label), |b| {
+        b.iter(|| black_box(build_bigram_model(black_box(log))).len())
+    });
+
+    // Prefix extraction (from the first real trace)
+    group.bench_function(BenchmarkId::new("prefix_extraction", ds.label), |b| {
+        b.iter(|| black_box(trace_activities(black_box(&log.traces[0]))).len())
+    });
+
+    // Inference (lookup in trained model) — use a real prefix from the log.
+    let model = build_bigram_model(log);
+    let sample_prefix: Vec<String> = model
+        .keys()
+        .next()
+        .cloned()
+        .unwrap_or_else(|| vec!["__none__".to_string()]);
+    group.bench_function(BenchmarkId::new("inference", ds.label), |b| {
+        b.iter(|| black_box(model.get(black_box(&sample_prefix))).is_some())
     });
 
     // JSON serialization
@@ -458,7 +358,7 @@ fn bench_end_to_end_breakdown(c: &mut Criterion) {
                 "confidence": 0.5,
                 "entropy": 0.95
             });
-            serde_json::to_string(&result).ok()
+            black_box(serde_json::to_string(black_box(&result)).ok())
         })
     });
 
@@ -470,152 +370,37 @@ fn bench_end_to_end_breakdown(c: &mut Criterion) {
 // ============================================================================
 
 fn bench_batch_throughput(c: &mut Criterion) {
+    let datasets = real_logs();
+    let ds = &datasets[0];
+    let model = build_bigram_model(&ds.log);
+    let sample_prefix: Vec<String> = model
+        .keys()
+        .next()
+        .cloned()
+        .unwrap_or_else(|| vec!["__none__".to_string()]);
+
     let mut group = c.benchmark_group("prediction_batch_throughput");
-    group.sample_size(20);
     if helpers::is_fast_mode() {
         helpers::fast_group(&mut group);
     } else {
         helpers::full_group(&mut group);
     }
 
-    let shape = LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 20,
-        num_activities: 15,
-        noise_factor: 0.10,
-    };
-
-    let log = generate_event_log(&shape);
-
-    // Build model
-    let mut model: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
-    for trace in &log.traces {
-        let acts: Vec<String> = trace
-            .events
-            .iter()
-            .filter_map(|e| {
-                e.attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| v.as_string())
-                    .map(str::to_owned)
-            })
-            .collect();
-
-        for i in 0..acts.len().saturating_sub(1) {
-            let prefix = vec![acts[i].clone()];
-            model
-                .entry(prefix)
-                .or_insert_with(Vec::new)
-                .push((acts[i + 1].clone(), 0.5));
-        }
-    }
-
-    // Single task processing
-    group.bench_function("single_prediction", |b| {
-        b.iter(|| {
-            let prefix = black_box(vec!["Register".to_string()]);
-            model.get(&prefix).map(|p| p.first())
-        })
-    });
-
-    // Batch processing (100 tasks)
-    group.bench_function("batch_100_predictions", |b| {
-        b.iter(|| {
-            let prefixes = vec![vec!["Register".to_string()]; 100];
-            let mut results = Vec::new();
-            for prefix in &prefixes {
-                results.push(model.get(prefix).map(|p| p.first()));
-            }
-            results.len()
-        })
-    });
-
-    // Batch processing (1000 tasks)
-    group.bench_function("batch_1000_predictions", |b| {
-        b.iter(|| {
-            let prefixes = vec![vec!["Register".to_string()]; 1000];
-            let mut results = Vec::new();
-            for prefix in &prefixes {
-                results.push(model.get(prefix).map(|p| p.first()));
-            }
-            results.len()
-        })
-    });
-
-    group.finish();
-}
-
-// ============================================================================
-// SCALING ANALYSIS
-// ============================================================================
-
-fn bench_scaling_by_trace_length(c: &mut Criterion) {
-    let mut group = c.benchmark_group("prediction_scaling_trace_length");
-    group.sample_size(20);
-    if helpers::is_fast_mode() {
-        helpers::fast_group(&mut group);
-    } else {
-        helpers::full_group(&mut group);
-    }
-
-    for trace_len in [10, 50, 100, 500].iter() {
-        let shape = LogShape {
-            num_cases: 100,
-            avg_events_per_case: *trace_len,
-            num_activities: 10,
-            noise_factor: 0.10,
-        };
-
-        let log = generate_event_log(&shape);
-
-        // Build model
-        let mut model: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
-        for trace in &log.traces {
-            let acts: Vec<String> = trace
-                .events
-                .iter()
-                .filter_map(|e| {
-                    e.attributes
-                        .get(ACTIVITY_KEY)
-                        .and_then(|v| v.as_string())
-                        .map(str::to_owned)
-                })
-                .collect();
-
-            for i in 0..acts.len().saturating_sub(1) {
-                let prefix = vec![acts[i].clone()];
-                model
-                    .entry(prefix)
-                    .or_insert_with(Vec::new)
-                    .push((acts[i + 1].clone(), 0.5));
-            }
-        }
-
+    for &batch in &[1usize, 100, 1000] {
+        let prefixes = vec![sample_prefix.clone(); batch];
+        group.throughput(Throughput::Elements(batch as u64));
         group.bench_with_input(
-            BenchmarkId::new("model_building", trace_len),
-            &trace_len,
-            |b, _| {
+            BenchmarkId::new("batch_predictions", batch),
+            &prefixes,
+            |b, prefixes| {
                 b.iter(|| {
-                    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
-                    for trace in black_box(&log.traces) {
-                        let acts: Vec<String> = trace
-                            .events
-                            .iter()
-                            .filter_map(|e| {
-                                e.attributes
-                                    .get(ACTIVITY_KEY)
-                                    .and_then(|v| v.as_string())
-                                    .map(str::to_owned)
-                            })
-                            .collect();
-
-                        for i in 0..acts.len().saturating_sub(1) {
-                            let prefix = vec![acts[i].clone()];
-                            let next = acts[i + 1].clone();
-                            *counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
+                    let mut hits = 0usize;
+                    for prefix in black_box(prefixes) {
+                        if model.get(prefix).and_then(|p| p.first()).is_some() {
+                            hits += 1;
                         }
                     }
-                    counts.len()
+                    black_box(hits)
                 })
             },
         );
@@ -624,52 +409,27 @@ fn bench_scaling_by_trace_length(c: &mut Criterion) {
     group.finish();
 }
 
+// ============================================================================
+// SCALING ANALYSIS — over real datasets of increasing size
+// ============================================================================
+
 fn bench_scaling_by_log_size(c: &mut Criterion) {
+    let datasets = real_logs();
+
     let mut group = c.benchmark_group("prediction_scaling_log_size");
-    group.sample_size(20);
     if helpers::is_fast_mode() {
         helpers::fast_group(&mut group);
     } else {
         helpers::full_group(&mut group);
     }
 
-    for num_cases in [100, 500, 1000, 5000].iter() {
-        let shape = LogShape {
-            num_cases: *num_cases,
-            avg_events_per_case: 15,
-            num_activities: 12,
-            noise_factor: 0.10,
-        };
-
-        let log = generate_event_log(&shape);
-
+    for ds in &datasets {
+        let events = ds.log.event_count();
+        group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
-            BenchmarkId::new("model_building", num_cases),
-            &num_cases,
-            |b, _| {
-                b.iter(|| {
-                    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
-                    for trace in black_box(&log.traces) {
-                        let acts: Vec<String> = trace
-                            .events
-                            .iter()
-                            .filter_map(|e| {
-                                e.attributes
-                                    .get(ACTIVITY_KEY)
-                                    .and_then(|v| v.as_string())
-                                    .map(str::to_owned)
-                            })
-                            .collect();
-
-                        for i in 0..acts.len().saturating_sub(1) {
-                            let prefix = vec![acts[i].clone()];
-                            let next = acts[i + 1].clone();
-                            *counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
-                        }
-                    }
-                    counts.len()
-                })
-            },
+            BenchmarkId::new("model_building", ds.label),
+            &ds.log,
+            |b, log| b.iter(|| black_box(build_bigram_model(black_box(log))).len()),
         );
     }
 
@@ -681,43 +441,14 @@ fn bench_scaling_by_log_size(c: &mut Criterion) {
 // ============================================================================
 
 fn benches_accuracy(c: &mut Criterion) {
-    let sizes = vec![
-        (
-            LogShape {
-                num_cases: 100,
-                avg_events_per_case: 10,
-                num_activities: 8,
-                noise_factor: 0.05,
-            },
-            "small",
-        ),
-        (
-            LogShape {
-                num_cases: 1000,
-                avg_events_per_case: 15,
-                num_activities: 12,
-                noise_factor: 0.10,
-            },
-            "medium",
-        ),
-        (
-            LogShape {
-                num_cases: 5000,
-                avg_events_per_case: 20,
-                num_activities: 15,
-                noise_factor: 0.15,
-            },
-            "large",
-        ),
-    ];
-
-    for (shape, label) in sizes {
-        benchmark_next_activity_latency(c, &shape, label);
-        benchmark_remaining_time_latency(c, &shape, label);
-        benchmark_outcome_latency(c, &shape, label);
-        benchmark_drift_latency(c, &shape, label);
-        benchmark_features_latency(c, &shape, label);
-        benchmark_resource_latency(c, &shape, label);
+    let datasets = real_logs();
+    for ds in &datasets {
+        benchmark_next_activity_latency(c, ds);
+        benchmark_remaining_time_latency(c, ds);
+        benchmark_outcome_latency(c, ds);
+        benchmark_drift_latency(c, ds);
+        benchmark_features_latency(c, ds);
+        benchmark_resource_latency(c, ds);
     }
 }
 
@@ -726,7 +457,6 @@ criterion_group!(
     benches_accuracy,
     bench_end_to_end_breakdown,
     bench_batch_throughput,
-    bench_scaling_by_trace_length,
     bench_scaling_by_log_size
 );
 criterion_main!(benches);

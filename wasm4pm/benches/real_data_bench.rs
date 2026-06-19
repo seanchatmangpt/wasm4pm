@@ -13,7 +13,9 @@
 //! Fallback: if real data is absent (e.g., CI), a synthetic 100-case log is generated
 //! so the bench always produces output regardless of environment.
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{
+    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+};
 use std::{collections::HashMap, fs, time::Duration};
 
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
@@ -213,7 +215,7 @@ fn bench_dfg(c: &mut Criterion) {
             BenchmarkId::new("dataset", ds.label),
             &admitted_log,
             |b, log| {
-                b.iter(|| discover_dfg_from_log(log, ACTIVITY_KEY));
+                b.iter(|| black_box(discover_dfg_from_log(black_box(log), ACTIVITY_KEY)));
             },
         );
     }
@@ -234,7 +236,13 @@ fn bench_alpha_plus_plus(c: &mut Criterion) {
             BenchmarkId::new("dataset", ds.label),
             &admitted_log,
             |b, log| {
-                b.iter(|| discover_alpha_plus_plus_from_log(log, ACTIVITY_KEY, 0.0));
+                b.iter(|| {
+                    black_box(discover_alpha_plus_plus_from_log(
+                        black_box(log),
+                        ACTIVITY_KEY,
+                        0.0,
+                    ))
+                });
             },
         );
     }
@@ -250,7 +258,13 @@ fn bench_heuristic_miner(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_heuristic_miner_from_log(log, ACTIVITY_KEY, 0.3));
+            b.iter(|| {
+                black_box(discover_heuristic_miner_from_log(
+                    black_box(log),
+                    ACTIVITY_KEY,
+                    0.3,
+                ))
+            });
         });
     }
     group.finish();
@@ -270,7 +284,9 @@ fn bench_inductive_miner(c: &mut Criterion) {
             BenchmarkId::new("dataset", ds.label),
             &admitted_log,
             |b, log| {
-                b.iter(|| discover_inductive_miner_from_log(log, ACTIVITY_KEY));
+                b.iter(|| {
+                    black_box(discover_inductive_miner_from_log(black_box(log), ACTIVITY_KEY))
+                });
             },
         );
     }
@@ -286,7 +302,7 @@ fn bench_hill_climbing(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_hill_climbing_from_log(log, ACTIVITY_KEY));
+            b.iter(|| black_box(discover_hill_climbing_from_log(black_box(log), ACTIVITY_KEY)));
         });
     }
     group.finish();
@@ -301,7 +317,14 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_simulated_annealing_from_log(log, ACTIVITY_KEY, 50.0, 0.95));
+            b.iter(|| {
+                black_box(discover_simulated_annealing_from_log(
+                    black_box(log),
+                    ACTIVITY_KEY,
+                    50.0,
+                    0.95,
+                ))
+            });
         });
     }
     group.finish();
@@ -316,7 +339,7 @@ fn bench_a_star(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_astar_from_log(log, ACTIVITY_KEY, 50));
+            b.iter(|| black_box(discover_astar_from_log(black_box(log), ACTIVITY_KEY, 50)));
         });
     }
     group.finish();
@@ -331,7 +354,7 @@ fn bench_aco(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_aco_algorithm_from_log(log, ACTIVITY_KEY, 10, 5));
+            b.iter(|| black_box(discover_aco_algorithm_from_log(black_box(log), ACTIVITY_KEY, 10, 5)));
         });
     }
     group.finish();
@@ -346,7 +369,7 @@ fn bench_pso(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_pso_algorithm_from_log(log, ACTIVITY_KEY, 10, 5));
+            b.iter(|| black_box(discover_pso_algorithm_from_log(black_box(log), ACTIVITY_KEY, 10, 5)));
         });
     }
     group.finish();
@@ -361,7 +384,14 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_genetic_algorithm_from_log(log, ACTIVITY_KEY, 10, 5));
+            b.iter(|| {
+                black_box(discover_genetic_algorithm_from_log(
+                    black_box(log),
+                    ACTIVITY_KEY,
+                    10,
+                    5,
+                ))
+            });
         });
     }
     group.finish();
@@ -376,7 +406,14 @@ fn bench_optimized_dfg(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_optimized_dfg_from_log(log, ACTIVITY_KEY, 0.5, 0.5));
+            b.iter(|| {
+                black_box(discover_optimized_dfg_from_log(
+                    black_box(log),
+                    ACTIVITY_KEY,
+                    0.5,
+                    0.5,
+                ))
+            });
         });
     }
     group.finish();
@@ -391,7 +428,7 @@ fn bench_ilp(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_ilp_petri_net_from_log(log, ACTIVITY_KEY));
+            b.iter(|| black_box(discover_ilp_petri_net_from_log(black_box(log), ACTIVITY_KEY)));
         });
     }
     group.finish();
@@ -406,7 +443,7 @@ fn bench_transition_system(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_transition_system(log, ACTIVITY_KEY, 2, "past"));
+            b.iter(|| black_box(discover_transition_system(black_box(log), ACTIVITY_KEY, 2, "past")));
         });
     }
     group.finish();
@@ -421,7 +458,7 @@ fn bench_prefix_tree(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_prefix_tree_inner(log, ACTIVITY_KEY, None));
+            b.iter(|| black_box(discover_prefix_tree_inner(black_box(log), ACTIVITY_KEY, None)));
         });
     }
     group.finish();
@@ -436,7 +473,7 @@ fn bench_batches(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
-            b.iter(|| discover_batches(log, ACTIVITY_KEY, TIMESTAMP_KEY));
+            b.iter(|| black_box(discover_batches(black_box(log), ACTIVITY_KEY, TIMESTAMP_KEY)));
         });
     }
     group.finish();
@@ -459,7 +496,14 @@ fn bench_correlation_miner(c: &mut Criterion) {
             BenchmarkId::new("dataset", ds.label),
             &input,
             |b, (log, cfg)| {
-                b.iter(|| mine_correlation(log, ACTIVITY_KEY, TIMESTAMP_KEY, cfg));
+                b.iter(|| {
+                    black_box(mine_correlation(
+                        black_box(log),
+                        ACTIVITY_KEY,
+                        TIMESTAMP_KEY,
+                        black_box(cfg),
+                    ))
+                });
             },
         );
     }

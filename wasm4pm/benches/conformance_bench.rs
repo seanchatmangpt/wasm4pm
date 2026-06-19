@@ -11,7 +11,8 @@
 //! expensive (O(b^d) worst case) and the internal function is private.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::fs;
 use std::time::Duration;
 use wasm4pm::models::*;
 use wasm4pm::state::{get_or_init_state, StoredObject};
@@ -601,6 +602,224 @@ fn bench_temporal_profile(c: &mut Criterion) {
 }
 
 // ---------------------------------------------------------------------------
+// Real-Data Conformance Benchmark (grounded on sepsis.xes)
+// ---------------------------------------------------------------------------
+//
+// Conformance is a real-log domain, so we exercise it against the real Sepsis
+// event log (1,050 cases, ~15K events — ICU patient flow). We discover a DFG
+// directly from the log's directly-follows pairs, build a SIMD Petri net from
+// it, and replay the real columnar log. We also run inline DECLARE Response
+// checking over the real traces. Both are activity-agnostic, so no synthetic
+// structure is imposed on the real data.
+
+/// Minimal streaming XES parser (same pattern as real_data_bench.rs).
+fn parse_xes(content: &str) -> EventLog {
+    let mut log = EventLog::new();
+    let mut current_trace: Option<Trace> = None;
+    let mut current_event: Option<Event> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
+        }
+        if trimmed.starts_with("</trace>") {
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
+        }
+        if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
+        }
+        if trimmed.starts_with("</event>") {
+            if let Some(ev) = current_event.take() {
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
+            }
+        }
+        if trimmed.starts_with("<string") {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
+                if let Some(ref mut ev) = current_event {
+                    ev.attributes.insert(k, AttributeValue::String(v));
+                } else if let Some(ref mut t) = current_trace {
+                    t.attributes.insert(k, AttributeValue::String(v));
+                }
+            }
+        }
+    }
+    log
+}
+
+fn extract_attr(s: &str, attr: &str) -> Option<String> {
+    let needle = format!("{}=\"", attr);
+    let start = s.find(&needle)? + needle.len();
+    let end = s[start..].find('"')?;
+    Some(s[start..start + end].to_string())
+}
+
+/// Load the real Sepsis log, capping traces for reproducible runtime.
+/// Returns None if the dataset is absent (e.g. CI) so the bench degrades
+/// gracefully rather than panicking the whole binary.
+fn load_real_log(max_traces: usize) -> Option<EventLog> {
+    let candidates = ["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"];
+    for path in candidates {
+        if let Ok(content) = fs::read_to_string(path) {
+            if content.len() < 200 {
+                continue;
+            }
+            let mut log = parse_xes(&content);
+            if log.traces.is_empty() {
+                continue;
+            }
+            log.traces.truncate(max_traces);
+            return Some(log);
+        }
+    }
+    None
+}
+
+/// Discover a directly-follows graph directly from a real columnar log.
+/// Activity-agnostic: nodes/edges derive from observed pairs only.
+fn discover_dfg_from_columnar(col: &ColumnarLog) -> DFG {
+    let mut node_freq: BTreeMap<String, usize> = BTreeMap::new();
+    let mut edge_freq: BTreeMap<(String, String), usize> = BTreeMap::new();
+
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        let mut prev: Option<&str> = None;
+        for &id in &col.events[start..end] {
+            let act = col.vocab[id as usize];
+            *node_freq.entry(act.to_string()).or_insert(0) += 1;
+            if let Some(p) = prev {
+                *edge_freq
+                    .entry((p.to_string(), act.to_string()))
+                    .or_insert(0) += 1;
+            }
+            prev = Some(act);
+        }
+    }
+
+    let mut dfg = DFG::new();
+    for (act, freq) in node_freq {
+        dfg.nodes.push(DFGNode {
+            id: act.clone(),
+            label: act,
+            frequency: freq,
+        });
+    }
+    for ((from, to), freq) in edge_freq {
+        dfg.edges.push(DirectlyFollowsRelation {
+            from,
+            to,
+            frequency: freq,
+        });
+    }
+    dfg
+}
+
+fn bench_real_conformance(c: &mut Criterion) {
+    let log = match load_real_log(1_050) {
+        Some(l) => l,
+        None => {
+            eprintln!(
+                "conformance_bench: bench_data/sepsis.xes not found — \
+                 skipping real-data conformance group"
+            );
+            return;
+        }
+    };
+
+    let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
+
+    let mut group = c.benchmark_group("conformance/real_sepsis");
+    group.measurement_time(Duration::from_secs(5));
+    group.warm_up_time(Duration::from_secs(1));
+    group.sample_size(20);
+    group.throughput(Throughput::Elements(total_events as u64));
+
+    // --- SIMD token replay over the real log, model discovered from the log ---
+    let col = log.to_columnar(ACTIVITY_KEY);
+    let dfg = discover_dfg_from_columnar(&col);
+    let net = SimdPetriNet::from_dfg(&dfg).expect("Failed to build SimdPetriNet from real DFG");
+    group.bench_function("simd_token_replay", |b| {
+        b.iter(|| black_box(net.replay_log(black_box(&col))));
+    });
+
+    // --- Inline DECLARE Response conformance over real traces ---
+    let traces_owned: Vec<Vec<String>> = log
+        .traces
+        .iter()
+        .map(|t| {
+            t.events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(ACTIVITY_KEY)
+                        .and_then(|v| v.as_string())
+                        .map(|s| s.to_owned())
+                })
+                .collect()
+        })
+        .collect();
+    let traces: Vec<Vec<&str>> = traces_owned
+        .iter()
+        .map(|t| t.iter().map(|s| s.as_str()).collect())
+        .collect();
+
+    // Mine Response(a,b) constraints from the two most frequent directly-follows
+    // pairs so the constraint set reflects the real log, not synthetic structure.
+    let mut pair_freq: BTreeMap<(&str, &str), usize> = BTreeMap::new();
+    for trace in &traces {
+        for w in trace.windows(2) {
+            *pair_freq.entry((w[0], w[1])).or_insert(0) += 1;
+        }
+    }
+    let mut pairs: Vec<((&str, &str), usize)> = pair_freq.into_iter().collect();
+    pairs.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    let response_constraints: Vec<(String, String)> = pairs
+        .into_iter()
+        .take(4)
+        .map(|((a, b), _)| (a.to_string(), b.to_string()))
+        .collect();
+
+    group.bench_with_input(
+        BenchmarkId::new("declare_response", response_constraints.len()),
+        &(&traces, &response_constraints),
+        |b, (traces, constraints)| {
+            b.iter(|| {
+                let mut violations: Vec<usize> = vec![0; constraints.len()];
+                for trace in traces.iter() {
+                    for (ci, (a, b)) in constraints.iter().enumerate() {
+                        let mut violates = false;
+                        for (i, &act) in trace.iter().enumerate() {
+                            if act == a.as_str() && !trace[i + 1..].contains(&b.as_str()) {
+                                violates = true;
+                                break;
+                            }
+                        }
+                        if violates {
+                            violations[ci] += 1;
+                        }
+                    }
+                }
+                black_box(violations)
+            })
+        },
+    );
+
+    group.finish();
+}
+
+// ---------------------------------------------------------------------------
 // Criterion Groups
 // ---------------------------------------------------------------------------
 
@@ -611,5 +830,6 @@ criterion_group!(
     bench_etconformance_precision,
     bench_declare_conformance,
     bench_temporal_profile,
+    bench_real_conformance,
 );
 criterion_main!(conformance_benches);

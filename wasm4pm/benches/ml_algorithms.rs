@@ -20,7 +20,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 use wasm4pm::fast_discovery::cluster_traces;
-use wasm4pm::ml::classification::{extract_features, knn_internal};
+use wasm4pm::ml::classification::knn_internal;
 use wasm4pm::ml::forecasting::forecast_internal;
 use wasm4pm::ml::pca::pca_internal;
 use wasm4pm::ml::regression::regression_internal;

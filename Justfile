@@ -17,6 +17,42 @@ build:
 bench:
     make bench-quick
 
+# Regression gate: compare current Criterion medians against the committed
+# baseline (.wasm4pm/benchmarks/baselines/main-latest.json) and FAIL if any
+# benchmark's median regresses beyond the threshold (default 10%, --threshold).
+bench-regress:
+    cargo run -q -p bench-tools -- regress
+
+# Emit a BLAKE3 performance receipt (environment + results + lineage) and refresh
+# the committed baseline used by the regression gate and CI.
+bench-receipt:
+    cargo run -q -p bench-tools -- receipt
+
+# Verify a benchmark receipt's BLAKE3 integrity (tamper detection) and refuse a
+# dirty-tree baseline. Run after bench-receipt; --allow-dirty to permit local runs.
+bench-verify:
+    cargo run -q -p bench-tools -- verify --allow-dirty
+
+# Longitudinal view: verify the append-only receipt-chain ledger and print a
+# per-bench median trend over all recorded runs. --bench SUBSTR to filter.
+bench-ledger:
+    cargo run -q -p bench-tools -- ledger
+
+# Correctness × performance: run the paper-grounded + falsification gates, join
+# each breed's correctness with its latency, and FAIL on any fast-but-wrong breed.
+bench-attest:
+    cargo run -q -p bench-tools -- attest
+
+# Performance budgets as code: FAIL if any bench exceeds its machine-independent
+# SLO (median/calibration ratio) declared in docs/benchmarks/budgets.json.
+bench-budget:
+    cargo run -q -p bench-tools -- budget
+
+# Unified report: walk target/criterion/**/new/estimates.json and emit
+# docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
+bench-report:
+    cargo run -q -p bench-tools -- report
+
 clean:
     make clean
 

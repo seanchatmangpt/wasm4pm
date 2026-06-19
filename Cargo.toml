@@ -1,7 +1,12 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/wasm4pm-lsp"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools"]
+# wasm4pm-lsp depends on an out-of-repo path crate `lsp-max` (../../../lsp-max) that is
+# not part of this repository and cannot be resolved in a clean checkout. Excluded so the
+# rest of the workspace builds reproducibly. Re-add to `members` once lsp-max is vendored
+# or published.
+exclude = ["crates/wasm4pm-lsp"]
 
 [workspace.package]
 version = "26.6.12"
