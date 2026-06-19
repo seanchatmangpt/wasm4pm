@@ -1,0 +1,12 @@
+# Standalone (empty [workspace] detaches it from the wasm4pm root workspace).
+[package]
+name = "breeds-rust-consumer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

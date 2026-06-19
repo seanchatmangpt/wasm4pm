@@ -1,0 +1,20 @@
+{
+  "operation_id": "f74268c2-c2ac-4c96-9bdb-61254ac514f4",
+  "timestamp": "2026-06-19T18:35:01.637558Z",
+  "input_hashes": [
+    "actuator:ggen-sync@26.6.11",
+    "ggen.toml:23fb8d7e3e38dc4b3f137887f63d4ffcd1c6d4c58c2a897083f34d53732e60b3",
+    "../../packs/wasm4pm-breeds-rust/ggen/ontology/breed-vocabulary.ttl:53ab28078241ab025a631be7d3a08d4f796e12b371a5f4ac3370bec77992145c",
+    "../../packs/wasm4pm-breeds-rust/ggen/ontology/breeds.ttl:d44a7e0ba29125a6554209c120ad189095607e45f67688c4a9d8efc8a3d97f9d",
+    "../../packs/wasm4pm-breeds-rust/ggen/queries/extract-breeds.rq:516820b89b02a14bb27b57ea361fd24bd3974e7fcad598f11d90234e6aeed9bb",
+    "../../packs/wasm4pm-breeds-rust/ggen/templates/breed_ids.rs.tera:6ad2f837e9f2f0441e4fdc474d6ff1f6cf2ac84d6c0e7786fa8b8ad8f41f028b",
+    "../../packs/wasm4pm-breeds-rust/ggen/queries/extract-breeds.rq:516820b89b02a14bb27b57ea361fd24bd3974e7fcad598f11d90234e6aeed9bb",
+    "../../packs/wasm4pm-breeds-rust/ggen/templates/breed_catalog.rs.tera:f7e962176450783e514c06268b94d1524dbcaa7c7575f25d962ab556a6f46c1b"
+  ],
+  "output_hashes": [
+    "./src/breed_ids.rs:379d747cd05a224a3073ab4c7115251991d44a04b9b840efb24278722c314bd1",
+    "./src/breed_catalog.rs:1dde4b4275a61e890ed94074b13d0f59346569776aeb6d59758071e17660c791"
+  ],
+  "signature": "334f203ac8fc57b4259c0ed84cefa4bd6d266d7259e9551695b0fa7774796954ddfb7e673efa8bd17bbe4e5b050a6d306c5fbff57ae52175e127e1e8adea1a0f",
+  "previous_receipt_hash": null
+}
