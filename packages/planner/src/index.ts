@@ -31,6 +31,9 @@ export {
   type QualityPrediction,
 } from './planner.js';
 export { explain, explainBrief, explainStructured, type ExplainResult } from './explain.js';
+// Discovery-algorithm search space (speed/quality tiers, complexity, scaling, noise robustness).
+// Exported as ALGORITHM_PROFILES for AutoPM scoring (alias of the internal ALGORITHM_HINTS table).
+export { ALGORITHM_HINTS, ALGORITHM_HINTS as ALGORITHM_PROFILES, type AlgorithmHints } from './explain.js';
 
 // Multi-algorithm planning
 export { planMultiAlgorithm, type MultiAlgorithmPlan, type AlgorithmPlanEntry } from './multi-algorithm.js';
