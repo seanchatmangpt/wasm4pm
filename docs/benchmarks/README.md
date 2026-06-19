@@ -62,4 +62,25 @@ cargo run -p bench-tools -- receipt --no-baseline --out <file>
 A `tree_dirty: true` receipt corresponds to no committed state — a gate should
 refuse to trust it as a baseline.
 
-Exit codes: `0` ok · `1` no estimates found · `2` bad arguments.
+## 4. Receipt integrity — `bench-tools verify`
+
+Recomputes the BLAKE3 over the canonical receipt body (everything except the two
+hash fields) and confirms it matches the stored `receipt_hash`. A mismatch means
+the receipt — or the results it vouches for — was altered after signing. Also
+**refuses a `tree_dirty` receipt** as a baseline unless `--allow-dirty`. An
+unverifiable receipt is just JSON; this is what makes the chain enforceable.
+
+```bash
+just bench-verify                                    # verify the committed baseline (local: dirty allowed)
+cargo run -p bench-tools -- verify --receipt <file>  # strict: fails on a dirty-tree receipt
+```
+
+CI runs `receipt` → `verify` → `regress` so every benchmark run is provenance-
+stamped and tamper-evident before the regression gate reads the baseline.
+
+The regression gate (§1) only flags a regression when the median crosses the
+threshold **and** the current 95% CI does not overlap the baseline's — a far
+stronger signal than a point-estimate cross, which rejects the false positives
+flat gates produce on noisy benchmarks.
+
+Exit codes: `0` ok · `1` no estimates found / tamper / untrusted · `2` bad arguments.

@@ -28,6 +28,11 @@ bench-regress:
 bench-receipt:
     cargo run -q -p bench-tools -- receipt
 
+# Verify a benchmark receipt's BLAKE3 integrity (tamper detection) and refuse a
+# dirty-tree baseline. Run after bench-receipt; --allow-dirty to permit local runs.
+bench-verify:
+    cargo run -q -p bench-tools -- verify --allow-dirty
+
 # Unified report: walk target/criterion/**/new/estimates.json and emit
 # docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
 bench-report:

@@ -13,7 +13,7 @@ export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
-        bench-regress bench-receipt bench-report \
+        bench-regress bench-receipt bench-verify bench-report \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test test-proof verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
@@ -231,6 +231,10 @@ bench-regress:
 # ── BLAKE3 performance receipt → refreshes the committed CI baseline ─────────
 bench-receipt:
 	@cargo run -q -p bench-tools -- receipt
+
+# ── Verify a receipt's BLAKE3 integrity (tamper + dirty-tree detection) ──────
+bench-verify:
+	@cargo run -q -p bench-tools -- verify --allow-dirty
 
 # ── Unified Criterion report → docs/benchmarks/REPORT.md + report.csv ────────
 bench-report:

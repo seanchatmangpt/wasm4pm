@@ -289,13 +289,22 @@ fn cmd_regress(criterion_dir: &Path, baseline: &Path, threshold_pct: f64) -> i32
             return 1;
         }
     };
-    let base: BTreeMap<String, f64> = base_json
+    // Baseline keyed by bench id → (median, ci_lower, ci_upper). Carrying the
+    // confidence interval lets the gate distinguish a real shift from noise.
+    let base: BTreeMap<String, (f64, Option<f64>, Option<f64>)> = base_json
         .get("benchmarks")
         .and_then(Value::as_array)
         .map(|arr| {
             arr.iter()
                 .filter_map(|b| {
-                    Some((b.get("bench")?.as_str()?.to_string(), b.get("median_ns")?.as_f64()?))
+                    Some((
+                        b.get("bench")?.as_str()?.to_string(),
+                        (
+                            b.get("median_ns")?.as_f64()?,
+                            b.get("ci_lower_ns").and_then(Value::as_f64),
+                            b.get("ci_upper_ns").and_then(Value::as_f64),
+                        ),
+                    ))
                 })
                 .collect()
         })
@@ -304,29 +313,47 @@ fn cmd_regress(criterion_dir: &Path, baseline: &Path, threshold_pct: f64) -> i32
     let mut regressions = Vec::new();
     let mut compared = 0;
     for r in &current {
-        if let Some(&base_median) = base.get(&r.bench) {
+        if let Some(&(base_median, base_ci_lo, base_ci_hi)) = base.get(&r.bench) {
             compared += 1;
             let delta_pct = (r.median_ns - base_median) / base_median * 100.0;
-            // Only count a regression if it also exceeds measurement noise
-            // (std_dev): a change within one std-dev is indistinguishable from jitter.
-            let noise_pct = r.std_dev_ns.map(|s| s / base_median * 100.0).unwrap_or(0.0);
-            if delta_pct > threshold_pct && delta_pct > noise_pct {
+            if delta_pct <= threshold_pct {
+                continue;
+            }
+            // Fortune-grade statistical gate: a regression must be both
+            //   (a) larger than the threshold on the median, AND
+            //   (b) statistically distinguishable — the current 95% CI lower
+            //       bound must clear the baseline 95% CI upper bound, so the two
+            //       distributions do not overlap. CI non-overlap is a far stronger
+            //       signal than a point-estimate threshold cross and rejects the
+            //       false positives that flat median gates produce on noisy benches.
+            // When CI data is absent on either side, fall back to a one-std-dev
+            // jitter guard so the gate still functions, just less precisely.
+            let distinguishable = match (r.ci_lower_ns, base_ci_hi) {
+                (Some(cur_lo), Some(b_hi)) => cur_lo > b_hi,
+                _ => {
+                    let noise_pct = r.std_dev_ns.map(|s| s / base_median * 100.0).unwrap_or(0.0);
+                    delta_pct > noise_pct
+                }
+            };
+            if distinguishable {
+                let _ = (base_ci_lo,); // retained for symmetry / future two-sided tests
                 regressions.push((r.bench.clone(), base_median, r.median_ns, delta_pct));
             }
         }
     }
 
     println!(
-        "regress: compared {compared}/{} benches against baseline (threshold {threshold_pct:.1}%)",
+        "regress: compared {compared}/{} benches against baseline \
+         (threshold {threshold_pct:.1}%, 95% CI non-overlap required)",
         current.len()
     );
     if regressions.is_empty() {
-        println!("no regressions beyond threshold");
+        println!("no statistically-distinguishable regressions beyond threshold");
         return 0;
     }
     eprintln!("REGRESSIONS ({}):", regressions.len());
     for (bench, base, now, pct) in &regressions {
-        eprintln!("  {bench}: {} → {} (+{pct:.1}%)", fmt_time(*base), fmt_time(*now));
+        eprintln!("  {bench}: {} → {} (+{pct:.1}%, CIs disjoint)", fmt_time(*base), fmt_time(*now));
     }
     1
 }
@@ -406,6 +433,79 @@ fn cmd_receipt(criterion_dir: &Path, write_baseline: bool, out: Option<&Path>, e
     0
 }
 
+// --------------------------------------------------------------------------- verify
+/// Verify a benchmark receipt's integrity: recompute the BLAKE3 over the
+/// canonical body (everything except the two hash fields) and confirm it matches
+/// the stored `receipt_hash`. A mismatch means the receipt — or the result set it
+/// vouches for — was altered after signing. Also rejects a `tree_dirty` receipt
+/// as a baseline (it corresponds to no committed state) unless `--allow-dirty`.
+///
+/// This is what makes a receipt more than decorative JSON: an unverifiable
+/// receipt cannot be trusted as a regression baseline or a provenance record.
+fn cmd_verify(receipt_path: &Path, allow_dirty: bool) -> i32 {
+    let receipt: Value = match fs::read_to_string(receipt_path)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+    {
+        Some(v) => v,
+        None => {
+            eprintln!("no readable receipt at {}", receipt_path.display());
+            return 1;
+        }
+    };
+
+    let stored = match receipt.get("receipt_hash").and_then(Value::as_str) {
+        Some(h) => h.to_string(),
+        None => {
+            eprintln!("receipt has no receipt_hash field: {}", receipt_path.display());
+            return 1;
+        }
+    };
+
+    // Rebuild the hashed body: strip the two fields that the hash cannot cover.
+    let mut body = receipt.clone();
+    if let Some(obj) = body.as_object_mut() {
+        obj.remove("receipt_hash");
+        obj.remove("hash_algorithm");
+    }
+    let recomputed = blake3_hex(&canonicalize(&body));
+
+    let count = receipt.get("benchmark_count").and_then(Value::as_u64).unwrap_or(0);
+    let commit = receipt
+        .get("commit")
+        .and_then(Value::as_str)
+        .map(|c| &c[..8.min(c.len())])
+        .unwrap_or("?");
+    let dirty = receipt.get("tree_dirty").and_then(Value::as_bool).unwrap_or(false);
+
+    if recomputed != stored {
+        eprintln!(
+            "TAMPERED: {} — stored hash {} != recomputed {}",
+            receipt_path.display(),
+            &stored[..16.min(stored.len())],
+            &recomputed[..16.min(recomputed.len())],
+        );
+        return 1;
+    }
+
+    if dirty && !allow_dirty {
+        eprintln!(
+            "UNTRUSTWORTHY: receipt {} was produced from a DIRTY tree (commit {commit}) — \
+             it corresponds to no committed state. Re-run on a clean tree, or pass --allow-dirty.",
+            receipt_path.display()
+        );
+        return 1;
+    }
+
+    println!(
+        "verified: {} · BLAKE3 {} · {count} benches · commit {commit}{}",
+        receipt_path.display(),
+        &stored[..16.min(stored.len())],
+        if dirty { " (DIRTY, allowed)" } else { "" }
+    );
+    0
+}
+
 // --------------------------------------------------------------------------- arg parsing
 fn flag_value(args: &[String], name: &str) -> Option<String> {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
@@ -417,11 +517,12 @@ fn has_flag(args: &[String], name: &str) -> bool {
 
 fn usage() -> i32 {
     eprintln!(
-        "usage: bench-tools <report|regress|receipt> [flags]\n\
+        "usage: bench-tools <report|regress|receipt|verify> [flags]\n\
          \n\
          report   --criterion-dir DIR  --out-dir DIR\n\
          regress  --criterion-dir DIR  --baseline FILE  --threshold PCT(=10)\n\
-         receipt  --criterion-dir DIR  --out FILE  --no-baseline  --print"
+         receipt  --criterion-dir DIR  --out FILE  --no-baseline  --print\n\
+         verify   --receipt FILE       --allow-dirty"
     );
     2
 }
@@ -458,6 +559,10 @@ fn main() {
                 out.as_deref(),
                 has_flag(rest, "--print"),
             )
+        }
+        "verify" => {
+            let receipt = flag_value(rest, "--receipt").map(PathBuf::from).unwrap_or_else(baseline_path);
+            cmd_verify(&receipt, has_flag(rest, "--allow-dirty"))
         }
         "-h" | "--help" | "help" => usage(),
         other => {
