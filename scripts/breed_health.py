@@ -20,11 +20,9 @@ import argparse
 import glob
 import json
 import math
-import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +43,7 @@ def we_rule1(series: list[float], mean: float, sigma: float) -> list[tuple]:
 
 def we_rule2(series: list[float], mean: float, sigma: float) -> list[tuple]:
     """Rule 2: 9 (or more) consecutive points on the same side of the mean."""
+    del sigma  # uniform signature; this rule uses only mean
     violations = []
     n = len(series)
     run = 1
@@ -62,6 +61,7 @@ def we_rule2(series: list[float], mean: float, sigma: float) -> list[tuple]:
 
 def we_rule3(series: list[float], mean: float, sigma: float) -> list[tuple]:
     """Rule 3: 6 (or more) consecutive points trending steadily up or down."""
+    del mean, sigma  # uniform signature; this rule uses only series values
     violations = []
     n = len(series)
     if n < 6:
@@ -89,6 +89,7 @@ def we_rule3(series: list[float], mean: float, sigma: float) -> list[tuple]:
 
 def we_rule4(series: list[float], mean: float, sigma: float) -> list[tuple]:
     """Rule 4: 14 (or more) consecutive points alternating up and down."""
+    del mean, sigma  # uniform signature; this rule uses only series values
     violations = []
     n = len(series)
     if n < 14:
