@@ -23,8 +23,10 @@ falsifiable, composable multi-paradigm reasoning**. An LLM can imitate any of
 these reasoning styles but guarantee none. A single formalism (logic,
 probability, planning) can guarantee its own results but cannot span the others.
 The breed library is the only construction that is simultaneously *complete*
-across paradigms, *correct* per paradigm against published ground truth, and
-*accountable* end to end.
+across paradigms, *correct* per paradigm against published ground truth,
+*accountable* end to end — and *generative*: the whole basis compiles from one
+ontology into any consumer's language, so it can be installed and used, not merely
+admired.
 
 ---
 
@@ -280,6 +282,36 @@ else does. A monolithic model gives fluency without proof. A single solver gives
 proof without breadth. Only the periodic table gives breadth, proof, and an audit
 trail at once.
 
+### 3.5 Generativity: a basis you can install, not just admire
+
+A periodic table is worth little if it lives in one laboratory. The fourth
+property is that the breed basis is **distributable** — not as a binary blob, but
+as a *generated surface compiled from the same ontology that admits the breeds*.
+
+The breeds are not, at root, hand-written code. They are RDF instances in an
+ontology (`breeds.ttl`); the build doctrine is "the ontology is the specification,
+ggen is the compiler, the generated code is first-class source." That doctrine now
+extends past this repository: two distributable **ggen packs** — one Rust, one
+TypeScript — carry the breed ontology and compile it, in a consumer's own project,
+into the full typed surface: the `BreedId` enum/union, a catalog of every breed
+with its paper citation, the exact WASM contract types, and a typed client. A
+consumer adds the pack to their `ggen.toml`, runs `ggen sync`, and the periodic
+table materializes in their language — **with no per-breed hand-coding, and no
+dependency on this repository.** Two runnable examples (one per language) prove
+the path end to end.
+
+This makes "executable citation" literal at the *consumption* layer too. The same
+ontology that earns a breed its admission also generates its bindings, and those
+bindings are provably derived rather than transcribed — faithfully enough that
+carrying a paper's citation through the pipeline exposed and forced the fix of a
+real escaped-quote bug in the code generator itself. The basis set is therefore
+not a library you depend on but a *substrate you manufacture*: portable,
+regenerable from a single source of truth, and identical in every consumer because
+it is compiled, not copied.
+
+Completeness, correctness, and accountability make the periodic table *true*.
+Generativity makes it *usable* — anywhere, by anyone, without re-deriving a line.
+
 ---
 
 ## 4. Why this matters now
@@ -296,8 +328,9 @@ the literature and replayed from evidence.
 The library is, in the end, an argument made in code: that the accumulated
 reasoning methods of the field need not be folklore approximated by a model, but
 can be preserved as **executable, falsifiable, receipt-bearing citations** — a
-periodic table of cognition that a machine can compose, and that a human can
-audit, one lawful step at a time.
+periodic table of cognition that a machine can compose, that a human can audit one
+lawful step at a time, and that any application can install and generate into its
+own language from a single ontology.
 
 ---
 
@@ -305,5 +338,8 @@ audit, one lawful step at a time.
 source's published result and is exercised by both a paper-grounded test and the
 `every_paper_fixture_is_confirmed_and_falsifiable` falsification harness. Breed
 status, conformance fitness, and receipts are recorded under `ocel/reports/` and
-`.wasm4pm/receipts/`. The claims in this thesis are checkable against that
-evidence — as the doctrine requires.
+`.wasm4pm/receipts/`. The distributable surface of §3.5 lives in
+`packs/wasm4pm-breeds-rust/` and `packs/wasm4pm-breeds-ts/`, with runnable
+consumers under `examples/breeds-rust-consumer/` and `examples/breeds-ts-consumer/`.
+The claims in this thesis are checkable against that evidence — as the doctrine
+requires.
