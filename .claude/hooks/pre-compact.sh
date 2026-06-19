@@ -11,7 +11,7 @@ cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 CHECKPOINT_DIR=".wasm4pm/compaction-checkpoints"
-mkdir -p "$CHECKPOINT_DIR"
+mkdir -p "$CHECKPOINT_DIR" 2>/dev/null || true
 
 GIT_HEAD=$(git rev-parse --short HEAD 2>/dev/null) || GIT_HEAD="unknown"
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || GIT_BRANCH="unknown"
