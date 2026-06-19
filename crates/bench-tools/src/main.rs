@@ -204,6 +204,25 @@ fn is_regression(
     }
 }
 
+/// Cross-machine normalization factor. The calibration anchor (a fixed workload)
+/// measures each host's raw speed; scaling the current run's latencies by
+/// `baseline_calibration / current_calibration` re-expresses them in the baseline
+/// machine's time units, cancelling out hardware differences between CI runners.
+/// Returns 1.0 (no-op) when either calibration is missing or non-positive, so the
+/// gate degrades gracefully to absolute comparison.
+fn normalize_factor(baseline_cal: Option<f64>, current_cal: Option<f64>) -> f64 {
+    match (baseline_cal, current_cal) {
+        (Some(b), Some(c)) if b > 0.0 && c > 0.0 => b / c,
+        _ => 1.0,
+    }
+}
+
+/// True if a Criterion bench id denotes the machine-speed calibration anchor
+/// rather than a real workload (it must be excluded from regression reporting).
+fn is_calibration_id(bench: &str) -> bool {
+    bench.contains("calibration")
+}
+
 /// Count breaks in a receipt-chain ledger: each entry's `previous_receipt_hash`
 /// must equal the prior entry's `receipt_hash`. Pure over parsed entries so the
 /// chain-integrity logic can be unit-tested without touching the filesystem.
@@ -378,29 +397,45 @@ fn cmd_regress(criterion_dir: &Path, baseline: &Path, threshold_pct: f64) -> i32
         })
         .unwrap_or_default();
 
+    // Cross-machine normalization: scale this run's latencies into the baseline
+    // host's time units via the calibration anchor, so a baseline captured on a
+    // different (faster/slower) machine does not produce phantom regressions.
+    let base_cal = base_json.get("calibration_ns").and_then(Value::as_f64);
+    let cur_cal = current
+        .iter()
+        .find(|r| is_calibration_id(&r.bench))
+        .map(|r| r.median_ns);
+    let factor = normalize_factor(base_cal, cur_cal);
+    let normalized = (factor - 1.0).abs() > f64::EPSILON;
+
     let mut regressions = Vec::new();
     let mut compared = 0;
     for r in &current {
+        // The calibration anchor itself is not a workload — never gate on it.
+        if is_calibration_id(&r.bench) {
+            continue;
+        }
         if let Some(&(base_median, _base_ci_lo, base_ci_hi)) = base.get(&r.bench) {
             compared += 1;
-            if is_regression(
-                r.median_ns,
-                r.ci_lower_ns,
-                r.std_dev_ns,
-                base_median,
-                base_ci_hi,
-                threshold_pct,
-            ) {
-                let delta_pct = (r.median_ns - base_median) / base_median * 100.0;
-                regressions.push((r.bench.clone(), base_median, r.median_ns, delta_pct));
+            let med = r.median_ns * factor;
+            let lo = r.ci_lower_ns.map(|v| v * factor);
+            let std = r.std_dev_ns.map(|v| v * factor);
+            if is_regression(med, lo, std, base_median, base_ci_hi, threshold_pct) {
+                let delta_pct = (med - base_median) / base_median * 100.0;
+                regressions.push((r.bench.clone(), base_median, med, delta_pct));
             }
         }
     }
 
     println!(
         "regress: compared {compared}/{} benches against baseline \
-         (threshold {threshold_pct:.1}%, 95% CI non-overlap required)",
-        current.len()
+         (threshold {threshold_pct:.1}%, 95% CI non-overlap required{})",
+        current.len(),
+        if normalized {
+            format!(", calibration-normalized ×{factor:.3}")
+        } else {
+            String::new()
+        }
     );
     if regressions.is_empty() {
         println!("no statistically-distinguishable regressions beyond threshold");
@@ -434,6 +469,13 @@ fn cmd_receipt(criterion_dir: &Path, write_baseline: bool, out: Option<&Path>, e
     let created_at = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
 
     // Body WITHOUT the hash fields (the hash cannot reference itself).
+    // Calibration anchor median for this machine (if the calibration bench ran),
+    // recorded so the regression gate can normalize across heterogeneous runners.
+    let calibration_ns = rows
+        .iter()
+        .find(|r| is_calibration_id(&r.bench))
+        .map(|r| r.median_ns);
+
     let body = serde_json::json!({
         "receipt_type": RECEIPT_TYPE,
         "receipt_schema": RECEIPT_SCHEMA,
@@ -445,6 +487,7 @@ fn cmd_receipt(criterion_dir: &Path, write_baseline: bool, out: Option<&Path>, e
         "time_basis": "WallClockUTC",
         "created_at": created_at,
         "environment": environment(),
+        "calibration_ns": calibration_ns,
         "benchmark_count": rows.len(),
         "benchmarks": estimates_to_json(&rows),
         "previous_receipt_hash": previous_hash,
@@ -967,6 +1010,42 @@ mod tests {
     #[test]
     fn regression_handles_degenerate_baseline() {
         assert!(!is_regression(100.0, Some(99.0), None, 0.0, Some(0.0), 10.0));
+    }
+
+    // ---- cross-machine normalization ------------------------------------
+    #[test]
+    fn normalize_factor_cancels_machine_speed() {
+        // Baseline machine's anchor 200ns, current machine 100ns → current is 2×
+        // faster, so its latencies must be scaled UP by 2.0 to compare fairly.
+        assert!((normalize_factor(Some(200.0), Some(100.0)) - 2.0).abs() < 1e-9);
+        // Same speed → no-op.
+        assert!((normalize_factor(Some(100.0), Some(100.0)) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn normalize_factor_degrades_to_identity() {
+        assert_eq!(normalize_factor(None, Some(100.0)), 1.0);
+        assert_eq!(normalize_factor(Some(100.0), None), 1.0);
+        assert_eq!(normalize_factor(Some(0.0), Some(100.0)), 1.0);
+        assert_eq!(normalize_factor(Some(100.0), Some(0.0)), 1.0);
+    }
+
+    #[test]
+    fn normalization_prevents_phantom_regression() {
+        // Current machine is 2× slower (anchor 200 vs baseline 100): a breed at
+        // 2000ns here equals 1000ns on the baseline machine. Un-normalized that
+        // looks like a +100% regression; normalized (×0.5) it is flat.
+        let factor = normalize_factor(Some(100.0), Some(200.0)); // 0.5
+        let normalized_median = 2000.0 * factor; // 1000
+        assert!(!is_regression(normalized_median, Some(990.0 * factor), None, 1000.0, Some(1010.0), 10.0));
+        // Without normalization it would be flagged.
+        assert!(is_regression(2000.0, Some(1980.0), None, 1000.0, Some(1010.0), 10.0));
+    }
+
+    #[test]
+    fn calibration_id_recognized() {
+        assert!(is_calibration_id("calibration/anchor"));
+        assert!(!is_calibration_id("breed_latency/mycin"));
     }
 
     // ---- ledger chain integrity -----------------------------------------

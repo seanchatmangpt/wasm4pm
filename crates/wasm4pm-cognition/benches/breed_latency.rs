@@ -89,5 +89,30 @@ fn bench_breeds(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_breeds);
+/// Machine-speed calibration anchor: a fixed, deterministic, allocation-free
+/// CPU-bound workload whose latency represents this machine's raw speed. The
+/// bench-tools regression gate divides breed latencies by this anchor so a
+/// baseline captured on one machine (e.g. a developer's laptop) is comparable to
+/// a run on another (e.g. a slower CI runner) — cross-runner normalization. The
+/// loop count is fixed so the anchor is stable across runs; only the host's speed
+/// moves it. bench id: `calibration/anchor`.
+fn bench_calibration(c: &mut Criterion) {
+    let mut group = c.benchmark_group("calibration");
+    group.sample_size(50);
+    group.bench_function("anchor", |b| {
+        b.iter(|| {
+            let mut acc: u64 = black_box(0x9E37_79B9_7F4A_7C15);
+            for i in 0..10_000u64 {
+                acc = acc
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(black_box(i) | 1);
+                acc ^= acc >> 29;
+            }
+            black_box(acc)
+        })
+    });
+    group.finish();
+}
+
+criterion_group!(benches, bench_breeds, bench_calibration);
 criterion_main!(benches);

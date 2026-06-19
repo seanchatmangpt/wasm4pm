@@ -26,6 +26,15 @@ cargo run -p bench-tools -- regress --threshold 15   # 15% threshold
 cargo run -p bench-tools -- regress --baseline <file> --criterion-dir <dir>
 ```
 
+**Cross-machine normalization.** The breed suite includes a fixed `calibration/anchor`
+workload that measures each host's raw speed. `receipt` records its median as
+`calibration_ns`; `regress` scales the current run's latencies by
+`baseline_calibration / current_calibration`, re-expressing them in the baseline
+machine's time units. This cancels out hardware differences, so a baseline captured
+on a developer laptop does not produce phantom regressions when the gate runs on a
+slower CI runner. When either calibration is absent the factor is 1.0 (absolute
+comparison). The anchor is excluded from regression reporting.
+
 Exit codes: `0` no regression · `1` regression beyond threshold / no data.
 
 ## 2. Unified report — `bench-tools report`
