@@ -22,6 +22,45 @@ impl ScriptSam {
         }
     }
 
+    /// Canonical built-in restaurant script ($RESTAURANT, Schank & Abelson 1977
+    /// Chapter 3): enter, order, eat, pay, leave — with the customer role as the
+    /// single variable filler. SAM carries this script built-in, so an empty
+    /// `input.rules` triggers it.
+    fn builtin_restaurant_script() -> crate::breeds::Rule {
+        crate::breeds::Rule {
+            id: "restaurant_script".to_string(),
+            premise: vec![
+                "enter($customer)".to_string(),
+                "order($customer)".to_string(),
+                "eat($customer)".to_string(),
+                "pay($customer)".to_string(),
+                "leave($customer)".to_string(),
+            ],
+            conclusion: "restaurant".to_string(),
+            certainty: 1.0,
+        }
+    }
+
+    /// Normalize a fact into an observed scene instance `scene(filler)`.
+    ///
+    /// Accepts two encodings:
+    /// - legacy: `key == "observation"`, value already `scene(filler)`.
+    /// - SAM fixture: `key == "sam:event:N"`, value `scene:filler`
+    ///   (colon-separated scene token and role filler).
+    fn observation_from_fact(f: &Fact) -> Option<String> {
+        if f.key == "observation" {
+            return Some(f.value.clone());
+        }
+        if f.key.starts_with("sam:event:") {
+            // value form "scene:filler" -> "scene(filler)"; bare scene -> "scene"
+            if let Some((scene, filler)) = f.value.split_once(':') {
+                return Some(format!("{}({})", scene.trim(), filler.trim()));
+            }
+            return Some(f.value.trim().to_string());
+        }
+        None
+    }
+
     fn match_scene(
         pattern: &str,
         instance: &str,
@@ -87,9 +126,14 @@ impl CognitionBreed for ScriptSam {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        if input.rules.is_empty() {
-            return Err("no scripts defined in rules".to_string());
+        let has_observations = input
+            .facts
+            .iter()
+            .any(|f| Self::observation_from_fact(f).is_some());
+        if !has_observations {
+            return Err("no observations to align (need 'observation' or 'sam:event:N' facts)".to_string());
         }
+        // Scripts come either from input.rules or the built-in restaurant script.
         Ok(())
     }
 
@@ -98,12 +142,19 @@ impl CognitionBreed for ScriptSam {
         let mut inferred_facts = Vec::new();
         let mut step_count = 0;
 
-        let observations: Vec<&str> = input
+        let observations: Vec<String> = input
             .facts
             .iter()
-            .filter(|f| f.key == "observation")
-            .map(|f| f.value.as_str())
+            .filter_map(Self::observation_from_fact)
             .collect();
+
+        // SAM carries the restaurant script built-in: if no scripts are
+        // supplied in input.rules, fall back to the canonical inventory.
+        let scripts: Vec<crate::breeds::Rule> = if input.rules.is_empty() {
+            vec![Self::builtin_restaurant_script()]
+        } else {
+            input.rules.clone()
+        };
 
         if observations.is_empty() {
             return Ok(BreedOutput {
@@ -122,7 +173,7 @@ impl CognitionBreed for ScriptSam {
         let mut best_alignment = None;
         let mut best_bindings = HashMap::new();
 
-        for script_rule in &input.rules {
+        for script_rule in &scripts {
             trace.push(TraceStep {
                 step: step_count,
                 kind: "script-selection".to_string(),
@@ -142,7 +193,7 @@ impl CognitionBreed for ScriptSam {
                 let mut found = false;
                 for i in last_idx..script.len() {
                     let mut temp_bindings = bindings.clone();
-                    if Self::match_scene(&script[i], obs, &mut temp_bindings) {
+                    if Self::match_scene(&script[i], obs.as_str(), &mut temp_bindings) {
                         bindings = temp_bindings;
                         alignment.push(i);
                         last_idx = i + 1;
@@ -187,30 +238,58 @@ impl CognitionBreed for ScriptSam {
             });
             step_count += 1;
 
+            // Surface the bound role filler (e.g. the customer = john). The
+            // single script variable maps to the customer role in $RESTAURANT.
+            if let Some(filler) = best_bindings.get("$customer") {
+                inferred_facts.push(Fact {
+                    key: "sam:role:customer".to_string(),
+                    value: filler.clone(),
+                });
+                trace.push(TraceStep {
+                    step: step_count,
+                    kind: "role-binding".to_string(),
+                    detail: format!("Bound customer role to {}", filler),
+                    depth: 0,
+                    objects: vec![("filler".to_string(), filler.clone())],
+                });
+                step_count += 1;
+            }
+
             for i in min_idx..=max_idx {
                 if !alignment.contains(&i) {
                     let inferred_scene_pattern = &script_rule.premise[i];
                     let inferred_scene = Self::apply_bindings(inferred_scene_pattern, &best_bindings);
-                    
+                    let (scene_name, scene_args) = Self::parse_scene(&inferred_scene);
+                    let filler = scene_args.first().cloned().unwrap_or_default();
+
                     trace.push(TraceStep {
                         step: step_count,
                         kind: "gap-inference".to_string(),
-                        detail: format!("Inferred scene: {}", inferred_scene),
+                        detail: format!("Inferred scene: {} ({}={})", inferred_scene, scene_name, filler),
                         depth: 0,
                         objects: vec![("scene".to_string(), inferred_scene.clone())],
                     });
                     step_count += 1;
 
+                    // Key the inferred scene by its derived scene token under the
+                    // sam:inferred: namespace, with the bound role filler as value.
                     inferred_facts.push(Fact {
-                        key: "inferred_scene".to_string(),
-                        value: inferred_scene,
+                        key: format!("sam:inferred:{}", scene_name),
+                        value: filler,
                     });
                 }
             }
         }
 
+        // inferred_count is the number of inferred (gap) scenes, excluding the
+        // role-binding fact.
+        let inferred_count = inferred_facts
+            .iter()
+            .filter(|f| f.key.starts_with("sam:inferred:"))
+            .count();
+
         let explanation = if best_script.is_some() {
-            format!("Successfully aligned to script '{}' and inferred {} missing scenes.", best_script.unwrap().conclusion, inferred_facts.len())
+            format!("Successfully aligned to script '{}' and inferred {} missing scenes.", best_script.unwrap().conclusion, inferred_count)
         } else {
             "Could not align observations to any known script.".to_string()
         };

@@ -4247,43 +4247,11 @@ fn sat_cdcl_paper_grounded() {
 
 #[test]
 fn script_sam_paper_grounded() {
-    let (json, mut input) = load_fixture("script_sam");
-    
-    // The fixture defines observations as facts, but the implementation
-    // expects "observation" key. Add the restaurant script rule and observations.
-    input.rules = vec![Rule {
-        id: "restaurant_script".to_string(),
-        premise: vec![
-            "enter($customer)".to_string(),
-            "order($customer)".to_string(),
-            "eat($customer)".to_string(),
-            "pay($customer)".to_string(),
-            "leave($customer)".to_string(),
-        ],
-        conclusion: "restaurant".to_string(),
-        certainty: 1.0,
-    }];
-    
-    // Convert sam:event:N facts to observation facts for the algorithm
-    input.facts = vec![
-        Fact {
-            key: "observation".to_string(),
-            value: "enter(john)".to_string(),
-        },
-        Fact {
-            key: "observation".to_string(),
-            value: "order(john)".to_string(),
-        },
-        Fact {
-            key: "observation".to_string(),
-            value: "pay(john)".to_string(),
-        },
-        Fact {
-            key: "observation".to_string(),
-            value: "leave(john)".to_string(),
-        },
-    ];
-    
+    // Use the RAW fixture as encoded on disk — sam:event:N observation facts
+    // and EMPTY rules (SAM carries the restaurant script built-in). No input
+    // reconstruction.
+    let (json, input) = load_fixture("script_sam");
+
     let breed = script_sam::ScriptSam;
     assert!(
         breed.preconditions(&input).is_ok(),
@@ -4303,37 +4271,59 @@ fn script_sam_paper_grounded() {
         "script_sam trace must be non-empty"
     );
     
-    // Paper-grounded assertion: Schank & Abelson 1977 Chapter 3
-    // SAM infers the missing eating scene between order and pay with John as the filler
+    // Paper-grounded assertions, derived from the fixture's published values
+    // (Schank & Abelson 1977 Chapter 3). SAM infers the missing eating scene
+    // between order and pay with John as the filler.
     let exp = &json["expected"];
-    
-    // Assert exactly 1 inferred scene per Schank & Abelson 1977
-    let inferred_count = output.facts.len();
+
+    // expected.value == "1": exactly one inferred (gap) scene.
+    let expected_inferred_count: usize = exp["value"].as_str().unwrap().parse().unwrap();
+    let inferred_count = output
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("sam:inferred:"))
+        .count();
     assert_eq!(
-        inferred_count, 1,
-        "script_sam must infer exactly 1 gap scene (eat with John) \
-         per Schank & Abelson 1977 Chapter 3 restaurant script example; got {}",
-        inferred_count
+        inferred_count, expected_inferred_count,
+        "script_sam must infer exactly {} gap scene(s) (eat with John) \
+         per Schank & Abelson 1977 Chapter 3; got {}",
+        expected_inferred_count, inferred_count
     );
-    
-    // Assert the script was selected correctly
-    let selected_script = output.selected.as_deref().expect(
-        "script_sam must select the aligned script name"
-    );
+
+    // expected.script == "restaurant": the selected script name.
+    let selected_script = output
+        .selected
+        .as_deref()
+        .expect("script_sam must select the aligned script name");
     assert_eq!(
-        selected_script, "restaurant",
-        "script_sam must select 'restaurant' script per Schank & Abelson 1977 Chapter 3"
+        selected_script,
+        exp["script"].as_str().unwrap(),
+        "script_sam must select the restaurant script per Schank & Abelson 1977"
     );
-    
-    // Assert the inferred scene contains the role binding (john as customer)
-    let inferred_fact = &output.facts[0];
-    assert_eq!(inferred_fact.key, "inferred_scene");
-    assert!(
-        inferred_fact.value.contains("eat") && inferred_fact.value.contains("john"),
-        "script_sam must infer 'eat(john)' scene \
-         with John bound as the customer role filler; got '{}'",
-        inferred_fact.value
-    );
+
+    // expected.inferred == { "sam:inferred:eat": "john" }.
+    for (k, v) in exp["inferred"].as_object().unwrap() {
+        let fact = output
+            .facts
+            .iter()
+            .find(|f| &f.key == k)
+            .unwrap_or_else(|| panic!("script_sam must emit inferred fact '{k}'"));
+        assert_eq!(
+            &fact.value,
+            v.as_str().unwrap(),
+            "inferred scene {k} must bind John as the customer role filler"
+        );
+    }
+
+    // expected.role == { "sam:role:customer": "john" }.
+    for (k, v) in exp["role"].as_object().unwrap() {
+        let fact = output
+            .facts
+            .iter()
+            .find(|f| &f.key == k)
+            .unwrap_or_else(|| panic!("script_sam must emit role fact '{k}'"));
+        assert_eq!(&fact.value, v.as_str().unwrap());
+    }
     
     // Verify gap-inference trace step exists
     assert!(
@@ -4558,65 +4548,10 @@ fn triz_paper_grounded() {
 
 #[test]
 fn version_space_paper_grounded() {
-    let (json, _) = load_fixture("version_space");
-    
-    // Construct BreedInput matching what the breed actually expects:
-    // key="attribute" with value="name:value1,value2,..." format
-    // key="example" with value="attr1=val1,attr2=val2,...:label" format
-    let input = BreedInput {
-        intent: "learn the EnjoySport concept by candidate elimination".to_string(),
-        candidates: vec![],
-        facts: vec![
-            Fact {
-                key: "attribute".to_string(),
-                value: "Sky:Sunny,Rainy".to_string(),
-            },
-            Fact {
-                key: "attribute".to_string(),
-                value: "AirTemp:Warm,Cold".to_string(),
-            },
-            Fact {
-                key: "attribute".to_string(),
-                value: "Humidity:Normal,High".to_string(),
-            },
-            Fact {
-                key: "attribute".to_string(),
-                value: "Wind:Strong".to_string(),
-            },
-            Fact {
-                key: "attribute".to_string(),
-                value: "Water:Warm,Cool".to_string(),
-            },
-            Fact {
-                key: "attribute".to_string(),
-                value: "Forecast:Same,Change".to_string(),
-            },
-            // Positive examples
-            Fact {
-                key: "example".to_string(),
-                value: "Sky=Sunny,AirTemp=Warm,Humidity=Normal,Wind=Strong,Water=Warm,Forecast=Same,positive".to_string(),
-            },
-            Fact {
-                key: "example".to_string(),
-                value: "Sky=Sunny,AirTemp=Warm,Humidity=High,Wind=Strong,Water=Warm,Forecast=Same,positive".to_string(),
-            },
-            // Negative example
-            Fact {
-                key: "example".to_string(),
-                value: "Sky=Rainy,AirTemp=Cold,Humidity=High,Wind=Strong,Water=Warm,Forecast=Change,negative".to_string(),
-            },
-            // Final positive example
-            Fact {
-                key: "example".to_string(),
-                value: "Sky=Sunny,AirTemp=Warm,Humidity=High,Wind=Strong,Water=Cool,Forecast=Change,positive".to_string(),
-            },
-        ],
-        cases: vec![],
-        rules: vec![],
-        goals: vec![],
-        state: vec![],
-    };
-    
+    // Load the RAW Mitchell 1982 EnjoySport fixture exactly as encoded on disk
+    // (vs:attrs + vs:example:1..4). NO input reconstruction.
+    let (json, input) = load_fixture("version_space");
+
     let breed = version_space::VersionSpace;
     assert!(
         breed.preconditions(&input).is_ok(),
@@ -4658,5 +4593,55 @@ fn version_space_paper_grounded() {
     assert!(
         has_boundary_evolution,
         "version_space updates must display S and G boundaries (Mitchell 1982 p.204-226 candidate elimination algorithm)"
+    );
+
+    // Published values (Mitchell, Machine Learning 1997 Ch.2 Tables 2.1/2.5),
+    // DERIVED by the candidate-elimination algorithm from the raw fixture.
+    let exp = &json["expected"];
+    let exp_s = exp["s"].as_str().unwrap();
+    let s_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "vs:S")
+        .expect("vs:S boundary fact must be emitted");
+    assert_eq!(
+        s_fact.value, exp_s,
+        "S4 boundary must equal published <Sunny,Warm,?,Strong,?,?>"
+    );
+
+    let g_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "vs:G")
+        .expect("vs:G boundary fact must be emitted");
+    let g_members: std::collections::BTreeSet<&str> =
+        g_fact.value.split(" | ").collect();
+    let exp_g: std::collections::BTreeSet<&str> = exp["g"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(g_members, exp_g, "G4 boundary must equal published 2-member set");
+
+    let ig_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "vs:intermediate_g_size")
+        .expect("vs:intermediate_g_size fact must be emitted");
+    assert_eq!(
+        ig_fact.value.parse::<u64>().unwrap(),
+        exp["intermediate_g_size"].as_u64().unwrap(),
+        "|G3| must equal published 3 after the negative example"
+    );
+
+    let conv_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "vs:converged")
+        .expect("vs:converged fact must be emitted");
+    assert_eq!(
+        conv_fact.value, exp["converged"].as_str().unwrap(),
+        "version space must not have converged (S != G)"
     );
 }
