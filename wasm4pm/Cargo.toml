@@ -244,6 +244,30 @@ harness = false
 name = "autonomic_real_data_bench"
 harness = false
 
+[[bench]]
+name = "anti_fake"
+harness = false
+
+[[bench]]
+name = "native_api_bench"
+harness = false
+
+[[bench]]
+name = "ocel_export"
+harness = false
+
+[[bench]]
+name = "parser_bench"
+harness = false
+
+[[bench]]
+name = "route_driven_tdd"
+harness = false
+
+[[bench]]
+name = "self_conformance"
+harness = false
+
 [[example]]
 name = "scalability_report"
 

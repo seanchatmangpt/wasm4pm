@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use wasm4pm::xes_format::load_eventlog_from_xes;
 
 fn generate_xes(num_traces: usize) -> String {
@@ -39,10 +39,16 @@ fn bench_xes_loader(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("loader/xes");
 
-    group.bench_function("1k_traces", |b| b.iter(|| load_eventlog_from_xes(&xes_1k)));
+    // Throughput reported as bytes/sec so parse rate is comparable across input
+    // sizes; black_box prevents the optimizer from eliding the parse result.
+    group.throughput(Throughput::Bytes(xes_1k.len() as u64));
+    group.bench_function("1k_traces", |b| {
+        b.iter(|| black_box(load_eventlog_from_xes(black_box(&xes_1k))))
+    });
 
+    group.throughput(Throughput::Bytes(xes_10k.len() as u64));
     group.bench_function("10k_traces", |b| {
-        b.iter(|| load_eventlog_from_xes(&xes_10k))
+        b.iter(|| black_box(load_eventlog_from_xes(black_box(&xes_10k))))
     });
 
     group.finish();

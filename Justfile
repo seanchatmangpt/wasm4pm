@@ -17,6 +17,20 @@ build:
 bench:
     make bench-quick
 
+# Regression gate: run the fast bench set with Criterion baselines and FAIL
+# if any benchmark's median regresses beyond BENCH_REGRESS_THRESHOLD (default 10%).
+bench-regress:
+    python3 scripts/bench_regress.py
+
+# Parse existing Criterion baselines without re-running benches (CI-fast).
+bench-regress-check:
+    python3 scripts/bench_regress.py --no-run
+
+# Unified report: walk target/criterion/**/new/estimates.json and emit
+# docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
+bench-report:
+    python3 scripts/bench_report.py
+
 clean:
     make clean
 
