@@ -1,0 +1,14 @@
+# Extract all CognitionBreed instances. SELECT columns become Tera row fields.
+PREFIX compat: <https://wasm4pm.dev/ns#>
+
+SELECT ?breed_id ?breed_label ?breed_doc ?citation ?module_path ?module_file
+WHERE {
+  ?b a compat:CognitionBreed ;
+     compat:breedId    ?breed_id ;
+     compat:breedLabel ?breed_label ;
+     compat:breedDoc   ?breed_doc ;
+     compat:citation   ?citation .
+  OPTIONAL { ?b compat:modulePath ?module_path }
+  BIND(COALESCE(?module_path, ?breed_id) AS ?module_file)
+}
+ORDER BY ?breed_id

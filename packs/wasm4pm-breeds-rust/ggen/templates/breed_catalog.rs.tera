@@ -1,0 +1,23 @@
+// breed_catalog.rs — RENDERED FROM ONTOLOGY by ggen (pack: wasm4pm-breeds-rust).
+// This file is first-class source. To change a breed, edit the pack ontology
+// (ggen/ontology/breeds.ttl) and re-run `ggen sync`.
+//
+// {{ sparql_results | length }} cognition breeds with paper provenance.
+
+/// Static metadata for one cognition breed.
+pub struct BreedInfo {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub doc: &'static str,
+    pub citation: &'static str,
+}
+
+/// Every registered cognition breed, in stable (id-sorted) order.
+pub const CATALOG: &[BreedInfo] = &[
+{% for row in sparql_results %}    BreedInfo {
+        id: "{{ row.breed_id }}",
+        label: "{{ row.breed_label }}",
+        doc: "{{ row.breed_doc | addslashes }}",
+        citation: "{{ row.citation | addslashes }}",
+    },
+{% endfor %}];

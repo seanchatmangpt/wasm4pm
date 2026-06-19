@@ -1,0 +1,50 @@
+# Working ggen.toml for a consumer of the wasm4pm-breeds-ts pack.
+#
+# Copy this into your project root, adjust PACK_DIR below to point at where you
+# vendored the pack (e.g. "./vendor/wasm4pm-breeds-ts" or an absolute path), then:
+#
+#   ggen sync --manifest ./ggen.toml
+#
+# IMPORTANT: always pass --manifest explicitly. If you omit it, ggen searches
+# parent directories and may pick up an unrelated ggen.toml.
+#
+# This pack is self-contained: the ontology below bundles its own vocabulary
+# plus all 55 breed instances. You do NOT need the wasm4pm-compat sibling repo.
+
+[project]
+name        = "my-cognition-consumer"
+version     = "0.0.1"
+description = "Consumes wasm4pm-breeds-ts to generate breed bindings"
+authors     = ["you"]
+license     = "MIT"
+
+[ontology]
+# PACK_DIR = path to the vendored pack. Replace with your real path.
+source        = "/ABS/PATH/TO/wasm4pm-breeds-ts/ggen/ontology/breeds.ttl"
+standard_only = false
+
+[generation]
+output_dir = "."
+
+# breed-ids.ts → BREED_IDS + BreedId
+[[generation.rules]]
+name        = "breed-ids"
+query       = { file = "/ABS/PATH/TO/wasm4pm-breeds-ts/ggen/queries/extract-breeds.rq" }
+template    = { file = "/ABS/PATH/TO/wasm4pm-breeds-ts/ggen/templates/breed-ids.ts.tera" }
+output_file = "src/breed-ids.ts"
+mode        = "Overwrite"
+
+# breed-catalog.ts → BreedInfo + BREED_CATALOG
+[[generation.rules]]
+name        = "breed-catalog"
+query       = { file = "/ABS/PATH/TO/wasm4pm-breeds-ts/ggen/queries/extract-breeds.rq" }
+template    = { file = "/ABS/PATH/TO/wasm4pm-breeds-ts/ggen/templates/breed-catalog.ts.tera" }
+output_file = "src/breed-catalog.ts"
+mode        = "Overwrite"
+
+# ggen requires at least one inference rule (DMAIC "Measure" gate).
+# This identity CONSTRUCT is a no-op that satisfies the gate.
+[inference]
+rules = [
+  { name = "identity", construct = "CONSTRUCT { ?b a <https://wasm4pm.dev/ns#CognitionBreed> } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> }" }
+]

@@ -1,0 +1,45 @@
+# example-consumer-ggen.toml — copy this into YOUR crate root as `ggen.toml`.
+#
+# Replace `/ABS/PATH/TO/wasm4pm-breeds-rust` with the absolute (or relative)
+# path to this pack directory on your machine. Then run `ggen sync`.
+#
+# Generates (Overwrite) src/breed_ids.rs and src/breed_catalog.rs from the
+# bundled breed ontology. The fixed contract types live in this pack's static/
+# (copy breed_types.rs + client.rs into your src/ once — they do not change).
+
+[project]
+name        = "breeds-consumer-demo"
+version     = "0.0.0"
+description = "Demo consumer that generates Rust cognition-breed bindings from the wasm4pm-breeds-rust pack."
+authors     = ["Demo Consumer"]
+license     = "MIT"
+
+[ontology]
+# Self-contained: the pack ships both the vocabulary and the 55 breed instances.
+source  = "/ABS/PATH/TO/wasm4pm-breeds-rust/ggen/ontology/breed-vocabulary.ttl"
+imports = [ "/ABS/PATH/TO/wasm4pm-breeds-rust/ggen/ontology/breeds.ttl" ]
+standard_only = false
+
+[inference]
+# ggen's DMAIC quality gate requires at least one inference rule. This trivial
+# CONSTRUCT marks every breed; it does not affect the generated output.
+rules = [
+  { name = "mark-breeds", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#isBreed> true } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> }" }
+]
+
+[generation]
+output_dir = "."
+
+[[generation.rules]]
+name        = "breed-ids"
+query       = { file = "/ABS/PATH/TO/wasm4pm-breeds-rust/ggen/queries/extract-breeds.rq" }
+template    = { file = "/ABS/PATH/TO/wasm4pm-breeds-rust/ggen/templates/breed_ids.rs.tera" }
+output_file = "src/breed_ids.rs"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "breed-catalog"
+query       = { file = "/ABS/PATH/TO/wasm4pm-breeds-rust/ggen/queries/extract-breeds.rq" }
+template    = { file = "/ABS/PATH/TO/wasm4pm-breeds-rust/ggen/templates/breed_catalog.rs.tera" }
+output_file = "src/breed_catalog.rs"
+mode        = "Overwrite"

@@ -1,0 +1,34 @@
+// breed_ids.rs — RENDERED FROM ONTOLOGY by ggen (pack: wasm4pm-breeds-rust).
+// This file is first-class source. To change a breed, edit the pack ontology
+// (ggen/ontology/breeds.ttl) and re-run `ggen sync`.
+//
+// {{ sparql_results | length }} cognition breeds.
+
+/// Stable identifier for every cognition breed registered in the wasm4pm platform.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BreedId {
+{% for row in sparql_results %}    /// `{{ row.breed_id }}`
+    {{ row.breed_label }},
+{% endfor %}}
+
+impl BreedId {
+    /// The wire-level breed id string passed to `cognition_run`.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+{% for row in sparql_results %}            BreedId::{{ row.breed_label }} => "{{ row.breed_id }}",
+{% endfor %}        }
+    }
+
+    /// Parse a breed id string into its `BreedId` variant.
+    pub fn from_str_id(s: &str) -> Option<Self> {
+        match s {
+{% for row in sparql_results %}            "{{ row.breed_id }}" => Some(BreedId::{{ row.breed_label }}),
+{% endfor %}            _ => None,
+        }
+    }
+
+    /// Every breed, in stable (id-sorted) order.
+    pub const ALL: &'static [BreedId] = &[
+{% for row in sparql_results %}        BreedId::{{ row.breed_label }},
+{% endfor %}    ];
+}

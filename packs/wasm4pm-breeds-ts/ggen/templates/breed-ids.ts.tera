@@ -1,0 +1,8 @@
+// AUTO-RENDERED BY GGEN — edit ggen/ontology/breeds.ttl, then run `ggen sync`.
+// Source of truth: wasm4pm-breeds-ts pack (compat:CognitionBreed instances).
+
+export const BREED_IDS = [
+{% for row in sparql_results %}  "{{ row.breed_id }}",
+{% endfor %}] as const;
+
+export type BreedId = (typeof BREED_IDS)[number];
