@@ -119,11 +119,8 @@ wasm4pm-breeds-rust/
 
 ## Note on citations
 
-ggen 26.6.11's RDF/SPARQL binding does not decode TTL string-internal escaped
-double quotes (`\"`) — it truncates the literal at that point. To keep the pack
-self-contained and render all 55 citations correctly, the three affected
-citations in the bundled `breeds.ttl` use typographic curly quotes (`“ ”`)
-instead of escaped straight quotes. This is lossless for human-readable
-citations. The `breed_id` and `breed_label` fields never contain quotes, so the
-`BreedId` enum is unaffected regardless.
+Citations containing interior double quotes (`\"`) render correctly. (Earlier
+ggen versions truncated TTL literals at an interior escaped quote; fixed in
+ggen — see ggen `fix/turtle-escaped-quote-literal-truncation`. Requires a ggen
+build that includes that fix.)
 ```
