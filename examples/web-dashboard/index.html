@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>wasm4pm — Client-Side Receipted Process Intelligence</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>wasm4pm dashboard</h1>
+      <p class="sub">
+        Client-side receipted process intelligence. The cognition WASM kernel
+        runs entirely in this browser tab — no data leaves the page. Every
+        displayed number carries the receipt hash that proves it.
+      </p>
+      <div id="wasm-status" data-testid="wasm-status" class="status pending">
+        loading cognition WASM…
+      </div>
+    </header>
+
+    <main>
+      <section id="catalog-section">
+        <h2>Breed catalog</h2>
+        <p class="hint">
+          <span id="breed-count" data-testid="breed-count">0</span> cognitive
+          breeds available in-browser. Pick one with a bundled paper fixture and
+          run it.
+        </p>
+        <div id="catalog" class="catalog" data-testid="catalog"></div>
+      </section>
+
+      <section id="run-section">
+        <h2>Run &amp; receipt</h2>
+        <p class="hint">
+          Selected breed:
+          <strong id="selected-breed" data-testid="selected-breed">mycin</strong>
+        </p>
+        <button id="run-btn" data-testid="run-btn" disabled>Run breed</button>
+
+        <div id="receipt" class="receipt hidden" data-testid="receipt">
+          <h3>Receipt</h3>
+          <dl>
+            <dt>status</dt>
+            <dd data-testid="r-status" id="r-status"></dd>
+            <dt>breed</dt>
+            <dd data-testid="r-breed" id="r-breed"></dd>
+            <dt>run_id</dt>
+            <dd class="mono" data-testid="r-run-id" id="r-run-id"></dd>
+            <dt>output_hash</dt>
+            <dd class="mono" data-testid="r-output-hash" id="r-output-hash"></dd>
+            <dt>replay_pointer</dt>
+            <dd class="mono" data-testid="r-replay-pointer" id="r-replay-pointer"></dd>
+          </dl>
+
+          <h3>Provable KPIs</h3>
+          <p class="hint">
+            Each value is traceable to the receipt above — its source hash is
+            shown beside it.
+          </p>
+          <div id="kpis" class="kpis" data-testid="kpis"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        The product is CodeManufactory; RevOps is merely proof that
+        CodeManufactory works. Here: the cognition kernel is the product, the
+        receipt is the proof.
+      </p>
+    </footer>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
