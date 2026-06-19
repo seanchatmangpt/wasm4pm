@@ -54,13 +54,13 @@ pub const CATALOG: &[BreedInfo] = &[
         id: "autoinstinct_learning",
         label: "AutoinstinctLearning",
         doc: "AutoinstinctLearning — STRIPS/HACKER bitwise heuristic planning (Winston 1975).",
-        citation: "Sussman, Gerald Jay. “A Computational Model of Skill Acquisition.” MIT Artificial Intelligence Laboratory Technical Report AI TR-297, August 1973. Thesis Supervisor: Seymour A. Papert.",
+        citation: "Sussman, Gerald Jay. \"A Computational Model of Skill Acquisition.\" MIT Artificial Intelligence Laboratory Technical Report AI TR-297, August 1973. Thesis Supervisor: Seymour A. Papert.",
     },
     BreedInfo {
         id: "autoinstinct_neurosis",
         label: "AutoinstinctNeurosis",
         doc: "AutoinstinctNeurosis breed — Artificial Neurosis / Ideology Machine (Colby/Abelson lineage).",
-        citation: "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: “Programs That Model the Mind.” [Conflict detection framework: neurosis as simultaneous maintenance of mutually incompatible beliefs, pp. 198–212.]",
+        citation: "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \"Programs That Model the Mind.\" [Conflict detection framework: neurosis as simultaneous maintenance of mutually incompatible beliefs, pp. 198–212.]",
     },
     BreedInfo {
         id: "autoinstinct_semantics",
@@ -192,7 +192,7 @@ pub const CATALOG: &[BreedInfo] = &[
         id: "gps",
         label: "Gps",
         doc: "GPS (General Problem Solver) — means-ends gap reduction (Newell & Shaw 1963).",
-        citation: "A. Newell and H. A. Simon, “GPS, A Program That Simulates Human Thought,” RAND Corporation, P-2257, March 30, 1961 (Revised April 10, 1961). Presented at the Conference on Learning Automata, Karlsruhe, Germany, April 11–14, 1961.",
+        citation: "A. Newell and H. A. Simon, \"GPS, A Program That Simulates Human Thought,\" RAND Corporation, P-2257, March 30, 1961 (Revised April 10, 1961). Presented at the Conference on Learning Automata, Karlsruhe, Germany, April 11–14, 1961.",
     },
     BreedInfo {
         id: "hearsay",

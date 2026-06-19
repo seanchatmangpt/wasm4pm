@@ -1,14 +1,14 @@
 {
   "version": "1.0.0",
-  "created_at": "2026-06-19T18:36:58.143688+00:00",
+  "created_at": "2026-06-19T18:49:47.400273+00:00",
   "ontology": {
-    "hash": "1b9bd4ffe547e3a4edbc7becf6603008941407cdaa393727f0f2770cdbc87b88",
-    "timestamp": "2026-06-19T18:36:58.143671+00:00",
-    "size_bytes": 25283
+    "hash": "3dbc11b6c13a858b5f5fbcc0f5552eeecf5ccea903eb70c0f839febf7dfd2369",
+    "timestamp": "2026-06-19T18:49:47.400270+00:00",
+    "size_bytes": 25289
   },
   "manifest": {
     "hash": "125466e8ca7cffbf57c7987b249b167bb834f0811001ac92cfbb4df92e3f9f71",
-    "timestamp": "2026-06-19T18:36:58.143671+00:00",
+    "timestamp": "2026-06-19T18:49:47.400270+00:00",
     "size_bytes": 1220
   },
   "inference_rules": {
@@ -16,5 +16,5 @@
   },
   "imports": {},
   "files_synced": 2,
-  "sync_duration_ms": 44
+  "sync_duration_ms": 8
 }

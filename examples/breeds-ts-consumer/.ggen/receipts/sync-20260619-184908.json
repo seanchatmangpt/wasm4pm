@@ -1,6 +1,6 @@
 {
-  "operation_id": "57cf3888-db11-46b0-b358-2769636c7478",
-  "timestamp": "2026-06-19T18:49:47.401144Z",
+  "operation_id": "9a31c997-74e2-4b71-9e45-b114e9cc0604",
+  "timestamp": "2026-06-19T18:49:08.288572Z",
   "input_hashes": [
     "actuator:ggen-sync@26.6.11",
     "ggen.toml:125466e8ca7cffbf57c7987b249b167bb834f0811001ac92cfbb4df92e3f9f71",
@@ -8,12 +8,12 @@
     "../../packs/wasm4pm-breeds-ts/ggen/queries/extract-breeds.rq:9d84770ec0717f8f0c1a845126c15141982242d8485ad5b556b8f5cbcac3ab31",
     "../../packs/wasm4pm-breeds-ts/ggen/templates/breed-ids.ts.tera:23793cc3f992d92b00002c6b0128a04f74e11aef04c994f3ce37b215d9dab817",
     "../../packs/wasm4pm-breeds-ts/ggen/queries/extract-breeds.rq:9d84770ec0717f8f0c1a845126c15141982242d8485ad5b556b8f5cbcac3ab31",
-    "../../packs/wasm4pm-breeds-ts/ggen/templates/breed-catalog.ts.tera:921a998faf1c66eaea79a4737ed44fe27ad8796387f0e2840e67a8a86d301caf"
+    "../../packs/wasm4pm-breeds-ts/ggen/templates/breed-catalog.ts.tera:4f99e87948896e93fe6da95405b814f29290b702c67cfc72e8a54a2cc175481a"
   ],
   "output_hashes": [
     "./src/breed-ids.ts:654d400542a1246d3fbb6c0893ecd8da8de077642fd105894773e08bea177cd7",
-    "./src/breed-catalog.ts:4cbc00128eab5a4645124d544dbfc34d2031ae3ee6227399ecba912b463b667b"
+    "./src/breed-catalog.ts:7dadad464923b8087aebdf0194fb3d6e956fa712c9cb838057a1a7d21e1f8dc1"
   ],
-  "signature": "404b2252129e4224132274e756a00fe74d909af479213bbe8369f965857546ab88c7fd1312a251f7aee034b613953f51f5b0740b110331d5cdf0e2d932e44904",
-  "previous_receipt_hash": "52de4d868caa9f9a273ef3207f0ecdc27a0ec65084aef91e468fd2757388d679"
+  "signature": "bab8cefb34e9e17c5d702a35b89c601c8f2428f3687ebc060de184652a8f16a26a74906e5f825076f6be8ac1355777bab50677b34b39b50509607616d94ca909",
+  "previous_receipt_hash": "ed143295d3eff14c03d19aa04258ee2452c72ff4cabaf8b0e3b5990f447f36ce"
 }

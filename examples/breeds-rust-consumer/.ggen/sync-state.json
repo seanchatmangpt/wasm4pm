@@ -1,14 +1,14 @@
 {
   "version": "1.0.0",
-  "created_at": "2026-06-19T18:35:01.634633+00:00",
+  "created_at": "2026-06-19T18:49:08.235815+00:00",
   "ontology": {
     "hash": "53ab28078241ab025a631be7d3a08d4f796e12b371a5f4ac3370bec77992145c",
-    "timestamp": "2026-06-19T18:35:01.634629+00:00",
+    "timestamp": "2026-06-19T18:49:08.235800+00:00",
     "size_bytes": 974
   },
   "manifest": {
     "hash": "23fb8d7e3e38dc4b3f137887f63d4ffcd1c6d4c58c2a897083f34d53732e60b3",
-    "timestamp": "2026-06-19T18:35:01.634629+00:00",
+    "timestamp": "2026-06-19T18:49:08.235800+00:00",
     "size_bytes": 1309
   },
   "inference_rules": {
@@ -16,11 +16,11 @@
   },
   "imports": {
     "../../packs/wasm4pm-breeds-rust/ggen/ontology/breeds.ttl": {
-      "hash": "d44a7e0ba29125a6554209c120ad189095607e45f67688c4a9d8efc8a3d97f9d",
-      "timestamp": "2026-06-19T18:35:01.634629+00:00",
-      "size_bytes": 24610
+      "hash": "4193a8e36d2a97167649b960b364527c27116be9224872a3a3229f4ac09e1a21",
+      "timestamp": "2026-06-19T18:49:08.235800+00:00",
+      "size_bytes": 24604
     }
   },
   "files_synced": 2,
-  "sync_duration_ms": 29
+  "sync_duration_ms": 35
 }
