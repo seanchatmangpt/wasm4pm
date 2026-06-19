@@ -103,6 +103,17 @@ impl CognitionBreed for SituationCalculus {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        let has_action_facts = input.facts.iter().any(|f| {
+            f.key.starts_with("action:")
+                || f.key.starts_with("do:")
+                || f.key.starts_with("poss:")
+                || f.key.starts_with("sc:")
+        });
+        if !input.goals.is_empty() && input.rules.is_empty() && !has_action_facts {
+            return Err(
+                "situation_calculus requires at least one successor-state axiom rule".to_string(),
+            );
+        }
         let (fluents, actions, sequence) = parse_domain(input)?;
         if sequence.is_empty() {
             return Err("situation_calculus requires at least one do:<n> action step".to_string());

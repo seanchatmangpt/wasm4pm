@@ -1,22 +1,29 @@
 {
+  "breed_id": "abductive_ibe",
   "id": "ocel_abductive_ibe_v1",
   "name": "Abductive IBE Lifecycle Model",
   "phases": [
     {
       "name": "load",
-      "kinds": ["ibe-load"],
+      "kinds": [
+        "ibe-load"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     },
     {
       "name": "explain",
-      "kinds": ["ibe-explain"],
+      "kinds": [
+        "ibe-explain"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     },
     {
       "name": "select",
-      "kinds": ["ibe-select"],
+      "kinds": [
+        "ibe-select"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     }

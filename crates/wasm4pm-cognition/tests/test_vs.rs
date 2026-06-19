@@ -43,6 +43,6 @@ fn test_version_space_mitchell_1982() {
         println!("{:?}", step.detail);
     }
 
-    let s = output.facts.iter().find(|f| f.key == "vs:s").unwrap();
+    let s = output.facts.iter().find(|f| f.key == "vs:S").unwrap();
     assert_eq!(s.value, "Sunny,Warm,?,Strong,?,?");
 }

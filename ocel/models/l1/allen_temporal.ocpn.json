@@ -2,26 +2,31 @@
   "model_id": "allen_temporal-l1-v1",
   "model_level": "L1",
   "breed_id": "allen_temporal",
-  "object_types": ["run", "breed"],
+  "object_types": ["interval", "constraint", "decision"],
   "places": [
-    {"id": "p1", "name": "init", "object_type": "run"},
-    {"id": "p2", "name": "propagating", "object_type": "breed"},
-    {"id": "p3", "name": "consistent", "object_type": "breed"},
-    {"id": "p4", "name": "inconsistent", "object_type": "breed"}
+    {"id": "p1", "name": "network_empty",   "object_type": "constraint"},
+    {"id": "p2", "name": "network_loaded",  "object_type": "interval"},
+    {"id": "p3", "name": "propagating",     "object_type": "constraint"},
+    {"id": "p4", "name": "fixpoint_reached","object_type": "decision"}
   ],
   "transitions": [
-    {"id": "t1", "name": "init", "label": "init"},
-    {"id": "t2", "name": "propagate", "label": "propagate"},
-    {"id": "t3", "name": "inconsistent", "label": "inconsistent"}
+    {"id": "t1", "name": "allen-load",    "label": "allen-load"},
+    {"id": "t2", "name": "allen-compose", "label": "allen-compose"},
+    {"id": "t3", "name": "allen-verdict", "label": "allen-verdict"}
   ],
   "arcs": [
     {"from": "p1", "to": "t1", "type": "consume"},
     {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
     {"from": "p2", "to": "t2", "type": "consume"},
-    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
     {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "p3", "to": "t3", "type": "consume"},
     {"from": "t3", "to": "p4", "type": "produce"}
   ],
   "initial_marking": {"p1": 1},
-  "final_markings": [{"p2": 1}, {"p4": 1}]
+  "final_markings": [{"p4": 1}]
 }
