@@ -17,19 +17,21 @@ build:
 bench:
     make bench-quick
 
-# Regression gate: run the fast bench set with Criterion baselines and FAIL
-# if any benchmark's median regresses beyond BENCH_REGRESS_THRESHOLD (default 10%).
+# Regression gate: compare current Criterion medians against the committed
+# baseline (.wasm4pm/benchmarks/baselines/main-latest.json) and FAIL if any
+# benchmark's median regresses beyond the threshold (default 10%, --threshold).
 bench-regress:
-    python3 scripts/bench_regress.py
+    cargo run -q -p bench-tools -- regress
 
-# Parse existing Criterion baselines without re-running benches (CI-fast).
-bench-regress-check:
-    python3 scripts/bench_regress.py --no-run
+# Emit a BLAKE3 performance receipt (environment + results + lineage) and refresh
+# the committed baseline used by the regression gate and CI.
+bench-receipt:
+    cargo run -q -p bench-tools -- receipt
 
 # Unified report: walk target/criterion/**/new/estimates.json and emit
 # docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
 bench-report:
-    python3 scripts/bench_report.py
+    cargo run -q -p bench-tools -- report
 
 clean:
     make clean

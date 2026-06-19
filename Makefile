@@ -13,7 +13,7 @@ export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
-        bench-regress bench-regress-check bench-report \
+        bench-regress bench-receipt bench-report \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test test-proof verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
@@ -222,18 +222,19 @@ bench-compare:
 bench-regression:
 	@bash .wasm4pm/benchmarks/detect-regression.sh .wasm4pm/benchmarks/baselines/main-latest.json
 
-# ── Criterion median regression gate (scripts/bench_regress.py) ──────────────
-# Runs the fast bench set with --save-baseline/--baseline and fails (exit 1)
-# when any benchmark's median regresses beyond BENCH_REGRESS_THRESHOLD (def 10%).
+# ── Criterion median regression gate (crates/bench-tools) ────────────────────
+# Compares current Criterion medians against the committed baseline and fails
+# (exit 1) when any benchmark regresses beyond the threshold (default 10%).
 bench-regress:
-	@python3 scripts/bench_regress.py
+	@cargo run -q -p bench-tools -- regress
 
-bench-regress-check:
-	@python3 scripts/bench_regress.py --no-run
+# ── BLAKE3 performance receipt → refreshes the committed CI baseline ─────────
+bench-receipt:
+	@cargo run -q -p bench-tools -- receipt
 
 # ── Unified Criterion report → docs/benchmarks/REPORT.md + report.csv ────────
 bench-report:
-	@python3 scripts/bench_report.py
+	@cargo run -q -p bench-tools -- report
 
 # ── Unified Benchmarking: Runs both Rust and WASM and unifies reports ───────
 bench-all: bench-data

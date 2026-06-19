@@ -1,0 +1,23 @@
+[package]
+name = "bench-tools"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+# Benchmark governance tooling: report generation, regression gating, and
+# performance receipts. Replaces the former scripts/bench_*.py with a single
+# Rust binary so the bench toolchain is `cargo`-native (no Python runtime) and
+# the receipt uses real BLAKE3, matching the repository receipt doctrine.
+
+[[bin]]
+name = "bench-tools"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+chrono = { workspace = true }

@@ -1,46 +1,65 @@
-# Benchmark Regression & Reporting
+# Benchmark Regression, Reporting & Receipts
 
-Two scripts sit on top of Criterion's existing baseline machinery
-(`wasm4pm/target/criterion/`). Neither edits any bench source.
-
-## 1. Regression gate — `scripts/bench_regress.py`
-
-Runs a fast bench set twice (`--save-baseline` then `--baseline`), parses each
-benchmark's `new/estimates.json` vs the saved baseline `estimates.json`, and
-**exits 1** when any benchmark's *median* regresses beyond a threshold.
+The `bench-tools` crate (`crates/bench-tools`) sits on top of Criterion's output
+(`target/criterion/`). It is `cargo`-native — no Python runtime — and the
+receipt uses the same BLAKE3 algorithm as the repository's execution receipts.
+None of its subcommands edit bench source.
 
 ```bash
-just bench-regress              # run fast benches + gate (default 10% threshold)
-just bench-regress-check        # parse existing baselines without re-running
-make bench-regress              # same via Make
-
-BENCH_REGRESS_THRESHOLD=15 python3 scripts/bench_regress.py   # 15% threshold
-BENCH_REGRESS_BENCHES="fast_algorithms" python3 scripts/bench_regress.py
-python3 scripts/bench_regress.py --no-run --baseline main     # vs existing baseline
-python3 scripts/bench_regress.py --criterion-dir <fixture>    # parse a fixture
+cargo run -p bench-tools -- <report|regress|receipt> [flags]
 ```
 
-| Env var | Default | Meaning |
-|---------|---------|---------|
-| `BENCH_REGRESS_THRESHOLD` | `10` | % median regression allowed before fail |
-| `BENCH_REGRESS_BENCHES` | `fast_algorithms analytics hot_kernels` | bench set |
-| `BENCH_REGRESS_BASELINE` | `regress-base` | Criterion baseline name |
-| `BENCH_REGRESS_FEATURES` | `cloud` | cargo `--features` value |
+All three default `--criterion-dir` to the workspace's shared
+`target/criterion` (honoring `CARGO_TARGET_DIR`).
 
-Exit codes: `0` no regression · `1` regression beyond threshold · `2` no data.
+## 1. Regression gate — `bench-tools regress`
 
-## 2. Unified report — `scripts/bench_report.py`
+Compares each current `new/estimates.json` *median* against the committed
+baseline (`.wasm4pm/benchmarks/baselines/main-latest.json`) and **exits 1** when
+any benchmark regresses beyond the threshold. A change within one measured
+std-dev is treated as jitter, not a regression.
+
+```bash
+just bench-regress                                   # gate (default 10%)
+make bench-regress
+cargo run -p bench-tools -- regress --threshold 15   # 15% threshold
+cargo run -p bench-tools -- regress --baseline <file> --criterion-dir <dir>
+```
+
+Exit codes: `0` no regression · `1` regression beyond threshold / no data.
+
+## 2. Unified report — `bench-tools report`
 
 Walks `target/criterion/**/new/estimates.json` and emits, in deterministic
 (lexicographic) order:
 
-- `docs/benchmarks/REPORT.md` — table of `Benchmark | Median | ±CI (95%)`
-- `docs/benchmarks/report.csv` — `bench,median_ns,ci_lower_ns,ci_upper_ns`
+- `docs/benchmarks/REPORT.md` — `Benchmark | Median | 95% CI`
+- `docs/benchmarks/report.csv` — `bench,median_ns,ci_lower_ns,ci_upper_ns,std_dev_ns`
 
 ```bash
-just bench-report                                   # write REPORT.md + report.csv
-make bench-report
-python3 scripts/bench_report.py --criterion-dir <fixture> --out-dir <dir>
+just bench-report
+cargo run -p bench-tools -- report --criterion-dir <dir> --out-dir <dir>
 ```
 
-Exit codes: `0` report written · `2` no estimates found.
+## 3. Performance receipt — `bench-tools receipt`
+
+Emits a `Wasm4pmBenchmarkReceipt.v1` binding **environment provenance**
+(git commit + dirty flag, rustc, OS/arch, logical cores, CPU model, frequency
+governor) to the **result set**, hashed with BLAKE3 and chained to the previous
+receipt — the same doctrine as execution receipts, applied to measurement. A
+benchmark number is only trustworthy if you can prove which code, on which
+machine, under which toolchain produced it.
+
+By default it refreshes `.wasm4pm/benchmarks/baselines/main-latest.json` — the
+baseline both the regression gate and CI read.
+
+```bash
+just bench-receipt                                   # update the committed baseline
+cargo run -p bench-tools -- receipt --print          # echo the receipt JSON
+cargo run -p bench-tools -- receipt --no-baseline --out <file>
+```
+
+A `tree_dirty: true` receipt corresponds to no committed state — a gate should
+refuse to trust it as a baseline.
+
+Exit codes: `0` ok · `1` no estimates found · `2` bad arguments.
