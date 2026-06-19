@@ -111,3 +111,6 @@ apps/wasm4pm/nul
 
 # Scratch run outputs
 soar-output*.json
+
+# affidavit working state
+.affi/
