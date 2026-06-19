@@ -16,6 +16,7 @@ use crate::autosystems::dimension::DimensionSpec;
 use crate::autosystems::dominance::{reject_dominated, DomainProfile};
 use crate::autosystems::findings::FindingRegistry;
 use crate::autosystems::receipt::ReceiptChain;
+use crate::breeds::dispatch::dispatch_breed;
 use crate::breeds::{BreedError, BreedInput, BreedOutput};
 use crate::evidence::check_trace_laws;
 use crate::evidence::{Artifact, EvidenceSource};
@@ -202,7 +203,6 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
                     event_types: vec![],
                     events: vec![],
                     objects: vec![],
-                    events: vec![],
                 });
             let result = crate::ocel::validate_ocel_alignment(&ocel, model);
             serde_json::json!({
