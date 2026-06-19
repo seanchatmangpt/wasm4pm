@@ -3190,53 +3190,36 @@ fn event_calculus_paper_grounded() {
         .as_object()
         .expect("fixture must declare expected.verdicts");
 
-    // Extract holds state at each time from the trace details (kind="ec-infer")
-    let mut holds_by_time: std::collections::HashMap<usize, std::collections::HashSet<String>> = std::collections::HashMap::new();
-    for trace_step in &output.inference_trace {
-        if trace_step.kind == "ec-infer" {
-            // Detail format: "t={time}: holds={...}, happens={...}, initiates={...}, terminates={...}"
-            if let Some(time_str) = trace_step.detail.split("t=").nth(1)
-                .and_then(|s| s.split(':').next()) {
-                if let Ok(t) = time_str.trim().parse::<usize>() {
-                    // Parse holds set from detail string
-                    if let Some(holds_str) = trace_step.detail.split("holds=").nth(1)
-                        .and_then(|s| s.split(',').next()) {
-                        let holds_set: std::collections::HashSet<String> = holds_str
-                            .trim_start_matches('[')
-                            .trim_end_matches(']')
-                            .trim_matches('"')
-                            .split(',')
-                            .filter(|f| !f.trim().is_empty() && f.trim() != "\"")
-                            .map(|f| f.trim().trim_matches('"').to_string())
-                            .collect();
-                        holds_by_time.insert(t, holds_set);
-                    }
-                }
-            }
+    // The breed exposes per-query verdicts directly via `ec-verdict` trace steps and the
+    // `ec:verdict:<fluent>@<time>` keys in `output.selected`. Parse selected into a map.
+    let selected = output.selected.as_deref().expect("event_calculus must expose verdicts in selected");
+    assert!(
+        output.inference_trace.iter().any(|t| t.kind == "ec-verdict"),
+        "event_calculus must emit ec-verdict steps for HoldsAt queries"
+    );
+    let mut computed: std::collections::HashMap<String, bool> = std::collections::HashMap::new();
+    for entry in selected.split(',') {
+        if let Some((k, v)) = entry.split_once('=') {
+            computed.insert(k.trim().to_string(), v.trim() == "true");
         }
     }
 
-    // Assert each verdict against the computed holds state
+    // Assert each paper-ground-truth verdict against the breed's computed verdict.
     for (query_id, verdict_value) in verdicts.iter() {
         let verdict_str = verdict_value.as_str().expect("verdicts must be strings");
-        // Parse query_id: format "ec:verdict:fluent@time"
-        if let Some(fluent_time) = query_id.strip_prefix("ec:verdict:") {
-            if let Some(at_pos) = fluent_time.rfind('@') {
-                let fluent = &fluent_time[..at_pos];
-                if let Ok(time) = fluent_time[at_pos+1..].parse::<usize>() {
-                    let holds_at_time = holds_by_time.get(&time)
-                        .map(|s| s.contains(fluent))
-                        .unwrap_or(false);
-                    let expected_true = verdict_str == "true";
-                    assert_eq!(
-                        holds_at_time, expected_true,
-                        "event_calculus HoldsAt({})@{} must be {} per Kowalski & Sergot 1986 \
-                         Sections 2-5 Mary hired/promoted narrative; computed holds at t={}: {:?}",
-                        fluent, time, verdict_str, time, holds_by_time.get(&time)
-                    );
-                }
-            }
-        }
+        let expected_true = verdict_str == "true";
+        let got = *computed.get(query_id).unwrap_or_else(|| {
+            panic!(
+                "event_calculus did not produce a verdict for {} (computed: {:?})",
+                query_id, computed
+            )
+        });
+        assert_eq!(
+            got, expected_true,
+            "event_calculus {} must be {} per Kowalski & Sergot 1986 Sections 2-5 \
+             Mary hired/promoted narrative; computed: {:?}",
+            query_id, verdict_str, computed
+        );
     }
 }
 
@@ -3820,14 +3803,14 @@ fn partial_order_plan_paper_grounded() {
         .as_str()
         .expect("fixture must declare expected.plan");
     
-    // Extract the plan actions from output.selected (note: impl joins with ',' not ';')
+    // Extract the plan actions from output.selected (impl joins with ';', canonical delimiter)
     let selected = output.selected.as_deref().expect(
         "partial_order_plan must produce a selected plan per McAllester & Rosenblitt 1991 Sussman anomaly"
     );
-    
+
     // The expected plan actions from the fixture
     let expected_actions: Vec<&str> = expected_plan_str.split(';').map(|s| s.trim()).collect();
-    let actual_actions: Vec<&str> = selected.split(',').map(|s| s.trim()).collect();
+    let actual_actions: Vec<&str> = selected.split(';').map(|s| s.trim()).collect();
     
     // Verify the plan contains exactly the expected actions in the correct order
     assert_eq!(

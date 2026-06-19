@@ -401,7 +401,7 @@ impl CognitionBreed for PartialOrderPlan {
         let selected = if plan_actions.is_empty() {
             Some("".to_string())
         } else {
-            Some(plan_actions.join(","))
+            Some(plan_actions.join(";"))
         };
 
         let explanation = format!(

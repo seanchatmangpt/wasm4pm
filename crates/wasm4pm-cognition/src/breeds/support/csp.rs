@@ -66,6 +66,18 @@ impl CspStore {
     }
 
     fn evaluate(&self, val1: &str, val2: &str, op: &str) -> bool {
+        // Arithmetic offset constraints: val1 == val2 + c  ("=+c") or val1 == val2 - c ("=-c").
+        if let (Ok(i1), Ok(i2)) = (val1.parse::<i64>(), val2.parse::<i64>()) {
+            if let Some(rest) = op.strip_prefix("=+") {
+                if let Ok(c) = rest.parse::<i64>() {
+                    return i1 == i2 + c;
+                }
+            } else if let Some(rest) = op.strip_prefix("=-") {
+                if let Ok(c) = rest.parse::<i64>() {
+                    return i1 == i2 - c;
+                }
+            }
+        }
         match op {
             "!=" => val1 != val2,
             "==" => val1 == val2,
@@ -92,7 +104,16 @@ impl CspStore {
                         "<=" => ">=".to_string(),
                         ">" => "<".to_string(),
                         ">=" => "<=".to_string(),
-                        _ => c.op.clone(),
+                        other => {
+                            // Reverse arithmetic offset: x = y + c  <=>  y = x - c.
+                            if let Some(rest) = other.strip_prefix("=+") {
+                                format!("=-{}", rest)
+                            } else if let Some(rest) = other.strip_prefix("=-") {
+                                format!("=+{}", rest)
+                            } else {
+                                c.op.clone()
+                            }
+                        }
                     }
                 }
             })
