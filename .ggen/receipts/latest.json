@@ -1,26 +1,26 @@
 {
-  "operation_id": "6775411b-c758-4304-b270-596bcad649a9",
-  "timestamp": "2026-06-13T04:33:35.531210Z",
+  "operation_id": "94fe2f7f-d19d-4bcc-9df1-47e0b546b384",
+  "timestamp": "2026-06-19T05:48:54.882872Z",
   "input_hashes": [
-    "actuator:ggen-sync@26.6.9",
+    "actuator:ggen-sync@26.6.11",
     "ggen.toml:22936d0e8401428469889ed429f7fd0cdf88eea8019853a291ad8b56db0d6f5b",
-    "../wasm4pm-compat/ggen/ontology/wasm4pm-compat.ttl:f30c1795be202832d7045158909523d4328d9b35d1a533ad9a134ad89699b835",
+    "../wasm4pm-compat/ggen/ontology/wasm4pm-compat.ttl:1d8ea34e9b7b2418d9415509104102f827c79dd184c6d71dad804e2dc8d216f3",
     "../wasm4pm-compat/ggen/ontology/papers.ttl:51a12c41e86b593916c97008abbfccff9cdd23a58c5000d6dca61a34d1ae50d0",
     "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl:01593c15eed0d733fc409d72453e4dfd1cb3f25ee4108ec3dd0cfbd45ed336c5",
     "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl:cb3a556d437c1f0989aa24697cd22d04785ae60fd0cd736746615a2bbe3477f2",
     "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl:ec257d944799c6834683874134ead188606f3820adf0028de311c4ac91928255",
-    "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl:c045b785f399735da07931b83cbad7099bda352d1640e4862d3074b7d8197225",
+    "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl:40931a7aca1187f0fd69100a17aa70c07300f63d4e3149762a8678994632cef6",
     "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl:7eef8efd8df67d039fa454043d90a44c95c5a2bf716e6b91e44fcbf289ccc3f3",
     "ggen/ontology/breeds.ttl:471b50111e5e3a09c4f2f2286bbe3bb5e816ce95dcc6c150812cf9d8dc18a123",
     "ocel/reports/evidence.ttl:492395fa75cccf8ec2551dbdbb340a49e2bd76b01f663e2d2947cd2f7e9cfdc2"
   ],
   "output_hashes": [
-    "./crates/wasm4pm-cognition/src/breeds/registration.rs:e650978c1952e5542580700898db7f90e1d29c3da5f45a36683febffd417fa96",
+    "./crates/wasm4pm-cognition/src/breeds/registration.rs:49b9b347aea728b6641ce583558fc8e5aca23268c3ffe09c6a311bfcb70278b6",
     "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:34cdd6dc4af25e3b315f004730482a0ca6742940c80eff91c30ea933b3bc7d1a",
     "./crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs:56d545227531e0429ad85482efba0b41733c4b40c12adc947dd8d5a92bd34150",
-    "./crates/wasm4pm-cognition/breeds/registry.json:37fa635b878fb689f642a4af664f93c53ffb503add2b25453a8a6596860e5836",
-    "./packages/cognition/src/breed-ids.ts:0cae447da38256dd3bb1a784d6399481ad341f285e5124f71221640da221ab8a"
+    "./crates/wasm4pm-cognition/breeds/registry.json:06ab9ac573bc91d224667da5fdf5adfa91ebb4342e63539513a36da6372388d7",
+    "./packages/cognition/src/breed-ids.ts:96d8b4fa0e72abac84f49763fe042bad13aaad9d70be2c7f561d0f3b7110448f"
   ],
-  "signature": "28831dbe44591315d3c35845a24f8abc2af16bdf2f50a5c1729e15a6ddf2ab458bbd3d8c4ef6b0a8b3072996a5830f8eb4ef9dbfc75827f0baff88be1cb31001",
-  "previous_receipt_hash": "4f15cb92244c4071dc1d325ce53c2926a8d58228b2e508567eb9921ca29ceef4"
+  "signature": "254ff6ec3441a00bb91d281e02901c4d2d04b52b9e12f48cba2e704f567c7ea295c4d278274b1a13655800f0db75fe8226595c0ce0aaea49ac2b7be40b6e520f",
+  "previous_receipt_hash": "1d63383bb33d3ea190474897b67db41229c2e07d72b6a6551d691f6d5babbece"
 }
