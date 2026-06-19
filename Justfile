@@ -37,6 +37,18 @@ ci: polish test-full anticheat scan
 project-evidence:
     python3 scripts/project_evidence.py
 
+# Western Electric SPC rules applied to breed fitness time-series.
+# Reads ocel/reports/*.json (current) and ocel/reports/history/**/*.json (historical).
+# Exits 1 if any WE violation is detected; 0 if all breeds are within control limits.
+# Add historical snapshots under ocel/reports/history/<breed>/<date>.json to enable
+# multi-point rules (9-in-a-row, 6-point trend, etc.).
+breed-health:
+    python3 scripts/breed_health.py
+
+# Same as breed-health but outputs JSON (suitable for CI artifact upload).
+breed-health-json:
+    python3 scripts/breed_health.py --json
+
 # Conformance gate: lsp-check, sync, and fail on any drift in generated surfaces.
 ggen-gate:
     ggen sync
