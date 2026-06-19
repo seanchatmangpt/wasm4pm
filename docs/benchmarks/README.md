@@ -101,4 +101,32 @@ This is the longitudinal governance layer: PR-to-PR regressions are caught by
 §1, but slow multi-month drift is only visible across the whole ledger. A chain
 break (exit 1) means the performance history was altered.
 
-Exit codes: `0` ok · `1` no estimates / tamper / untrusted / chain break · `2` bad arguments.
+## 6. Correctness × performance — `bench-tools attest`
+
+The synthesis gate, and the one that matters most for a *reasoning* engine: a
+benchmark number is meaningless if the breed is wrong. A fast wrong answer is
+worse than a slow correct one — yet a latency benchmark alone would silently
+bless it.
+
+`attest` runs the paper-grounded gate (per breed: does it reproduce its source
+paper's published value?) and the falsification gate (does the suite confirm AND
+reject mutants?), joins each breed's correctness with its measured latency, and
+assigns a verdict:
+
+| Verdict | Meaning |
+|---|---|
+| ✅ TRUSTED | paper-grounded **and** benchmarked — the latency is meaningful |
+| ☐ CORRECT (unbenched) | proven correct, no latency sample yet |
+| ⚠️ FAST-BUT-WRONG | benchmarked but **not** paper-grounded — the dangerous case |
+| ❌ BROKEN | neither correct nor benchmarked |
+
+```bash
+just bench-attest                                    # → docs/benchmarks/ATTESTATION.md
+```
+
+**Fails (exit 1)** on any fast-but-wrong or broken breed, or a failed
+falsification suite — the benchmark suite refuses to vouch for code that is not
+provably correct. This is what ties the performance layer to the paper-grounded
+and falsification gates: *trusted performance, not just fast numbers.*
+
+Exit codes: `0` ok · `1` no estimates / tamper / untrusted / chain break / attestation failure · `2` bad arguments.

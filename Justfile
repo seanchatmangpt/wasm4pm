@@ -38,6 +38,11 @@ bench-verify:
 bench-ledger:
     cargo run -q -p bench-tools -- ledger
 
+# Correctness × performance: run the paper-grounded + falsification gates, join
+# each breed's correctness with its latency, and FAIL on any fast-but-wrong breed.
+bench-attest:
+    cargo run -q -p bench-tools -- attest
+
 # Unified report: walk target/criterion/**/new/estimates.json and emit
 # docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
 bench-report:

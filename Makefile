@@ -13,7 +13,7 @@ export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
-        bench-regress bench-receipt bench-verify bench-ledger bench-report \
+        bench-regress bench-receipt bench-verify bench-ledger bench-attest bench-report \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test test-proof verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
@@ -239,6 +239,10 @@ bench-verify:
 # ── Receipt-chain ledger: chain integrity + per-bench median trend over time ─
 bench-ledger:
 	@cargo run -q -p bench-tools -- ledger
+
+# ── Attestation: correctness × performance — fails on any fast-but-wrong breed ─
+bench-attest:
+	@cargo run -q -p bench-tools -- attest
 
 # ── Unified Criterion report → docs/benchmarks/REPORT.md + report.csv ────────
 bench-report:

@@ -635,6 +635,153 @@ fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
     0
 }
 
+// --------------------------------------------------------------------------- attest
+/// Correctness × performance attestation — the synthesis gate.
+///
+/// For a *reasoning* engine, a benchmark number is meaningless if the breed is
+/// wrong: a fast wrong answer is worse than a slow correct one. This runs the
+/// paper-grounded gate (per-breed: does the breed reproduce its paper's published
+/// value?) and the falsification gate (does the suite confirm AND reject mutants?),
+/// joins each breed's correctness with its measured latency, and assigns a verdict
+/// that flags the dangerous FAST-BUT-WRONG case a latency benchmark alone hides.
+fn cmd_attest(criterion_dir: &Path, out_dir: &Path) -> i32 {
+    // 1. Per-breed correctness from the paper-grounded test names.
+    println!("running paper-grounded gate (cargo test --test paper_grounded)…");
+    let grounded_out = run_capture(
+        "cargo",
+        &["test", "-p", "wasm4pm-cognition", "--test", "paper_grounded"],
+    );
+    let Some(grounded_out) = grounded_out else {
+        eprintln!("could not run the paper_grounded test (cargo unavailable or compile error)");
+        return 1;
+    };
+    let mut grounded: BTreeMap<String, bool> = BTreeMap::new();
+    for line in grounded_out.lines() {
+        // "test <breed>_paper_grounded ... ok" | "... FAILED"
+        let l = line.trim_start();
+        if let Some(rest) = l.strip_prefix("test ") {
+            if let Some(name) = rest.split("_paper_grounded").next() {
+                if rest.contains("_paper_grounded") && (rest.contains(" ... ok") || rest.contains(" ... FAILED")) {
+                    grounded.insert(name.to_string(), rest.contains(" ... ok"));
+                }
+            }
+        }
+    }
+
+    // 2. Falsification gate — a single aggregate suite over all fixtures.
+    println!("running falsification gate (cargo test --test paper_falsification)…");
+    let fals_out = run_capture(
+        "cargo",
+        &["test", "-p", "wasm4pm-cognition", "--test", "paper_falsification"],
+    );
+    let falsification_pass = fals_out
+        .as_deref()
+        .map(|o| o.contains("test result: ok"))
+        .unwrap_or(false);
+
+    // 3. Benchmark latency per breed (strip the "breed_latency/" group prefix).
+    let medians: BTreeMap<String, f64> = collect(criterion_dir)
+        .into_iter()
+        .filter_map(|e| {
+            e.bench
+                .rsplit('/')
+                .next()
+                .map(|b| (b.to_string(), e.median_ns))
+        })
+        .collect();
+
+    if grounded.is_empty() {
+        eprintln!("no paper_grounded results parsed — aborting attestation");
+        return 1;
+    }
+
+    // 4. Join → verdict per breed.
+    let mut trusted = 0;
+    let mut fast_but_wrong = 0;
+    let mut correct_unbenched = 0;
+    let mut broken = 0;
+    let mut md = String::from("# Benchmark Attestation — correctness × performance\n\n");
+    md.push_str(&format!(
+        "Falsification suite (confirm + reject mutants): **{}**\n\n",
+        if falsification_pass { "PASS" } else { "FAIL" }
+    ));
+    md.push_str("| Breed | Paper-grounded | Latency | Verdict |\n|---|:--:|---:|---|\n");
+    for (breed, &ok) in &grounded {
+        let lat = medians.get(breed).copied();
+        let (verdict, lat_str) = match (ok, lat) {
+            (true, Some(ns)) => {
+                trusted += 1;
+                ("✅ TRUSTED", fmt_time(ns))
+            }
+            (true, None) => {
+                correct_unbenched += 1;
+                ("☐ CORRECT (unbenched)", "—".to_string())
+            }
+            (false, Some(ns)) => {
+                fast_but_wrong += 1;
+                ("⚠️ FAST-BUT-WRONG", fmt_time(ns))
+            }
+            (false, None) => {
+                broken += 1;
+                ("❌ BROKEN", "—".to_string())
+            }
+        };
+        md.push_str(&format!(
+            "| `{breed}` | {} | {lat_str} | {verdict} |\n",
+            if ok { "✓" } else { "✗" }
+        ));
+    }
+    md.push_str(&format!(
+        "\n**{} trusted · {} fast-but-wrong · {} correct-unbenched · {} broken** \
+         (of {} breeds).\n\nA *trusted* latency is one whose breed provably reproduces \
+         its source paper. A *fast-but-wrong* breed is the one a latency benchmark \
+         alone would silently bless.\n",
+        trusted, fast_but_wrong, correct_unbenched, broken, grounded.len()
+    ));
+
+    if let Err(e) = fs::create_dir_all(out_dir) {
+        eprintln!("cannot create {}: {e}", out_dir.display());
+        return 1;
+    }
+    let att = out_dir.join("ATTESTATION.md");
+    if let Err(e) = fs::write(&att, &md) {
+        eprintln!("cannot write {}: {e}", att.display());
+        return 1;
+    }
+
+    println!(
+        "attestation: {trusted} trusted · {fast_but_wrong} fast-but-wrong · \
+         {correct_unbenched} correct-unbenched · {broken} broken → {}",
+        att.display()
+    );
+    println!(
+        "falsification suite: {}",
+        if falsification_pass { "PASS" } else { "FAIL" }
+    );
+
+    // A fast-but-wrong breed, a broken breed, or a failed falsification suite is
+    // an attestation failure: the benchmark vouches for code that is not correct.
+    if fast_but_wrong > 0 || broken > 0 || !falsification_pass {
+        eprintln!(
+            "ATTESTATION FAILED: {fast_but_wrong} fast-but-wrong, {broken} broken, \
+             falsification {}",
+            if falsification_pass { "ok" } else { "FAILED" }
+        );
+        return 1;
+    }
+    0
+}
+
+/// Run a command and return combined stdout+stderr (cargo prints test lines to
+/// stdout, compile errors to stderr). Returns None only if the process could not
+/// be spawned — a non-zero exit (e.g. a failing test) still yields its output.
+fn run_capture(cmd: &str, args: &[&str]) -> Option<String> {
+    let out = Command::new(cmd).args(args).output().ok()?;
+    let mut s = String::from_utf8_lossy(&out.stdout).into_owned();
+    s.push_str(&String::from_utf8_lossy(&out.stderr));
+    Some(s)
+}
+
 // --------------------------------------------------------------------------- arg parsing
 fn flag_value(args: &[String], name: &str) -> Option<String> {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
@@ -646,13 +793,14 @@ fn has_flag(args: &[String], name: &str) -> bool {
 
 fn usage() -> i32 {
     eprintln!(
-        "usage: bench-tools <report|regress|receipt|verify|ledger> [flags]\n\
+        "usage: bench-tools <report|regress|receipt|verify|ledger|attest> [flags]\n\
          \n\
          report   --criterion-dir DIR  --out-dir DIR\n\
          regress  --criterion-dir DIR  --baseline FILE  --threshold PCT(=10)\n\
          receipt  --criterion-dir DIR  --out FILE  --no-baseline  --print\n\
          verify   --receipt FILE       --allow-dirty\n\
-         ledger   --bench SUBSTR        (chain integrity + per-bench trend)"
+         ledger   --bench SUBSTR        (chain integrity + per-bench trend)\n\
+         attest   --criterion-dir DIR  --out-dir DIR  (correctness × performance)"
     );
     2
 }
@@ -695,6 +843,12 @@ fn main() {
             cmd_verify(&receipt, has_flag(rest, "--allow-dirty"))
         }
         "ledger" => cmd_ledger(flag_value(rest, "--bench").as_deref()),
+        "attest" => {
+            let out_dir = flag_value(rest, "--out-dir")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| repo_root().join("docs").join("benchmarks"));
+            cmd_attest(&criterion_dir, &out_dir)
+        }
         "-h" | "--help" | "help" => usage(),
         other => {
             eprintln!("unknown subcommand: {other}");
