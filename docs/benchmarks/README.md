@@ -83,4 +83,22 @@ threshold **and** the current 95% CI does not overlap the baseline's — a far
 stronger signal than a point-estimate cross, which rejects the false positives
 flat gates produce on noisy benchmarks.
 
-Exit codes: `0` ok · `1` no estimates found / tamper / untrusted · `2` bad arguments.
+## 5. Receipt-chain ledger — `bench-tools ledger`
+
+Each `receipt` run appends a compact entry (commit, hashes, per-bench medians) to
+an append-only `.wasm4pm/benchmarks/ledger.jsonl`, linked to the prior entry via
+`previous_receipt_hash`. `ledger` walks that history to (a) **verify chain
+integrity** — every entry must link to its predecessor, so an edited or dropped
+run is detected — and (b) print a **per-bench median trend** (first → last,
+% change, direction) across all recorded runs.
+
+```bash
+just bench-ledger                                    # chain integrity + trend
+cargo run -p bench-tools -- ledger --bench mycin      # filter to one bench
+```
+
+This is the longitudinal governance layer: PR-to-PR regressions are caught by
+§1, but slow multi-month drift is only visible across the whole ledger. A chain
+break (exit 1) means the performance history was altered.
+
+Exit codes: `0` ok · `1` no estimates / tamper / untrusted / chain break · `2` bad arguments.

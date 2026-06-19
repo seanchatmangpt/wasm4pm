@@ -33,6 +33,11 @@ bench-receipt:
 bench-verify:
     cargo run -q -p bench-tools -- verify --allow-dirty
 
+# Longitudinal view: verify the append-only receipt-chain ledger and print a
+# per-bench median trend over all recorded runs. --bench SUBSTR to filter.
+bench-ledger:
+    cargo run -q -p bench-tools -- ledger
+
 # Unified report: walk target/criterion/**/new/estimates.json and emit
 # docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
 bench-report:

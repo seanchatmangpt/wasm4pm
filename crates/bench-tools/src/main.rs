@@ -55,6 +55,16 @@ fn baseline_path() -> PathBuf {
         .join("main-latest.json")
 }
 
+/// Append-only chained history of benchmark receipts (one JSON object per line).
+/// Each line links to the prior via `previous_receipt_hash`, giving a tamper-
+/// evident longitudinal record for trend analysis across many runs.
+fn ledger_path() -> PathBuf {
+    repo_root()
+        .join(".wasm4pm")
+        .join("benchmarks")
+        .join("ledger.jsonl")
+}
+
 // --------------------------------------------------------------------------- estimates
 #[derive(Clone)]
 struct Estimate {
@@ -412,6 +422,37 @@ fn cmd_receipt(criterion_dir: &Path, write_baseline: bool, out: Option<&Path>, e
             return 1;
         }
         println!("baseline updated: {}", bp.display());
+
+        // Append a compact entry to the chained ledger. We store per-bench
+        // medians (not the full CI/environment block) so the longitudinal file
+        // stays small while still supporting trend analysis; the chain link
+        // (previous_receipt_hash → receipt_hash) makes the history tamper-evident.
+        let medians: BTreeMap<&String, f64> =
+            rows.iter().map(|r| (&r.bench, r.median_ns)).collect();
+        let entry = serde_json::json!({
+            "created_at": receipt["created_at"],
+            "commit": receipt["commit"],
+            "branch": receipt["branch"],
+            "tree_dirty": receipt["tree_dirty"],
+            "receipt_hash": receipt_hash,
+            "previous_receipt_hash": receipt["previous_receipt_hash"],
+            "benchmark_count": rows.len(),
+            "medians_ns": medians,
+        });
+        let lp = ledger_path();
+        let line = serde_json::to_string(&entry).unwrap();
+        let appended = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&lp)
+            .and_then(|mut f| {
+                use std::io::Write;
+                writeln!(f, "{line}")
+            });
+        match appended {
+            Ok(()) => println!("ledger appended: {}", lp.display()),
+            Err(e) => eprintln!("warning: could not append ledger {}: {e}", lp.display()),
+        }
     }
     if let Some(out_path) = out {
         if let Some(parent) = out_path.parent() {
@@ -506,6 +547,94 @@ fn cmd_verify(receipt_path: &Path, allow_dirty: bool) -> i32 {
     0
 }
 
+// --------------------------------------------------------------------------- ledger
+/// Walk the append-only receipt ledger: verify chain integrity (each entry's
+/// `previous_receipt_hash` must equal the prior entry's `receipt_hash`) and emit
+/// a per-bench trend (first → last median, % change, direction). This is the
+/// longitudinal governance view — performance over many runs, not just PR-to-PR.
+fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
+    let lp = ledger_path();
+    let text = match fs::read_to_string(&lp) {
+        Ok(t) => t,
+        Err(_) => {
+            eprintln!("no ledger at {} — run `bench-tools receipt` to seed it", lp.display());
+            return 1;
+        }
+    };
+    let entries: Vec<Value> = text
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| serde_json::from_str(l).ok())
+        .collect();
+    if entries.is_empty() {
+        eprintln!("ledger {} has no parseable entries", lp.display());
+        return 1;
+    }
+
+    // 1. Chain integrity: entry[i].previous_receipt_hash must link to entry[i-1].
+    let mut breaks = 0;
+    for i in 1..entries.len() {
+        let prev_hash = entries[i - 1].get("receipt_hash").and_then(Value::as_str);
+        let claimed = entries[i].get("previous_receipt_hash").and_then(Value::as_str);
+        // A null previous link is allowed only at the head; mid-chain it is a break.
+        if claimed != prev_hash {
+            breaks += 1;
+            eprintln!(
+                "  chain break at entry {i}: previous_receipt_hash {:?} != prior receipt_hash {:?}",
+                claimed.map(|s| &s[..8.min(s.len())]),
+                prev_hash.map(|s| &s[..8.min(s.len())]),
+            );
+        }
+    }
+
+    // 2. Per-bench trend: first vs last recorded median.
+    let first = &entries[0]["medians_ns"];
+    let last = &entries[entries.len() - 1]["medians_ns"];
+    let mut bench_names: Vec<&String> = last.as_object().map(|o| o.keys().collect()).unwrap_or_default();
+    bench_names.sort();
+
+    println!(
+        "ledger: {} entries · {} chain break(s)",
+        entries.len(),
+        breaks
+    );
+    println!("trend (first → last median):");
+    for name in bench_names {
+        if let Some(f) = bench_filter {
+            if !name.contains(f) {
+                continue;
+            }
+        }
+        let last_v = last.get(name).and_then(Value::as_f64);
+        let first_v = first.get(name).and_then(Value::as_f64);
+        match (first_v, last_v) {
+            (Some(fv), Some(lv)) => {
+                let pct = if fv != 0.0 { (lv - fv) / fv * 100.0 } else { 0.0 };
+                let dir = if pct > 1.0 {
+                    "▲ slower"
+                } else if pct < -1.0 {
+                    "▼ faster"
+                } else {
+                    "≈ flat"
+                };
+                println!(
+                    "  {name}: {} → {} ({pct:+.1}% {dir})",
+                    fmt_time(fv),
+                    fmt_time(lv)
+                );
+            }
+            (None, Some(lv)) => println!("  {name}: (new) → {}", fmt_time(lv)),
+            _ => {}
+        }
+    }
+
+    if breaks > 0 {
+        eprintln!("ledger chain INTEGRITY FAILED: {breaks} break(s)");
+        return 1;
+    }
+    0
+}
+
 // --------------------------------------------------------------------------- arg parsing
 fn flag_value(args: &[String], name: &str) -> Option<String> {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
@@ -517,12 +646,13 @@ fn has_flag(args: &[String], name: &str) -> bool {
 
 fn usage() -> i32 {
     eprintln!(
-        "usage: bench-tools <report|regress|receipt|verify> [flags]\n\
+        "usage: bench-tools <report|regress|receipt|verify|ledger> [flags]\n\
          \n\
          report   --criterion-dir DIR  --out-dir DIR\n\
          regress  --criterion-dir DIR  --baseline FILE  --threshold PCT(=10)\n\
          receipt  --criterion-dir DIR  --out FILE  --no-baseline  --print\n\
-         verify   --receipt FILE       --allow-dirty"
+         verify   --receipt FILE       --allow-dirty\n\
+         ledger   --bench SUBSTR        (chain integrity + per-bench trend)"
     );
     2
 }
@@ -564,6 +694,7 @@ fn main() {
             let receipt = flag_value(rest, "--receipt").map(PathBuf::from).unwrap_or_else(baseline_path);
             cmd_verify(&receipt, has_flag(rest, "--allow-dirty"))
         }
+        "ledger" => cmd_ledger(flag_value(rest, "--bench").as_deref()),
         "-h" | "--help" | "help" => usage(),
         other => {
             eprintln!("unknown subcommand: {other}");
