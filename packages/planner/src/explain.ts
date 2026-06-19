@@ -33,8 +33,10 @@ interface AlgorithmHints {
   outputType: string;
 }
 
+export type { AlgorithmHints };
+
 /** Subset of kernel registry metadata needed by explain() */
-const ALGORITHM_HINTS: Record<string, AlgorithmHints> = {
+export const ALGORITHM_HINTS: Record<string, AlgorithmHints> = {
   // outputType sourced from packages/kernel/src/registry.ts (authoritative after Phase 4 audit)
   dfg:                  { speedTier: 5,  qualityTier: 30,  complexity: 'O(n)',         scalesWell: true,  robustToNoise: true,  outputType: 'dfg'      },
   process_skeleton:     { speedTier: 3,  qualityTier: 25,  complexity: 'O(n)',         scalesWell: true,  robustToNoise: true,  outputType: 'dfg'      },
