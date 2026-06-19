@@ -1,20 +1,30 @@
 //! bench-tools — `cargo`-native benchmark governance for wasm4pm.
 //!
-//! One binary, three subcommands, replacing the former `scripts/bench_*.py`:
+//! One binary, the full Fortune-grade measurement pipeline (replacing the former
+//! `scripts/bench_*.py`):
 //!
-//!   bench-tools report   — walk Criterion output → docs/benchmarks/REPORT.md + report.csv
-//!   bench-tools regress  — compare current Criterion medians against a saved baseline,
-//!                          exit 1 on any regression beyond a threshold
-//!   bench-tools receipt  — emit a BLAKE3 performance receipt (environment + results +
-//!                          lineage), and update the CI baseline at
-//!                          .wasm4pm/benchmarks/baselines/main-latest.json
+//!   report   — walk Criterion output → docs/benchmarks/REPORT.md + report.csv
+//!   regress  — gate current medians vs the committed baseline; a regression must
+//!              clear the threshold AND be statistically distinguishable (95% CI
+//!              non-overlap), so noisy benches don't trip false positives
+//!   receipt  — emit a BLAKE3 performance receipt (environment + results + lineage),
+//!              refresh the CI baseline, and append to the chained ledger
+//!   verify   — recompute a receipt's BLAKE3 to detect tampering; refuse a
+//!              dirty-tree baseline
+//!   ledger   — verify the append-only receipt chain's integrity and print a
+//!              per-bench median trend over all recorded runs
+//!   attest   — correctness × performance: run the paper-grounded + falsification
+//!              gates, join each breed's correctness with its latency, and FAIL on
+//!              any FAST-BUT-WRONG breed (a benchmark must not bless wrong code)
 //!
-//! Why Rust, not Python: the bench toolchain stays inside `cargo` (no interpreter
+//! Why Rust, not Python: the toolchain stays inside `cargo` (no interpreter
 //! dependency for CI), and the receipt uses *real* BLAKE3 — the same algorithm the
 //! execution receipts use — so a benchmark receipt chains exactly like any other
-//! Wasm4pm receipt instead of falling back to a different hash.
+//! Wasm4pm receipt. The decision logic (regression, chain integrity, hashing) is
+//! unit-tested: a gate that can't fail proves nothing.
 //!
-//! Exit codes: 0 ok · 1 nothing to measure / regression detected · 2 bad arguments.
+//! Exit codes: 0 ok · 1 nothing to measure / regression / tamper / attestation
+//! failure · 2 bad arguments.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -159,6 +169,54 @@ fn canonicalize(v: &Value) -> String {
 
 fn blake3_hex(s: &str) -> String {
     blake3::hash(s.as_bytes()).to_hex().to_string()
+}
+
+// --------------------------------------------------------------------------- decision logic (pure, tested)
+/// Decide whether a current measurement is a regression against a baseline.
+///
+/// A regression requires BOTH:
+///   (a) the median exceeds the baseline median by more than `threshold_pct`, AND
+///   (b) the change is statistically distinguishable — the current 95% CI lower
+///       bound clears the baseline 95% CI upper bound (intervals disjoint).
+/// When CI data is missing on either side, fall back to a one-std-dev jitter
+/// guard. Pure and total so the gate logic can be unit-tested directly.
+fn is_regression(
+    cur_median: f64,
+    cur_ci_lower: Option<f64>,
+    cur_std_dev: Option<f64>,
+    base_median: f64,
+    base_ci_upper: Option<f64>,
+    threshold_pct: f64,
+) -> bool {
+    if base_median <= 0.0 {
+        return false;
+    }
+    let delta_pct = (cur_median - base_median) / base_median * 100.0;
+    if delta_pct <= threshold_pct {
+        return false;
+    }
+    match (cur_ci_lower, base_ci_upper) {
+        (Some(lo), Some(hi)) => lo > hi,
+        _ => {
+            let noise_pct = cur_std_dev.map(|s| s / base_median * 100.0).unwrap_or(0.0);
+            delta_pct > noise_pct
+        }
+    }
+}
+
+/// Count breaks in a receipt-chain ledger: each entry's `previous_receipt_hash`
+/// must equal the prior entry's `receipt_hash`. Pure over parsed entries so the
+/// chain-integrity logic can be unit-tested without touching the filesystem.
+fn chain_breaks(entries: &[Value]) -> usize {
+    let mut breaks = 0;
+    for i in 1..entries.len() {
+        let prev_hash = entries[i - 1].get("receipt_hash").and_then(Value::as_str);
+        let claimed = entries[i].get("previous_receipt_hash").and_then(Value::as_str);
+        if claimed != prev_hash {
+            breaks += 1;
+        }
+    }
+    breaks
 }
 
 // --------------------------------------------------------------------------- environment
@@ -323,30 +381,17 @@ fn cmd_regress(criterion_dir: &Path, baseline: &Path, threshold_pct: f64) -> i32
     let mut regressions = Vec::new();
     let mut compared = 0;
     for r in &current {
-        if let Some(&(base_median, base_ci_lo, base_ci_hi)) = base.get(&r.bench) {
+        if let Some(&(base_median, _base_ci_lo, base_ci_hi)) = base.get(&r.bench) {
             compared += 1;
-            let delta_pct = (r.median_ns - base_median) / base_median * 100.0;
-            if delta_pct <= threshold_pct {
-                continue;
-            }
-            // Fortune-grade statistical gate: a regression must be both
-            //   (a) larger than the threshold on the median, AND
-            //   (b) statistically distinguishable — the current 95% CI lower
-            //       bound must clear the baseline 95% CI upper bound, so the two
-            //       distributions do not overlap. CI non-overlap is a far stronger
-            //       signal than a point-estimate threshold cross and rejects the
-            //       false positives that flat median gates produce on noisy benches.
-            // When CI data is absent on either side, fall back to a one-std-dev
-            // jitter guard so the gate still functions, just less precisely.
-            let distinguishable = match (r.ci_lower_ns, base_ci_hi) {
-                (Some(cur_lo), Some(b_hi)) => cur_lo > b_hi,
-                _ => {
-                    let noise_pct = r.std_dev_ns.map(|s| s / base_median * 100.0).unwrap_or(0.0);
-                    delta_pct > noise_pct
-                }
-            };
-            if distinguishable {
-                let _ = (base_ci_lo,); // retained for symmetry / future two-sided tests
+            if is_regression(
+                r.median_ns,
+                r.ci_lower_ns,
+                r.std_dev_ns,
+                base_median,
+                base_ci_hi,
+                threshold_pct,
+            ) {
+                let delta_pct = (r.median_ns - base_median) / base_median * 100.0;
                 regressions.push((r.bench.clone(), base_median, r.median_ns, delta_pct));
             }
         }
@@ -572,13 +617,11 @@ fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
     }
 
     // 1. Chain integrity: entry[i].previous_receipt_hash must link to entry[i-1].
-    let mut breaks = 0;
+    let breaks = chain_breaks(&entries);
     for i in 1..entries.len() {
         let prev_hash = entries[i - 1].get("receipt_hash").and_then(Value::as_str);
         let claimed = entries[i].get("previous_receipt_hash").and_then(Value::as_str);
-        // A null previous link is allowed only at the head; mid-chain it is a break.
         if claimed != prev_hash {
-            breaks += 1;
             eprintln!(
                 "  chain break at entry {i}: previous_receipt_hash {:?} != prior receipt_hash {:?}",
                 claimed.map(|s| &s[..8.min(s.len())]),
@@ -856,4 +899,109 @@ fn main() {
         }
     };
     std::process::exit(code);
+}
+
+// --------------------------------------------------------------------------- tests
+// The benchmark governance tool gates the whole repo's performance — so its own
+// decision logic is unit-tested. A gate that can't fail proves nothing.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    // ---- canonicalization & hashing -------------------------------------
+    #[test]
+    fn canonicalize_sorts_object_keys() {
+        let a = json!({"b": 1, "a": 2, "c": {"z": 1, "y": 2}});
+        let b = json!({"c": {"y": 2, "z": 1}, "a": 2, "b": 1});
+        // Different key order, same canonical form → same hash.
+        assert_eq!(canonicalize(&a), canonicalize(&b));
+        assert_eq!(blake3_hex(&canonicalize(&a)), blake3_hex(&canonicalize(&b)));
+    }
+
+    #[test]
+    fn canonicalize_is_deterministic_and_order_sensitive_in_arrays() {
+        let v = json!({"benchmarks": [{"bench": "x", "median_ns": 10.0}]});
+        assert_eq!(canonicalize(&v), canonicalize(&v.clone()));
+        // Array order is significant (it carries meaning); reordering changes the hash.
+        let reordered = json!([2, 1]);
+        let original = json!([1, 2]);
+        assert_ne!(canonicalize(&reordered), canonicalize(&original));
+    }
+
+    #[test]
+    fn receipt_hash_detects_tamper() {
+        let body = json!({"benchmark_count": 2, "commit": "abc",
+            "benchmarks": [{"bench": "a", "median_ns": 10.0}]});
+        let h1 = blake3_hex(&canonicalize(&body));
+        let mut tampered = body.clone();
+        tampered["benchmarks"][0]["median_ns"] = json!(999.0);
+        let h2 = blake3_hex(&canonicalize(&tampered));
+        assert_ne!(h1, h2, "altering a median must change the receipt hash");
+    }
+
+    // ---- regression gate -------------------------------------------------
+    #[test]
+    fn regression_requires_threshold_crossing() {
+        // +5% median, threshold 10% → not a regression even with disjoint CIs.
+        assert!(!is_regression(105.0, Some(104.0), None, 100.0, Some(101.0), 10.0));
+    }
+
+    #[test]
+    fn regression_requires_ci_non_overlap() {
+        // +20% median (clears 10% threshold) but CIs overlap → NOT flagged.
+        // cur_ci_lower 90 is below base_ci_upper 130 → overlap.
+        assert!(!is_regression(120.0, Some(90.0), None, 100.0, Some(130.0), 10.0));
+        // Same median shift but disjoint CIs (cur_lo 115 > base_hi 105) → flagged.
+        assert!(is_regression(120.0, Some(115.0), None, 100.0, Some(105.0), 10.0));
+    }
+
+    #[test]
+    fn regression_falls_back_to_std_dev_without_ci() {
+        // No CI data: +20% median, std_dev 2ns (2% noise) → distinguishable → flagged.
+        assert!(is_regression(120.0, None, Some(2.0), 100.0, None, 10.0));
+        // +20% median but std_dev 30ns (30% noise) > delta → within jitter → not flagged.
+        assert!(!is_regression(120.0, None, Some(30.0), 100.0, None, 10.0));
+    }
+
+    #[test]
+    fn regression_handles_degenerate_baseline() {
+        assert!(!is_regression(100.0, Some(99.0), None, 0.0, Some(0.0), 10.0));
+    }
+
+    // ---- ledger chain integrity -----------------------------------------
+    #[test]
+    fn chain_breaks_zero_for_valid_chain() {
+        let entries = vec![
+            json!({"receipt_hash": "h1", "previous_receipt_hash": null}),
+            json!({"receipt_hash": "h2", "previous_receipt_hash": "h1"}),
+            json!({"receipt_hash": "h3", "previous_receipt_hash": "h2"}),
+        ];
+        assert_eq!(chain_breaks(&entries), 0);
+    }
+
+    #[test]
+    fn chain_breaks_detects_altered_link() {
+        let entries = vec![
+            json!({"receipt_hash": "h1", "previous_receipt_hash": null}),
+            json!({"receipt_hash": "h2", "previous_receipt_hash": "WRONG"}),
+            json!({"receipt_hash": "h3", "previous_receipt_hash": "h2"}),
+        ];
+        assert_eq!(chain_breaks(&entries), 1);
+    }
+
+    #[test]
+    fn chain_breaks_empty_and_single() {
+        assert_eq!(chain_breaks(&[]), 0);
+        assert_eq!(chain_breaks(&[json!({"receipt_hash": "h1"})]), 0);
+    }
+
+    // ---- time formatting -------------------------------------------------
+    #[test]
+    fn fmt_time_scales_units() {
+        assert!(fmt_time(1_500_000_000.0).ends_with(" s"));
+        assert!(fmt_time(1_500_000.0).ends_with(" ms"));
+        assert!(fmt_time(1_500.0).ends_with(" µs"));
+        assert!(fmt_time(500.0).ends_with(" ns"));
+    }
 }
