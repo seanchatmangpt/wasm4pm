@@ -1,0 +1,9 @@
+{
+  "_doc": "Performance budgets as code — machine-independent latency SLOs. A budget is the maximum allowed ratio of a benchmark's median to the calibration anchor's median (calibration/anchor). Because both are measured on the same host, the ratio cancels machine speed: a budget of 5.0 means 'no slower than 5x this machine's calibration workload', and holds on any runner. `bench-tools budget` fails (exit 1) on any breach. Tighten these as real measurements accumulate; the generous defaults below enforce the mechanism without blocking adoption.",
+  "default_ratio": 1000.0,
+  "overrides": {
+    "calibration/anchor": 1.5,
+    "breed_latency/mycin": 50.0,
+    "breed_latency/bayesian_network": 50.0
+  }
+}

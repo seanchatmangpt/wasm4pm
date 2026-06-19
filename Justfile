@@ -43,6 +43,11 @@ bench-ledger:
 bench-attest:
     cargo run -q -p bench-tools -- attest
 
+# Performance budgets as code: FAIL if any bench exceeds its machine-independent
+# SLO (median/calibration ratio) declared in docs/benchmarks/budgets.json.
+bench-budget:
+    cargo run -q -p bench-tools -- budget
+
 # Unified report: walk target/criterion/**/new/estimates.json and emit
 # docs/benchmarks/REPORT.md + docs/benchmarks/report.csv (deterministic order).
 bench-report:

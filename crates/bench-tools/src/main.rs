@@ -223,6 +223,18 @@ fn is_calibration_id(bench: &str) -> bool {
     bench.contains("calibration")
 }
 
+/// Resolve a benchmark's budget (max allowed median/calibration ratio). The most
+/// specific matching override wins (longest matching key), else the default. Pure
+/// so the precedence rule can be unit-tested.
+fn budget_for(bench: &str, default_ratio: f64, overrides: &BTreeMap<String, f64>) -> f64 {
+    overrides
+        .iter()
+        .filter(|(k, _)| bench.contains(k.as_str()))
+        .max_by_key(|(k, _)| k.len())
+        .map(|(_, &v)| v)
+        .unwrap_or(default_ratio)
+}
+
 /// Count breaks in a receipt-chain ledger: each entry's `previous_receipt_hash`
 /// must equal the prior entry's `receipt_hash`. Pure over parsed entries so the
 /// chain-integrity logic can be unit-tested without touching the filesystem.
@@ -868,6 +880,81 @@ fn run_capture(cmd: &str, args: &[&str]) -> Option<String> {
     Some(s)
 }
 
+// --------------------------------------------------------------------------- budget
+/// Performance budgets as code: enforce machine-independent latency SLOs.
+///
+/// A budget is the maximum allowed ratio of a benchmark's median to the
+/// calibration anchor's median. Because both are measured on the same host the
+/// ratio cancels machine speed, so a budget holds on any runner. This is distinct
+/// from `regress` (don't get worse than last time) — a budget is an absolute
+/// ceiling the code must never cross, however the baseline drifts.
+fn cmd_budget(criterion_dir: &Path, budgets_file: &Path) -> i32 {
+    let rows = collect(criterion_dir);
+    if rows.is_empty() {
+        eprintln!("no estimates found under {}", criterion_dir.display());
+        return 1;
+    }
+    let cfg: Value = match fs::read_to_string(budgets_file)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+    {
+        Some(v) => v,
+        None => {
+            eprintln!("no readable budgets file at {}", budgets_file.display());
+            return 1;
+        }
+    };
+    let default_ratio = cfg.get("default_ratio").and_then(Value::as_f64).unwrap_or(f64::INFINITY);
+    let overrides: BTreeMap<String, f64> = cfg
+        .get("overrides")
+        .and_then(Value::as_object)
+        .map(|o| {
+            o.iter()
+                .filter_map(|(k, v)| v.as_f64().map(|f| (k.clone(), f)))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    // Budgets are ratios against the calibration anchor — without it they cannot
+    // be enforced machine-independently, so report and pass rather than block.
+    let calibration = rows.iter().find(|r| is_calibration_id(&r.bench)).map(|r| r.median_ns);
+    let Some(cal) = calibration.filter(|&c| c > 0.0) else {
+        println!(
+            "budget: no calibration anchor in {} — run the `calibration/anchor` bench to enforce ratio budgets (skipping)",
+            criterion_dir.display()
+        );
+        return 0;
+    };
+
+    let mut breaches = Vec::new();
+    let mut checked = 0;
+    for r in &rows {
+        if is_calibration_id(&r.bench) {
+            continue;
+        }
+        checked += 1;
+        let ratio = r.median_ns / cal;
+        let budget = budget_for(&r.bench, default_ratio, &overrides);
+        if ratio > budget {
+            breaches.push((r.bench.clone(), ratio, budget));
+        }
+    }
+
+    println!(
+        "budget: checked {checked} benches against ratio SLOs (calibration {} ns)",
+        cal as u64
+    );
+    if breaches.is_empty() {
+        println!("all benches within budget");
+        return 0;
+    }
+    eprintln!("BUDGET BREACHES ({}):", breaches.len());
+    for (bench, ratio, budget) in &breaches {
+        eprintln!("  {bench}: {ratio:.2}× calibration exceeds budget {budget:.2}×");
+    }
+    1
+}
+
 // --------------------------------------------------------------------------- arg parsing
 fn flag_value(args: &[String], name: &str) -> Option<String> {
     args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
@@ -879,14 +966,15 @@ fn has_flag(args: &[String], name: &str) -> bool {
 
 fn usage() -> i32 {
     eprintln!(
-        "usage: bench-tools <report|regress|receipt|verify|ledger|attest> [flags]\n\
+        "usage: bench-tools <report|regress|receipt|verify|ledger|attest|budget> [flags]\n\
          \n\
          report   --criterion-dir DIR  --out-dir DIR\n\
          regress  --criterion-dir DIR  --baseline FILE  --threshold PCT(=10)\n\
          receipt  --criterion-dir DIR  --out FILE  --no-baseline  --print\n\
          verify   --receipt FILE       --allow-dirty\n\
          ledger   --bench SUBSTR        (chain integrity + per-bench trend)\n\
-         attest   --criterion-dir DIR  --out-dir DIR  (correctness × performance)"
+         attest   --criterion-dir DIR  --out-dir DIR  (correctness × performance)\n\
+         budget   --criterion-dir DIR  --budgets FILE (machine-independent SLOs)"
     );
     2
 }
@@ -929,6 +1017,12 @@ fn main() {
             cmd_verify(&receipt, has_flag(rest, "--allow-dirty"))
         }
         "ledger" => cmd_ledger(flag_value(rest, "--bench").as_deref()),
+        "budget" => {
+            let budgets = flag_value(rest, "--budgets")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| repo_root().join("docs").join("benchmarks").join("budgets.json"));
+            cmd_budget(&criterion_dir, &budgets)
+        }
         "attest" => {
             let out_dir = flag_value(rest, "--out-dir")
                 .map(PathBuf::from)
@@ -1046,6 +1140,19 @@ mod tests {
     fn calibration_id_recognized() {
         assert!(is_calibration_id("calibration/anchor"));
         assert!(!is_calibration_id("breed_latency/mycin"));
+    }
+
+    #[test]
+    fn budget_lookup_prefers_most_specific_override() {
+        let mut ov = BTreeMap::new();
+        ov.insert("breed_latency".to_string(), 100.0);
+        ov.insert("breed_latency/mycin".to_string(), 50.0);
+        // Longest matching key wins.
+        assert_eq!(budget_for("breed_latency/mycin", 1000.0, &ov), 50.0);
+        // Shorter prefix match for a different breed.
+        assert_eq!(budget_for("breed_latency/soar", 1000.0, &ov), 100.0);
+        // No match → default.
+        assert_eq!(budget_for("other/thing", 1000.0, &ov), 1000.0);
     }
 
     // ---- ledger chain integrity -----------------------------------------

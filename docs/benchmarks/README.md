@@ -138,4 +138,26 @@ falsification suite — the benchmark suite refuses to vouch for code that is no
 provably correct. This is what ties the performance layer to the paper-grounded
 and falsification gates: *trusted performance, not just fast numbers.*
 
-Exit codes: `0` ok · `1` no estimates / tamper / untrusted / chain break / attestation failure · `2` bad arguments.
+## 7. Performance budgets — `bench-tools budget`
+
+SLOs as code, and machine-independent. A budget (in `docs/benchmarks/budgets.json`)
+is the maximum allowed ratio of a benchmark's median to the `calibration/anchor`
+median. Because both are measured on the same host, the ratio cancels machine
+speed — a budget of `5.0` means "no slower than 5× this machine's calibration
+workload" and holds on any runner. The most specific (longest) matching override
+wins, else `default_ratio`.
+
+```json
+{ "default_ratio": 1000.0, "overrides": { "breed_latency/mycin": 50.0 } }
+```
+
+```bash
+just bench-budget                                    # fails on any breach
+```
+
+This is distinct from regression (§1): regression says "don't get worse than last
+time"; a budget is an absolute ceiling the code must never cross, however the
+baseline drifts. Without a calibration anchor the check reports and passes (it
+cannot enforce a ratio). Tighten budgets as real measurements accumulate.
+
+Exit codes: `0` ok / within budget · `1` no estimates / tamper / untrusted / chain break / attestation failure / budget breach · `2` bad arguments.

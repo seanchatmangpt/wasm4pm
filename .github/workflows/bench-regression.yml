@@ -123,6 +123,14 @@ jobs:
         continue-on-error: true
         run: cargo run -q -p bench-tools -- attest
 
+      # Performance budgets: machine-independent latency SLOs (median/calibration
+      # ratio). Fails if any bench exceeds its declared ceiling, however the
+      # baseline drifts. continue-on-error during adoption.
+      - name: Budget gate (bench-tools)
+        id: budget_gate
+        continue-on-error: true
+        run: cargo run -q -p bench-tools -- budget
+
       # Run regression detection (legacy bash gate, retained during adoption)
       - name: Detect regressions
         id: regression

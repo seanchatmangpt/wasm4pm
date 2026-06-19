@@ -13,7 +13,7 @@ export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
-        bench-regress bench-receipt bench-verify bench-ledger bench-attest bench-report \
+        bench-regress bench-receipt bench-verify bench-ledger bench-attest bench-budget bench-report \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test test-proof verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
@@ -243,6 +243,10 @@ bench-ledger:
 # ── Attestation: correctness × performance — fails on any fast-but-wrong breed ─
 bench-attest:
 	@cargo run -q -p bench-tools -- attest
+
+# ── Performance budgets: machine-independent latency SLOs (ratio to calibration) ─
+bench-budget:
+	@cargo run -q -p bench-tools -- budget
 
 # ── Unified Criterion report → docs/benchmarks/REPORT.md + report.csv ────────
 bench-report:
