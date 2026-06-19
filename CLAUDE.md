@@ -52,7 +52,7 @@ Multiple AI fleets may edit this repo simultaneously. If `cargo check` errors ch
 - All breed collections must be BTreeMap/BTreeSet/sorted Vec — HashMap order breaks determinism + receipts.
 - Fitness >0.85 for valid models; MCPP route admission requires exactly 1.0.
 - ENV prefix `WASM4PM_*`. Exit codes: 0 ok · 1 config · 2 source · 3 exec · 4 partial · 5 system.
-- Audit records decay both ways — verify on disk before citing `docs/audit-history.md` or any memory note.
+- Audit records decay both ways — verify on disk before citing `docs/internal/audit-history.md` or any memory note.
 - **Andon:** stop on `error[E` · `test.*FAILED` · `FM-5 violation` · `panicked at` · `<new-diagnostics>`.
 - `rm` is blocked in this environment — use `trash`. Cargo output is prefixed with AutoDX banners; grep past them.
 

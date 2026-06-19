@@ -198,6 +198,15 @@ bench-ci:
 	 wait
 	@cd $(PKG_DIR) && node benchmarks/wasm_bench_runner.js --ci
 
+# ── Top-level build/clean (delegated from Justfile) ─────────────────────────
+build:
+	cd apps/wasm4pm && pnpm run build
+	wasm-pack build --target nodejs --out-dir pkg -- --features wasm
+	cargo build --release
+
+clean:
+	trash wasm4pm/pkg/ apps/wasm4pm/dist/ 2>/dev/null; cargo clean; pnpm install --frozen-lockfile
+
 # ── Quick smoke-test (compile check only — avoids cloud binary startup hang) ──
 bench-quick:
 	@cd $(PKG_DIR) && cargo build --bench analytics --features cloud
