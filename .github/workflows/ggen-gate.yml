@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/ggen
-          key: ggen-bin-${{ runner.os }}-git-555f857ac5dc
+          key: ggen-bin-${{ runner.os }}-git-6eaad753885f
 
       - name: Install ggen
         run: |
@@ -102,9 +102,14 @@ jobs:
           # crates.io currently has NO ggen release, so `cargo install ggen`
           # cannot resolve. The binary `ggen` lives in package `ggen-cli-lib`
           # (path crates/ggen-cli) of seanchatmangpt/ggen (G4).
+          #
+          # Rev bumped from 555f857 → 6eaad75: the old pin had
+          # `ocel-core = { path = "/Users/sac/wasm4pm/crates/ocel-core" }` in
+          # crates/ggen-graph/Cargo.toml — an absolute local path that breaks
+          # `cargo install` on any CI runner. The new HEAD removes that dep.
           if ! command -v ggen >/dev/null; then
             cargo install --git https://github.com/seanchatmangpt/ggen \
-              --rev 555f857ac5dcf236eba0121d0833bb764a782e3a \
+              --rev 6eaad753885f6b29560826af1f3461a28275f101 \
               --bin ggen ggen-cli-lib --locked
           fi
           ggen --version
