@@ -17,7 +17,14 @@ export interface CognitionWasmModule {
 }
 
 export interface WasmLoaderConfig {
+  /** Module specifier to import. Defaults to the node build `wasm4pm-cognition`.
+   *  For browser use, point at a `--target web` build (e.g. `wasm4pm-cognition/pkg-web`). */
   modulePath?: string;
+  /** Browser only: URL of the `_bg.wasm` for a `--target web` build. When the
+   *  imported module's default export is an `init()` function (the web target),
+   *  it is called with this URL to fetch + instantiate. Omit to let the web build
+   *  resolve the wasm relative to its own module URL (works under most bundlers). */
+  wasmUrl?: string | URL;
 }
 
 export class WasmLoader {
@@ -53,10 +60,24 @@ export class WasmLoader {
     try {
       const specifier = this.config.modulePath ?? 'wasm4pm-cognition';
       const rawMod = await import(/* @vite-ignore */ specifier);
-      const mod = ('default' in rawMod && rawMod.default && typeof (rawMod.default as any).cognition_run === 'function') 
-        ? rawMod.default 
-        : rawMod;
-      this.module = mod as CognitionWasmModule;
+
+      // Three module shapes are supported:
+      //  1. `--target web`:    default export is an async `init()` that fetches +
+      //     instantiates the .wasm; the named exports (`cognition_run`, …) only
+      //     work AFTER it resolves. Detected by `default` being a function.
+      //  2. node default-object: `default` is the module object carrying
+      //     `cognition_run` directly (some bundler interop).
+      //  3. `--target nodejs`: named exports live on the namespace itself.
+      const def = (rawMod as { default?: unknown }).default;
+      if (typeof def === 'function') {
+        // Web target — instantiate before the exports are callable.
+        await (def as (input?: string | URL) => Promise<unknown>)(this.config.wasmUrl);
+        this.module = rawMod as CognitionWasmModule;
+      } else if (def && typeof (def as { cognition_run?: unknown }).cognition_run === 'function') {
+        this.module = def as CognitionWasmModule;
+      } else {
+        this.module = rawMod as CognitionWasmModule;
+      }
       this.initialized = true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
