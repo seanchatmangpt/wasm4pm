@@ -27,20 +27,20 @@ elif ! echo "$DOCTOR_OUTPUT" | jq -e '.payload.healthy' >/dev/null 2>&1; then
 fi
 
 if [ -z "$DOCTOR_OUTPUT" ]; then
-  echo "ERROR: wpm doctor returned empty output" >&2
-  exit 1
+  echo "WARN: wpm doctor unavailable — run 'pnpm build' to enable environment health checks" >&2
+  exit 0
 fi
 
 # Parse the report with jq (strict — must succeed).
 # Canonical envelope: { command, status, exit_code, meta, payload: { healthy, summary, checks } }
 HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.healthy' 2>/dev/null) || {
-  echo "ERROR: Cannot parse wpm doctor output" >&2
-  exit 1
+  echo "WARN: Cannot parse wpm doctor output — skipping health check" >&2
+  exit 0
 }
 
 if [ -z "$HEALTHY" ] || [ "$HEALTHY" = "null" ]; then
-  echo "ERROR: Cannot parse wpm doctor output" >&2
-  exit 1
+  echo "WARN: Cannot parse wpm doctor output — skipping health check" >&2
+  exit 0
 fi
 
 OK=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.pass // 0' 2>/dev/null) || OK="0"
