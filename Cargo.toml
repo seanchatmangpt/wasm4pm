@@ -25,6 +25,7 @@ sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
 wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.6.10", path = "wasm4pm", features = ["cloud"] }
+affidavit = { git = "https://github.com/seanchatmangpt/affidavit", features = ["core"] }
 wasm4pm-cognition = { version = "26.6.10", path = "crates/wasm4pm-cognition" }
 prolog8 = { version = "26.6.10", path = "crates/prolog8" }
 miniml = { version = "26.6.10", path = "crates/miniml-core" }

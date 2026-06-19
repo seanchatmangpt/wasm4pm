@@ -24,6 +24,7 @@ wasm4pm = { workspace = true }
 wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 blake3 = { workspace = true }
 chrono = { workspace = true }
+affidavit = { workspace = true }
 git2 = "0.21"
 
 [dev-dependencies]
