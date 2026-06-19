@@ -73,7 +73,7 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 
 if [[ "$FILE_PATH" == *"packages/cognition"* ]]; then
   cd "$PROJECT_DIR/packages/cognition"
-  if ! npm test -- --run 2>&1 | tee /tmp/cognition-test-output.log; then
+  if ! pnpm test -- --run 2>&1 | tee /tmp/cognition-test-output.log; then
     echo "packages/cognition tests failed after editing: $FILE_PATH" >&2
     echo "" >&2
     grep -E "FAIL|✗|×|Error:" /tmp/cognition-test-output.log | head -10 >&2
@@ -83,7 +83,7 @@ if [[ "$FILE_PATH" == *"packages/cognition"* ]]; then
 elif [[ "$FILE_PATH" == *"commands/cognition"* ]] || \
      [[ "$FILE_PATH" == *"cognition-"* && "$FILE_PATH" == *".test.ts"* ]]; then
   cd "$PROJECT_DIR/apps/wasm4pm"
-  if ! npm test -- src/__tests__/cognition --run 2>&1 | tee /tmp/cognition-cli-test-output.log; then
+  if ! pnpm test -- src/__tests__/cognition --run 2>&1 | tee /tmp/cognition-cli-test-output.log; then
     echo "Cognition CLI tests failed after editing: $FILE_PATH" >&2
     echo "" >&2
     grep -E "FAIL|✗|×|Error:" /tmp/cognition-cli-test-output.log | head -10 >&2

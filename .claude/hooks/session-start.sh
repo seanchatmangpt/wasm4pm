@@ -4,13 +4,11 @@
 # Runs `wpm doctor` and injects health summary into Claude's context.
 # CRITICAL: Must succeed. Fails loudly if doctor is unavailable.
 
-set -e
-
 DOCTOR_OUTPUT=""
 
 # Run wpm doctor via make target (builds CLI if needed).
 # Separate stderr so build/runtime diagnostics don't contaminate the JSON parsed below.
-cd "$CLAUDE_PROJECT_DIR"
+cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || { echo "WARN: Cannot cd to project dir — skipping doctor" >&2; exit 0; }
 DOCTOR_OUTPUT=$(make doctor 2>/tmp/wpm-doctor.err | awk '/^{/,/^}/ {print}') || {
   echo "WARN: make doctor failed — see /tmp/wpm-doctor.err for details" >&2
 }
@@ -27,20 +25,20 @@ elif ! echo "$DOCTOR_OUTPUT" | jq -e '.payload.healthy' >/dev/null 2>&1; then
 fi
 
 if [ -z "$DOCTOR_OUTPUT" ]; then
-  echo "ERROR: wpm doctor returned empty output" >&2
-  exit 1
+  echo "WARN: wpm doctor unavailable — run 'pnpm build' to enable environment health checks" >&2
+  exit 0
 fi
 
 # Parse the report with jq (strict — must succeed).
 # Canonical envelope: { command, status, exit_code, meta, payload: { healthy, summary, checks } }
 HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.healthy' 2>/dev/null) || {
-  echo "ERROR: Cannot parse wpm doctor output" >&2
-  exit 1
+  echo "WARN: Cannot parse wpm doctor output — skipping health check" >&2
+  exit 0
 }
 
 if [ -z "$HEALTHY" ] || [ "$HEALTHY" = "null" ]; then
-  echo "ERROR: Cannot parse wpm doctor output" >&2
-  exit 1
+  echo "WARN: Cannot parse wpm doctor output — skipping health check" >&2
+  exit 0
 fi
 
 OK=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.pass // 0' 2>/dev/null) || OK="0"

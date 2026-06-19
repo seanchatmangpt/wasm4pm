@@ -11,7 +11,7 @@ cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 SESSIONS_DIR=".wasm4pm/sessions"
-mkdir -p "$SESSIONS_DIR"
+mkdir -p "$SESSIONS_DIR" 2>/dev/null || true
 
 # Run doctor to get final health status
 DOCTOR_OUTPUT=""
