@@ -1,41 +1,31 @@
 {
-  "model_id": "description_logic-l1-v1",
-  "model_level": "L1",
   "breed_id": "description_logic",
-  "object_types": ["tbox", "subsumption", "verdict"],
-  "places": [
-    {"id": "p1", "name": "tbox_loaded",     "object_type": "tbox"},
-    {"id": "p2", "name": "normalized",      "object_type": "tbox"},
-    {"id": "p3", "name": "completing",      "object_type": "subsumption"},
-    {"id": "p4", "name": "saturated",       "object_type": "subsumption"},
-    {"id": "p5", "name": "classified",      "object_type": "verdict"}
-  ],
-  "transitions": [
-    {"id": "t1", "name": "normalize",        "label": "normalize"},
-    {"id": "t2", "name": "apply_cr1",        "label": "apply-cr1"},
-    {"id": "t3", "name": "apply_cr2",        "label": "apply-cr2"},
-    {"id": "t4", "name": "apply_cr3",        "label": "apply-cr3"},
-    {"id": "t5", "name": "apply_cr4",        "label": "apply-cr4"},
-    {"id": "t6", "name": "fixpoint",         "label": "fixpoint"},
-    {"id": "t7", "name": "classify_verdict", "label": "classify-verdict"}
-  ],
-  "arcs": [
-    {"from": "p1", "to": "t1", "type": "consume"},
-    {"from": "t1", "to": "p2", "type": "produce"},
-    {"from": "p2", "to": "t2", "type": "consume"},
-    {"from": "p2", "to": "t3", "type": "consume"},
-    {"from": "p2", "to": "t4", "type": "consume"},
-    {"from": "p2", "to": "t5", "type": "consume"},
-    {"from": "t2", "to": "p3", "type": "produce"},
-    {"from": "t3", "to": "p3", "type": "produce"},
-    {"from": "t4", "to": "p3", "type": "produce"},
-    {"from": "t5", "to": "p3", "type": "produce"},
-    {"from": "p3", "to": "t6", "type": "consume"},
-    {"from": "p2", "to": "t6", "type": "consume"},
-    {"from": "t6", "to": "p4", "type": "produce"},
-    {"from": "p4", "to": "t7", "type": "consume"},
-    {"from": "t7", "to": "p5", "type": "produce"}
-  ],
-  "initial_marking": {"p1": 1},
-  "final_markings": [{"p5": 1}]
+  "id": "ocel_description_logic_v1",
+  "name": "Description Logic Lifecycle Model",
+  "phases": [
+    {
+      "name": "load",
+      "kinds": [
+        "dl-load"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "subsume",
+      "kinds": [
+        "dl-subsume"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "consistent",
+      "kinds": [
+        "dl-consistent"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
 }

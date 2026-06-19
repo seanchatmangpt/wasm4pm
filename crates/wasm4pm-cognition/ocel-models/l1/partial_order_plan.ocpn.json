@@ -1,26 +1,31 @@
 {
-  "model_id": "partial_order_plan-l1-v1",
-  "model_level": "L1",
   "breed_id": "partial_order_plan",
-  "object_types": ["plan"],
-  "places": [
-    {"id": "p1", "name": "problem_loaded",  "object_type": "plan"},
-    {"id": "p2", "name": "plan_resolving",  "object_type": "plan"},
-    {"id": "p3", "name": "plan_done",       "object_type": "plan"}
-  ],
-  "transitions": [
-    {"id": "t1", "name": "pop_init",      "label": "pop-init"},
-    {"id": "t2", "name": "pop_resolve",   "label": "pop-resolve"},
-    {"id": "t3", "name": "pop_plan",      "label": "pop-plan"}
-  ],
-  "arcs": [
-    {"from": "p1", "to": "t1", "type": "consume"},
-    {"from": "t1", "to": "p2", "type": "produce"},
-    {"from": "p2", "to": "t2", "type": "consume"},
-    {"from": "t2", "to": "p2", "type": "produce"},
-    {"from": "p2", "to": "t3", "type": "consume"},
-    {"from": "t3", "to": "p3", "type": "produce"}
-  ],
-  "initial_marking": {"p1": 1},
-  "final_markings": [{"p3": 1}]
+  "id": "ocel_partial_order_plan_v1",
+  "name": "Partial Order Plan Lifecycle Model",
+  "phases": [
+    {
+      "name": "init",
+      "kinds": [
+        "pop-init"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "resolve",
+      "kinds": [
+        "pop-resolve"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "plan",
+      "kinds": [
+        "pop-plan"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
 }

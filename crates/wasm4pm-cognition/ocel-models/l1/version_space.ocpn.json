@@ -1,26 +1,31 @@
 {
-  "model_id": "version_space-l1-v1",
-  "model_level": "L1",
   "breed_id": "version_space",
-  "object_types": ["boundary", "example", "concept"],
-  "places": [
-    {"id": "p1", "name": "examples_raw",    "object_type": "example"},
-    {"id": "p2", "name": "boundaries_init", "object_type": "boundary"},
-    {"id": "p3", "name": "concept_final",   "object_type": "concept"}
-  ],
-  "transitions": [
-    {"id": "t1", "name": "vs_init",    "label": "vs-init"},
-    {"id": "t2", "name": "vs_update",  "label": "vs-update"},
-    {"id": "t3", "name": "vs_verdict", "label": "vs-verdict"}
-  ],
-  "arcs": [
-    {"from": "p1", "to": "t1", "type": "consume"},
-    {"from": "t1", "to": "p2", "type": "produce"},
-    {"from": "p2", "to": "t2", "type": "consume"},
-    {"from": "t2", "to": "p2", "type": "produce"},
-    {"from": "p2", "to": "t3", "type": "consume"},
-    {"from": "t3", "to": "p3", "type": "produce"}
-  ],
-  "initial_marking": {"p1": 1},
-  "final_markings": [{"p3": 1}]
+  "id": "ocel_version_space_v1",
+  "name": "Version Space Lifecycle Model",
+  "phases": [
+    {
+      "name": "init",
+      "kinds": [
+        "vs-init"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "update",
+      "kinds": [
+        "vs-update"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "verdict",
+      "kinds": [
+        "vs-verdict"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
 }

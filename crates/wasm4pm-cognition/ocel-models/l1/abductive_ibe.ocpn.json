@@ -1,32 +1,31 @@
 {
-  "model_id": "abductive_ibe-l1-v1",
-  "model_level": "L1",
   "breed_id": "abductive_ibe",
-  "object_types": ["observation", "hypothesis", "explanation"],
-  "places": [
-    {"id": "p1", "name": "observations_raw",      "object_type": "observation"},
-    {"id": "p2", "name": "observations_collected", "object_type": "observation"},
-    {"id": "p3", "name": "hypothesis_scored",     "object_type": "hypothesis"},
-    {"id": "p4", "name": "hypothesis_compared",   "object_type": "hypothesis"},
-    {"id": "p5", "name": "best_explanation",      "object_type": "explanation"}
-  ],
-  "transitions": [
-    {"id": "t1", "name": "collect_observations", "label": "collect-observations"},
-    {"id": "t2", "name": "score_hypothesis",     "label": "score-hypothesis"},
-    {"id": "t3", "name": "compare",              "label": "compare"},
-    {"id": "t4", "name": "best_explanation",     "label": "best-explanation"}
-  ],
-  "arcs": [
-    {"from": "p1", "to": "t1", "type": "consume"},
-    {"from": "t1", "to": "p2", "type": "produce"},
-    {"from": "p2", "to": "t2", "type": "consume"},
-    {"from": "t2", "to": "p3", "type": "produce"},
-    {"from": "p3", "to": "t3", "type": "consume"},
-    {"from": "t3", "to": "p4", "type": "produce"},
-    {"from": "p4", "to": "t2", "type": "consume"},
-    {"from": "p4", "to": "t4", "type": "consume"},
-    {"from": "t4", "to": "p5", "type": "produce"}
-  ],
-  "initial_marking": {"p1": 1},
-  "final_markings": [{"p5": 1}]
+  "id": "ocel_abductive_ibe_v1",
+  "name": "Abductive IBE Lifecycle Model",
+  "phases": [
+    {
+      "name": "load",
+      "kinds": [
+        "ibe-load"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "explain",
+      "kinds": [
+        "ibe-explain"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "select",
+      "kinds": [
+        "ibe-select"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
 }

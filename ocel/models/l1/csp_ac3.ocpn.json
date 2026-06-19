@@ -1,43 +1,38 @@
 {
-  "id": "csp_ac3",
-  "name": "CSP AC-3 + MAC Backtracking",
+  "model_id": "csp_ac3-l1-v1",
+  "model_level": "L1",
+  "breed_id": "csp_ac3",
+  "object_types": ["variable", "constraint", "decision"],
   "places": [
-    { "id": "p_start" },
-    { "id": "p_solving" },
-    { "id": "p_end" }
+    {"id": "p1", "name": "problem_posed",  "object_type": "constraint"},
+    {"id": "p2", "name": "initialized",    "object_type": "variable"},
+    {"id": "p3", "name": "searching",      "object_type": "variable"},
+    {"id": "p4", "name": "verdict_emitted","object_type": "decision"}
   ],
   "transitions": [
-    {
-      "id": "t_init",
-      "label": "csp-init",
-      "arcs_in": ["p_start"],
-      "arcs_out": ["p_solving"]
-    },
-    {
-      "id": "t_revise",
-      "label": "csp-revise",
-      "arcs_in": ["p_solving"],
-      "arcs_out": ["p_solving"]
-    },
-    {
-      "id": "t_assign",
-      "label": "csp-assign",
-      "arcs_in": ["p_solving"],
-      "arcs_out": ["p_solving"]
-    },
-    {
-      "id": "t_backtrack",
-      "label": "csp-backtrack",
-      "arcs_in": ["p_solving"],
-      "arcs_out": ["p_solving"]
-    },
-    {
-      "id": "t_verdict",
-      "label": "csp-verdict",
-      "arcs_in": ["p_solving"],
-      "arcs_out": ["p_end"]
-    }
+    {"id": "t1", "name": "csp-init",      "label": "csp-init"},
+    {"id": "t2", "name": "csp-revise",    "label": "csp-revise"},
+    {"id": "t3", "name": "csp-assign",    "label": "csp-assign"},
+    {"id": "t4", "name": "csp-backtrack", "label": "csp-backtrack"},
+    {"id": "t5", "name": "csp-verdict",   "label": "csp-verdict"}
   ],
-  "initial_marking": ["p_start"],
-  "final_markings": [["p_end"]]
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p3", "type": "produce"},
+    {"from": "p2", "to": "t5", "type": "consume"},
+    {"from": "p3", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p4", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}]
 }

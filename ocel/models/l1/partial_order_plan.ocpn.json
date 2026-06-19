@@ -1,22 +1,29 @@
 {
+  "breed_id": "partial_order_plan",
   "id": "ocel_partial_order_plan_v1",
   "name": "Partial Order Plan Lifecycle Model",
   "phases": [
     {
       "name": "init",
-      "kinds": ["pop-init"],
+      "kinds": [
+        "pop-init"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     },
     {
       "name": "resolve",
-      "kinds": ["pop-resolve"],
+      "kinds": [
+        "pop-resolve"
+      ],
       "min_occurrences": 0,
       "max_occurrences": 99999
     },
     {
       "name": "plan",
-      "kinds": ["pop-plan"],
+      "kinds": [
+        "pop-plan"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     }

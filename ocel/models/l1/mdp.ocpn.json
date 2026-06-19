@@ -1,22 +1,29 @@
 {
+  "breed_id": "mdp",
   "id": "ocel_mdp_v1",
   "name": "MDP Lifecycle Model",
   "phases": [
     {
       "name": "init",
-      "kinds": ["mdp-init"],
+      "kinds": [
+        "mdp-init"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     },
     {
       "name": "iterate",
-      "kinds": ["mdp-iterate"],
+      "kinds": [
+        "mdp-iterate"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 99999
     },
     {
       "name": "policy",
-      "kinds": ["mdp-policy"],
+      "kinds": [
+        "mdp-policy"
+      ],
       "min_occurrences": 1,
       "max_occurrences": 1
     }
