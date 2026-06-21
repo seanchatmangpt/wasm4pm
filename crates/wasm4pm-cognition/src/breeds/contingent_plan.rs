@@ -51,15 +51,19 @@ enum PlanNode {
     Sense(String, String, Box<PlanNode>, Box<PlanNode>),
 }
 
+impl std::fmt::Display for PlanNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PlanNode::Done => write!(f, "(done)"),
+            PlanNode::Act(n, sub) => write!(f, "(act {} {})", n, sub),
+            PlanNode::Sense(n, atom, t, e) => write!(f, "(sense {} {} {} {})", n, atom, t, e),
+        }
+    }
+}
+
 impl PlanNode {
     fn serialize(&self) -> String {
-        match self {
-            PlanNode::Done => "(done)".to_string(),
-            PlanNode::Act(n, sub) => format!("(act {} {})", n, sub.serialize()),
-            PlanNode::Sense(n, atom, t, e) => {
-                format!("(sense {} {} {} {})", n, atom, t.serialize(), e.serialize())
-            }
-        }
+        self.to_string()
     }
 }
 
