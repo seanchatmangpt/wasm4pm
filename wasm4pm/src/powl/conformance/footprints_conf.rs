@@ -8,7 +8,7 @@
 use crate::powl::footprints::Footprints;
 use crate::powl_event_log::EventLog;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 /// Footprints conformance result.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -20,13 +20,12 @@ pub struct FootprintsConformanceResult {
 }
 
 /// Build the log footprints from the directly-follows graph.
-fn log_footprints(log: &EventLog) -> HashMap<(String, String), usize> {
-    let mut sequence: HashMap<(String, String), usize> = HashMap::new();
+fn log_footprints(log: &EventLog) -> HashSet<(String, String)> {
+    let mut sequence: HashSet<(String, String)> = HashSet::new();
 
     for trace in &log.traces {
         for window in trace.events.windows(2) {
-            let key = (window[0].name.clone(), window[1].name.clone());
-            *sequence.entry(key).or_insert(0) += 1;
+            sequence.insert((window[0].name.clone(), window[1].name.clone()));
         }
     }
 
@@ -35,15 +34,12 @@ fn log_footprints(log: &EventLog) -> HashMap<(String, String), usize> {
 
 /// Compute footprints-based conformance metrics.
 pub fn check(log: &EventLog, model_fp: &Footprints) -> FootprintsConformanceResult {
-    let log_fp_map = log_footprints(log);
-
-    let model_sequence: std::collections::HashSet<(String, String)> = model_fp.sequence.clone();
-    let log_sequence: std::collections::HashSet<(String, String)> =
-        log_fp_map.keys().cloned().collect();
+    let log_sequence = log_footprints(log);
+    let model_sequence = &model_fp.sequence;
 
     // --- Fitness ---
     let log_total = log_sequence.len();
-    let matching = log_sequence.intersection(&model_sequence).count();
+    let matching = log_sequence.intersection(model_sequence).count();
     let fitness = if log_total == 0 {
         1.0
     } else {
