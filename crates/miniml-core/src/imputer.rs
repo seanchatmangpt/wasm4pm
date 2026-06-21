@@ -46,8 +46,8 @@ impl SimpleImputer {
                     if values.is_empty() {
                         0.0
                     } else {
-                        let mut sorted = values.clone();
-                        sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+                        let mut sorted = values;
+                        sorted.sort_unstable_by(|a, b| a.total_cmp(b));
                         if sorted.len().is_multiple_of(2) {
                             (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
                         } else {

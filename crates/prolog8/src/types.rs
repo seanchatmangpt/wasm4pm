@@ -116,9 +116,7 @@ impl Atom8 {
     pub fn new(pred_id: PredicateId, arity: u8, args: &[TermId]) -> Self {
         let mut padded = [TERM_SENTINEL; ARITY_CAP as usize];
         let take = arity.min(ARITY_CAP) as usize;
-        for (i, t) in args.iter().take(take).enumerate() {
-            padded[i] = *t;
-        }
+        padded[..take].copy_from_slice(&args[..take]);
         Self {
             pred_id,
             arity: arity.min(ARITY_CAP),
@@ -265,9 +263,7 @@ impl FactRow8 {
     pub fn new(pred_id: PredicateId, arity: u8, args: &[TermId], source_id: SourceId) -> Self {
         let mut padded = [TERM_SENTINEL; ARITY_CAP as usize];
         let take = arity.min(ARITY_CAP) as usize;
-        for (i, t) in args.iter().take(take).enumerate() {
-            padded[i] = *t;
-        }
+        padded[..take].copy_from_slice(&args[..take]);
         let row_no_hash = FactRow8 {
             pred_id,
             arity: arity.min(ARITY_CAP),
