@@ -58,41 +58,6 @@ fn to_js_str<T: serde::Serialize>(v: &T) -> Result<JsValue, JsValue> {
         .map_err(|e| js_err(&format!("serialize: {e}")))
 }
 
-/// Human-readable description for a `RejectionCode`.
-fn rejection_message(code: RejectionCode) -> &'static str {
-    match code {
-        RejectionCode::ArityCapExceeded => "arity exceeds cap of 8",
-        RejectionCode::RuleBodyCapExceeded => "rule body exceeds cap of 8 atoms",
-        RejectionCode::VariableCapExceeded => "rule declares more than 8 variables",
-        RejectionCode::ProofFanInExceeded => "proof node has more than 8 children",
-        RejectionCode::StateSurfaceExceeded => "rule-family state surface exceeds 256",
-        RejectionCode::StringQueryNotAdmitted => "string queries are not admitted (use interned IDs)",
-        RejectionCode::RuntimeParseRejected => "runtime parsing is not admitted",
-        RejectionCode::TextualMetaCallRejected => "textual meta-calls are not admitted",
-        RejectionCode::UninternedTerm => "bound argument refers to an uninterned term (TermId 0 is sentinel)",
-        RejectionCode::OperatorDeclarationRejected => "operator declarations are not admitted",
-        RejectionCode::UnstratifiedNegation => "negation is not stratified",
-        RejectionCode::UnboundedRecursion => "recursion must be bounded or declared",
-        RejectionCode::NonIndexableBuiltin => "built-in predicate is not indexable",
-        RejectionCode::DynamicMutationNotAdmitted => "assert/retract (dynamic mutation) is not admitted",
-        RejectionCode::CutNotAdmitted => "cut (!) is not admitted",
-        RejectionCode::ForeignContractMissing => "foreign predicate has no replay contract",
-        RejectionCode::NondeterministicForeignCall => "foreign predicate is non-deterministic",
-        RejectionCode::SideEffectInKernel => "side-effects inside the kernel boundary are not admitted",
-        RejectionCode::ReplayContractMissing => "replay contract is missing",
-        RejectionCode::PredicateNotInCatalog => "predicate id is not registered in the catalog",
-        RejectionCode::ArityMismatch => "atom arity does not match catalog metadata",
-        RejectionCode::BindingMaskOutOfRange => "binding_mask references bit positions beyond the atom arity",
-        RejectionCode::PaddingNotSentinel => "argument slots beyond arity must be sentinel (TermId 0)",
-        RejectionCode::BodyMaskMismatch => "body_mask must equal (1 << body_len) - 1",
-        RejectionCode::NegationMaskOutOfRange => "negation_mask references positions beyond body_len",
-        RejectionCode::BuiltinMaskOutOfRange => "builtin_mask references positions beyond body_len",
-        RejectionCode::ProofMaskOutOfRange => "proof_mask references positions beyond body_len",
-        RejectionCode::FeatureBitNotAdmitted => "feature_mask contains a reserved or unrecognised bit",
-        RejectionCode::NegationRequiresFeature => "negation_mask is set but FeatureBit::StratifiedNegation is not in feature_mask",
-        RejectionCode::BuiltinRequiresFeature => "builtin_mask is set but FeatureBit::Equality or TypedComparisons is not in feature_mask",
-    }
-}
 
 // -- Friendly WASM-boundary input types ---------------------------------------
 
@@ -297,7 +262,7 @@ pub fn prolog8_query(input_json: &str) -> Result<JsValue, JsValue> {
         kernel.load_facts(block.into_fact_block()).map_err(|c| {
             js_err(&format!(
                 "fact admission rejected: {}",
-                rejection_message(c)
+                c
             ))
         })?;
     }
@@ -305,7 +270,7 @@ pub fn prolog8_query(input_json: &str) -> Result<JsValue, JsValue> {
         kernel.load_rule(rule).map_err(|c| {
             js_err(&format!(
                 "rule admission rejected: {}",
-                rejection_message(c)
+                c
             ))
         })?;
     }
@@ -364,7 +329,7 @@ pub fn prolog8_replay(input_json: &str) -> Result<JsValue, JsValue> {
             .map_err(|c: RejectionCode| {
                 js_err(&format!(
                     "fact admission rejected: {}",
-                    rejection_message(c)
+                    c
                 ))
             })?;
     }
@@ -372,7 +337,7 @@ pub fn prolog8_replay(input_json: &str) -> Result<JsValue, JsValue> {
         kernel.load_rule(rule).map_err(|c: RejectionCode| {
             js_err(&format!(
                 "rule admission rejected: {}",
-                rejection_message(c)
+                c
             ))
         })?;
     }
