@@ -288,8 +288,8 @@ impl CognitionBreed for ScriptSam {
             .filter(|f| f.key.starts_with("sam:inferred:"))
             .count();
 
-        let explanation = if best_script.is_some() {
-            format!("Successfully aligned to script '{}' and inferred {} missing scenes.", best_script.unwrap().conclusion, inferred_count)
+        let explanation = if let Some(s) = best_script {
+            format!("Successfully aligned to script '{}' and inferred {} missing scenes.", s.conclusion, inferred_count)
         } else {
             "Could not align observations to any known script.".to_string()
         };
