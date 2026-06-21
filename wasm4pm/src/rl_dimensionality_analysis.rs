@@ -332,7 +332,7 @@ pub fn format_dimensionality_report(analyzer: &DimensionalityAnalyzer) -> String
                 .iter()
                 .map(|(s, e)| {
                     if s == e {
-                        format!("{}", s)
+                        s.to_string()
                     } else {
                         format!("{}-{}", s, e)
                     }

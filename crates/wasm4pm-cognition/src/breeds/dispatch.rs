@@ -16,7 +16,7 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
         .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
 
     // Derive OCEL and validate conformance (van der Aalst doctrine)
-    let breed_id = format!("{}", b.id());
+    let breed_id = b.id().to_string();
     let trace_str = serde_json::to_string(&output.inference_trace).unwrap_or_default();
     let tmp_run_id = blake3::hash(trace_str.as_bytes()).to_hex().to_string();
     let ocel_log = crate::ocel::derive_ocel(&breed_id, &tmp_run_id, &output.inference_trace);
