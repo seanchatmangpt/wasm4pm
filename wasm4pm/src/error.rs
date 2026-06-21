@@ -10,6 +10,7 @@
 //! Error codes: `PARSE_ERROR`, `VALIDATION_ERROR`, `BINARY_FORMAT_ERROR`,
 //! `ALGORITHM_ERROR`, `HANDLE_NOT_FOUND`.
 
+use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 /// Typed error enum for wasm4pm public APIs.
@@ -104,17 +105,16 @@ impl From<Wasm4pmError> for JsValue {
     /// Converts to a structured JSON object `{code, message, remediation?}`.
     /// Callers can switch on `code` for typed error handling in JS/TS.
     fn from(e: Wasm4pmError) -> JsValue {
-        let msg = e.to_string().replace('"', "\\\"");
-        let json = match e.remediation() {
-            Some(r) => format!(
-                r#"{{"code":"{}","message":"{}","remediation":"{}"}}"#,
-                e.code(),
-                msg,
-                r
-            ),
-            None => format!(r#"{{"code":"{}","message":"{}"}}"#, e.code(), msg),
-        };
-        js_val(&json)
+        let mut map = serde_json::Map::new();
+        map.insert("code".to_owned(), json!(e.code()));
+        map.insert("message".to_owned(), json!(e.to_string()));
+        if let Some(r) = e.remediation() {
+            map.insert("remediation".to_owned(), json!(r));
+        }
+        let serialized = serde_json::to_string(&map).unwrap_or_else(|_| {
+            r#"{"code":"INTERNAL_ERROR","message":"error serialization failed"}"#.to_owned()
+        });
+        js_val(&serialized)
     }
 }
 
@@ -137,12 +137,11 @@ pub fn js_val(s: &str) -> JsValue {
 /// Creates a structured error object for JavaScript
 /// Returns JSON string: {"code":"CODE","message":"message text"}
 pub fn wasm_err(code: &str, message: impl std::fmt::Display) -> JsValue {
-    let json = format!(
-        r#"{{"code":"{}","message":"{}"}}"#,
-        code,
-        message.to_string().replace('"', "\\\"")
-    );
-    js_val(&json)
+    let serialized = serde_json::to_string(&json!({"code": code, "message": message.to_string()}))
+        .unwrap_or_else(|_| {
+            r#"{"code":"INTERNAL_ERROR","message":"error serialization failed"}"#.to_owned()
+        });
+    js_val(&serialized)
 }
 
 /// Error codes for common failure scenarios
