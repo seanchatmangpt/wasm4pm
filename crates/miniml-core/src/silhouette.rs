@@ -19,7 +19,7 @@ pub fn silhouette_score_impl(
 
     // Find unique clusters
     let mut clusters: Vec<f64> = labels.to_vec();
-    clusters.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    clusters.sort_unstable_by(|a, b| a.total_cmp(b));
     clusters.dedup();
 
     if clusters.len() < 2 {
@@ -28,23 +28,27 @@ pub fn silhouette_score_impl(
         ));
     }
 
-    // Precompute cluster assignments for O(1) lookup
+    // Build O(log k) label→cluster-index map (BTreeMap keyed on f64::to_bits).
+    // Labels from clustering algorithms are always exact integer-valued floats
+    // (cast from usize), so bitwise equality is correct here.
+    use std::collections::BTreeMap;
+    let cluster_pos: BTreeMap<u64, usize> = clusters
+        .iter()
+        .enumerate()
+        .map(|(idx, &v)| (v.to_bits(), idx))
+        .collect();
+
+    // Precompute cluster assignments; O(log k) per sample vs former O(k) linear scan
     let mut cluster_indices: Vec<Vec<usize>> = vec![Vec::new(); clusters.len()];
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let c = clusters
-            .iter()
-            .position(|&cls| (cls - label).abs() < 1e-10)
-            .unwrap();
+        let c = *cluster_pos.get(&label.to_bits()).unwrap();
         cluster_indices[c].push(i);
     }
 
     let mut total_silhouette = 0.0;
 
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let ci = clusters
-            .iter()
-            .position(|&cls| (cls - label).abs() < 1e-10)
-            .unwrap();
+        let ci = *cluster_pos.get(&label.to_bits()).unwrap();
         let same_cluster = &cluster_indices[ci];
 
         // a(i) = mean distance to other points in same cluster
