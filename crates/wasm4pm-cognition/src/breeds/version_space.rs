@@ -296,15 +296,17 @@ impl CognitionBreed for VersionSpace {
 
             g_sizes.push(g_set.len());
 
+            // Deterministic, sorted constraint snapshots for the trace detail
+            // (s_set/g_set are HashSet — unsorted iteration would leak into output_hash).
+            let mut s_snap: Vec<_> = s_set.iter().map(|h| h.constraints.clone()).collect();
+            s_snap.sort();
+            let mut g_snap: Vec<_> = g_set.iter().map(|h| h.constraints.clone()).collect();
+            g_snap.sort();
+
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "vs-update".to_string(),
-                detail: format!(
-                    "Update {}: S={:?}, G={:?}",
-                    idx + 1,
-                    s_set.iter().map(|h| h.constraints.clone()).collect::<Vec<_>>(),
-                    g_set.iter().map(|h| h.constraints.clone()).collect::<Vec<_>>()
-                ),
+                detail: format!("Update {}: S={:?}, G={:?}", idx + 1, s_snap, g_snap),
                 depth: 0,
                 objects: vec![],
             });
