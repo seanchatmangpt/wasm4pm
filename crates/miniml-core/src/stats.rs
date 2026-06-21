@@ -246,7 +246,7 @@ fn std_dev(data: &[f64]) -> f64 {
 }
 
 fn median(data: &mut [f64]) -> f64 {
-    data.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    data.sort_unstable_by(|a, b| a.total_cmp(b));
     let n = data.len();
     if n.is_multiple_of(2) {
         (data[n / 2 - 1] + data[n / 2]) / 2.0
@@ -300,7 +300,7 @@ fn t_ppf(p: f64, df: f64) -> f64 {
 fn rank_values(data: &[f64]) -> Vec<f64> {
     let n = data.len();
     let mut indexed: Vec<(usize, f64)> = data.iter().copied().enumerate().collect();
-    indexed.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+    indexed.sort_unstable_by(|a, b| a.1.total_cmp(&b.1));
     let mut ranks = vec![0.0f64; n];
     let mut i = 0;
     while i < n {
@@ -485,7 +485,7 @@ pub fn mann_whitney_u_impl(data1: &[f64], data2: &[f64]) -> Result<MannWhitneyRe
 
     let rank_counts: Vec<usize> = {
         let mut sorted = ranks.clone();
-        sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+        sorted.sort_unstable_by(|a, b| a.total_cmp(b));
         let mut counts = Vec::new();
         let mut i = 0;
         while i < sorted.len() {
@@ -576,7 +576,7 @@ pub fn ks_test_impl(data: &[f64]) -> Result<KSTestResult, MlError> {
     }
 
     let mut sorted = data.to_vec();
-    sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    sorted.sort_unstable_by(|a, b| a.total_cmp(b));
 
     let mut d_stat = 0.0f64;
     for (i, &x) in sorted.iter().enumerate().take(n) {
