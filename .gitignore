@@ -116,3 +116,6 @@ soar-output*.json
 docs/benchmarks/REPORT.md
 docs/benchmarks/report.csv
 docs/benchmarks/ATTESTATION.md
+
+# Accidentally-committed Gemini CLI config symlink (absolute path, escapes repo — breaks cloud/web checkout)
+.antigravitycli/
