@@ -211,11 +211,7 @@ impl GeneticAlgorithm {
     {
         // Sort by fitness (descending)
         let mut sorted: Vec<_> = population.to_vec();
-        sorted.sort_by(|a, b| {
-            b.fitness
-                .partial_cmp(&a.fitness)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        sorted.sort_by(|a, b| b.fitness.total_cmp(&a.fitness));
 
         // Elitism: keep top performers
         let elite_size = self.options.elitism_count.min(sorted.len());

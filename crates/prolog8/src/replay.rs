@@ -8,6 +8,7 @@ use crate::types::{QueryAtom8, Receipt};
 use serde::{Deserialize, Serialize};
 
 /// Outcome of a replay attempt.
+#[must_use]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReplayStatus {
     /// All roots match.
@@ -24,6 +25,7 @@ pub enum ReplayStatus {
 
 /// Replay a query against a kernel and compare the produced receipt's
 /// roots against `expected`. Returns the replay outcome.
+#[must_use = "discarding the replay outcome silently bypasses verification"]
 pub fn replay(kernel: &Kernel, query: &QueryAtom8, expected: &Receipt) -> ReplayStatus {
     // 1. Verify the receipt's own integrity (recompute its hash).
     if expected.compute_hash() != expected.receipt_hash {

@@ -113,12 +113,10 @@ pub fn gradient_boosting_impl(
 
     // Find unique classes
     let mut classes: Vec<f64> = labels.to_vec();
-    classes.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    classes.sort_unstable_by(|a, b| a.total_cmp(b));
     classes.dedup();
     let n_classes = classes.len();
 
-    // Initialize with equal weights
-    let _sample_weights: Vec<f64> = vec![1.0; n];
     let mut residual_labels = labels.to_vec();
     let mut trees = Vec::new();
 

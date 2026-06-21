@@ -13,7 +13,7 @@ pub fn confusion_matrix_impl(y_true: &[f64], y_pred: &[f64]) -> Result<Vec<f64>,
 
     // Find unique sorted classes
     let mut classes: Vec<f64> = y_true.iter().chain(y_pred.iter()).copied().collect();
-    classes.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    classes.sort_unstable_by(|a, b| a.total_cmp(b));
     classes.dedup();
     let n_classes = classes.len();
 
