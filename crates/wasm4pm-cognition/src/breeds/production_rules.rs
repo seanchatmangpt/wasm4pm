@@ -90,8 +90,7 @@ impl CognitionBreed for Mycin {
                 let br = &input.rules[*bi];
                 br.certainty
                     .abs()
-                    .partial_cmp(&ar.certainty.abs())
-                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .total_cmp(&ar.certainty.abs())
                     .then_with(|| ar.id.cmp(&br.id))
             });
             let (idx, premise_cf) = applicable[0];

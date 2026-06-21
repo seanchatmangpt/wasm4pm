@@ -15,7 +15,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 blake3 = { workspace = true }
 smallvec = { workspace = true }
-once_cell = "1.19"
 
 wasm-bindgen = { version = "0.2.92", optional = true }
 serde-wasm-bindgen = { version = "0.6", optional = true }

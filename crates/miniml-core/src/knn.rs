@@ -46,11 +46,11 @@ impl KnnModel {
             // Partial sort: find k smallest
             // Use select_nth_unstable_by for O(n) partial sort
             if self.k < dists.len() {
-                dists.select_nth_unstable_by(self.k, |a, b| a.0.partial_cmp(&b.0).unwrap());
+                dists.select_nth_unstable_by(self.k, |a, b| a.0.total_cmp(&b.0));
                 let (_, rest) = dists.split_at_mut(self.k);
-                rest.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+                rest.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
             } else {
-                dists.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+                dists.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
             }
 
             // Majority vote
@@ -85,11 +85,11 @@ impl KnnModel {
                 .collect();
             // Use select_nth_unstable_by for O(n) partial sort
             if self.k < dists.len() {
-                dists.select_nth_unstable_by(self.k, |a, b| a.0.partial_cmp(&b.0).unwrap());
+                dists.select_nth_unstable_by(self.k, |a, b| a.0.total_cmp(&b.0));
                 let (_, rest) = dists.split_at_mut(self.k);
-                rest.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+                rest.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
             } else {
-                dists.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+                dists.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
             }
 
             let k = self.k.min(dists.len());

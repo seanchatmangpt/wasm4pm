@@ -1468,7 +1468,6 @@ version = "26.6.10"
 dependencies = [
  "blake3",
  "js-sys",
- "once_cell",
  "proptest",
  "serde",
  "serde-wasm-bindgen",

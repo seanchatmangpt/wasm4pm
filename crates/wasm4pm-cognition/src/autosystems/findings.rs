@@ -4,6 +4,7 @@
 
 use crate::evidence::EvidenceSource;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// Finding severity level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -16,6 +17,17 @@ pub enum Severity {
     Error,
     /// Fatal.
     Fatal,
+}
+
+impl fmt::Display for Severity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Severity::Info => f.write_str("info"),
+            Severity::Warning => f.write_str("warning"),
+            Severity::Error => f.write_str("error"),
+            Severity::Fatal => f.write_str("fatal"),
+        }
+    }
 }
 
 /// A finding raised by a detector.
@@ -54,6 +66,12 @@ impl Finding {
     pub fn with_evidence(mut self, evidence: Vec<String>) -> Self {
         self.evidence = evidence;
         self
+    }
+}
+
+impl fmt::Display for Finding {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}] {}: {}", self.severity, self.code, self.message)
     }
 }
 
