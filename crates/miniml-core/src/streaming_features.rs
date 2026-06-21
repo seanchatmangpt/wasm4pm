@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WelfordStatistics {
@@ -33,7 +33,7 @@ impl WelfordStatistics {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct IncrementalTfIdf {
     pub document_count: usize,
-    pub term_doc_freq: HashMap<String, usize>,
+    pub term_doc_freq: BTreeMap<String, usize>,
 }
 
 impl IncrementalTfIdf {
