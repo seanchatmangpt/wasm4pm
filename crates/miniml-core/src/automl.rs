@@ -112,6 +112,12 @@ impl AlgorithmType {
     }
 }
 
+impl std::fmt::Display for AlgorithmType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 /// AutoML options
 #[derive(Clone, Debug)]
 pub struct AutoMLOptions {
@@ -405,7 +411,7 @@ impl AutoMLEngine {
             self.emit_progress(ProgressStage::AlgorithmEvaluation, idx, total);
 
             let score = self.evaluate_algorithm_cv(*algorithm, x, y);
-            algorithm_scores.push((algorithm.as_str().to_string(), score));
+            algorithm_scores.push((algorithm.to_string(), score));
 
             // Early stopping: if we found a near-perfect algorithm, stop
             if self.early_stopping && score >= self.min_score_threshold {

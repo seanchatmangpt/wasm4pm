@@ -4,54 +4,54 @@
 //! hashing scheme can never collide with another (e.g., a fact hash cannot
 //! be confused with a proof-node hash).
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 /// 32-byte BLAKE3 hash output.
 pub type Hash = [u8; 32];
 
 /// Domain key for a fact row's canonical hash.
-pub static DOMAIN_PROLOG8_FACT: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.fact.v1", b""));
+pub static DOMAIN_PROLOG8_FACT: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.fact.v1", b""));
 
 /// Domain key for a fact block header.
-pub static DOMAIN_PROLOG8_BLOCK_HEADER: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.block_header.v1", b""));
+pub static DOMAIN_PROLOG8_BLOCK_HEADER: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.block_header.v1", b""));
 
 /// Domain key for the rolling fact-block content hash.
-pub static DOMAIN_PROLOG8_BLOCK: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.block.v1", b""));
+pub static DOMAIN_PROLOG8_BLOCK: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.block.v1", b""));
 
 /// Domain key for a proof-DAG node.
-pub static DOMAIN_PROLOG8_PROOF_NODE: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.proof_node.v1", b""));
+pub static DOMAIN_PROLOG8_PROOF_NODE: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.proof_node.v1", b""));
 
 /// Domain key for the rolling proof-root.
-pub static DOMAIN_PROLOG8_PROOF_ROOT: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.proof_root.v1", b""));
+pub static DOMAIN_PROLOG8_PROOF_ROOT: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.proof_root.v1", b""));
 
 /// Domain key for receipts.
-pub static DOMAIN_PROLOG8_RECEIPT: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.receipt.v1", b""));
+pub static DOMAIN_PROLOG8_RECEIPT: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.receipt.v1", b""));
 
 /// Domain key for input query roots.
-pub static DOMAIN_PROLOG8_INPUT: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.input.v1", b""));
+pub static DOMAIN_PROLOG8_INPUT: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.input.v1", b""));
 
 /// Domain key for output binding roots.
-pub static DOMAIN_PROLOG8_OUTPUT: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.output.v1", b""));
+pub static DOMAIN_PROLOG8_OUTPUT: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.output.v1", b""));
 
 /// Domain key for the catalog root.
-pub static DOMAIN_PROLOG8_CATALOG: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.catalog.v1", b""));
+pub static DOMAIN_PROLOG8_CATALOG: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.catalog.v1", b""));
 
 /// Domain key for the rule artifact root.
-pub static DOMAIN_PROLOG8_RULES: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.rules.v1", b""));
+pub static DOMAIN_PROLOG8_RULES: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.rules.v1", b""));
 
 /// Domain key for chain-link hashes (length-prefixed).
-pub static DOMAIN_PROLOG8_LINK: Lazy<[u8; 32]> =
-    Lazy::new(|| blake3::derive_key("prolog8.link.v1", b""));
+pub static DOMAIN_PROLOG8_LINK: LazyLock<[u8; 32]> =
+    LazyLock::new(|| blake3::derive_key("prolog8.link.v1", b""));
 
 /// Hash arbitrary bytes under a domain key.
 pub fn hash_bytes(domain: &[u8; 32], bytes: &[u8]) -> Hash {
