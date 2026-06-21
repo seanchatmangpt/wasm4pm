@@ -704,15 +704,15 @@ impl AutoMLEngine {
 /// One-liner AutoML: The simplest way to get started.
 /// x_json: JSON array of arrays (Vec<Vec<f64>>), y_json: JSON array of f64
 #[wasm_bindgen]
-pub fn auto_fit(x_json: &str, y_json: &str) -> Result<AutoMLResult, JsValue> {
+pub fn auto_fit(x_json: &str, y_json: &str) -> Result<AutoMLResult, JsError> {
     let x: Vec<Vec<f64>> = serde_json::from_str(x_json)
-        .map_err(|e| JsValue::from_str(&format!("x parse error: {e}")))?;
+        .map_err(|e| JsError::new(&format!("x parse error: {e}")))?;
     let y: Vec<f64> = serde_json::from_str(y_json)
-        .map_err(|e| JsValue::from_str(&format!("y parse error: {e}")))?;
+        .map_err(|e| JsError::new(&format!("y parse error: {e}")))?;
     let engine = AutoMLEngine::new(AutoMLOptions::default());
     engine
         .optimize_pipeline(&x, &y)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// PSO-based hyperparameter optimization
@@ -1037,7 +1037,7 @@ pub fn auto_fit_regression(
     y: &[f64],
     n_samples: usize,
     n_features: usize,
-) -> Result<AutoMLResult, JsValue> {
+) -> Result<AutoMLResult, JsError> {
     let mut x_matrix = Vec::with_capacity(n_samples);
     for i in 0..n_samples {
         let start = i * n_features;
@@ -1048,7 +1048,7 @@ pub fn auto_fit_regression(
     let engine = AutoMLEngine::new(AutoMLOptions::default());
     engine
         .optimize_pipeline(&x_matrix, y)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// Convenience function: automated classification
@@ -1058,7 +1058,7 @@ pub fn auto_fit_classification(
     y: &[f64],
     n_samples: usize,
     n_features: usize,
-) -> Result<AutoMLResult, JsValue> {
+) -> Result<AutoMLResult, JsError> {
     let mut x_matrix = Vec::with_capacity(n_samples);
     for i in 0..n_samples {
         let start = i * n_features;
@@ -1069,7 +1069,7 @@ pub fn auto_fit_classification(
     let engine = AutoMLEngine::new(AutoMLOptions::default());
     engine
         .optimize_pipeline(&x_matrix, y)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// Get algorithm recommendation based on data characteristics
