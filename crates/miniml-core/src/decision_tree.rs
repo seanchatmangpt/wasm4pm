@@ -1,6 +1,5 @@
 use crate::error::MlError;
 use crate::matrix::{mat_get, validate_matrix};
-use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
@@ -332,12 +331,6 @@ impl<'a> TreeBuilder<'a> {
     }
 
     fn find_best_split(&self, indices: &[usize], targets: &[f64]) -> (usize, f64, f64) {
-        // Build class-to-index map once
-        let unique_classes: Vec<_> = targets.iter().map(|&t| t as u32).collect();
-        let class_set: HashSet<_> = unique_classes.iter().collect();
-        let _class_to_idx: HashMap<_, _> =
-            class_set.iter().enumerate().map(|(i, &c)| (c, i)).collect();
-
         let mut best_feature = 0;
         let mut best_threshold = 0.0;
         let mut best_score = -1.0;
