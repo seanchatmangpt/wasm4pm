@@ -269,7 +269,14 @@ impl CognitionBreed for BayesianNetwork {
                 f_vars.extend(&p_ids);
                 let mut table = vec![0.0; 1 << f_vars.len()];
                 
-                let probs: Vec<f64> = val.split(',').map(|s| s.parse().unwrap()).collect();
+                let probs: Vec<f64> = val
+                    .split(',')
+                    .map(|s| s.parse::<f64>())
+                    .collect::<Result<_, _>>()
+                    .map_err(|_| BreedError {
+                        breed: self.id(),
+                        message: format!("invalid cpt probability in '{}'", val),
+                    })?;
                 if probs.len() != (1 << p_ids.len()) {
                     return Err(BreedError { breed: self.id(), message: "invalid cpt length".to_string() });
                 }
