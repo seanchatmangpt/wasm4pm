@@ -373,6 +373,7 @@ pub fn detect_bottlenecks(
                 avg_b
                     .partial_cmp(&avg_a)
                     .unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| a["activity"].as_str().cmp(&b["activity"].as_str()))
             });
 
             to_js_str(&json!({
