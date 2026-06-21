@@ -6,7 +6,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// Partial Order Planner
 pub struct PartialOrderPlan;
@@ -64,7 +64,7 @@ fn goal_strings(goals: &[Goal]) -> Vec<String> {
         .collect()
 }
 
-fn has_path(start: usize, end: usize, num_nodes: usize, orderings: &HashSet<(usize, usize)>) -> bool {
+fn has_path(start: usize, end: usize, num_nodes: usize, orderings: &BTreeSet<(usize, usize)>) -> bool {
     let mut adj = vec![vec![]; num_nodes];
     for &(u, v) in orderings {
         adj[u].push(v);
@@ -87,7 +87,7 @@ fn has_path(start: usize, end: usize, num_nodes: usize, orderings: &HashSet<(usi
     false
 }
 
-fn is_consistent(num_steps: usize, orderings: &HashSet<(usize, usize)>) -> bool {
+fn is_consistent(num_steps: usize, orderings: &BTreeSet<(usize, usize)>) -> bool {
     let mut adj = vec![vec![]; num_steps];
     let mut in_degree = vec![0; num_steps];
     for &(u, v) in orderings {
@@ -113,7 +113,7 @@ fn is_consistent(num_steps: usize, orderings: &HashSet<(usize, usize)>) -> bool 
     count == num_steps
 }
 
-fn topological_sort(num_steps: usize, orderings: &HashSet<(usize, usize)>) -> Vec<usize> {
+fn topological_sort(num_steps: usize, orderings: &BTreeSet<(usize, usize)>) -> Vec<usize> {
     let mut adj = vec![vec![]; num_steps];
     let mut in_degree = vec![0; num_steps];
     for &(u, v) in orderings {
@@ -141,7 +141,7 @@ fn topological_sort(num_steps: usize, orderings: &HashSet<(usize, usize)>) -> Ve
 
 fn resolve_threats(
     steps: &Vec<Step>,
-    orderings: &mut HashSet<(usize, usize)>,
+    orderings: &mut BTreeSet<(usize, usize)>,
     causal_links: &Vec<CausalLink>,
     trace: &mut Vec<TraceStep>,
     depth: usize,
@@ -226,7 +226,7 @@ fn resolve_threats(
 
 fn pop_search(
     steps: &mut Vec<Step>,
-    orderings: &mut HashSet<(usize, usize)>,
+    orderings: &mut BTreeSet<(usize, usize)>,
     causal_links: &mut Vec<CausalLink>,
     actions: &[Rule],
     trace: &mut Vec<TraceStep>,
@@ -378,7 +378,7 @@ impl CognitionBreed for PartialOrderPlan {
             },
         ];
 
-        let mut orderings = HashSet::new();
+        let mut orderings = BTreeSet::new();
         orderings.insert((0, 1));
         let mut causal_links = Vec::new();
 
