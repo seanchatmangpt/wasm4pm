@@ -230,11 +230,11 @@ impl CognitionBreed for DempsterShafer {
         let mut out_facts = input.facts.clone();
         out_facts.push(Fact {
             key: format!("belief:{}", query_str),
-            value: format!("{}", bel),
+            value: bel.to_string(),
         });
         out_facts.push(Fact {
             key: format!("plausibility:{}", query_str),
-            value: format!("{}", pl),
+            value: pl.to_string(),
         });
 
         let explanation = format!(

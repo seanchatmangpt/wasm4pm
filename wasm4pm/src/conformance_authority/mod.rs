@@ -772,7 +772,7 @@ mod tests {
         verdict.precision = Some(0.85);
         verdict.generalization = Some(0.90);
 
-        let display_str = format!("{}", verdict);
+        let display_str = verdict.to_string();
         assert!(display_str.contains("fitness=95.00%"));
         assert!(display_str.contains("precision=85.00%"));
         assert!(display_str.contains("generalization=90.00%"));

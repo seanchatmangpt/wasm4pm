@@ -189,7 +189,7 @@ impl CognitionBreed for Tableaux {
                 objects: vec![],
             });
         };
-        push("parse-formula", format!("{}", formula), 0, &mut trace);
+        push("parse-formula", formula.to_string(), 0, &mut trace);
         push("sign-root", format!("F {}", formula), 0, &mut trace);
 
         let mut atoms = std::collections::BTreeSet::new();

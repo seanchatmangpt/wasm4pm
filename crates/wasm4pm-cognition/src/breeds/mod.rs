@@ -459,7 +459,7 @@ pub trait CognitionBreed: Send + Sync {
     /// Human-readable capability list. Default: `[breed_id_string]`.
     /// Override when the breed exposes multiple named capabilities.
     fn capabilities(&self) -> Vec<String> {
-        vec![format!("{}", self.id())]
+        vec![self.id().to_string()]
     }
 
     /// Precondition checks: ensure the breed can run.

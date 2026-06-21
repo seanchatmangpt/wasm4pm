@@ -149,7 +149,6 @@ impl CognitionBreed for NaivePhysics {
         );
 
         // ax-support: stability via support transitivity.
-        let mut stable: BTreeMap<String, bool> = BTreeMap::new();
         for o in &scene.objects {
             if scene.removed.contains(o) {
                 continue;
@@ -169,7 +168,6 @@ impl CognitionBreed for NaivePhysics {
                     None => break false, // unsupported, not ground
                 }
             };
-            stable.insert(o.clone(), is_stable);
             push(
                 &mut trace,
                 "apply-axiom",
@@ -247,7 +245,6 @@ impl CognitionBreed for NaivePhysics {
             });
         }
 
-        let _ = stable;
         push(
             &mut trace,
             "decision",
