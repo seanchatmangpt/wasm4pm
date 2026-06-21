@@ -1,6 +1,7 @@
 use crate::error::MlError;
 use crate::matrix::Rng;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 // ============================================================
 // Structs
@@ -27,23 +28,23 @@ impl MarkovChain {
         transition_matrix: &[f64],
         n_states: usize,
         initial_distribution: &[f64],
-    ) -> Result<MarkovChain, JsValue> {
+    ) -> Result<MarkovChain, JsError> {
         markov_chain_impl(transition_matrix, n_states, initial_distribution)
-            .map_err(|e| JsValue::from_str(&e.message))
+            .map_err(|e| JsError::new(&e.message))
     }
 
     /// Compute the steady-state distribution (power iteration).
     #[wasm_bindgen(js_name = "steadyState")]
-    pub fn steady_state(&self, max_iter: usize, tol: f64) -> Result<Vec<f64>, JsValue> {
+    pub fn steady_state(&self, max_iter: usize, tol: f64) -> Result<Vec<f64>, JsError> {
         compute_steady_state_impl(&self.transition_matrix, self.n_states, max_iter, tol)
-            .map_err(|e| JsValue::from_str(&e.message))
+            .map_err(|e| JsError::new(&e.message))
     }
 
     /// Compute the n-step transition probability matrix.
     #[wasm_bindgen(js_name = "nStepProbability")]
-    pub fn n_step_probability(&self, n_steps: usize) -> Result<Vec<f64>, JsValue> {
+    pub fn n_step_probability(&self, n_steps: usize) -> Result<Vec<f64>, JsError> {
         n_step_probability_impl(&self.transition_matrix, self.n_states, n_steps)
-            .map_err(|e| JsValue::from_str(&e.message))
+            .map_err(|e| JsError::new(&e.message))
     }
 
     /// Simulate a trajectory of the chain.
@@ -89,7 +90,7 @@ impl HMM {
         emission_probs: &[f64],
         n_states: usize,
         n_observations: usize,
-    ) -> Result<HMM, JsValue> {
+    ) -> Result<HMM, JsError> {
         hmm_from_params_impl(
             initial_probs,
             transition_probs,
@@ -97,12 +98,12 @@ impl HMM {
             n_states,
             n_observations,
         )
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
     }
 
     /// Forward algorithm — compute P(observations | model).
     #[wasm_bindgen(js_name = "forward")]
-    pub fn forward(&self, observations: &[usize]) -> Result<f64, JsValue> {
+    pub fn forward(&self, observations: &[usize]) -> Result<f64, JsError> {
         let (_, log_likelihood) = hmm_forward_impl(
             &self.initial_probs,
             &self.transition_probs,
@@ -111,13 +112,13 @@ impl HMM {
             self.n_states,
             self.n_observations,
         )
-        .map_err(|e| JsValue::from_str(&e.message))?;
+        .map_err(|e| JsError::new(&e.message))?;
         Ok(log_likelihood)
     }
 
     /// Viterbi algorithm — find most likely state sequence.
     #[wasm_bindgen(js_name = "viterbi")]
-    pub fn viterbi(&self, observations: &[usize]) -> Result<Vec<usize>, JsValue> {
+    pub fn viterbi(&self, observations: &[usize]) -> Result<Vec<usize>, JsError> {
         hmm_viterbi_impl(
             &self.initial_probs,
             &self.transition_probs,
@@ -126,7 +127,7 @@ impl HMM {
             self.n_states,
             self.n_observations,
         )
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
     }
 
     /// Train HMM using Baum-Welch (EM algorithm).
@@ -138,9 +139,9 @@ impl HMM {
         max_iter: usize,
         tol: f64,
         seed: u64,
-    ) -> Result<HMM, JsValue> {
+    ) -> Result<HMM, JsError> {
         hmm_train_baum_welch_impl(observations, n_states, n_obs_symbols, max_iter, tol, seed)
-            .map_err(|e| JsValue::from_str(&e.message))
+            .map_err(|e| JsError::new(&e.message))
     }
 }
 

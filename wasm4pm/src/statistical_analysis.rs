@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 use serde_json::json;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 use crate::error::{codes, wasm_err};
 use crate::models::{parse_timestamp_ms, AttributeValue};
@@ -176,7 +177,7 @@ pub fn compare_cohort_durations(
     timestamp_key: &str,
     cohort_attribute: &str,
     alpha: f64,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     let state = get_or_init_state();
 
     state.with_object(log_handle, |obj| {
@@ -242,7 +243,7 @@ pub fn compare_cohort_durations(
             .collect();
 
         let t_result = miniml::t_test_two_sample_impl(group_a, group_b, alpha)
-            .map_err(|e| JsValue::from_str(&e.message))?;
+            .map_err(|e| JsError::new(&e.message))?;
 
         let mean_a = group_a.iter().sum::<f64>() / group_a.len() as f64;
         let mean_b = group_b.iter().sum::<f64>() / group_b.len() as f64;
@@ -285,7 +286,7 @@ pub fn compare_resource_performance(
     resource_key: &str,
     timestamp_key: &str,
     alpha: f64,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     let _ = activity_key; // reserved for future per-activity filtering
     let state = get_or_init_state();
 
@@ -336,7 +337,7 @@ pub fn compare_resource_performance(
         }
 
         let anova_result = miniml::one_way_anova_impl(&flat_data, &group_sizes)
-            .map_err(|e| JsValue::from_str(&e.message))?;
+            .map_err(|e| JsError::new(&e.message))?;
 
         let significant = anova_result.p_value() < alpha;
 
@@ -365,7 +366,7 @@ pub fn describe_attribute(
     log_handle: &str,
     attribute_key: &str,
     scope: &str,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     let state = get_or_init_state();
 
     state.with_object(log_handle, |obj| {
@@ -411,7 +412,7 @@ pub fn describe_attribute(
         }
 
         let stats = miniml::describe_impl(&values)
-            .map_err(|e| JsValue::from_str(&e.message))?;
+            .map_err(|e| JsError::new(&e.message))?;
 
         let result = json!({
             "mean": stats.mean(),

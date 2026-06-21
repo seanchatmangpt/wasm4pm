@@ -1,6 +1,7 @@
 use crate::error::MlError;
 use crate::matrix::{validate_matrix, Rng};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 /// Epsilon-Support Vector Regression using PEGASOS-style subgradient descent.
 ///
@@ -247,13 +248,13 @@ pub fn svr_fit(
     n_features: usize,
     targets: &[f64],
     config: SVRConfig,
-) -> Result<SVRModel, JsValue> {
-    svr_fit_impl(data, n_features, targets, config).map_err(|e| JsValue::from_str(&e.message))
+) -> Result<SVRModel, JsError> {
+    svr_fit_impl(data, n_features, targets, config).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "svrPredict")]
-pub fn svr_predict(model: &SVRModel, data: &[f64]) -> Result<Vec<f64>, JsValue> {
-    svr_predict_impl(model, data).map_err(|e| JsValue::from_str(&e.message))
+pub fn svr_predict(model: &SVRModel, data: &[f64]) -> Result<Vec<f64>, JsError> {
+    svr_predict_impl(model, data).map_err(|e| JsError::new(&e.message))
 }
 
 #[cfg(test)]

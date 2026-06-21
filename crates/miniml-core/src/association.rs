@@ -5,6 +5,7 @@
 use crate::error::MlError;
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 // ============================================================
 // Structs
@@ -319,14 +320,14 @@ pub fn apriori(
     transaction_lengths: &[usize],
     min_support: f64,
     min_confidence: f64,
-) -> Result<AssociationResult, JsValue> {
+) -> Result<AssociationResult, JsError> {
     apriori_impl(
         transactions,
         transaction_lengths,
         min_support,
         min_confidence,
     )
-    .map_err(|e| JsValue::from_str(&e.message))
+    .map_err(|e| JsError::new(&e.message))
 }
 
 // ============================================================

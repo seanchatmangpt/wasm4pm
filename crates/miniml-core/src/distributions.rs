@@ -1,5 +1,6 @@
 use crate::error::MlError;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 // ---------------------------------------------------------------------------
 // Xorshift64 PRNG
@@ -607,8 +608,8 @@ pub fn normal_ppf(p: f64, mean: f64, std: f64) -> f64 {
 }
 
 #[wasm_bindgen(js_name = "normalSample")]
-pub fn normal_sample(n: usize, mean: f64, std: f64, seed: u64) -> Result<Vec<f64>, JsValue> {
-    normal_sample_impl(n, mean, std, seed).map_err(|e| JsValue::from_str(&e.message))
+pub fn normal_sample(n: usize, mean: f64, std: f64, seed: u64) -> Result<Vec<f64>, JsError> {
+    normal_sample_impl(n, mean, std, seed).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "binomialPmf")]
@@ -622,8 +623,8 @@ pub fn binomial_cdf(k: i64, n: i64, p: f64) -> f64 {
 }
 
 #[wasm_bindgen(js_name = "binomialSample")]
-pub fn binomial_sample(n: usize, n_trials: i64, p: f64, seed: u64) -> Result<Vec<f64>, JsValue> {
-    binomial_sample_impl(n, n_trials, p, seed).map_err(|e| JsValue::from_str(&e.message))
+pub fn binomial_sample(n: usize, n_trials: i64, p: f64, seed: u64) -> Result<Vec<f64>, JsError> {
+    binomial_sample_impl(n, n_trials, p, seed).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "poissonPmf")]
@@ -637,8 +638,8 @@ pub fn poisson_cdf(k: i64, lambda: f64) -> f64 {
 }
 
 #[wasm_bindgen(js_name = "poissonSample")]
-pub fn poisson_sample(n_samples: usize, lambda: f64, seed: u64) -> Result<Vec<f64>, JsValue> {
-    poisson_sample_impl(n_samples, lambda, seed).map_err(|e| JsValue::from_str(&e.message))
+pub fn poisson_sample(n_samples: usize, lambda: f64, seed: u64) -> Result<Vec<f64>, JsError> {
+    poisson_sample_impl(n_samples, lambda, seed).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "exponentialPdf")]
@@ -652,8 +653,8 @@ pub fn exponential_cdf(x: f64, lambda: f64) -> f64 {
 }
 
 #[wasm_bindgen(js_name = "exponentialSample")]
-pub fn exponential_sample(n: usize, lambda: f64, seed: u64) -> Result<Vec<f64>, JsValue> {
-    exponential_sample_impl(n, lambda, seed).map_err(|e| JsValue::from_str(&e.message))
+pub fn exponential_sample(n: usize, lambda: f64, seed: u64) -> Result<Vec<f64>, JsError> {
+    exponential_sample_impl(n, lambda, seed).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "chiSquaredPdf")]
@@ -667,8 +668,8 @@ pub fn chi_squared_cdf(x: f64, k: f64) -> f64 {
 }
 
 #[wasm_bindgen(js_name = "chiSquaredSample")]
-pub fn chi_squared_sample(n: usize, k: f64, seed: u64) -> Result<Vec<f64>, JsValue> {
-    chi_squared_sample_impl(n, k, seed).map_err(|e| JsValue::from_str(&e.message))
+pub fn chi_squared_sample(n: usize, k: f64, seed: u64) -> Result<Vec<f64>, JsError> {
+    chi_squared_sample_impl(n, k, seed).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "tPdf")]

@@ -1,5 +1,6 @@
 use crate::error::MlError;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 // ============================================================
 // Structs
@@ -38,8 +39,8 @@ impl GPModel {
 
     /// Predict using the GP model. Returns mean, std, lower CI, upper CI.
     #[wasm_bindgen]
-    pub fn predict(&self, x_test: &[f64]) -> Result<GPPrediction, JsValue> {
-        gp_predict_impl(self, x_test).map_err(|e| JsValue::from_str(&e.message))
+    pub fn predict(&self, x_test: &[f64]) -> Result<GPPrediction, JsError> {
+        gp_predict_impl(self, x_test).map_err(|e| JsError::new(&e.message))
     }
 }
 
@@ -246,9 +247,9 @@ pub fn gp_fit(
     kernel_type: &str,
     kernel_params: &[f64],
     noise: f64,
-) -> Result<GPModel, JsValue> {
+) -> Result<GPModel, JsError> {
     gp_fit_impl(data, n_features, targets, kernel_type, kernel_params, noise)
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
 }
 
 // ============================================================

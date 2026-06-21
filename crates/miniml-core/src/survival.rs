@@ -4,6 +4,7 @@
 
 use crate::error::MlError;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 /// Kaplan-Meier survival curve estimate.
 #[derive(Debug, Clone)]
@@ -113,8 +114,8 @@ pub fn kaplan_meier_impl(times: &[f64], events: &[f64]) -> Result<KaplanMeierRes
 }
 
 #[wasm_bindgen(js_name = "kaplanMeier")]
-pub fn kaplan_meier(times: &[f64], events: &[f64]) -> Result<JsValue, JsValue> {
-    let result = kaplan_meier_impl(times, events).map_err(|e| JsValue::from_str(&e.message))?;
+pub fn kaplan_meier(times: &[f64], events: &[f64]) -> Result<JsValue, JsError> {
+    let result = kaplan_meier_impl(times, events).map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![result.median_survival, result.times.len() as f64];
     for k in 0..result.times.len() {
         out.push(result.times[k]);
@@ -244,9 +245,9 @@ pub fn cox_proportional_hazards(
     events: &[f64],
     max_iter: usize,
     lr: f64,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     let result = cox_proportional_hazards_impl(features, n_features, times, events, max_iter, lr)
-        .map_err(|e| JsValue::from_str(&e.message))?;
+        .map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![result.n_features as f64, result.log_likelihood];
     out.extend(&result.coefficients);
     out.extend(&result.hazard_ratios);
