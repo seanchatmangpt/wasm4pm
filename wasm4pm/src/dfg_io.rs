@@ -248,6 +248,8 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
             frequency: *count as usize,
         });
     }
+    dfg.edges
+        .sort_by(|a, b| (a.from.as_str(), a.to.as_str()).cmp(&(b.from.as_str(), b.to.as_str())));
 
     for (act, count) in &result.start_activities {
         dfg.start_activities.insert(act.clone(), *count as usize);
