@@ -1,4 +1,3 @@
-#![allow(clippy::all, unused_variables, unused_imports, dead_code)]
 
 //! # Prolog8 — Byte-Capped Proof Engine
 //!

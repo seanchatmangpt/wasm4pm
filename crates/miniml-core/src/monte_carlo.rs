@@ -2,6 +2,9 @@ use crate::error::MlError;
 use crate::matrix::Rng;
 use wasm_bindgen::prelude::*;
 
+/// Z-score for 95% confidence interval under the normal approximation.
+const Z_95: f64 = 1.96;
+
 /// Result of a Monte Carlo estimation
 #[wasm_bindgen]
 pub struct MonteCarloResult {
@@ -138,7 +141,7 @@ where
     };
 
     // 95% CI using normal approximation (z = 1.96)
-    let z = 1.96;
+    let z = Z_95;
     let ci_lower = estimate - z * std_error;
     let ci_upper = estimate + z * std_error;
     let converged = (ci_upper - ci_lower).abs() < 0.01 * estimate.abs().max(1.0);
@@ -211,7 +214,7 @@ where
         0.0
     };
 
-    let z = 1.96;
+    let z = Z_95;
     let ci_lower = estimate - z * std_error;
     let ci_upper = estimate + z * std_error;
     let converged = (ci_upper - ci_lower).abs() < 0.01 * estimate.abs().max(1.0);
@@ -246,7 +249,7 @@ pub fn mc_estimate_pi_impl(n_samples: usize, seed: u64) -> MonteCarloResult {
     let p = inside as f64 / n_samples as f64;
     let std_error = 4.0 * (p * (1.0 - p) / n_samples as f64).sqrt();
 
-    let z = 1.96;
+    let z = Z_95;
     let ci_lower = estimate - z * std_error;
     let ci_upper = estimate + z * std_error;
 
@@ -299,7 +302,7 @@ where
         0.0
     };
 
-    let z = 1.96;
+    let z = Z_95;
     let ci_lower = estimate - z * std_error;
     let ci_upper = estimate + z * std_error;
 

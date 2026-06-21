@@ -76,10 +76,9 @@ pub fn hierarchical_impl(
         }
 
         // Extract closest pair
-        let best = heap.pop().unwrap();
-        let to_extend = clusters[best.cluster_j].clone();
-        clusters[best.cluster_i].extend(&to_extend);
-        clusters.remove(best.cluster_j);
+        let best = heap.pop().expect("heap is non-empty while clusters.len() > n_clusters");
+        let to_extend = clusters.remove(best.cluster_j);
+        clusters[best.cluster_i].extend(to_extend);
     }
 
     // Assign labels
