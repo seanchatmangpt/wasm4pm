@@ -7,21 +7,13 @@ use wasm4pm::simd_token_replay;
 use wasm4pm::state::delete_object;
 use wasm4pm::xes_format::load_eventlog_from_xes;
 use wasm4pm_cli::io::{Io, Table};
+use wasm4pm_cli::is_ocel_log;
 
 pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
     let io = Io::new(false);
 
     // 0. Format detection — bail early with actionable message for OCEL files
-    let ext = input
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-    let is_ocel = (ext == "json" && (input.to_string_lossy().contains(".ocel") || input.to_string_lossy().contains("vision_trace")))
-        || ext == "jsonocel"
-        || ext == "ocel";
-
-    if is_ocel {
+    if is_ocel_log(&input) {
         // OCEL format detected — graduate to wasm4pm engine for full support.
         // The wasm4pm WASM layer supports OCEL 2.0 via feature-ocel, but the
         // Rust CLI audit path uses SIMD token replay which requires a flattened

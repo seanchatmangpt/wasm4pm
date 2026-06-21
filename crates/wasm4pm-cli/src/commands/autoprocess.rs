@@ -6,6 +6,7 @@ use wasm4pm::autonomic_execute_cycle;
 use wasm4pm::state::delete_object;
 use wasm4pm::xes_format::load_eventlog_from_xes;
 use wasm4pm_cli::io::Io;
+use wasm4pm_cli::is_ocel_log;
 
 pub fn run(
     input: PathBuf,
@@ -16,16 +17,7 @@ pub fn run(
     let io = Io::new(false);
 
     // 0. Format detection — bail early with actionable message for OCEL files
-    let ext = input
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_lowercase();
-    let is_ocel = (ext == "json" && (input.to_string_lossy().contains(".ocel") || input.to_string_lossy().contains("vision_trace") || fs::read_to_string(&input).unwrap_or_default().contains("ocel:")))
-        || ext == "jsonocel"
-        || ext == "ocel";
-
-    if is_ocel {
+    if is_ocel_log(&input) {
         anyhow::bail!(
             "OCEL 2.0 format detected ({:?}).\n\
              The wpm autoprocess command currently supports XES event logs (IEEE 1849).\n\
