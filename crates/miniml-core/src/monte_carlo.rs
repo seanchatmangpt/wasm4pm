@@ -1,6 +1,7 @@
 use crate::error::MlError;
 use crate::matrix::Rng;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 /// Z-score for 95% confidence interval under the normal approximation.
 const Z_95: f64 = 1.96;
@@ -449,10 +450,10 @@ pub fn mc_integrate(
     _b: f64,
     _n_samples: usize,
     _seed: u64,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     // For WASM, we use a simple polynomial integration since we can't pass closures.
     // Users should use mc_integrate_multidim or the _impl version directly.
-    Err(JsValue::from_str(
+    Err(JsError::new(
         "Use mcIntegrateFn with a string expression, or use the Rust API directly",
     ))
 }
@@ -465,9 +466,9 @@ pub fn mc_bootstrap(
     statistic: &str,
     confidence: f64,
     seed: u64,
-) -> Result<MonteCarloBootstrapResult, JsValue> {
+) -> Result<MonteCarloBootstrapResult, JsError> {
     mc_bootstrap_impl(data, n_bootstrap, statistic, confidence, seed)
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
 }
 
 /// Expected value of a function using Monte Carlo sampling.

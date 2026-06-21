@@ -5,6 +5,7 @@
 use crate::error::MlError;
 use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 /// Result of PageRank computation.
 #[derive(Debug, Clone)]
@@ -110,9 +111,9 @@ pub fn pagerank(
     damping: f64,
     max_iter: usize,
     tol: f64,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     let result = pagerank_impl(adjacency, n_nodes, damping, max_iter, tol)
-        .map_err(|e| JsValue::from_str(&e.message))?;
+        .map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![
         if result.converged { 1.0 } else { 0.0 },
         result.iterations as f64,
@@ -173,9 +174,9 @@ pub fn shortest_path_impl(
 }
 
 #[wasm_bindgen(js_name = "shortestPath")]
-pub fn shortest_path(adjacency: &[f64], n_nodes: usize, source: usize) -> Result<JsValue, JsValue> {
+pub fn shortest_path(adjacency: &[f64], n_nodes: usize, source: usize) -> Result<JsValue, JsError> {
     let result = shortest_path_impl(adjacency, n_nodes, source)
-        .map_err(|e| JsValue::from_str(&e.message))?;
+        .map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![result.source as f64];
     out.extend(&result.distances);
     out.extend(&result.predecessors);
@@ -246,9 +247,9 @@ pub fn community_detection(
     adjacency: &[f64],
     n_nodes: usize,
     max_iter: usize,
-) -> Result<JsValue, JsValue> {
+) -> Result<JsValue, JsError> {
     let result = community_detection_impl(adjacency, n_nodes, max_iter)
-        .map_err(|e| JsValue::from_str(&e.message))?;
+        .map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![result.n_communities as f64];
     out.extend(&result.labels);
     Ok(JsValue::from(out))

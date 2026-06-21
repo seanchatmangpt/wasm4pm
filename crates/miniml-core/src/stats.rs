@@ -1,6 +1,7 @@
 use crate::distributions::{chi_squared_cdf, f_cdf, normal_cdf, normal_ppf, t_cdf};
 use crate::error::MlError;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 // ---------------------------------------------------------------------------
 // Result structs
@@ -861,44 +862,44 @@ pub fn t_test_one_sample(
     data: &[f64],
     hypothesized_mean: f64,
     alpha: f64,
-) -> Result<TTestResult, JsValue> {
+) -> Result<TTestResult, JsError> {
     t_test_one_sample_impl(data, hypothesized_mean, alpha)
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "tTestTwoSample")]
-pub fn t_test_two_sample(data1: &[f64], data2: &[f64], alpha: f64) -> Result<TTestResult, JsValue> {
-    t_test_two_sample_impl(data1, data2, alpha).map_err(|e| JsValue::from_str(&e.message))
+pub fn t_test_two_sample(data1: &[f64], data2: &[f64], alpha: f64) -> Result<TTestResult, JsError> {
+    t_test_two_sample_impl(data1, data2, alpha).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "tTestPaired")]
-pub fn t_test_paired(data1: &[f64], data2: &[f64], alpha: f64) -> Result<TTestResult, JsValue> {
-    t_test_paired_impl(data1, data2, alpha).map_err(|e| JsValue::from_str(&e.message))
+pub fn t_test_paired(data1: &[f64], data2: &[f64], alpha: f64) -> Result<TTestResult, JsError> {
+    t_test_paired_impl(data1, data2, alpha).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "welchTTest")]
-pub fn welch_t_test(data1: &[f64], data2: &[f64], alpha: f64) -> Result<TTestResult, JsValue> {
-    welch_t_test_impl(data1, data2, alpha).map_err(|e| JsValue::from_str(&e.message))
+pub fn welch_t_test(data1: &[f64], data2: &[f64], alpha: f64) -> Result<TTestResult, JsError> {
+    welch_t_test_impl(data1, data2, alpha).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "mannWhitneyU")]
-pub fn mann_whitney_u(data1: &[f64], data2: &[f64]) -> Result<MannWhitneyResult, JsValue> {
-    mann_whitney_u_impl(data1, data2).map_err(|e| JsValue::from_str(&e.message))
+pub fn mann_whitney_u(data1: &[f64], data2: &[f64]) -> Result<MannWhitneyResult, JsError> {
+    mann_whitney_u_impl(data1, data2).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "wilcoxonSignedRank")]
-pub fn wilcoxon_signed_rank(data1: &[f64], data2: &[f64]) -> Result<MannWhitneyResult, JsValue> {
-    wilcoxon_signed_rank_impl(data1, data2).map_err(|e| JsValue::from_str(&e.message))
+pub fn wilcoxon_signed_rank(data1: &[f64], data2: &[f64]) -> Result<MannWhitneyResult, JsError> {
+    wilcoxon_signed_rank_impl(data1, data2).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "ksTest")]
-pub fn ks_test(data: &[f64]) -> Result<KSTestResult, JsValue> {
-    ks_test_impl(data).map_err(|e| JsValue::from_str(&e.message))
+pub fn ks_test(data: &[f64]) -> Result<KSTestResult, JsError> {
+    ks_test_impl(data).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "chiSquareTest")]
-pub fn chi_square_test(observed: &[f64], expected: &[f64]) -> Result<ChiSquareResult, JsValue> {
-    chi_square_test_impl(observed, expected).map_err(|e| JsValue::from_str(&e.message))
+pub fn chi_square_test(observed: &[f64], expected: &[f64]) -> Result<ChiSquareResult, JsError> {
+    chi_square_test_impl(observed, expected).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "chiSquareIndependence")]
@@ -906,19 +907,19 @@ pub fn chi_square_independence(
     contingency: &[f64],
     n_rows: usize,
     n_cols: usize,
-) -> Result<ChiSquareResult, JsValue> {
+) -> Result<ChiSquareResult, JsError> {
     chi_square_independence_impl(contingency, n_rows, n_cols)
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "oneWayAnova")]
-pub fn one_way_anova(groups: &[f64], group_sizes: &[usize]) -> Result<AnovaResult, JsValue> {
-    one_way_anova_impl(groups, group_sizes).map_err(|e| JsValue::from_str(&e.message))
+pub fn one_way_anova(groups: &[f64], group_sizes: &[usize]) -> Result<AnovaResult, JsError> {
+    one_way_anova_impl(groups, group_sizes).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "confidenceIntervalMean")]
-pub fn confidence_interval_mean(data: &[f64], alpha: f64) -> Result<ConfidenceInterval, JsValue> {
-    confidence_interval_mean_impl(data, alpha).map_err(|e| JsValue::from_str(&e.message))
+pub fn confidence_interval_mean(data: &[f64], alpha: f64) -> Result<ConfidenceInterval, JsError> {
+    confidence_interval_mean_impl(data, alpha).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "confidenceIntervalProportion")]
@@ -926,14 +927,14 @@ pub fn confidence_interval_proportion(
     successes: i64,
     total: i64,
     alpha: f64,
-) -> Result<ConfidenceInterval, JsValue> {
+) -> Result<ConfidenceInterval, JsError> {
     confidence_interval_proportion_impl(successes, total, alpha)
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "describe")]
-pub fn describe(data: &[f64]) -> Result<DescriptiveStats, JsValue> {
-    describe_impl(data).map_err(|e| JsValue::from_str(&e.message))
+pub fn describe(data: &[f64]) -> Result<DescriptiveStats, JsError> {
+    describe_impl(data).map_err(|e| JsError::new(&e.message))
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 use crate::error::MlError;
 use crate::matrix::Rng;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsError;
 
 // ============================================================
 // Structs
@@ -347,7 +348,7 @@ pub fn bayesian_estimate(
     seed: u64,
     initial: f64,
     proposal_sd: f64,
-) -> Result<BayesianResult, JsValue> {
+) -> Result<BayesianResult, JsError> {
     // Default: estimate the mean of a standard normal
     let log_likelihood = |x: f64| -x * x / 2.0;
     let log_prior = |_x: f64| 0.0; // flat prior
@@ -360,7 +361,7 @@ pub fn bayesian_estimate(
         initial,
         proposal_sd,
     )
-    .map_err(|e| JsValue::from_str(&e.message))
+    .map_err(|e| JsError::new(&e.message))
 }
 
 /// Bayesian linear regression with conjugate prior.
@@ -372,7 +373,7 @@ pub fn bayesian_linear_regression(
     prior_precision: f64,
     prior_alpha: f64,
     prior_beta: f64,
-) -> Result<BayesianLinearModel, JsValue> {
+) -> Result<BayesianLinearModel, JsError> {
     bayesian_linear_regression_impl(
         data,
         n_features,
@@ -381,7 +382,7 @@ pub fn bayesian_linear_regression(
         prior_alpha,
         prior_beta,
     )
-    .map_err(|e| JsValue::from_str(&e.message))
+    .map_err(|e| JsError::new(&e.message))
 }
 
 /// Interpret a Bayes factor.
