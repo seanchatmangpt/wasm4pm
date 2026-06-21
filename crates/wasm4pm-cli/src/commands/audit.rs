@@ -17,7 +17,7 @@ pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_lowercase();
-    let is_ocel = (ext == "json" && input.to_string_lossy().contains(".ocel"))
+    let is_ocel = (ext == "json" && (input.to_string_lossy().contains(".ocel") || input.to_string_lossy().contains("vision_trace")))
         || ext == "jsonocel"
         || ext == "ocel";
 

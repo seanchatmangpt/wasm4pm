@@ -44,10 +44,10 @@ pub enum MiningCommands {
         /// Path to the event log file (.xes or .json)
         input: PathBuf,
         /// Algorithm to use (heuristic, inductive)
-        #[arg(short, long, default_value = "heuristic")]
+        #[arg(long, default_value = "heuristic")]
         algo: String,
         /// Activity key to use (e.g. "concept:name")
-        #[arg(short, long, default_value = "concept:name")]
+        #[arg(short = 'k', long, default_value = "concept:name")]
         activity_key: String,
     },
     /// Check conformance of an event log against a model.

@@ -4,6 +4,11 @@ wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
 
+## [Unreleased]
+
+### Added
+- Task D2: Recorded massive geometry expansion (from 8KB to 1.8MB)
+
 ## [26.6.9] — 2026-06-09
 
 ### Changed

@@ -15,6 +15,29 @@ pub fn run(
 ) -> Result<()> {
     let io = Io::new(false);
 
+    // 0. Format detection — bail early with actionable message for OCEL files
+    let ext = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    let is_ocel = (ext == "json" && (input.to_string_lossy().contains(".ocel") || input.to_string_lossy().contains("vision_trace") || fs::read_to_string(&input).unwrap_or_default().contains("ocel:")))
+        || ext == "jsonocel"
+        || ext == "ocel";
+
+    if is_ocel {
+        anyhow::bail!(
+            "OCEL 2.0 format detected ({:?}).\n\
+             The wpm autoprocess command currently supports XES event logs (IEEE 1849).\n\
+             To autoprocess an OCEL log, flatten it first:\n\n\
+             \twpm run --algorithm dfg --format json {:?}\n\n\
+             or use the TypeScript CLI: wpm autoprocess {:?}",
+            input,
+            input,
+            input
+        );
+    }
+
     // 1. Load XES file
     let xes_content = fs::read_to_string(&input)
         .with_context(|| format!("Failed to read event log: {:?}", input))?;
