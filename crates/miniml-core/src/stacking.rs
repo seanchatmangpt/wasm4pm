@@ -4,7 +4,7 @@
 
 use crate::error::MlError;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 /// Voting type for ensemble
@@ -197,16 +197,22 @@ impl VotingEnsemble {
         match self.voting_type {
             VotingType::Hard => {
                 // Majority vote
-                let mut counts: HashMap<i32, usize> = HashMap::new();
+                let mut counts: BTreeMap<i32, usize> = BTreeMap::new();
 
                 for &pred in base_predictions {
                     let class = pred.round() as i32;
                     *counts.entry(class).or_insert(0) += 1;
                 }
 
-                // Find class with most votes
+                // Find class with most votes. BTreeMap iterates ascending by
+                // class id; `.rev()` makes `max_by` (which keeps the last of
+                // equal maxima) resolve ties to the LOWEST class id — a
+                // deterministic, sklearn-style tie-break. Replaces the previous
+                // HashMap whose nondeterministic iteration made tied predictions
+                // non-reproducible (a receipt/determinism leak).
                 counts
                     .into_iter()
+                    .rev()
                     .max_by(|a, b| a.1.cmp(&b.1))
                     .map(|(class, _)| class as f64)
                     .unwrap_or(0.0)
@@ -426,6 +432,20 @@ mod tests {
         let result = ensemble.predict(&predictions);
 
         assert_eq!(result, 1.0); // Class 1 wins
+    }
+
+    #[test]
+    fn test_voting_ensemble_hard_tie_is_deterministic_lowest_class() {
+        let models = vec!["Model1".to_string(), "Model2".to_string()];
+        let ensemble = VotingEnsemble::new(models, VotingType::Hard);
+
+        // 1-vote-each tie between class 2 and class 5. The deterministic
+        // tie-break must pick the lowest class id (2), identically on every run.
+        let predictions = vec![5.0, 2.0];
+
+        for _ in 0..8 {
+            assert_eq!(ensemble.predict(&predictions), 2.0);
+        }
     }
 
     #[test]
