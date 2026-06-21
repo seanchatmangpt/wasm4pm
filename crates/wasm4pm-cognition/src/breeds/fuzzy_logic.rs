@@ -9,7 +9,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Fuzzy Logic breed
 pub struct FuzzyLogic;
@@ -154,7 +154,7 @@ impl CognitionBreed for FuzzyLogic {
             }
         };
 
-        let mut terms: HashMap<String, Mf> = HashMap::new();
+        let mut terms: BTreeMap<String, Mf> = BTreeMap::new();
         for fact in &input.facts {
             let key_norm = if fact.key.starts_with("fuzzy_set:") {
                 format!("fuzzy:{}", &fact.key["fuzzy_set:".len()..])
@@ -182,7 +182,7 @@ impl CognitionBreed for FuzzyLogic {
         }
 
         let mut fuzzified: HashMap<String, f32> = HashMap::new();
-        let mut out_vars: HashMap<String, Vec<String>> = HashMap::new();
+        let mut out_vars: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
         for (term_key, mf) in &terms {
             let parts: Vec<&str> = term_key.split(':').collect();
@@ -206,7 +206,7 @@ impl CognitionBreed for FuzzyLogic {
             }
         }
 
-        let mut aggregated: HashMap<String, f32> = HashMap::new();
+        let mut aggregated: BTreeMap<String, f32> = BTreeMap::new();
         for rule in &input.rules {
             let mut fire_strength = 1.0_f32;
             let mut can_fire = true;
