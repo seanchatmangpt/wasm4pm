@@ -207,10 +207,8 @@ impl SocialNetwork {
         for node in &self.nodes {
             let neighbors: Vec<_> = adj
                 .get(&node.id)
-                .unwrap_or(&HashSet::new())
-                .iter()
-                .cloned()
-                .collect();
+                .map(|s| s.iter().cloned().collect())
+                .unwrap_or_default();
 
             if neighbors.len() <= 1 {
                 local_coefficients.insert(node.id.clone(), 0.0);
