@@ -297,9 +297,8 @@ impl Kernel {
                         let raw = body_atom.args[ai];
                         let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
                         let resolved = resolve(effective, &subst);
-                        if var_index(resolved).is_some() {
+                        if let Some(vi) = var_index(resolved) {
                             // Bind this variable to the fact value.
-                            let vi = var_index(resolved).unwrap();
                             if vi < ARITY_CAP as usize {
                                 subst[vi] = Some(fact_row.args[ai]);
                             }
