@@ -269,10 +269,15 @@ pub fn compute_fitness(
     } else {
         trace_results.iter().map(|r| r.precision).sum::<f64>() / total_traces as f64
     };
-    let total_produced: u32 = trace_results.iter().map(|r| r.produced_tokens).sum();
-    let total_consumed: u32 = trace_results.iter().map(|r| r.consumed_tokens).sum();
-    let total_missing: u32 = trace_results.iter().map(|r| r.missing_tokens).sum();
-    let total_remaining: u32 = trace_results.iter().map(|r| r.remaining_tokens).sum();
+    let (total_produced, total_consumed, total_missing, total_remaining) =
+        trace_results.iter().fold((0u32, 0u32, 0u32, 0u32), |(p, c, m, r), x| {
+            (
+                p + x.produced_tokens,
+                c + x.consumed_tokens,
+                m + x.missing_tokens,
+                r + x.remaining_tokens,
+            )
+        });
     let percentage = if total_produced == 0 && total_consumed == 0 {
         1.0
     } else {

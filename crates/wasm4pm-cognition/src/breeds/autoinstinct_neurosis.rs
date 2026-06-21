@@ -132,7 +132,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
 
             trace.push(TraceStep {
                 step: trace.len(),
-                kind: response.clone(),
+                kind: response.to_string(),
                 detail: format!(
                     "stimulus=\"{}\" strength={:.3} Δfear={:+.3} Δanger={:+.3} Δmistrust={:+.3}",
                     stimulus, strength, delta_fear, delta_anger, delta_mistrust

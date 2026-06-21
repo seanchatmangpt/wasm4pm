@@ -5,7 +5,7 @@
 //! to generate plans and adapt to failures.
 
 /// Represents a simple state in a problem-solving space.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ProblemState {
     /// Bitmask of achieved goals (each bit = one satisfied sub-goal).
     pub features: u32,
@@ -44,7 +44,7 @@ impl HeuristicPlanner {
     /// // Validation successful
     /// ```
     pub fn solve(&self, mut current: ProblemState) -> Vec<ProblemState> {
-        let mut plan = vec![current.clone()];
+        let mut plan = vec![current];
         let mut distance = self.heuristic_distance(&current);
 
         while distance > 0 {
@@ -54,7 +54,7 @@ impl HeuristicPlanner {
 
             // Apply action (flip the bit)
             current.features |= next_bit;
-            plan.push(current.clone());
+            plan.push(current);
 
             let new_dist = self.heuristic_distance(&current);
             if new_dist >= distance {
@@ -143,7 +143,7 @@ mod tests {
     fn presatisfied_goal_yields_single_state_plan() {
         let planner = HeuristicPlanner::new(0b1111);
         let initial = ProblemState { features: 0b1111 };
-        let plan = planner.solve(initial.clone());
+        let plan = planner.solve(initial);
         assert_eq!(
             plan.len(),
             1,

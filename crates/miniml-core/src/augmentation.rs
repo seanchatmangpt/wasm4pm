@@ -48,16 +48,13 @@ pub fn smote(
     let _majority_class = f64::from_bits(majority_class_bits);
 
     // Separate minority and majority samples
-    let mut minority_indices = Vec::new();
-    let mut majority_indices = Vec::new();
-
-    for (i, &label) in y.iter().enumerate() {
-        if label == minority_class {
-            minority_indices.push(i);
-        } else {
-            majority_indices.push(i);
-        }
-    }
+    let (minority_indices, majority_indices): (Vec<usize>, Vec<usize>) = {
+        let (a, b): (Vec<(usize, _)>, Vec<(usize, _)>) = y
+            .iter()
+            .enumerate()
+            .partition(|(_, &label)| label == minority_class);
+        (a.into_iter().map(|(i, _)| i).collect(), b.into_iter().map(|(i, _)| i).collect())
+    };
 
     let n_minority = minority_indices.len();
     let n_majority = majority_indices.len();
@@ -196,16 +193,13 @@ pub fn random_oversample(
     let _majority_class = f64::from_bits(majority_class_bits);
 
     // Separate minority and majority samples
-    let mut minority_indices = Vec::new();
-    let mut majority_indices = Vec::new();
-
-    for (i, &label) in y.iter().enumerate() {
-        if label == minority_class {
-            minority_indices.push(i);
-        } else {
-            majority_indices.push(i);
-        }
-    }
+    let (minority_indices, majority_indices): (Vec<usize>, Vec<usize>) = {
+        let (a, b): (Vec<(usize, _)>, Vec<(usize, _)>) = y
+            .iter()
+            .enumerate()
+            .partition(|(_, &label)| label == minority_class);
+        (a.into_iter().map(|(i, _)| i).collect(), b.into_iter().map(|(i, _)| i).collect())
+    };
 
     let n_minority = minority_indices.len();
     let n_majority = majority_indices.len();

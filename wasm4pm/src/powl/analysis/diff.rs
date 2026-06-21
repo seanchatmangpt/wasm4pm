@@ -168,23 +168,18 @@ pub fn diff(arena_a: &PowlArena, root_a: u32, arena_b: &PowlArena, root_b: u32) 
         always_changes.push(AlwaysChange::BecameOptional(act.clone()));
     }
 
-    let seq_a: std::collections::HashSet<_> = fp_a.sequence.clone();
-    let seq_b: std::collections::HashSet<_> = fp_b.sequence.clone();
-    let par_a: std::collections::HashSet<_> = fp_a.parallel.clone();
-    let par_b: std::collections::HashSet<_> = fp_b.parallel.clone();
-
     let mut order_changes = Vec::new();
 
-    for p in seq_b.difference(&seq_a) {
+    for p in fp_b.sequence.difference(&fp_a.sequence) {
         order_changes.push(OrderChange::SequenceAdded(p.clone()));
     }
-    for p in seq_a.difference(&seq_b) {
+    for p in fp_a.sequence.difference(&fp_b.sequence) {
         order_changes.push(OrderChange::SequenceRemoved(p.clone()));
     }
-    for p in par_b.difference(&par_a) {
+    for p in fp_b.parallel.difference(&fp_a.parallel) {
         order_changes.push(OrderChange::ParallelAdded(p.clone()));
     }
-    for p in par_a.difference(&par_b) {
+    for p in fp_a.parallel.difference(&fp_b.parallel) {
         order_changes.push(OrderChange::ParallelRemoved(p.clone()));
     }
     for a in fp_b.start_activities.difference(&fp_a.start_activities) {
