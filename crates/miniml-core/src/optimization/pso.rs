@@ -93,12 +93,12 @@ impl Particle {
     }
 
     fn update_position(&mut self, bounds: Option<(f64, f64)>) {
-        for i in 0..self.position.len() {
-            self.position[i] += self.velocity[i];
+        for (pos, vel) in self.position.iter_mut().zip(self.velocity.iter()) {
+            *pos += vel;
 
             // Apply bounds if specified
             if let Some((min, max)) = bounds {
-                self.position[i] = self.position[i].clamp(min, max);
+                *pos = pos.clamp(min, max);
             }
         }
     }

@@ -29,7 +29,7 @@ pub fn roc_auc_impl(y_true: &[f64], y_scores: &[f64]) -> Result<f64, MlError> {
     // Sort by score descending.
     let mut indexed: Vec<(usize, f64)> =
         y_scores.iter().enumerate().map(|(i, s)| (i, *s)).collect();
-    indexed.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    indexed.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
 
     // Process tied-score groups together so the trapezoidal area is symmetric.
     // Without this, a random classifier (all equal scores) gives 0.25 instead of 0.5

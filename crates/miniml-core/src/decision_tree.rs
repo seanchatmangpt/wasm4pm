@@ -355,7 +355,7 @@ impl<'a> TreeBuilder<'a> {
                 sorted.sort_unstable_by(|&a, &b| {
                     let va = mat_get(self.data, self.n_features, indices[a], f);
                     let vb = mat_get(self.data, self.n_features, indices[b], f);
-                    va.partial_cmp(&vb).unwrap()
+                    va.total_cmp(&vb)
                 });
 
                 // Running left counts, right counts start as parent counts
@@ -429,7 +429,7 @@ impl<'a> TreeBuilder<'a> {
                 sorted.sort_unstable_by(|&a, &b| {
                     let va = mat_get(self.data, self.n_features, indices[a], f);
                     let vb = mat_get(self.data, self.n_features, indices[b], f);
-                    va.partial_cmp(&vb).unwrap()
+                    va.total_cmp(&vb)
                 });
 
                 let mut left_sum = 0.0;

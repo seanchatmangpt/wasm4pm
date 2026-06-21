@@ -24,7 +24,7 @@ pub fn davies_bouldin_impl(
 
     // Find unique clusters
     let mut cluster_ids: Vec<f64> = labels.to_vec();
-    cluster_ids.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    cluster_ids.sort_unstable_by(|a, b| a.total_cmp(b));
     cluster_ids.dedup();
     let n_clusters = cluster_ids.len();
 
@@ -131,7 +131,7 @@ pub fn calinski_harabasz_impl(
 
     // Find unique clusters
     let mut cluster_ids: Vec<f64> = labels.to_vec();
-    cluster_ids.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    cluster_ids.sort_unstable_by(|a, b| a.total_cmp(b));
     cluster_ids.dedup();
     let n_clusters = cluster_ids.len();
 

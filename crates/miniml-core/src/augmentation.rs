@@ -97,7 +97,7 @@ pub fn smote(
         }
 
         // Sort by distance and select k nearest
-        distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        distances.sort_by(|a, b| a.0.total_cmp(&b.0));
         let k_neighbors = distances
             .iter()
             .take(k.min(distances.len()))

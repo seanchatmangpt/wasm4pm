@@ -55,7 +55,7 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
 
     // Build confusion matrix
     let mut unique_true: Vec<f64> = y_true.to_vec();
-    unique_true.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    unique_true.sort_unstable_by(|a, b| a.total_cmp(b));
     unique_true.dedup();
 
     let n_classes = unique_true.len();
@@ -65,7 +65,7 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
         let t_idx = unique_true
             .iter()
             .position(|&v| (v - t).abs() < 1e-10)
-            .unwrap();
+            .ok_or_else(|| MlError::new("label not found in unique set"))?;
         let p_idx = unique_true.iter().position(|&v| (v - p).abs() < 1e-10);
         if let Some(pi) = p_idx {
             observed[t_idx * n_classes + pi] += 1;
@@ -109,7 +109,7 @@ pub fn balanced_accuracy_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
     }
 
     let mut unique_true: Vec<f64> = y_true.to_vec();
-    unique_true.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    unique_true.sort_unstable_by(|a, b| a.total_cmp(b));
     unique_true.dedup();
 
     let mut recalls = Vec::new();

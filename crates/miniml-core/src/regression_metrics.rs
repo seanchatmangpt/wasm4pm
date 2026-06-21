@@ -93,7 +93,7 @@ pub fn median_absolute_error(y_true: &[f64], y_pred: &[f64]) -> Result<f64, JsEr
         .zip(y_pred.iter())
         .map(|(t, p)| (t - p).abs())
         .collect();
-    errors.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+    errors.sort_unstable_by(|a, b| a.total_cmp(b));
 
     let median = if errors.len().is_multiple_of(2) {
         (errors[errors.len() / 2 - 1] + errors[errors.len() / 2]) / 2.0
