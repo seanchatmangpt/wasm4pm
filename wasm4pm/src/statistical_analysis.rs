@@ -197,7 +197,7 @@ pub fn compare_cohort_durations(
 
         if groups.len() < 2 {
             let msg = json!({"error": "Need at least 2 cohorts"});
-            return Err(JsValue::from_str(&msg.to_string()));
+            return Err(JsError::new(&msg.to_string()).into());
         }
 
         // Deterministic: sort keys and take first two. Each group must have at
@@ -226,7 +226,7 @@ pub fn compare_cohort_durations(
                 "cohorts_seen": total_cohorts,
                 "skipped_too_small": skipped_too_small,
             });
-            return Err(JsValue::from_str(&msg.to_string()));
+            return Err(JsError::new(&msg.to_string()).into());
         }
 
         let label_a = chosen[0].clone();
@@ -314,7 +314,7 @@ pub fn compare_resource_performance(
         if filtered.len() < 2 {
             let msg =
                 json!({"error": "Need at least 2 resource groups with >=2 observations each"});
-            return Err(JsValue::from_str(&msg.to_string()));
+            return Err(JsError::new(&msg.to_string()).into());
         }
 
         // Sort for determinism
@@ -408,7 +408,7 @@ pub fn describe_attribute(
 
         if values.is_empty() {
             let msg = json!({"error": format!("No numeric values found for attribute '{}' in scope '{}'", attribute_key, scope)});
-            return Err(JsValue::from_str(&msg.to_string()));
+            return Err(JsError::new(&msg.to_string()).into());
         }
 
         let stats = miniml::describe_impl(&values)
