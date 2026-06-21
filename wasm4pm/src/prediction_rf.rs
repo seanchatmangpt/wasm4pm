@@ -515,7 +515,7 @@ pub fn predict_next_activity_rf(model_handle: &str, prefix_json: &str) -> Result
         candidates.sort_by(|a, b| {
             let pa = a["probability"].as_f64().unwrap_or(0.0);
             let pb = b["probability"].as_f64().unwrap_or(0.0);
-            pb.partial_cmp(&pa).unwrap_or(std::cmp::Ordering::Equal)
+            pb.total_cmp(&pa)
         });
 
         let result_arr = serde_json::Value::Array(candidates);

@@ -235,7 +235,7 @@ pub fn discover_astar_from_log(
     let mut iterations = 0;
 
     while !open_set.is_empty() && iterations < max_iterations {
-        open_set.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+        open_set.sort_by(|a, b| a.1.total_cmp(&b.1));
         let (current_dfg, _score) = match open_set.pop() {
             Some(item) => item,
             None => break,
@@ -295,7 +295,7 @@ pub fn discover_astar_from_log(
         }
         open_set.extend(new_candidates);
         // Beam: sort descending by score and cap the open set to prevent memory explosion.
-        open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        open_set.sort_by(|a, b| b.1.total_cmp(&a.1));
         open_set.truncate(128);
         iterations += 1;
     }

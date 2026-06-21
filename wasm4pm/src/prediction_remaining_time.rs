@@ -265,7 +265,7 @@ pub fn build_remaining_time_model(
     // Fix C: sort in-place; case_durations is not used after this point.
     let median_duration_ms = {
         case_durations
-            .sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            .sort_unstable_by(|a, b| a.total_cmp(b));
         case_durations[case_durations.len() / 2]
     };
 

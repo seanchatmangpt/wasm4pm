@@ -61,7 +61,7 @@ pub fn predict_top_k_activities(
         }
     }
 
-    candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    candidates.sort_by(|a, b| b.1.total_cmp(&a.1));
 
     let top_k = std::cmp::min(k, candidates.len());
     let activities: Vec<String> = candidates
@@ -130,7 +130,7 @@ pub fn beam_search_paths(
             }
         }
 
-        next_beams.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        next_beams.sort_by(|a, b| b.1.total_cmp(&a.1));
         beams = next_beams.into_iter().take(beam_width).collect();
     }
 
@@ -215,7 +215,7 @@ pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionG
             (from, to, prob)
         })
         .collect();
-    edges.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+    edges.sort_by(|a, b| b.2.total_cmp(&a.2));
 
     let mut activities: Vec<String> = activities_set.into_iter().collect();
     activities.sort();
@@ -361,7 +361,7 @@ pub fn greedy_intervention_ranking(
         })
         .collect::<Vec<_>>();
 
-    ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
     ranked.into_iter().map(|(name, _)| name).collect()
 }
 

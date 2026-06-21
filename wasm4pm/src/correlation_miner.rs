@@ -383,7 +383,7 @@ fn resolve_edges(
             candidates.push((dur[i][j] / ps[i][j] / mc as f64, i, j));
         }
     }
-    candidates.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    candidates.sort_by(|a, b| a.0.total_cmp(&b.0));
 
     let mut out_rem: Vec<u32> = act_counts.iter().map(|&c| c as u32).collect();
     let mut in_rem: Vec<u32> = act_counts.iter().map(|&c| c as u32).collect();

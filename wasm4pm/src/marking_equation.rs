@@ -234,7 +234,7 @@ fn simplex(tab: &mut [Vec<f64>], basis: &mut [usize], m: usize, n_vars: usize) -
         let (enter_col, _) = (0..n_vars)
             .map(|j| (j, tab[m][j]))
             .filter(|&(_, rc)| rc < -EPS)
-            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .min_by(|a, b| a.1.total_cmp(&b.1))
             .unzip();
         let ec = match enter_col {
             None => return PivotResult::Optimal,

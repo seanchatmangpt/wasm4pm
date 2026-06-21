@@ -412,7 +412,7 @@ pub fn identify_resource_bottlenecks(
             bottlenecks.sort_by(|a, b| {
                 let aq = a.get("avg_queue_size").and_then(|v| v.as_f64()).unwrap_or(0.0);
                 let bq = b.get("avg_queue_size").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                bq.partial_cmp(&aq).unwrap_or(std::cmp::Ordering::Equal)
+                bq.total_cmp(&aq)
             });
 
             serde_json::to_string(&json!({

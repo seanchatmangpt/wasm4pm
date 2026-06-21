@@ -440,7 +440,7 @@ pub fn run_monte_carlo_simulation(
         0.0
     };
 
-    per_case_sojourn_ms.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    per_case_sojourn_ms.sort_by(|a, b| a.total_cmp(b));
     let sojourn_time_p5_ms = percentile_sorted(&per_case_sojourn_ms, 5.0);
     let sojourn_time_p50_ms = percentile_sorted(&per_case_sojourn_ms, 50.0);
     let sojourn_time_p95_ms = percentile_sorted(&per_case_sojourn_ms, 95.0);

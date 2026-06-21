@@ -132,7 +132,7 @@ impl StreamingAStarBuilder {
             })
             .collect();
 
-        scored_edges.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap_or(std::cmp::Ordering::Equal));
+        scored_edges.sort_by(|a, b| a.2.total_cmp(&b.2));
 
         // Compute median score as pruning threshold
         let median_score = if scored_edges.len() >= 2 {

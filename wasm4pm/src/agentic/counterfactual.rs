@@ -112,7 +112,7 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
             .max_by(|a, b| {
                 a.estimated_reward
                     .unwrap_or(f32::NEG_INFINITY)
-                    .partial_cmp(&b.estimated_reward.unwrap_or(f32::NEG_INFINITY))
+                    .total_cmp(&b.estimated_reward.unwrap_or(f32::NEG_INFINITY))
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
             .map(|o| o.option_id.clone());
