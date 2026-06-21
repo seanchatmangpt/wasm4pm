@@ -191,6 +191,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99408a1bac0657713ecef7e9a723d3241feb5c603d8edefe663773cf903d9d0b"
 
 [[package]]
+name = "bench-tools"
+version = "26.6.12"
+dependencies = [
+ "blake3",
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
