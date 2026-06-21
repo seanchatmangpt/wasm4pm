@@ -26,9 +26,7 @@ pub enum ReplayStatus {
 /// roots against `expected`. Returns the replay outcome.
 pub fn replay(kernel: &Kernel, query: &QueryAtom8, expected: &Receipt) -> ReplayStatus {
     // 1. Verify the receipt's own integrity (recompute its hash).
-    let mut probe = expected.clone();
-    probe.receipt_hash = [0u8; 32];
-    if probe.compute_hash() != expected.receipt_hash {
+    if expected.compute_hash() != expected.receipt_hash {
         return ReplayStatus::ReceiptInvalid;
     }
 
