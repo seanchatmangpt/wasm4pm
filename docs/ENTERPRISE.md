@@ -15,7 +15,7 @@
 ```bash
 git clone https://github.com/seanchatmangpt/wasm4pm
 cd wasm4pm && pnpm install
-cd wasm4pm && npm run build:nodejs && cd ..
+cd wasm4pm && pnpm build && cd ..
 node apps/wasm4pm/dist/bin/wpm.js --version
 ```
 
@@ -23,8 +23,9 @@ node apps/wasm4pm/dist/bin/wpm.js --version
 
 On internet-connected machine:
   mkdir offline && cd offline
-  npm pack @wasm4pm/cli && npm pack wasm4pm
-  npm install --prefix bundle @wasm4pm/cli
+  pnpm pack --filter @wasm4pm/cli
+  pnpm pack --filter wasm4pm
+  pnpm install --prefix bundle @wasm4pm/cli
   tar czf wasm4pm-bundle.tar.gz bundle/
 
 Transfer tarball, then:
@@ -51,7 +52,7 @@ Transfer tarball, then:
 ### Config File (wasm4pm.toml)
 
 [algorithm]
-name = "inductive_miner"
+name = "simd_streaming_dfg"
 
 [execution]
 profile = "quality"
@@ -72,7 +73,7 @@ OTLP telemetry is opt-in and only sent to YOUR configured endpoint.
 | Log Size | Recommended Algorithm | Memory |
 |----------|----------------------|--------|
 | < 10K events | Any | 512 MB |
-| 10K-100K | dfg, heuristic_miner | 1-2 GB |
+| 10K-100K | dfg, streaming_dfg | 1-2 GB |
 | 100K-500K | dfg, streaming_dfg | 2-4 GB |
 | > 500K | simd_streaming_dfg | 4+ GB |
 
@@ -85,7 +86,7 @@ npm config set proxy http://proxy.company.com:8080
 ## Versioning
 
 wasm4pm uses CalVer (YEAR.MONTH.DAY). Always pin exact versions:
-  "dependencies": { "@wasm4pm/cli": "26.6.9" }
+  "dependencies": { "@wasm4pm/cli": "26.6.12" }
 
 ## Known Limitations
 
@@ -108,7 +109,7 @@ Algorithms using randomness (genetic, ACO, PSO, simulated annealing, A*) use a f
 
 ### WASM Binary Size (Browser Profile)
 
-The browser-profile WASM binary is approximately 7.6 MB. All profiles (mobile/iot/edge/fog) currently build to ~5.4 MB; they differ by feature-gated algorithm subsets. Bundle size optimization is planned for a future release.
+The WASM binary is approximately 5-8 MB depending on feature flags and profile. Profiles (mobile/iot/edge/fog/browser) differ by feature-gated algorithm subsets. Bundle size optimization is planned for a future release.
 
 ## Support
 

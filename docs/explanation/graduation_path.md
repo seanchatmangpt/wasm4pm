@@ -43,8 +43,8 @@ ontology from which "type law renders everything": Rust, Zod/TypeScript, WIT, an
 docs are all projected from one source of truth. So while you do not consume compat's
 *crate*, you do consume its **generated Zod projection** — 49 domain schemas (BPMN,
 Petri nets, conformance results and verdicts, diagnostics, …) rendered from compat's
-ontology via `ggen/{queries/extract-zod-schemas.rq, templates/zod-schemas.ts.tera,
-ggen_zod.toml}`. That projection is typed *and runtime-validatable* TypeScript, and
+ontology via `packs/wasm4pm-compat-ts/ggen/{queries/extract-zod-schemas.rq,
+templates/zod-schemas.ts.tera}` and the `zod-types.ttl` ontology in that pack. That projection is typed *and runtime-validatable* TypeScript, and
 it sits alongside the breed pack at rung 1 (below).
 
 The practical consequence: **a TypeScript application starts from the generated
@@ -284,12 +284,12 @@ platform that is partly shipped and partly converging.
   the receipt emit/verify functions, `verifyReceipt`, `verifyReceiptHashes`,
   `detectTampering`, and the hash primitives; the `wasm4pm-breeds-ts` pack carries
   the generated `BreedId` surface and breed catalog. The compat Zod projection is
-  **generated but not yet packaged**: the 49 schemas exist at
-  `wasm4pm-compat/wasm4pm-compat-ts/bindings/zod_schemas.ts`, but that directory has
-  no `package.json` — it is an orphan today, exactly as the breed bindings were
-  before they were packaged as `packs/wasm4pm-breeds-ts`. Packaging it as
-  `@wasm4pm/compat-ts` (mirroring that pattern) is the work that makes this part of
-  rung 1 consumable.
+  **not yet rendered**: the pack at `packs/wasm4pm-compat-ts/` carries the ggen
+  source (queries, templates, ontology) but has no `package.json` and no rendered
+  output yet — it is at the same stage the breed bindings were before they were
+  rendered and packaged as `packs/wasm4pm-breeds-ts`. Running `ggen sync` from that
+  pack and adding a `package.json` is the work that makes this part of rung 1
+  consumable as `@wasm4pm/compat-ts`.
 - Rung 2 is real: `@wasm4pm/cognition` (and `/browser`) runs breeds against the
   cognition WASM and returns `ContractResult` with receipts; the field contract is
   pinned in `.claude/rules/cognition-contracts.md`.
@@ -304,8 +304,10 @@ platform that is partly shipped and partly converging.
   `cli > toml > env > default` precedence; the receipt ledger records runs.
 
 **In progress.**
-- Packaging the compat Zod projection as `@wasm4pm/compat-ts` so rung 1's domain
-  layer is installable, not an orphan file (see above).
+- Rendering and packaging the compat Zod projection as `@wasm4pm/compat-ts` so rung
+  1's domain layer is installable — the ggen source now lives at
+  `packs/wasm4pm-compat-ts/` (queries, templates, ontology), but `ggen sync` has not
+  yet been run and no `package.json` exists (see above).
 - The compat WIT → WASM-component path that would make compat's conformance/law
   *logic* callable from TS at runtime, beyond the static Zod shapes.
 - AutoPM's config-as-artifact inversion (the rung-4→5 loop described above) is the
@@ -318,11 +320,9 @@ platform that is partly shipped and partly converging.
 
 *Grounding note.* The package boundaries described here are checkable against the
 repository. Rung 1: `packages/contracts/src/`, `packs/wasm4pm-breeds-ts/`, and the
-compat Zod projection at `wasm4pm-compat/wasm4pm-compat-ts/bindings/zod_schemas.ts`
-(891 lines, 49 schemas), rendered from compat's ontology via
-`wasm4pm-compat/ggen/{queries/extract-zod-schemas.rq, templates/zod-schemas.ts.tera,
-ggen_zod.toml}` — generated today, awaiting a `package.json` to become
-`@wasm4pm/compat-ts`. Rung
+compat Zod pack source at `packs/wasm4pm-compat-ts/ggen/` (queries, templates, and
+`zod-types.ttl` ontology) — the rendered output and `package.json` do not yet exist;
+`ggen sync` from that pack directory is the step that produces `@wasm4pm/compat-ts`. Rung
 2: `packages/cognition/` (the `./browser` export is declared in its
 `package.json`); the field contract is `.claude/rules/cognition-contracts.md`. Rung
 3: the wasm4pm WASM core under `wasm4pm/` and the `wpm` CLI at `apps/wasm4pm/`. Rung
@@ -333,6 +333,7 @@ Rung 5: `packages/config/src/schema.ts` (`configSchema`, `sourceConfigSchema`,
 `ALGORITHM_IDS`), `packages/config/src/resolver.ts` for precedence, and the
 `wasm4pm.toml` it validates. The compat nuance is checkable too: the
 `wasm4pm-compat` *crate* is rlib-only with no path dependency permitted from this
-repo, while its *generated Zod projection* exists at the path above — you consume the
+repo, while its *generated Zod projection* is sourced from `packs/wasm4pm-compat-ts/ggen/`
+(ggen templates and ontology, not yet rendered) — you will consume the rendered
 projection, never the crate. As elsewhere in wasm4pm, the claims in this
 document are meant to be verified against that evidence, not taken on trust.

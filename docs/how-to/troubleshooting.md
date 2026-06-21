@@ -30,11 +30,11 @@ Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'wasm4pm'
 
 **Fix:**
 ```bash
-cd wasm4pm
-npm run build:nodejs
-cd ..
+wasm-pack build --target nodejs --out-dir pkg -- --features wasm
 pnpm install
 ```
+
+Run `wasm-pack` from the `wasm4pm/` directory (the Rust crate root), then `pnpm install` from the monorepo root.
 
 The WASM build must be re-run after any `git pull` that touches `wasm4pm/src/`. The `pnpm install` step is required because pnpm hard-copies file-protocol deps — it won't pick up the new WASM binary automatically.
 
@@ -161,7 +161,7 @@ wpm doctor check
 ```
 
 **Fix steps in order:**
-1. `cd wasm4pm && npm run build:nodejs && cd ..` — rebuild WASM
+1. `cd wasm4pm && wasm-pack build --target nodejs --out-dir pkg -- --features wasm && cd ..` — rebuild WASM
 2. `pnpm install` — reinstall to pick up new binary
 3. `node apps/wasm4pm/dist/bin/wpm.js --version` — verify CLI binary exists
 4. Re-run `wpm doctor check`

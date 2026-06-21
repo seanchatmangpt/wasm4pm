@@ -62,10 +62,11 @@ are generated from the same Rust struct that produces them; drift is impossible
 by construction.
 
 For the domain types around the breeds — the process-mining structures a real
-application validates against — you import `@wasm4pm/compat-ts`, 49 Zod schemas
-(`ConformanceResultSchema`, `ConformanceVerdictSchema`, `BpmnProcessSchema`, …)
-generated from the compat ontology, so your runtime validation and your static
-types share a single source of truth.
+application validates against — the `wasm4pm-compat-ts` ggen pack renders 49 Zod
+schemas (`ConformanceResultSchema`, `ConformanceVerdictSchema`, `BpmnProcessSchema`,
+…) from the compat ontology into your monorepo, so your runtime validation and
+your static types share a single source of truth. (The pack is consumed via the
+monorepo workspace; it is not yet published as a standalone npm package.)
 
 And it runs in the browser. The cognition engine compiles to a `--target web`
 WASM module; `initCognitionBrowser({ wasmUrl })` fetches and instantiates it, and
@@ -89,7 +90,7 @@ breed must derive a certainty factor of **0.7** (Shortliffe & Buchanan 1975,
 p. 247). The Bayesian-network breed must derive **P(Burglary | Alarm) =
 0.373551228281836** by exact enumeration over Pearl's 1988 alarm network. The test
 loads a fixture carrying that published value with its citation, runs the breed,
-and asserts the number within tolerance — across all **56 breeds, 56/56 pass**.
+and asserts the number within tolerance — across all **52 breeds, 52/52 pass**.
 
 The loader refuses to lie by omission. A common failure mode is the *silent skip*:
 `if (fs.existsSync(fixture))` quietly turns a missing fixture into a green test. The
@@ -142,8 +143,8 @@ wrong, and when the process is impossible — and only then do they pass.*
 A correct answer that takes a second is useless inside a 16 ms frame. So the breeds
 are measured, and the measurement is itself governed.
 
-Across 55 benchmarked breeds the median `run()` completes in **19.1 µs** and the
-mean in 45.7 µs; 53 of 55 finish under 100 µs. Latency is reported normalized to a
+Across 52 benchmarked breeds the median `run()` completes in **19.1 µs** and the
+mean in 45.7 µs; the overwhelming majority finish under 100 µs. Latency is reported normalized to a
 fixed *calibration anchor* (~17.8 µs on the reference host), so the numbers are
 machine-independent — a budget like "no slower than 15× calibration" holds on any
 runner.
@@ -153,7 +154,7 @@ engine, a fast wrong answer is worse than a slow right one — yet a latency
 benchmark alone would silently bless it. The attestation gate joins the two: it
 runs the paper-grounded and falsification suites, joins each breed's correctness
 with its latency, and **fails on any breed that is fast but not provably correct**.
-Of the benchmarked breeds, **55 are TRUSTED** (correct *and* fast); zero are
+Of the benchmarked breeds, **52 are TRUSTED** (correct *and* fast); zero are
 fast-but-wrong. The benchmark suite refuses to vouch for code it has not also
 proven right.
 
@@ -196,7 +197,7 @@ Two further layers complete the picture, both visible from TypeScript.
 **Conformance.** Each breed declares an object-centric lifecycle (an OCPN model);
 each execution emits an OCEL event log; the two are checked for conformance at
 fitness 1.0, and an admission gate refuses to mark a breed live on anything less.
-The `@wasm4pm/compat-ts` `ConformanceResultSchema` and `ConformanceVerdictSchema`
+The `wasm4pm-compat-ts`-rendered `ConformanceResultSchema` and `ConformanceVerdictSchema`
 are exactly the TypeScript shapes of that verdict — the lawfulness check is a
 first-class value your application can read, not a hidden internal.
 
@@ -247,7 +248,7 @@ have.
 ---
 
 *Grounding note.* The surfaces in §1 are `packs/wasm4pm-breeds-ts`,
-`@wasm4pm/compat-ts`, `@wasm4pm/cognition` (with `/browser`), and the runnable
+`packs/wasm4pm-compat-ts` (ggen pack, workspace-only), `@wasm4pm/cognition` (with `/browser`), and the runnable
 `examples/` (`breeds-ts-consumer`, `web-dashboard`). The correctness claims (§2–§3)
 are the `paper_grounded` and `paper_falsification` suites and the `ocel_conformance`
 gate. The benchmark and attestation claims (§4) are `crates/bench-tools` and

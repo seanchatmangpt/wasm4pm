@@ -8,7 +8,7 @@ Compile and deploy the `wasm4pm` engine onto highly constrained Edge or IoT envi
 ### 1. Select the Profile
 The default build targets Node/Browser. For edge environments, select the `edge` or `iot` profile to aggressively strip memory overhead.
 ```bash
-npm run build:edge
+pnpm build:edge
 ```
 
 ### 2. Bundle
@@ -17,7 +17,7 @@ Include the minimized `pkg/wasm4pm_bg.wasm` file in your edge worker deployment 
 ### 3. Instantiate
 Use the lightweight initialization API in your worker code:
 ```javascript
-import init, { discover_dfg } from './pkg/wasm4pm.js';
+import init, { simd_streaming_dfg } from './pkg/wasm4pm.js';
 
 export default {
   async fetch(request, env) {

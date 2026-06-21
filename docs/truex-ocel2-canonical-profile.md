@@ -85,7 +85,7 @@ If any assertion fails, the receipt is immediately classified with a strict taxo
 ### 5.1 Verify via CLI
 
 ```bash
-# Prerequisite (once per clone): cd wasm4pm && npm run build:nodejs
+# Prerequisite (once per clone): pnpm build
 
 # Admitted receipt — exit 0
 wpm truex verify examples/out/truex_ocel2_valid.json
@@ -112,7 +112,7 @@ Exit codes: `0` = admitted; non-zero = refused or verifier error. Refusal status
 Baseline WASM verification against sample payloads:
 
 ```bash
-npx tsx scripts/examples/truex-cross-tool-parity.ts
+pnpm exec tsx scripts/examples/truex-cross-tool-parity.ts
 ```
 
 Tutorial walkthrough: [Truex Receipt Verification](tutorials/truex_receipts.md).

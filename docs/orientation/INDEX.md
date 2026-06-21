@@ -23,7 +23,7 @@ This index provides a comprehensive map of the `wasm4pm` architecture. It is str
 
 ## Top 10 Proven Facts (High Confidence)
 
-1. **Rust/WASM Core**: The mathematical engine is written in Rust (`crates/wasm4pm-algos`) and exposed via `wasm-bindgen` (`wasm4pm/src/lib.rs`).
+1. **Rust/WASM Core**: The mathematical engine is written in Rust (`crates/wasm4pm-algos` for process-mining algorithms, `crates/wasm4pm-cognition/` for 52 PARTIAL_ALIVE cognitive breeds) and exposed via `wasm-bindgen` (`wasm4pm/src/lib.rs`).
 2. **Truex Native Trust Layer**: App-state mutation is cryptographically bound into Truex OCEL 2.0 Receipts using BLAKE3 hashing.
 3. **Semantic Equivalence (Profile V1)**: Truex evaluates payloads for operational equivalence rather than byte-for-byte serialization equality.
 4. **Strict Refusal Taxonomy**: Invalid execution paths do not return generic errors; they return strict enums like `ReceiptForged` or `CanonicalizationMismatch`.
@@ -47,7 +47,7 @@ This index provides a comprehensive map of the `wasm4pm` architecture. It is str
 1. **WASI Support Status**: The level of compatibility with pure WASI (outside of the V8/Node JS bridge) is UNKNOWN.
 2. **Max Batch Thresholds**: The absolute threshold where `truex verify` drops below sub-50ms latency is UNKNOWN.
 3. **React Native Safari Limits**: iOS Safari constraints on WebAssembly memory limits for the mobile execution profile are UNKNOWN.
-4. **Future Old-AI Integrations**: The roadmap for the 9 Old-AI breeds (e.g. ELIZA) vs process execution modeling is UNKNOWN.
+4. **Cognition Breed Roadmap**: How the 52 PARTIAL_ALIVE breeds (MYCIN, Dempster-Shafer, EBL, Episodic Memory, Script-SAM, LTL Monitor, and others) will be promoted to ALIVE and integrated with process execution modeling is UNKNOWN.
 5. **App Store Validation**: How Truex signatures hold up under iOS Native App review context is UNKNOWN.
 
 ## Recommended Read Order

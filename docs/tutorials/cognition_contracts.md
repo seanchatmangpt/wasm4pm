@@ -4,21 +4,21 @@
 
 In this tutorial, you will:
 
-1. Understand the 13-breed cognition layer (9 Old AI + 4 Autoinstinct).
+1. Understand the 55-breed cognition layer (51 symbolic AI families + 4 Autoinstinct).
 2. Select the correct breed and construct a strictly-typed `BreedInput`.
 3. Execute a contract and read the output using exact field names.
 4. Verify the BLAKE3 receipt chain.
 
 ---
 
-## 1. Overview — 13 Breeds
+## 1. Overview — 55 Breeds
 
-The cognition layer ships 13 breeds in two families:
+The cognition layer ships 55 breeds in two families:
 
 | Family | Count | Description |
 |---|---|---|
-| **Old AI** | 9 | Deterministic symbolic AI systems from the 1960s–1990s |
-| **Autoinstinct** | 4 | Adaptive instinct layers wired to the Old AI substrate |
+| **Symbolic AI** | 51 | Deterministic symbolic AI systems from the 1960s–1990s |
+| **Autoinstinct** | 4 | Adaptive instinct layers wired to the symbolic AI substrate |
 
 Every breed is registered in the kernel and dispatched via the same CLI contract:
 
@@ -56,9 +56,9 @@ Check `status === 'ok'` before consuming `output`. Use `run_id` to locate the re
 
 ---
 
-## 3. Old AI Breeds
+## 3. Symbolic AI Breeds
 
-Thirteen breeds implement canonical AI architectures: 9 Old AI symbolic reasoning systems and 4 Autoinstinct breeds. All 9 Old AI breeds have verified working examples under `examples/cognition/<breed>/intent.json`.
+Fifty-five breeds implement canonical AI architectures: 51 symbolic reasoning systems and 4 Autoinstinct breeds. The breeds listed below have verified working examples under `examples/cognition/<breed>/intent.json`; the full breed index is in `crates/wasm4pm-cognition/src/breeds/registration.rs`.
 
 | Breed Name | CLI ID (in JSON) | Rust file | Approx. Year | Technique | Example intent |
 |---|---|---|---|---|---|
@@ -102,7 +102,7 @@ Four breeds extend the Old AI layer with adaptive instinct capabilities. They sh
 
 ## 5. Output Contract
 
-All 13 breeds return the same `ContractResult` shape. Source of truth: `crates/wasm4pm-cognition/src/wasm.rs` lines 182–190.
+All 55 breeds return the same `ContractResult` shape. Source of truth: `crates/wasm4pm-cognition/src/wasm.rs` lines 182–190.
 
 ### Fields you MUST use
 
@@ -361,15 +361,15 @@ All breeds share a common `Rule` struct (`breeds/mod.rs`):
 
 ---
 
-## 8. Running All 9 Breeds
+## 8. Running Breeds
 
-All 9 Old AI breeds have working examples under `examples/cognition/`. Each directory contains `intent.json` and `run.sh`:
+Breeds with working examples are located under `examples/cognition/`. Each directory contains `intent.json` and `run.sh`. The complete list of registered breeds (55 total) is in `crates/wasm4pm-cognition/src/breeds/registration.rs`.
 
 ```bash
 # Run one breed
 bash examples/cognition/mycin/run.sh
 
-# Run all 9 breeds
+# Run all example breeds
 bash examples/cognition/run-all.sh
 ```
 

@@ -74,22 +74,22 @@ Run these from the `wasm4pm/` subdirectory:
 
 ```bash
 # Mobile profile
-npm run build:mobile
+pnpm run build:mobile
 
 # IoT profile
-npm run build:iot
+pnpm run build:iot
 
 # Edge profile
-npm run build:edge
+pnpm run build:edge
 
 # Fog profile
-npm run build:fog
+pnpm run build:fog
 
 # Browser profile (DEFAULT)
-npm run build
+pnpm run build
 ```
 
-To measure all sizes: `npm run measure-sizes`.
+To measure all sizes: `pnpm run measure-sizes`.
 
 ## Registry Integration
 

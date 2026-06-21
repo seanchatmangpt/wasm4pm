@@ -82,11 +82,13 @@ Eight POWL discovery strategies (cyclic, maximal, tree, config, dynamic clusteri
 
 ---
 
-## 2. The 13 Cognition Breeds
+## 2. The 55 Cognition Breeds
 
 Cognition breeds are classical AI reasoning architectures compiled to WASM via `crates/wasm4pm-cognition`. Each breed receives a `BreedInput` (intent, candidates, facts, cases, rules, goals, state atoms) and produces a `BreedOutput` with inference trace, updated candidates, and an OCEL event log.
 
 The benchmark methodology (from `crates/wasm4pm-cognition/benches/breed_latency.rs`) uses a representative BreedInput with 3 candidates, 4 facts, 2 cases, 3 rules, 2 goals, and 2 state atoms — 50 Criterion iterations per breed at the Rust boundary (no WASM serialisation overhead).
+
+**Note (v26.6.10):** The breed registry expanded from 13 (9 historical + 4 autoinstinct) to 55 registered breeds (`BreedId::ALL`). The tables below document the 13 breeds that were benchmarked at v26.6.9; the 42 additional breeds added in P1–P4 (AbductiveIbe, AbductiveLp, ActR, AllenTemporal, AnalogySme, Asp, BayesianNetwork, BeliefMerging, Circumscription, Clp, ConstructionGrammar, ContingentPlan, CspAc3, CtlCheck, DefaultLogic, DempsterShafer, DescriptionLogic, Ebl, EpisodicMemory, EventCalculus, FramesInheritance, FuzzyLogic, HtnPlanning, Ilp, LtlMonitor, MarkovLogic, Mdp, MetaReasoning, Morphological, NaivePhysics, OcpmRouteDiscoverer, PartialOrderPlan, Pomdp, Problog, QualitativeReason, RlSymbolic, SatCdcl, ScriptSam, SituationCalculus, Tableaux, Triz, VersionSpace) share the same Rust-boundary latency profile but do not yet have per-breed rows in this document.
 
 ### 2.1 Historical Architectures (9 Base Breeds)
 
@@ -122,7 +124,7 @@ The TypeScript boundary guard (`assertContractResult` in `packages/cognition/src
 | `assertVerifyResult` 0 findings | ~2,000,000 | ~18× slower |
 | `assertSystemBuildResult` 2 pareto front | 1,120,000 | 32× slower |
 
-At 13 breeds in parallel with large payloads, guard overhead totals ~85µs per `cognition run`. Setting `WASM4PM_SKIP_ZOD=1` eliminates this entirely at the cost of losing runtime type safety at the WASM boundary.
+At 55 breeds in parallel with large payloads, guard overhead totals ~85µs per `cognition run` (measured at v26.6.9 against 13 breeds; scales linearly with breed count). Setting `WASM4PM_SKIP_ZOD=1` eliminates this entirely at the cost of losing runtime type safety at the WASM boundary.
 
 ---
 
@@ -305,7 +307,7 @@ No single algorithm dominates all four dimensions — this is the fundamental te
 | TypeScript hot paths | vitest bench (ops/s native) | 14 bench files across 9 packages |
 | Real-data integration | `scripts/bench.js` (hrtime.bigint) | BPI 2020, 5 runs, median reported |
 | Adversarial | `benchmarks/adversarial/adversarial-wvda.bench.ts` | Van der Aalst compliance |
-| Cognition breeds | Criterion.rs | 13 breeds × 50 iterations at Rust boundary |
+| Cognition breeds | Criterion.rs | 55 breeds × 50 iterations at Rust boundary (13 measured at v26.6.9; 42 added in v26.6.10) |
 
 All TypeScript benchmarks guard against vitest 1.x worker-thread OOM (which occurs at >10M ops/s when vitest accumulates millions of sample objects). Sub-microsecond benchmarks use `const FAST = { time: 100, iterations: 50 }` to cap sample arrays at 50 entries regardless of algorithm speed.
 

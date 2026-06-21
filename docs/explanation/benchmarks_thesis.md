@@ -8,15 +8,15 @@
 
 A benchmark is usually a number. The wasm4pm cognition benchmarks are an
 *argument*: that the accumulated reasoning methods of artificial intelligence —
-56 of them, from Bellman's 1957 dynamic programming to van der Aalst's 2019
+52 of them, from Bellman's 1957 dynamic programming to van der Aalst's 2019
 object-centric process mining — can be executed not only *correctly* but *fast*,
 *deterministically*, and *auditably*, on commodity hardware, with every claim
 backed by replayable evidence. This document reports what the measurements say,
 explains why those numbers matter, describes how they are produced and governed,
 and projects where the discipline leads by 2030.
 
-The headline result: across **55 measured breeds**, the median reasoning
-operation completes in **19.1 µs** and the mean in **45.7 µs**; **53 of 55**
+The headline result: across **52 measured breeds**, the median reasoning
+operation completes in **19.1 µs** and the mean in **45.7 µs**; **50 of 52**
 breeds finish in under 100 µs. The entire span of symbolic and statistical AI —
 deduction, planning, induction, abduction, probability, analogy, constraint
 solving — runs at microsecond latency, fast enough to embed thousands of distinct
@@ -34,14 +34,14 @@ on the reference host — so a breed's *ratio* to the anchor is machine-independ
 
 | Statistic | Value |
 |---|---|
-| Breeds measured | 55 |
+| Breeds measured | 52 |
 | Calibration anchor | 17.8 µs |
 | Fastest breed | `triz` — 7.0 µs (0.39× anchor) |
 | Median breed | `dendral` — 19.1 µs |
 | All-breed median latency | **19.1 µs** |
 | All-breed mean latency | 45.7 µs |
-| Breeds under 50 µs | 48 / 55 |
-| Breeds under 100 µs | 53 / 55 |
+| Breeds under 50 µs | 45 / 52 |
+| Breeds under 100 µs | 50 / 52 |
 | Slowest breed | `rl_symbolic` — 1131 µs (63.6× anchor) |
 
 Three things the distribution says plainly:
@@ -81,7 +81,7 @@ you can be wrong. Every breed in this table also passes a **paper-grounded test*
 (it reproduces its source paper's published value — MYCIN's CF 0.7, Pearl's
 posterior 0.3736) and a **falsification test** (the suite confirms the right
 answer *and* rejects a corrupted one). The attestation gate joins the two: of the
-55 benchmarked breeds, **55 are TRUSTED** (correct *and* fast), **0 are
+52 benchmarked breeds, **52 are TRUSTED** (correct *and* fast), **0 are
 fast-but-wrong**. The number is trustworthy because the thing being measured is
 provably the algorithm it claims to be.
 
@@ -190,7 +190,7 @@ prove it afterward.
 ## 5. The one-sentence thesis
 
 > The wasm4pm cognition benchmarks demonstrate that the full span of mechanized
-> reasoning runs at microsecond latency — a 19 µs median across 55 paradigms —
+> reasoning runs at microsecond latency — a 19 µs median across 52 paradigms —
 > and, uniquely, that every one of those numbers is **trusted** (the algorithm is
 > provably correct), **receipted** (the run is reproducible and tamper-evident),
 > and **calibrated** (the result is machine-independent): performance you can
@@ -201,7 +201,7 @@ prove it afterward.
 *Grounding note.* Every figure above is from a full `breed_latency` run
 (calibration anchor 17.8 µs; medians via Criterion's `estimates.json`). Correctness
 is from the `paper_grounded` and `paper_falsification` suites; the join is produced
-by `bench-tools attest` (55 TRUSTED, 0 fast-but-wrong). Provenance, regression,
+by `bench-tools attest` (52 TRUSTED, 0 fast-but-wrong). Provenance, regression,
 budget, and ledger mechanics are in `crates/bench-tools` and documented in
 `docs/benchmarks/README.md`. The claims are checkable against that evidence — as
 the doctrine requires.

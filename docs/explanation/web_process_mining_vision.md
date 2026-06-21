@@ -153,7 +153,7 @@ is the fix safe* — are diagnostic, abductive, prescriptive, and verificational
 Server-side platforms answer them with a human, a meeting, and a follow-up query.
 
 wasm4pm answers them in the same frame, because the cognition layer runs in the
-same tab. The 55 measured breeds execute at a **19.1 µs median latency** (see
+same tab. The 52 measured breeds execute at a **19.1 µs median latency** (see
 `docs/explanation/benchmarks_thesis.md`); a 16 ms interactive frame has room for
 hundreds of verified reasoning steps. So a bottleneck the conformance overlay
 surfaces can be handed, live and client-side, down a pipeline of breeds:
@@ -220,7 +220,7 @@ shipped and intended is drawn plainly.
 
 **Real today.**
 - The cognition WASM builds for the browser: `crates/wasm4pm-cognition/pkg-web`
-  exists alongside the Node and bundler targets, and the 55 breeds run
+  exists alongside the Node and bundler targets, and the 52 breeds run
   **client-side** from it.
 - The breeds are paper-grounded, falsifiable, deterministic, and receipt-bearing,
   with the latency profile cited in §5 (`docs/explanation/benchmarks_thesis.md`).
@@ -253,7 +253,7 @@ dashboard are the work in front of it.
 
 *Grounding note.* The browser cognition build is `crates/wasm4pm-cognition/pkg-web`;
 the breed latency and trust figures are from `docs/explanation/benchmarks_thesis.md`
-(19.1 µs median, 55 TRUSTED) and the breed admission discipline from
+(19.1 µs median, 52 PARTIAL_ALIVE) and the breed admission discipline from
 `docs/explanation/breeds_thesis.md`. Object-centric models and conformance
 evidence live under `ocel/models/l1/` and `ocel/reports/`. The distributable breed
 surface is in `packs/wasm4pm-breeds-rust/` and `packs/wasm4pm-breeds-ts/`, and the

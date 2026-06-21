@@ -21,7 +21,8 @@ graph TD
   subgraph "Rust Host Engine"
     Core[crates/wasm4pm-algos]
     Truex[Truex Canonicalization & BLAKE3]
-    Algos[60 Discovery / Conformance Algos]
+    Algos[Discovery / Conformance Algos]
+    Cognition[crates/wasm4pm-cognition: 52 PARTIAL_ALIVE Breeds]
   end
 
   User -- "Executes commands" --> CLI
@@ -32,6 +33,7 @@ graph TD
   WasmModule -- "Executes Rust Math" --> Core
   Core -- "Verifies Hashes" --> Truex
   Core -- "Computes Models" --> Algos
+  Core -- "Runs Cognition Breeds" --> Cognition
 ```
 
 ## Data Boundary (The WASM Bridge)

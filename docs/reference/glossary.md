@@ -81,13 +81,13 @@ A 32-character hex string identifying an OTEL trace. Required field on all `Rece
 ## Cognition Layer Terms
 
 **Breed**
-A cognition algorithm implementing a specific historical AI architecture. 13 breeds in two families: 9 Old AI (eliza, mycin, strips, prolog, cbr, dendral, gps, soar, hearsay) and 4 Autoinstinct (learning, neurosis, semantics, vision).
+A cognition algorithm implementing a specific historical or formal AI architecture. 52 breeds are PARTIAL_ALIVE, registered in `crates/wasm4pm-cognition/src/breeds/registration.rs`. Examples include `mycin`, `dempster_shafer`, `ebl`, `episodic_memory`, `script_sam`, `ltl_monitor`, `eliza`, `strips`, `prolog`, `cbr`, `dendral`, `gps`, `soar`, `hearsay`, and many others spanning symbolic AI, probabilistic reasoning, planning, and temporal logic. Full list: `wpm cognition breeds`.
 
 **Old AI**
-The 9 symbolic AI systems from the 1960s–1990s implemented as native Rust breeds in `crates/wasm4pm-cognition/src/breeds/`. Each implements the `CognitionBreed` trait.
+The symbolic AI systems from the 1960s–1990s implemented as native Rust breeds in `crates/wasm4pm-cognition/src/breeds/`. Each implements the `CognitionBreed` trait. Includes `eliza`, `mycin`, `strips`, `prolog`, `cbr`, `dendral`, `gps`, `soar`, `hearsay`, and extended symbolic breeds such as `asp`, `abductive_ibe`, `dempster_shafer`, `ebl`, `episodic_memory`, `script_sam`, `ltl_monitor`, and others.
 
 **Autoinstinct**
-The 4 adaptive instinct breeds added to the Old AI substrate: `autoinstinct_learning`, `autoinstinct_neurosis`, `autoinstinct_semantics`, `autoinstinct_vision`.
+The 4 adaptive instinct breeds added alongside the symbolic AI substrate: `autoinstinct_learning`, `autoinstinct_neurosis`, `autoinstinct_semantics`, `autoinstinct_vision`.
 
 **Contract**
 The structured input to a cognition run. All breeds share a common `BreedInput` contract with fields: `intent`, `candidates`, `facts`, `cases`, `rules`, `goals`, `state`. Wrapped in `{ "breed": "<id>", "contract": { ... } }` for the WASM boundary.

@@ -4,7 +4,7 @@ Cross-reference: each primitive doc → paper grounding → formal object → im
 
 **Source of truth:** `../academic_coverage.toml`  
 **Primitive count:** 10 (primitives 00–09)  
-**Gate:** ACADEMIC-COVERAGE-001 (status: `partial` — see gap section below)
+**Gate:** ACADEMIC-COVERAGE-001 (status: `partial` — 05 Process World Foundry remains partial; see gap section below)
 
 ---
 
@@ -42,7 +42,7 @@ Cross-reference: each primitive doc → paper grounding → formal object → im
 | [06 — Negative Corpus](06-NEGATIVE-CORPUS.md) | (engineering) | Negative fixture corpus for refusal proof (invalid OCEL, invalid XES, impossible traces) | — | (fixtures only — no Rust module) | `wasm4pm/tests/negative_quality.rs`, `wasm4pm/tests/adversarial_ingestion.rs`, `wasm4pm/tests/anti_fake_tests.rs` | `fixtures/conformance/ggen_invalid_exclusion.json`, `fixtures/conformance/ggen_invalid_immediate.json`, `fixtures/conformance/ggen_invalid_precedence.json`, `fixtures/ocpq/invalid_monotonicity.json`, `fixtures/ocpq/invalid_o2o.json` | **covered** |
 | [07 — Route-Driven TDD](07-ROUTE-DRIVEN-TDD.md) | (engineering) | POWL 2.0 route-driven test substrate (15 named routes; choice\_graph / sequence / partial\_order) | — | `wasm4pm/src/testing/` (PowlTestHarness, ConformanceVerdict, AndonPull, ProofPackWriter) | — | — | **covered** |
 | [08 — Benchmark Gates](08-BENCHMARK-GATES.md) | (engineering) | Deterministic benchmark gates G1–G5 with BLAKE3 receipts and CalVer version locks | G1 determinism; G2 receipt integrity; G3 quality threshold (fitness ≥ 0.95, precision ≥ 0.80); G4 cross-profile synchrony; G5 report completeness | `wasm4pm/src/benchmark_runner.rs`, `wasm4pm/src/benchmark_registry.rs` | `wasm4pm/benches/closed_claw/gates.rs` | — | **covered** |
-| 09 — OCPQ *(doc planned)* | Küsters & van der Aalst arXiv:2506.11541v1 | Object-Centric Process Querying: E2O, O2O, TBE predicates, CHILD SET constraints (Defs 1–9) | Defs 1–9 (OCPQ formal language) | *(not yet implemented — `crates/ocpq/` not present)* | *(none)* | `fixtures/ocpq/invalid_monotonicity.json`, `fixtures/ocpq/invalid_o2o.json` | **planned** |
+| [09 — OCPQ](09-OCPQ-PRIMITIVES.md) | Küsters & van der Aalst arXiv:2506.11541v1 | Object-Centric Process Querying: E2O, O2O, TBE predicates, CHILD SET constraints (Defs 1–9) | Defs 1–9 (OCPQ formal language) | `crates/ocpq/src/lib.rs` | `crates/ocpq/tests/` (16/16 passing) | `fixtures/ocpq/invalid_monotonicity.json`, `fixtures/ocpq/invalid_o2o.json` | **covered** |
 
 ---
 
@@ -115,9 +115,7 @@ the code.
 
 ### Status = `planned`
 
-| Primitive | Gap | Remediation |
-|---|---|---|
-| **09 — OCPQ** | No `docs/primitives/09-OCPQ-PRIMITIVES.md`. No `crates/ocpq/` in worktree. Negative fixtures (`invalid_monotonicity.json`, `invalid_o2o.json`) exist but nothing currently reads them. Defs 1–9 of Küsters & van der Aalst are identified but not implemented. | Create `09-OCPQ-PRIMITIVES.md`. Implement `crates/ocpq/src/lib.rs` with Defs 1–9. Add tests named `def_1_*`, `def_2_*`, … `def_9_*`. Wire negative fixtures to rejection tests. |
+No primitives currently have `planned` status. All 10 primitives (00–09) are at `covered` or `partial`.
 
 ### Missing negative fixtures (gap in `covered` rows)
 
