@@ -192,17 +192,17 @@ pub fn quantile_regression_fit(
     max_iter: usize,
     lr: f64,
     tol: f64,
-) -> Result<QuantileRegressionModel, JsValue> {
+) -> Result<QuantileRegressionModel, JsError> {
     quantile_regression_fit_impl(data, n_features, targets, quantile, max_iter, lr, tol)
-        .map_err(|e| JsValue::from_str(&e.message))
+        .map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "quantileRegressionPredict")]
 pub fn quantile_regression_predict(
     model: &QuantileRegressionModel,
     data: &[f64],
-) -> Result<Vec<f64>, JsValue> {
-    quantile_regression_predict_impl(model, data).map_err(|e| JsValue::from_str(&e.message))
+) -> Result<Vec<f64>, JsError> {
+    quantile_regression_predict_impl(model, data).map_err(|e| JsError::new(&e.message))
 }
 
 #[cfg(test)]

@@ -231,15 +231,7 @@ pub fn analyze_resource_activity_matrix(
                 specialization_scores.insert(resource.clone(), herfindahl);
             }
 
-            // Build output matrix with proper JSON
-            let mut matrix_obj = HashMap::new();
-            for (resource, activities) in matrix {
-                let mut activities_obj = HashMap::new();
-                for (activity, count) in activities {
-                    activities_obj.insert(activity, count);
-                }
-                matrix_obj.insert(resource, activities_obj);
-            }
+            let matrix_obj = matrix;
 
             serde_json::to_string(&json!({
                 "matrix": matrix_obj,
