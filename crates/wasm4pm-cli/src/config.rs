@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Config {
     #[serde(default)]
-    pub values: HashMap<String, String>,
+    pub values: BTreeMap<String, String>,
 }
 
 impl Config {
