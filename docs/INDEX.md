@@ -11,7 +11,7 @@ Start here if you are new to wasm4pm. Tutorials take you through concrete steps 
 - [Getting Started](tutorials/getting_started.md) — install, run your first discovery, verify with `wpm doctor`
 - [Truex Receipt Verification](tutorials/truex_receipts.md) — OCEL 2.0 canonicalization and BLAKE3 integrity checking
 - [Predictive Monitoring](tutorials/predictive_monitoring.md) — next-activity prediction and concept drift detection
-- [Cognition Contracts](tutorials/cognition_contracts.md) — all 13 breeds, exact field names, working examples
+- [Cognition Contracts](tutorials/cognition_contracts.md) — all 52 breeds, exact field names, working examples
 
 ---
 
@@ -70,7 +70,7 @@ These sections are not part of the four Diátaxis quadrants but complement them.
 Runnable code demonstrating the platform end-to-end.
 
 - [examples/README.md](../examples/README.md) — ML, RL, prediction, Truex, and full-workflow examples
-- [examples/cognition/README.md](../examples/cognition/README.md) — all 9 Old AI breeds with intent.json + run.sh
+- [examples/cognition/README.md](../examples/cognition/README.md) — all 52 breeds with intent.json + run.sh
 
 ---
 

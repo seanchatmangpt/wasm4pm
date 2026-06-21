@@ -4,7 +4,7 @@
 |------|----------|-------|------------|-------|
 | Package Manager | `pnpm-workspace.yaml` | `pnpm-lock.yaml`, `package.json` | High | PNPM Workspaces |
 | Monorepo Structure | Defined packages & apps | `apps/`, `packages/`, `crates/` | High | Segregated logic |
-| Rust Core | 60 Algorithms + Truex Engine | `crates/wasm4pm-algos/`, `Cargo.toml` | High | High-performance core |
+| Rust Core | Process mining algorithms (`wasm4pm/`) + 52 PARTIAL_ALIVE cognition breeds (`crates/wasm4pm-cognition/`) | `wasm4pm/src/`, `crates/wasm4pm-cognition/`, `Cargo.toml` | High | High-performance core; two distinct subsystems |
 | WASM Bridge | `wasm-bindgen` annotations | `wasm4pm/src/lib.rs` | High | FFI Boundary |
 | CLI Surface | `wpm` command definitions | `apps/wasm4pm/src/commands/` | High | The user entry point |
 | SDK boundary | Node.js TS interface | `packages/kernel/` | High | Abstracts WASM memory |
@@ -32,11 +32,13 @@ graph TD
   Obs[packages/observability]
   Contracts[packages/contracts]
   WASM[wasm4pm: The WASM Bridge]
-  Algos[crates/wasm4pm-algos: The Math Engine]
+  Algos[wasm4pm/src: Process Mining Algorithms]
+  Cognition[crates/wasm4pm-cognition: 52 Breeds]
 
   CLI --> Kernel
   CLI --> Obs
   Kernel --> Contracts
   Kernel --> WASM
   WASM --> Algos
+  WASM --> Cognition
 ```

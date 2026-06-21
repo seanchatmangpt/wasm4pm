@@ -4,7 +4,11 @@
 
 This audit covers the full cognition remediation sprint applied to the
 `crates/wasm4pm-cognition` Rust crate. Thirteen breeds (9 classical AI +
-4 autoinstinct) were reviewed under van der Aalst hostile assumptions.
+4 autoinstinct) were reviewed under van der Aalst hostile assumptions as
+the initial cohort. The crate has since grown to 55 registered breeds
+(spanning classical AI, probabilistic reasoning, planning, logic
+programming, and autoinstinct tiers); the per-breed tables and findings
+below document the 13-breed remediation sprint only.
 
 **Found:** Non-deterministic iteration order in MYCIN (HashMap) and CBR
 (HashSet retrieval), missing OCEL provability layer, absent lifecycle DFA
@@ -15,9 +19,11 @@ priority queue), SOAR (no bounded subgoal on tie impasse), CBR (partial
 **Remediated:** OCEL 2.0 provability layer built from scratch
 (`ocel.rs`, 404 lines). Per-breed lifecycle DFA models declared for all
 13 breeds. Determinism fixes applied to MYCIN and CBR. Four breed fidelity
-upgrades shipped. 403 Rust tests now cover the crate (149 inline + 254
-integration), including 7 OCEL conformance tests and a
-`check_temporal_conformance` gate.
+upgrades shipped. At the time of this sprint the crate had 403 Rust tests
+(149 inline + 254 integration). The crate now carries 426 lib tests and
+944 integration tests across 28 test files, reflecting the expanded
+55-breed roster added in subsequent tiers. The sprint's specific deliverables
+include 7 OCEL conformance tests and a `check_temporal_conformance` gate.
 
 ---
 
@@ -77,7 +83,7 @@ Exports:
 - `check_temporal_conformance(log) -> Result<()>` — asserts strictly
   increasing `logical_step` values.
 - `get_model(breed_id) -> Option<&BreedLifecycleModel>` — registry lookup
-  for all 13 breeds.
+  for all 13 sprint-cohort breeds.
 
 ### 2. MYCIN HashMap non-determinism (was: HashMap iteration)
 
@@ -255,7 +261,9 @@ not bind variables across rule premises.
 
 ## Test Evidence
 
-### Rust crate test counts (2026-06-09)
+### Rust crate test counts
+
+**At sprint close (2026-06-09):**
 
 | Location | Files | Tests |
 |----------|-------|-------|
@@ -263,19 +271,26 @@ not bind variables across rule premises.
 | `tests/` integration | 15 files | 254 |
 | **Total** | **45** | **403** |
 
+**Current (as of post-sprint expansion to 55 breeds):**
+
+| Location | Files | Tests |
+|----------|-------|-------|
+| `src/` lib tests | — | 426 |
+| `tests/` integration | 28 files | 944 |
+
 ### Key test files
 
 | File | Tests | Coverage |
 |------|-------|----------|
 | `tests/ocel_conformance.rs` | 7 | `derive_ocel`, `validate_ocel_alignment`, `check_temporal_conformance` |
-| `tests/breed_determinism.rs` | 16 | All 13 breeds: same input → identical output |
+| `tests/breed_determinism.rs` | 16 | Sprint-cohort 13 breeds: same input → identical output |
 | `tests/breed_adversarial.rs` | 58 | Adversarial inputs, empty facts, contradictory rules |
 | `tests/breed_oracle_gaps.rs` | 31 | Oracle boundary conditions per breed |
 | `tests/autoinstinct_adversarial.rs` | 27 | All 4 autoinstinct breeds under hostile inputs |
 | `tests/strips_soar_cbr_invariants.rs` | 23 | STRIPS/SOAR/CBR algebraic invariants |
 | `tests/gps_dendral_eliza_falsification.rs` | 19 | Falsification tests for GPS, Dendral, Eliza |
 | `tests/breed_math_properties.rs` | 12 | Certainty-factor algebra (combine_cf, etc.) |
-| `tests/level_10_integration.rs` | 11 | Full-dispatch integration across all breeds |
+| `tests/level_10_integration.rs` | 11 | Full-dispatch integration across sprint-cohort breeds |
 
 ### TypeScript test files (packages/cognition)
 

@@ -36,7 +36,7 @@ wpm algorithms --format json
 wpm compare dfg,heuristic,inductive -i log.xes
 ```
 
-**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile, else `heuristic_miner`. See [Algorithms reference](algorithms.md) for the full registry and alias list.
+**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile, else `simd_streaming_dfg`. See [Algorithms reference](algorithms.md) for the full registry and alias list.
 
 `wpm compare` benchmarks a fixed subset of discovery aliases. `wpm run -a <id>` accepts any registered algorithm ID or CLI alias.
 

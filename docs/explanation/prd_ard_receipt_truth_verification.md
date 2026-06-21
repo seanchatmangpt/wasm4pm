@@ -156,7 +156,7 @@ The verifier consumes a `CandidateReceipt` and outputs a signed `VerificationRep
 
 ```rust
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProofClass {
@@ -181,7 +181,7 @@ pub struct OcelEvent {
     pub timestamp: String,
     pub objects: Vec<String>,
     #[serde(default)]
-    pub attributes: HashMap<String, serde_json::Value>,
+    pub attributes: BTreeMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,7 +189,7 @@ pub struct OcelObject {
     pub id: String,
     pub r#type: String,
     #[serde(default)]
-    pub attributes: HashMap<String, serde_json::Value>,
+    pub attributes: BTreeMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

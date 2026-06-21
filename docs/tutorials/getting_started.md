@@ -8,7 +8,7 @@
 git clone https://github.com/seanchatmangpt/wasm4pm
 cd wasm4pm
 # Build the Node.js WASM target (required once per clone)
-cd wasm4pm && npm run build:nodejs && cd ..
+wasm-pack build wasm4pm --target nodejs --out-dir pkg -- --features wasm
 pnpm install
 ```
 

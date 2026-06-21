@@ -25,7 +25,7 @@ graph TD
   Ob --> Status[status]
 ```
 
-`wpm run -a <id>` dispatches all ~60 kernel registry algorithms. `wpm compare` benchmarks a fixed subset of discovery aliases (dfg, heuristic, inductive, …). `wpm truex verify` is implemented; receipt generation is not exposed on the CLI yet.
+`wpm run -a <id>` dispatches all kernel registry algorithms. `wpm compare` benchmarks a fixed subset of discovery aliases (dfg, simd_streaming_dfg, inductive, …); the default algorithm is `simd_streaming_dfg`. Every `wpm run` emits a mandatory BLAKE3 receipt to `.wasm4pm/receipts/latest.json` with `output_hash`, `run_id`, and `replay_pointer`; `wpm truex verify` validates those receipts.
 
 ## The TypeScript SDK Boundary (`packages/kernel`)
 
@@ -33,7 +33,7 @@ If developers embed `wasm4pm` natively in a Node.js or Browser context, they int
 
 ### Main SDK Exports
 1. `new Kernel(wasm); await kernel.init()`: Initializes the WASM module.
-2. `kernel.discover(algo, logHandle, params)`: Dispatches to one of the 60 discovery engines.
+2. `kernel.discover(algo, logHandle, params)`: Dispatches to the registered discovery engines.
 3. `kernel.truexVerify(envelope)`: The programmatic equivalent of `wpm truex verify`. Parses the JCS-OCEL payload and computes the BLAKE3 digest.
 
 ## Architecture Rules

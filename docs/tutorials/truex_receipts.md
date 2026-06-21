@@ -7,13 +7,13 @@ Truex verifies object-centric OCEL 2.0 execution envelopes with deterministic ca
 The CLI requires the Node.js WASM target (once per clone):
 
 ```bash
-cd wasm4pm && npm run build:nodejs && cd ..
+cd crates/wasm4pm-cognition && wasm-pack build --target nodejs --out-dir pkg -- --features wasm && cd ../..
 ```
 
-Run from the monorepo (global npm publish is not yet available):
+Run from the monorepo (global publish is not yet available):
 
 ```bash
-npm exec --workspace @wasm4pm/cli -- wpm truex verify examples/out/truex_ocel2_valid.json
+pnpm exec --filter @wasm4pm/cli wpm truex verify examples/out/truex_ocel2_valid.json
 ```
 
 ## Step 1: Verify an Admitted Receipt
@@ -68,10 +68,10 @@ Edge capture and standalone verifier demos live under `examples/`:
 
 ```bash
 # Standalone TS verifier (educational; see note below)
-npx tsx examples/truex-cli.ts verify examples/out/truex_ocel2_valid.json
+pnpm dlx tsx examples/truex-cli.ts verify examples/out/truex_ocel2_valid.json
 
 # OTLP egress capture demo (generates sample payloads)
-npx tsx examples/truex-cli.ts capture
+pnpm dlx tsx examples/truex-cli.ts capture
 ```
 
 **Important:** Authoritative verification for production and CI is **`wpm truex verify`** (Rust/WASM). The TypeScript demos in `examples/truex-cli.ts` and `examples/truex-capture-otlp.ts` share the same JCS-OCEL canonicalization and BLAKE3 hashing via `examples/truex-canonical.ts` for cross-tool parity testing.
@@ -79,7 +79,7 @@ npx tsx examples/truex-cli.ts capture
 Cross-tool parity baseline:
 
 ```bash
-npx tsx scripts/examples/truex-cross-tool-parity.ts
+pnpm dlx tsx scripts/examples/truex-cross-tool-parity.ts
 ```
 
 ## Next Steps

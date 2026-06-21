@@ -5,7 +5,7 @@ Sync **wpm command receipts** and **TrueX OCEL 2.0 envelopes** to a Supabase pro
 ## Prerequisites
 
 1. [Supabase CLI](https://supabase.com/docs/guides/cli) installed
-2. Node.js ≥ 20 and wasm4pm built: `cd wasm4pm && npm run build:nodejs`
+2. Node.js ≥ 20 and wasm4pm built: `wasm-pack build --target nodejs --out-dir pkg -- --features wasm` (run from `crates/wasm4pm-cognition/`) or `pnpm build` from the repo root
 3. A Supabase project (local or cloud)
 
 ## 1. Apply database migrations
