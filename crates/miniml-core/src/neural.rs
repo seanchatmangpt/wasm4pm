@@ -389,8 +389,8 @@ impl NeuralNet {
                         }
                         output[neuron_idx] = sum;
                     }
-                    current = output.clone();
-                    activations.push(current.clone());
+                    activations.push(output.clone());
+                    current = output;
                 }
             }
 

@@ -116,8 +116,10 @@ impl CognitionBreed for FramesInheritance {
             }
         }
 
-        if result.is_none() && default_val.is_some() {
-            result = Some((default_val.unwrap(), default_frame.unwrap(), "default".to_string()));
+        if result.is_none() {
+            if let Some((v, f)) = default_val.zip(default_frame) {
+                result = Some((v, f, "default".to_string()));
+            }
         }
 
         if let Some((val, found_frame, kind)) = result {
