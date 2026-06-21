@@ -51,7 +51,7 @@ impl CognitionBreed for DefaultLogic {
             let a_unless = a.premise.iter().filter(|p| p.starts_with("unless:")).count();
             let b_unless = b.premise.iter().filter(|p| p.starts_with("unless:")).count();
             a_unless.cmp(&b_unless)
-                .then_with(|| b.certainty.partial_cmp(&a.certainty).unwrap_or(std::cmp::Ordering::Equal))
+                .then_with(|| b.certainty.total_cmp(&a.certainty))
                 .then_with(|| b.id.cmp(&a.id))
         });
 

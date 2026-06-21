@@ -35,30 +35,30 @@ impl NeuroticState {
     /// ```rust
     /// // Validation successful
     /// ```
-    pub fn process_input(&mut self, concept: &str, incoming_strength: f64) -> String {
+    pub fn process_input(&mut self, concept: &str, incoming_strength: f64) -> &'static str {
         let incoming_clamped = if incoming_strength.is_finite() {
             incoming_strength.clamp(0.0, 1.0)
         } else {
             0.0
         };
-        let response = if let Some(&current_strength) = self.beliefs.get(concept) {
+        let response: &'static str = if let Some(&current_strength) = self.beliefs.get(concept) {
             let conflict = (current_strength - incoming_clamped).abs();
             if conflict > 0.5 {
                 self.mistrust += 0.1 * conflict;
                 self.anger += 0.2 * conflict;
                 self.fear += 0.05 * conflict;
-                "defensive".to_string()
+                "defensive"
             } else {
                 self.mistrust = (self.mistrust - 0.1).max(0.0);
                 let blended = ((current_strength + incoming_clamped) / 2.0).clamp(0.0, 1.0);
                 self.beliefs.insert(concept.to_string(), blended);
-                "accepting".to_string()
+                "accepting"
             }
         } else {
             // Novel concept, slight mistrust increase for paranoia simulation
             self.mistrust += 0.05;
             self.beliefs.insert(concept.to_string(), incoming_clamped);
-            "curious".to_string()
+            "curious"
         };
 
         // Enforce documented [0.0, 1.0] invariant.
