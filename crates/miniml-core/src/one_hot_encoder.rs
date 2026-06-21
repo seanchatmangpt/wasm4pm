@@ -37,7 +37,7 @@ impl OneHotEncoder {
                 .map(|(_, &v)| v)
                 .collect();
 
-            feature_values.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+            feature_values.sort_unstable_by(f64::total_cmp);
             feature_values.dedup();
 
             self.categories.push(feature_values);

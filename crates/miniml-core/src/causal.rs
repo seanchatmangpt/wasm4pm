@@ -162,13 +162,10 @@ pub fn propensity_score_matching_impl(
     }
 
     // Compute average treatment effect on matched sample
-    let mut treated_outcomes = Vec::new();
-    let mut control_outcomes = Vec::new();
-
-    for &(treated_idx, control_idx) in &matched_pairs {
-        treated_outcomes.push(outcome[treated_idx]);
-        control_outcomes.push(outcome[control_idx]);
-    }
+    let (treated_outcomes, control_outcomes): (Vec<f64>, Vec<f64>) = matched_pairs
+        .iter()
+        .map(|&(ti, ci)| (outcome[ti], outcome[ci]))
+        .unzip();
 
     let ate = average_treatment_effect(&treated_outcomes, &control_outcomes);
     let (ci_lower, ci_upper) =
