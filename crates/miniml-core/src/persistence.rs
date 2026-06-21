@@ -4,7 +4,7 @@
 
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 /// Training metadata for provenance tracking
@@ -33,7 +33,7 @@ pub struct TrainingMetadata {
 
     /// Custom metadata
     #[serde(flatten)]
-    pub custom: HashMap<String, serde_json::Value>,
+    pub custom: BTreeMap<String, serde_json::Value>,
 }
 
 impl TrainingMetadata {
@@ -47,7 +47,7 @@ impl TrainingMetadata {
             n_features: 0,
             data_hash: String::new(),
             timestamp: 0,
-            custom: HashMap::new(),
+            custom: BTreeMap::new(),
         }
     }
 
