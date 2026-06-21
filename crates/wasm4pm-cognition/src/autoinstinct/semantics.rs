@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 /// Conceptual Dependency (CD) Primitive Acts (Schank)
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum PrimitiveAct {
     /// Transfer of abstract relationship (e.g. give).
     Atrans,
@@ -81,7 +81,7 @@ impl SemanticParser {
         let verb = words[1].to_lowercase();
         let object = words[2].to_string();
 
-        let act = self.lexicon.get(&verb)?.clone();
+        let act = *self.lexicon.get(&verb)?;
 
         // Scan positions 3..N for `to <X>` and `from <X>` prepositions.
         let mut to: Option<String> = None;
