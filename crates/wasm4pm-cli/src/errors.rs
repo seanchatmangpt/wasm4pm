@@ -59,29 +59,10 @@ impl Report for anyhow::Error {
     }
 }
 
-/// Extension trait for adding common context to results
-pub trait ContextExt<T, E> {
-    fn with_io_context<S: Into<String>>(self, msg: S) -> anyhow::Result<T>;
-    fn with_parse_context<S: Into<String>>(self, msg: S) -> anyhow::Result<T>;
-}
-
-impl<T, E> ContextExt<T, E> for std::result::Result<T, E>
-where
-    E: std::error::Error + Send + Sync + 'static,
-{
-    fn with_io_context<S: Into<String>>(self, msg: S) -> anyhow::Result<T> {
-        anyhow::Result::from(self).map_err(|e| {
-            let m = msg.into();
-            anyhow::anyhow!(e).context(format!("Failed IO operation: {}", m))
-        })
-    }
-
-    fn with_parse_context<S: Into<String>>(self, msg: S) -> anyhow::Result<T> {
-        anyhow::Result::from(self).map_err(|e| {
-            let m = msg.into();
-            anyhow::anyhow!(e).context(format!("Failed to parse: {}", m))
-        })
-    }
-}
+// Context helpers have been removed in favour of `anyhow::Context::with_context`,
+// which is lazy (closure runs only on Err) and ships with anyhow:
+//
+//   use anyhow::Context as _;
+//   some_result.with_context(|| format!("Failed IO operation: {path}"))?;
 
 pub type Result<T> = anyhow::Result<T>;
