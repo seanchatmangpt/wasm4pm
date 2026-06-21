@@ -3,7 +3,7 @@
 //! PageRank, shortest paths (Dijkstra), and community detection (label propagation).
 
 use crate::error::MlError;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 /// Result of PageRank computation.
@@ -200,7 +200,7 @@ pub fn community_detection_impl(
     for _iter in 0..max_iter {
         let mut changed = false;
         for i in 0..n_nodes {
-            let mut label_weights: HashMap<usize, f64> = HashMap::new();
+            let mut label_weights: BTreeMap<usize, f64> = BTreeMap::new();
             for j in 0..n_nodes {
                 let weight = adjacency[i * n_nodes + j];
                 if weight > 0.0 {
