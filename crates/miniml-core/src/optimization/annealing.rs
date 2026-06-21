@@ -99,7 +99,7 @@ impl SimulatedAnnealing {
     where
         T: Clone + PartialEq + Send + Sync,
     {
-        let mut current_state = initial_state.clone();
+        let mut current_state = initial_state;
         let mut current_fitness = fitness_fn.evaluate(&Individual::new(current_state.clone()));
 
         let mut best_state = current_state.clone();
