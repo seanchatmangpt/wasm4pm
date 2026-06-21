@@ -114,21 +114,13 @@ impl Kernel {
     /// Scan all admitted fact blocks for rows that unify with `query`.
     /// Returns `(row, fact_hash)` pairs.
     fn scan_facts(&self, query: &Atom8, epoch: EpochId) -> Vec<(FactRow8, [u8; 32])> {
-        let mut out = Vec::new();
-        for block in &self.fact_blocks {
-            if block.pred_id != query.pred_id {
-                continue;
-            }
-            if block.skip_for(query, epoch) {
-                continue;
-            }
-            for row in &block.rows {
-                if Self::row_matches(row, query) {
-                    out.push((*row, row.fact_hash));
-                }
-            }
-        }
-        out
+        self.fact_blocks
+            .iter()
+            .filter(|b| b.pred_id == query.pred_id && !b.skip_for(query, epoch))
+            .flat_map(|b| b.rows.iter())
+            .filter(|row| Self::row_matches(row, query))
+            .map(|row| (*row, row.fact_hash))
+            .collect()
     }
 
     /// Test whether a fact row matches a query atom under bound positions.

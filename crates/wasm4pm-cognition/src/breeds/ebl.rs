@@ -314,11 +314,11 @@ impl CognitionBreed for Ebl {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        let has_rule = output.facts.iter().any(|f| f.key == "ebl:rule");
-        if !has_rule {
-            return Err("EBL must emit an ebl:rule fact".to_string());
-        }
-        let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
+        let rule_fact = output
+            .facts
+            .iter()
+            .find(|f| f.key == "ebl:rule")
+            .ok_or_else(|| "EBL must emit an ebl:rule fact".to_string())?;
         if !rule_fact.value.contains('?') {
             return Err("Learned rule must contain >= 1 variable. A ground rule is a fraud signal.".to_string());
         }
