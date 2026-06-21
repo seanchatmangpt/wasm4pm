@@ -258,28 +258,9 @@ pub fn gp_fit(
 /// Compute a kernel between two feature vectors.
 fn compute_kernel(x: &[f64], y: &[f64], kernel_type: &str, gamma: f64) -> f64 {
     match kernel_type {
-        "rbf" => {
-            let mut sq_dist = 0.0;
-            for i in 0..x.len() {
-                let d = x[i] - y[i];
-                sq_dist += d * d;
-            }
-            (-gamma * sq_dist).exp()
-        }
-        "linear" => {
-            let mut dot = 0.0;
-            for i in 0..x.len() {
-                dot += x[i] * y[i];
-            }
-            dot
-        }
-        _ => {
-            // Default to RBF
-            let mut sq_dist = 0.0;
-            for i in 0..x.len() {
-                let d = x[i] - y[i];
-                sq_dist += d * d;
-            }
+        "linear" => x.iter().zip(y).map(|(a, b)| a * b).sum::<f64>(),
+        "rbf" | _ => {
+            let sq_dist: f64 = x.iter().zip(y).map(|(a, b)| (a - b).powi(2)).sum();
             (-gamma * sq_dist).exp()
         }
     }
