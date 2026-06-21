@@ -112,8 +112,7 @@ pub fn compute_feature_importance(
         b["importance"]
             .as_f64()
             .unwrap_or(0.0)
-            .partial_cmp(&a["importance"].as_f64().unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
+            .total_cmp(&a["importance"].as_f64().unwrap_or(0.0))
     });
 
     // Normalize importances to sum to 1.0
@@ -259,8 +258,7 @@ pub fn global_feature_importance(
         b["mean_importance"]
             .as_f64()
             .unwrap_or(0.0)
-            .partial_cmp(&a["mean_importance"].as_f64().unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
+            .total_cmp(&a["mean_importance"].as_f64().unwrap_or(0.0))
     });
 
     to_js_str(&serde_json::json!({

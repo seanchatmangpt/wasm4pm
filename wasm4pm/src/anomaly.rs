@@ -183,8 +183,7 @@ pub fn score_log_anomalies(
                 b["score"]
                     .as_f64()
                     .unwrap_or(0.0)
-                    .partial_cmp(&a["score"].as_f64().unwrap_or(0.0))
-                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .total_cmp(&a["score"].as_f64().unwrap_or(0.0))
             });
 
             // Per-trace z-score relative to the log-level distribution. This

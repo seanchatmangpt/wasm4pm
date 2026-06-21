@@ -145,7 +145,7 @@ pub fn ablation_study(
     // Sort by severity descending
     results.sort_by(|a, b| {
         b["severity"].as_f64().unwrap_or(0.0)
-            .partial_cmp(&a["severity"].as_f64().unwrap_or(0.0))
+            .total_cmp(&a["severity"].as_f64().unwrap_or(0.0))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 

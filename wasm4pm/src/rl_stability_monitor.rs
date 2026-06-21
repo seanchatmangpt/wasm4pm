@@ -221,7 +221,7 @@ impl RlStabilityMonitor {
                 .q_divergence
                 .max_q_history
                 .iter()
-                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+                .max_by(|a, b| a.total_cmp(b))
                 .unwrap_or(&recent_start);
             if recent_start > 0.0 && (recent_max - recent_start) / recent_start > 0.5 {
                 self.q_divergence.is_diverging = true;

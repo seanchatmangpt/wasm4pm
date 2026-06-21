@@ -1743,7 +1743,7 @@ impl NGramPredictor {
             .iter()
             .map(|(act, &cnt)| (act.clone(), cnt as f64 / total as f64))
             .collect();
-        result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        result.sort_by(|a, b| b.1.total_cmp(&a.1));
         result
     }
 }

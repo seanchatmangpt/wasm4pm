@@ -68,7 +68,7 @@ fn compute_edge_stats(durs: &[f64]) -> (f64, f64, f64) {
     let data = Data::new(valid.clone());
     let median = data.median();
     let mut sorted = valid;
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    sorted.sort_by(|a, b| a.total_cmp(b));
     let p95_idx = ((sorted.len() as f64 - 1.0) * 0.95).round() as usize;
     let p95 = sorted[p95_idx.min(sorted.len() - 1)];
     (mean, median, p95)
@@ -328,7 +328,7 @@ fn compute_duration_stats(durations: &[f64]) -> serde_json::Value {
     }
 
     let mut sorted = durations.to_vec();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    sorted.sort_by(|a, b| a.total_cmp(b));
 
     let min = sorted.first().copied().unwrap_or(0.0);
     let max = sorted.last().copied().unwrap_or(0.0);

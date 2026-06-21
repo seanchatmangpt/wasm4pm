@@ -135,7 +135,7 @@ fn extract_motion_features(
 
     // ── Step 4: Labelling threshold — bottom 15% by variant frequency ─────────
     let mut sorted_freqs = variant_freq.clone();
-    sorted_freqs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    sorted_freqs.sort_by(|a, b| a.total_cmp(b));
     let threshold_idx = ((n as f64 * 0.15).ceil() as usize).min(n.saturating_sub(1));
     let anomaly_threshold = sorted_freqs.get(threshold_idx).copied().unwrap_or(0.0);
 
@@ -477,7 +477,7 @@ fn score_with_miniml(
         .collect();
 
     // Partial sort: bring the k smallest distances to the front
-    distances.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    distances.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
 
     // Anomaly score = fraction of k neighbours labelled 1.0
     let anomalous_count = distances

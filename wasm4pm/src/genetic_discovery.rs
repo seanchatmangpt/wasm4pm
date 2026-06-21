@@ -146,7 +146,7 @@ pub fn discover_genetic_algorithm_from_log(
         .collect();
 
     for _ in 0..generations {
-        population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        population.sort_by(|a, b| b.1.total_cmp(&a.1));
         let elite_size = (population_size / 4).max(1);
         let mut next = population[..elite_size].to_vec();
         while next.len() < population_size {
@@ -165,7 +165,7 @@ pub fn discover_genetic_algorithm_from_log(
         population = next;
     }
 
-    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    population.sort_by(|a, b| b.1.total_cmp(&a.1));
     let best_fitness = population[0].1;
     let best_edges = population.remove(0).0;
     Some((
@@ -584,7 +584,7 @@ pub fn discover_aco_algorithm_from_log(
         }
         if let Some((best_edges, best_fit)) = iteration_solutions
             .iter()
-            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| a.1.total_cmp(&b.1))
         {
             let deposit = q * best_fit * 2.0;
             for &edge in best_edges {

@@ -94,7 +94,7 @@ pub fn discover_performance_dfg_from_log(
             let data = Data::new(valid.clone());
             let median_ms = data.median();
             let mut sorted = valid.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            sorted.sort_by(|a, b| a.total_cmp(b));
             let p95_idx = ((sorted.len() as f64 - 1.0) * 0.95).round() as usize;
             let p95_ms = if sorted.is_empty() {
                 0.0

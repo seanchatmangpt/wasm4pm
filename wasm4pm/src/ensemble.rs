@@ -211,8 +211,7 @@ pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsVal
         b["quality_score"]
             .as_f64()
             .unwrap_or(0.0)
-            .partial_cmp(&a["quality_score"].as_f64().unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
+            .total_cmp(&a["quality_score"].as_f64().unwrap_or(0.0))
     });
 
     let best = &models[0];

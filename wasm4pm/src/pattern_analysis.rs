@@ -276,7 +276,7 @@ fn select_pattern(chars: &StructureCharacteristics) -> (PatternType, f64) {
 
     let (pattern, confidence) = scores
         .into_iter()
-        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+        .max_by(|a, b| a.1.total_cmp(&b.1))
         .unwrap_or((PatternType::Sequence, 0.5));
 
     (pattern, confidence)
