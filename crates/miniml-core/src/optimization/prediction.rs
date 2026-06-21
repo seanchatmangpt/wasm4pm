@@ -75,7 +75,11 @@ pub fn predict_top_k(
         }
     }
 
-    candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    candidates.sort_by(|a, b| {
+        b.1.partial_cmp(&a.1)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.0.cmp(&b.0))
+    });
 
     let top_k = k.min(candidates.len());
     let items: Vec<String> = candidates
