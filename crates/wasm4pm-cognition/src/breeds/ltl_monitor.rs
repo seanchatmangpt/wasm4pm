@@ -238,7 +238,7 @@ impl CognitionBreed for LtlMonitor {
             verdict = Some(Self::evaluate_end(&current_phi));
         }
 
-        let final_verdict = verdict.unwrap();
+        let final_verdict = verdict.expect("ltl verdict must be set after trace exhaustion");
         trace.push(TraceStep {
             step,
             kind: "ltl-verdict".to_string(),
