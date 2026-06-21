@@ -52,7 +52,7 @@ impl<S> BreedPipeline<S> {
         F: FnOnce(&mut S) -> Result<String, BreedError>,
     {
         // Record the step *before* running so partial traces are still valid evidence.
-        let detail = f(&mut self.state).map_err(|e| e)?;
+        let detail = f(&mut self.state)?;
         self.trace.push(TraceStep {
             step: self.step,
             kind: name.to_string(),
