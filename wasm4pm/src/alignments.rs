@@ -2,7 +2,7 @@ use crate::models::PetriNet;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
 /// Priority 5 — A* Search-based optimal alignment conformance checking.
 ///
 /// Computes per-trace alignments against a Petri Net using A* search.
@@ -18,7 +18,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Clone, Debug, PartialEq)]
 struct AlignmentState {
     trace_index: usize,              // Position in the trace (0..len)
-    marking: HashMap<String, usize>, // Current marking of petri net
+    marking: BTreeMap<String, usize>, // Current marking of petri net
     cost: f64,                       // Cumulative cost to reach this state
     path: Vec<String>,               // Sequence of moves: "sync:A", "log:B", "model:C"
 }
@@ -64,7 +64,7 @@ fn get_transition_activities(petri_net: &PetriNet, transition_id: &str) -> Vec<S
 }
 
 /// Check if a transition can fire with current marking.
-fn can_fire(petri_net: &PetriNet, marking: &HashMap<String, usize>, transition_id: &str) -> bool {
+fn can_fire(petri_net: &PetriNet, marking: &BTreeMap<String, usize>, transition_id: &str) -> bool {
     // For each arc from a place to this transition, check if place has sufficient tokens
     for arc in &petri_net.arcs {
         if arc.to == transition_id {
@@ -81,9 +81,9 @@ fn can_fire(petri_net: &PetriNet, marking: &HashMap<String, usize>, transition_i
 /// Fire a transition and compute new marking.
 fn fire_transition(
     petri_net: &PetriNet,
-    marking: &HashMap<String, usize>,
+    marking: &BTreeMap<String, usize>,
     transition_id: &str,
-) -> Option<HashMap<String, usize>> {
+) -> Option<BTreeMap<String, usize>> {
     if !can_fire(petri_net, marking, transition_id) {
         return None;
     }
@@ -131,7 +131,7 @@ fn compute_trace_alignment(
 
     let initial_state = AlignmentState {
         trace_index: 0,
-        marking: petri_net.initial_marking.clone(),
+        marking: petri_net.initial_marking.iter().map(|(k, v)| (k.clone(), *v)).collect(),
         cost: 0.0,
         path: Vec::new(),
     };
@@ -152,10 +152,8 @@ fn compute_trace_alignment(
             break;
         }
 
-        // Create deterministic state key by sorting marking entries
-        let mut marking_vec: Vec<_> = state.marking.iter().map(|(k, v)| (k.clone(), *v)).collect();
-        marking_vec.sort_by(|a, b| a.0.cmp(&b.0));
-        let state_key = (state.trace_index, marking_vec);
+        // BTreeMap iterates in key order — no sort needed for a deterministic closed-set key
+        let state_key = (state.trace_index, state.marking.clone());
         if closed_set.contains(&state_key) {
             continue;
         }
@@ -167,7 +165,7 @@ fn compute_trace_alignment(
                 || petri_net
                     .final_markings
                     .iter()
-                    .any(|fm| fm == &state.marking))
+                    .any(|fm| fm.len() == state.marking.len() && fm.iter().all(|(k, v)| state.marking.get(k) == Some(v))))
         {
             let (sync_count, log_count, model_count) = count_moves(&state.path);
             best_solution = Some((
@@ -555,14 +553,14 @@ mod tests {
     fn test_alignment_state_equality() {
         let state1 = AlignmentState {
             trace_index: 5,
-            marking: HashMap::from([("p1".to_string(), 1)]),
+            marking: BTreeMap::from([("p1".to_string(), 1)]),
             cost: 2.0,
             path: vec!["sync:A".to_string()],
         };
 
         let state2 = AlignmentState {
             trace_index: 5,
-            marking: HashMap::from([("p1".to_string(), 1)]),
+            marking: BTreeMap::from([("p1".to_string(), 1)]),
             cost: 2.0, // Same cost
             path: vec!["sync:A".to_string()],
         };
@@ -572,7 +570,7 @@ mod tests {
 
         let state3 = AlignmentState {
             trace_index: 5,
-            marking: HashMap::from([("p1".to_string(), 1)]),
+            marking: BTreeMap::from([("p1".to_string(), 1)]),
             cost: 3.0, // Different cost
             path: vec!["sync:A".to_string()],
         };
