@@ -30,15 +30,13 @@ impl RandomForestModel {
         let mut result = Vec::with_capacity(n);
 
         for i in 0..n {
-            let point: Vec<f64> = (0..self.n_features)
-                .map(|j| data[i * self.n_features + j])
-                .collect();
+            let point = &data[i * self.n_features..(i + 1) * self.n_features];
 
-            // Collect predictions from all trees (using predict_single to avoid allocation)
+            // Collect predictions from all trees
             let predictions: Vec<f64> = self
                 .trees
                 .iter()
-                .map(|tree| tree.predict_single(&point))
+                .map(|tree| tree.predict_single(point))
                 .collect();
 
             if self.is_classifier {
