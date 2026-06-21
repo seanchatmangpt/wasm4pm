@@ -159,9 +159,8 @@ pub fn analyze_process_speedup(
                 }
 
                 // Calculate gaps using real ISO-8601 timestamp parsing
-                for i in 0..timestamps.len().saturating_sub(1) {
-                    let gap =
-                        crate::parse_iso8601_duration(&timestamps[i], &timestamps[i + 1]).abs();
+                for pair in timestamps.windows(2) {
+                    let gap = crate::parse_iso8601_duration(&pair[0], &pair[1]).abs();
                     time_gaps.push(gap);
                 }
             }
