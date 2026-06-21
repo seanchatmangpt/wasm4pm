@@ -177,9 +177,9 @@ impl DataFrame {
             let val_a = self.data[col_idx][a];
             let val_b = self.data[col_idx][b];
             if ascending {
-                val_a.partial_cmp(&val_b).unwrap()
+                val_a.total_cmp(&val_b)
             } else {
-                val_b.partial_cmp(&val_a).unwrap()
+                val_b.total_cmp(&val_a)
             }
         });
 
@@ -228,7 +228,7 @@ impl DataFrame {
             let std = variance.sqrt();
 
             let mut sorted = col.clone();
-            sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            sorted.sort_by(|a, b| a.total_cmp(b));
 
             let q1_idx = (n * 0.25).floor() as usize;
             let q2_idx = (n * 0.50).floor() as usize;
@@ -286,7 +286,7 @@ impl DataFrame {
                         0.0
                     } else {
                         let mut sorted = col.clone();
-                        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                        sorted.sort_by(|a, b| a.total_cmp(b));
                         let idx = (q * sorted.len() as f64).floor() as usize;
                         sorted.get(idx).copied().unwrap_or(0.0)
                     }
