@@ -71,16 +71,19 @@ impl Catalog {
     /// Intern a term label; returns the assigned `TermId`.
     /// Reserves id 0 as the sentinel.
     pub fn intern_term(&mut self, label: impl Into<String>) -> TermId {
+        use std::collections::btree_map::Entry;
         let label: String = label.into();
-        if let Some(existing) = self.term_by_label.get(&label) {
-            return *existing;
+        match self.term_by_label.entry(label) {
+            Entry::Occupied(e) => *e.get(),
+            Entry::Vacant(e) => {
+                // First non-sentinel id is 1.
+                let next_id = (self.term_labels.len() as u32).saturating_add(1);
+                let id = TermId(next_id);
+                self.term_labels.insert(id, e.key().clone());
+                e.insert(id);
+                id
+            }
         }
-        // First non-sentinel id is 1.
-        let next_id = (self.term_labels.len() as u32).saturating_add(1);
-        let id = TermId(next_id);
-        self.term_by_label.insert(label.clone(), id);
-        self.term_labels.insert(id, label);
-        id
     }
 
     /// Lookup the metadata of a predicate by id.
