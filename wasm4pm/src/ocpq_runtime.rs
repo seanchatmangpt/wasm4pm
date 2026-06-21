@@ -1,7 +1,7 @@
 use crate::models::{OCELEvent, OCEL};
 use crate::ocpq_parser::{OcpqClause, OcpqQuery, OcpqRelation, OcpqScope};
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct OcpqVerdict {
@@ -127,8 +127,8 @@ pub fn evaluate(ocel: &OCEL, query: &OcpqQuery) -> OcpqVerdict {
                     violations.append(&mut cl_violations);
                 }
                 OcpqScope::SameObject { object_type } => {
-                    let mut events_by_object: HashMap<String, Vec<(usize, &OCELEvent)>> =
-                        HashMap::new();
+                    let mut events_by_object: BTreeMap<String, Vec<(usize, &OCELEvent)>> =
+                        BTreeMap::new();
                     for (idx, event) in ocel.events.iter().enumerate() {
                         for obj_id in event.all_object_ids() {
                             if let Some(ref ot) = object_type {
@@ -189,7 +189,7 @@ impl OcpqEvaluator {
             .collect();
 
         // Build a map of object ID to related events
-        let mut events_by_object: HashMap<String, Vec<(usize, &OCELEvent)>> = HashMap::new();
+        let mut events_by_object: BTreeMap<String, Vec<(usize, &OCELEvent)>> = BTreeMap::new();
         for (idx, event) in ocel.events.iter().enumerate() {
             for obj_id in event.all_object_ids() {
                 events_by_object
