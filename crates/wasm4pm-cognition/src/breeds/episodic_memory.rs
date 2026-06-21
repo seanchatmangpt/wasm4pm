@@ -102,7 +102,7 @@ impl CognitionBreed for EpisodicMemory {
             .facts
             .iter()
             .find(|f| f.key == "cue:t")
-            .unwrap()
+            .ok_or_else(|| err("cue:t fact missing".to_string()))?
             .value
             .parse()
             .map_err(|_| err("cue:t is not an integer".to_string()))?;

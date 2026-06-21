@@ -32,7 +32,7 @@ impl OrdinalEncoder {
                 .map(|(_, &v)| v)
                 .collect();
 
-            feature_values.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+            feature_values.sort_unstable_by(|a, b| a.total_cmp(b));
             feature_values.dedup();
 
             self.categories.push(feature_values);
