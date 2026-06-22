@@ -72,7 +72,6 @@ pub struct Trie {
     pub nodes: Vec<TrieNode>,
 }
 
-
 impl Trie {
     /// Create a new empty trie with just a root node.
     pub fn new() -> Self {
@@ -263,16 +262,16 @@ pub fn discover_prefix_tree(
     max_path_length: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let max_len = if max_path_length > 0 {
-                Some(max_path_length)
-            } else {
-                None
-            };
+        let max_len = if max_path_length > 0 {
+            Some(max_path_length)
+        } else {
+            None
+        };
 
-            match discover_prefix_tree_inner(log, activity_key, max_len) {
-                Ok(result) => to_js(&result),
-                Err(e) => Err(wasm_err(codes::INVALID_INPUT, e)),
-            }
+        match discover_prefix_tree_inner(log, activity_key, max_len) {
+            Ok(result) => to_js(&result),
+            Err(e) => Err(wasm_err(codes::INVALID_INPUT, e)),
+        }
     })
 }
 

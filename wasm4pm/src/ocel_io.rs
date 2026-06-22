@@ -184,19 +184,19 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
 #[wasm_bindgen]
 pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_ocel(handle, |ocel| {
-            let errors = validate_ocel_inner(ocel);
-            let is_valid = errors.is_empty();
+        let errors = validate_ocel_inner(ocel);
+        let is_valid = errors.is_empty();
 
-            let report = json!({
-                "valid": is_valid,
-                "error_count": errors.len(),
-                "errors": errors
-            });
+        let report = json!({
+            "valid": is_valid,
+            "error_count": errors.len(),
+            "errors": errors
+        });
 
-            let report_json = serde_json::to_string(&report).map_err(|e| {
-                crate::error::js_val(&format!("Failed to serialize validation report: {}", e))
-            })?;
-            Ok(crate::error::js_val(&report_json))
+        let report_json = serde_json::to_string(&report).map_err(|e| {
+            crate::error::js_val(&format!("Failed to serialize validation report: {}", e))
+        })?;
+        Ok(crate::error::js_val(&report_json))
     })
 }
 
@@ -253,173 +253,173 @@ pub struct ProvenanceQueryResult {
 #[wasm_bindgen]
 pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result<String, JsValue> {
     get_or_init_state().with_ocel(ocel_handle, |ocel| {
-            let query: ProvenanceQuery = serde_json::from_str(query_json)
-                .map_err(|e| crate::error::js_val(&format!("Failed to parse query JSON: {}", e)))?;
+        let query: ProvenanceQuery = serde_json::from_str(query_json)
+            .map_err(|e| crate::error::js_val(&format!("Failed to parse query JSON: {}", e)))?;
 
-            // 1. Collect start nodes
-            let mut initial_objects = Vec::new();
-            if let Some(ref start_id) = query.start_object_id {
-                if let Some(o) = ocel.objects.iter().find(|obj| &obj.id == start_id) {
-                    if o.object_type == query.start_object_type {
-                        initial_objects.push(o);
-                    } else {
-                        return Err(crate::error::js_val(&format!(
-                            "Start object '{}' type mismatch: expected '{}', got '{}'",
-                            start_id, query.start_object_type, o.object_type
-                        )));
-                    }
+        // 1. Collect start nodes
+        let mut initial_objects = Vec::new();
+        if let Some(ref start_id) = query.start_object_id {
+            if let Some(o) = ocel.objects.iter().find(|obj| &obj.id == start_id) {
+                if o.object_type == query.start_object_type {
+                    initial_objects.push(o);
                 } else {
                     return Err(crate::error::js_val(&format!(
-                        "Start object '{}' not found",
-                        start_id
+                        "Start object '{}' type mismatch: expected '{}', got '{}'",
+                        start_id, query.start_object_type, o.object_type
                     )));
                 }
             } else {
-                for o in &ocel.objects {
-                    if o.object_type == query.start_object_type {
-                        initial_objects.push(o);
-                    }
+                return Err(crate::error::js_val(&format!(
+                    "Start object '{}' not found",
+                    start_id
+                )));
+            }
+        } else {
+            for o in &ocel.objects {
+                if o.object_type == query.start_object_type {
+                    initial_objects.push(o);
                 }
             }
+        }
 
-            let mut active_paths: Vec<Vec<PathNode>> = initial_objects
-                .into_iter()
-                .map(|o| {
-                    vec![PathNode::Object {
-                        id: o.id.clone(),
-                        object_type: o.object_type.clone(),
-                    }]
-                })
-                .collect();
+        let mut active_paths: Vec<Vec<PathNode>> = initial_objects
+            .into_iter()
+            .map(|o| {
+                vec![PathNode::Object {
+                    id: o.id.clone(),
+                    object_type: o.object_type.clone(),
+                }]
+            })
+            .collect();
 
-            // 2. Fetch O2O relations locally (global + embedded) to avoid mutability issues
-            let mut all_relations = ocel.object_relations.clone();
-            for object in &ocel.objects {
-                for embedded in &object.embedded_relations {
-                    all_relations.push(crate::models::OCELObjectRelation {
-                        source_id: object.id.clone(),
-                        target_id: embedded.object_id.clone(),
-                        qualifier: embedded.qualifier.clone(),
-                    });
-                }
+        // 2. Fetch O2O relations locally (global + embedded) to avoid mutability issues
+        let mut all_relations = ocel.object_relations.clone();
+        for object in &ocel.objects {
+            for embedded in &object.embedded_relations {
+                all_relations.push(crate::models::OCELObjectRelation {
+                    source_id: object.id.clone(),
+                    target_id: embedded.object_id.clone(),
+                    qualifier: embedded.qualifier.clone(),
+                });
             }
+        }
 
-            // 3. Step-by-step path generation
-            for step in &query.steps {
-                let mut new_paths = Vec::new();
-                for path in &active_paths {
-                    if let Some(last_node) = path.last() {
-                        match (last_node, step) {
-                            (
-                                PathNode::Object { id: obj_id, .. },
-                                TraversalStep::ObjectToEvent {
-                                    event_type,
-                                    qualifier,
-                                },
-                            ) => {
-                                for event in &ocel.events {
-                                    if &event.event_type == event_type {
-                                        let matches_qualifier = event.object_refs.iter().any(|r| {
-                                            &r.object_id == obj_id && &r.qualifier == qualifier
+        // 3. Step-by-step path generation
+        for step in &query.steps {
+            let mut new_paths = Vec::new();
+            for path in &active_paths {
+                if let Some(last_node) = path.last() {
+                    match (last_node, step) {
+                        (
+                            PathNode::Object { id: obj_id, .. },
+                            TraversalStep::ObjectToEvent {
+                                event_type,
+                                qualifier,
+                            },
+                        ) => {
+                            for event in &ocel.events {
+                                if &event.event_type == event_type {
+                                    let matches_qualifier = event.object_refs.iter().any(|r| {
+                                        &r.object_id == obj_id && &r.qualifier == qualifier
+                                    });
+                                    if matches_qualifier {
+                                        let mut next_path = path.clone();
+                                        next_path.push(PathNode::Event {
+                                            id: event.id.clone(),
+                                            event_type: event.event_type.clone(),
                                         });
-                                        if matches_qualifier {
-                                            let mut next_path = path.clone();
-                                            next_path.push(PathNode::Event {
-                                                id: event.id.clone(),
-                                                event_type: event.event_type.clone(),
-                                            });
-                                            new_paths.push(next_path);
-                                        }
+                                        new_paths.push(next_path);
                                     }
                                 }
                             }
-                            (
-                                PathNode::Event { id: ev_id, .. },
-                                TraversalStep::EventToObject {
-                                    object_type,
-                                    qualifier,
-                                },
-                            ) => {
-                                if let Some(event) = ocel.events.iter().find(|e| &e.id == ev_id) {
-                                    for r in &event.object_refs {
-                                        if &r.qualifier == qualifier {
-                                            if let Some(target_obj) =
-                                                ocel.objects.iter().find(|o| o.id == r.object_id)
-                                            {
-                                                if &target_obj.object_type == object_type {
-                                                    let mut next_path = path.clone();
-                                                    next_path.push(PathNode::Object {
-                                                        id: target_obj.id.clone(),
-                                                        object_type: target_obj.object_type.clone(),
-                                                    });
-                                                    new_paths.push(next_path);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            (
-                                PathNode::Object { id: obj_id, .. },
-                                TraversalStep::ObjectToObject {
-                                    object_type,
-                                    qualifier,
-                                    direction,
-                                },
-                            ) => {
-                                for rel in &all_relations {
-                                    if &rel.qualifier == qualifier {
-                                        // Forward search
-                                        if (direction == "forward" || direction == "both")
-                                            && &rel.source_id == obj_id
-                                        {
-                                            if let Some(target_obj) =
-                                                ocel.objects.iter().find(|o| o.id == rel.target_id)
-                                            {
-                                                if &target_obj.object_type == object_type {
-                                                    let mut next_path = path.clone();
-                                                    next_path.push(PathNode::Object {
-                                                        id: target_obj.id.clone(),
-                                                        object_type: target_obj.object_type.clone(),
-                                                    });
-                                                    new_paths.push(next_path);
-                                                }
-                                            }
-                                        }
-                                        // Reverse search
-                                        if (direction == "reverse" || direction == "both")
-                                            && &rel.target_id == obj_id
-                                        {
-                                            if let Some(source_obj) =
-                                                ocel.objects.iter().find(|o| o.id == rel.source_id)
-                                            {
-                                                if &source_obj.object_type == object_type {
-                                                    let mut next_path = path.clone();
-                                                    next_path.push(PathNode::Object {
-                                                        id: source_obj.id.clone(),
-                                                        object_type: source_obj.object_type.clone(),
-                                                    });
-                                                    new_paths.push(next_path);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {} // Drop path on step type mismatch
                         }
+                        (
+                            PathNode::Event { id: ev_id, .. },
+                            TraversalStep::EventToObject {
+                                object_type,
+                                qualifier,
+                            },
+                        ) => {
+                            if let Some(event) = ocel.events.iter().find(|e| &e.id == ev_id) {
+                                for r in &event.object_refs {
+                                    if &r.qualifier == qualifier {
+                                        if let Some(target_obj) =
+                                            ocel.objects.iter().find(|o| o.id == r.object_id)
+                                        {
+                                            if &target_obj.object_type == object_type {
+                                                let mut next_path = path.clone();
+                                                next_path.push(PathNode::Object {
+                                                    id: target_obj.id.clone(),
+                                                    object_type: target_obj.object_type.clone(),
+                                                });
+                                                new_paths.push(next_path);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        (
+                            PathNode::Object { id: obj_id, .. },
+                            TraversalStep::ObjectToObject {
+                                object_type,
+                                qualifier,
+                                direction,
+                            },
+                        ) => {
+                            for rel in &all_relations {
+                                if &rel.qualifier == qualifier {
+                                    // Forward search
+                                    if (direction == "forward" || direction == "both")
+                                        && &rel.source_id == obj_id
+                                    {
+                                        if let Some(target_obj) =
+                                            ocel.objects.iter().find(|o| o.id == rel.target_id)
+                                        {
+                                            if &target_obj.object_type == object_type {
+                                                let mut next_path = path.clone();
+                                                next_path.push(PathNode::Object {
+                                                    id: target_obj.id.clone(),
+                                                    object_type: target_obj.object_type.clone(),
+                                                });
+                                                new_paths.push(next_path);
+                                            }
+                                        }
+                                    }
+                                    // Reverse search
+                                    if (direction == "reverse" || direction == "both")
+                                        && &rel.target_id == obj_id
+                                    {
+                                        if let Some(source_obj) =
+                                            ocel.objects.iter().find(|o| o.id == rel.source_id)
+                                        {
+                                            if &source_obj.object_type == object_type {
+                                                let mut next_path = path.clone();
+                                                next_path.push(PathNode::Object {
+                                                    id: source_obj.id.clone(),
+                                                    object_type: source_obj.object_type.clone(),
+                                                });
+                                                new_paths.push(next_path);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        _ => {} // Drop path on step type mismatch
                     }
                 }
-                active_paths = new_paths;
             }
+            active_paths = new_paths;
+        }
 
-            let result = ProvenanceQueryResult {
-                paths: active_paths,
-            };
-            let result_json = serde_json::to_string(&result).map_err(|e| {
-                crate::error::js_val(&format!("Failed to serialize query result: {}", e))
-            })?;
-            Ok(result_json)
+        let result = ProvenanceQueryResult {
+            paths: active_paths,
+        };
+        let result_json = serde_json::to_string(&result).map_err(|e| {
+            crate::error::js_val(&format!("Failed to serialize query result: {}", e))
+        })?;
+        Ok(result_json)
     })
 }
 

@@ -287,7 +287,6 @@ impl StreamingAlgorithm for StreamingHeuristicBuilder {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

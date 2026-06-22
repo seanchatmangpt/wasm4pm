@@ -279,7 +279,6 @@ pub struct Event {
     pub attributes: Attributes,
 }
 
-
 impl Event {
     /// Create a new event with empty attributes.
     #[must_use]
@@ -298,7 +297,6 @@ pub struct Trace {
     /// Ordered sequence of events in this case.
     pub events: Vec<Event>,
 }
-
 
 impl Trace {
     /// Create a new trace with empty attributes and events.
@@ -375,9 +373,7 @@ fn convert_attribute_value(
     }
 }
 
-fn convert_attributes(
-    attrs: wasm4pm_compat::event_log::Attributes,
-) -> Attributes {
+fn convert_attributes(attrs: wasm4pm_compat::event_log::Attributes) -> Attributes {
     let mut map = Attributes::new();
     for attr in attrs {
         if let Some(cv) = convert_attribute_value(attr.value) {
@@ -1741,12 +1737,6 @@ impl NGramPredictor {
         result
     }
 }
-
-
-
-
-
-
 
 /// A node in a process tree representation of a workflow.
 #[derive(Clone, Debug, Serialize, Deserialize)]

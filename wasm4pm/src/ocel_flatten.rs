@@ -11,17 +11,17 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_ocel(ocel_handle, |ocel| {
-            let mut object_types: Vec<String> = ocel
-                .objects
-                .iter()
-                .map(|obj| obj.object_type.clone())
-                .collect();
+        let mut object_types: Vec<String> = ocel
+            .objects
+            .iter()
+            .map(|obj| obj.object_type.clone())
+            .collect();
 
-            // Remove duplicates while preserving first occurrence order
-            let mut seen = HashSet::new();
-            object_types.retain(|t| seen.insert(t.clone()));
+        // Remove duplicates while preserving first occurrence order
+        let mut seen = HashSet::new();
+        object_types.retain(|t| seen.insert(t.clone()));
 
-            to_js(&object_types)
+        to_js(&object_types)
     })
 }
 
@@ -30,59 +30,59 @@ pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_ocel(ocel_handle, |ocel| {
-            // Collect unique event types
-            let event_types: Vec<String> = {
-                let types: std::collections::BTreeSet<String> =
-                    ocel.events.iter().map(|e| e.event_type.clone()).collect();
-                types.into_iter().collect()
-            };
+        // Collect unique event types
+        let event_types: Vec<String> = {
+            let types: std::collections::BTreeSet<String> =
+                ocel.events.iter().map(|e| e.event_type.clone()).collect();
+            types.into_iter().collect()
+        };
 
-            // Collect unique object types and compute stats
-            let mut object_type_stats: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+        // Collect unique object types and compute stats
+        let mut object_type_stats: BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
-            for obj_type in &ocel.object_types {
-                let objects_of_type: Vec<&OCELObject> = ocel
-                    .objects
+        for obj_type in &ocel.object_types {
+            let objects_of_type: Vec<&OCELObject> = ocel
+                .objects
+                .iter()
+                .filter(|o| &o.object_type == obj_type)
+                .collect();
+
+            let count = objects_of_type.len();
+
+            // Calculate average events per object of this type
+            let mut total_events = 0;
+            for obj in &objects_of_type {
+                let event_count = ocel
+                    .events
                     .iter()
-                    .filter(|o| &o.object_type == obj_type)
-                    .collect();
-
-                let count = objects_of_type.len();
-
-                // Calculate average events per object of this type
-                let mut total_events = 0;
-                for obj in &objects_of_type {
-                    let event_count = ocel
-                        .events
-                        .iter()
-                        .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
-                        .count();
-                    total_events += event_count;
-                }
-
-                let avg_events = if count > 0 {
-                    total_events as f64 / count as f64
-                } else {
-                    0.0
-                };
-
-                object_type_stats.insert(
-                    obj_type.clone(),
-                    json!({
-                        "count": count,
-                        "avg_events": avg_events
-                    }),
-                );
+                    .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+                    .count();
+                total_events += event_count;
             }
 
-            let stats = json!({
-                "event_types": event_types,
-                "object_types": &ocel.object_types,
-                "event_count": ocel.events.len(),
-                "object_type_stats": object_type_stats
-            });
+            let avg_events = if count > 0 {
+                total_events as f64 / count as f64
+            } else {
+                0.0
+            };
 
-            to_js(&stats)
+            object_type_stats.insert(
+                obj_type.clone(),
+                json!({
+                    "count": count,
+                    "avg_events": avg_events
+                }),
+            );
+        }
+
+        let stats = json!({
+            "event_types": event_types,
+            "object_types": &ocel.object_types,
+            "event_count": ocel.events.len(),
+            "object_type_stats": object_type_stats
+        });
+
+        to_js(&stats)
     })
 }
 
@@ -293,38 +293,38 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
 #[wasm_bindgen]
 pub fn measure_ocel_flattening_loss(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_ocel(ocel_handle, |ocel| {
-            // Collect unique object types
-            let mut seen = HashSet::new();
-            let object_types: Vec<String> = ocel
-                .objects
-                .iter()
-                .map(|o| o.object_type.clone())
-                .filter(|t| seen.insert(t.clone()))
-                .collect();
+        // Collect unique object types
+        let mut seen = HashSet::new();
+        let object_types: Vec<String> = ocel
+            .objects
+            .iter()
+            .map(|o| o.object_type.clone())
+            .filter(|t| seen.insert(t.clone()))
+            .collect();
 
-            let reports: Vec<serde_json::Value> = object_types
-                .iter()
-                .map(|ot| {
-                    let r = measure_flattening_loss(ocel, ot);
-                    let duplicate_ratio = if r.unique_ocel_events_referenced > 0 {
-                        r.event_duplication_count as f64 / r.unique_ocel_events_referenced as f64
-                    } else {
-                        0.0
-                    };
-                    json!({
-                        "object_type": ot,
-                        "event_duplication_count": r.event_duplication_count,
-                        "original_ocel_variant_count": r.original_ocel_variant_count,
-                        "flattened_variant_count": r.flattened_variant_count,
-                        "new_variants_introduced": r.new_variants_introduced,
-                        "total_events_in_flattened_log": r.total_events_in_flattened_log,
-                        "unique_ocel_events_referenced": r.unique_ocel_events_referenced,
-                        "duplicate_event_ratio": duplicate_ratio,
-                    })
+        let reports: Vec<serde_json::Value> = object_types
+            .iter()
+            .map(|ot| {
+                let r = measure_flattening_loss(ocel, ot);
+                let duplicate_ratio = if r.unique_ocel_events_referenced > 0 {
+                    r.event_duplication_count as f64 / r.unique_ocel_events_referenced as f64
+                } else {
+                    0.0
+                };
+                json!({
+                    "object_type": ot,
+                    "event_duplication_count": r.event_duplication_count,
+                    "original_ocel_variant_count": r.original_ocel_variant_count,
+                    "flattened_variant_count": r.flattened_variant_count,
+                    "new_variants_introduced": r.new_variants_introduced,
+                    "total_events_in_flattened_log": r.total_events_in_flattened_log,
+                    "unique_ocel_events_referenced": r.unique_ocel_events_referenced,
+                    "duplicate_event_ratio": duplicate_ratio,
                 })
-                .collect();
+            })
+            .collect();
 
-            to_js(&json!({ "flattening_loss": reports }))
+        to_js(&json!({ "flattening_loss": reports }))
     })
 }
 

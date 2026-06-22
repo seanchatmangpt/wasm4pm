@@ -179,7 +179,6 @@ impl AppState {
         f(objects.get_mut(id))
     }
 
-
     /// Execute a closure with the named `EventLog`, returning a typed error if not found.
     pub fn with_event_log<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
@@ -188,7 +187,10 @@ impl AppState {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::EventLog(log)) => f(log),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("EventLog '{}' not found", id),
+            )),
         })
     }
 
@@ -200,7 +202,10 @@ impl AppState {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::PetriNet(net)) => f(net),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("PetriNet '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("PetriNet '{}' not found", id),
+            )),
         })
     }
 
@@ -213,7 +218,10 @@ impl AppState {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::OCEL(ocel)) => f(ocel),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("OCEL '{}' not found", id),
+            )),
         })
     }
 
@@ -225,7 +233,10 @@ impl AppState {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::DFG(dfg)) => f(dfg),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("DFG '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("DFG '{}' not found", id),
+            )),
         })
     }
 
@@ -237,7 +248,10 @@ impl AppState {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::JsonString(s)) => f(s),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a JsonString")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("JsonString '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("JsonString '{}' not found", id),
+            )),
         })
     }
 
@@ -249,7 +263,10 @@ impl AppState {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::EventLog(log)) => f(log),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("EventLog '{}' not found", id),
+            )),
         })
     }
 

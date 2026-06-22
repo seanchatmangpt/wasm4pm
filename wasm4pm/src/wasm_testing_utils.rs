@@ -37,31 +37,31 @@ pub fn measure_trace_determinism(
     algorithm: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(handle, |log| {
-            let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
+        let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
 
-            // Run the algorithm 3 times and capture output hashes
-            let mut hashes: Vec<String> = Vec::new();
-            for _run in 0..3 {
-                let output = run_discovery_algorithm(handle, activity_key, algorithm)?;
-                let output_str = match output {
-                    Value::String(s) => s,
-                    _ => serde_json::to_string(&output).unwrap_or_default(),
-                };
-                let hash = blake3_hash(&output_str);
-                hashes.push(hash);
-            }
+        // Run the algorithm 3 times and capture output hashes
+        let mut hashes: Vec<String> = Vec::new();
+        for _run in 0..3 {
+            let output = run_discovery_algorithm(handle, activity_key, algorithm)?;
+            let output_str = match output {
+                Value::String(s) => s,
+                _ => serde_json::to_string(&output).unwrap_or_default(),
+            };
+            let hash = blake3_hash(&output_str);
+            hashes.push(hash);
+        }
 
-            let stable = hashes.iter().all(|h| h == &hashes[0]);
-            let result = json!({
-                "algorithm": algorithm,
-                "log_size": log_size,
-                "run_count": 3,
-                "hashes": hashes,
-                "stable": stable,
-                "all_identical": stable
-            });
+        let stable = hashes.iter().all(|h| h == &hashes[0]);
+        let result = json!({
+            "algorithm": algorithm,
+            "log_size": log_size,
+            "run_count": 3,
+            "hashes": hashes,
+            "stable": stable,
+            "all_identical": stable
+        });
 
-            to_js_str(&result)
+        to_js_str(&result)
     })
 }
 
@@ -89,28 +89,28 @@ pub fn measure_algorithm_quality_baseline(
     algorithm: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(handle, |log| {
-            let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
+        let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
 
-            // Run discovery algorithm
-            let output = run_discovery_algorithm(handle, activity_key, algorithm)?;
+        // Run discovery algorithm
+        let output = run_discovery_algorithm(handle, activity_key, algorithm)?;
 
-            // Extract fitness (approximate from output structure)
-            // For real fitness, we'd need conformance checking, but we capture what we can
-            let fitness = estimate_fitness(&output);
-            let precision = estimate_precision(&output);
-            let quality_score = (fitness + precision) / 2.0;
-            let model_size = extract_model_size(&output);
+        // Extract fitness (approximate from output structure)
+        // For real fitness, we'd need conformance checking, but we capture what we can
+        let fitness = estimate_fitness(&output);
+        let precision = estimate_precision(&output);
+        let quality_score = (fitness + precision) / 2.0;
+        let model_size = extract_model_size(&output);
 
-            let result = json!({
-                "algorithm": algorithm,
-                "log_size": log_size,
-                "fitness": fitness,
-                "precision": precision,
-                "quality_score": quality_score,
-                "model_size": model_size
-            });
+        let result = json!({
+            "algorithm": algorithm,
+            "log_size": log_size,
+            "fitness": fitness,
+            "precision": precision,
+            "quality_score": quality_score,
+            "model_size": model_size
+        });
 
-            to_js_str(&result)
+        to_js_str(&result)
     })
 }
 
@@ -141,47 +141,47 @@ pub fn benchmark_algorithm(
     iterations: u32,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(handle, |log| {
-            let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
-            let mut latencies: Vec<f64> = Vec::new();
+        let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
+        let mut latencies: Vec<f64> = Vec::new();
 
-            for _ in 0..iterations {
-                #[cfg(target_arch = "wasm32")]
-                let start = js_sys::Date::now();
-                #[cfg(not(target_arch = "wasm32"))]
-                let start = std::time::Instant::now();
+        for _ in 0..iterations {
+            #[cfg(target_arch = "wasm32")]
+            let start = js_sys::Date::now();
+            #[cfg(not(target_arch = "wasm32"))]
+            let start = std::time::Instant::now();
 
-                let _ = run_discovery_algorithm(handle, activity_key, algorithm);
+            let _ = run_discovery_algorithm(handle, activity_key, algorithm);
 
-                #[cfg(target_arch = "wasm32")]
-                let elapsed_ms = js_sys::Date::now() - start;
-                #[cfg(not(target_arch = "wasm32"))]
-                let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
+            #[cfg(target_arch = "wasm32")]
+            let elapsed_ms = js_sys::Date::now() - start;
+            #[cfg(not(target_arch = "wasm32"))]
+            let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
 
-                latencies.push(elapsed_ms);
-            }
+            latencies.push(elapsed_ms);
+        }
 
-            latencies.sort_by(f64::total_cmp);
+        latencies.sort_by(f64::total_cmp);
 
-            let mean = latencies.iter().sum::<f64>() / latencies.len() as f64;
-            let min = latencies.first().copied().unwrap_or(0.0);
-            let max = latencies.last().copied().unwrap_or(0.0);
-            let p50_idx = latencies.len() / 2;
-            let p95_idx = (latencies.len() as f64 * 0.95) as usize;
-            let p99_idx = (latencies.len() as f64 * 0.99) as usize;
+        let mean = latencies.iter().sum::<f64>() / latencies.len() as f64;
+        let min = latencies.first().copied().unwrap_or(0.0);
+        let max = latencies.last().copied().unwrap_or(0.0);
+        let p50_idx = latencies.len() / 2;
+        let p95_idx = (latencies.len() as f64 * 0.95) as usize;
+        let p99_idx = (latencies.len() as f64 * 0.99) as usize;
 
-            let result = json!({
-                "algorithm": algorithm,
-                "iterations": iterations,
-                "log_size": log_size,
-                "p50_ms": latencies.get(p50_idx).copied().unwrap_or(0.0),
-                "p95_ms": latencies.get(p95_idx).copied().unwrap_or(0.0),
-                "p99_ms": latencies.get(p99_idx).copied().unwrap_or(0.0),
-                "mean_ms": mean,
-                "min_ms": min,
-                "max_ms": max
-            });
+        let result = json!({
+            "algorithm": algorithm,
+            "iterations": iterations,
+            "log_size": log_size,
+            "p50_ms": latencies.get(p50_idx).copied().unwrap_or(0.0),
+            "p95_ms": latencies.get(p95_idx).copied().unwrap_or(0.0),
+            "p99_ms": latencies.get(p99_idx).copied().unwrap_or(0.0),
+            "mean_ms": mean,
+            "min_ms": min,
+            "max_ms": max
+        });
 
-            to_js_str(&result)
+        to_js_str(&result)
     })
 }
 

@@ -72,7 +72,6 @@ fn is_place(net: &PetriNet, name: &str) -> bool {
     net.places.iter().any(|p| p.id == name)
 }
 
-
 /// Input places (preset) of a transition.
 fn preset(net: &PetriNet, trans_id: &str) -> Vec<String> {
     net.arcs

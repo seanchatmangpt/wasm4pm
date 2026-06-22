@@ -90,7 +90,8 @@ impl UnionFind {
     }
 
     fn get_partitions(&mut self) -> Vec<std::collections::BTreeSet<String>> {
-        let mut partitions: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
+        let mut partitions: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> =
+            std::collections::BTreeMap::new();
         let keys: Vec<String> = self.parent.keys().cloned().collect();
         for k in keys {
             let root = self.find(&k);
@@ -144,7 +145,10 @@ pub fn discover_choice_graph(
     _start_activities: &HashSet<String>,
     _end_activities: &HashSet<String>,
     _has_empty_trace: bool,
-) -> Option<(Vec<std::collections::BTreeSet<String>>, HashSet<(usize, usize)>)> {
+) -> Option<(
+    Vec<std::collections::BTreeSet<String>>,
+    HashSet<(usize, usize)>,
+)> {
     // Step 1: Initialize each activity as its own partition
     let mut uf = UnionFind::new(activities);
 

@@ -791,7 +791,6 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

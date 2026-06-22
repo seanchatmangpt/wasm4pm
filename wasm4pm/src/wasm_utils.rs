@@ -159,78 +159,76 @@ pub fn identify_high_variance_activities(
     threshold: f64,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            use std::collections::HashMap;
+        use std::collections::HashMap;
 
-            // Count occurrences per trace
-            let mut activity_per_trace: HashMap<String, Vec<usize>> = HashMap::new();
+        // Count occurrences per trace
+        let mut activity_per_trace: HashMap<String, Vec<usize>> = HashMap::new();
 
-            for trace in &log.traces {
-                let mut trace_counts: HashMap<String, usize> = HashMap::new();
+        for trace in &log.traces {
+            let mut trace_counts: HashMap<String, usize> = HashMap::new();
 
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(activity)) =
-                        event.attributes.get(activity_key)
-                    {
-                        *trace_counts.entry(activity.clone()).or_default() += 1;
-                    }
-                }
-
-                for (activity, count) in trace_counts {
-                    activity_per_trace.entry(activity).or_default().push(count);
+            for event in &trace.events {
+                if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+                    *trace_counts.entry(activity.clone()).or_default() += 1;
                 }
             }
 
-            // Compute variance and statistics for each activity
-            let mut high_variance: Vec<serde_json::Value> = Vec::new();
+            for (activity, count) in trace_counts {
+                activity_per_trace.entry(activity).or_default().push(count);
+            }
+        }
 
-            for (activity, counts) in &activity_per_trace {
-                if counts.is_empty() {
-                    continue;
-                }
+        // Compute variance and statistics for each activity
+        let mut high_variance: Vec<serde_json::Value> = Vec::new();
 
-                let mean = counts.iter().sum::<usize>() as f64 / counts.len() as f64;
-                let variance: f64 = counts
-                    .iter()
-                    .map(|&c| {
-                        let diff = c as f64 - mean;
-                        diff * diff
-                    })
-                    .sum::<f64>()
-                    / counts.len() as f64;
-
-                if variance > threshold {
-                    let min_per_trace = *counts.iter().min().unwrap_or(&0);
-                    let max_per_trace = *counts.iter().max().unwrap_or(&0);
-                    let occurrence_count = counts.iter().sum::<usize>();
-
-                    high_variance.push(json!({
-                        "activity": activity,
-                        "variance": variance,
-                        "min_per_trace": min_per_trace,
-                        "max_per_trace": max_per_trace,
-                        "mean_per_trace": mean,
-                        "occurrence_count": occurrence_count,
-                    }));
-                }
+        for (activity, counts) in &activity_per_trace {
+            if counts.is_empty() {
+                continue;
             }
 
-            high_variance.sort_by(|a, b| {
-                let var_a = a.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                let var_b = b.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                var_b
-                    .partial_cmp(&var_a)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-                    .then_with(|| {
-                        let na = a.get("activity").and_then(|v| v.as_str()).unwrap_or("");
-                        let nb = b.get("activity").and_then(|v| v.as_str()).unwrap_or("");
-                        na.cmp(nb)
-                    })
-            });
+            let mean = counts.iter().sum::<usize>() as f64 / counts.len() as f64;
+            let variance: f64 = counts
+                .iter()
+                .map(|&c| {
+                    let diff = c as f64 - mean;
+                    diff * diff
+                })
+                .sum::<f64>()
+                / counts.len() as f64;
 
-            to_js_str(&json!({
-                "high_variance_activities": high_variance,
-                "total_activities": activity_per_trace.len(),
-            }))
+            if variance > threshold {
+                let min_per_trace = *counts.iter().min().unwrap_or(&0);
+                let max_per_trace = *counts.iter().max().unwrap_or(&0);
+                let occurrence_count = counts.iter().sum::<usize>();
+
+                high_variance.push(json!({
+                    "activity": activity,
+                    "variance": variance,
+                    "min_per_trace": min_per_trace,
+                    "max_per_trace": max_per_trace,
+                    "mean_per_trace": mean,
+                    "occurrence_count": occurrence_count,
+                }));
+            }
+        }
+
+        high_variance.sort_by(|a, b| {
+            let var_a = a.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+            let var_b = b.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+            var_b
+                .partial_cmp(&var_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| {
+                    let na = a.get("activity").and_then(|v| v.as_str()).unwrap_or("");
+                    let nb = b.get("activity").and_then(|v| v.as_str()).unwrap_or("");
+                    na.cmp(nb)
+                })
+        });
+
+        to_js_str(&json!({
+            "high_variance_activities": high_variance,
+            "total_activities": activity_per_trace.len(),
+        }))
     })
 }
 

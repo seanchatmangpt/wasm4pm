@@ -242,7 +242,6 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

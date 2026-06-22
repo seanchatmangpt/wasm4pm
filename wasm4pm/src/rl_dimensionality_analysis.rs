@@ -140,7 +140,8 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
     let mut circuit_drift_pairs = HashSet::new();
 
     // Per-dimension tracking: [dimension_index] -> set of observed values
-    let mut dimension_values: Vec<std::collections::BTreeSet<u8>> = vec![std::collections::BTreeSet::new(); 8];
+    let mut dimension_values: Vec<std::collections::BTreeSet<u8>> =
+        vec![std::collections::BTreeSet::new(); 8];
 
     // Analyze each state
     for state in states {

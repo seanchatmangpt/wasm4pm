@@ -27,21 +27,21 @@ pub fn filter_by_start_activity(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|t| {
-                    t.events
-                        .first()
-                        .and_then(|e| e.attributes.get(activity_key))
-                        .and_then(|v| v.as_string())
-                        .is_some_and(|a| keep.contains(a))
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|t| {
+                t.events
+                    .first()
+                    .and_then(|e| e.attributes.get(activity_key))
+                    .and_then(|v| v.as_string())
+                    .is_some_and(|a| keep.contains(a))
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -56,21 +56,21 @@ pub fn filter_by_end_activity(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|t| {
-                    t.events
-                        .last()
-                        .and_then(|e| e.attributes.get(activity_key))
-                        .and_then(|v| v.as_string())
-                        .is_some_and(|a| keep.contains(a))
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|t| {
+                t.events
+                    .last()
+                    .and_then(|e| e.attributes.get(activity_key))
+                    .and_then(|v| v.as_string())
+                    .is_some_and(|a| keep.contains(a))
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -83,15 +83,15 @@ pub fn filter_by_case_size(
     max_events: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|t| t.events.len() >= min_events && t.events.len() <= max_events)
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|t| t.events.len() >= min_events && t.events.len() <= max_events)
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -114,23 +114,23 @@ pub fn filter_by_directly_follows(
         pairs.into_iter().map(|[f, t]| (f, t)).collect();
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    let acts: Vec<&str> = trace
-                        .events
-                        .iter()
-                        .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                        .collect();
-                    acts.windows(2)
-                        .any(|w| pair_set.contains(&(w[0].to_owned(), w[1].to_owned())))
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                let acts: Vec<&str> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                    .collect();
+                acts.windows(2)
+                    .any(|w| pair_set.contains(&(w[0].to_owned(), w[1].to_owned())))
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -144,67 +144,67 @@ pub fn filter_by_variant_coverage(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let total = log.traces.len();
-            if total == 0 {
-                let mut out = EventLog::new();
-                out.attributes = log.attributes.clone();
-                return store_filtered(out);
-            }
+        let total = log.traces.len();
+        if total == 0 {
+            let mut out = EventLog::new();
+            out.attributes = log.attributes.clone();
+            return store_filtered(out);
+        }
 
-            // Build variant → count map
-            let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
-            for trace in &log.traces {
+        // Build variant → count map
+        let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
+        for trace in &log.traces {
+            let variant: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                .map(str::to_owned)
+                .collect();
+            *variant_counts.entry(variant).or_default() += 1;
+        }
+
+        // Sort variants descending by count
+        let mut sorted: Vec<(Vec<String>, usize)> = variant_counts.into_iter().collect();
+        sorted.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+
+        // Accumulate until coverage_pct reached
+        let target = (total as f64 * coverage_pct / 100.0).ceil() as usize;
+        let mut keep_variants: std::collections::HashSet<Vec<String>> =
+            std::collections::HashSet::new();
+        let mut covered = 0usize;
+        for (variant, cnt) in sorted {
+            keep_variants.insert(variant);
+            covered += cnt;
+            if covered >= target {
+                break;
+            }
+        }
+
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
                 let variant: Vec<String> = trace
                     .events
                     .iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                    .filter_map(|e| {
+                        e.attributes.get(activity_key).and_then(|v| {
+                            if let AttributeValue::String(s) = v {
+                                Some(s.as_str())
+                            } else {
+                                v.as_string()
+                            }
+                        })
+                    })
                     .map(str::to_owned)
                     .collect();
-                *variant_counts.entry(variant).or_default() += 1;
-            }
-
-            // Sort variants descending by count
-            let mut sorted: Vec<(Vec<String>, usize)> = variant_counts.into_iter().collect();
-            sorted.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
-
-            // Accumulate until coverage_pct reached
-            let target = (total as f64 * coverage_pct / 100.0).ceil() as usize;
-            let mut keep_variants: std::collections::HashSet<Vec<String>> =
-                std::collections::HashSet::new();
-            let mut covered = 0usize;
-            for (variant, cnt) in sorted {
-                keep_variants.insert(variant);
-                covered += cnt;
-                if covered >= target {
-                    break;
-                }
-            }
-
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    let variant: Vec<String> = trace
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            e.attributes.get(activity_key).and_then(|v| {
-                                if let AttributeValue::String(s) = v {
-                                    Some(s.as_str())
-                                } else {
-                                    v.as_string()
-                                }
-                            })
-                        })
-                        .map(str::to_owned)
-                        .collect();
-                    keep_variants.contains(&variant)
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+                keep_variants.contains(&variant)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -216,49 +216,49 @@ pub fn filter_by_variants_top_k(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            // Build variant → count map
-            let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
-            for trace in &log.traces {
+        // Build variant → count map
+        let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
+        for trace in &log.traces {
+            let variant: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                .map(str::to_owned)
+                .collect();
+            *variant_counts.entry(variant).or_default() += 1;
+        }
+
+        // Sort variants descending by count and keep top k
+        let mut sorted: Vec<(Vec<String>, usize)> = variant_counts.into_iter().collect();
+        sorted.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+        let keep_variants: std::collections::HashSet<Vec<String>> =
+            sorted.into_iter().take(k).map(|(v, _)| v).collect();
+
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
                 let variant: Vec<String> = trace
                     .events
                     .iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                    .filter_map(|e| {
+                        e.attributes.get(activity_key).and_then(|v| {
+                            if let AttributeValue::String(s) = v {
+                                Some(s.as_str())
+                            } else {
+                                v.as_string()
+                            }
+                        })
+                    })
                     .map(str::to_owned)
                     .collect();
-                *variant_counts.entry(variant).or_default() += 1;
-            }
-
-            // Sort variants descending by count and keep top k
-            let mut sorted: Vec<(Vec<String>, usize)> = variant_counts.into_iter().collect();
-            sorted.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
-            let keep_variants: std::collections::HashSet<Vec<String>> =
-                sorted.into_iter().take(k).map(|(v, _)| v).collect();
-
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    let variant: Vec<String> = trace
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            e.attributes.get(activity_key).and_then(|v| {
-                                if let AttributeValue::String(s) = v {
-                                    Some(s.as_str())
-                                } else {
-                                    v.as_string()
-                                }
-                            })
-                        })
-                        .map(str::to_owned)
-                        .collect();
-                    keep_variants.contains(&variant)
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+                keep_variants.contains(&variant)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -273,23 +273,23 @@ pub fn filter_traces_containing_activities(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    let activities: std::collections::HashSet<String> = trace
-                        .events
-                        .iter()
-                        .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                        .map(str::to_owned)
-                        .collect();
-                    required.is_subset(&activities)
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                let activities: std::collections::HashSet<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                    .map(str::to_owned)
+                    .collect();
+                required.is_subset(&activities)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -304,22 +304,22 @@ pub fn filter_traces_excluding_activities(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    !trace.events.iter().any(|e| {
-                        e.attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .is_some_and(|a| excluded.contains(a))
-                    })
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                !trace.events.iter().any(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .is_some_and(|a| excluded.contains(a))
                 })
-                .cloned()
-                .collect();
-            store_filtered(out)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -333,24 +333,24 @@ pub fn filter_by_time_range(
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    trace.events.iter().all(|e| {
-                        if let Some(AttributeValue::String(ts)) = e.attributes.get(timestamp_key) {
-                            // Simple string comparison for ISO timestamps (lexicographic works for ISO8601)
-                            ts.as_str() >= min_dt && ts.as_str() <= max_dt
-                        } else {
-                            false
-                        }
-                    })
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                trace.events.iter().all(|e| {
+                    if let Some(AttributeValue::String(ts)) = e.attributes.get(timestamp_key) {
+                        // Simple string comparison for ISO timestamps (lexicographic works for ISO8601)
+                        ts.as_str() >= min_dt && ts.as_str() <= max_dt
+                    } else {
+                        false
+                    }
                 })
-                .cloned()
-                .collect();
-            store_filtered(out)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -363,39 +363,39 @@ pub fn filter_by_case_performance(
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    if let (Some(first), Some(last)) = (
-                        trace
-                            .events
-                            .first()
-                            .and_then(|e| e.attributes.get(timestamp_key)),
-                        trace
-                            .events
-                            .last()
-                            .and_then(|e| e.attributes.get(timestamp_key)),
-                    ) {
-                        if let (Some(start), Some(end)) = (first.as_string(), last.as_string()) {
-                            // Parse ISO timestamps and compute duration
-                            if let (Ok(start_dt), Ok(end_dt)) = (
-                                chrono::DateTime::parse_from_rfc3339(start),
-                                chrono::DateTime::parse_from_rfc3339(end),
-                            ) {
-                                let duration_ms =
-                                    end_dt.timestamp_millis() - start_dt.timestamp_millis();
-                                return duration_ms >= min_ms && duration_ms <= max_ms;
-                            }
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                if let (Some(first), Some(last)) = (
+                    trace
+                        .events
+                        .first()
+                        .and_then(|e| e.attributes.get(timestamp_key)),
+                    trace
+                        .events
+                        .last()
+                        .and_then(|e| e.attributes.get(timestamp_key)),
+                ) {
+                    if let (Some(start), Some(end)) = (first.as_string(), last.as_string()) {
+                        // Parse ISO timestamps and compute duration
+                        if let (Ok(start_dt), Ok(end_dt)) = (
+                            chrono::DateTime::parse_from_rfc3339(start),
+                            chrono::DateTime::parse_from_rfc3339(end),
+                        ) {
+                            let duration_ms =
+                                end_dt.timestamp_millis() - start_dt.timestamp_millis();
+                            return duration_ms >= min_ms && duration_ms <= max_ms;
                         }
                     }
-                    false
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+                }
+                false
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -403,31 +403,31 @@ pub fn filter_by_case_performance(
 #[wasm_bindgen]
 pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    let activities: Vec<String> = trace
-                        .events
-                        .iter()
-                        .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                        .map(str::to_owned)
-                        .collect();
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                let activities: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                    .map(str::to_owned)
+                    .collect();
 
-                    // Check if any activity appears more than once
-                    let mut seen = std::collections::HashSet::new();
-                    for act in &activities {
-                        if !seen.insert(act) {
-                            return true; // Duplicate found
-                        }
+                // Check if any activity appears more than once
+                let mut seen = std::collections::HashSet::new();
+                for act in &activities {
+                    if !seen.insert(act) {
+                        return true; // Duplicate found
                     }
-                    false
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+                }
+                false
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -439,21 +439,21 @@ pub fn filter_by_trace_attribute(
     attribute_value: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    trace
-                        .attributes
-                        .get(attribute_key)
-                        .and_then(|v| v.as_string())
-                        .is_some_and(|val| val == attribute_value)
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                trace
+                    .attributes
+                    .get(attribute_key)
+                    .and_then(|v| v.as_string())
+                    .is_some_and(|val| val == attribute_value)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -465,22 +465,22 @@ pub fn filter_by_event_attribute_value(
     attribute_value: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    trace.events.iter().any(|e| {
-                        e.attributes
-                            .get(attribute_key)
-                            .and_then(|v| v.as_string())
-                            .is_some_and(|val| val == attribute_value)
-                    })
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                trace.events.iter().any(|e| {
+                    e.attributes
+                        .get(attribute_key)
+                        .and_then(|v| v.as_string())
+                        .is_some_and(|val| val == attribute_value)
                 })
-                .cloned()
-                .collect();
-            store_filtered(out)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -495,21 +495,21 @@ pub fn filter_by_case_ids(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    trace
-                        .attributes
-                        .get(case_id_key)
-                        .and_then(|v| v.as_string())
-                        .is_some_and(|id| keep_ids.contains(id))
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                trace
+                    .attributes
+                    .get(case_id_key)
+                    .and_then(|v| v.as_string())
+                    .is_some_and(|id| keep_ids.contains(id))
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -524,30 +524,30 @@ pub fn filter_traces_starting_with_sequence(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    if trace.events.len() < sequence.len() {
-                        return false;
-                    }
-                    trace
-                        .events
-                        .iter()
-                        .take(sequence.len())
-                        .enumerate()
-                        .all(|(i, e)| {
-                            e.attributes
-                                .get(activity_key)
-                                .and_then(|v| v.as_string())
-                                .is_some_and(|act| act == sequence[i])
-                        })
-                })
-                .cloned()
-                .collect();
-            store_filtered(out)
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                if trace.events.len() < sequence.len() {
+                    return false;
+                }
+                trace
+                    .events
+                    .iter()
+                    .take(sequence.len())
+                    .enumerate()
+                    .all(|(i, e)| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .is_some_and(|act| act == sequence[i])
+                    })
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }
 
@@ -562,25 +562,25 @@ pub fn filter_traces_ending_with_sequence(
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut out = EventLog::new();
-            out.attributes = log.attributes.clone();
-            out.traces = log
-                .traces
-                .iter()
-                .filter(|trace| {
-                    if trace.events.len() < sequence.len() {
-                        return false;
-                    }
-                    let offset = trace.events.len() - sequence.len();
-                    trace.events.iter().skip(offset).enumerate().all(|(i, e)| {
-                        e.attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .is_some_and(|act| act == sequence[i])
-                    })
+        let mut out = EventLog::new();
+        out.attributes = log.attributes.clone();
+        out.traces = log
+            .traces
+            .iter()
+            .filter(|trace| {
+                if trace.events.len() < sequence.len() {
+                    return false;
+                }
+                let offset = trace.events.len() - sequence.len();
+                trace.events.iter().skip(offset).enumerate().all(|(i, e)| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .is_some_and(|act| act == sequence[i])
                 })
-                .cloned()
-                .collect();
-            store_filtered(out)
+            })
+            .cloned()
+            .collect();
+        store_filtered(out)
     })
 }

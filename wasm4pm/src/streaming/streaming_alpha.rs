@@ -261,7 +261,6 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

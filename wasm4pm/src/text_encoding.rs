@@ -109,52 +109,52 @@ pub fn encode_variants_as_text(
     top_n: usize,
 ) -> Result<String, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            if log.traces.is_empty() {
-                return Ok("No process variants found (empty event log).".to_string());
+        if log.traces.is_empty() {
+            return Ok("No process variants found (empty event log).".to_string());
+        }
+
+        // Extract trace sequences
+        let mut variants: std::collections::BTreeMap<Vec<String>, usize> =
+            std::collections::BTreeMap::new();
+        for trace in &log.traces {
+            let sequence: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)?
+                        .as_string()
+                        .map(str::to_owned)
+                })
+                .collect();
+            if !sequence.is_empty() {
+                *variants.entry(sequence).or_default() += 1;
             }
+        }
 
-            // Extract trace sequences
-            let mut variants: std::collections::BTreeMap<Vec<String>, usize> =
-                std::collections::BTreeMap::new();
-            for trace in &log.traces {
-                let sequence: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)?
-                            .as_string()
-                            .map(str::to_owned)
-                    })
-                    .collect();
-                if !sequence.is_empty() {
-                    *variants.entry(sequence).or_default() += 1;
-                }
-            }
+        let total_cases = log.traces.len() as f64;
+        let mut sorted_variants: Vec<_> = variants.into_iter().collect();
+        sorted_variants.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
 
-            let total_cases = log.traces.len() as f64;
-            let mut sorted_variants: Vec<_> = variants.into_iter().collect();
-            sorted_variants.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
+        let mut text = format!(
+            "Top {} process variants:\n",
+            top_n.min(sorted_variants.len())
+        );
 
-            let mut text = format!(
-                "Top {} process variants:\n",
-                top_n.min(sorted_variants.len())
+        for (idx, (sequence, count)) in sorted_variants.iter().take(top_n).enumerate() {
+            let pct = (*count as f64 / total_cases) * 100.0;
+            let variant_str = sequence.join(" → ");
+            let _ = write!(
+                text,
+                "{}. {} ({} cases, {:.1}%)\n",
+                idx + 1,
+                variant_str,
+                count,
+                pct
             );
+        }
 
-            for (idx, (sequence, count)) in sorted_variants.iter().take(top_n).enumerate() {
-                let pct = (*count as f64 / total_cases) * 100.0;
-                let variant_str = sequence.join(" → ");
-                let _ = write!(
-                    text,
-                    "{}. {} ({} cases, {:.1}%)\n",
-                    idx + 1,
-                    variant_str,
-                    count,
-                    pct
-                );
-            }
-
-            Ok(text.trim_end().to_string())
+        Ok(text.trim_end().to_string())
     })
 }
 
@@ -162,54 +162,54 @@ pub fn encode_variants_as_text(
 #[wasm_bindgen]
 pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
-            let case_count = log.case_count();
-            let event_count = log.event_count();
-            let avg_events_per_case = if case_count > 0 {
-                event_count as f64 / case_count as f64
-            } else {
-                0.0
-            };
+        let case_count = log.case_count();
+        let event_count = log.event_count();
+        let avg_events_per_case = if case_count > 0 {
+            event_count as f64 / case_count as f64
+        } else {
+            0.0
+        };
 
-            // Get activity frequencies (using a default activity key)
-            let activity_key = "concept:name";
-            let activities = log.get_activities(activity_key);
-            let unique_activities = activities.len();
+        // Get activity frequencies (using a default activity key)
+        let activity_key = "concept:name";
+        let activities = log.get_activities(activity_key);
+        let unique_activities = activities.len();
 
-            // Count frequency per activity
-            let mut activity_freqs: HashMap<String, usize> = HashMap::new();
-            for trace in &log.traces {
-                for event in &trace.events {
-                    if let Some(activity) = event
-                        .attributes
-                        .get(activity_key)
-                        .and_then(|v| v.as_string())
-                    {
-                        *activity_freqs.entry(activity.to_string()).or_default() += 1;
-                    }
+        // Count frequency per activity
+        let mut activity_freqs: HashMap<String, usize> = HashMap::new();
+        for trace in &log.traces {
+            for event in &trace.events {
+                if let Some(activity) = event
+                    .attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                {
+                    *activity_freqs.entry(activity.to_string()).or_default() += 1;
                 }
             }
+        }
 
-            let mut freq_pairs: Vec<_> = activity_freqs.into_iter().collect();
-            freq_pairs.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
+        let mut freq_pairs: Vec<_> = activity_freqs.into_iter().collect();
+        freq_pairs.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
 
-            let mut text = String::from("Process log summary:\n");
-            let _ = write!(text, "- Total cases: {}\n", case_count);
-            let _ = write!(text, "- Total events: {}\n", event_count);
-            let _ = write!(
-                text,
-                "- Average events per case: {:.2}\n",
-                avg_events_per_case
-            );
-            let _ = write!(text, "- Unique activities: {}\n", unique_activities);
+        let mut text = String::from("Process log summary:\n");
+        let _ = write!(text, "- Total cases: {}\n", case_count);
+        let _ = write!(text, "- Total events: {}\n", event_count);
+        let _ = write!(
+            text,
+            "- Average events per case: {:.2}\n",
+            avg_events_per_case
+        );
+        let _ = write!(text, "- Unique activities: {}\n", unique_activities);
 
-            text.push_str("- Activity frequencies: ");
-            let freq_strs: Vec<String> = freq_pairs
-                .iter()
-                .map(|(activity, freq)| format!("{} ({})", activity, freq))
-                .collect();
-            text.push_str(&freq_strs.join(", "));
+        text.push_str("- Activity frequencies: ");
+        let freq_strs: Vec<String> = freq_pairs
+            .iter()
+            .map(|(activity, freq)| format!("{} ({})", activity, freq))
+            .collect();
+        text.push_str(&freq_strs.join(", "));
 
-            Ok(text)
+        Ok(text)
     })
 }
 

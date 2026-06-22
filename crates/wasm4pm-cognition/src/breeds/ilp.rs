@@ -331,20 +331,14 @@ impl CognitionBreed for Ilp {
                     push(
                         &mut trace,
                         "score-gain",
-                        format!(
-                            "{}: t={} p1={} n1={} gain={:.4}",
-                            lit,
-                            t,
-                            p1,
-                            n1,
-                            gain
-                        ),
+                        format!("{}: t={} p1={} n1={} gain={:.4}", lit, t, p1, n1, gain),
                     );
                     let better = match &best {
                         None => true,
                         Some((bg_gain, bl, _, _, _)) => {
                             gain > *bg_gain + 1e-9
-                                || ((gain - *bg_gain).abs() <= 1e-9 && lit.to_string() < bl.to_string())
+                                || ((gain - *bg_gain).abs() <= 1e-9
+                                    && lit.to_string() < bl.to_string())
                         }
                     };
                     if better {
@@ -388,7 +382,10 @@ impl CognitionBreed for Ilp {
             let clause_text = format!(
                 "{} :- {}",
                 head,
-                body.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(", ")
+                body.iter()
+                    .map(|l| l.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             );
             push(&mut trace, "emit-clause", clause_text.clone());
             rule_facts.push(Fact {

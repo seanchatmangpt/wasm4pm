@@ -95,48 +95,48 @@ pub fn build_transition_probabilities(
     let activity_key = activity_key.to_string();
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
-            // Compute edge counts alongside the transition graph so we can
-            // include raw counts in the output.
-            let mut edge_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
-            let mut activity_totals: HashMap<String, usize> = HashMap::new();
+        // Compute edge counts alongside the transition graph so we can
+        // include raw counts in the output.
+        let mut edge_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
+        let mut activity_totals: HashMap<String, usize> = HashMap::new();
 
-            for trace in &log.traces {
-                let mut prev_act: Option<String> = None;
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(act)) = event.attributes.get(&activity_key) {
-                        *activity_totals.entry(act.clone()).or_default() += 1;
-                        if let Some(ref prev) = prev_act {
-                            *edge_counts.entry((prev.clone(), act.clone())).or_default() += 1;
-                        }
-                        prev_act = Some(act.clone());
+        for trace in &log.traces {
+            let mut prev_act: Option<String> = None;
+            for event in &trace.events {
+                if let Some(AttributeValue::String(act)) = event.attributes.get(&activity_key) {
+                    *activity_totals.entry(act.clone()).or_default() += 1;
+                    if let Some(ref prev) = prev_act {
+                        *edge_counts.entry((prev.clone(), act.clone())).or_default() += 1;
                     }
+                    prev_act = Some(act.clone());
                 }
             }
+        }
 
-            // Also call build_transition_graph for the sorted activity list
-            let tg = build_transition_graph(log, &activity_key);
+        // Also call build_transition_graph for the sorted activity list
+        let tg = build_transition_graph(log, &activity_key);
 
-            let edges: Vec<serde_json::Value> = edge_counts
-                .iter()
-                .map(|((from, to), &count)| {
-                    let total = activity_totals.get(from).copied().unwrap_or(1);
-                    let probability = count as f64 / total as f64;
-                    json!({
-                        "from": from,
-                        "to": to,
-                        "probability": probability,
-                        "count": count,
-                    })
+        let edges: Vec<serde_json::Value> = edge_counts
+            .iter()
+            .map(|((from, to), &count)| {
+                let total = activity_totals.get(from).copied().unwrap_or(1);
+                let probability = count as f64 / total as f64;
+                json!({
+                    "from": from,
+                    "to": to,
+                    "probability": probability,
+                    "count": count,
                 })
-                .collect();
+            })
+            .collect();
 
-            let result = json!({
-                "edges": edges,
-                "activities": tg.activities,
-            });
+        let result = json!({
+            "edges": edges,
+            "activities": tg.activities,
+        });
 
-            serde_json::to_string(&result)
-                .map_err(|e| crate::error::js_val(&format!("Serialization error: {}", e)))
+        serde_json::to_string(&result)
+            .map_err(|e| crate::error::js_val(&format!("Serialization error: {}", e)))
     })?;
 
     Ok(crate::error::js_val(&result_json))

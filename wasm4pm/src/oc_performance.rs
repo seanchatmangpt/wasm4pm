@@ -4,9 +4,9 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use crate::{Data, Median};
 use rustc_hash::FxHashMap;
-use std::collections::BTreeMap;
 use serde::Serialize;
 use serde_json::json;
+use std::collections::BTreeMap;
 /// Object-Centric Performance Analysis (Phase 2C).
 ///
 /// For each object type in an OCEL log, builds a performance-annotated

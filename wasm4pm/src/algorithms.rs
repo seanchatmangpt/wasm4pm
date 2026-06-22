@@ -471,16 +471,16 @@ pub fn discover_alpha_plus_plus(
 
     // Compute inside closure (no store — avoids mutex re-entry), store outside.
     let pn = get_or_init_state().with_event_log(eventlog_handle, |log| {
-            tracing::info!(
-                target: "wasm4pm.discovery.alpha_plus_plus",
-                checkpoint = "feature_extraction",
-                log_size = log.traces.len(),
-                activity_count = log.get_activities(activity_key).len(),
-                "Log loaded and analyzed"
-            );
-            let admitted =
-                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-            alpha_plus_plus_inner(&admitted, activity_key, min_support)
+        tracing::info!(
+            target: "wasm4pm.discovery.alpha_plus_plus",
+            checkpoint = "feature_extraction",
+            log_size = log.traces.len(),
+            activity_count = log.get_activities(activity_key).len(),
+            "Log loaded and analyzed"
+        );
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+        alpha_plus_plus_inner(&admitted, activity_key, min_support)
     })?;
 
     let n_places = pn.places.len();

@@ -53,7 +53,8 @@ pub fn discover_temporal_profile_from_log(
         }
     }
 
-    let mut pairs_map: std::collections::BTreeMap<(String, String), (f64, f64, usize)> = std::collections::BTreeMap::new();
+    let mut pairs_map: std::collections::BTreeMap<(String, String), (f64, f64, usize)> =
+        std::collections::BTreeMap::new();
     for ((a, b), (sum, sum_sq, cnt)) in acc {
         let mean = sum / cnt as f64;
         let variance = (sum_sq / cnt as f64) - mean * mean;
@@ -122,84 +123,83 @@ pub fn check_temporal_conformance(
     })?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
-            let mut total_steps = 0usize;
-            let mut total_deviations = 0usize;
-            let mut details: Vec<serde_json::Value> = Vec::new();
+        let mut total_steps = 0usize;
+        let mut total_deviations = 0usize;
+        let mut details: Vec<serde_json::Value> = Vec::new();
 
-            for trace in &log.traces {
-                let case_id = trace
-                    .attributes
-                    .get("concept:name")
-                    .and_then(|v| v.as_string())
-                    .unwrap_or("unknown")
-                    .to_string();
+        for trace in &log.traces {
+            let case_id = trace
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+                .unwrap_or("unknown")
+                .to_string();
 
-                let pairs: Vec<(String, Option<i64>)> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        let act = e
-                            .attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)?;
-                        let ts = e.attributes.get(timestamp_key).and_then(|v| {
-                            if let AttributeValue::Date(s) = v {
-                                parse_timestamp_ms(s)
-                            } else {
-                                None
-                            }
-                        });
-                        Some((act, ts))
-                    })
-                    .collect();
-
-                for i in 0..pairs.len().saturating_sub(1) {
-                    total_steps += 1;
-                    let key = (&pairs[i].0, &pairs[i + 1].0);
-                    if let Some(&(mean, stdev, _)) =
-                        profile_pairs.get(&(key.0.clone(), key.1.clone()))
-                    {
-                        if let (Some(t1), Some(t2)) = (pairs[i].1, pairs[i + 1].1) {
-                            let dur = (t2 - t1).max(0) as f64;
-                            let z = if stdev > 0.0 {
-                                (dur - mean).abs() / stdev
-                            } else {
-                                0.0
-                            };
-                            let is_deviation = z > zeta;
-                            if is_deviation {
-                                total_deviations += 1;
-                            }
-                            details.push(json!({
-                                "case_id": case_id,
-                                "from": pairs[i].0,
-                                "to": pairs[i + 1].0,
-                                "duration_ms": dur,
-                                "mean_ms": mean,
-                                "stdev_ms": stdev,
-                                "zeta": z,
-                                "deviation": is_deviation,
-                            }));
+            let pairs: Vec<(String, Option<i64>)> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    let act = e
+                        .attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)?;
+                    let ts = e.attributes.get(timestamp_key).and_then(|v| {
+                        if let AttributeValue::Date(s) = v {
+                            parse_timestamp_ms(s)
+                        } else {
+                            None
                         }
+                    });
+                    Some((act, ts))
+                })
+                .collect();
+
+            for i in 0..pairs.len().saturating_sub(1) {
+                total_steps += 1;
+                let key = (&pairs[i].0, &pairs[i + 1].0);
+                if let Some(&(mean, stdev, _)) = profile_pairs.get(&(key.0.clone(), key.1.clone()))
+                {
+                    if let (Some(t1), Some(t2)) = (pairs[i].1, pairs[i + 1].1) {
+                        let dur = (t2 - t1).max(0) as f64;
+                        let z = if stdev > 0.0 {
+                            (dur - mean).abs() / stdev
+                        } else {
+                            0.0
+                        };
+                        let is_deviation = z > zeta;
+                        if is_deviation {
+                            total_deviations += 1;
+                        }
+                        details.push(json!({
+                            "case_id": case_id,
+                            "from": pairs[i].0,
+                            "to": pairs[i + 1].0,
+                            "duration_ms": dur,
+                            "mean_ms": mean,
+                            "stdev_ms": stdev,
+                            "zeta": z,
+                            "deviation": is_deviation,
+                        }));
                     }
                 }
             }
+        }
 
-            let fitness = if total_steps == 0 {
-                1.0
-            } else {
-                1.0 - total_deviations as f64 / total_steps as f64
-            };
+        let fitness = if total_steps == 0 {
+            1.0
+        } else {
+            1.0 - total_deviations as f64 / total_steps as f64
+        };
 
-            serde_json::to_string(&json!({
-                "total_traces": log.traces.len(),
-                "total_steps": total_steps,
-                "deviations": total_deviations,
-                "fitness": fitness,
-                "details": details,
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
+        serde_json::to_string(&json!({
+            "total_traces": log.traces.len(),
+            "total_steps": total_steps,
+            "deviations": total_deviations,
+            "fitness": fitness,
+            "details": details,
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&result_json))

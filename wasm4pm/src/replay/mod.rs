@@ -54,7 +54,6 @@ impl ReplayAuthority {
     }
 }
 
-
 /// Replay engine trait.
 ///
 /// Implement this trait for each concrete replay algorithm.

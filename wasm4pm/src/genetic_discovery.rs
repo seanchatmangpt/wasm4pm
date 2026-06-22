@@ -49,18 +49,17 @@ pub fn discover_genetic_algorithm(
         "Genetic Algorithm discovery started"
     );
 
-    let (best_dfg, best_fitness) =
-        get_or_init_state().with_event_log(eventlog_handle, |log| {
-                tracing::info!(
-                    target: "wasm4pm.discovery.genetic_algorithm",
-                    checkpoint = "feature_extraction",
-                    log_size = log.traces.len(),
-                    activity_count = log.get_activities(activity_key).len(),
-                    "Log loaded and analyzed"
-                );
-                discover_genetic_algorithm_from_log(log, activity_key, population_size, generations)
-                    .ok_or_else(|| crate::error::js_val("no_edges"))
-        })?;
+    let (best_dfg, best_fitness) = get_or_init_state().with_event_log(eventlog_handle, |log| {
+        tracing::info!(
+            target: "wasm4pm.discovery.genetic_algorithm",
+            checkpoint = "feature_extraction",
+            log_size = log.traces.len(),
+            activity_count = log.get_activities(activity_key).len(),
+            "Log loaded and analyzed"
+        );
+        discover_genetic_algorithm_from_log(log, activity_key, population_size, generations)
+            .ok_or_else(|| crate::error::js_val("no_edges"))
+    })?;
 
     let node_count = best_dfg.nodes.len();
     let edge_count = best_dfg.edges.len();
@@ -186,11 +185,10 @@ pub fn discover_pso_algorithm(
     swarm_size: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    let (best_dfg, best_fitness) =
-        get_or_init_state().with_event_log(eventlog_handle, |log| {
-                discover_pso_algorithm_from_log(log, activity_key, swarm_size, iterations)
-                    .ok_or_else(|| crate::error::js_val("no_edges"))
-        })?;
+    let (best_dfg, best_fitness) = get_or_init_state().with_event_log(eventlog_handle, |log| {
+        discover_pso_algorithm_from_log(log, activity_key, swarm_size, iterations)
+            .ok_or_else(|| crate::error::js_val("no_edges"))
+    })?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DFG(best_dfg.clone()))
@@ -597,11 +595,10 @@ pub fn discover_aco_algorithm(
     ant_count: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    let (best_dfg, best_fitness) =
-        get_or_init_state().with_event_log(eventlog_handle, |log| {
-                discover_aco_algorithm_from_log(log, activity_key, ant_count, iterations)
-                    .ok_or_else(|| crate::error::js_val("no_edges"))
-        })?;
+    let (best_dfg, best_fitness) = get_or_init_state().with_event_log(eventlog_handle, |log| {
+        discover_aco_algorithm_from_log(log, activity_key, ant_count, iterations)
+            .ok_or_else(|| crate::error::js_val("no_edges"))
+    })?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DFG(best_dfg.clone()))

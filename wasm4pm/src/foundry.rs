@@ -843,10 +843,9 @@ pub fn field_xes() -> String {
     xes.push_str("    <string key=\"concept:name\" value=\"order-1\"/>\n");
     for (id, ty, time) in &rows {
         xes.push_str("    <event>\n");
-        let _ = write!(xes,
-            "      <string key=\"concept:name\" value=\"{ty}\"/>\n"
-        );
-        let _ = write!(xes,
+        let _ = write!(xes, "      <string key=\"concept:name\" value=\"{ty}\"/>\n");
+        let _ = write!(
+            xes,
             "      <date key=\"time:timestamp\" value=\"{}\"/>\n",
             time.to_rfc3339()
         );

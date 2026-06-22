@@ -205,7 +205,6 @@ impl ActivityInterner for Interner {
     }
 }
 
-
 /// Helper macro to implement ActivityInterner for structs with an `interner` field.
 macro_rules! impl_activity_interner {
     ($struct_name:ident) => {

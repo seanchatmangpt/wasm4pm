@@ -328,30 +328,30 @@ pub fn discover_dfg_hierarchical(
     num_chunks: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            if num_chunks == 0 {
-                return Err(wasm_err(codes::INVALID_INPUT, "num_chunks must be >= 1"));
-            }
+        if num_chunks == 0 {
+            return Err(wasm_err(codes::INVALID_INPUT, "num_chunks must be >= 1"));
+        }
 
-            let config = HierarchicalConfig {
-                num_chunks,
-                max_chunk_events: None,
-            };
+        let config = HierarchicalConfig {
+            num_chunks,
+            max_chunk_events: None,
+        };
 
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-            let result = discover_hierarchical::<DfgChunker>(log, activity_key, &config);
-            let dfg = result.to_dfg(&col.vocab);
+        let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+            .unwrap_or_else(|| {
+                let owned = log.to_columnar_owned(activity_key);
+                crate::cache::columnar_cache_insert(
+                    eventlog_handle.to_string(),
+                    activity_key.to_string(),
+                    owned.clone(),
+                );
+                owned
+            });
+        let col = ColumnarLog::from_owned(&col_owned);
+        let result = discover_hierarchical::<DfgChunker>(log, activity_key, &config);
+        let dfg = result.to_dfg(&col.vocab);
 
-            to_js_str(&dfg)
+        to_js_str(&dfg)
     })
 }
 
@@ -366,33 +366,33 @@ pub fn discover_dfg_hierarchical_by_events(
     max_chunk_events: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            if max_chunk_events == 0 {
-                return Err(wasm_err(
-                    codes::INVALID_INPUT,
-                    "max_chunk_events must be >= 1",
-                ));
-            }
+        if max_chunk_events == 0 {
+            return Err(wasm_err(
+                codes::INVALID_INPUT,
+                "max_chunk_events must be >= 1",
+            ));
+        }
 
-            let config = HierarchicalConfig {
-                num_chunks: 8, // fallback; max_chunk_events takes precedence
-                max_chunk_events: Some(max_chunk_events),
-            };
+        let config = HierarchicalConfig {
+            num_chunks: 8, // fallback; max_chunk_events takes precedence
+            max_chunk_events: Some(max_chunk_events),
+        };
 
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-            let result = discover_hierarchical::<DfgChunker>(log, activity_key, &config);
-            let dfg = result.to_dfg(&col.vocab);
+        let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+            .unwrap_or_else(|| {
+                let owned = log.to_columnar_owned(activity_key);
+                crate::cache::columnar_cache_insert(
+                    eventlog_handle.to_string(),
+                    activity_key.to_string(),
+                    owned.clone(),
+                );
+                owned
+            });
+        let col = ColumnarLog::from_owned(&col_owned);
+        let result = discover_hierarchical::<DfgChunker>(log, activity_key, &config);
+        let dfg = result.to_dfg(&col.vocab);
 
-            to_js_str(&dfg)
+        to_js_str(&dfg)
     })
 }
 
