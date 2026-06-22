@@ -262,8 +262,8 @@ impl FusedMultiPass {
         }
 
         // Build DFG (without interner for non-streaming profiles)
-        let mut node_counts: HashMap<String, usize> = HashMap::new();
-        let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
+        let mut node_counts: BTreeMap<String, usize> = BTreeMap::new();
+        let mut edge_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
         let mut start_counts: BTreeMap<String, usize> = BTreeMap::new();
         let mut end_counts: BTreeMap<String, usize> = BTreeMap::new();
 
