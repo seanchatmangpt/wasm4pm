@@ -87,9 +87,9 @@ impl Builder {
                 self.flow(&id, exit);
             }
             Some(PowlNode::OperatorPowl(op)) => {
-                let operator = op.operator.as_str().to_string();
+                let operator: &'static str = op.operator.as_str();
                 let children = op.children.clone();
-                match operator.as_str() {
+                match operator {
                     "X" => {
                         let split = self.ids.next("xor_split");
                         let join = self.ids.next("xor_join");
