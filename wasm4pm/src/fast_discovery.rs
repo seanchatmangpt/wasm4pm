@@ -137,8 +137,8 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DF
     // Pre-size: n² / 4 is a practical upper bound for DFG edge count (sparse graphs).
     let n = col.vocab.len();
     let cap = n.saturating_mul(n) / 4 + 1;
-    let mut current_edges: std::collections::HashSet<(u32, u32)> =
-        std::collections::HashSet::with_capacity(cap);
+    let mut current_edges: std::collections::BTreeSet<(u32, u32)> =
+        std::collections::BTreeSet::new();
     let mut edge_freq: FxHashMap<(u32, u32), usize> =
         FxHashMap::with_capacity_and_hasher(cap, Default::default());
     let mut node_freq: FxHashMap<u32, usize> =
@@ -197,10 +197,8 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DF
             label: act.to_string(),
             frequency: node_freq.get(&(idx as u32)).copied().unwrap_or(0),
         }));
-    let mut sorted_edges: Vec<(u32, u32)> = current_edges.into_iter().collect();
-    sorted_edges.sort_unstable();
     dfg.edges
-        .extend(sorted_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
+        .extend(current_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
             from: col.vocab[f as usize].to_owned(),
             to: col.vocab[t as usize].to_owned(),
             frequency: edge_freq.get(&(f, t)).copied().unwrap_or(1),

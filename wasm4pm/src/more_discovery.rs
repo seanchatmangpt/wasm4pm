@@ -5,7 +5,7 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use serde_json::json;
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 use wasm_bindgen::prelude::*;
 
@@ -767,7 +767,7 @@ pub fn discover_simulated_annealing_from_log(
     temperature: f64,
     cooling_rate: f64,
 ) -> (DFG, f64) {
-    use std::collections::HashSet as HS;
+    use std::collections::BTreeSet as HS;
 
     if temperature <= 0.0 {
         return (DFG::new(), 0.0); // invalid temperature
@@ -832,11 +832,9 @@ pub fn discover_simulated_annealing_from_log(
             Added((u32, u32)),
         }
         let mv: Option<Move> = if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
-            // Sort for deterministic selection independent of HashSet RandomState.
-            let mut edges_sorted: Vec<(u32, u32)> = current_edges.iter().copied().collect();
-            edges_sorted.sort_unstable();
-            let pick = (rng.gen::<f64>() * edges_sorted.len() as f64) as usize;
-            let edge = edges_sorted[pick];
+            // BTreeSet iterates in ascending order — no explicit sort needed.
+            let pick = (rng.gen::<f64>() * current_edges.len() as f64) as usize;
+            let edge = *current_edges.iter().nth(pick).unwrap();
             current_edges.remove(&edge);
             Some(Move::Removed(edge))
         } else if !edge_vocab.is_empty() {
@@ -1115,7 +1113,7 @@ pub fn analyze_case_attributes(
 #[inline]
 // Helper: Materialize a DFG from edge set and vocabulary
 fn edge_set_to_dfg(
-    edge_set: &HashSet<(u32, u32)>,
+    edge_set: &BTreeSet<(u32, u32)>,
     vocab: &[String],
     edge_freq: &FxHashMap<(u32, u32), f64>,
     node_freq: &FxHashMap<u32, usize>,
@@ -1130,10 +1128,7 @@ fn edge_set_to_dfg(
         });
     }
 
-    let mut sorted_edges: Vec<(u32, u32)> = edge_set.iter().copied().collect();
-    sorted_edges.sort_unstable();
-
-    for (from_id, to_id) in sorted_edges {
+    for &(from_id, to_id) in edge_set {
         let from_idx = from_id as usize;
         let to_idx = to_id as usize;
         if from_idx < vocab.len() && to_idx < vocab.len() {

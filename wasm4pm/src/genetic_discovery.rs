@@ -5,10 +5,10 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use serde_json::json;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use wasm_bindgen::prelude::*;
 
-type EdgeSet = HashSet<(u32, u32)>;
+type EdgeSet = BTreeSet<(u32, u32)>;
 
 /// Discover a process model using a Genetic Algorithm.
 ///
@@ -325,11 +325,7 @@ fn edge_set_to_dfg(
         });
     }
 
-    // Sort for deterministic edge order independent of HashSet RandomState.
-    let mut sorted_edges: Vec<(u32, u32)> = edge_set.iter().copied().collect();
-    sorted_edges.sort_unstable();
-
-    for (from_id, to_id) in sorted_edges {
+    for (from_id, to_id) in edge_set.iter().copied() {
         let from_idx = from_id as usize;
         let to_idx = to_id as usize;
         if from_idx < vocab.len() && to_idx < vocab.len() {
@@ -352,7 +348,7 @@ fn create_random_edge_set_seeded(
     inclusion_probability: f64,
     rng: &mut StdRng,
 ) -> EdgeSet {
-    let mut edge_set: EdgeSet = HashSet::new();
+    let mut edge_set: EdgeSet = BTreeSet::new();
     for &edge in edge_vocab {
         if rng.gen::<f64>() < inclusion_probability {
             edge_set.insert(edge);
@@ -362,22 +358,15 @@ fn create_random_edge_set_seeded(
 }
 
 fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng) -> EdgeSet {
-    let mut child: EdgeSet = HashSet::new();
+    let mut child: EdgeSet = BTreeSet::new();
 
-    // Sort before iterating: HashSet iteration order is non-deterministic due to hash
-    // randomization. Sorting ensures RNG calls are consumed in the same order every run,
-    // keeping the RNG state deterministic across WASM invocations.
-    let mut p1_edges: Vec<(u32, u32)> = parent1.iter().copied().collect();
-    p1_edges.sort_unstable();
-    for edge in p1_edges {
+    for &edge in parent1 {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
     }
 
-    let mut p2_edges: Vec<(u32, u32)> = parent2.iter().copied().collect();
-    p2_edges.sort_unstable();
-    for edge in p2_edges {
+    for &edge in parent2 {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
@@ -394,11 +383,9 @@ fn mutate_edges_seeded(
 ) {
     if rng.gen::<f64>() < mutation_rate {
         if !edge_set.is_empty() && rng.gen::<f64>() < 0.5 {
-            // Sort for deterministic selection independent of HashSet RandomState.
-            let mut edges_sorted: Vec<(u32, u32)> = edge_set.iter().copied().collect();
-            edges_sorted.sort_unstable();
-            let pick = (rng.gen::<f64>() * edges_sorted.len() as f64) as usize;
-            edge_set.remove(&edges_sorted[pick]);
+            let pick = (rng.gen::<f64>() * edge_set.len() as f64) as usize;
+            let to_remove = *edge_set.iter().nth(pick).unwrap();
+            edge_set.remove(&to_remove);
         } else if !edge_vocab.is_empty() {
             let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
             edge_set.insert(edge_vocab[idx]);
@@ -407,23 +394,18 @@ fn mutate_edges_seeded(
 }
 
 fn blend_edges_seeded(set1: &EdgeSet, set2: &EdgeSet, ratio: f64, rng: &mut StdRng) -> EdgeSet {
-    let mut result: EdgeSet = HashSet::new();
+    let mut result: EdgeSet = BTreeSet::new();
 
-    // Sort before iterating: HashSet iteration order is non-deterministic due to hash
-    // randomization. Sorting ensures RNG calls are consumed in the same order every run.
+    // BTreeSet iterates in ascending order — no explicit sort needed.
     // Keep edges from set1 with probability (1 - ratio)
-    let mut s1_edges: Vec<(u32, u32)> = set1.iter().copied().collect();
-    s1_edges.sort_unstable();
-    for edge in s1_edges {
+    for &edge in set1 {
         if rng.gen::<f64>() > ratio {
             result.insert(edge);
         }
     }
 
     // Add edges from set2 with probability ratio
-    let mut s2_edges: Vec<(u32, u32)> = set2.iter().copied().collect();
-    s2_edges.sort_unstable();
-    for edge in s2_edges {
+    for &edge in set2 {
         if rng.gen::<f64>() < ratio {
             result.insert(edge);
         }
@@ -544,7 +526,7 @@ pub fn discover_aco_algorithm_from_log(
         let mut iteration_solutions: Vec<(EdgeSet, f64)> = Vec::new();
 
         for _ant in 0..ant_count {
-            let mut ant_edges: EdgeSet = HashSet::new();
+            let mut ant_edges: EdgeSet = BTreeSet::new();
             for &edge in &edge_vocab {
                 let tau = pheromone.get(&edge).copied().unwrap_or(tau_0);
                 let eta = heuristic.get(&edge).copied().unwrap_or(0.01);
