@@ -1,6 +1,6 @@
 use crate::models::OCEL;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// Object-Centric Language Abstraction (OCLA)
 ///
@@ -8,11 +8,11 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct OCLanguageAbstraction {
     /// Start event types per object type
-    pub start_ev_types: HashMap<String, HashSet<String>>,
+    pub start_ev_types: BTreeMap<String, BTreeSet<String>>,
     /// End event types per object type
-    pub end_ev_types: HashMap<String, HashSet<String>>,
+    pub end_ev_types: BTreeMap<String, BTreeSet<String>>,
     /// Directly-follows relations per object type
-    pub directly_follows: HashMap<String, HashSet<(String, String)>>,
+    pub directly_follows: BTreeMap<String, BTreeSet<(String, String)>>,
 }
 
 impl OCLanguageAbstraction {
