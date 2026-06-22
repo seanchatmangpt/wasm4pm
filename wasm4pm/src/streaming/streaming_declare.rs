@@ -147,7 +147,9 @@ impl StreamingDeclareBuilder {
         }
 
         // Sort for deterministic constraint ordering in serialized DeclareModel
-        model.constraints.sort_by(|a, b| a.template.cmp(&b.template));
+        model
+            .constraints
+            .sort_by(|a, b| a.template.cmp(&b.template));
 
         model
     }

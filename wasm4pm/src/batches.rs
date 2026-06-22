@@ -302,8 +302,8 @@ pub fn discover_batches_wasm(
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let result = discover_batches(log, activity_key, timestamp_key);
-            to_js(&result)
+        let result = discover_batches(log, activity_key, timestamp_key);
+        to_js(&result)
     })
 }
 

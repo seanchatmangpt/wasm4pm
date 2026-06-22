@@ -80,9 +80,7 @@ pub fn enforce_lifecycle_state(
         (
             LifecycleState::Decommission,
             OperationKind::Mutate | OperationKind::MutateStructure | OperationKind::Simulate,
-        ) => {
-            Err(LifecycleError::ArchivedModelImmutable)
-        }
+        ) => Err(LifecycleError::ArchivedModelImmutable),
         _ => Ok(()), // Cleared for execution
     }
 }

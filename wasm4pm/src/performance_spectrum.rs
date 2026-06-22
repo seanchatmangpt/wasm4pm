@@ -180,9 +180,9 @@ pub fn discover_performance_spectrum_wasm(
     target_activity: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let result =
-                discover_performance_spectrum(log, target_activity, activity_key, timestamp_key);
-            to_js(&result)
+        let result =
+            discover_performance_spectrum(log, target_activity, activity_key, timestamp_key);
+        to_js(&result)
     })
 }
 

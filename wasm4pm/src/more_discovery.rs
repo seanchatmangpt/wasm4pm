@@ -364,23 +364,23 @@ pub fn discover_inductive_miner(
     );
 
     let tree = get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let activities = log.get_activities(activity_key);
-            let activity_count = activities.len();
+        let activities = log.get_activities(activity_key);
+        let activity_count = activities.len();
 
-            tracing::info!(
-                target: "wasm4pm.discovery.inductive_miner",
-                checkpoint = "feature_extraction",
-                log_size = log.traces.len(),
-                activity_count = activity_count,
-                "Log loaded and activity vocabulary built"
-            );
+        tracing::info!(
+            target: "wasm4pm.discovery.inductive_miner",
+            checkpoint = "feature_extraction",
+            log_size = log.traces.len(),
+            activity_count = activity_count,
+            "Log loaded and activity vocabulary built"
+        );
 
-            let mut sorted_acts: Vec<_> = activities.to_vec();
-            sorted_acts.sort_unstable(); // Deterministic ordering
+        let mut sorted_acts: Vec<_> = activities.to_vec();
+        sorted_acts.sort_unstable(); // Deterministic ordering
 
-            let admitted =
-                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-            inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0)
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+        inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0)
     })?;
 
     let nodes = tree.count_nodes();
@@ -887,77 +887,77 @@ pub fn extract_process_skeleton(
     min_frequency: usize,
 ) -> Result<JsValue, JsValue> {
     let dfg = get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
+        let activities = log.get_activities(activity_key);
+        let directly_follows_vec = log.get_directly_follows(activity_key);
 
-            let mut dfg = DFG::new();
+        let mut dfg = DFG::new();
 
-            // Calculate activity frequencies and start/end activities
-            let mut activity_freqs = rustc_hash::FxHashMap::default();
-            let mut start_counts = rustc_hash::FxHashMap::default();
-            let mut end_counts = rustc_hash::FxHashMap::default();
+        // Calculate activity frequencies and start/end activities
+        let mut activity_freqs = rustc_hash::FxHashMap::default();
+        let mut start_counts = rustc_hash::FxHashMap::default();
+        let mut end_counts = rustc_hash::FxHashMap::default();
 
-            for trace in &log.traces {
-                let mut first = true;
-                let mut last_event: Option<&String> = None;
+        for trace in &log.traces {
+            let mut first = true;
+            let mut last_event: Option<&String> = None;
 
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
-                        *activity_freqs.entry(act.clone()).or_default() += 1;
-                        if first {
-                            *start_counts.entry(act.clone()).or_default() += 1;
-                            first = false;
-                        }
-                        last_event = Some(act);
+            for event in &trace.events {
+                if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
+                    *activity_freqs.entry(act.clone()).or_default() += 1;
+                    if first {
+                        *start_counts.entry(act.clone()).or_default() += 1;
+                        first = false;
                     }
-                }
-
-                if let Some(act) = last_event {
-                    *end_counts.entry(act.clone()).or_default() += 1;
+                    last_event = Some(act);
                 }
             }
 
-            // Only include edges above frequency threshold
-            for (from, to, freq) in &directly_follows_vec {
-                if *freq >= min_frequency {
-                    dfg.edges.push(DirectlyFollowsRelation {
-                        from: from.clone(),
-                        to: to.clone(),
-                        frequency: *freq,
-                    });
-                }
+            if let Some(act) = last_event {
+                *end_counts.entry(act.clone()).or_default() += 1;
             }
+        }
 
-            // Remove nodes with no edges, but without allocating multiple strings in flat_map
-            let mut nodes_with_edges: HashSet<&str> = HashSet::new();
-            for e in &dfg.edges {
-                nodes_with_edges.insert(&e.from);
-                nodes_with_edges.insert(&e.to);
+        // Only include edges above frequency threshold
+        for (from, to, freq) in &directly_follows_vec {
+            if *freq >= min_frequency {
+                dfg.edges.push(DirectlyFollowsRelation {
+                    from: from.clone(),
+                    to: to.clone(),
+                    frequency: *freq,
+                });
             }
+        }
 
-            for activity in &activities {
-                if nodes_with_edges.contains(activity.as_str()) {
-                    dfg.nodes.push(DFGNode {
-                        id: activity.clone(),
-                        label: activity.clone(),
-                        frequency: *activity_freqs.get(activity).unwrap_or(&0),
-                    });
-                }
-            }
+        // Remove nodes with no edges, but without allocating multiple strings in flat_map
+        let mut nodes_with_edges: HashSet<&str> = HashSet::new();
+        for e in &dfg.edges {
+            nodes_with_edges.insert(&e.from);
+            nodes_with_edges.insert(&e.to);
+        }
 
-            // Populate start and end activities for the DFG skeleton
-            for (act, count) in start_counts {
-                if nodes_with_edges.contains(act.as_str()) {
-                    dfg.start_activities.insert(act, count);
-                }
+        for activity in &activities {
+            if nodes_with_edges.contains(activity.as_str()) {
+                dfg.nodes.push(DFGNode {
+                    id: activity.clone(),
+                    label: activity.clone(),
+                    frequency: *activity_freqs.get(activity).unwrap_or(&0),
+                });
             }
-            for (act, count) in end_counts {
-                if nodes_with_edges.contains(act.as_str()) {
-                    dfg.end_activities.insert(act, count);
-                }
-            }
+        }
 
-            Ok(dfg)
+        // Populate start and end activities for the DFG skeleton
+        for (act, count) in start_counts {
+            if nodes_with_edges.contains(act.as_str()) {
+                dfg.start_activities.insert(act, count);
+            }
+        }
+        for (act, count) in end_counts {
+            if nodes_with_edges.contains(act.as_str()) {
+                dfg.end_activities.insert(act, count);
+            }
+        }
+
+        Ok(dfg)
     })?;
 
     let handle = get_or_init_state()
@@ -980,55 +980,57 @@ pub fn analyze_activity_dependencies(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut predecessors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
-            let mut successors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
+        let mut predecessors: std::collections::BTreeMap<
+            String,
+            std::collections::BTreeSet<String>,
+        > = std::collections::BTreeMap::new();
+        let mut successors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> =
+            std::collections::BTreeMap::new();
 
-            for trace in &log.traces {
-                for (i, event) in trace.events.iter().enumerate() {
-                    if let Some(AttributeValue::String(current)) =
-                        event.attributes.get(activity_key)
-                    {
-                        // Get predecessors
-                        if i > 0 {
-                            if let Some(AttributeValue::String(prev)) =
-                                trace.events[i - 1].attributes.get(activity_key)
-                            {
-                                predecessors
-                                    .entry(current.clone())
-                                    .or_default()
-                                    .insert(prev.clone());
-                            }
+        for trace in &log.traces {
+            for (i, event) in trace.events.iter().enumerate() {
+                if let Some(AttributeValue::String(current)) = event.attributes.get(activity_key) {
+                    // Get predecessors
+                    if i > 0 {
+                        if let Some(AttributeValue::String(prev)) =
+                            trace.events[i - 1].attributes.get(activity_key)
+                        {
+                            predecessors
+                                .entry(current.clone())
+                                .or_default()
+                                .insert(prev.clone());
                         }
+                    }
 
-                        // Get successors
-                        if i < trace.events.len() - 1 {
-                            if let Some(AttributeValue::String(next)) =
-                                trace.events[i + 1].attributes.get(activity_key)
-                            {
-                                successors
-                                    .entry(current.clone())
-                                    .or_default()
-                                    .insert(next.clone());
-                            }
+                    // Get successors
+                    if i < trace.events.len() - 1 {
+                        if let Some(AttributeValue::String(next)) =
+                            trace.events[i + 1].attributes.get(activity_key)
+                        {
+                            successors
+                                .entry(current.clone())
+                                .or_default()
+                                .insert(next.clone());
                         }
                     }
                 }
             }
+        }
 
-            let result: Vec<_> = predecessors
-                .keys()
-                .map(|activity| {
-                    json!({
-                        "activity": activity,
-                        "predecessors": predecessors.get(activity).map_or(0, |s| s.len()),
-                        "successors": successors.get(activity).map_or(0, |s| s.len()),
-                    })
+        let result: Vec<_> = predecessors
+            .keys()
+            .map(|activity| {
+                json!({
+                    "activity": activity,
+                    "predecessors": predecessors.get(activity).map_or(0, |s| s.len()),
+                    "successors": successors.get(activity).map_or(0, |s| s.len()),
                 })
-                .collect();
+            })
+            .collect();
 
-            to_js_str(&json!({
-                "dependencies": result,
-            }))
+        to_js_str(&json!({
+            "dependencies": result,
+        }))
     })
 }
 
@@ -1039,51 +1041,54 @@ pub fn analyze_case_attributes(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut attribute_values: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
-            let mut attribute_activity_map: FxHashMap<(String, String), Vec<String>> =
-                FxHashMap::default();
+        let mut attribute_values: std::collections::BTreeMap<
+            String,
+            std::collections::BTreeSet<String>,
+        > = std::collections::BTreeMap::new();
+        let mut attribute_activity_map: FxHashMap<(String, String), Vec<String>> =
+            FxHashMap::default();
 
-            for trace in &log.traces {
-                let activities: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)?
-                            .as_string()
-                            .map(str::to_owned)
-                    })
-                    .collect();
-
-                for (key, value) in &trace.attributes {
-                    if let AttributeValue::String(v) = value {
-                        attribute_values
-                            .entry(key.clone())
-                            .or_default()
-                            .insert(v.clone());
-
-                        attribute_activity_map
-                            .entry((key.clone(), v.clone()))
-                            .or_default()
-                            .extend(activities.clone());
-                    }
-                }
-            }
-
-            let result: Vec<_> = attribute_values
+        for trace in &log.traces {
+            let activities: Vec<String> = trace
+                .events
                 .iter()
-                .map(|(attr, values)| {
-                    json!({
-                        "attribute": attr,
-                        "unique_values": values.len(),
-                        "examples": values.iter().take(5).collect::<Vec<_>>()
-                    })
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)?
+                        .as_string()
+                        .map(str::to_owned)
                 })
                 .collect();
 
-            to_js_str(&json!({
-                "case_attributes": result,
-            }))
+            for (key, value) in &trace.attributes {
+                if let AttributeValue::String(v) = value {
+                    attribute_values
+                        .entry(key.clone())
+                        .or_default()
+                        .insert(v.clone());
+
+                    attribute_activity_map
+                        .entry((key.clone(), v.clone()))
+                        .or_default()
+                        .extend(activities.clone());
+                }
+            }
+        }
+
+        let result: Vec<_> = attribute_values
+            .iter()
+            .map(|(attr, values)| {
+                json!({
+                    "attribute": attr,
+                    "unique_values": values.len(),
+                    "examples": values.iter().take(5).collect::<Vec<_>>()
+                })
+            })
+            .collect();
+
+        to_js_str(&json!({
+            "case_attributes": result,
+        }))
     })
 }
 

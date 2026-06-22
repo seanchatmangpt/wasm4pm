@@ -130,61 +130,60 @@ pub fn compute_boundary_coverage(
         .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
     get_or_init_state().with_event_log(log_handle, |log| {
-            // Extract complete traces as activity string vectors
-            let all_traces: Vec<Vec<String>> = log
-                .traces
-                .iter()
-                .map(|trace| {
-                    trace
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            e.attributes
-                                .get(activity_key)
-                                .and_then(|v| v.as_string())
-                                .map(str::to_owned)
-                        })
-                        .collect()
-                })
-                .collect();
-
-            let coverage = crate::prediction_additions::boundary_coverage(&prefix, &all_traces);
-
-            // Count matching traces and normal completions for reporting
-            let matching: Vec<&Vec<String>> = all_traces
-                .iter()
-                .filter(|t| t.len() >= prefix.len() && t[..prefix.len()] == prefix[..])
-                .collect();
-
-            let matching_count = matching.len();
-            let normal_count = if matching.is_empty() {
-                0
-            } else {
-                let mut lengths: Vec<usize> = matching.iter().map(|t| t.len()).collect();
-                lengths.sort();
-                let median = lengths[lengths.len() / 2];
-                let variance: f64 = lengths
+        // Extract complete traces as activity string vectors
+        let all_traces: Vec<Vec<String>> = log
+            .traces
+            .iter()
+            .map(|trace| {
+                trace
+                    .events
                     .iter()
-                    .map(|&len| ((len as i64 - median as i64).pow(2)) as f64)
-                    .sum::<f64>()
-                    / lengths.len() as f64;
-                let sigma = variance.sqrt();
-                let threshold = median as f64 + 2.0 * sigma;
-                lengths
-                    .iter()
-                    .filter(|&&len| (len as f64) <= threshold)
-                    .count()
-            };
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect()
+            })
+            .collect();
 
-            let result = json!({
-                "coverage": coverage,
-                "matching_traces": matching_count,
-                "normal_completions": normal_count
-            });
-            Ok(crate::error::js_val(
-                &serde_json::to_string(&result)
-                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
-            ))
+        let coverage = crate::prediction_additions::boundary_coverage(&prefix, &all_traces);
+
+        // Count matching traces and normal completions for reporting
+        let matching: Vec<&Vec<String>> = all_traces
+            .iter()
+            .filter(|t| t.len() >= prefix.len() && t[..prefix.len()] == prefix[..])
+            .collect();
+
+        let matching_count = matching.len();
+        let normal_count = if matching.is_empty() {
+            0
+        } else {
+            let mut lengths: Vec<usize> = matching.iter().map(|t| t.len()).collect();
+            lengths.sort();
+            let median = lengths[lengths.len() / 2];
+            let variance: f64 = lengths
+                .iter()
+                .map(|&len| ((len as i64 - median as i64).pow(2)) as f64)
+                .sum::<f64>()
+                / lengths.len() as f64;
+            let sigma = variance.sqrt();
+            let threshold = median as f64 + 2.0 * sigma;
+            lengths
+                .iter()
+                .filter(|&&len| (len as f64) <= threshold)
+                .count()
+        };
+
+        let result = json!({
+            "coverage": coverage,
+            "matching_traces": matching_count,
+            "normal_completions": normal_count
+        });
+        Ok(crate::error::js_val(
+            &serde_json::to_string(&result).map_err(|e| crate::error::js_val(&e.to_string()))?,
+        ))
     })
 }
 

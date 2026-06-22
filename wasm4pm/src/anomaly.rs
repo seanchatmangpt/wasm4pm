@@ -44,34 +44,34 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
         .map_err(|e| crate::error::js_val(&format!("Invalid activities JSON: {}", e)))?;
 
     get_or_init_state().with_dfg(dfg_handle, |dfg| {
-            if activities.len() < 2 {
-                return Ok(JsValue::from_f64(0.0));
-            }
+        if activities.len() < 2 {
+            return Ok(JsValue::from_f64(0.0));
+        }
 
-            let mut cost_sum = 0.0_f64;
-            let steps = activities.len() - 1;
-            for i in 0..steps {
-                let from_act = &activities[i];
-                // Use per-source total for correct transition probability
-                let from_total: usize = dfg
-                    .edges
-                    .iter()
-                    .filter(|e| &e.from == from_act)
-                    .map(|e| e.frequency)
-                    .sum::<usize>()
-                    .max(1);
-                let edge_freq = dfg
-                    .edges
-                    .iter()
-                    .find(|e| e.from == activities[i] && e.to == activities[i + 1])
-                    .map_or(0, |e| e.frequency);
-                cost_sum += if edge_freq == 0 {
-                    MISSING_EDGE_COST
-                } else {
-                    -(edge_freq as f64 / from_total as f64).log2()
-                };
-            }
-            Ok(JsValue::from_f64(cost_sum / steps as f64))
+        let mut cost_sum = 0.0_f64;
+        let steps = activities.len() - 1;
+        for i in 0..steps {
+            let from_act = &activities[i];
+            // Use per-source total for correct transition probability
+            let from_total: usize = dfg
+                .edges
+                .iter()
+                .filter(|e| &e.from == from_act)
+                .map(|e| e.frequency)
+                .sum::<usize>()
+                .max(1);
+            let edge_freq = dfg
+                .edges
+                .iter()
+                .find(|e| e.from == activities[i] && e.to == activities[i + 1])
+                .map_or(0, |e| e.frequency);
+            cost_sum += if edge_freq == 0 {
+                MISSING_EDGE_COST
+            } else {
+                -(edge_freq as f64 / from_total as f64).log2()
+            };
+        }
+        Ok(JsValue::from_f64(cost_sum / steps as f64))
     })
 }
 
@@ -142,73 +142,71 @@ pub fn score_log_anomalies(
     }
 
     let results_json = get_or_init_state().with_event_log(log_handle, |log| {
-            let mut results: Vec<serde_json::Value> = Vec::new();
-            for trace in &log.traces {
-                let case_id = trace
-                    .attributes
-                    .get("concept:name")
-                    .and_then(|v| v.as_string())
-                    .unwrap_or("unknown")
-                    .to_string();
-                let acts: Vec<&str> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                    .collect();
-                if acts.len() < 2 {
-                    results.push(json!({"case_id": case_id, "score": 0.0, "steps": 0}));
-                    continue;
-                }
-                let steps = acts.len() - 1;
-                let mut cost = 0.0_f64;
-                for i in 0..steps {
-                    let from_total = source_totals.get(acts[i]).copied().unwrap_or(1).max(1);
-                    let freq = freq_map.get(&(acts[i], acts[i + 1])).copied().unwrap_or(0);
-                    cost += if freq == 0 {
-                        MISSING_EDGE_COST
-                    } else {
-                        -(freq as f64 / from_total as f64).log2()
-                    };
-                }
-                results.push(
-                    json!({"case_id": case_id, "score": cost / steps as f64, "steps": steps}),
-                );
-            }
-            results.sort_by(|a, b| {
-                b["score"]
-                    .as_f64()
-                    .unwrap_or(0.0)
-                    .total_cmp(&a["score"].as_f64().unwrap_or(0.0))
-            });
-
-            // Per-trace z-score relative to the log-level distribution. This
-            // turns a raw -log2(prob) cost into something comparable across
-            // logs — `is_outlier` flags z > 2 (≈ outside 95th percentile under
-            // a normal approximation). Counter to the upstream PR-50 pattern
-            // for classification (where macro-F1 was added because accuracy
-            // hid class imbalance), here a raw score hides distribution shape.
-            let scores: Vec<f64> = results
+        let mut results: Vec<serde_json::Value> = Vec::new();
+        for trace in &log.traces {
+            let case_id = trace
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+                .unwrap_or("unknown")
+                .to_string();
+            let acts: Vec<&str> = trace
+                .events
                 .iter()
-                .filter_map(|r| r["score"].as_f64())
-                .filter(|s| s.is_finite())
+                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                 .collect();
-            if !scores.is_empty() {
-                let (mean, std_dev) = score_distribution_stats(&scores);
-                for r in results.iter_mut() {
-                    if let Some(score) = r["score"].as_f64() {
-                        let z = if std_dev > 1e-12 {
-                            (score - mean) / std_dev
-                        } else {
-                            0.0
-                        };
-                        if let Some(obj) = r.as_object_mut() {
-                            obj.insert("z_score".to_string(), json!(z));
-                            obj.insert("is_outlier".to_string(), json!(z > 2.0));
-                        }
+            if acts.len() < 2 {
+                results.push(json!({"case_id": case_id, "score": 0.0, "steps": 0}));
+                continue;
+            }
+            let steps = acts.len() - 1;
+            let mut cost = 0.0_f64;
+            for i in 0..steps {
+                let from_total = source_totals.get(acts[i]).copied().unwrap_or(1).max(1);
+                let freq = freq_map.get(&(acts[i], acts[i + 1])).copied().unwrap_or(0);
+                cost += if freq == 0 {
+                    MISSING_EDGE_COST
+                } else {
+                    -(freq as f64 / from_total as f64).log2()
+                };
+            }
+            results.push(json!({"case_id": case_id, "score": cost / steps as f64, "steps": steps}));
+        }
+        results.sort_by(|a, b| {
+            b["score"]
+                .as_f64()
+                .unwrap_or(0.0)
+                .total_cmp(&a["score"].as_f64().unwrap_or(0.0))
+        });
+
+        // Per-trace z-score relative to the log-level distribution. This
+        // turns a raw -log2(prob) cost into something comparable across
+        // logs — `is_outlier` flags z > 2 (≈ outside 95th percentile under
+        // a normal approximation). Counter to the upstream PR-50 pattern
+        // for classification (where macro-F1 was added because accuracy
+        // hid class imbalance), here a raw score hides distribution shape.
+        let scores: Vec<f64> = results
+            .iter()
+            .filter_map(|r| r["score"].as_f64())
+            .filter(|s| s.is_finite())
+            .collect();
+        if !scores.is_empty() {
+            let (mean, std_dev) = score_distribution_stats(&scores);
+            for r in results.iter_mut() {
+                if let Some(score) = r["score"].as_f64() {
+                    let z = if std_dev > 1e-12 {
+                        (score - mean) / std_dev
+                    } else {
+                        0.0
+                    };
+                    if let Some(obj) = r.as_object_mut() {
+                        obj.insert("z_score".to_string(), json!(z));
+                        obj.insert("is_outlier".to_string(), json!(z > 2.0));
                     }
                 }
             }
-            serde_json::to_string(&results).map_err(|e| crate::error::js_val(&e.to_string()))
+        }
+        serde_json::to_string(&results).map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&results_json))

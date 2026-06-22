@@ -212,20 +212,31 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> Result<ProcessTree, 
                         sub_trees.push(apply_recursive(arena, spo.children[local_to_global[li]])?);
                     }
                     if sub_trees.len() == 1 {
-                        level_trees.push(sub_trees.into_iter().next().expect("invariant: non-empty when len==1"));
+                        level_trees.push(
+                            sub_trees
+                                .into_iter()
+                                .next()
+                                .expect("invariant: non-empty when len==1"),
+                        );
                     } else {
                         level_trees.push(ProcessTree::internal(PtOperator::Parallel, sub_trees));
                     }
                 }
                 let subtree = if level_trees.len() == 1 {
-                    level_trees.into_iter().next().expect("invariant: single-component subtree")
+                    level_trees
+                        .into_iter()
+                        .next()
+                        .expect("invariant: single-component subtree")
                 } else {
                     ProcessTree::internal(PtOperator::Sequence, level_trees)
                 };
                 component_trees.push(subtree);
             }
             if component_trees.len() == 1 {
-                Ok(component_trees.into_iter().next().expect("invariant: single-component result"))
+                Ok(component_trees
+                    .into_iter()
+                    .next()
+                    .expect("invariant: single-component result"))
             } else {
                 Ok(ProcessTree::internal(PtOperator::Parallel, component_trees))
             }
@@ -291,20 +302,31 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> Result<ProcessTree, 
                         sub_trees.push(apply_recursive(arena, dg.children[local_to_global[li]])?);
                     }
                     if sub_trees.len() == 1 {
-                        level_trees.push(sub_trees.into_iter().next().expect("invariant: non-empty when len==1"));
+                        level_trees.push(
+                            sub_trees
+                                .into_iter()
+                                .next()
+                                .expect("invariant: non-empty when len==1"),
+                        );
                     } else {
                         level_trees.push(ProcessTree::internal(PtOperator::Parallel, sub_trees));
                     }
                 }
                 let subtree = if level_trees.len() == 1 {
-                    level_trees.into_iter().next().expect("invariant: single-component subtree")
+                    level_trees
+                        .into_iter()
+                        .next()
+                        .expect("invariant: single-component subtree")
                 } else {
                     ProcessTree::internal(PtOperator::Sequence, level_trees)
                 };
                 component_trees.push(subtree);
             }
             if component_trees.len() == 1 {
-                Ok(component_trees.into_iter().next().expect("invariant: single-component result"))
+                Ok(component_trees
+                    .into_iter()
+                    .next()
+                    .expect("invariant: single-component result"))
             } else {
                 Ok(ProcessTree::internal(PtOperator::Parallel, component_trees))
             }
@@ -320,7 +342,10 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> Result<ProcessTree, 
             if sub_trees.is_empty() {
                 Ok(ProcessTree::leaf(None))
             } else if sub_trees.len() == 1 {
-                Ok(sub_trees.into_iter().next().expect("invariant: non-empty when len==1"))
+                Ok(sub_trees
+                    .into_iter()
+                    .next()
+                    .expect("invariant: non-empty when len==1"))
             } else {
                 Ok(ProcessTree::internal(PtOperator::Xor, sub_trees))
             }

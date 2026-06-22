@@ -304,68 +304,68 @@ pub fn compute_optimal_alignments(
     let petri_net = get_or_init_state().with_petri_net(petri_net_handle, |pn| Ok(pn.clone()))?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
-            let mut alignments: Vec<serde_json::Value> = Vec::new();
-            let mut total_cost = 0.0;
+        let mut alignments: Vec<serde_json::Value> = Vec::new();
+        let mut total_cost = 0.0;
 
-            for trace in &log.traces {
-                let case_id = trace
-                    .attributes
-                    .get("concept:name")
-                    .and_then(|v| v.as_string())
-                    .unwrap_or("unknown")
-                    .to_string();
+        for trace in &log.traces {
+            let case_id = trace
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+                .unwrap_or("unknown")
+                .to_string();
 
-                let acts: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)
-                    })
-                    .collect();
+            let acts: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)
+                })
+                .collect();
 
-                let (cost, path, sync_count, log_count, model_count) = compute_trace_alignment(
-                    &acts,
-                    &petri_net,
-                    sync_cost,
-                    log_move_cost,
-                    model_move_cost,
-                );
+            let (cost, path, sync_count, log_count, model_count) = compute_trace_alignment(
+                &acts,
+                &petri_net,
+                sync_cost,
+                log_move_cost,
+                model_move_cost,
+            );
 
-                // Only include in total if alignment was found (cost is finite)
-                if cost.is_finite() {
-                    total_cost += cost;
-                }
-
-                alignments.push(json!({
-                    "case_id": case_id,
-                    "alignment_found": cost.is_finite(),
-                    "cost": if cost.is_finite() { cost } else { -1.0 }, // Use -1 as marker for no alignment
-                    "sync_moves": sync_count,
-                    "log_moves": log_count,
-                    "model_moves": model_count,
-                    "path": path,
-                }));
+            // Only include in total if alignment was found (cost is finite)
+            if cost.is_finite() {
+                total_cost += cost;
             }
 
-            let finite_count = alignments
-                .iter()
-                .filter(|a| a["cost"].as_f64().unwrap_or(-1.0) >= 0.0)
-                .count();
-            let avg_cost = if finite_count > 0 {
-                total_cost / finite_count as f64
-            } else {
-                0.0
-            };
+            alignments.push(json!({
+                "case_id": case_id,
+                "alignment_found": cost.is_finite(),
+                "cost": if cost.is_finite() { cost } else { -1.0 }, // Use -1 as marker for no alignment
+                "sync_moves": sync_count,
+                "log_moves": log_count,
+                "model_moves": model_count,
+                "path": path,
+            }));
+        }
 
-            serde_json::to_string(&json!({
-                "total_traces": log.traces.len(),
-                "avg_cost": avg_cost,
-                "alignments": alignments,
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
+        let finite_count = alignments
+            .iter()
+            .filter(|a| a["cost"].as_f64().unwrap_or(-1.0) >= 0.0)
+            .count();
+        let avg_cost = if finite_count > 0 {
+            total_cost / finite_count as f64
+        } else {
+            0.0
+        };
+
+        serde_json::to_string(&json!({
+            "total_traces": log.traces.len(),
+            "avg_cost": avg_cost,
+            "alignments": alignments,
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&result_json))
@@ -389,93 +389,95 @@ pub fn compute_alignments(
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
-    let start_activities: std::collections::HashSet<String> =
-        get_or_init_state().with_dfg(dfg_handle, |dfg| Ok(dfg.start_activities.keys().cloned().collect()))?;
+    let start_activities: std::collections::HashSet<String> = get_or_init_state()
+        .with_dfg(dfg_handle, |dfg| {
+            Ok(dfg.start_activities.keys().cloned().collect())
+        })?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
-            let mut alignments: Vec<serde_json::Value> = Vec::new();
+        let mut alignments: Vec<serde_json::Value> = Vec::new();
 
-            for trace in &log.traces {
-                let case_id = trace
-                    .attributes
-                    .get("concept:name")
-                    .and_then(|v| v.as_string())
-                    .unwrap_or("unknown")
-                    .to_string();
+        for trace in &log.traces {
+            let case_id = trace
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+                .unwrap_or("unknown")
+                .to_string();
 
-                let acts: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)
-                    })
-                    .collect();
+            let acts: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)
+                })
+                .collect();
 
-                let mut moves: Vec<serde_json::Value> = Vec::new();
-                let mut sync_count = 0usize;
-                let mut log_move_count = 0usize;
+            let mut moves: Vec<serde_json::Value> = Vec::new();
+            let mut sync_count = 0usize;
+            let mut log_move_count = 0usize;
 
-                if acts.is_empty() {
-                    alignments.push(json!({
-                        "case_id": case_id,
-                        "fitness": 1.0,
-                        "moves": moves,
-                    }));
-                    continue;
-                }
-
-                if start_activities.is_empty() || start_activities.contains(&acts[0]) {
-                    moves.push(json!({"type": "sync", "activity": acts[0]}));
-                    sync_count += 1;
-                } else {
-                    moves.push(json!({"type": "log", "activity": acts[0]}));
-                    log_move_count += 1;
-                }
-
-                for w in acts.windows(2) {
-                    let edge = (w[0].clone(), w[1].clone());
-                    if edge_map.contains_key(&edge) {
-                        moves.push(json!({"type": "sync", "activity": w[1]}));
-                        sync_count += 1;
-                    } else {
-                        moves.push(json!({"type": "log", "activity": w[1]}));
-                        log_move_count += 1;
-                    }
-                }
-
-                let total_moves = sync_count + log_move_count;
-                let fitness = if total_moves == 0 {
-                    1.0
-                } else {
-                    sync_count as f64 / total_moves as f64
-                };
-
+            if acts.is_empty() {
                 alignments.push(json!({
                     "case_id": case_id,
-                    "fitness": fitness,
+                    "fitness": 1.0,
                     "moves": moves,
                 }));
+                continue;
             }
 
-            let avg_fitness = if alignments.is_empty() {
+            if start_activities.is_empty() || start_activities.contains(&acts[0]) {
+                moves.push(json!({"type": "sync", "activity": acts[0]}));
+                sync_count += 1;
+            } else {
+                moves.push(json!({"type": "log", "activity": acts[0]}));
+                log_move_count += 1;
+            }
+
+            for w in acts.windows(2) {
+                let edge = (w[0].clone(), w[1].clone());
+                if edge_map.contains_key(&edge) {
+                    moves.push(json!({"type": "sync", "activity": w[1]}));
+                    sync_count += 1;
+                } else {
+                    moves.push(json!({"type": "log", "activity": w[1]}));
+                    log_move_count += 1;
+                }
+            }
+
+            let total_moves = sync_count + log_move_count;
+            let fitness = if total_moves == 0 {
                 1.0
             } else {
-                alignments
-                    .iter()
-                    .map(|a| a["fitness"].as_f64().unwrap_or(1.0))
-                    .sum::<f64>()
-                    / alignments.len() as f64
+                sync_count as f64 / total_moves as f64
             };
 
-            serde_json::to_string(&json!({
-                "total_traces": log.traces.len(),
-                "avg_fitness": avg_fitness,
-                "alignments": alignments,
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
+            alignments.push(json!({
+                "case_id": case_id,
+                "fitness": fitness,
+                "moves": moves,
+            }));
+        }
+
+        let avg_fitness = if alignments.is_empty() {
+            1.0
+        } else {
+            alignments
+                .iter()
+                .map(|a| a["fitness"].as_f64().unwrap_or(1.0))
+                .sum::<f64>()
+                / alignments.len() as f64
+        };
+
+        serde_json::to_string(&json!({
+            "total_traces": log.traces.len(),
+            "avg_fitness": avg_fitness,
+            "alignments": alignments,
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&result_json))

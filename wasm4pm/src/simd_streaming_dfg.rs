@@ -194,7 +194,10 @@ impl SimdStreamingDfg {
         }
 
         // Find max ID to ensure capacity once
-        let max_id = *ids.iter().max().expect("invariant: has events → ids non-empty");
+        let max_id = *ids
+            .iter()
+            .max()
+            .expect("invariant: has events → ids non-empty");
         self.ensure_capacity(max_id);
 
         #[cfg(target_arch = "wasm32")]
@@ -469,21 +472,21 @@ impl Default for SimdStreamingDfg {
 #[wasm_bindgen]
 pub fn discover_dfg_simd(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-            let mut builder = SimdStreamingDfg::new();
-            builder.add_events(&col.events, &col.trace_offsets);
-            let dfg = builder.finish(&col.vocab);
-            to_js(&dfg)
+        let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+            .unwrap_or_else(|| {
+                let owned = log.to_columnar_owned(activity_key);
+                crate::cache::columnar_cache_insert(
+                    eventlog_handle.to_string(),
+                    activity_key.to_string(),
+                    owned.clone(),
+                );
+                owned
+            });
+        let col = ColumnarLog::from_owned(&col_owned);
+        let mut builder = SimdStreamingDfg::new();
+        builder.add_events(&col.events, &col.trace_offsets);
+        let dfg = builder.finish(&col.vocab);
+        to_js(&dfg)
     })
 }
 
@@ -496,20 +499,20 @@ pub fn discover_dfg_simd_handle(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let dfg = get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-            let mut builder = SimdStreamingDfg::new();
-            builder.add_events(&col.events, &col.trace_offsets);
-            Ok(builder.finish(&col.vocab))
+        let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+            .unwrap_or_else(|| {
+                let owned = log.to_columnar_owned(activity_key);
+                crate::cache::columnar_cache_insert(
+                    eventlog_handle.to_string(),
+                    activity_key.to_string(),
+                    owned.clone(),
+                );
+                owned
+            });
+        let col = ColumnarLog::from_owned(&col_owned);
+        let mut builder = SimdStreamingDfg::new();
+        builder.add_events(&col.events, &col.trace_offsets);
+        Ok(builder.finish(&col.vocab))
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;

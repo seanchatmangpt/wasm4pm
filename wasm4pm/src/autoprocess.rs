@@ -161,7 +161,6 @@ impl std::fmt::Display for DecisionReason {
     }
 }
 
-
 /// AutoProcess decision output.
 ///
 /// This struct captures the result of a single autonomic cycle's decision phase,

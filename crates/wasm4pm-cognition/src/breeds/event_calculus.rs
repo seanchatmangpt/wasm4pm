@@ -262,7 +262,13 @@ impl CognitionBreed for EventCalculus {
 
         // `selected` exposes per-query verdicts when queries are present, else final holds.
         let selected = if verdicts.is_empty() {
-            Some(final_holds.iter().map(String::as_str).collect::<Vec<_>>().join(","))
+            Some(
+                final_holds
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(","),
+            )
         } else {
             Some(
                 verdicts

@@ -254,7 +254,8 @@ impl AutonomicAuditTrail {
                 AuditPhase::Escalation => "⚠️",
             };
 
-            let _ = write!(timeline,
+            let _ = write!(
+                timeline,
                 "│ {}: Cycle {} @ {}s\n",
                 phase_marker, event.cycle_count, timestamp
             );
@@ -267,7 +268,8 @@ impl AutonomicAuditTrail {
         }
 
         timeline.push_str("╰──────────────────────────────────────────────────────────\n");
-        let _ = write!(timeline,
+        let _ = write!(
+            timeline,
             "Checksum (Merkle root): {}\n",
             &self.checksum[..16]
         );

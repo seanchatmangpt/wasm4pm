@@ -398,7 +398,6 @@ pub struct ConformanceAdmissionGate {
     pub reject_floor: f64,
 }
 
-
 impl ConformanceAdmissionGate {
     /// Construct gate with standard Blue River Dam thresholds.
     ///

@@ -143,12 +143,14 @@ pub fn load_boundary_map(path: &str) -> Option<BoundaryMap> {
     } else {
         v
     };
-    let transitions: std::collections::BTreeMap<String, Vec<String>> = serde_json::from_value(map_value).ok()?;
+    let transitions: std::collections::BTreeMap<String, Vec<String>> =
+        serde_json::from_value(map_value).ok()?;
     Some(BoundaryMap { transitions })
 }
 
 pub fn default_boundary_map() -> BoundaryMap {
-    let mut transitions: std::collections::BTreeMap<String, Vec<String>> = std::collections::BTreeMap::new();
+    let mut transitions: std::collections::BTreeMap<String, Vec<String>> =
+        std::collections::BTreeMap::new();
     transitions.insert("idle".to_string(), vec!["start".to_string()]);
     transitions.insert(
         "running".to_string(),

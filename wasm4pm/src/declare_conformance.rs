@@ -37,107 +37,107 @@ pub fn check_declare_conformance(
     })?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
-            let total = log.traces.len();
-            // violations[i] = # traces violating constraint i
-            let mut violations: Vec<usize> = vec![0; constraints.len()];
+        let total = log.traces.len();
+        // violations[i] = # traces violating constraint i
+        let mut violations: Vec<usize> = vec![0; constraints.len()];
 
-            for trace in &log.traces {
-                let acts: Vec<&str> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                    .collect();
+        for trace in &log.traces {
+            let acts: Vec<&str> = trace
+                .events
+                .iter()
+                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                .collect();
 
-                for (ci, constraint) in constraints.iter().enumerate() {
-                    let violated = match constraint.template.as_str() {
-                        "Response" if constraint.activities.len() == 2 => {
-                            let a = constraint.activities[0].as_str();
-                            let b = constraint.activities[1].as_str();
-                            // For each occurrence of A in the trace, B must follow
-                            let mut violates = false;
-                            for (i, &act) in acts.iter().enumerate() {
-                                if act == a {
-                                    // Check if B appears anywhere after position i
-                                    if !acts[i + 1..].contains(&b) {
-                                        violates = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            violates
-                        }
-                        "Existence" if constraint.activities.len() == 1 => {
-                            let a = constraint.activities[0].as_str();
-                            !acts.contains(&a)
-                        }
-                        "Absence" if constraint.activities.len() == 1 => {
-                            let a = constraint.activities[0].as_str();
-                            acts.contains(&a)
-                        }
-                        "Init" if constraint.activities.len() == 1 => {
-                            let a = constraint.activities[0].as_str();
-                            acts.first().map_or(true, |&x| x != a)
-                        }
-                        "Precedence" if constraint.activities.len() == 2 => {
-                            let a = constraint.activities[0].as_str();
-                            let b = constraint.activities[1].as_str();
-                            // B can only occur if A occurred before it
-                            let mut a_seen = false;
-                            let mut violates = false;
-                            for &act in &acts {
-                                if act == a {
-                                    a_seen = true;
-                                }
-                                if act == b && !a_seen {
+            for (ci, constraint) in constraints.iter().enumerate() {
+                let violated = match constraint.template.as_str() {
+                    "Response" if constraint.activities.len() == 2 => {
+                        let a = constraint.activities[0].as_str();
+                        let b = constraint.activities[1].as_str();
+                        // For each occurrence of A in the trace, B must follow
+                        let mut violates = false;
+                        for (i, &act) in acts.iter().enumerate() {
+                            if act == a {
+                                // Check if B appears anywhere after position i
+                                if !acts[i + 1..].contains(&b) {
                                     violates = true;
                                     break;
                                 }
                             }
-                            violates
                         }
-                        _ => false, // Unknown template: no violation
-                    };
-                    if violated {
-                        violations[ci] += 1;
+                        violates
                     }
+                    "Existence" if constraint.activities.len() == 1 => {
+                        let a = constraint.activities[0].as_str();
+                        !acts.contains(&a)
+                    }
+                    "Absence" if constraint.activities.len() == 1 => {
+                        let a = constraint.activities[0].as_str();
+                        acts.contains(&a)
+                    }
+                    "Init" if constraint.activities.len() == 1 => {
+                        let a = constraint.activities[0].as_str();
+                        acts.first().map_or(true, |&x| x != a)
+                    }
+                    "Precedence" if constraint.activities.len() == 2 => {
+                        let a = constraint.activities[0].as_str();
+                        let b = constraint.activities[1].as_str();
+                        // B can only occur if A occurred before it
+                        let mut a_seen = false;
+                        let mut violates = false;
+                        for &act in &acts {
+                            if act == a {
+                                a_seen = true;
+                            }
+                            if act == b && !a_seen {
+                                violates = true;
+                                break;
+                            }
+                        }
+                        violates
+                    }
+                    _ => false, // Unknown template: no violation
+                };
+                if violated {
+                    violations[ci] += 1;
                 }
             }
+        }
 
-            let constraint_results: Vec<serde_json::Value> = constraints
-                .iter()
-                .zip(violations.iter())
-                .map(|(c, &v)| {
-                    let fitness = if total == 0 {
-                        1.0
-                    } else {
-                        1.0 - v as f64 / total as f64
-                    };
-                    json!({
-                        "template": c.template,
-                        "activities": c.activities,
-                        "support": c.support,
-                        "violations": v,
-                        "fitness": fitness,
-                    })
+        let constraint_results: Vec<serde_json::Value> = constraints
+            .iter()
+            .zip(violations.iter())
+            .map(|(c, &v)| {
+                let fitness = if total == 0 {
+                    1.0
+                } else {
+                    1.0 - v as f64 / total as f64
+                };
+                json!({
+                    "template": c.template,
+                    "activities": c.activities,
+                    "support": c.support,
+                    "violations": v,
+                    "fitness": fitness,
                 })
-                .collect();
+            })
+            .collect();
 
-            let avg_fitness = if constraint_results.is_empty() {
-                1.0_f64
-            } else {
-                constraint_results
-                    .iter()
-                    .map(|r| r["fitness"].as_f64().unwrap_or(1.0))
-                    .sum::<f64>()
-                    / constraint_results.len() as f64
-            };
+        let avg_fitness = if constraint_results.is_empty() {
+            1.0_f64
+        } else {
+            constraint_results
+                .iter()
+                .map(|r| r["fitness"].as_f64().unwrap_or(1.0))
+                .sum::<f64>()
+                / constraint_results.len() as f64
+        };
 
-            serde_json::to_string(&json!({
-                "total_traces": total,
-                "avg_fitness": avg_fitness,
-                "constraints": constraint_results,
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
+        serde_json::to_string(&json!({
+            "total_traces": total,
+            "avg_fitness": avg_fitness,
+            "constraints": constraint_results,
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&result_json))

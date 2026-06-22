@@ -30,37 +30,37 @@ pub fn build_ngram_predictor(
 ) -> Result<JsValue, JsValue> {
     let n = n.max(2); // minimum bigram
     let predictor = get_or_init_state().with_event_log(log_handle, |log| {
-            let mut counts: std::collections::BTreeMap<
-                Vec<String>,
-                std::collections::BTreeMap<String, usize>,
-            > = std::collections::BTreeMap::new();
+        let mut counts: std::collections::BTreeMap<
+            Vec<String>,
+            std::collections::BTreeMap<String, usize>,
+        > = std::collections::BTreeMap::new();
 
-            for trace in &log.traces {
-                let acts: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)
-                    })
-                    .collect();
+        for trace in &log.traces {
+            let acts: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)
+                })
+                .collect();
 
-                if acts.len() < 2 {
-                    continue;
-                }
-
-                // For each position, record prefix → next_activity
-                for i in 0..acts.len() - 1 {
-                    let context_len = (n - 1).min(i + 1);
-                    let prefix: Vec<String> = acts[i + 1 - context_len..=i].to_vec();
-                    let next = acts[i + 1].clone();
-                    *counts.entry(prefix).or_default().entry(next).or_default() += 1;
-                }
+            if acts.len() < 2 {
+                continue;
             }
 
-            Ok(NGramPredictor { n, counts })
+            // For each position, record prefix → next_activity
+            for i in 0..acts.len() - 1 {
+                let context_len = (n - 1).min(i + 1);
+                let prefix: Vec<String> = acts[i + 1 - context_len..=i].to_vec();
+                let next = acts[i + 1].clone();
+                *counts.entry(prefix).or_default().entry(next).or_default() += 1;
+            }
+        }
+
+        Ok(NGramPredictor { n, counts })
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::NGramPredictor(predictor))?;

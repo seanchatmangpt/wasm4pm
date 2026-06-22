@@ -62,8 +62,8 @@ pub fn discover_causal_alpha(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let result = build_causal_alpha(log, activity_key)?;
-            to_js(&result)
+        let result = build_causal_alpha(log, activity_key)?;
+        to_js(&result)
     })
 }
 
@@ -81,8 +81,8 @@ pub fn discover_causal_heuristic(
     threshold: f64,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let result = build_causal_heuristic(log, activity_key, threshold)?;
-            to_js(&result)
+        let result = build_causal_heuristic(log, activity_key, threshold)?;
+        to_js(&result)
     })
 }
 

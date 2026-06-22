@@ -158,32 +158,32 @@ pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
-            let mut xes = String::with_capacity(512 + total_events * 200);
+        let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
+        let mut xes = String::with_capacity(512 + total_events * 200);
 
-            xes.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            xes.push_str("<log xes:version=\"1.0\" xmlns:xes=\"http://www.xes-standard.org/\">\n");
+        xes.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        xes.push_str("<log xes:version=\"1.0\" xmlns:xes=\"http://www.xes-standard.org/\">\n");
 
-            for trace in log.traces.iter() {
-                xes.push_str("  <trace>\n");
-                let mut trace_attrs: Vec<_> = trace.attributes.iter().collect();
-                trace_attrs.sort_by_key(|(k, _)| k.as_str());
-                for (key, value) in trace_attrs {
-                    write_attribute(&mut xes, 2, key, value);
-                }
-                for event in trace.events.iter() {
-                    xes.push_str("    <event>\n");
-                    let mut event_attrs: Vec<_> = event.attributes.iter().collect();
-                    event_attrs.sort_by_key(|(k, _)| k.as_str());
-                    for (key, value) in event_attrs {
-                        write_attribute(&mut xes, 3, key, value);
-                    }
-                    xes.push_str("    </event>\n");
-                }
-                xes.push_str("  </trace>\n");
+        for trace in log.traces.iter() {
+            xes.push_str("  <trace>\n");
+            let mut trace_attrs: Vec<_> = trace.attributes.iter().collect();
+            trace_attrs.sort_by_key(|(k, _)| k.as_str());
+            for (key, value) in trace_attrs {
+                write_attribute(&mut xes, 2, key, value);
             }
-            xes.push_str("</log>");
-            Ok(xes)
+            for event in trace.events.iter() {
+                xes.push_str("    <event>\n");
+                let mut event_attrs: Vec<_> = event.attributes.iter().collect();
+                event_attrs.sort_by_key(|(k, _)| k.as_str());
+                for (key, value) in event_attrs {
+                    write_attribute(&mut xes, 3, key, value);
+                }
+                xes.push_str("    </event>\n");
+            }
+            xes.push_str("  </trace>\n");
+        }
+        xes.push_str("</log>");
+        Ok(xes)
     })
 }
 

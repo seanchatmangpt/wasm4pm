@@ -370,24 +370,19 @@ pub fn network_to_graphml(network: &SocialNetwork) -> String {
         }
         xml.push_str(">\n");
         if let Some(workload) = node.workload {
-            let _ = write!(xml,
-                "      <data key=\"workload\">{}</data>\n",
-                workload
-            );
+            let _ = write!(xml, "      <data key=\"workload\">{}</data>\n", workload);
         }
         xml.push_str("    </node>\n");
     }
 
     for edge in &network.edges {
-        let _ = write!(xml,
+        let _ = write!(
+            xml,
             "    <edge source=\"{}\" target=\"{}\">\n",
             escape_xml(&edge.from),
             escape_xml(&edge.to)
         );
-        let _ = write!(xml,
-            "      <data key=\"weight\">{}</data>\n",
-            edge.weight
-        );
+        let _ = write!(xml, "      <data key=\"weight\">{}</data>\n", edge.weight);
         xml.push_str("    </edge>\n");
     }
 

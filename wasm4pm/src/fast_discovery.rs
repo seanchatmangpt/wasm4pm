@@ -86,14 +86,14 @@ pub fn discover_hill_climbing(
     );
 
     let current_dfg = get_or_init_state().with_event_log(eventlog_handle, |log| {
-            tracing::info!(
-                target: "wasm4pm.discovery.hill_climbing",
-                checkpoint = "feature_extraction",
-                log_size = log.traces.len(),
-                activity_count = log.get_activities(activity_key).len(),
-                "Log loaded and analyzed"
-            );
-            Ok(discover_hill_climbing_from_log(log, activity_key))
+        tracing::info!(
+            target: "wasm4pm.discovery.hill_climbing",
+            checkpoint = "feature_extraction",
+            log_size = log.traces.len(),
+            activity_count = log.get_activities(activity_key).len(),
+            "Log loaded and analyzed"
+        );
+        Ok(discover_hill_climbing_from_log(log, activity_key))
     })?;
 
     let node_count = current_dfg.nodes.len();
@@ -303,43 +303,43 @@ pub fn analyze_trace_variants(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut variants: std::collections::BTreeMap<Vec<String>, usize> =
-                std::collections::BTreeMap::new();
+        let mut variants: std::collections::BTreeMap<Vec<String>, usize> =
+            std::collections::BTreeMap::new();
 
-            for trace in &log.traces {
-                let path: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)?
-                            .as_string()
-                            .map(str::to_owned)
-                    })
-                    .collect();
-                *variants.entry(path).or_default() += 1;
-            }
-
-            let mut variant_list: Vec<(Vec<String>, usize)> = variants.into_iter().collect();
-            variant_list.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
-
-            let top_variants: Vec<_> = variant_list
+        for trace in &log.traces {
+            let path: Vec<String> = trace
+                .events
                 .iter()
-                .take(20)
-                .map(|(path, count)| {
-                    json!({
-                        "path": path,
-                        "count": count,
-                        "percentage": (*count as f64 / log.traces.len() as f64 * 100.0).round()
-                    })
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)?
+                        .as_string()
+                        .map(str::to_owned)
                 })
                 .collect();
+            *variants.entry(path).or_default() += 1;
+        }
 
-            to_js_str(&json!({
-                "total_variants": variant_list.len(),
-                "top_variants": top_variants,
-                "coverage": (top_variants.len() as f64 / variant_list.len().max(1) as f64 * 100.0),
-            }))
+        let mut variant_list: Vec<(Vec<String>, usize)> = variants.into_iter().collect();
+        variant_list.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+
+        let top_variants: Vec<_> = variant_list
+            .iter()
+            .take(20)
+            .map(|(path, count)| {
+                json!({
+                    "path": path,
+                    "count": count,
+                    "percentage": (*count as f64 / log.traces.len() as f64 * 100.0).round()
+                })
+            })
+            .collect();
+
+        to_js_str(&json!({
+            "total_variants": variant_list.len(),
+            "top_variants": top_variants,
+            "coverage": (top_variants.len() as f64 / variant_list.len().max(1) as f64 * 100.0),
+        }))
     })
 }
 
@@ -352,50 +352,50 @@ pub fn mine_sequential_patterns(
     pattern_length: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut patterns: std::collections::BTreeMap<Vec<String>, usize> =
-                std::collections::BTreeMap::new();
-            let min_count = ((log.traces.len() as f64 * min_support).ceil()) as usize;
+        let mut patterns: std::collections::BTreeMap<Vec<String>, usize> =
+            std::collections::BTreeMap::new();
+        let min_count = ((log.traces.len() as f64 * min_support).ceil()) as usize;
 
-            for trace in &log.traces {
-                let activities: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)?
-                            .as_string()
-                            .map(str::to_owned)
-                    })
-                    .collect();
-
-                for window in activities.windows(pattern_length) {
-                    *patterns.entry(window.to_vec()).or_default() += 1;
-                }
-            }
-
-            let mut frequent_patterns: Vec<_> = patterns
-                .into_iter()
-                .filter(|(_, count)| *count >= min_count)
-                .collect();
-            frequent_patterns.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
-
-            let result_patterns: Vec<_> = frequent_patterns
+        for trace in &log.traces {
+            let activities: Vec<String> = trace
+                .events
                 .iter()
-                .take(50)
-                .map(|(pattern, count)| {
-                    json!({
-                        "pattern": pattern,
-                        "count": count,
-                        "support": (*count as f64 / log.traces.len() as f64)
-                    })
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)?
+                        .as_string()
+                        .map(str::to_owned)
                 })
                 .collect();
 
-            to_js_str(&json!({
-                "pattern_length": pattern_length,
-                "patterns": result_patterns,
-                "min_support": min_support,
-            }))
+            for window in activities.windows(pattern_length) {
+                *patterns.entry(window.to_vec()).or_default() += 1;
+            }
+        }
+
+        let mut frequent_patterns: Vec<_> = patterns
+            .into_iter()
+            .filter(|(_, count)| *count >= min_count)
+            .collect();
+        frequent_patterns.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+
+        let result_patterns: Vec<_> = frequent_patterns
+            .iter()
+            .take(50)
+            .map(|(pattern, count)| {
+                json!({
+                    "pattern": pattern,
+                    "count": count,
+                    "support": (*count as f64 / log.traces.len() as f64)
+                })
+            })
+            .collect();
+
+        to_js_str(&json!({
+            "pattern_length": pattern_length,
+            "patterns": result_patterns,
+            "min_support": min_support,
+        }))
     })
 }
 
@@ -407,49 +407,49 @@ pub fn detect_concept_drift(
     window_size: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut drifts = Vec::new();
-            let mut previous_activities: HashSet<String> = HashSet::new();
+        let mut drifts = Vec::new();
+        let mut previous_activities: HashSet<String> = HashSet::new();
 
-            for (idx, window) in log.traces.windows(window_size).enumerate() {
-                let mut current_activities: HashSet<String> = HashSet::new();
+        for (idx, window) in log.traces.windows(window_size).enumerate() {
+            let mut current_activities: HashSet<String> = HashSet::new();
 
-                for trace in window {
-                    for event in &trace.events {
-                        if let Some(AttributeValue::String(activity)) =
-                            event.attributes.get(activity_key)
-                        {
-                            current_activities.insert(activity.clone());
-                        }
+            for trace in window {
+                for event in &trace.events {
+                    if let Some(AttributeValue::String(activity)) =
+                        event.attributes.get(activity_key)
+                    {
+                        current_activities.insert(activity.clone());
                     }
                 }
-
-                if !previous_activities.is_empty() {
-                    let jaccard_distance = 1.0
-                        - (current_activities
-                            .intersection(&previous_activities)
-                            .count() as f64
-                            / current_activities
-                                .union(&previous_activities)
-                                .count()
-                                .max(1) as f64);
-
-                    if jaccard_distance > 0.3 {
-                        drifts.push(json!({
-                            "position": idx * window_size,
-                            "distance": jaccard_distance,
-                            "type": "concept_drift"
-                        }));
-                    }
-                }
-
-                previous_activities = current_activities;
             }
 
-            to_js_str(&json!({
-                "drifts_detected": drifts.len(),
-                "drifts": drifts,
-                "window_size": window_size,
-            }))
+            if !previous_activities.is_empty() {
+                let jaccard_distance = 1.0
+                    - (current_activities
+                        .intersection(&previous_activities)
+                        .count() as f64
+                        / current_activities
+                            .union(&previous_activities)
+                            .count()
+                            .max(1) as f64);
+
+                if jaccard_distance > 0.3 {
+                    drifts.push(json!({
+                        "position": idx * window_size,
+                        "distance": jaccard_distance,
+                        "type": "concept_drift"
+                    }));
+                }
+            }
+
+            previous_activities = current_activities;
+        }
+
+        to_js_str(&json!({
+            "drifts_detected": drifts.len(),
+            "drifts": drifts,
+            "window_size": window_size,
+        }))
     })
 }
 
@@ -539,84 +539,84 @@ pub fn cluster_traces(
     num_clusters: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            if log.traces.is_empty() {
-                return to_js_str(&json!({
-                    "num_clusters": num_clusters,
-                    "cluster_sizes": [],
-                    "total_traces": 0,
-                }));
-            }
-
-            let num_clusters = num_clusters.min(log.traces.len());
-
-            // Encode all traces as bitsets: O(T×A) but amortized O(T) after index build
-            let (bitsets, _activity_index) = encode_traces_as_bitsets(log, activity_key);
-
-            let mut cluster_centers: Vec<u128> = vec![0u128; num_clusters];
-            let mut clusters: Vec<Vec<usize>> = vec![Vec::new(); num_clusters];
-
-            // Initialize centers from first K traces
-            cluster_centers[..num_clusters].copy_from_slice(&bitsets[..num_clusters]);
-
-            // K-means: converge with bitset operations
-            let max_iterations = 10;
-            let mut converged = false;
-            let mut iteration = 0;
-
-            while !converged && iteration < max_iterations {
-                iteration += 1;
-                converged = true;
-
-                // Clear cluster assignments
-                for cluster in &mut clusters {
-                    cluster.clear();
-                }
-
-                // Assignment: O(T×K) — integer bitwise ops, no String operations
-                for (trace_idx, &bitset) in bitsets.iter().enumerate() {
-                    let mut best_cluster = 0;
-                    let mut best_similarity = -1.0;
-
-                    for (center_idx, &center) in cluster_centers.iter().enumerate() {
-                        let similarity = jaccard_bitset(bitset, center);
-                        if similarity > best_similarity {
-                            best_similarity = similarity;
-                            best_cluster = center_idx;
-                        }
-                    }
-
-                    clusters[best_cluster].push(trace_idx);
-                }
-
-                // Update centers using majority voting: O(K×128) = O(K)
-                for (center_idx, cluster_indices) in clusters.iter().enumerate() {
-                    let new_center = recompute_center(cluster_indices, &bitsets);
-                    if new_center != cluster_centers[center_idx] {
-                        converged = false;
-                    }
-                    cluster_centers[center_idx] = new_center;
-                }
-            }
-
-            // Build result
-            let cluster_sizes: Vec<_> = clusters
-                .iter()
-                .enumerate()
-                .map(|(idx, cluster)| {
-                    json!({
-                        "cluster": idx,
-                        "size": cluster.len(),
-                        "percentage": (cluster.len() as f64 / log.traces.len() as f64 * 100.0)
-                    })
-                })
-                .collect();
-
-            to_js_str(&json!({
+        if log.traces.is_empty() {
+            return to_js_str(&json!({
                 "num_clusters": num_clusters,
-                "cluster_sizes": cluster_sizes,
-                "total_traces": log.traces.len(),
-                "iterations": iteration,
-            }))
+                "cluster_sizes": [],
+                "total_traces": 0,
+            }));
+        }
+
+        let num_clusters = num_clusters.min(log.traces.len());
+
+        // Encode all traces as bitsets: O(T×A) but amortized O(T) after index build
+        let (bitsets, _activity_index) = encode_traces_as_bitsets(log, activity_key);
+
+        let mut cluster_centers: Vec<u128> = vec![0u128; num_clusters];
+        let mut clusters: Vec<Vec<usize>> = vec![Vec::new(); num_clusters];
+
+        // Initialize centers from first K traces
+        cluster_centers[..num_clusters].copy_from_slice(&bitsets[..num_clusters]);
+
+        // K-means: converge with bitset operations
+        let max_iterations = 10;
+        let mut converged = false;
+        let mut iteration = 0;
+
+        while !converged && iteration < max_iterations {
+            iteration += 1;
+            converged = true;
+
+            // Clear cluster assignments
+            for cluster in &mut clusters {
+                cluster.clear();
+            }
+
+            // Assignment: O(T×K) — integer bitwise ops, no String operations
+            for (trace_idx, &bitset) in bitsets.iter().enumerate() {
+                let mut best_cluster = 0;
+                let mut best_similarity = -1.0;
+
+                for (center_idx, &center) in cluster_centers.iter().enumerate() {
+                    let similarity = jaccard_bitset(bitset, center);
+                    if similarity > best_similarity {
+                        best_similarity = similarity;
+                        best_cluster = center_idx;
+                    }
+                }
+
+                clusters[best_cluster].push(trace_idx);
+            }
+
+            // Update centers using majority voting: O(K×128) = O(K)
+            for (center_idx, cluster_indices) in clusters.iter().enumerate() {
+                let new_center = recompute_center(cluster_indices, &bitsets);
+                if new_center != cluster_centers[center_idx] {
+                    converged = false;
+                }
+                cluster_centers[center_idx] = new_center;
+            }
+        }
+
+        // Build result
+        let cluster_sizes: Vec<_> = clusters
+            .iter()
+            .enumerate()
+            .map(|(idx, cluster)| {
+                json!({
+                    "cluster": idx,
+                    "size": cluster.len(),
+                    "percentage": (cluster.len() as f64 / log.traces.len() as f64 * 100.0)
+                })
+            })
+            .collect();
+
+        to_js_str(&json!({
+            "num_clusters": num_clusters,
+            "cluster_sizes": cluster_sizes,
+            "total_traces": log.traces.len(),
+            "iterations": iteration,
+        }))
     })
 }
 
@@ -688,50 +688,50 @@ pub fn analyze_activity_cooccurrence(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut cooccurrence: FxHashMap<(String, String), usize> = FxHashMap::default();
+        let mut cooccurrence: FxHashMap<(String, String), usize> = FxHashMap::default();
 
-            for trace in &log.traces {
-                let activities: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)?
-                            .as_string()
-                            .map(str::to_owned)
-                    })
-                    .collect();
-
-                for i in 0..activities.len() {
-                    for j in i + 1..activities.len() {
-                        let pair = if activities[i] < activities[j] {
-                            (activities[i].clone(), activities[j].clone())
-                        } else {
-                            (activities[j].clone(), activities[i].clone())
-                        };
-                        *cooccurrence.entry(pair).or_default() += 1;
-                    }
-                }
-            }
-
-            let mut pairs: Vec<_> = cooccurrence.into_iter().collect();
-            pairs.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-
-            let result: Vec<_> = pairs
+        for trace in &log.traces {
+            let activities: Vec<String> = trace
+                .events
                 .iter()
-                .take(30)
-                .map(|((a1, a2), count)| {
-                    json!({
-                        "activity1": a1,
-                        "activity2": a2,
-                        "cooccurrence_count": count
-                    })
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)?
+                        .as_string()
+                        .map(str::to_owned)
                 })
                 .collect();
 
-            to_js_str(&json!({
-                "cooccurrences": result,
-            }))
+            for i in 0..activities.len() {
+                for j in i + 1..activities.len() {
+                    let pair = if activities[i] < activities[j] {
+                        (activities[i].clone(), activities[j].clone())
+                    } else {
+                        (activities[j].clone(), activities[i].clone())
+                    };
+                    *cooccurrence.entry(pair).or_default() += 1;
+                }
+            }
+        }
+
+        let mut pairs: Vec<_> = cooccurrence.into_iter().collect();
+        pairs.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+
+        let result: Vec<_> = pairs
+            .iter()
+            .take(30)
+            .map(|((a1, a2), count)| {
+                json!({
+                    "activity1": a1,
+                    "activity2": a2,
+                    "cooccurrence_count": count
+                })
+            })
+            .collect();
+
+        to_js_str(&json!({
+            "cooccurrences": result,
+        }))
     })
 }
 

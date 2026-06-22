@@ -102,47 +102,47 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
     // discover_dfg_from_log builds its own columnar view internally, so we only
     // need a shared reference, not an owned copy.
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let log_size = log.traces.len();
+        let log_size = log.traces.len();
 
-            tracing::info!(
-                target: "wasm4pm.discovery.dfg",
-                algorithm = "dfg",
-                log_size = log_size,
-                activity_key = activity_key,
-                "DFG discovery started"
-            );
+        tracing::info!(
+            target: "wasm4pm.discovery.dfg",
+            algorithm = "dfg",
+            log_size = log_size,
+            activity_key = activity_key,
+            "DFG discovery started"
+        );
 
-            let admitted =
-                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-            let dfg = discover_dfg_from_log(&admitted, activity_key);
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+        let dfg = discover_dfg_from_log(&admitted, activity_key);
 
-            // Derive activity_count from the already-built DFG nodes — avoids
-            // a second full columnar pass that was previously done by get_activities().
-            let node_count = dfg.nodes.len();
-            let edge_count = dfg.edges.len();
-            let complexity = if node_count > 0 {
-                edge_count as f64 / node_count as f64
-            } else {
-                0.0
-            };
+        // Derive activity_count from the already-built DFG nodes — avoids
+        // a second full columnar pass that was previously done by get_activities().
+        let node_count = dfg.nodes.len();
+        let edge_count = dfg.edges.len();
+        let complexity = if node_count > 0 {
+            edge_count as f64 / node_count as f64
+        } else {
+            0.0
+        };
 
-            tracing::info!(
-                target: "wasm4pm.discovery.dfg",
-                checkpoint = "feature_extraction",
-                activity_count = node_count,
-                "Activity vocabulary extracted"
-            );
+        tracing::info!(
+            target: "wasm4pm.discovery.dfg",
+            checkpoint = "feature_extraction",
+            activity_count = node_count,
+            "Activity vocabulary extracted"
+        );
 
-            tracing::info!(
-                target: "wasm4pm.discovery.dfg",
-                checkpoint = "result_generation",
-                node_count = node_count,
-                edge_count = edge_count,
-                complexity = complexity,
-                "DFG discovery completed"
-            );
+        tracing::info!(
+            target: "wasm4pm.discovery.dfg",
+            checkpoint = "result_generation",
+            node_count = node_count,
+            edge_count = edge_count,
+            complexity = complexity,
+            "DFG discovery completed"
+        );
 
-            to_js_str(&dfg)
+        to_js_str(&dfg)
     })
 }
 
@@ -232,8 +232,8 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
 #[wasm_bindgen]
 pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_ocel(ocel_handle, |ocel| {
-            let dfg = discover_ocel_dfg_pure(ocel);
-            to_js_str(&dfg)
+        let dfg = discover_ocel_dfg_pure(ocel);
+        to_js_str(&dfg)
     })
 }
 
@@ -251,132 +251,131 @@ fn bitmask_check(mask: u64, id: usize) -> bool {
 #[wasm_bindgen]
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_ocel(ocel_handle, |ocel| {
-            let mut result: std::collections::BTreeMap<String, DFG> = std::collections::BTreeMap::new();
+        let mut result: std::collections::BTreeMap<String, DFG> = std::collections::BTreeMap::new();
 
-            // Build sorted activity vocabulary for stable index assignment
-            let mut activity_vocab: Vec<String> = {
-                let mut seen: FxHashSet<&str> = FxHashSet::default();
-                ocel.events
-                    .iter()
-                    .filter_map(|e| {
-                        if seen.insert(e.event_type.as_str()) {
-                            Some(e.event_type.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect()
-            };
-            activity_vocab.sort_unstable();
-            let activity_count = activity_vocab.len();
-
-            // Reverse lookup: activity name → index (used by bitmask fast path)
-            let activity_index: FxHashMap<&str, usize> = activity_vocab
+        // Build sorted activity vocabulary for stable index assignment
+        let mut activity_vocab: Vec<String> = {
+            let mut seen: FxHashSet<&str> = FxHashSet::default();
+            ocel.events
                 .iter()
-                .enumerate()
-                .map(|(i, s)| (s.as_str(), i))
-                .collect();
-
-            let use_bitmask = activity_count <= 64;
-
-            // Fix C: pre-compute global activity frequencies once, outside the per-type loop
-            let global_activity_counts: FxHashMap<String, usize> = {
-                let mut m: FxHashMap<String, usize> = FxHashMap::default();
-                for event in &ocel.events {
-                    *m.entry(event.event_type.clone()).or_default() += 1;
-                }
-                m
-            };
-
-            // For each object type, discover a separate DFG
-            for obj_type in &ocel.object_types {
-                let mut dfg = DFG::new();
-
-                for name in &activity_vocab {
-                    dfg.nodes.push(DFGNode {
-                        id: name.clone(),
-                        label: name.clone(),
-                        frequency: 0,
-                    });
-                }
-
-                // Get all events for objects of this type
-                let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> =
-                    FxHashMap::default();
-                for obj in &ocel.objects {
-                    if &obj.object_type == obj_type {
-                        events_by_object.insert(obj.id.clone(), Vec::new());
+                .filter_map(|e| {
+                    if seen.insert(e.event_type.as_str()) {
+                        Some(e.event_type.clone())
+                    } else {
+                        None
                     }
-                }
+                })
+                .collect()
+        };
+        activity_vocab.sort_unstable();
+        let activity_count = activity_vocab.len();
 
-                // Collect events for each object of this type
-                for (idx, event) in ocel.events.iter().enumerate() {
-                    for obj_id in event.all_object_ids() {
-                        if let Some(events) = events_by_object.get_mut(obj_id) {
-                            events.push((idx, event.event_type.as_str()));
-                        }
-                    }
-                }
+        // Reverse lookup: activity name → index (used by bitmask fast path)
+        let activity_index: FxHashMap<&str, usize> = activity_vocab
+            .iter()
+            .enumerate()
+            .map(|(i, s)| (s.as_str(), i))
+            .collect();
 
-                // Sort events by timestamp (ISO 8601 sorts lexicographically without parsing).
-                // sort_unstable_by with str comparison avoids a String allocation per comparison.
-                for events in events_by_object.values_mut() {
-                    events.sort_unstable_by(|(ai, _), (bi, _)| {
-                        ocel.events[*ai]
-                            .timestamp
-                            .as_str()
-                            .cmp(ocel.events[*bi].timestamp.as_str())
-                    });
-                }
+        let use_bitmask = activity_count <= 64;
 
-                // Fix C: use pre-computed global activity frequencies
-                for node in &mut dfg.nodes {
-                    if let Some(count) = global_activity_counts.get(&node.id) {
-                        node.frequency = *count;
-                    }
-                }
+        // Fix C: pre-compute global activity frequencies once, outside the per-type loop
+        let global_activity_counts: FxHashMap<String, usize> = {
+            let mut m: FxHashMap<String, usize> = FxHashMap::default();
+            for event in &ocel.events {
+                *m.entry(event.event_type.clone()).or_default() += 1;
+            }
+            m
+        };
 
-                // Use &str keys to avoid one String allocation per DF pair in the hot loop.
-                let mut edge_map: FxHashMap<(&str, &str), usize> = FxHashMap::default();
-                for events in events_by_object.values() {
-                    for pair in events.windows(2) {
-                        let from = pair[0].1;
-                        let to = pair[1].1;
-                        *edge_map.entry((from, to)).or_default() += 1;
-                    }
-                }
-                for ((from, to), freq) in edge_map {
-                    dfg.edges.push(DirectlyFollowsRelation {
-                        from: from.to_owned(),
-                        to: to.to_owned(),
-                        frequency: freq,
-                    });
-                }
+        // For each object type, discover a separate DFG
+        for obj_type in &ocel.object_types {
+            let mut dfg = DFG::new();
 
-                // Collect start/end activities (now correctly using events_by_object.keys())
-                let mut trace_seen_bitmask: u64 = 0u64;
-                for obj_id in events_by_object.keys() {
-                    if let Some(events) = events_by_object.get(obj_id) {
-                        if let Some(first) = events.first() {
-                            *dfg.start_activities.entry(first.1.to_string()).or_default() += 1;
-                            if use_bitmask {
-                                if let Some(&id) = activity_index.get(first.1) {
-                                    bitmask_mark(&mut trace_seen_bitmask, id);
-                                }
-                            }
-                        }
-                        if let Some(last) = events.last() {
-                            *dfg.end_activities.entry(last.1.to_string()).or_default() += 1;
-                        }
-                    }
-                }
-                let _ = (trace_seen_bitmask, bitmask_check);
-
-                result.insert(obj_type.clone(), dfg);
+            for name in &activity_vocab {
+                dfg.nodes.push(DFGNode {
+                    id: name.clone(),
+                    label: name.clone(),
+                    frequency: 0,
+                });
             }
 
-            // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
-            to_js_str(&result)
+            // Get all events for objects of this type
+            let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
+            for obj in &ocel.objects {
+                if &obj.object_type == obj_type {
+                    events_by_object.insert(obj.id.clone(), Vec::new());
+                }
+            }
+
+            // Collect events for each object of this type
+            for (idx, event) in ocel.events.iter().enumerate() {
+                for obj_id in event.all_object_ids() {
+                    if let Some(events) = events_by_object.get_mut(obj_id) {
+                        events.push((idx, event.event_type.as_str()));
+                    }
+                }
+            }
+
+            // Sort events by timestamp (ISO 8601 sorts lexicographically without parsing).
+            // sort_unstable_by with str comparison avoids a String allocation per comparison.
+            for events in events_by_object.values_mut() {
+                events.sort_unstable_by(|(ai, _), (bi, _)| {
+                    ocel.events[*ai]
+                        .timestamp
+                        .as_str()
+                        .cmp(ocel.events[*bi].timestamp.as_str())
+                });
+            }
+
+            // Fix C: use pre-computed global activity frequencies
+            for node in &mut dfg.nodes {
+                if let Some(count) = global_activity_counts.get(&node.id) {
+                    node.frequency = *count;
+                }
+            }
+
+            // Use &str keys to avoid one String allocation per DF pair in the hot loop.
+            let mut edge_map: FxHashMap<(&str, &str), usize> = FxHashMap::default();
+            for events in events_by_object.values() {
+                for pair in events.windows(2) {
+                    let from = pair[0].1;
+                    let to = pair[1].1;
+                    *edge_map.entry((from, to)).or_default() += 1;
+                }
+            }
+            for ((from, to), freq) in edge_map {
+                dfg.edges.push(DirectlyFollowsRelation {
+                    from: from.to_owned(),
+                    to: to.to_owned(),
+                    frequency: freq,
+                });
+            }
+
+            // Collect start/end activities (now correctly using events_by_object.keys())
+            let mut trace_seen_bitmask: u64 = 0u64;
+            for obj_id in events_by_object.keys() {
+                if let Some(events) = events_by_object.get(obj_id) {
+                    if let Some(first) = events.first() {
+                        *dfg.start_activities.entry(first.1.to_string()).or_default() += 1;
+                        if use_bitmask {
+                            if let Some(&id) = activity_index.get(first.1) {
+                                bitmask_mark(&mut trace_seen_bitmask, id);
+                            }
+                        }
+                    }
+                    if let Some(last) = events.last() {
+                        *dfg.end_activities.entry(last.1.to_string()).or_default() += 1;
+                    }
+                }
+            }
+            let _ = (trace_seen_bitmask, bitmask_check);
+
+            result.insert(obj_type.clone(), dfg);
+        }
+
+        // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
+        to_js_str(&result)
     })
 }
 
@@ -445,248 +444,227 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
     );
 
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-            let mut model = DeclareModel::new();
+        let mut model = DeclareModel::new();
 
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-            let n = col.vocab.len();
-            let total_cases = col.trace_offsets.len().saturating_sub(1);
+        let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+            .unwrap_or_else(|| {
+                let owned = log.to_columnar_owned(activity_key);
+                crate::cache::columnar_cache_insert(
+                    eventlog_handle.to_string(),
+                    activity_key.to_string(),
+                    owned.clone(),
+                );
+                owned
+            });
+        let col = ColumnarLog::from_owned(&col_owned);
+        let n = col.vocab.len();
+        let total_cases = col.trace_offsets.len().saturating_sub(1);
 
+        tracing::info!(
+            target: "wasm4pm.discovery.declare",
+            checkpoint = "feature_extraction",
+            activity_count = n,
+            trace_count = total_cases,
+            "Activity vocabulary and case counts extracted"
+        );
+
+        model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
+
+        if n == 0 || total_cases == 0 {
             tracing::info!(
                 target: "wasm4pm.discovery.declare",
-                checkpoint = "feature_extraction",
+                checkpoint = "empty_log",
                 activity_count = n,
                 trace_count = total_cases,
-                "Activity vocabulary and case counts extracted"
+                "Empty log detected"
             );
+            return to_js_str(&model);
+        }
 
-            model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
-
-            if n == 0 || total_cases == 0 {
-                tracing::info!(
-                    target: "wasm4pm.discovery.declare",
-                    checkpoint = "empty_log",
-                    activity_count = n,
-                    trace_count = total_cases,
-                    "Empty log detected"
-                );
-                return to_js_str(&model);
-            }
-
-            // Phase 1: Build TraceProfile for each trace
-            let mut traces_profiles: Vec<TraceProfile> = Vec::with_capacity(total_cases);
-            for t in 0..total_cases {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                let mut profile = TraceProfile::new(n);
-                if start < end {
-                    for pos in 0..(end - start) {
-                        let activity_id = col.events[start + pos];
-                        profile.mark_activity(activity_id as usize, pos);
-                        if pos < (end - start - 1) {
-                            profile
-                                .immediate_follows
-                                .insert((activity_id, col.events[start + pos + 1]));
-                        }
-                    }
-                }
-                traces_profiles.push(profile);
-            }
-
-            tracing::info!(
-                target: "wasm4pm.discovery.declare",
-                checkpoint = "profile_building",
-                profiles_count = traces_profiles.len(),
-                "Trace profiles built"
-            );
-
-            // Phase 2: Iterate over activity pairs and count template matches
-            let mut activity_counts = vec![0u32; n];
-            for profile in &traces_profiles {
-                for (a, count) in activity_counts.iter_mut().enumerate() {
-                    if profile.first_positions[a] != usize::MAX {
-                        *count += 1;
+        // Phase 1: Build TraceProfile for each trace
+        let mut traces_profiles: Vec<TraceProfile> = Vec::with_capacity(total_cases);
+        for t in 0..total_cases {
+            let start = col.trace_offsets[t];
+            let end = col.trace_offsets[t + 1];
+            let mut profile = TraceProfile::new(n);
+            if start < end {
+                for pos in 0..(end - start) {
+                    let activity_id = col.events[start + pos];
+                    profile.mark_activity(activity_id as usize, pos);
+                    if pos < (end - start - 1) {
+                        profile
+                            .immediate_follows
+                            .insert((activity_id, col.events[start + pos + 1]));
                     }
                 }
             }
+            traces_profiles.push(profile);
+        }
 
-            let total_f64 = total_cases as f64;
-            let min_support = 0.1;
-            let min_confidence = 0.8;
+        tracing::info!(
+            target: "wasm4pm.discovery.declare",
+            checkpoint = "profile_building",
+            profiles_count = traces_profiles.len(),
+            "Trace profiles built"
+        );
 
-            for a in 0..n {
-                let support = activity_counts[a] as f64 / total_f64;
-                if support >= min_support {
-                    model.constraints.push(DeclareConstraint {
-                        template: "Existence".to_string(),
-                        activities: vec![col.vocab[a].to_string()],
-                        support,
-                        confidence: 1.0,
-                    });
-                } else if (1.0 - support) >= min_support {
-                    model.constraints.push(DeclareConstraint {
-                        template: "Absence".to_string(),
-                        activities: vec![col.vocab[a].to_string()],
-                        support: 1.0 - support,
-                        confidence: 1.0,
-                    });
+        // Phase 2: Iterate over activity pairs and count template matches
+        let mut activity_counts = vec![0u32; n];
+        for profile in &traces_profiles {
+            for (a, count) in activity_counts.iter_mut().enumerate() {
+                if profile.first_positions[a] != usize::MAX {
+                    *count += 1;
+                }
+            }
+        }
+
+        let total_f64 = total_cases as f64;
+        let min_support = 0.1;
+        let min_confidence = 0.8;
+
+        for a in 0..n {
+            let support = activity_counts[a] as f64 / total_f64;
+            if support >= min_support {
+                model.constraints.push(DeclareConstraint {
+                    template: "Existence".to_string(),
+                    activities: vec![col.vocab[a].to_string()],
+                    support,
+                    confidence: 1.0,
+                });
+            } else if (1.0 - support) >= min_support {
+                model.constraints.push(DeclareConstraint {
+                    template: "Absence".to_string(),
+                    activities: vec![col.vocab[a].to_string()],
+                    support: 1.0 - support,
+                    confidence: 1.0,
+                });
+            }
+
+            for b in 0..n {
+                if a == b {
+                    continue;
                 }
 
-                for b in 0..n {
-                    if a == b {
-                        continue;
-                    }
+                let mut both_count = 0;
+                let mut a_before_b_count = 0;
+                let mut a_immediately_before_b_count = 0;
+                for profile in &traces_profiles {
+                    let has_a = profile.first_positions[a] != usize::MAX;
+                    let has_b = profile.first_positions[b] != usize::MAX;
 
-                    let mut both_count = 0;
-                    let mut a_before_b_count = 0;
-                    let mut a_immediately_before_b_count = 0;
-                    for profile in &traces_profiles {
-                        let has_a = profile.first_positions[a] != usize::MAX;
-                        let has_b = profile.first_positions[b] != usize::MAX;
-
-                        if has_a && has_b {
-                            both_count += 1;
-                            if profile.appears_before(a, b) {
-                                a_before_b_count += 1;
-                            }
-                            if profile.immediate_follows.contains(&(a as u32, b as u32)) {
-                                a_immediately_before_b_count += 1;
-                            }
+                    if has_a && has_b {
+                        both_count += 1;
+                        if profile.appears_before(a, b) {
+                            a_before_b_count += 1;
+                        }
+                        if profile.immediate_follows.contains(&(a as u32, b as u32)) {
+                            a_immediately_before_b_count += 1;
                         }
                     }
+                }
 
-                    // CoExistence
-                    if a < b {
-                        let coex_support = both_count as f64 / total_f64;
-                        if coex_support >= min_support {
-                            model.constraints.push(DeclareConstraint {
-                                template: "CoExistence".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: coex_support,
-                                confidence: 1.0,
-                            });
-                        }
-
-                        // NotCoExistence
-                        let not_coex_support = (total_cases - both_count) as f64 / total_f64;
-                        if not_coex_support >= 0.9 {
-                            model.constraints.push(DeclareConstraint {
-                                template: "NotCoExistence".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: not_coex_support,
-                                confidence: 1.0,
-                            });
-                        }
+                // CoExistence
+                if a < b {
+                    let coex_support = both_count as f64 / total_f64;
+                    if coex_support >= min_support {
+                        model.constraints.push(DeclareConstraint {
+                            template: "CoExistence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: coex_support,
+                            confidence: 1.0,
+                        });
                     }
 
-                    // Response: A -> eventually B
-                    if activity_counts[a] > 0 {
-                        let conf = a_before_b_count as f64 / activity_counts[a] as f64;
-                        if conf >= min_confidence {
-                            model.constraints.push(DeclareConstraint {
-                                template: "Response".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: a_before_b_count as f64 / total_f64,
-                                confidence: conf,
-                            });
-                        }
+                    // NotCoExistence
+                    let not_coex_support = (total_cases - both_count) as f64 / total_f64;
+                    if not_coex_support >= 0.9 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "NotCoExistence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: not_coex_support,
+                            confidence: 1.0,
+                        });
                     }
+                }
 
-                    // Precedence: B -> always preceded by A
-                    if activity_counts[b] > 0 {
-                        let conf = a_before_b_count as f64 / activity_counts[b] as f64;
-                        if conf >= min_confidence {
-                            model.constraints.push(DeclareConstraint {
-                                template: "Precedence".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: a_before_b_count as f64 / total_f64,
-                                confidence: conf,
-                            });
-                        }
+                // Response: A -> eventually B
+                if activity_counts[a] > 0 {
+                    let conf = a_before_b_count as f64 / activity_counts[a] as f64;
+                    if conf >= min_confidence {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Response".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: a_before_b_count as f64 / total_f64,
+                            confidence: conf,
+                        });
                     }
+                }
 
-                    // Succession: Response + Precedence
-                    if activity_counts[a] > 0 && activity_counts[b] > 0 {
-                        let conf_a = a_before_b_count as f64 / activity_counts[a] as f64;
-                        let conf_b = a_before_b_count as f64 / activity_counts[b] as f64;
-                        if conf_a >= min_confidence && conf_b >= min_confidence {
-                            model.constraints.push(DeclareConstraint {
-                                template: "Succession".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: a_before_b_count as f64 / total_f64,
-                                confidence: (conf_a + conf_b) / 2.0,
-                            });
-                        }
+                // Precedence: B -> always preceded by A
+                if activity_counts[b] > 0 {
+                    let conf = a_before_b_count as f64 / activity_counts[b] as f64;
+                    if conf >= min_confidence {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Precedence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: a_before_b_count as f64 / total_f64,
+                            confidence: conf,
+                        });
                     }
+                }
 
-                    // ChainResponse: A -> immediately B
-                    if activity_counts[a] > 0 {
-                        let conf = a_immediately_before_b_count as f64 / activity_counts[a] as f64;
-                        if conf >= min_confidence {
-                            model.constraints.push(DeclareConstraint {
-                                template: "ChainResponse".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: a_immediately_before_b_count as f64 / total_f64,
-                                confidence: conf,
-                            });
-                        }
+                // Succession: Response + Precedence
+                if activity_counts[a] > 0 && activity_counts[b] > 0 {
+                    let conf_a = a_before_b_count as f64 / activity_counts[a] as f64;
+                    let conf_b = a_before_b_count as f64 / activity_counts[b] as f64;
+                    if conf_a >= min_confidence && conf_b >= min_confidence {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Succession".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: a_before_b_count as f64 / total_f64,
+                            confidence: (conf_a + conf_b) / 2.0,
+                        });
                     }
+                }
 
-                    // ChainPrecedence: B -> always immediately preceded by A
-                    if activity_counts[b] > 0 {
-                        let conf = a_immediately_before_b_count as f64 / activity_counts[b] as f64;
-                        if conf >= min_confidence {
-                            model.constraints.push(DeclareConstraint {
-                                template: "ChainPrecedence".to_string(),
-                                activities: vec![
-                                    col.vocab[a].to_string(),
-                                    col.vocab[b].to_string(),
-                                ],
-                                support: a_immediately_before_b_count as f64 / total_f64,
-                                confidence: conf,
-                            });
-                        }
+                // ChainResponse: A -> immediately B
+                if activity_counts[a] > 0 {
+                    let conf = a_immediately_before_b_count as f64 / activity_counts[a] as f64;
+                    if conf >= min_confidence {
+                        model.constraints.push(DeclareConstraint {
+                            template: "ChainResponse".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: a_immediately_before_b_count as f64 / total_f64,
+                            confidence: conf,
+                        });
+                    }
+                }
+
+                // ChainPrecedence: B -> always immediately preceded by A
+                if activity_counts[b] > 0 {
+                    let conf = a_immediately_before_b_count as f64 / activity_counts[b] as f64;
+                    if conf >= min_confidence {
+                        model.constraints.push(DeclareConstraint {
+                            template: "ChainPrecedence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support: a_immediately_before_b_count as f64 / total_f64,
+                            confidence: conf,
+                        });
                     }
                 }
             }
+        }
 
-            let constraint_count = model.constraints.len();
-            tracing::info!(
-                target: "wasm4pm.discovery.declare",
-                checkpoint = "result_generation",
-                constraint_count = constraint_count,
-                activity_count = n,
-                "DECLARE discovery completed"
-            );
+        let constraint_count = model.constraints.len();
+        tracing::info!(
+            target: "wasm4pm.discovery.declare",
+            checkpoint = "result_generation",
+            constraint_count = constraint_count,
+            activity_count = n,
+            "DECLARE discovery completed"
+        );
 
-            to_js_str(&model)
+        to_js_str(&model)
     })
 }
 

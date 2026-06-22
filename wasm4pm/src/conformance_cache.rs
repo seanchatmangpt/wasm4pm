@@ -5,7 +5,6 @@
 //! which runs multiple algorithms against the same log, triggering repeated
 //! conformance checks on identical log+model pairs.
 
-
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -130,7 +129,6 @@ impl ConformanceCache {
         self.misses = 0;
     }
 }
-
 
 // ---------------------------------------------------------------------------
 // WASM bindings

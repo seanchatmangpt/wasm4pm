@@ -213,12 +213,18 @@ pub fn cache_stats() -> CacheStats {
 
 /// Look up a cached parsed log handle by XES content hash.
 pub fn parse_cache_get(content_hash: &str) -> Option<String> {
-    PARSE_CACHE.lock().expect("mutex poisoned").get(content_hash)
+    PARSE_CACHE
+        .lock()
+        .expect("mutex poisoned")
+        .get(content_hash)
 }
 
 /// Insert a parsed log handle into the parse cache.
 pub fn parse_cache_insert(content_hash: String, handle: String) {
-    PARSE_CACHE.lock().expect("mutex poisoned").insert(content_hash, handle);
+    PARSE_CACHE
+        .lock()
+        .expect("mutex poisoned")
+        .insert(content_hash, handle);
 }
 
 /// Look up a cached columnar log by `(log_handle, activity_key)`.
@@ -242,13 +248,20 @@ pub fn columnar_cache_insert(log_handle: String, activity_key: String, col: Owne
 /// Look up a cached interner by log handle.  Returns a clone.
 #[cfg(feature = "streaming_basic")]
 pub fn interner_cache_get(log_handle: &str) -> Option<Interner> {
-    INTERNER_CACHE.lock().expect("mutex poisoned").get(log_handle).cloned()
+    INTERNER_CACHE
+        .lock()
+        .expect("mutex poisoned")
+        .get(log_handle)
+        .cloned()
 }
 
 /// Insert an interner into the interner cache.
 #[cfg(feature = "streaming_basic")]
 pub fn interner_cache_insert(log_handle: String, interner: Interner) {
-    INTERNER_CACHE.lock().expect("mutex poisoned").insert(log_handle, interner);
+    INTERNER_CACHE
+        .lock()
+        .expect("mutex poisoned")
+        .insert(log_handle, interner);
 }
 
 // ---------------------------------------------------------------------------

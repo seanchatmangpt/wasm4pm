@@ -42,124 +42,124 @@ pub fn analyze_resource_utilization(
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
     let json = get_or_init_state().with_event_log(log_handle, |log| {
-            // Track per-resource info
-            let mut resource_events: HashMap<String, Vec<(usize, i64, String)>> = HashMap::new();
-            let mut resource_activities: HashMap<String, HashMap<String, usize>> = HashMap::new();
-            let mut case_active_times: Vec<(i64, i64)> = Vec::new(); // (start, end) per case
+        // Track per-resource info
+        let mut resource_events: HashMap<String, Vec<(usize, i64, String)>> = HashMap::new();
+        let mut resource_activities: HashMap<String, HashMap<String, usize>> = HashMap::new();
+        let mut case_active_times: Vec<(i64, i64)> = Vec::new(); // (start, end) per case
 
-            // First pass: collect events per resource and case durations
-            for trace in &log.traces {
-                let mut case_start: Option<i64> = None;
-                let mut case_end: Option<i64> = None;
+        // First pass: collect events per resource and case durations
+        for trace in &log.traces {
+            let mut case_start: Option<i64> = None;
+            let mut case_end: Option<i64> = None;
 
-                for (event_idx, event) in trace.events.iter().enumerate() {
-                    if let Some(resource) = event
+            for (event_idx, event) in trace.events.iter().enumerate() {
+                if let Some(resource) = event
+                    .attributes
+                    .get(resource_key)
+                    .and_then(|v| v.as_string())
+                {
+                    if let Some(timestamp_str) = event
                         .attributes
-                        .get(resource_key)
+                        .get(timestamp_key)
                         .and_then(|v| v.as_string())
                     {
-                        if let Some(timestamp_str) = event
-                            .attributes
-                            .get(timestamp_key)
-                            .and_then(|v| v.as_string())
-                        {
-                            if let Some(ts_ms) = parse_timestamp_ms(timestamp_str) {
-                                resource_events
+                        if let Some(ts_ms) = parse_timestamp_ms(timestamp_str) {
+                            resource_events
+                                .entry(resource.to_string())
+                                .or_default()
+                                .push((event_idx, ts_ms, String::new()));
+
+                            // Track case duration
+                            if case_start.is_none() {
+                                case_start = Some(ts_ms);
+                            }
+                            case_end = Some(ts_ms);
+
+                            // Track activities per resource
+                            if let Some(activity) = event
+                                .attributes
+                                .get("concept:name")
+                                .and_then(|v| v.as_string())
+                            {
+                                *resource_activities
                                     .entry(resource.to_string())
                                     .or_default()
-                                    .push((event_idx, ts_ms, String::new()));
-
-                                // Track case duration
-                                if case_start.is_none() {
-                                    case_start = Some(ts_ms);
-                                }
-                                case_end = Some(ts_ms);
-
-                                // Track activities per resource
-                                if let Some(activity) = event
-                                    .attributes
-                                    .get("concept:name")
-                                    .and_then(|v| v.as_string())
-                                {
-                                    *resource_activities
-                                        .entry(resource.to_string())
-                                        .or_default()
-                                        .entry(activity.to_string())
-                                        .or_default() += 1;
-                                }
+                                    .entry(activity.to_string())
+                                    .or_default() += 1;
                             }
                         }
                     }
                 }
-
-                // Record case duration
-                if let (Some(start), Some(end)) = (case_start, case_end) {
-                    case_active_times.push((start, end));
-                }
             }
 
-            // Second pass: compute resource metrics
-            let mut resources_obj: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+            // Record case duration
+            if let (Some(start), Some(end)) = (case_start, case_end) {
+                case_active_times.push((start, end));
+            }
+        }
 
-            for (resource, events) in &resource_events {
-                if events.is_empty() {
-                    continue;
-                }
+        // Second pass: compute resource metrics
+        let mut resources_obj: BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
-                let event_count = events.len();
+        for (resource, events) in &resource_events {
+            if events.is_empty() {
+                continue;
+            }
 
-                // Get first and last event timestamps
-                let min_ts = events.iter().map(|e| e.1).min().ok_or_else(|| {
-                    crate::error::js_val(&format!("No events found for resource {}", resource))
-                })?;
-                let max_ts = events.iter().map(|e| e.1).max().ok_or_else(|| {
-                    crate::error::js_val(&format!("No events found for resource {}", resource))
-                })?;
+            let event_count = events.len();
 
-                // Format timestamps
-                let first_event = format_timestamp(min_ts);
-                let last_event = format_timestamp(max_ts);
+            // Get first and last event timestamps
+            let min_ts = events.iter().map(|e| e.1).min().ok_or_else(|| {
+                crate::error::js_val(&format!("No events found for resource {}", resource))
+            })?;
+            let max_ts = events.iter().map(|e| e.1).max().ok_or_else(|| {
+                crate::error::js_val(&format!("No events found for resource {}", resource))
+            })?;
 
-                // Compute average concurrent cases during this resource's active time
-                let mut concurrent_cases_count = 0.0;
-                if !case_active_times.is_empty() {
-                    for (case_start, case_end) in &case_active_times {
-                        for (res_start, res_end) in &case_active_times {
-                            if case_start <= res_end && case_end >= res_start {
-                                concurrent_cases_count += 1.0;
-                            }
+            // Format timestamps
+            let first_event = format_timestamp(min_ts);
+            let last_event = format_timestamp(max_ts);
+
+            // Compute average concurrent cases during this resource's active time
+            let mut concurrent_cases_count = 0.0;
+            if !case_active_times.is_empty() {
+                for (case_start, case_end) in &case_active_times {
+                    for (res_start, res_end) in &case_active_times {
+                        if case_start <= res_end && case_end >= res_start {
+                            concurrent_cases_count += 1.0;
                         }
                     }
-                    concurrent_cases_count /= case_active_times.len() as f64;
                 }
-                let avg_concurrent = concurrent_cases_count;
-
-                // Get top 2 activities
-                let mut activities: Vec<_> = resource_activities
-                    .get(resource)
-                    .map(|acts| acts.iter().collect())
-                    .unwrap_or_default();
-                activities.sort_by(|a, b| b.1.cmp(a.1));
-                let top_activities: Vec<&String> = activities.iter().take(2).map(|a| a.0).collect();
-
-                let resource_info = json!({
-                    "event_count": event_count,
-                    "first_event": first_event,
-                    "last_event": last_event,
-                    "avg_concurrent_cases": (avg_concurrent * 10.0).round() / 10.0,
-                    "top_activities": top_activities
-                });
-
-                resources_obj.insert(resource.clone(), resource_info);
+                concurrent_cases_count /= case_active_times.len() as f64;
             }
+            let avg_concurrent = concurrent_cases_count;
 
-            let total_resources = resources_obj.len();
+            // Get top 2 activities
+            let mut activities: Vec<_> = resource_activities
+                .get(resource)
+                .map(|acts| acts.iter().collect())
+                .unwrap_or_default();
+            activities.sort_by(|a, b| b.1.cmp(a.1));
+            let top_activities: Vec<&String> = activities.iter().take(2).map(|a| a.0).collect();
 
-            serde_json::to_string(&json!({
-                "resources": resources_obj,
-                "total_resources": total_resources
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
+            let resource_info = json!({
+                "event_count": event_count,
+                "first_event": first_event,
+                "last_event": last_event,
+                "avg_concurrent_cases": (avg_concurrent * 10.0).round() / 10.0,
+                "top_activities": top_activities
+            });
+
+            resources_obj.insert(resource.clone(), resource_info);
+        }
+
+        let total_resources = resources_obj.len();
+
+        serde_json::to_string(&json!({
+            "resources": resources_obj,
+            "total_resources": total_resources
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&json))
@@ -188,51 +188,51 @@ pub fn analyze_resource_activity_matrix(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let json = get_or_init_state().with_event_log(log_handle, |log| {
-            let mut matrix: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
-            let mut resource_totals: HashMap<String, usize> = HashMap::new();
+        let mut matrix: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
+        let mut resource_totals: HashMap<String, usize> = HashMap::new();
 
-            // Build resource-activity matrix
-            for trace in &log.traces {
-                for event in &trace.events {
-                    if let Some(resource) = event
+        // Build resource-activity matrix
+        for trace in &log.traces {
+            for event in &trace.events {
+                if let Some(resource) = event
+                    .attributes
+                    .get(resource_key)
+                    .and_then(|v| v.as_string())
+                {
+                    if let Some(activity) = event
                         .attributes
-                        .get(resource_key)
+                        .get(activity_key)
                         .and_then(|v| v.as_string())
                     {
-                        if let Some(activity) = event
-                            .attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                        {
-                            let res_entry = matrix.entry(resource.to_string()).or_default();
-                            *res_entry.entry(activity.to_string()).or_default() += 1;
-                            *resource_totals.entry(resource.to_string()).or_default() += 1;
-                        }
+                        let res_entry = matrix.entry(resource.to_string()).or_default();
+                        *res_entry.entry(activity.to_string()).or_default() += 1;
+                        *resource_totals.entry(resource.to_string()).or_default() += 1;
                     }
                 }
             }
+        }
 
-            // Compute specialization scores using Herfindahl index
-            let mut specialization_scores: BTreeMap<String, f64> = BTreeMap::new();
-            for (resource, activities) in &matrix {
-                let total = resource_totals.get(resource).copied().unwrap_or(1) as f64;
-                let herfindahl: f64 = activities
-                    .values()
-                    .map(|count| {
-                        let prop = *count as f64 / total;
-                        prop * prop
-                    })
-                    .sum();
-                specialization_scores.insert(resource.clone(), herfindahl);
-            }
+        // Compute specialization scores using Herfindahl index
+        let mut specialization_scores: BTreeMap<String, f64> = BTreeMap::new();
+        for (resource, activities) in &matrix {
+            let total = resource_totals.get(resource).copied().unwrap_or(1) as f64;
+            let herfindahl: f64 = activities
+                .values()
+                .map(|count| {
+                    let prop = *count as f64 / total;
+                    prop * prop
+                })
+                .sum();
+            specialization_scores.insert(resource.clone(), herfindahl);
+        }
 
-            let matrix_obj = matrix;
+        let matrix_obj = matrix;
 
-            serde_json::to_string(&json!({
-                "matrix": matrix_obj,
-                "specialization_scores": specialization_scores
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
+        serde_json::to_string(&json!({
+            "matrix": matrix_obj,
+            "specialization_scores": specialization_scores
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
     })?;
 
     Ok(crate::error::js_val(&json))
