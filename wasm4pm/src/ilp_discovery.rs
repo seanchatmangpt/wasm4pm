@@ -134,11 +134,10 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
                 let b = outputs[i];
                 let c = outputs[j];
                 if parallel_pairs.contains(&(b, c)) {
-                    let mut out = vec![b, c];
-                    out.sort_unstable();
+                    let (lo, hi) = if b <= c { (b, c) } else { (c, b) };
                     candidates.push(CandidatePlace {
                         input_acts: vec![a],
-                        output_acts: out,
+                        output_acts: vec![lo, hi],
                     });
                 }
             }
@@ -156,10 +155,9 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
                 let a = inputs[i];
                 let b = inputs[j];
                 if parallel_pairs.contains(&(a, b)) {
-                    let mut inp = vec![a, b];
-                    inp.sort_unstable();
+                    let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
                     candidates.push(CandidatePlace {
-                        input_acts: inp,
+                        input_acts: vec![lo, hi],
                         output_acts: vec![c],
                     });
                 }
