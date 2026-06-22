@@ -78,10 +78,10 @@ pub fn discover_handover_network(log_handle: &str, resource_key: &str) -> Result
 pub fn discover_working_together_network_from_log(log: &EventLog, resource_key: &str) -> String {
     let mut co_occur: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
-        let resources: std::collections::HashSet<String> = trace
+        let resources: std::collections::BTreeSet<String> = trace
             .events
             .iter()
             .filter_map(|e| {
@@ -96,8 +96,7 @@ pub fn discover_working_together_network_from_log(log: &EventLog, resource_key: 
             all_resources.insert(r.clone());
         }
 
-        let mut sorted: Vec<&String> = resources.iter().collect();
-        sorted.sort();
+        let sorted: Vec<&String> = resources.iter().collect();
         for i in 0..sorted.len() {
             for j in i + 1..sorted.len() {
                 let key = (sorted[i].clone(), sorted[j].clone());
@@ -151,7 +150,7 @@ pub fn compute_network_metrics(log_handle: &str, resource_key: &str) -> Result<J
     // Build network from handover relationships
     let mut handovers: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
         let resources: Vec<Option<String>> = trace
@@ -229,10 +228,10 @@ pub fn compute_clustering_coefficient(
     // Build network from working-together relationships
     let mut co_occur: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
-        let resources: std::collections::HashSet<String> = trace
+        let resources: std::collections::BTreeSet<String> = trace
             .events
             .iter()
             .filter_map(|e| {
@@ -247,8 +246,7 @@ pub fn compute_clustering_coefficient(
             all_resources.insert(r.clone());
         }
 
-        let mut sorted: Vec<String> = resources.into_iter().collect();
-        sorted.sort();
+        let sorted: Vec<String> = resources.into_iter().collect();
         for i in 0..sorted.len() {
             for j in i + 1..sorted.len() {
                 let key = (sorted[i].clone(), sorted[j].clone());
@@ -301,10 +299,10 @@ pub fn detect_communities(log_handle: &str, resource_key: &str) -> Result<JsValu
     // Build network from working-together relationships
     let mut co_occur: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
-        let resources: std::collections::HashSet<String> = trace
+        let resources: std::collections::BTreeSet<String> = trace
             .events
             .iter()
             .filter_map(|e| {
@@ -319,8 +317,7 @@ pub fn detect_communities(log_handle: &str, resource_key: &str) -> Result<JsValu
             all_resources.insert(r.clone());
         }
 
-        let mut sorted: Vec<String> = resources.into_iter().collect();
-        sorted.sort();
+        let sorted: Vec<String> = resources.into_iter().collect();
         for i in 0..sorted.len() {
             for j in i + 1..sorted.len() {
                 let key = (sorted[i].clone(), sorted[j].clone());
