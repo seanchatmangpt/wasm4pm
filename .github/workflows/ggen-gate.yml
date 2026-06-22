@@ -91,7 +91,7 @@ jobs:
           toolchain: stable
 
       - name: Cache cargo-installed binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cargo/bin/ggen
           key: ggen-bin-${{ runner.os }}-git-555f857ac5dc
