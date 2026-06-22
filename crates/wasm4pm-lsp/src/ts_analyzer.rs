@@ -143,7 +143,7 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
             let quote = marker.chars().last().unwrap();
             if let Some(end_idx) = remainder.find(quote) {
                 let val = &remainder[..end_idx];
-                if val.len() > 0 && val.len() < 64 && !val.contains("${") {
+                if !val.is_empty() && val.len() < 64 && !val.contains("${") {
                     issues.push(ConformanceIssue {
                         severity: "ERROR".to_string(),
                         code: "STRUCTURAL-FAKERY-R2".to_string(),

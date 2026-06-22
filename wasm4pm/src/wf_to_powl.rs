@@ -1356,9 +1356,7 @@ fn cg_dfs(
                     result,
                 );
             }
-            for _ in 0..added {
-                prefix.pop();
-            }
+            prefix.truncate(prefix.len() - added);
         }
     } else {
         // artificial start node: just traverse.

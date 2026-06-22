@@ -207,9 +207,7 @@ impl BinaryRelation {
             self.row_words = new_row_words;
             self.words = new_words;
         } else {
-            for _ in 0..new_row_words {
-                self.words.push(0u64);
-            }
+            self.words.resize(self.words.len() + new_row_words, 0u64);
         }
         self.n = new_n;
         self.n - 1
