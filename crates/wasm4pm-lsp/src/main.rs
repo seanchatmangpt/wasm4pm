@@ -605,7 +605,7 @@ impl Backend {
             .config
             .read()
             .ok()
-            .map(|g| g.clone())
+            .cloned()
             .unwrap_or_default();
 
         let path_str = uri.path().as_str().to_string();
@@ -2087,7 +2087,7 @@ impl lsp_max::LanguageServer for Backend {
             .config
             .read()
             .ok()
-            .map(|g| g.clone())
+            .cloned()
             .unwrap_or_default();
         if uri.path().as_str().ends_with(".ocel.json") && cfg.membrane.enabled {
             let issues = analyze_ocel(&text);
@@ -2970,7 +2970,7 @@ impl lsp_max::LanguageServer for Backend {
             .config
             .read()
             .ok()
-            .map(|g| g.clone())
+            .cloned()
             .unwrap_or_default();
         let ocpn = match cfg.model.ocpn_model {
             Some(m) => m,
@@ -3101,7 +3101,7 @@ impl lsp_max::LanguageServer for Backend {
             .config
             .read()
             .ok()
-            .map(|g| g.clone())
+            .cloned()
             .unwrap_or_default();
 
         for entry in self.documents.iter() {
@@ -3375,7 +3375,7 @@ impl lsp_max::LanguageServer for Backend {
             .config
             .read()
             .ok()
-            .map(|g| g.clone())
+            .cloned()
             .unwrap_or_default();
         let ocpn = match cfg.model.ocpn_model {
             Some(m) => m,
