@@ -383,7 +383,7 @@ impl<'a> YawlExporter<'a> {
             let source_id = if idx == 0 {
                 input_id
             } else {
-                prev_task_id.as_ref().unwrap()
+                prev_task_id.as_ref().expect("invariant: idx > 0 guarantees prev_task_id was set in prior iteration")
             };
             let _ = write!(
                 xml,
