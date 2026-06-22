@@ -1,6 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// SAM (Script Applier Mechanism) breed (Schank 1977).
@@ -149,10 +150,10 @@ impl CognitionBreed for ScriptSam {
 
         // SAM carries the restaurant script built-in: if no scripts are
         // supplied in input.rules, fall back to the canonical inventory.
-        let scripts: Vec<crate::breeds::Rule> = if input.rules.is_empty() {
-            vec![Self::builtin_restaurant_script()]
+        let scripts: Cow<'_, [crate::breeds::Rule]> = if input.rules.is_empty() {
+            Cow::Owned(vec![Self::builtin_restaurant_script()])
         } else {
-            input.rules.clone()
+            Cow::Borrowed(&input.rules)
         };
 
         if observations.is_empty() {
@@ -172,7 +173,7 @@ impl CognitionBreed for ScriptSam {
         let mut best_alignment = None;
         let mut best_bindings = HashMap::new();
 
-        for script_rule in &scripts {
+        for script_rule in scripts.as_ref() {
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "script-selection".to_string(),
