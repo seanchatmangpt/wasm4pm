@@ -413,12 +413,6 @@ impl FusedMultiPass {
     }
 }
 
-impl Default for FusedMultiPass {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 // ============================================================================
 // Smart Engine — top-level boundary
 // ============================================================================

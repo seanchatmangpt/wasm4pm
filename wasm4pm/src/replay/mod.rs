@@ -107,7 +107,7 @@ impl LogEvent {
 /// Records the step-by-step execution of a process model during replay,
 /// including which transitions fired, which paths were taken, and where
 /// deviations occurred.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ReplayTrace {
     /// Sequence of fired transitions
     pub transitions: Vec<String>,
@@ -148,12 +148,6 @@ impl ReplayTrace {
     pub fn miss_activity(&mut self, activity: String) {
         self.missed_activities += 1;
         self.log.push(format!("Missed activity: {}", activity));
-    }
-}
-
-impl Default for ReplayTrace {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

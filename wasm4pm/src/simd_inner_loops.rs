@@ -519,12 +519,6 @@ pub struct SimdVariantDeduplicator {
     scratch: Vec<u64>,
 }
 
-impl Default for SimdVariantDeduplicator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl SimdVariantDeduplicator {
     /// Create a new variant deduplicator.
     pub fn new() -> Self {
@@ -608,12 +602,6 @@ pub struct SimdTokenAccumulator {
     consumed: u64,
     missing: u64,
     remaining: u64,
-}
-
-impl Default for SimdTokenAccumulator {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl SimdTokenAccumulator {
