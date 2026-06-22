@@ -40,7 +40,7 @@ pub struct ProcessModelEnvelope {
     pub version: String,
     pub model_type: ModelType,
     pub payload: String,
-    pub metadata: HashMap<String, String>,
+    pub metadata: BTreeMap<String, String>,
 }
 
 /// Comparison operators for variant routing guards.
@@ -95,7 +95,7 @@ impl ConditionalGuard {
 /// Evaluated variant context payload.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariantKey {
-    pub attributes: HashMap<String, String>,
+    pub attributes: BTreeMap<String, String>,
 }
 
 /// Rule determining how a variant is mapped to a process model.
@@ -232,7 +232,7 @@ static REGISTRY: Lazy<Mutex<ProcessModelRegistry>> = Lazy::new(|| {
         version: "1.0.0".to_string(),
         model_type: ModelType::PNML,
         payload,
-        metadata: std::collections::HashMap::new(),
+        metadata: BTreeMap::new(),
     };
     let _ = registry.insert(envelope, None);
 
@@ -563,7 +563,7 @@ mod tests {
             version: "1.0.0".to_string(),
             model_type: ModelType::PNML,
             payload: "payload1".to_string(),
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         };
         let env2 = ProcessModelEnvelope {
             id: "m2".to_string(),
@@ -571,7 +571,7 @@ mod tests {
             version: "1.0.0".to_string(),
             model_type: ModelType::PNML,
             payload: "payload2".to_string(),
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         };
         let env3 = ProcessModelEnvelope {
             id: "m3".to_string(),
@@ -579,7 +579,7 @@ mod tests {
             version: "1.0.0".to_string(),
             model_type: ModelType::PNML,
             payload: "payload3".to_string(),
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         };
 
         assert!(registry.insert(env1.clone(), None).is_ok());
@@ -605,7 +605,7 @@ mod tests {
             version: "1.0.0".to_string(),
             model_type: ModelType::PNML,
             payload: "payload1".to_string(),
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         };
 
         assert!(registry
@@ -628,7 +628,7 @@ mod tests {
             version: "1.0.0".to_string(),
             model_type: ModelType::PNML,
             payload: "payload1".to_string(),
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         };
         let env2 = ProcessModelEnvelope {
             id: "m2".to_string(),
@@ -636,7 +636,7 @@ mod tests {
             version: "1.0.0".to_string(),
             model_type: ModelType::PNML,
             payload: "payload2".to_string(),
-            metadata: HashMap::new(),
+            metadata: BTreeMap::new(),
         };
 
         assert!(registry.insert(env1, None).is_ok());
@@ -676,19 +676,19 @@ mod tests {
         registry.add_variant_rule(rule3);
 
         // Test matching US
-        let mut attributes = HashMap::new();
+        let mut attributes = BTreeMap::new();
         attributes.insert("region".to_string(), "US".to_string());
         let key = VariantKey { attributes };
         assert_eq!(registry.resolve_model(&key), Some("m1".to_string()));
 
         // Test matching EU (which has higher priority)
-        let mut attributes = HashMap::new();
+        let mut attributes = BTreeMap::new();
         attributes.insert("region".to_string(), "EU".to_string());
         let key = VariantKey { attributes };
         assert_eq!(registry.resolve_model(&key), Some("m2".to_string()));
 
         // Test priority routing: both US (rule1, priority 1) and value > 100 (rule3, priority 3) match
-        let mut attributes = HashMap::new();
+        let mut attributes = BTreeMap::new();
         attributes.insert("region".to_string(), "US".to_string());
         attributes.insert("value".to_string(), "150".to_string());
         let key = VariantKey { attributes };
@@ -698,7 +698,7 @@ mod tests {
     #[test]
     fn test_comparison_ops() {
         let key = |val: &str| {
-            let mut attributes = HashMap::new();
+            let mut attributes = BTreeMap::new();
             attributes.insert("attr".to_string(), val.to_string());
             VariantKey { attributes }
         };

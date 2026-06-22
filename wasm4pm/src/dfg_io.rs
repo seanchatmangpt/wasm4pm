@@ -9,7 +9,7 @@
 ///   Then EA lines: "idx x count"
 ///   Then:          number of DFG edges (E) — **optional header line**
 ///   Then E lines:  "from_idx>to_idx x count"
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -26,9 +26,9 @@ pub struct DfgResult {
     /// Directly-follows counts keyed by (from, to) activity names.
     pub dfg: HashMap<(String, String), u64>,
     /// Activities that start traces and their counts.
-    pub start_activities: HashMap<String, u64>,
+    pub start_activities: BTreeMap<String, u64>,
     /// Activities that end traces and their counts.
-    pub end_activities: HashMap<String, u64>,
+    pub end_activities: BTreeMap<String, u64>,
 }
 
 // ── Core parser ───────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ pub fn parse_dfg_text(content: &str) -> Result<DfgResult, String> {
     })?;
     i += 1;
 
-    let mut start_activities: HashMap<String, u64> = HashMap::with_capacity(num_sa);
+    let mut start_activities: BTreeMap<String, u64> = BTreeMap::new();
     for _ in 0..num_sa {
         if i >= rows.len() {
             return Err("Unexpected EOF reading start activities".to_string());
@@ -100,7 +100,7 @@ pub fn parse_dfg_text(content: &str) -> Result<DfgResult, String> {
         .map_err(|_| format!("Line {}: expected end-activity count, got {:?}", i, rows[i]))?;
     i += 1;
 
-    let mut end_activities: HashMap<String, u64> = HashMap::with_capacity(num_ea);
+    let mut end_activities: BTreeMap<String, u64> = BTreeMap::new();
     for _ in 0..num_ea {
         if i >= rows.len() {
             return Err("Unexpected EOF reading end activities".to_string());
