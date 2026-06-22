@@ -301,11 +301,7 @@ pub fn compute_optimal_alignments(
     let log_move_cost = cost_config.get("log_move_cost").copied().unwrap_or(1.0);
     let model_move_cost = cost_config.get("model_move_cost").copied().unwrap_or(1.0);
 
-    let petri_net = get_or_init_state().with_object(petri_net_handle, |obj| match obj {
-        Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
-        None => Err(crate::error::js_val("PetriNet handle not found")),
-    })?;
+    let petri_net = get_or_init_state().with_petri_net(petri_net_handle, |pn| Ok(pn.clone()))?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut alignments: Vec<serde_json::Value> = Vec::new();
