@@ -8,7 +8,7 @@
 use crate::powl::footprints::Footprints;
 use crate::powl_event_log::EventLog;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 /// Footprints conformance result.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -20,8 +20,8 @@ pub struct FootprintsConformanceResult {
 }
 
 /// Build the log footprints from the directly-follows graph.
-fn log_footprints(log: &EventLog) -> HashSet<(String, String)> {
-    let mut sequence: HashSet<(String, String)> = HashSet::new();
+fn log_footprints(log: &EventLog) -> BTreeSet<(String, String)> {
+    let mut sequence: BTreeSet<(String, String)> = BTreeSet::new();
 
     for trace in &log.traces {
         for window in trace.events.windows(2) {
@@ -100,23 +100,23 @@ mod tests {
     }
 
     fn make_model_fp(activities: &[&str], sequence: &[(&str, &str)]) -> Footprints {
-        let act_set: std::collections::HashSet<String> =
+        let act_set: std::collections::BTreeSet<String> =
             activities.iter().map(|s| s.to_string()).collect();
-        let seq_set: std::collections::HashSet<(String, String)> = sequence
+        let seq_set: std::collections::BTreeSet<(String, String)> = sequence
             .iter()
             .map(|(a, b)| (a.to_string(), b.to_string()))
             .collect();
         let start = if !activities.is_empty() {
             [activities[0].to_string()].into_iter().collect()
         } else {
-            std::collections::HashSet::new()
+            std::collections::BTreeSet::new()
         };
         let end = if !activities.is_empty() {
             [activities[activities.len() - 1].to_string()]
                 .into_iter()
                 .collect()
         } else {
-            std::collections::HashSet::new()
+            std::collections::BTreeSet::new()
         };
         Footprints {
             start_activities: start,
@@ -124,8 +124,8 @@ mod tests {
             activities: act_set,
             skippable: false,
             sequence: seq_set,
-            parallel: std::collections::HashSet::new(),
-            activities_always_happening: std::collections::HashSet::new(),
+            parallel: std::collections::BTreeSet::new(),
+            activities_always_happening: std::collections::BTreeSet::new(),
             min_trace_length: activities.len(),
         }
     }
