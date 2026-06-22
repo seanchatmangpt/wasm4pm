@@ -248,25 +248,23 @@ pub fn detect_drift(
                     let distance = jaccard_distance(&current_activities, prev);
                     if distance > DEFAULT_DRIFT_THRESHOLD {
                         // Compute appeared (in current but not prev) and disappeared (in prev but not current)
-                        let mut appeared: Vec<&str> = current_activities
+                        let appeared: std::collections::BTreeSet<&str> = current_activities
                             .difference(prev)
                             .map(String::as_str)
                             .collect();
-                        appeared.sort_unstable();
-                        let mut disappeared: Vec<&str> = prev
+                        let disappeared: std::collections::BTreeSet<&str> = prev
                             .difference(&current_activities)
                             .map(String::as_str)
                             .collect();
-                        disappeared.sort_unstable();
-                        let suggestion = if !disappeared.is_empty() {
+                        let suggestion = if let Some(first) = disappeared.iter().next() {
                             format!(
                                 "Activity '{}' disappeared — re-run discovery or check for process change",
-                                disappeared[0]
+                                first
                             )
-                        } else if !appeared.is_empty() {
+                        } else if let Some(first) = appeared.iter().next() {
                             format!(
                                 "Activity '{}' appeared — new path detected, consider model update",
-                                appeared[0]
+                                first
                             )
                         } else {
                             "Frequency shift detected — inspect directly-follows graph".to_string()
