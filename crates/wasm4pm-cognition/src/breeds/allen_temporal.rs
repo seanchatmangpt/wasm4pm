@@ -1,5 +1,5 @@
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 
 /// Allen's Interval Algebra breed
 pub struct AllenTemporal;
@@ -186,7 +186,7 @@ impl CognitionBreed for AllenTemporal {
         let mut trace = Vec::new();
 
         let mut node_names = Vec::new();
-        let mut name_to_id = HashMap::new();
+        let mut name_to_id = BTreeMap::new();
 
         // Helper closures inline logic
         macro_rules! get_id {
@@ -261,7 +261,7 @@ impl CognitionBreed for AllenTemporal {
             }
         }
 
-        let mut concrete_intervals = HashMap::new();
+        let mut concrete_intervals = BTreeMap::new();
         for state in &input.state {
             if state.predicate == "interval" {
                 let parts: Vec<&str> = state.value.split(',').collect();

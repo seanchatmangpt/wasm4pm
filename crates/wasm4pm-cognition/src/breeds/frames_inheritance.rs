@@ -1,5 +1,5 @@
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 /// Frame-based inheritance with overrides (Minsky 1974).
 pub struct FramesInheritance;
@@ -40,9 +40,9 @@ impl CognitionBreed for FramesInheritance {
         let target_slot = parts[2].to_string();
 
         let mut trace = Vec::new();
-        let mut isa_map: HashMap<String, String> = HashMap::new();
-        let mut own_slots: HashMap<String, HashMap<String, String>> = HashMap::new();
-        let mut default_slots: HashMap<String, HashMap<String, String>> = HashMap::new();
+        let mut isa_map: BTreeMap<String, String> = BTreeMap::new();
+        let mut own_slots: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+        let mut default_slots: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
 
         // Facts: frame:<F>:isa=<Parent> or frame:<F>:isa with value=<Parent>
         // Depending on `Fact` shape. Assume key = "frame:<F>:isa", value = "<Parent>"

@@ -19,7 +19,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use tracing;
 
 /// STRIPS planner.
@@ -48,8 +48,8 @@ struct FrameAxiom {
     actions: BTreeSet<String>,
 }
 
-fn parse_frame_axioms(facts: &[crate::breeds::Fact]) -> HashMap<String, FrameAxiom> {
-    let mut axioms = HashMap::new();
+fn parse_frame_axioms(facts: &[crate::breeds::Fact]) -> BTreeMap<String, FrameAxiom> {
+    let mut axioms = BTreeMap::new();
     for fact in facts {
         if fact.key == "frame" {
             // Format: "atom,action1,action2,action3"
@@ -99,7 +99,7 @@ fn applicable(rule: &Rule, state: &BTreeSet<String>) -> bool {
 fn apply_with_frames(
     rule: &Rule,
     state: &BTreeSet<String>,
-    frame_axioms: &HashMap<String, FrameAxiom>,
+    frame_axioms: &BTreeMap<String, FrameAxiom>,
 ) -> BTreeSet<String> {
     let eff = parse_effect(&rule.conclusion);
     let mut next: BTreeSet<String> = state
@@ -132,7 +132,7 @@ fn idfs(
     actions: &[Rule],
     depth: usize,
     trace: &mut Vec<TraceStep>,
-    frame_axioms: &HashMap<String, FrameAxiom>,
+    frame_axioms: &BTreeMap<String, FrameAxiom>,
 ) -> Option<Vec<String>> {
     if goals_satisfied(goals, state) {
         return Some(Vec::new());
@@ -366,7 +366,7 @@ mod tests {
         state.insert("onTable=block".to_string());
         state.insert("clear=block".to_string());
 
-        let empty_frames: HashMap<String, FrameAxiom> = HashMap::new();
+        let empty_frames: BTreeMap<String, FrameAxiom> = BTreeMap::new();
         let next = apply_with_frames(&rule, &state, &empty_frames);
 
         // With no frame axioms: deletion of `onTable=block` MUST fire,
