@@ -180,17 +180,7 @@ pub fn compare_cohort_durations(
 ) -> Result<JsValue, JsError> {
     let state = get_or_init_state();
 
-    state.with_object(log_handle, |obj| {
-        let log = match obj {
-            Some(StoredObject::EventLog(l)) => l,
-            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
-            None => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    format!("EventLog handle not found: {}", log_handle),
-                ))
-            }
-        };
+    get_or_init_state().with_event_log(log_handle, |log| {
 
         let groups =
             extract_durations_by_case_attribute_internal(log, cohort_attribute, timestamp_key);
@@ -290,17 +280,7 @@ pub fn compare_resource_performance(
     let _ = activity_key; // reserved for future per-activity filtering
     let state = get_or_init_state();
 
-    state.with_object(log_handle, |obj| {
-        let log = match obj {
-            Some(StoredObject::EventLog(l)) => l,
-            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
-            None => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    format!("EventLog handle not found: {}", log_handle),
-                ))
-            }
-        };
+    get_or_init_state().with_event_log(log_handle, |log| {
 
         let raw_groups =
             extract_durations_by_event_attribute_internal(log, resource_key, timestamp_key);
@@ -367,21 +347,7 @@ pub fn describe_attribute(
     attribute_key: &str,
     scope: &str,
 ) -> Result<JsValue, JsError> {
-    let state = get_or_init_state();
-
-    state.with_object(log_handle, |obj| {
-        let log = match obj {
-            Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog"))
-            }
-            None => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    format!("EventLog handle not found: {}", log_handle),
-                ))
-            }
-        };
+    get_or_init_state().with_event_log(log_handle, |log| {
 
         let use_trace_scope = scope != "event";
 
