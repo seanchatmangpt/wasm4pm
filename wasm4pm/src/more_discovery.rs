@@ -363,8 +363,7 @@ pub fn discover_inductive_miner(
         "Inductive Miner discovery started"
     );
 
-    let tree = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let tree = get_or_init_state().with_event_log(eventlog_handle, |log| {
             let activities = log.get_activities(activity_key);
             let activity_count = activities.len();
 
@@ -382,9 +381,6 @@ pub fn discover_inductive_miner(
             let admitted =
                 wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
             inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0)
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let nodes = tree.count_nodes();
@@ -890,8 +886,7 @@ pub fn extract_process_skeleton(
     activity_key: &str,
     min_frequency: usize,
 ) -> Result<JsValue, JsValue> {
-    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let dfg = get_or_init_state().with_event_log(eventlog_handle, |log| {
             let activities = log.get_activities(activity_key);
             let directly_follows_vec = log.get_directly_follows(activity_key);
 
@@ -963,9 +958,6 @@ pub fn extract_process_skeleton(
             }
 
             Ok(dfg)
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let handle = get_or_init_state()
@@ -987,8 +979,7 @@ pub fn analyze_activity_dependencies(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut predecessors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
             let mut successors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
 
@@ -1038,9 +1029,6 @@ pub fn analyze_activity_dependencies(
             to_js_str(&json!({
                 "dependencies": result,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -1050,8 +1038,7 @@ pub fn analyze_case_attributes(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut attribute_values: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
             let mut attribute_activity_map: FxHashMap<(String, String), Vec<String>> =
                 FxHashMap::default();
@@ -1097,9 +1084,6 @@ pub fn analyze_case_attributes(
             to_js_str(&json!({
                 "case_attributes": result,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
