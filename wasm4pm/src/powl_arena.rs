@@ -313,7 +313,7 @@ impl FrequentTransitionNode {
     /// Reference: TaggedPOWL.is_repeatable() → max_freq is None or max_freq > 1
     #[inline]
     pub fn is_repeatable(&self) -> bool {
-        self.max_freq.is_none() || self.max_freq.unwrap() > 1
+        self.max_freq.map_or(true, |f| f > 1)
     }
 
     /// Reference: TaggedPOWL.is_unbounded() → max_freq is None
