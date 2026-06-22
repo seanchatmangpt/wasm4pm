@@ -484,8 +484,8 @@ mod tests {
         // Same edge frequencies (order may differ)
         let mut mono_edges: Vec<_> = mono.edges.iter().collect();
         let mut chunked_edges: Vec<_> = chunked_dfg.edges.iter().collect();
-        mono_edges.sort_by(|a, b| a.from.cmp(&b.from).then(a.to.cmp(&b.to)));
-        chunked_edges.sort_by(|a, b| a.from.cmp(&b.from).then(a.to.cmp(&b.to)));
+        mono_edges.sort_by_key(|x| (x.from.clone(), x.to.clone()));
+        chunked_edges.sort_by_key(|x| (x.from.clone(), x.to.clone()));
         for (m, c) in mono_edges.iter().zip(chunked_edges.iter()) {
             assert_eq!(m.from, c.from, "edge from mismatch");
             assert_eq!(m.to, c.to, "edge to mismatch");

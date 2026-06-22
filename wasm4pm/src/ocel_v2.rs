@@ -93,7 +93,7 @@ pub fn flatten_ocel_v2(json: &str, object_type: &str) -> Result<JsValue, JsValue
             .iter()
             .filter(|e| ocel.e2o(&e.id).iter().any(|(oid, _)| oid == &obj.id))
             .collect();
-        events_for_obj.sort_by(|a, b| a.time.cmp(&b.time));
+        events_for_obj.sort_by_key(|x| x.time);
 
         let trace: Vec<String> = events_for_obj
             .iter()

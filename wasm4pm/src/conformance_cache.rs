@@ -79,7 +79,7 @@ impl ConformanceCache {
         // Hash nodes (sorted by id for determinism). `label` is part of the
         // semantic identity of a node, so include it in the hash.
         let mut nodes: Vec<_> = dfg.nodes.iter().collect();
-        nodes.sort_by(|a, b| a.id.cmp(&b.id));
+        nodes.sort_by_key(|x| x.id.clone());
         for node in &nodes {
             node.id.hash(&mut h);
             node.label.hash(&mut h);
@@ -88,7 +88,7 @@ impl ConformanceCache {
 
         // Hash edges (sorted for determinism).
         let mut edges: Vec<_> = dfg.edges.iter().collect();
-        edges.sort_by(|a, b| a.from.cmp(&b.from).then(a.to.cmp(&b.to)));
+        edges.sort_by_key(|x| (x.from.clone(), x.to.clone()));
         for edge in &edges {
             edge.from.hash(&mut h);
             edge.to.hash(&mut h);
@@ -99,7 +99,7 @@ impl ConformanceCache {
         // HashMap iteration order is randomized, so we MUST sort before
         // hashing or the same DFG produces different cache keys across runs.
         let mut starts: Vec<_> = dfg.start_activities.iter().collect();
-        starts.sort_by(|a, b| a.0.cmp(b.0));
+        starts.sort_by_key(|x| x.0.clone());
         for (k, v) in &starts {
             "start".hash(&mut h);
             k.hash(&mut h);
@@ -107,7 +107,7 @@ impl ConformanceCache {
         }
 
         let mut ends: Vec<_> = dfg.end_activities.iter().collect();
-        ends.sort_by(|a, b| a.0.cmp(b.0));
+        ends.sort_by_key(|x| x.0.clone());
         for (k, v) in &ends {
             "end".hash(&mut h);
             k.hash(&mut h);

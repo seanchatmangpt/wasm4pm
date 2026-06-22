@@ -129,7 +129,7 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
             .collect();
 
         // Sort events by timestamp (ascending)
-        events_for_obj.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        events_for_obj.sort_by_key(|x| x.timestamp.clone());
 
         // Create a trace with ID = object ID
         let mut trace = Trace {
@@ -254,7 +254,7 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
             .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
             .map(|e| (e, e.event_type.clone()))
             .collect();
-        ts_sorted.sort_by(|(a, _), (b, _)| a.timestamp.cmp(&b.timestamp));
+        ts_sorted.sort_by_key(|(a, _)| a.timestamp.clone());
         let flat_seq: Vec<String> = ts_sorted.iter().map(|(_, et)| et.clone()).collect();
 
         total_events_in_flattened_log += flat_seq.len();

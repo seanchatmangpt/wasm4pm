@@ -1,7 +1,7 @@
 use crate::models::parse_timestamp_ms;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 /// Priority 5C — Resource-centric analysis.
 ///
 /// Analyzes which resources (people, machines) are performing which activities,
@@ -139,7 +139,7 @@ pub fn analyze_resource_utilization(
                 .get(resource)
                 .map(|acts| acts.iter().collect())
                 .unwrap_or_default();
-            activities.sort_by(|a, b| b.1.cmp(a.1));
+            activities.sort_by_key(|x| std::cmp::Reverse(x.1));
             let top_activities: Vec<&String> = activities.iter().take(2).map(|a| a.0).collect();
 
             let resource_info = json!({
@@ -420,7 +420,7 @@ fn format_timestamp(ms: i64) -> String {
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::{BTreeMap};
+    use std::collections::BTreeMap;
 
     fn create_test_log() -> EventLog {
         EventLog {

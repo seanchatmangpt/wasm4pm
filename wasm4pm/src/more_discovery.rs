@@ -638,7 +638,7 @@ fn find_parallel_cut(
     }
 
     let mut result: Vec<Vec<String>> = groups.into_values().collect();
-    result.sort_by(|a, b| a[0].cmp(&b[0])); // deterministic order
+    result.sort_by_key(|x| x[0].clone()); // deterministic order
     Some(result)
 }
 

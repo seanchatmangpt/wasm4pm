@@ -908,7 +908,7 @@ fn translate_petri_to_powl(
     // If we have exactly 2 transitions, try XOR
     if net.transition_count() == 2 {
         let mut labels: Vec<Option<String>> = net.transitions.values().cloned().collect();
-        labels.sort_by(|a, b| a.cmp(b));
+        labels.sort();
         let children: Vec<u32> = labels
             .into_iter()
             .map(|l| arena.add_transition(l))

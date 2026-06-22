@@ -119,7 +119,7 @@ impl IncrementalDFG {
                 }
             })
             .collect();
-        nodes.sort_by(|a, b| a.id.cmp(&b.id));
+        nodes.sort_by_key(|x| x.id.clone());
         dfg.nodes = nodes;
 
         // Edges — sort by (from, to) for deterministic serialization
@@ -261,7 +261,7 @@ impl StreamingDFG {
                 })
             })
             .collect();
-        nodes.sort_by(|a, b| a.id.cmp(&b.id));
+        nodes.sort_by_key(|x| x.id.clone());
         dfg.nodes = nodes;
 
         // Edges — sort by (from, to) for deterministic serialization
