@@ -147,7 +147,8 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         let selected_action = if is_exploration {
             // Random action
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            let action = A::from_index(idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds");
+            let action = A::from_index(idx)
+                .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds");
             debug!(
                 action_idx = idx,
                 exploitation = false,
@@ -175,7 +176,8 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
             Some(q_values) => argmax_f32(q_values),
             None => 0, // unvisited state: all Q == 0, deterministic tie-break to first action
         };
-        A::from_index(best_idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
+        A::from_index(best_idx)
+            .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
     }
 
     /// Q-Learning update: Q(s,a) <- Q(s,a) + alpha[r + gamma max Q(s',a') - Q(s,a)]
@@ -473,7 +475,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
         let selected_action = if is_exploration {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            let action = A::from_index(idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds");
+            let action = A::from_index(idx)
+                .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds");
             debug!(
                 action_idx = idx,
                 exploitation = false,
@@ -498,7 +501,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             Some(v) => argmax_f32(v),
             None => 0,
         };
-        A::from_index(best_idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
+        A::from_index(best_idx)
+            .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
     }
 
     /// Compute L2 norm of Q-table weights for convergence analysis.
@@ -677,7 +681,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     pub fn select_action(&self, state: &S) -> A {
         if self.rng.borrow_mut().f32() < self.exploration_rate {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
+            A::from_index(idx)
+                .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
         } else {
             self.greedy_action(state)
         }
@@ -708,7 +713,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
                 best_idx
             }
         };
-        A::from_index(best_idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
+        A::from_index(best_idx)
+            .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
     }
 
     /// Double Q-Learning update
@@ -970,7 +976,8 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     pub fn select_action(&self, state: &S) -> A {
         if self.rng.borrow_mut().f32() < self.exploration_rate {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
+            A::from_index(idx)
+                .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
         } else {
             self.greedy_action(state)
         }
@@ -982,7 +989,8 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             Some(v) => argmax_f32(v),
             None => 0,
         };
-        A::from_index(best_idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
+        A::from_index(best_idx)
+            .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds")
     }
 
     /// Expected SARSA update: Q(s,a) <- Q(s,a) + alpha[r + gamma * E_pi[Q(s',.)] - Q(s,a)]
@@ -1254,7 +1262,8 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
                 }
             }
         }
-        let selected = A::from_index(best_idx).expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds");
+        let selected = A::from_index(best_idx)
+            .expect("invariant: idx < A::ACTION_COUNT guarantees from_index succeeds");
         debug!(
             action_idx = best_idx,
             gumbel_value = best_val,

@@ -181,7 +181,6 @@ pub fn compare_cohort_durations(
     let state = get_or_init_state();
 
     get_or_init_state().with_event_log(log_handle, |log| {
-
         let groups =
             extract_durations_by_case_attribute_internal(log, cohort_attribute, timestamp_key);
 
@@ -281,7 +280,6 @@ pub fn compare_resource_performance(
     let state = get_or_init_state();
 
     get_or_init_state().with_event_log(log_handle, |log| {
-
         let raw_groups =
             extract_durations_by_event_attribute_internal(log, resource_key, timestamp_key);
 

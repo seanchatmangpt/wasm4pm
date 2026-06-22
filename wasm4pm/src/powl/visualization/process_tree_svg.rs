@@ -194,7 +194,8 @@ pub fn render_process_tree_svg(arena: &PowlArena, root: u32) -> String {
     )
     .expect("invariant: fmt::Write on String is infallible");
     write!(buffer, "<style>").expect("invariant: fmt::Write on String is infallible");
-    write!(buffer, ".node {{ stroke: #333; stroke-width: 2px; }}").expect("invariant: fmt::Write on String is infallible");
+    write!(buffer, ".node {{ stroke: #333; stroke-width: 2px; }}")
+        .expect("invariant: fmt::Write on String is infallible");
     write!(
         buffer,
         ".label {{ font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }}"
