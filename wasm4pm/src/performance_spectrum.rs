@@ -122,7 +122,7 @@ pub fn discover_performance_spectrum(
     let mut measurements: Vec<ActivityPerformance> = buckets
         .into_iter()
         .map(|((act, next_act), mut durations)| {
-            durations.sort_unstable_by(|a, b| a.total_cmp(b));
+            durations.sort_unstable_by(f64::total_cmp);
             let count = durations.len();
             let min_d = durations.first().copied().unwrap_or(0.0);
             let max_d = durations.last().copied().unwrap_or(0.0);

@@ -228,7 +228,7 @@ impl DataFrame {
             let std = variance.sqrt();
 
             let mut sorted = col.clone();
-            sorted.sort_unstable_by(|a, b| a.total_cmp(b));
+            sorted.sort_unstable_by(f64::total_cmp);
 
             let q1_idx = (n * 0.25).floor() as usize;
             let q2_idx = (n * 0.50).floor() as usize;
@@ -286,7 +286,7 @@ impl DataFrame {
                         0.0
                     } else {
                         let mut sorted = col.clone();
-                        sorted.sort_unstable_by(|a, b| a.total_cmp(b));
+                        sorted.sort_unstable_by(f64::total_cmp);
                         let idx = (q * sorted.len() as f64).floor() as usize;
                         sorted.get(idx).copied().unwrap_or(0.0)
                     }

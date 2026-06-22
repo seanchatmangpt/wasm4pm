@@ -40,10 +40,8 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
         Some(StoredObject::OCEL(ocel)) => {
             // Collect unique event types
             let event_types: Vec<String> = {
-                let types: std::collections::BTreeSet<String> = ocel.events
-                    .iter()
-                    .map(|e| e.event_type.clone())
-                    .collect();
+                let types: std::collections::BTreeSet<String> =
+                    ocel.events.iter().map(|e| e.event_type.clone()).collect();
                 types.into_iter().collect()
             };
 

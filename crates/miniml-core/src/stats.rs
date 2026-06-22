@@ -247,7 +247,7 @@ fn std_dev(data: &[f64]) -> f64 {
 }
 
 fn median(data: &mut [f64]) -> f64 {
-    data.sort_unstable_by(|a, b| a.total_cmp(b));
+    data.sort_unstable_by(f64::total_cmp);
     let n = data.len();
     if n.is_multiple_of(2) {
         (data[n / 2 - 1] + data[n / 2]) / 2.0
@@ -486,7 +486,7 @@ pub fn mann_whitney_u_impl(data1: &[f64], data2: &[f64]) -> Result<MannWhitneyRe
 
     let rank_counts: Vec<usize> = {
         let mut sorted = ranks.clone();
-        sorted.sort_unstable_by(|a, b| a.total_cmp(b));
+        sorted.sort_unstable_by(f64::total_cmp);
         let mut counts = Vec::new();
         let mut i = 0;
         while i < sorted.len() {
@@ -577,7 +577,7 @@ pub fn ks_test_impl(data: &[f64]) -> Result<KSTestResult, MlError> {
     }
 
     let mut sorted = data.to_vec();
-    sorted.sort_unstable_by(|a, b| a.total_cmp(b));
+    sorted.sort_unstable_by(f64::total_cmp);
 
     let mut d_stat = 0.0f64;
     for (i, &x) in sorted.iter().enumerate().take(n) {

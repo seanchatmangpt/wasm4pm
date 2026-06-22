@@ -117,12 +117,18 @@ pub fn encode_variants_as_text(
             }
 
             // Extract trace sequences
-            let mut variants: std::collections::BTreeMap<Vec<String>, usize> = std::collections::BTreeMap::new();
+            let mut variants: std::collections::BTreeMap<Vec<String>, usize> =
+                std::collections::BTreeMap::new();
             for trace in &log.traces {
                 let sequence: Vec<String> = trace
                     .events
                     .iter()
-                    .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)?
+                            .as_string()
+                            .map(str::to_owned)
+                    })
                     .collect();
                 if !sequence.is_empty() {
                     *variants.entry(sequence).or_default() += 1;

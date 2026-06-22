@@ -62,7 +62,12 @@ pub fn oc_conformance_check_inner(ocel: &OCEL) -> Result<serde_json::Value, Stri
             let activities: Vec<String> = trace
                 .events
                 .iter()
-                .filter_map(|e| e.attributes.get("concept:name")?.as_string().map(str::to_owned))
+                .filter_map(|e| {
+                    e.attributes
+                        .get("concept:name")?
+                        .as_string()
+                        .map(str::to_owned)
+                })
                 .collect();
 
             let missing: Vec<String> = activities

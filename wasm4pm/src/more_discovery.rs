@@ -1060,7 +1060,12 @@ pub fn analyze_case_attributes(
                 let activities: Vec<String> = trace
                     .events
                     .iter()
-                    .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)?
+                            .as_string()
+                            .map(str::to_owned)
+                    })
                     .collect();
 
                 for (key, value) in &trace.attributes {

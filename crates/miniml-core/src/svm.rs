@@ -104,7 +104,10 @@ pub fn linear_svm_impl(
         // Subgradient step
         if label * decision < 1.0 {
             // Misclassified: update weights and bias
-            weights.iter_mut().zip(x).for_each(|(w, xi)| *w = (1.0 - eta * lambda) * *w + eta * label * xi);
+            weights
+                .iter_mut()
+                .zip(x)
+                .for_each(|(w, xi)| *w = (1.0 - eta * lambda) * *w + eta * label * xi);
             bias += eta * label;
         } else {
             // Correctly classified: only regularization

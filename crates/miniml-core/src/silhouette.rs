@@ -19,7 +19,7 @@ pub fn silhouette_score_impl(
 
     // Find unique clusters
     let mut clusters: Vec<f64> = labels.to_vec();
-    clusters.sort_unstable_by(|a, b| a.total_cmp(b));
+    clusters.sort_unstable_by(f64::total_cmp);
     clusters.dedup();
 
     if clusters.len() < 2 {

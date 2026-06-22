@@ -238,7 +238,8 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
     let mut events: Vec<OCELEvent> = Vec::new();
     let mut objects_map: HashMap<String, OCELObject> = HashMap::new();
     let mut event_types_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
-    let mut object_types_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut object_types_set: std::collections::BTreeSet<String> =
+        std::collections::BTreeSet::new();
 
     for (row_idx, rec) in records.iter().enumerate() {
         // Event ID: from column or auto-generated

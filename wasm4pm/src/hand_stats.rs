@@ -88,7 +88,7 @@ pub fn median(data: &mut [f64]) -> Option<f64> {
     if data.is_empty() {
         return None;
     }
-    data.sort_unstable_by(|a, b| a.total_cmp(b));
+    data.sort_unstable_by(f64::total_cmp);
     let len = data.len();
     if len.is_multiple_of(2) {
         Some((data[len / 2 - 1] + data[len / 2]) / 2.0)
@@ -133,7 +133,7 @@ pub fn percentile(data: &mut [f64], p: f64) -> Option<f64> {
     if data.is_empty() || !(0.0..=100.0).contains(&p) {
         return None;
     }
-    data.sort_unstable_by(|a, b| a.total_cmp(b));
+    data.sort_unstable_by(f64::total_cmp);
     let idx = (p / 100.0 * (data.len() - 1) as f64).round() as usize;
     Some(data[idx.min(data.len() - 1)])
 }
