@@ -451,8 +451,7 @@ fn invert_symmetric(a: &[f64], n: usize) -> Vec<f64> {
     let mut e = vec![0.0; n];
 
     for j in 0..n {
-        e.clear();
-        e.extend(vec![0.0; n]);
+        e.fill(0.0);
         e[j] = 1.0;
         let col = match cholesky_solve(a, &e, n) {
             Ok(c) => c,
