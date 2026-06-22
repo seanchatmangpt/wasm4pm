@@ -80,15 +80,11 @@ pub fn discover_ml_anomaly(log_handle: &str, activity_key: &str) -> Result<JsVal
     let state = get_or_init_state();
 
     // 1. Generate DFG directly by accessing the stored EventLog in state
-    let dfg = state.with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let admitted =
-                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-            let dfg = crate::discovery::discover_dfg_from_log(&admitted, activity_key);
-            Ok(dfg)
-        }
-        Some(_) => Err(crate::error::js_val("log_handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
+    let dfg = get_or_init_state().with_event_log(log_handle, |log| {
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+        let dfg = crate::discovery::discover_dfg_from_log(&admitted, activity_key);
+        Ok(dfg)
     })?;
 
     // 2. Store it
