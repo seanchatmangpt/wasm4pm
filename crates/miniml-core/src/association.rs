@@ -291,11 +291,7 @@ pub fn apriori_impl(
     }
 
     // Sort rules by confidence descending
-    rules.sort_by(|a, b| {
-        b.confidence
-            .partial_cmp(&a.confidence)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    rules.sort_unstable_by(|a, b| b.confidence.total_cmp(&a.confidence));
 
     // Convert frequent_itemsets to Vec<Vec<f64>>
     let fi_vecs: Vec<Vec<f64>> = frequent_itemsets
