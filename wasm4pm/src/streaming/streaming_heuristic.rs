@@ -168,7 +168,7 @@ impl StreamingHeuristicBuilder {
                 })
             })
             .collect();
-        edges.sort_by(|a, b| a.from.cmp(&b.from).then_with(|| a.to.cmp(&b.to)));
+        edges.sort_by_key(|x| (x.from.clone(), x.to.clone()));
         dfg.edges = edges;
 
         // Start/end activities
