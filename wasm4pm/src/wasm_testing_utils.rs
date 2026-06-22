@@ -169,7 +169,7 @@ pub fn benchmark_algorithm(
                 latencies.push(elapsed_ms);
             }
 
-            latencies.sort_by(|a, b| a.total_cmp(b));
+            latencies.sort_by(f64::total_cmp);
 
             let mean = latencies.iter().sum::<f64>() / latencies.len() as f64;
             let min = latencies.first().copied().unwrap_or(0.0);

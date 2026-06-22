@@ -27,7 +27,12 @@ pub fn analyze_variant_complexity(
                     trace
                         .events
                         .iter()
-                        .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
+                        .filter_map(|e| {
+                            e.attributes
+                                .get(activity_key)?
+                                .as_string()
+                                .map(str::to_owned)
+                        })
                         .collect::<Vec<String>>()
                 })
                 .counts();
@@ -165,7 +170,7 @@ pub fn analyze_process_speedup(
                 }));
             }
 
-            time_gaps.sort_unstable_by(|a, b| a.total_cmp(b));
+            time_gaps.sort_unstable_by(f64::total_cmp);
 
             let mean: f64 = time_gaps.iter().sum::<f64>() / time_gaps.len() as f64;
 

@@ -55,7 +55,7 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
 
     // Build confusion matrix
     let mut unique_true: Vec<f64> = y_true.to_vec();
-    unique_true.sort_unstable_by(|a, b| a.total_cmp(b));
+    unique_true.sort_unstable_by(f64::total_cmp);
     unique_true.dedup();
 
     let n_classes = unique_true.len();
@@ -109,7 +109,7 @@ pub fn balanced_accuracy_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
     }
 
     let mut unique_true: Vec<f64> = y_true.to_vec();
-    unique_true.sort_unstable_by(|a, b| a.total_cmp(b));
+    unique_true.sort_unstable_by(f64::total_cmp);
     unique_true.dedup();
 
     let mut recalls = Vec::new();

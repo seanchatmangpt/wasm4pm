@@ -46,7 +46,8 @@ fn is_invisible(net: &PetriNet, trans_name: &str) -> bool {
 
 /// Names of transitions that have an arc into `node`.
 fn preset_transitions(net: &PetriNet, node: &str) -> Vec<String> {
-    let mut v: Vec<String> = net.arcs
+    let mut v: Vec<String> = net
+        .arcs
         .iter()
         .filter(|a| a.to == node)
         .filter(|a| is_transition(net, &a.from))
@@ -58,7 +59,8 @@ fn preset_transitions(net: &PetriNet, node: &str) -> Vec<String> {
 
 /// Names of transitions that have an arc out of `node` — returned in sorted order.
 fn postset_transitions(net: &PetriNet, node: &str) -> Vec<String> {
-    let mut v: Vec<String> = net.arcs
+    let mut v: Vec<String> = net
+        .arcs
         .iter()
         .filter(|a| a.from == node)
         .filter(|a| is_transition(net, &a.to))

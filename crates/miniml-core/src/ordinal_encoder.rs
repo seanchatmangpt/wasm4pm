@@ -25,7 +25,7 @@ impl OrdinalEncoder {
         self.categories = (0..self.n_features)
             .map(|f| {
                 let mut vals: Vec<f64> = data.chunks(self.n_features).map(|row| row[f]).collect();
-                vals.sort_unstable_by(|a, b| a.total_cmp(b));
+                vals.sort_unstable_by(f64::total_cmp);
                 vals.dedup();
                 vals
             })

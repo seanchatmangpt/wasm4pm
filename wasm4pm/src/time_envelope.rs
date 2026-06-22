@@ -122,7 +122,7 @@ pub(crate) fn build_time_envelope_internal(
             .collect();
 
         // Sort ascending so gaps and duration are meaningful
-        trace_ts.sort_unstable_by(|a, b| a.total_cmp(b));
+        trace_ts.sort_unstable_by(f64::total_cmp);
 
         // Update global max timestamp
         if let Some(&max_ts) = trace_ts.last() {
@@ -151,7 +151,7 @@ pub(crate) fn build_time_envelope_internal(
         ));
     }
 
-    all_gaps.sort_unstable_by(|a, b| a.total_cmp(b));
+    all_gaps.sort_unstable_by(f64::total_cmp);
 
     let avg_case_duration_ms = mean(&case_durations);
     let std_case_duration_ms = std_dev(&case_durations);

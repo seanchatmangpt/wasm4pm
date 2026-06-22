@@ -135,7 +135,7 @@ fn extract_motion_features(
 
     // ── Step 4: Labelling threshold — bottom 15% by variant frequency ─────────
     let mut sorted_freqs = variant_freq.clone();
-    sorted_freqs.sort_unstable_by(|a, b| a.total_cmp(b));
+    sorted_freqs.sort_unstable_by(f64::total_cmp);
     let threshold_idx = ((n as f64 * 0.15).ceil() as usize).min(n.saturating_sub(1));
     let anomaly_threshold = sorted_freqs.get(threshold_idx).copied().unwrap_or(0.0);
 

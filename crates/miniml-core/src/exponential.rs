@@ -96,10 +96,13 @@ pub fn exponential_regression_impl(x: &[f64], y: &[f64]) -> Result<ExponentialMo
     let ln_y_mean: f64 = ln_y.iter().sum::<f64>() / n as f64;
 
     // Linear regression on transformed data
-    let (numerator, denominator) = x.iter().zip(&ln_y).fold((0.0_f64, 0.0_f64), |(num, den), (&xi, &lyi)| {
-        let xd = xi - x_mean;
-        (num + xd * (lyi - ln_y_mean), den + xd * xd)
-    });
+    let (numerator, denominator) =
+        x.iter()
+            .zip(&ln_y)
+            .fold((0.0_f64, 0.0_f64), |(num, den), (&xi, &lyi)| {
+                let xd = xi - x_mean;
+                (num + xd * (lyi - ln_y_mean), den + xd * xd)
+            });
 
     if denominator == 0.0 {
         return Err(MlError::new(
@@ -113,10 +116,13 @@ pub fn exponential_regression_impl(x: &[f64], y: &[f64]) -> Result<ExponentialMo
 
     // Calculate R-squared using original y values
     let y_mean: f64 = y.iter().sum::<f64>() / n as f64;
-    let (ss_res, ss_tot) = x.iter().zip(y).fold((0.0_f64, 0.0_f64), |(res, tot), (&xi, &yi)| {
-        let y_pred = a * (b * xi).exp();
-        (res + (yi - y_pred).powi(2), tot + (yi - y_mean).powi(2))
-    });
+    let (ss_res, ss_tot) = x
+        .iter()
+        .zip(y)
+        .fold((0.0_f64, 0.0_f64), |(res, tot), (&xi, &yi)| {
+            let y_pred = a * (b * xi).exp();
+            (res + (yi - y_pred).powi(2), tot + (yi - y_mean).powi(2))
+        });
 
     let r_squared = if ss_tot == 0.0 {
         1.0

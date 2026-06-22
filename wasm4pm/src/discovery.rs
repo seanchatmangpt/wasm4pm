@@ -19,8 +19,8 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::BTreeMap;
 use serde_json::json;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 /// Pure-Rust DFG discovery without wasm-bindgen. Used by integration tests.

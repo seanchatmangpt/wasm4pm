@@ -30,7 +30,7 @@ impl RobustScaler {
 
         for f in 0..self.n_features {
             let mut values: Vec<f64> = (0..n).map(|i| data[i * self.n_features + f]).collect();
-            values.sort_unstable_by(|a, b| a.total_cmp(b));
+            values.sort_unstable_by(f64::total_cmp);
 
             let median = if values.len().is_multiple_of(2) {
                 (values[values.len() / 2 - 1] + values[values.len() / 2]) / 2.0

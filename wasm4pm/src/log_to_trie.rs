@@ -212,7 +212,8 @@ pub fn discover_prefix_tree_inner(
 /// Single-pass sweep eliminates allocation of activity Vec during lookups.
 /// Deterministic iteration order via sorted fingerprints enables reproducible results.
 fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Variant>, String> {
-    let mut table: std::collections::BTreeMap<Vec<String>, usize> = std::collections::BTreeMap::new();
+    let mut table: std::collections::BTreeMap<Vec<String>, usize> =
+        std::collections::BTreeMap::new();
 
     for trace in &log.traces {
         let activities: Result<Vec<String>, String> = trace

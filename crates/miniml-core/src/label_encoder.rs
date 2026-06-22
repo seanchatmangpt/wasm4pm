@@ -17,7 +17,7 @@ impl LabelEncoder {
         }
 
         let mut unique: Vec<f64> = labels.to_vec();
-        unique.sort_unstable_by(|a, b| a.total_cmp(b));
+        unique.sort_unstable_by(f64::total_cmp);
         unique.dedup();
 
         self.classes = unique;

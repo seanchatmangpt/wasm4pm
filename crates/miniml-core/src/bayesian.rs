@@ -174,7 +174,7 @@ where
     }
 
     let n = samples.len();
-    samples.sort_unstable_by(|a, b| a.total_cmp(b));
+    samples.sort_unstable_by(f64::total_cmp);
 
     let mean: f64 = samples.iter().sum::<f64>() / n as f64;
     let median = samples[n / 2];
@@ -302,7 +302,7 @@ pub fn credible_interval_impl(samples: &[f64], alpha: f64) -> (f64, f64) {
         return (0.0, 0.0);
     }
     let mut sorted = samples.to_vec();
-    sorted.sort_unstable_by(|a, b| a.total_cmp(b));
+    sorted.sort_unstable_by(f64::total_cmp);
     let n = sorted.len();
     let lower_idx = ((alpha / 2.0) * n as f64).floor() as usize;
     let upper_idx = ((1.0 - alpha / 2.0) * n as f64).ceil() as usize;
