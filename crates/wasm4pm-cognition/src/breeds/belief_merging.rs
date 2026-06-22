@@ -13,6 +13,7 @@
 //! Hamming distance to the base's models). The merged belief is the set of
 //! IC-worlds with minimal aggregated distance vector (Σ: sum; GMax: leximax
 //! on the descending-sorted vector).
+use std::collections::BTreeMap;
 
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::support::trace_query::TraceQuery;
@@ -97,7 +98,7 @@ fn render_world(world: u32, atoms: &[String]) -> String {
 
 struct Parsed {
     atoms: Vec<String>,
-    bases: Vec<(String, Conj)>,
+    bases: BTreeMap<String, Conj>,
     ic: Conj,
     gmax: bool,
 }
@@ -113,13 +114,12 @@ fn parse(input: &BreedInput) -> Result<Parsed, String> {
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .collect();
-    let mut bases: Vec<(String, Conj)> = Vec::new();
+    let mut bases: BTreeMap<String, Conj> = BTreeMap::new();
     for f in &input.facts {
         if let Some(i) = f.key.strip_prefix("bm:base:") {
-            bases.push((i.to_string(), parse_conj(&f.value, &atoms)?));
+            bases.insert(i.to_string(), parse_conj(&f.value, &atoms)?);
         }
     }
-    bases.sort_by(|a, b| a.0.cmp(&b.0));
     let ic = input
         .facts
         .iter()
