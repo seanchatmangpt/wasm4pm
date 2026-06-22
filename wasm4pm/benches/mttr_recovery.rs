@@ -15,9 +15,7 @@
  * Instant/Duration timing), and every input and result is fed through black_box
  * so the optimizer cannot elide the modeled transition cost.
  */
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 
 // Synthetic recovery-path models. Each returns the resolved end state plus an
@@ -78,7 +76,11 @@ fn circuit_reset(timeout_work: usize) -> (&'static str, u32) {
     for _ in 0..timeout_work {
         time_in_open = time_in_open.wrapping_add(1);
     }
-    let mut breaker_state = if time_in_open > 100 { "half_open" } else { "open" };
+    let mut breaker_state = if time_in_open > 100 {
+        "half_open"
+    } else {
+        "open"
+    };
     let probe_success = true;
     if breaker_state == "half_open" && probe_success {
         breaker_state = "closed";
@@ -155,21 +157,34 @@ fn mttr_latency_percentiles(c: &mut Criterion) {
     group.sample_size(100);
     group.measurement_time(Duration::from_secs(10));
 
-    group.bench_with_input(BenchmarkId::from_parameter("soft_recovery"), &100usize, |b, &w| {
-        b.iter(|| black_box(soft_recovery(black_box(w))))
-    });
-    group.bench_with_input(BenchmarkId::from_parameter("fast_recovery"), &1_000usize, |b, &w| {
-        b.iter(|| black_box(fast_recovery(black_box(w))))
-    });
-    group.bench_with_input(BenchmarkId::from_parameter("cold_start"), &10_000usize, |b, &w| {
-        b.iter(|| black_box(cold_start(black_box(w), black_box(1_000))))
-    });
-    group.bench_with_input(BenchmarkId::from_parameter("circuit_reset"), &500usize, |b, &w| {
-        b.iter(|| black_box(circuit_reset(black_box(w))))
-    });
+    group.bench_with_input(
+        BenchmarkId::from_parameter("soft_recovery"),
+        &100usize,
+        |b, &w| b.iter(|| black_box(soft_recovery(black_box(w)))),
+    );
+    group.bench_with_input(
+        BenchmarkId::from_parameter("fast_recovery"),
+        &1_000usize,
+        |b, &w| b.iter(|| black_box(fast_recovery(black_box(w)))),
+    );
+    group.bench_with_input(
+        BenchmarkId::from_parameter("cold_start"),
+        &10_000usize,
+        |b, &w| b.iter(|| black_box(cold_start(black_box(w), black_box(1_000)))),
+    );
+    group.bench_with_input(
+        BenchmarkId::from_parameter("circuit_reset"),
+        &500usize,
+        |b, &w| b.iter(|| black_box(circuit_reset(black_box(w)))),
+    );
 
     group.finish();
 }
 
-criterion_group!(benches, mttr_benchmarks, mttr_contention, mttr_latency_percentiles);
+criterion_group!(
+    benches,
+    mttr_benchmarks,
+    mttr_contention,
+    mttr_latency_percentiles
+);
 criterion_main!(benches);

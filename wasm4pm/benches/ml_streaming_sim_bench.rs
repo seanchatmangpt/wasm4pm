@@ -10,9 +10,7 @@
 /// - OCEL flatten to eventlog
 ///
 /// Note: Uses internal Rust APIs directly, not WASM bindings.
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::fs;
 use std::time::Duration;

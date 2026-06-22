@@ -183,9 +183,7 @@ fn bench_handover_network(c: &mut Criterion) {
         group.throughput(Throughput::Elements(ds.events));
         group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.handle, |b, h| {
             b.iter(|| {
-                black_box(
-                    discover_handover_network(black_box(h), black_box(RESOURCE_KEY)).unwrap(),
-                )
+                black_box(discover_handover_network(black_box(h), black_box(RESOURCE_KEY)).unwrap())
             })
         });
     }

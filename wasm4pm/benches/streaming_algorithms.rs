@@ -46,7 +46,10 @@ fn load_datasets() -> Vec<Dataset> {
         if !path.exists() {
             // Skip cleanly if a dataset is absent (e.g. CI without bench_data);
             // never fabricate a synthetic log — that is a TPS violation.
-            eprintln!("streaming bench: dataset '{}' missing at {}, skipping", label, rel);
+            eprintln!(
+                "streaming bench: dataset '{}' missing at {}, skipping",
+                label, rel
+            );
             continue;
         }
         let content = std::fs::read_to_string(path)
@@ -54,9 +57,17 @@ fn load_datasets() -> Vec<Dataset> {
         let log = validate_and_parse_xes(&content)
             .unwrap_or_else(|e| panic!("bench: failed to parse {}: {}", rel, e));
         let events = log.event_count() as u64;
-        assert!(events > 0, "bench: real dataset '{}' parsed to 0 events", label);
+        assert!(
+            events > 0,
+            "bench: real dataset '{}' parsed to 0 events",
+            label
+        );
         let handle = store_log(log);
-        out.push(Dataset { label, handle, events });
+        out.push(Dataset {
+            label,
+            handle,
+            events,
+        });
     }
     assert!(
         !out.is_empty(),
@@ -79,17 +90,11 @@ fn bench_dfg_scalar(c: &mut Criterion) {
 
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.events));
-        group.bench_with_input(
-            BenchmarkId::new("dataset", ds.label),
-            &ds.handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(
-                        discover_dfg(black_box(h.as_str()), black_box(ACTIVITY_KEY)).unwrap(),
-                    )
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.handle, |b, h| {
+            b.iter(|| {
+                black_box(discover_dfg(black_box(h.as_str()), black_box(ACTIVITY_KEY)).unwrap())
+            })
+        });
     }
     group.finish();
 }
@@ -108,18 +113,14 @@ fn bench_dfg_simd_handle(c: &mut Criterion) {
 
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.events));
-        group.bench_with_input(
-            BenchmarkId::new("dataset", ds.label),
-            &ds.handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(
-                        discover_dfg_simd_handle(black_box(h.as_str()), black_box(ACTIVITY_KEY))
-                            .unwrap(),
-                    )
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.handle, |b, h| {
+            b.iter(|| {
+                black_box(
+                    discover_dfg_simd_handle(black_box(h.as_str()), black_box(ACTIVITY_KEY))
+                        .unwrap(),
+                )
+            })
+        });
     }
     group.finish();
 }

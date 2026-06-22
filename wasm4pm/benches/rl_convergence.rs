@@ -11,9 +11,7 @@
 //! 5. State space coverage: % of 460K states explored
 //! 6. Reward sensitivity: scaling and perturbation analysis
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
 use wasm4pm::{RlAction, RlState};
 

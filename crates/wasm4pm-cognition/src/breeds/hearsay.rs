@@ -275,20 +275,16 @@ impl CognitionBreed for Hearsay {
         // Determine top level: level of the highest-confidence posted hypothesis
         // that is NOT also at level-0 (i.e. not in the seed level).
         let seed_level: &str = input.facts.first().map(|f| f.key.as_str()).unwrap_or("");
-        let derived: Vec<(&String, f32)> = blackboard
+        let selected = blackboard
             .iter()
             .filter(|(k, _)| level_of(k) != seed_level)
             .map(|(k, v)| (k, *v))
-            .collect();
-
-        let selected = derived
-            .iter()
             .max_by(|(ak, av), (bk, bv)| {
                 av.partial_cmp(bv)
                     .unwrap_or(std::cmp::Ordering::Equal)
                     .then_with(|| bk.cmp(ak)) // reversed: smallest key wins on tie
             })
-            .map(|(k, _)| (*k).clone());
+            .map(|(k, _)| k.clone());
 
         // Collect new_facts from BTreeMap (already sorted).
         let mut new_facts: Vec<Fact> = blackboard

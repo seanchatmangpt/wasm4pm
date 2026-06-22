@@ -120,7 +120,8 @@ fn bench_heuristic_miner(c: &mut Criterion) {
                 |b, h| {
                     b.iter(|| {
                         black_box(
-                            discover_heuristic_miner(black_box(h), ACTIVITY_KEY, threshold).unwrap(),
+                            discover_heuristic_miner(black_box(h), ACTIVITY_KEY, threshold)
+                                .unwrap(),
                         )
                     })
                 },

@@ -7,7 +7,7 @@
 //! shared `helpers::generate_event_log` panics, so every benchmark here loads an
 //! actual process log and serializes it to the JSON form `discover_powl_from_log`
 //! consumes.
-use criterion::{criterion_group, criterion_main, black_box, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 use wasm4pm::models::EventLog;
 use wasm4pm::powl_api::discover_powl_from_log;
@@ -119,9 +119,13 @@ fn bench_powl_from_log(c: &mut Criterion) {
 
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.events));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.json, |b, json| {
-            b.iter(|| black_box(discover_powl_from_log(black_box(json), "inductive").unwrap()));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &ds.json,
+            |b, json| {
+                b.iter(|| black_box(discover_powl_from_log(black_box(json), "inductive").unwrap()));
+            },
+        );
     }
     group.finish();
 }
@@ -141,13 +145,9 @@ fn bench_powl_variants(c: &mut Criterion) {
     group.throughput(Throughput::Elements(ds.events));
 
     for variant in ["inductive", "alpha", "heuristic"] {
-        group.bench_with_input(
-            BenchmarkId::new("variant", variant),
-            &ds.json,
-            |b, json| {
-                b.iter(|| black_box(discover_powl_from_log(black_box(json), variant).unwrap()));
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("variant", variant), &ds.json, |b, json| {
+            b.iter(|| black_box(discover_powl_from_log(black_box(json), variant).unwrap()));
+        });
     }
     group.finish();
 }

@@ -71,7 +71,12 @@ fn bench_automl_forecast(c: &mut Criterion) {
         let handle = setup_mock_log(size, 10);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(format!("synthetic_{}_traces", size), &handle, |b, h| {
-            b.iter(|| black_box(discover_automl_forecast(black_box(h), black_box("concept:name"))))
+            b.iter(|| {
+                black_box(discover_automl_forecast(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
         });
     }
 
@@ -79,7 +84,12 @@ fn bench_automl_forecast(c: &mut Criterion) {
     if let Some((handle, count)) = setup_real_log("bench_data/sepsis.xes", 1000) {
         group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(format!("sepsis_real_{}_traces", count), &handle, |b, h| {
-            b.iter(|| black_box(discover_automl_forecast(black_box(h), black_box("concept:name"))))
+            b.iter(|| {
+                black_box(discover_automl_forecast(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
         });
     }
 
@@ -93,7 +103,12 @@ fn bench_automl_classify(c: &mut Criterion) {
         let handle = setup_mock_log(size, 10);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(format!("synthetic_{}_traces", size), &handle, |b, h| {
-            b.iter(|| black_box(discover_automl_classify(black_box(h), black_box("concept:name"))))
+            b.iter(|| {
+                black_box(discover_automl_classify(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
         });
     }
 
@@ -101,7 +116,12 @@ fn bench_automl_classify(c: &mut Criterion) {
     if let Some((handle, count)) = setup_real_log("bench_data/sepsis.xes", 1000) {
         group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(format!("sepsis_real_{}_traces", count), &handle, |b, h| {
-            b.iter(|| black_box(discover_automl_classify(black_box(h), black_box("concept:name"))))
+            b.iter(|| {
+                black_box(discover_automl_classify(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
         });
     }
 

@@ -328,8 +328,7 @@ pub fn token_replay_fitness(powl_str: &str, log_json: &str) -> Result<String, Js
         &log,
     );
 
-    serde_json::to_string_pretty(&fitness_result)
-        .map_err(|e| wasm_err(&format!("json error: {e}")))
+    serde_json::to_string_pretty(&fitness_result).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Check soundness of a POWL model (van der Aalst criteria).

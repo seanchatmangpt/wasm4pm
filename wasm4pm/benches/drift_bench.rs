@@ -126,7 +126,10 @@ fn bench_detect_drift(c: &mut Criterion) {
     // activity vocabularies, so exercising it on genuine logs (varied trace
     // counts and activity alphabets) is the meaningful workload.
     let datasets: &[(&str, &[&str])] = &[
-        ("sepsis", &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"]),
+        (
+            "sepsis",
+            &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"],
+        ),
         (
             "roadtraffic",
             &[
@@ -136,7 +139,10 @@ fn bench_detect_drift(c: &mut Criterion) {
         ),
         (
             "bpi2020",
-            &["bench_data/bpi2020_travel.xes", "../../bench_data/bpi2020_travel.xes"],
+            &[
+                "bench_data/bpi2020_travel.xes",
+                "../../bench_data/bpi2020_travel.xes",
+            ],
         ),
     ];
 

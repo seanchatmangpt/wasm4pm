@@ -270,9 +270,7 @@ fn bench_jaccard_distance(c: &mut Criterion) {
     group.bench_with_input(
         BenchmarkId::new("cases", shape.num_cases),
         &(map_a, map_b),
-        |b, (a, b_map)| {
-            b.iter(|| black_box(jaccard_distance(black_box(a), black_box(b_map))))
-        },
+        |b, (a, b_map)| b.iter(|| black_box(jaccard_distance(black_box(a), black_box(b_map)))),
     );
     group.finish();
 }

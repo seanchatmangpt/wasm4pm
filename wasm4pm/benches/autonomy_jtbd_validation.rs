@@ -245,7 +245,13 @@ fn bench_reinforcement(c: &mut Criterion) {
                         let action = agent.select_action(&state);
                         let reward = if action == RlAction::Left { 1.0 } else { -0.5 };
                         let next_state = RlState((state.0 + 1) % 3);
-                        agent.update(&state, &action, reward, &next_state, next_state.is_terminal());
+                        agent.update(
+                            &state,
+                            &action,
+                            reward,
+                            &next_state,
+                            next_state.is_terminal(),
+                        );
                         state = next_state;
                     }
                     black_box(agent.get_q_value(&RlState(0), &RlAction::Left))
@@ -346,7 +352,11 @@ fn bench_spc(c: &mut Criterion) {
             .map(|i| {
                 let phase = i % 32;
                 let v = if phase < 16 {
-                    if i % 2 == 0 { 4.0 } else { 6.0 }
+                    if i % 2 == 0 {
+                        4.0
+                    } else {
+                        6.0
+                    }
                 } else {
                     // upward trend segment to exercise trend/shift rules
                     5.0 + (phase as f64 - 16.0) * 0.2
@@ -367,7 +377,9 @@ fn bench_spc(c: &mut Criterion) {
 
     // Process capability (Cp/Cpk/DPMO/sigma) over a measurement window.
     for n in [50u64, 500, 5000] {
-        let data: Vec<f64> = (0..n).map(|i| 5.0 + ((i % 7) as f64 - 3.0) * 0.15).collect();
+        let data: Vec<f64> = (0..n)
+            .map(|i| 5.0 + ((i % 7) as f64 - 3.0) * 0.15)
+            .collect();
         group.throughput(Throughput::Elements(n));
         group.bench_with_input(
             BenchmarkId::new("process_capability", n),
