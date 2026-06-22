@@ -32,7 +32,7 @@ use crate::powl_parser::parse_powl_model_string;
 /// `serde_json::to_string` + `JsValue::from_str` avoids that bug.
 fn to_js(val: &impl serde::Serialize) -> Result<JsValue, JsValue> {
     let s = serde_json::to_string(val)
-        .map_err(|e| crate::error::js_val(&format!("serde error: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("serde error: {e}")))?;
     Ok(JsValue::from_str(&s))
 }
 
@@ -44,7 +44,7 @@ fn wasm_err(msg: &str) -> JsValue {
 fn parse_model(s: &str) -> Result<(PowlArena, u32), JsValue> {
     let mut arena = PowlArena::new();
     let root = parse_powl_model_string(s.trim(), &mut arena)
-        .map_err(|e| wasm_err(&format!("parse error: {}", e)))?;
+        .map_err(|e| wasm_err(&format!("parse error: {e}")))?;
     Ok((arena, root))
 }
 
@@ -217,8 +217,8 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
                 .map(|n| match n {
                     ChoiceGraphNode::Start => "Start".into(),
                     ChoiceGraphNode::End => "End".into(),
-                    ChoiceGraphNode::Activity(l) => format!("Activity({})", l),
-                    ChoiceGraphNode::SubModel(i) => format!("SubModel({})", i),
+                    ChoiceGraphNode::Activity(l) => format!("Activity({l})"),
+                    ChoiceGraphNode::SubModel(i) => format!("SubModel({i})"),
                 })
                 .collect();
             serde_json::json!({
@@ -232,7 +232,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
         None => serde_json::json!({ "error": "invalid index" }),
     };
     serde_json::to_string(&info)
-        .map_err(|e| crate::error::js_val(&format!("Failed to serialize model info: {}", e)))
+        .map_err(|e| crate::error::js_val(&format!("Failed to serialize model info: {e}")))
 }
 
 // ─── Conversions ──────────────────────────────────────────────────────────
@@ -242,7 +242,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
 pub fn powl_to_petri_net(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
-    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Convert a POWL model to a Process Tree (JSON).
@@ -253,7 +253,7 @@ pub fn powl_to_process_tree(s: &str) -> Result<String, JsValue> {
         return Err(wasm_err("POWL arena is empty or root index out of bounds"));
     }
     let tree = to_process_tree::apply(&arena, root).map_err(|e| wasm_err(&e))?;
-    serde_json::to_string_pretty(&tree).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&tree).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Convert a Process Tree (JSON) to a POWL model.
@@ -319,7 +319,7 @@ pub fn token_replay_fitness(powl_str: &str, log_json: &str) -> Result<String, Js
     let pn_result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
 
     let log: EventLog =
-        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {e}")))?;
 
     let fitness_result = compute_fitness(
         &pn_result.net,
@@ -329,7 +329,7 @@ pub fn token_replay_fitness(powl_str: &str, log_json: &str) -> Result<String, Js
     );
 
     serde_json::to_string_pretty(&fitness_result)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+        .map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Check soundness of a POWL model (van der Aalst criteria).
@@ -347,7 +347,7 @@ pub fn check_powl_soundness(powl_str: &str) -> Result<String, JsValue> {
     );
 
     serde_json::to_string_pretty(&soundness_result)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+        .map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Check DecisionGraph structural soundness (connectivity, acyclicity).
@@ -361,7 +361,7 @@ pub fn check_powl_soundness(powl_str: &str) -> Result<String, JsValue> {
 pub fn check_dg_soundness(powl_string: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(powl_string)?;
     let report = dg_soundness_report(&arena, root);
-    serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Compute footprints-based conformance (fitness, precision, recall, F1).
@@ -378,11 +378,11 @@ pub fn footprints_conformance(powl_str: &str, log_json: &str) -> Result<String, 
     let model_fp = footprints_apply(&arena, root);
 
     let log: EventLog =
-        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {e}")))?;
 
     let result = footprints_conformance_check(&log, &model_fp);
 
-    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 // ─── Analysis ─────────────────────────────────────────────────────────────
@@ -394,7 +394,7 @@ pub fn footprints_conformance(powl_str: &str, log_json: &str) -> Result<String, 
 pub fn measure_complexity(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let report = measure(&arena, root);
-    serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Analyse frequency ranges of all FrequentTransition nodes in a POWL model.
@@ -470,7 +470,7 @@ pub fn powl_freq_analysis(s: &str) -> Result<String, JsValue> {
         "nodes": nodes,
     });
 
-    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 /// Recursively collect all FrequentTransition nodes in the subtree into `out`.
@@ -531,7 +531,7 @@ pub fn diff_models(model_a_str: &str, model_b_str: &str) -> Result<String, JsVal
     let (arena_b, root_b) = parse_model(model_b_str)?;
 
     let result = model_diff(&arena_a, root_a, &arena_b, root_b);
-    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 // ─── Footprints ───────────────────────────────────────────────────────────
@@ -543,7 +543,7 @@ pub fn diff_models(model_a_str: &str, model_b_str: &str) -> Result<String, JsVal
 pub fn powl_footprints(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let fp = crate::powl::footprints::apply(&arena, root);
-    serde_json::to_string_pretty(&fp).map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&fp).map_err(|e| wasm_err(&format!("json error: {e}")))
 }
 
 // ─── Discovery ─────────────────────────────────────────────────────────────
@@ -561,7 +561,7 @@ pub fn powl_footprints(s: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, JsValue> {
     let log: ModelsEventLog =
-        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {e}")))?;
 
     let discovery_variant = DiscoveryVariant::from_variant_str(variant)
         .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
@@ -576,7 +576,7 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
     };
 
     let (arena, root) =
-        discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {}", e)))?;
+        discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {e}")))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
@@ -607,7 +607,7 @@ pub fn discover_powl_from_log_config(
     noise_threshold: f64,
 ) -> Result<JsValue, JsValue> {
     let log: ModelsEventLog =
-        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {e}")))?;
 
     let discovery_variant = DiscoveryVariant::from_variant_str(variant)
         .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
@@ -622,7 +622,7 @@ pub fn discover_powl_from_log_config(
     };
 
     let (arena, root) =
-        discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {}", e)))?;
+        discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {e}")))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
@@ -652,7 +652,7 @@ pub fn discover_powl_from_partial_orders(
     variant: &str,
 ) -> Result<JsValue, JsValue> {
     let log: ModelsEventLog =
-        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {e}")))?;
 
     let discovery_variant = DiscoveryVariant::from_variant_str(variant)
         .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
@@ -670,7 +670,7 @@ pub fn discover_powl_from_partial_orders(
     let root = crate::powl::discovery::from_partial_orders::discover_from_partial_orders(
         &log, &config, &mut arena,
     )
-    .map_err(|e| wasm_err(&format!("partial order discovery error: {}", e)))?;
+    .map_err(|e| wasm_err(&format!("partial order discovery error: {e}")))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
@@ -693,7 +693,7 @@ pub fn discover_powl_from_partial_orders(
 #[wasm_bindgen]
 pub fn discover_ocel_powl(ocel_json: &str, variant: &str) -> Result<JsValue, JsValue> {
     let log: ModelsEventLog = serde_json::from_str(ocel_json)
-        .map_err(|e| wasm_err(&format!("ocel log parse error: {}", e)))?;
+        .map_err(|e| wasm_err(&format!("ocel log parse error: {e}")))?;
 
     let ocel_variant = crate::powl::discovery::ocel::OcelVariant::from_variant_str(variant)
         .ok_or_else(|| wasm_err("invalid OCEL variant: use 'flattening' or 'oc_powl'"))?;
@@ -710,7 +710,7 @@ pub fn discover_ocel_powl(ocel_json: &str, variant: &str) -> Result<JsValue, JsV
     let mut arena = PowlArena::new();
     let root =
         crate::powl::discovery::ocel::discover_ocel_powl(&log, &config, &mut arena, ocel_variant)
-            .map_err(|e| wasm_err(&format!("ocel discovery error: {}", e)))?;
+            .map_err(|e| wasm_err(&format!("ocel discovery error: {e}")))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
