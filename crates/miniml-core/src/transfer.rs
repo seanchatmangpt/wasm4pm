@@ -130,7 +130,7 @@ pub fn fine_tune(
         .map_err(|e| JsError::new(&format!("Failed to load pretrained model: {}", e)))?;
 
     // Fine-tune the model
-    let fine_tuned_model = fine_tune_model(&model, x_new, y_new, layers_to_freeze, config)?;
+    let fine_tuned_model = fine_tune_model(model, x_new, y_new, layers_to_freeze, config)?;
 
     // Serialize and return fine-tuned model
     bincode::serialize(&fine_tuned_model)
@@ -205,14 +205,13 @@ fn convert_from_onnx(onnx_model: &OnnxModel) -> Result<PersistentModel, MlError>
 
 /// Fine-tune model with new data
 fn fine_tune_model(
-    model: &PersistentModel,
+    model: PersistentModel,
     x_new: &[f64],
     y_new: &[f64],
     layers_to_freeze: &[usize],
     config: &FineTuneConfig,
 ) -> Result<PersistentModel, MlError> {
-    // Clone the model
-    let mut fine_tuned = model.clone();
+    let mut fine_tuned = model;
 
     // Fine-tune based on model type
     match fine_tuned.model_type.as_str() {
