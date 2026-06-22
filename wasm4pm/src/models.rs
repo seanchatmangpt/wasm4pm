@@ -1715,7 +1715,7 @@ pub struct NGramPredictor {
     /// The 'n' in n-gram (length of history considered).
     pub n: usize,
     /// Mapping of activity prefix sequences to next-activity occurrence counts.
-    pub counts: HashMap<Vec<String>, HashMap<String, usize>>,
+    pub counts: BTreeMap<Vec<String>, BTreeMap<String, usize>>,
 }
 
 impl NGramPredictor {
@@ -1724,7 +1724,7 @@ impl NGramPredictor {
     pub fn new(n: usize) -> Self {
         NGramPredictor {
             n,
-            counts: HashMap::new(),
+            counts: BTreeMap::new(),
         }
     }
 
