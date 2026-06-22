@@ -19,6 +19,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::BTreeMap;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -35,11 +36,7 @@ pub fn discover_dfg_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -
         frequency: 0,
     }));
 
-    // Pre-size the edge map to n²/4 as a rough initial capacity — avoids most
-    // rehashes for typical logs where the DFG is sparse relative to n².
-    let n = col.vocab.len();
-    let mut edge_counts: FxHashMap<(u32, u32), usize> =
-        FxHashMap::with_capacity_and_hasher(n.saturating_mul(n) / 4 + 1, Default::default());
+    let mut edge_counts: BTreeMap<(u32, u32), usize> = BTreeMap::new();
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -63,12 +60,9 @@ pub fn discover_dfg_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -
             .or_default() += 1;
     }
 
-    let mut sorted_edges: Vec<_> = edge_counts.into_iter().collect();
-    // Sort by source then target index to ensure deterministic order (Gap-1)
-    sorted_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
-
+    // BTreeMap iterates in ascending key order — deterministic by contract (Gap-1).
     dfg.edges.extend(
-        sorted_edges
+        edge_counts
             .into_iter()
             .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
@@ -208,7 +202,7 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
 
     // Build an edge map with &str keys — avoids one String allocation per DF pair.
     // The strings are borrowed from the OCEL event_type fields which outlive this scope.
-    let mut edge_map: FxHashMap<(&str, &str), usize> = FxHashMap::default();
+    let mut edge_map: BTreeMap<(&str, &str), usize> = BTreeMap::new();
     for events in events_by_object.values() {
         for pair in events.windows(2) {
             let from = pair[0].1;
@@ -217,11 +211,8 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
         }
     }
 
-    // Sort by the borrowed keys — no clone needed since (&str, &str) is Ord.
-    let mut sorted_edges: Vec<_> = edge_map.into_iter().collect();
-    sorted_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
-
-    for ((from, to), frequency) in sorted_edges {
+    // BTreeMap<(&str,&str)> iterates in ascending key order — no explicit sort needed.
+    for ((from, to), frequency) in edge_map {
         dfg.edges.push(DirectlyFollowsRelation {
             from: from.to_owned(),
             to: to.to_owned(),
