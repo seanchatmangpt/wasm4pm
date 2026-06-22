@@ -307,8 +307,7 @@ pub fn compute_optimal_alignments(
         None => Err(crate::error::js_val("PetriNet handle not found")),
     })?;
 
-    let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut alignments: Vec<serde_json::Value> = Vec::new();
             let mut total_cost = 0.0;
 
@@ -371,9 +370,6 @@ pub fn compute_optimal_alignments(
                 "alignments": alignments,
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&result_json))
@@ -404,8 +400,7 @@ pub fn compute_alignments(
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
-    let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut alignments: Vec<serde_json::Value> = Vec::new();
 
             for trace in &log.traces {
@@ -489,9 +484,6 @@ pub fn compute_alignments(
                 "alignments": alignments,
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&result_json))

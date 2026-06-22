@@ -101,8 +101,7 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
     // Use with_object to borrow the log in place — avoids a full EventLog clone.
     // discover_dfg_from_log builds its own columnar view internally, so we only
     // need a shared reference, not an owned copy.
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let log_size = log.traces.len();
 
             tracing::info!(
@@ -144,12 +143,6 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
             );
 
             to_js_str(&dfg)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 
@@ -465,8 +458,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
         "DECLARE discovery started"
     );
 
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut model = DeclareModel::new();
 
             let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
@@ -709,12 +701,6 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             );
 
             to_js_str(&model)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 

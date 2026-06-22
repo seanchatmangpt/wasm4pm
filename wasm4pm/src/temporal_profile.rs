@@ -121,8 +121,7 @@ pub fn check_temporal_conformance(
         None => Err(crate::error::js_val("TemporalProfile handle not found")),
     })?;
 
-    let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut total_steps = 0usize;
             let mut total_deviations = 0usize;
             let mut details: Vec<serde_json::Value> = Vec::new();
@@ -201,9 +200,6 @@ pub fn check_temporal_conformance(
                 "details": details,
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&result_json))

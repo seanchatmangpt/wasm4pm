@@ -44,8 +44,7 @@ pub fn extract_case_features(
         .unwrap_or("remaining_time")
         .to_string();
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut results = Vec::new();
 
             for trace in &log.traces {
@@ -160,9 +159,6 @@ pub fn extract_case_features(
             }
 
             to_js(&results)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -179,8 +175,7 @@ pub fn extract_prefix_features(
     timestamp_key: &str,
     prefix_length: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut results = Vec::new();
 
             for trace in &log.traces {
@@ -264,9 +259,6 @@ pub fn extract_prefix_features(
             }
 
             to_js(&results)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -339,8 +331,7 @@ pub fn export_features_json(
     timestamp_key: &str,
     config_json: &str,
 ) -> Result<String, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             // Parse config
             let config: Map<String, Value> = serde_json::from_str(config_json)
                 .map_err(|e| crate::error::js_val(&format!("Invalid config JSON: {}", e)))?;
@@ -466,9 +457,6 @@ pub fn export_features_json(
 
             serde_json::to_string(&results)
                 .map_err(|e| crate::error::js_val(&format!("Failed to serialize features: {}", e)))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

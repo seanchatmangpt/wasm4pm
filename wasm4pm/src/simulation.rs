@@ -30,9 +30,6 @@ pub fn simulate_remove_activity(
     let (traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     // Remove activity from all traces
@@ -94,9 +91,6 @@ pub fn simulate_add_event(
     let (traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     let mut modified_count = 0usize;
@@ -159,9 +153,6 @@ pub fn simulate_reorder(
     let (traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     let mut swap_count = 0usize;
@@ -233,9 +224,6 @@ pub fn simulate_batch(
     let (mut traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     let mut step_results = Vec::new();

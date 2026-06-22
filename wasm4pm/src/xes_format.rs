@@ -157,8 +157,7 @@ pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
 /// Export EventLog to XES format (generates valid XES XML)
 #[wasm_bindgen]
 pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
             let mut xes = String::with_capacity(512 + total_events * 200);
 
@@ -185,9 +184,6 @@ pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> 
             }
             xes.push_str("</log>");
             Ok(xes)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

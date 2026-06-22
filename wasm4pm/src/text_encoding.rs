@@ -108,8 +108,7 @@ pub fn encode_variants_as_text(
     activity_key: &str,
     top_n: usize,
 ) -> Result<String, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             if log.traces.is_empty() {
                 return Ok("No process variants found (empty event log).".to_string());
             }
@@ -156,17 +155,13 @@ pub fn encode_variants_as_text(
             }
 
             Ok(text.trim_end().to_string())
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
 /// Convert event log statistics to human-readable summary text
 #[wasm_bindgen]
 pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let case_count = log.case_count();
             let event_count = log.event_count();
             let avg_events_per_case = if case_count > 0 {
@@ -215,9 +210,6 @@ pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
             text.push_str(&freq_strs.join(", "));
 
             Ok(text)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

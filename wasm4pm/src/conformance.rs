@@ -572,13 +572,9 @@ pub fn check_token_based_replay(
     let lookup = PetriNetLookup::build(&petri_net_cloned);
 
     // Perform conformance using borrowed EventLog — no clone.
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let result = replay_log(log, &petri_net_cloned, activity_key, &lookup);
             to_js_str(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

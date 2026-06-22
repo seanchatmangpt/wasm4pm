@@ -29,8 +29,7 @@ pub fn build_ngram_predictor(
     n: usize,
 ) -> Result<JsValue, JsValue> {
     let n = n.max(2); // minimum bigram
-    let predictor = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let predictor = get_or_init_state().with_event_log(log_handle, |log| {
             let mut counts: std::collections::BTreeMap<
                 Vec<String>,
                 std::collections::BTreeMap<String, usize>,
@@ -62,9 +61,6 @@ pub fn build_ngram_predictor(
             }
 
             Ok(NGramPredictor { n, counts })
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::NGramPredictor(predictor))?;

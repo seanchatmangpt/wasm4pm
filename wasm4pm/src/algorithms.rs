@@ -477,8 +477,7 @@ pub fn discover_alpha_plus_plus(
     );
 
     // Compute inside closure (no store — avoids mutex re-entry), store outside.
-    let pn = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let pn = get_or_init_state().with_event_log(eventlog_handle, |log| {
             tracing::info!(
                 target: "wasm4pm.discovery.alpha_plus_plus",
                 checkpoint = "feature_extraction",
@@ -489,12 +488,6 @@ pub fn discover_alpha_plus_plus(
             let admitted =
                 wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
             alpha_plus_plus_inner(&admitted, activity_key, min_support)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })?;
 
     let n_places = pn.places.len();

@@ -36,8 +36,7 @@ pub fn check_declare_conformance(
         None => Err(crate::error::js_val("DeclareModel handle not found")),
     })?;
 
-    let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             let total = log.traces.len();
             // violations[i] = # traces violating constraint i
             let mut violations: Vec<usize> = vec![0; constraints.len()];
@@ -139,9 +138,6 @@ pub fn check_declare_conformance(
                 "constraints": constraint_results,
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&result_json))

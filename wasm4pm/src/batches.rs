@@ -301,16 +301,9 @@ pub fn discover_batches_wasm(
     activity_key: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let result = discover_batches(log, activity_key, timestamp_key);
             to_js(&result)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 

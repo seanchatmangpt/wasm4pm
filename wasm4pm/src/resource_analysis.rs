@@ -41,8 +41,7 @@ pub fn analyze_resource_utilization(
     resource_key: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let json = get_or_init_state().with_event_log(log_handle, |log| {
             // Track per-resource info
             let mut resource_events: HashMap<String, Vec<(usize, i64, String)>> = HashMap::new();
             let mut resource_activities: HashMap<String, HashMap<String, usize>> = HashMap::new();
@@ -161,9 +160,6 @@ pub fn analyze_resource_utilization(
                 "total_resources": total_resources
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&json))
@@ -191,8 +187,7 @@ pub fn analyze_resource_activity_matrix(
     resource_key: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut matrix: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
             let mut resource_totals: HashMap<String, usize> = HashMap::new();
 
@@ -238,9 +233,6 @@ pub fn analyze_resource_activity_matrix(
                 "specialization_scores": specialization_scores
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&json))
@@ -270,8 +262,7 @@ pub fn identify_resource_bottlenecks(
     timestamp_key: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let json = get_or_init_state().with_event_log(log_handle, |log| {
             // Per-resource, per-case: (case_id, first_activity_time, resource_start_time, resource_end_time, activity)
             let mut resource_case_intervals: HashMap<String, Vec<(String, i64, i64, i64, String)>> =
                 HashMap::new();
@@ -419,9 +410,6 @@ pub fn identify_resource_bottlenecks(
                 "bottlenecks": bottlenecks
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&json))

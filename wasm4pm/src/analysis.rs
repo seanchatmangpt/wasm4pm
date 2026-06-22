@@ -21,8 +21,7 @@ use wasm_bindgen::prelude::*;
 /// Perform dotted chart analysis on an EventLog
 #[wasm_bindgen]
 pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut data = Vec::new();
             let mut total_events = 0;
 
@@ -42,20 +41,13 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<JsValue, JsValue> {
                 "total_events": total_events,
                 "cases": data
             }))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 
 /// Get event statistics from an EventLog
 #[wasm_bindgen]
 pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let total_events = log.event_count();
             let total_cases = log.case_count();
 
@@ -70,12 +62,6 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<JsValue, JsValu
             });
 
             to_js_str(&stats)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 
@@ -102,8 +88,7 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
 /// Analyze case duration from an EventLog
 #[wasm_bindgen]
 pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut event_counts: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
 
             let stats = if !event_counts.is_empty() {
@@ -134,12 +119,6 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
             };
 
             to_js_str(&stats)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 

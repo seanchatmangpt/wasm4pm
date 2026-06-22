@@ -129,8 +129,7 @@ pub fn compute_boundary_coverage(
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             // Extract complete traces as activity string vectors
             let all_traces: Vec<Vec<String>> = log
                 .traces
@@ -186,9 +185,6 @@ pub fn compute_boundary_coverage(
                 &serde_json::to_string(&result)
                     .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 

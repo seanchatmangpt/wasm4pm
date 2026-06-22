@@ -36,8 +36,7 @@ pub fn measure_trace_determinism(
     activity_key: &str,
     algorithm: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(handle, |log| {
             let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
 
             // Run the algorithm 3 times and capture output hashes
@@ -63,9 +62,6 @@ pub fn measure_trace_determinism(
             });
 
             to_js_str(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -92,8 +88,7 @@ pub fn measure_algorithm_quality_baseline(
     activity_key: &str,
     algorithm: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(handle, |log| {
             let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
 
             // Run discovery algorithm
@@ -116,9 +111,6 @@ pub fn measure_algorithm_quality_baseline(
             });
 
             to_js_str(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -148,8 +140,7 @@ pub fn benchmark_algorithm(
     algorithm: &str,
     iterations: u32,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(handle, |log| {
             let log_size: usize = log.traces.iter().map(|t| t.events.len()).sum();
             let mut latencies: Vec<f64> = Vec::new();
 
@@ -191,9 +182,6 @@ pub fn benchmark_algorithm(
             });
 
             to_js_str(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
