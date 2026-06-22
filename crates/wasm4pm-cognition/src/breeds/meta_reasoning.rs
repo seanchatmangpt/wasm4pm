@@ -60,16 +60,16 @@ fn parse_reports(input: &BreedInput) -> Result<Vec<Report>, String> {
         }
     }
     let mut reports = Vec::new();
-    for (id, conclusion) in &conclusions {
+    for (id, conclusion) in conclusions {
         let confidence = *confidences
-            .get(id)
+            .get(&id)
             .ok_or_else(|| format!("breed '{}' has a conclusion but no confidence", id))?;
         let (key, value) = match conclusion.split_once('=') {
             Some((k, v)) => (k.to_string(), v.to_string()),
-            None => ("decision".to_string(), conclusion.clone()),
+            None => ("decision".to_string(), conclusion),
         };
         reports.push(Report {
-            breed: id.clone(),
+            breed: id,
             key,
             value,
             confidence,
