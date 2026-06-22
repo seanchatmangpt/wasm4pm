@@ -237,8 +237,8 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
     // --- 3. Build OCEL structures ---
     let mut events: Vec<OCELEvent> = Vec::new();
     let mut objects_map: HashMap<String, OCELObject> = HashMap::new();
-    let mut event_types_set: std::collections::HashSet<String> = std::collections::HashSet::new();
-    let mut object_types_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut event_types_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut object_types_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for (row_idx, rec) in records.iter().enumerate() {
         // Event ID: from column or auto-generated
@@ -345,10 +345,8 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
         });
     }
 
-    let mut event_types: Vec<String> = event_types_set.into_iter().collect();
-    event_types.sort();
-    let mut object_types: Vec<String> = object_types_set.into_iter().collect();
-    object_types.sort();
+    let event_types: Vec<String> = event_types_set.into_iter().collect();
+    let object_types: Vec<String> = object_types_set.into_iter().collect();
     let objects: Vec<OCELObject> = objects_map.into_values().collect();
 
     Ok(OCEL {
