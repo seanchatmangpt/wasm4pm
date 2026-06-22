@@ -27,8 +27,7 @@ pub fn simulate_remove_activity(
     activity_key: &str,
     activity_name: &str,
 ) -> Result<JsValue, JsValue> {
-    let (traces, attributes, before_metrics) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
         }
@@ -92,8 +91,7 @@ pub fn simulate_add_event(
     condition_activity: &str,
     new_activity: &str,
 ) -> Result<JsValue, JsValue> {
-    let (traces, attributes, before_metrics) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
         }
@@ -158,8 +156,7 @@ pub fn simulate_reorder(
     first_activity: &str,
     second_activity: &str,
 ) -> Result<JsValue, JsValue> {
-    let (traces, attributes, before_metrics) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
         }
@@ -233,8 +230,7 @@ pub fn simulate_batch(
         return Err(wasm_err(codes::INVALID_INPUT, "Interventions list must not be empty"));
     }
 
-    let (mut traces, attributes, before_metrics) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (mut traces, attributes, before_metrics) = get_or_init_state().with_event_log(log_handle, |log| {
             let metrics = compute_log_metrics(log, activity_key);
             Ok((log.traces.clone(), log.attributes.clone(), metrics))
         }
