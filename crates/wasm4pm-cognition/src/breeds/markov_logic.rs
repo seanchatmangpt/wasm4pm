@@ -47,11 +47,11 @@ fn parse_clauses(
 ) -> Result<(Vec<String>, Vec<GroundClause>, BTreeMap<String, bool>), String> {
     // Collect atoms (sorted) and clauses from facts.
     let mut atom_set = std::collections::BTreeSet::new();
-    let mut raw: Vec<(String, String)> = Vec::new();
+    let mut raw: BTreeMap<String, String> = BTreeMap::new();
     let mut evidence: BTreeMap<String, bool> = BTreeMap::new();
     for f in &input.facts {
         if let Some(id) = f.key.strip_prefix("mln:clause:") {
-            raw.push((id.to_string(), f.value.clone()));
+            raw.insert(id.to_string(), f.value.clone());
         } else if let Some(atom) = f.key.strip_prefix("evidence:") {
             let v = match f.value.as_str() {
                 "true" => true,
@@ -73,7 +73,7 @@ fn parse_clauses(
     if raw.len() > MAX_CLAUSES {
         return Err(format!("clause count exceeds {}", MAX_CLAUSES));
     }
-    raw.sort();
+    // BTreeMap iterates in ascending key order — clauses processed deterministically.
     let mut parsed: Vec<(String, f64, Vec<(String, bool)>)> = Vec::new();
     for (id, val) in &raw {
         let (w_str, lits_str) = val
