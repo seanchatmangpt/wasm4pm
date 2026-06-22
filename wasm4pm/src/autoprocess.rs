@@ -155,6 +155,13 @@ impl DecisionReason {
     }
 }
 
+impl std::fmt::Display for DecisionReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.label())
+    }
+}
+
+
 /// AutoProcess decision output.
 ///
 /// This struct captures the result of a single autonomic cycle's decision phase,
