@@ -199,9 +199,11 @@ pub fn validate_acyclicity(arena: &PowlArena, root: u32) -> AcyclicityResult {
         }
     }
 
-    // Deduplicate cycle nodes
-    cycle_nodes.sort_unstable();
-    cycle_nodes.dedup();
+    // BTreeSet deduplicates and sorts in one pass.
+    let cycle_nodes: Vec<usize> = {
+        let set: std::collections::BTreeSet<usize> = cycle_nodes.into_iter().collect();
+        set.into_iter().collect()
+    };
 
     AcyclicityResult {
         acyclic: cycle_nodes.is_empty(),
