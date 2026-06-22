@@ -89,15 +89,10 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
     /// upper bound on the true count.
     #[inline]
     pub fn estimate(&self, key: u64) -> u32 {
-        let mut min_val = u32::MAX;
-        for row in 0..DEPTH {
-            let bucket = self.hash(key, row);
-            let val = self.table[row][bucket];
-            if val < min_val {
-                min_val = val;
-            }
-        }
-        min_val
+        (0..DEPTH)
+            .map(|row| self.table[row][self.hash(key, row)])
+            .min()
+            .unwrap_or(0)
     }
 
     /// Record a directly-follows pair `(from, to)`.

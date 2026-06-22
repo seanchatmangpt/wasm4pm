@@ -494,15 +494,15 @@ mod source_place_tests {
 
         // Build vocab and replay the exact sequence the model was built from
         // place_ids are assigned in node insertion order from make_dfg
-        let vocab: Vec<&str> = net.place_ids.iter().fold(
-            vec![""; net.num_places],
-            |mut v, (name, &id)| {
-                if (id as usize) < v.len() {
-                    v[id as usize] = name.as_str();
-                }
-                v
-            },
-        );
+        let vocab: Vec<&str> =
+            net.place_ids
+                .iter()
+                .fold(vec![""; net.num_places], |mut v, (name, &id)| {
+                    if (id as usize) < v.len() {
+                        v[id as usize] = name.as_str();
+                    }
+                    v
+                });
 
         // Find activity indices by name
         let idx_a = *net.place_ids.get("A").unwrap() as usize;

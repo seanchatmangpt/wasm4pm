@@ -217,10 +217,7 @@ pub fn build_rf_predictor(
         let mut max_case_ms = 1.0f64; // avoid ÷0
 
         for trace in &log.traces {
-            let len = trace.events.len();
-            if len > max_trace_len {
-                max_trace_len = len;
-            }
+            max_trace_len = max_trace_len.max(trace.events.len());
 
             // Interning pass — build vocab_map
             for event in &trace.events {
@@ -257,10 +254,7 @@ pub fn build_rf_predictor(
                 if timestamps.len() >= 2 {
                     let ts_min = *timestamps.iter().min().unwrap();
                     let ts_max = *timestamps.iter().max().unwrap();
-                    let dur = (ts_max - ts_min) as f64;
-                    if dur > max_case_ms {
-                        max_case_ms = dur;
-                    }
+                    max_case_ms = max_case_ms.max((ts_max - ts_min) as f64);
                 }
             }
         }

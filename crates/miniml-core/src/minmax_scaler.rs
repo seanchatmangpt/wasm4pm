@@ -34,12 +34,8 @@ impl MinMaxScaler {
 
             for i in 0..n {
                 let val = data[i * self.n_features + f];
-                if val < min_val {
-                    min_val = val;
-                }
-                if val > max_val {
-                    max_val = val;
-                }
+                min_val = min_val.min(val);
+                max_val = max_val.max(val);
             }
 
             self.min[f] = min_val;

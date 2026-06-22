@@ -37,12 +37,7 @@ fn argmax_f32(values: &[f32]) -> usize {
 /// when the next state has not yet been visited (Q is initialised to zero).
 #[inline]
 fn max_f32_or_zero(values: &[f32]) -> f32 {
-    let mut m = f32::NEG_INFINITY;
-    for &v in values {
-        if v > m {
-            m = v;
-        }
-    }
+    let m = values.iter().copied().fold(f32::NEG_INFINITY, f32::max);
     if m == f32::NEG_INFINITY {
         0.0
     } else {

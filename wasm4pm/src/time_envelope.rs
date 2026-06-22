@@ -126,9 +126,7 @@ pub(crate) fn build_time_envelope_internal(
 
         // Update global max timestamp
         if let Some(&max_ts) = trace_ts.last() {
-            if max_ts > global_max_ts {
-                global_max_ts = max_ts;
-            }
+            global_max_ts = global_max_ts.max(max_ts);
         }
 
         // Case duration: only for traces with at least 2 timestamped events
