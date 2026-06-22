@@ -297,7 +297,7 @@ fn main() {
     let mut x_missing = gen_data(100000, 50);
     for i in (0..x_missing.len()).step_by(100) { x_missing[i] = f64::NAN; }
     bench_row!("Preprocessing", "Imputer (100Kx50)", 100, 1000, || {
-        let mut imp = simple_imputer(50, "mean".to_string(), 0.0);
+        let mut imp = simple_imputer(50, "mean", 0.0);
         black_box(imp.fit_transform(&x_missing));
     });
 
