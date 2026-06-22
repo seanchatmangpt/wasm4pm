@@ -5,7 +5,7 @@ use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 /// Footprint relation between two activities
@@ -119,7 +119,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
         .collect();
 
     // ── Step 2: L1L — length-1 loop activities ────────────────────────────────
-    let l1l: HashSet<String> = df_set
+    let l1l: BTreeSet<String> = df_set
         .iter()
         .filter(|(a, b)| a == b)
         .map(|(a, _)| a.clone())
@@ -127,7 +127,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
 
     // ── Step 3: L2L — length-2 loop pairs ────────────────────────────────────
     // (a,b) ∈ L2L iff (a,b) ∈ DF ∧ (b,a) ∈ DF ∧ a ≠ b
-    let l2l: HashSet<(String, String)> = df_set
+    let l2l: BTreeSet<(String, String)> = df_set
         .iter()
         .filter(|(a, b)| a != b && df_set.contains(&(b.clone(), a.clone())))
         .map(|(a, b)| (a.clone(), b.clone()))
