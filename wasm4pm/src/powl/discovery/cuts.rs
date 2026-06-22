@@ -549,11 +549,7 @@ pub fn detect_loop_cut(
 
     // Build do-part model
     let do_model_idx = if do_part.len() == 1 {
-        let activity = {
-            let mut v: Vec<_> = do_part.iter().cloned().collect();
-            v.sort_unstable();
-            v.into_iter().next().unwrap()
-        };
+        let activity = do_part.iter().cloned().min().unwrap();
         arena.add_transition(Some(activity))
     } else {
         // Build SPO for do-part
@@ -582,11 +578,7 @@ pub fn detect_loop_cut(
 
     // Build redo-part model
     let redo_model_idx = if redo_part.len() == 1 {
-        let activity = {
-            let mut v: Vec<_> = redo_part.iter().cloned().collect();
-            v.sort_unstable();
-            v.into_iter().next().unwrap()
-        };
+        let activity = redo_part.iter().cloned().min().unwrap();
         arena.add_transition(Some(activity))
     } else {
         // Build SPO for redo-part
