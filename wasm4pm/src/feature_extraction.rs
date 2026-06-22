@@ -289,13 +289,12 @@ pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
     }
 
     // Collect all keys (columns) from all objects
-    let mut all_keys = std::collections::HashSet::new();
+    let mut all_keys = std::collections::BTreeSet::new();
     for feature in &features {
         all_keys.extend(feature.keys().cloned());
     }
 
-    let mut keys: Vec<String> = all_keys.into_iter().collect();
-    keys.sort(); // Deterministic column order
+    let keys: Vec<String> = all_keys.into_iter().collect();
 
     // Build CSV
     let mut csv = String::new();
