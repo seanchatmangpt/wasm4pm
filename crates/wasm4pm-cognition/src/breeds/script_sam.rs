@@ -140,7 +140,6 @@ impl CognitionBreed for ScriptSam {
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
         let mut inferred_facts = Vec::new();
-        let mut step_count = 0;
 
         let observations: Vec<String> = input
             .facts
@@ -175,13 +174,12 @@ impl CognitionBreed for ScriptSam {
 
         for script_rule in &scripts {
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "script-selection".to_string(),
                 detail: format!("Evaluating script: {}", script_rule.conclusion),
                 depth: 0,
                 objects: vec![("script".to_string(), script_rule.conclusion.clone())],
             });
-            step_count += 1;
 
             let script = &script_rule.premise;
             let mut bindings = HashMap::new();
@@ -209,13 +207,12 @@ impl CognitionBreed for ScriptSam {
 
             if possible {
                 trace.push(TraceStep {
-                    step: step_count,
+                    step: trace.len(),
                     kind: "alignment-success".to_string(),
                     detail: format!("Aligned script {} with {} matches", script_rule.conclusion, alignment.len()),
                     depth: 0,
                     objects: vec![("script".to_string(), script_rule.conclusion.clone())],
                 });
-                step_count += 1;
 
                 if best_alignment.as_ref().map_or(true, |a: &Vec<usize>| alignment.len() > a.len()) {
                     best_script = Some(script_rule);
@@ -230,13 +227,12 @@ impl CognitionBreed for ScriptSam {
             let max_idx = alignment[alignment.len() - 1];
 
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "inference-bounds".to_string(),
                 detail: format!("Inference bounds: [{}, {}]", min_idx, max_idx),
                 depth: 0,
                 objects: vec![],
             });
-            step_count += 1;
 
             // Surface the bound role filler (e.g. the customer = john). The
             // single script variable maps to the customer role in $RESTAURANT.
@@ -246,13 +242,12 @@ impl CognitionBreed for ScriptSam {
                     value: filler.clone(),
                 });
                 trace.push(TraceStep {
-                    step: step_count,
+                    step: trace.len(),
                     kind: "role-binding".to_string(),
                     detail: format!("Bound customer role to {}", filler),
                     depth: 0,
                     objects: vec![("filler".to_string(), filler.clone())],
                 });
-                step_count += 1;
             }
 
             for i in min_idx..=max_idx {
@@ -263,13 +258,12 @@ impl CognitionBreed for ScriptSam {
                     let filler = scene_args.first().cloned().unwrap_or_default();
 
                     trace.push(TraceStep {
-                        step: step_count,
+                        step: trace.len(),
                         kind: "gap-inference".to_string(),
                         detail: format!("Inferred scene: {} ({}={})", inferred_scene, scene_name, filler),
                         depth: 0,
                         objects: vec![("scene".to_string(), inferred_scene.clone())],
                     });
-                    step_count += 1;
 
                     // Key the inferred scene by its derived scene token under the
                     // sam:inferred: namespace, with the bound role filler as value.

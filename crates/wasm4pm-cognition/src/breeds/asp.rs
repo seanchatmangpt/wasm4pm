@@ -29,16 +29,14 @@ impl CognitionBreed for Asp {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "asp-load".to_string(),
             detail: format!("Loaded {} rules, {} facts", input.rules.len(), input.facts.len()),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // 1. Gather all unique atoms
         let mut all_atoms = HashSet::new();
@@ -68,13 +66,12 @@ impl CognitionBreed for Asp {
         atoms_list.sort();
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "asp-solve".to_string(),
             detail: format!("Solving over {} atoms: {:?}", atoms_list.len(), atoms_list),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // 2. Generate stable models
         let mut stable_models = Vec::new();
@@ -158,13 +155,12 @@ impl CognitionBreed for Asp {
         // Trace stable models
         for (idx, model) in stable_models.iter().enumerate() {
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "asp-model".to_string(),
                 detail: format!("Model {}: {:?}", idx, model),
                 depth: 0,
                 objects: vec![],
             });
-            step_count += 1;
         }
 
         // Set up output facts and selection

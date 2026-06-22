@@ -29,16 +29,14 @@ impl CognitionBreed for DescriptionLogic {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "dl-load".to_string(),
             detail: format!("Loaded {} facts", input.facts.len()),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // TBox: subsumes(A, B) -> class A subsumes class B (B is a subclass of A)
         let mut subsumes: BTreeSet<(String, String)> = BTreeSet::new();
@@ -100,13 +98,12 @@ impl CognitionBreed for DescriptionLogic {
             }
             for (a, d) in new_pairs {
                 trace.push(TraceStep {
-                    step: step_count,
+                    step: trace.len(),
                     kind: "dl-subsume".to_string(),
                     detail: format!("Derived: {} subsumes {}", a, d),
                     depth: 0,
                     objects: vec![("class".into(), a.clone()), ("class".into(), d.clone())],
                 });
-                step_count += 1;
                 subsumes.insert((a, d));
             }
         }
@@ -154,13 +151,12 @@ impl CognitionBreed for DescriptionLogic {
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "dl-consistent".to_string(),
             detail: if consistent { "Ontology is consistent".to_string() } else { format!("Inconsistent: {}", clash_detail) },
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         let mut out_facts = Vec::new();
         out_facts.push(Fact {

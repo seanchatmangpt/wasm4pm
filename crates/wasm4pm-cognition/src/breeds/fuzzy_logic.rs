@@ -119,16 +119,14 @@ impl CognitionBreed for FuzzyLogic {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
         let mut add_trace = |kind: &str, detail: String| {
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: kind.to_string(),
                 detail,
                 depth: 0,
                 objects: vec![],
             });
-            step_count += 1;
         };
 
         // Term key normalization helper

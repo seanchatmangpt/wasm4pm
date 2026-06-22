@@ -32,7 +32,6 @@ impl CognitionBreed for AbductiveLp {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
 
         // 1. Load abducibles, rules, and integrity constraints
         let mut abducibles: BTreeSet<String> = BTreeSet::new();
@@ -63,24 +62,22 @@ impl CognitionBreed for AbductiveLp {
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "alp-load".to_string(),
             detail: format!("Loaded {} rules, {} abducibles", input.rules.len(), abducibles.len()),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         let abducibles_list: Vec<String> = abducibles.into_iter().collect();
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "alp-abduce".to_string(),
             detail: format!("Abducing explanations over: {:?}", abducibles_list),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // 2. Search for valid explanations by exploring subsets of abducibles.
         // We want a minimal subset E of abducibles such that P U E derives all goals and violates no ICs.
@@ -177,13 +174,12 @@ impl CognitionBreed for AbductiveLp {
         // Trace the top explanations found
         for (idx, explanation) in valid_explanations.iter().enumerate() {
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "alp-hypothesis".to_string(),
                 detail: format!("Explanation {}: {:?}", idx, explanation),
                 depth: 0,
                 objects: vec![],
             });
-            step_count += 1;
         }
 
         let mut out_facts = Vec::new();
