@@ -183,7 +183,7 @@ impl DecisionTreeModel {
             flat.push(node.left as f64);
             flat.push(node.right as f64);
             flat.push(node.prediction);
-            flat.push(if node.is_leaf { 1.0 } else { 0.0 });
+            flat.push(f64::from(node.is_leaf));
         }
         flat
     }

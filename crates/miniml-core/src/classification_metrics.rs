@@ -14,8 +14,8 @@ pub fn matthews_corrcoef_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
     let mut fn_count = 0usize;
 
     for (&t, &p) in y_true.iter().zip(y_pred.iter()) {
-        let t_binary = if t > 0.5 { 1 } else { 0 };
-        let p_binary = if p > 0.5 { 1 } else { 0 };
+        let t_binary = i32::from(t > 0.5);
+        let p_binary = i32::from(p > 0.5);
 
         match (t_binary, p_binary) {
             (1, 1) => tp += 1,

@@ -42,7 +42,7 @@ impl PerceptronModel {
             for j in 0..self.n_features {
                 sum += self.weights[j] * data[i * self.n_features + j];
             }
-            result.push(if sum >= 0.0 { 1 } else { 0 });
+            result.push(u32::from(sum >= 0.0));
         }
         result
     }
