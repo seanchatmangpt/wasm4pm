@@ -261,7 +261,7 @@ pub fn apriori_impl(
                 continue;
             }
 
-            let mut cons_sorted = consequent.clone();
+            let mut cons_sorted = consequent;
             cons_sorted.sort();
 
             let ante_support = support_map.get(&ante_sorted).copied().unwrap_or(0.0);

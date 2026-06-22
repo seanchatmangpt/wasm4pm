@@ -118,7 +118,10 @@ pub fn naive_bayes_impl(
 
     // Compute means
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let c = classes.iter().position(|&cls| cls == label as u32).unwrap();
+        let c = classes
+            .iter()
+            .position(|&cls| cls == label as u32)
+            .ok_or_else(|| MlError::new("label not found in training classes"))?;
         counts[c] += 1;
         for j in 0..n_features {
             means[c * n_features + j] += mat_get(data, n_features, i, j);
@@ -132,7 +135,10 @@ pub fn naive_bayes_impl(
 
     // Compute variances
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let c = classes.iter().position(|&cls| cls == label as u32).unwrap();
+        let c = classes
+            .iter()
+            .position(|&cls| cls == label as u32)
+            .ok_or_else(|| MlError::new("label not found in training classes"))?;
         for j in 0..n_features {
             let diff = mat_get(data, n_features, i, j) - means[c * n_features + j];
             variances[c * n_features + j] += diff * diff;
