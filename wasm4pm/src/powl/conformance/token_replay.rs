@@ -331,7 +331,7 @@ mod tests {
                     name: a.to_string(),
                     timestamp: None,
                     lifecycle: None,
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                 })
                 .collect(),
         }

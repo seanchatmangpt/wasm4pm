@@ -8,7 +8,7 @@
 use crate::powl::footprints::Footprints;
 use crate::powl_event_log::EventLog;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Footprints conformance result.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -91,7 +91,7 @@ mod tests {
                             name: a.to_string(),
                             timestamp: None,
                             lifecycle: None,
-                            attributes: HashMap::new(),
+                            attributes: BTreeMap::new(),
                         })
                         .collect(),
                 })

@@ -3,7 +3,7 @@
 //! Minimal event log model used by token_replay and streaming conformance.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// A single event in a trace.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -15,7 +15,7 @@ pub struct Event {
     /// Lifecycle transition, if present.
     pub lifecycle: Option<String>,
     /// All other attributes.
-    pub attributes: HashMap<String, String>,
+    pub attributes: BTreeMap<String, String>,
 }
 
 /// An ordered sequence of events for one case.
@@ -58,7 +58,7 @@ mod tests {
                     name: a.to_string(),
                     timestamp: None,
                     lifecycle: None,
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 })
                 .collect(),
         }

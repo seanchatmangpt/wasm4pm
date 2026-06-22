@@ -5,6 +5,7 @@ use crate::powl_arena::PowlArena;
 use crate::powl_event_log::Trace;
 use crate::powl_models::{PowlMarking, PowlPetriNet};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AlertConfig {
@@ -254,7 +255,7 @@ mod tests {
                     name: a.to_string(),
                     timestamp: None,
                     lifecycle: None,
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 })
                 .collect(),
         }

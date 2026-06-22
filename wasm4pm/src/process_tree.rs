@@ -608,26 +608,6 @@ use crate::models::EventLog;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
-/// Recursively convert a  `ProcessTreeNode` to a JSON `serde_json::Value`.
-#[allow(dead_code)]
-fn node_to_json(node: &ProcessTreeNode) -> serde_json::Value {
-    let children: Vec<serde_json::Value> = node.children.iter().map(node_to_json).collect();
-    match &node.kind {
-        NodeKind::Operator(op) => json!({
-            "type": "operator",
-            "operator": op,
-            "children": children,
-        }),
-        NodeKind::Activity(label) => json!({
-            "type": "activity",
-            "label": label,
-        }),
-        NodeKind::Silent => json!({
-            "type": "silent",
-        }),
-    }
-}
-
 /// Convert a process tree JSON into a simplified flat representation
 /// (for JS consumption — the full tree as a JSON string).
 ///
