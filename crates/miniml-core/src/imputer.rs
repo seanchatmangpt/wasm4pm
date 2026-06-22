@@ -125,7 +125,7 @@ impl SimpleImputer {
 }
 
 #[wasm_bindgen(js_name = "simpleImputer")]
-pub fn simple_imputer(n_features: usize, strategy: String, fill_value: f64) -> SimpleImputer {
+pub fn simple_imputer(n_features: usize, strategy: &str, fill_value: f64) -> SimpleImputer {
     let strategy_valid = match strategy.to_lowercase().as_str() {
         "mean" | "median" | "most_frequent" | "constant" => strategy.to_lowercase(),
         _ => "mean".to_string(),
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn test_mean_imputation() {
         let data = vec![1.0, f64::NAN, 2.0, 4.0, 3.0, 6.0];
-        let mut imputer = simple_imputer(2, "mean".to_string(), 0.0);
+        let mut imputer = simple_imputer(2, "mean", 0.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         // Feature 0 mean = 2, Feature 1 mean = 5
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_median_imputation() {
         let data = vec![1.0, f64::NAN, 2.0, 2.0, 100.0, 8.0];
-        let mut imputer = simple_imputer(2, "median".to_string(), 0.0);
+        let mut imputer = simple_imputer(2, "median", 0.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         // Feature 0 median = 2, Feature 1 median = 5
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn test_constant_imputation() {
         let data = vec![1.0, f64::NAN, 3.0];
-        let mut imputer = simple_imputer(1, "constant".to_string(), -1.0);
+        let mut imputer = simple_imputer(1, "constant", -1.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         assert_eq!(result[0], 1.0);
@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn test_most_frequent_imputation() {
         let data = vec![1.0, f64::NAN, 1.0, 2.0, 2.0, 2.0];
-        let mut imputer = simple_imputer(2, "most_frequent".to_string(), 0.0);
+        let mut imputer = simple_imputer(2, "most_frequent", 0.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         // Feature 0 most frequent = 1, Feature 1 most frequent = 2
