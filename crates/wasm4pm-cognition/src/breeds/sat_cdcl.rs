@@ -328,18 +328,12 @@ impl CognitionBreed for SatCdcl {
                     break 'solve;
                 }
                 // Backjump level: second-highest level among learned literals.
-                let mut levels: Vec<u32> = learned
+                let levels: std::collections::BTreeSet<u32> = learned
                     .lits()
                     .iter()
                     .map(|l| *level_of.get(&l.var).unwrap_or(&0))
                     .collect();
-                levels.sort_unstable();
-                levels.dedup();
-                let bj = if levels.len() >= 2 {
-                    levels[levels.len() - 2]
-                } else {
-                    0
-                };
+                let bj = levels.iter().nth_back(1).copied().unwrap_or(0);
                 db.push(learned.clone());
                 let learned_idx = db.len() - 1;
                 learn_count += 1;
