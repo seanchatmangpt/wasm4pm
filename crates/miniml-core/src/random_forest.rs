@@ -84,7 +84,7 @@ impl RandomForestModel {
                 counts.push((pred, 1));
             }
         }
-        counts.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        counts.sort_by(|a, b| a.0.total_cmp(&b.0));
         counts
             .iter()
             .flat_map(|&(cls, cnt)| [cls, cnt as f64 / n_trees])

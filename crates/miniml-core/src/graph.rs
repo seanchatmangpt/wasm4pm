@@ -213,7 +213,7 @@ pub fn community_detection_impl(
             }
             let best_label = label_weights
                 .into_iter()
-                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                .max_by(|a, b| a.1.total_cmp(&b.1))
                 .map(|(label, _)| label)
                 .unwrap_or(labels[i]);
             if best_label != labels[i] {
