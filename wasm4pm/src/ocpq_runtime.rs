@@ -21,14 +21,7 @@ pub fn check_relation(
             // For every right, there must exist a preceding left
             for (i, (_, ev)) in events.iter().enumerate() {
                 if ev.event_type == right {
-                    let mut found = false;
-                    for j in 0..i {
-                        if events[j].1.event_type == left {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if !found {
+                    if !events[..i].iter().any(|(_, e)| e.event_type == left) {
                         violations.push(format!(
                             "Precedence violation: Event '{}' (id: {}) occurred without preceding '{}'",
                             right, ev.id, left
@@ -41,14 +34,7 @@ pub fn check_relation(
             // For every right, there must exist a subsequent left (preceding in reverse)
             for (i, (_, ev)) in events.iter().enumerate() {
                 if ev.event_type == right {
-                    let mut found = false;
-                    for j in (i + 1)..events.len() {
-                        if events[j].1.event_type == left {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if !found {
+                    if !events[i + 1..].iter().any(|(_, e)| e.event_type == left) {
                         violations.push(format!(
                             "Response violation: Event '{}' (id: {}) occurred without subsequent '{}'",
                             right, ev.id, left
