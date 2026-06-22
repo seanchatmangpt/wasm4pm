@@ -260,7 +260,7 @@ pub fn lasso_regression_impl(
 
     // Coordinate descent
     let mut coefficients = vec![0.0f64; n_features];
-    let mut residuals = centered_targets.clone();
+    let mut residuals = centered_targets;
 
     for _iter in 0..max_iter {
         let mut max_change: f64 = 0.0;
