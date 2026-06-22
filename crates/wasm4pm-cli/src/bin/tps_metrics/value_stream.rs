@@ -17,6 +17,7 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use git2::Repository;
+use std::fmt::Write as _;
 
 /// Value stream metrics
 #[derive(Debug, Clone, serde::Serialize)]
@@ -173,25 +174,29 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
 
     // Time breakdown
     report.push_str(&"Time Breakdown:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Coding time: {:.2} hours (active work)\n",
         metrics.coding_time_hours
-    ));
-    report.push_str(&format!(
+    );
+    let _ = write!(
+        report,
         "  Wait time: {:.2} hours (review, test, deploy)\n",
         metrics.wait_time_hours
-    ));
-    report.push_str(&format!(
+    );
+    let _ = write!(
+        report,
         "  Total lead time: {:.2} hours\n",
         metrics.total_lead_time_hours
-    ));
+    );
 
     // Value-added ratio
     report.push_str(&"\nValue-Added Metrics:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Value-added ratio: {:.1}% (coding / total)\n",
         metrics.value_added_ratio * 100.0
-    ));
+    );
 
     let ratio_status = if metrics.value_added_ratio >= 0.3 {
         "✅".green()
@@ -200,16 +205,17 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {} (target: >30%)\n", ratio_status));
+    let _ = write!(report, "    Status: {} (target: >30%)\n", ratio_status);
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Process efficiency: {:.1}%\n",
         metrics.process_efficiency * 100.0
-    ));
+    );
 
     // Bottleneck
     report.push_str(&"\nBottleneck Analysis:\n".bold());
-    report.push_str(&format!("  Primary bottleneck: {}\n", metrics.bottleneck));
+    let _ = write!(report, "  Primary bottleneck: {}\n", metrics.bottleneck);
 
     // Interpretation
     report.push_str(&"\nValue Stream Assessment:\n".bold());
@@ -248,14 +254,15 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
     report.push_str("  │ Idea → Coding → Review → Test → Deploy  │\n");
     report.push_str("  │   └───┬───────┬───────┬──────┬───────┘  │\n");
     report.push_str("  │     │       │       │      │       │\n");
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  │   {:.1}h   {:.1}h    {:.1}h    {:.1}h    {:.1}h  │\n",
         metrics.coding_time_hours * 0.1, // Idea (small fraction)
         metrics.coding_time_hours * 0.9, // Coding
         metrics.wait_time_hours * 0.3,   // Review
         metrics.wait_time_hours * 0.3,   // Test
         metrics.wait_time_hours * 0.4
-    )); // Deploy
+    ); // Deploy
     report.push_str("  └────────────────────────────────────────────┘\n");
 
     report.push('\n');

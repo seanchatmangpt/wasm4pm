@@ -18,6 +18,7 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use git2::Repository;
+use std::fmt::Write as _;
 
 /// Lead time metrics for a repository
 #[derive(Debug, Clone, serde::Serialize)]
@@ -168,10 +169,11 @@ pub fn generate_report(metrics: &LeadTimeMetrics) -> String {
 
     // Overall metrics
     report.push_str(&"Time from Commit to Merge:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Average: {:.2} hours (target: <24h)\n",
         metrics.average_hours
-    ));
+    );
 
     let avg_status = if metrics.average_hours < 24.0 {
         "✅".green()
@@ -180,23 +182,26 @@ pub fn generate_report(metrics: &LeadTimeMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", avg_status));
+    let _ = write!(report, "    Status: {}\n", avg_status);
 
-    report.push_str(&format!("  Median: {:.2} hours\n", metrics.median_hours));
-    report.push_str(&format!(
+    let _ = write!(report, "  Median: {:.2} hours\n", metrics.median_hours);
+    let _ = write!(
+        report,
         "  P95: {:.2} hours (worst 5%%)\n",
         metrics.p95_hours
-    ));
+    );
 
     report.push_str(&"\nMerge Speed:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Fast merges (<1h): {:.1}% ({} commits)\n",
         metrics.fast_merge_percent, metrics.fast_merge_count
-    ));
-    report.push_str(&format!(
+    );
+    let _ = write!(
+        report,
         "  Slow merges (>48h): {:.1}% ({} commits)\n",
         metrics.slow_merge_percent, metrics.slow_merge_count
-    ));
+    );
 
     // Interpretation
     report.push_str(&"\nLead Time Categories:\n".bold());

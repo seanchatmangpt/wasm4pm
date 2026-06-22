@@ -17,6 +17,7 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Timelike, Utc};
 use git2::Repository;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Write as _;
 
 /// Takt time metrics for a repository
 #[derive(Debug, Clone, serde::Serialize)]
@@ -186,10 +187,11 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
 
     // Overall metrics
     report.push_str(&"Overall Metrics:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Commits per Day: {:.2} (target: ≥3)\n",
         metrics.commits_per_day
-    ));
+    );
 
     let commits_status = if metrics.commits_per_day >= 3.0 {
         "✅".green()
@@ -198,12 +200,13 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", commits_status));
+    let _ = write!(report, "    Status: {}\n", commits_status);
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Consistency Score: {:.2}% (target: >80%)\n",
         metrics.consistency_score * 100.0
-    ));
+    );
 
     let consistency_status = if metrics.consistency_score >= 0.8 {
         "✅".green()
@@ -212,12 +215,13 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", consistency_status));
+    let _ = write!(report, "    Status: {}\n", consistency_status);
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Drought Days: {} (target: 0)\n",
         metrics.drought_days
-    ));
+    );
 
     let drought_status = if metrics.drought_days == 0 {
         "✅".green()
@@ -226,7 +230,7 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", drought_status));
+    let _ = write!(report, "    Status: {}\n", drought_status);
 
     // Weekday breakdown
     report.push_str(&"\nWeekday Averages:\n".bold());
@@ -241,7 +245,7 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     ];
     for day in weekdays {
         if let Some(avg) = metrics.weekday_avg.get(day) {
-            report.push_str(&format!("  {}: {:.2} commits/day\n", day, avg));
+            let _ = write!(report, "  {}: {:.2} commits/day\n", day, avg);
         }
     }
 
@@ -249,7 +253,7 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     report.push_str(&"\nHourly Distribution (UTC):\n".bold());
     for (hour, count) in &metrics.hourly_distribution {
         if *count > 0 {
-            report.push_str(&format!("  {:02}:00 — {} commits\n", hour, count));
+            let _ = write!(report, "  {:02}:00 — {} commits\n", hour, count);
         }
     }
 

@@ -18,6 +18,7 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Timelike, Utc};
 use git2::Repository;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Write as _;
 
 /// Mura (unevenness) metrics
 #[derive(Debug, Clone, serde::Serialize)]
@@ -235,10 +236,11 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
 
     // Variance metrics
     report.push_str(&"Workflow Variability:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Daily variance: {:.2} (target: <2.0)\n",
         metrics.daily_variance
-    ));
+    );
 
     let daily_status = if metrics.daily_variance < 2.0 {
         "✅".green()
@@ -247,12 +249,13 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", daily_status));
+    let _ = write!(report, "    Status: {}\n", daily_status);
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Hourly variance: {:.2} (target: <3.0)\n",
         metrics.hourly_variance
-    ));
+    );
 
     let hourly_status = if metrics.hourly_variance < 3.0 {
         "✅".green()
@@ -261,14 +264,15 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", hourly_status));
+    let _ = write!(report, "    Status: {}\n", hourly_status);
 
     // Burst and evenness
     report.push_str(&"\nDistribution Quality:\n".bold());
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Burst score: {:.2} (0=even, 1=clustered)\n",
         metrics.burst_score
-    ));
+    );
 
     let burst_status = if metrics.burst_score < 0.3 {
         "✅".green()
@@ -277,12 +281,13 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", burst_status));
+    let _ = write!(report, "    Status: {}\n", burst_status);
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Evenness score: {:.2} (1=perfect evenness)\n",
         metrics.evenness_score
-    ));
+    );
 
     let evenness_status = if metrics.evenness_score > 0.7 {
         "✅".green()
@@ -291,12 +296,13 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     } else {
         "❌".red()
     };
-    report.push_str(&format!("    Status: {}\n", evenness_status));
+    let _ = write!(report, "    Status: {}\n", evenness_status);
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Abnormal days: {} (days with >2x average commits)\n",
         metrics.abnormal_days
-    ));
+    );
 
     // Interpretation
     report.push_str(&"\nUnevenness Assessment:\n".bold());

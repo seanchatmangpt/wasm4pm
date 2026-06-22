@@ -2,6 +2,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::fmt::Write as _;
 
 /// Qualitative Reasoning (QR) breed based on de Kleer-Brown sign algebra.
 pub struct QualitativeReason;
@@ -275,7 +276,7 @@ impl CognitionBreed for QualitativeReason {
         for (idx, state) in valid_states.iter().enumerate() {
             let mut state_str = String::new();
             for key in state.keys() {
-                state_str.push_str(&format!("{}:{},", key, state[key].as_str()));
+                let _ = write!(state_str, "{}:{},", key, state[key].as_str());
             }
             out_facts.push(Fact {
                 key: format!("state_{}", idx),
