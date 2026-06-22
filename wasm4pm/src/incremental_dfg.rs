@@ -36,7 +36,7 @@ use crate::utilities::to_js_str;
 /// Each call to [`process_event`](IncrementalDFG::process_event) is O(1)
 /// amortized (two `FxHashMap` lookups/inserts). Callers are responsible for
 /// signalling trace boundaries via [`end_trace`](IncrementalDFG::end_trace).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct IncrementalDFG {
     /// (from_activity, to_activity) -> occurrence count
     pub edges: FxHashMap<(u32, u32), u64>,
@@ -187,11 +187,6 @@ impl IncrementalDFG {
     }
 }
 
-impl Default for IncrementalDFG {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 // ---------------------------------------------------------------------------
 // StreamingDFG
