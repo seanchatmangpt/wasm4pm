@@ -77,9 +77,10 @@ pub fn enforce_lifecycle_state(
         (LifecycleState::Operation, OperationKind::MutateStructure) => {
             Err(LifecycleError::GovernorInterventionBlocked)
         }
-        (LifecycleState::Decommission, OperationKind::Mutate)
-        | (LifecycleState::Decommission, OperationKind::MutateStructure)
-        | (LifecycleState::Decommission, OperationKind::Simulate) => {
+        (
+            LifecycleState::Decommission,
+            OperationKind::Mutate | OperationKind::MutateStructure | OperationKind::Simulate,
+        ) => {
             Err(LifecycleError::ArchivedModelImmutable)
         }
         _ => Ok(()), // Cleared for execution
