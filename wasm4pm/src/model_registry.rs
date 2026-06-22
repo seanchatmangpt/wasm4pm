@@ -7,7 +7,7 @@ use crate::error::{codes, wasm_err};
 use crate::models::PetriNet;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 use wasm_bindgen::prelude::*;
@@ -523,7 +523,7 @@ mod tests {
                     weight: None,
                 })
                 .collect(),
-            initial_marking: HashMap::new(),
+            initial_marking: BTreeMap::new(),
             final_markings: Vec::new(),
         }
     }

@@ -923,7 +923,7 @@ pub struct PetriNet {
     /// All arcs in the net.
     pub arcs: Vec<PetriNetArc>,
     /// Initial marking mapping place ID to token count.
-    pub initial_marking: HashMap<String, usize>,
+    pub initial_marking: BTreeMap<String, usize>,
     /// List of accepting final markings (place ID to token count).
     pub final_markings: Vec<HashMap<String, usize>>,
 }
@@ -936,7 +936,7 @@ impl PetriNet {
             places: Vec::new(),
             transitions: Vec::new(),
             arcs: Vec::new(),
-            initial_marking: HashMap::new(),
+            initial_marking: BTreeMap::new(),
             final_markings: Vec::new(),
         }
     }

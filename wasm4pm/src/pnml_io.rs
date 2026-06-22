@@ -15,7 +15,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -121,7 +121,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
     let mut places: Vec<PlaceData> = Vec::new();
     let mut transitions: Vec<TransitionData> = Vec::new();
     let mut raw_arcs: Vec<ArcData> = Vec::new();
-    let mut initial_marking: HashMap<String, usize> = HashMap::new();
+    let mut initial_marking: BTreeMap<String, usize> = BTreeMap::new();
     let mut final_markings: Vec<HashMap<String, usize>> = Vec::new();
 
     // Scratch vars used while building the current element

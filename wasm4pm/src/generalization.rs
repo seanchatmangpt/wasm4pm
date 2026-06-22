@@ -395,7 +395,7 @@ mod tests {
     use crate::models::{
         AttributeValue, Event, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
     };
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     /// Create a simple sequential Petri net: source -> A -> p1 -> B -> sink.
     fn make_sequential_net() -> PetriNet {
@@ -452,7 +452,7 @@ mod tests {
                 },
             ],
             initial_marking: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert("source".to_string(), 1);
                 m
             },
@@ -545,7 +545,7 @@ mod tests {
                 },
             ],
             initial_marking: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert("source".to_string(), 1);
                 m
             },
@@ -694,7 +694,7 @@ mod tests {
             places: vec![],
             transitions: vec![],
             arcs: vec![],
-            initial_marking: HashMap::new(),
+            initial_marking: BTreeMap::new(),
             final_markings: vec![],
         };
 
