@@ -76,7 +76,7 @@ pub struct KmeansResult {
 /// high performance.
 pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult {
     let n = features.len();
-    let k = k_request.min(n).max(1);
+    let k = k_request.clamp(1, n);
 
     // Initialize centroids evenly spaced across the input
     let mut centroids = vec![[0.0, 0.0]; k];

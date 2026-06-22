@@ -23,7 +23,7 @@ use crate::state::{get_or_init_state, StoredObject};
 /// Asserts that `n_traces >= 2` (caller guarantees this).
 fn cap_n_components(requested: usize, vocab_size: usize, n_traces: usize) -> usize {
     debug_assert!(n_traces >= 2, "cap_n_components requires n_traces >= 2");
-    requested.min(vocab_size).min(n_traces - 1).max(1)
+    requested.clamp(1, vocab_size.min(n_traces - 1))
 }
 
 /// Project trace variants into a reduced-dimension PCA space.
