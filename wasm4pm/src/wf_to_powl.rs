@@ -793,7 +793,7 @@ fn project_part(net: &WorkNet, part: &BTreeSet<usize>) -> PetriNet {
         }
     }
 
-    let mut initial_marking = std::collections::HashMap::new();
+    let mut initial_marking = std::collections::BTreeMap::new();
     initial_marking.insert(ps_id.clone(), 1usize);
     let mut final_mark = std::collections::HashMap::new();
     final_mark.insert(pe_id.clone(), 1usize);
@@ -1473,7 +1473,7 @@ mod tests {
         }
     }
     fn mk(places: &[&str], ts: &[(&str, &str)], arcs: &[(&str, &str)], src: &str) -> PetriNet {
-        let mut im = HashMap::new();
+        let mut im: BTreeMap<String, usize> = BTreeMap::new();
         im.insert(src.to_string(), 1usize);
         PetriNet {
             places: places.iter().map(|x| p(x)).collect(),

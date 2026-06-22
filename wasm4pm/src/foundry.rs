@@ -152,7 +152,7 @@ pub fn field_net() -> PetriNet {
         ("t_join", "sink"),
     ];
 
-    let mut initial = HashMap::new();
+    let mut initial: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
     initial.insert("src".to_string(), 1usize);
     let mut final_marking = HashMap::new();
     final_marking.insert("sink".to_string(), 1usize);

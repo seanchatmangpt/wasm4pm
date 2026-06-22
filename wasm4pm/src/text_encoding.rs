@@ -1,6 +1,6 @@
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::Value;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fmt::Write as _;
 use wasm_bindgen::prelude::*;
 
@@ -46,7 +46,7 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
             }
 
             // Edges (directly-follows relations)
-            let mut edges_by_from: HashMap<String, Vec<(String, usize)>> = HashMap::new();
+            let mut edges_by_from: BTreeMap<String, Vec<(String, usize)>> = BTreeMap::new();
             for edge in &dfg.edges {
                 edges_by_from
                     .entry(edge.from.clone())
