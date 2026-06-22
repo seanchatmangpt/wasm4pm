@@ -221,6 +221,11 @@ pub fn identify_high_variance_activities(
                 var_b
                     .partial_cmp(&var_a)
                     .unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| {
+                        let na = a.get("activity").and_then(|v| v.as_str()).unwrap_or("");
+                        let nb = b.get("activity").and_then(|v| v.as_str()).unwrap_or("");
+                        na.cmp(nb)
+                    })
             });
 
             to_js_str(&json!({
