@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// Qualitative Reasoning (QR) breed based on de Kleer-Brown sign algebra.
 pub struct QualitativeReason;
@@ -63,7 +63,7 @@ struct Confluence {
 }
 
 impl QualitativeReason {
-    fn evaluate_sum(&self, terms: &[(String, bool)], state: &HashMap<String, Sign>) -> Vec<Sign> {
+    fn evaluate_sum(&self, terms: &[(String, bool)], state: &BTreeMap<String, Sign>) -> Vec<Sign> {
         let mut results = vec![Sign::Zero];
         for (var, is_pos) in terms {
             let val = state.get(var).cloned().unwrap_or(Sign::Zero);
@@ -105,7 +105,7 @@ impl CognitionBreed for QualitativeReason {
         let mut trace = Vec::new();
 
         // 1. Parse confluences and variables
-        let mut variables = HashSet::new();
+        let mut variables: BTreeSet<String> = BTreeSet::new();
         let mut initial_signs = HashMap::new();
         let mut confluences = Vec::new();
 
@@ -166,11 +166,7 @@ impl CognitionBreed for QualitativeReason {
         }
         
         variables.remove("0");
-        let var_list: Vec<String> = {
-            let mut list: Vec<String> = variables.into_iter().collect();
-            list.sort();
-            list
-        };
+        let var_list: Vec<String> = variables.into_iter().collect();
 
         trace.push(TraceStep {
             step: trace.len(),
@@ -193,7 +189,7 @@ impl CognitionBreed for QualitativeReason {
 
         let total_combinations = 3usize.pow(n_vars as u32);
         for i in 0..total_combinations {
-            let mut state = HashMap::new();
+            let mut state: BTreeMap<String, Sign> = BTreeMap::new();
             let mut temp_i = i;
             for j in 0..n_vars {
                 let sign_idx = temp_i % 3;
@@ -263,9 +259,7 @@ impl CognitionBreed for QualitativeReason {
 
         for (idx, state) in valid_states.iter().enumerate() {
             let mut state_str = String::new();
-            let mut sorted_keys: Vec<_> = state.keys().collect();
-            sorted_keys.sort();
-            for key in sorted_keys {
+            for key in state.keys() {
                 state_str.push_str(&format!("{}:{},", key, state[key].as_str()));
             }
             out_facts.push(Fact {
