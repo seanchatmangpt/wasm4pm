@@ -19,6 +19,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
 
 /// Quinlan FOIL induction engine.
 pub struct Ilp;
@@ -53,16 +54,19 @@ struct Literal {
     args: Vec<usize>,
 }
 
-fn render(lit: &Literal) -> String {
-    format!(
-        "{}({})",
-        lit.pred,
-        lit.args
-            .iter()
-            .map(|v| format!("V{}", v))
-            .collect::<Vec<_>>()
-            .join(",")
-    )
+impl fmt::Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}({})",
+            self.pred,
+            self.args
+                .iter()
+                .map(|v| format!("V{}", v))
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+    }
 }
 
 type Binding = Vec<Option<String>>;
@@ -323,13 +327,13 @@ impl CognitionBreed for Ilp {
                     let p1 = p_ext.len() as f64;
                     let n1 = n_ext.len() as f64;
                     let gain = t * ((p1 / (p1 + n1)).log2() - base_info);
-                    push(&mut trace, "propose-literal", render(lit));
+                    push(&mut trace, "propose-literal", lit.to_string());
                     push(
                         &mut trace,
                         "score-gain",
                         format!(
                             "{}: t={} p1={} n1={} gain={:.4}",
-                            render(lit),
+                            lit,
                             t,
                             p1,
                             n1,
@@ -340,7 +344,7 @@ impl CognitionBreed for Ilp {
                         None => true,
                         Some((bg_gain, bl, _, _, _)) => {
                             gain > *bg_gain + 1e-9
-                                || ((gain - *bg_gain).abs() <= 1e-9 && render(lit) < render(bl))
+                                || ((gain - *bg_gain).abs() <= 1e-9 && lit.to_string() < bl.to_string())
                         }
                     };
                     if better {
@@ -356,7 +360,7 @@ impl CognitionBreed for Ilp {
                 push(
                     &mut trace,
                     "add-literal",
-                    format!("{} (gain={:.4})", render(&lit), gain),
+                    format!("{} (gain={:.4})", lit, gain),
                 );
                 if uses_new {
                     nvars += 1;
@@ -383,8 +387,8 @@ impl CognitionBreed for Ilp {
             }
             let clause_text = format!(
                 "{} :- {}",
-                render(&head),
-                body.iter().map(render).collect::<Vec<_>>().join(", ")
+                head,
+                body.iter().map(|l| l.to_string()).collect::<Vec<_>>().join(", ")
             );
             push(&mut trace, "emit-clause", clause_text.clone());
             rule_facts.push(Fact {
