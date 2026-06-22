@@ -19,7 +19,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use tracing;
 
 /// STRIPS planner.
@@ -27,7 +27,7 @@ pub struct Strips;
 
 const MAX_PLAN_DEPTH: usize = 16;
 
-fn atoms_of(state: &[StateAtom]) -> HashSet<String> {
+fn atoms_of(state: &[StateAtom]) -> BTreeSet<String> {
     state
         .iter()
         .map(|a| format!("{}={}", a.predicate, a.value))
@@ -45,7 +45,7 @@ fn goal_strings(goals: &[Goal]) -> Vec<String> {
 /// Encoded in input.facts as: fact.key="frame", fact.value="atom,action1,action2"
 #[derive(Debug, Clone)]
 struct FrameAxiom {
-    actions: HashSet<String>,
+    actions: BTreeSet<String>,
 }
 
 fn parse_frame_axioms(facts: &[crate::breeds::Fact]) -> HashMap<String, FrameAxiom> {
@@ -56,7 +56,7 @@ fn parse_frame_axioms(facts: &[crate::breeds::Fact]) -> HashMap<String, FrameAxi
             let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
             if parts.len() > 1 {
                 let atom = parts[0].to_string();
-                let actions: HashSet<String> = parts[1..].iter().map(|s| s.to_string()).collect();
+                let actions: BTreeSet<String> = parts[1..].iter().map(|s| s.to_string()).collect();
                 axioms.insert(atom, FrameAxiom { actions });
             }
         }
@@ -87,7 +87,7 @@ fn parse_effect(conclusion: &str) -> ActionEffect {
     ActionEffect { adds, dels }
 }
 
-fn applicable(rule: &Rule, state: &HashSet<String>) -> bool {
+fn applicable(rule: &Rule, state: &BTreeSet<String>) -> bool {
     rule.premise.iter().all(|p| state.contains(p))
 }
 
@@ -98,11 +98,11 @@ fn applicable(rule: &Rule, state: &HashSet<String>) -> bool {
 
 fn apply_with_frames(
     rule: &Rule,
-    state: &HashSet<String>,
+    state: &BTreeSet<String>,
     frame_axioms: &HashMap<String, FrameAxiom>,
-) -> HashSet<String> {
+) -> BTreeSet<String> {
     let eff = parse_effect(&rule.conclusion);
-    let mut next: HashSet<String> = state
+    let mut next: BTreeSet<String> = state
         .iter()
         .filter(|a| {
             // Check if this atom has a frame axiom preserving it for this action.
@@ -122,12 +122,12 @@ fn apply_with_frames(
     next
 }
 
-fn goals_satisfied(goals: &[String], state: &HashSet<String>) -> bool {
+fn goals_satisfied(goals: &[String], state: &BTreeSet<String>) -> bool {
     goals.iter().all(|g| state.contains(g))
 }
 
 fn idfs(
-    state: &HashSet<String>,
+    state: &BTreeSet<String>,
     goals: &[String],
     actions: &[Rule],
     depth: usize,

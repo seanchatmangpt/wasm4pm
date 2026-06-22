@@ -13,7 +13,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// Explanation-Based Learning breed
 pub struct Ebl;
@@ -127,7 +127,7 @@ enum ProofNode {
 fn explain(
     goal: &Term,
     rules: &[Rule],
-    facts: &HashSet<String>,
+    facts: &BTreeSet<String>,
     depth: usize,
     subst: &mut Subst,
     trace: &mut Vec<TraceStep>,
@@ -250,7 +250,7 @@ impl CognitionBreed for Ebl {
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
 
-        let mut fact_set = HashSet::new();
+        let mut fact_set = BTreeSet::new();
         for f in &input.facts {
             fact_set.insert(f.key.clone());
         }
