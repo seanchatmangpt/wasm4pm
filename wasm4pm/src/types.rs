@@ -18,48 +18,32 @@ impl WasmEventLog {
 
     /// Get the number of events in the log
     pub fn event_count(&self) -> Result<usize, JsValue> {
-        get_or_init_state().with_object(&self.handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let count = log.traces.iter().map(|t| t.events.len()).sum();
-                Ok(count)
-            }
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
+        get_or_init_state().with_event_log(&self.handle, |log| {
+            let count = log.traces.iter().map(|t| t.events.len()).sum();
+            Ok(count)
         })
     }
 
     /// Get the number of cases in the log
     pub fn case_count(&self) -> Result<usize, JsValue> {
-        get_or_init_state().with_object(&self.handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => Ok(log.traces.len()),
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
-        })
+        get_or_init_state().with_event_log(&self.handle, |log| Ok(log.traces.len()))
     }
 
     /// Get attributes count
     pub fn attribute_count(&self) -> Result<usize, JsValue> {
-        get_or_init_state().with_object(&self.handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => Ok(log.attributes.len()),
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
-        })
+        get_or_init_state().with_event_log(&self.handle, |log| Ok(log.attributes.len()))
     }
 
     /// Get basic statistics as JSON
     pub fn stats(&self) -> Result<JsValue, JsValue> {
-        get_or_init_state().with_object(&self.handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let event_count: usize = log.traces.iter().map(|t| t.events.len()).sum();
-                let stats = json!({
-                    "event_count": event_count,
-                    "case_count": log.traces.len(),
-                    "attribute_count": log.attributes.len(),
-                });
-                to_js(&stats)
-            }
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
+        get_or_init_state().with_event_log(&self.handle, |log| {
+            let event_count: usize = log.traces.iter().map(|t| t.events.len()).sum();
+            let stats = json!({
+                "event_count": event_count,
+                "case_count": log.traces.len(),
+                "attribute_count": log.attributes.len(),
+            });
+            to_js(&stats)
         })
     }
 }

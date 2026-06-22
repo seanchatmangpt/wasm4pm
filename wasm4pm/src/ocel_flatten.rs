@@ -97,14 +97,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<String, JsValue> {
     // First, extract and clone the OCEL data out of the lock
-    let ocel_clone = get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => Ok(ocel.clone()),
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("OCEL '{}' not found", ocel_handle),
-        )),
-    })?;
+    let ocel_clone = get_or_init_state().with_ocel(ocel_handle, |ocel| Ok(ocel.clone()))?;
 
     // Now process outside the lock to avoid deadlock
     let ocel = &ocel_clone;
