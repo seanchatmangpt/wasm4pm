@@ -1696,7 +1696,7 @@ impl StreamingConformanceChecker {
 #[derive(Debug, Clone)]
 pub struct TemporalProfile {
     /// Mapping of (from, to) activity pairs to their timing statistics (mean, std, count).
-    pub pairs: HashMap<(String, String), (f64, f64, usize)>,
+    pub pairs: BTreeMap<(String, String), (f64, f64, usize)>,
 }
 
 impl TemporalProfile {
@@ -1704,7 +1704,7 @@ impl TemporalProfile {
     #[must_use]
     pub fn new() -> Self {
         TemporalProfile {
-            pairs: HashMap::new(),
+            pairs: BTreeMap::new(),
         }
     }
 }
