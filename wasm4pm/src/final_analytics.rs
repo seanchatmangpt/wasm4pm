@@ -1,5 +1,5 @@
 use crate::models::*;
-use crate::state::{get_or_init_state, StoredObject};
+use crate::state::get_or_init_state;
 use crate::utilities::to_js_str;
 use hashbrown::HashMap;
 use itertools::Itertools;
@@ -15,8 +15,7 @@ pub fn analyze_variant_complexity(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let total = log.traces.len() as f64;
 
             // Single-pass: build variant counts with itertools::counts()
@@ -66,9 +65,6 @@ pub fn analyze_variant_complexity(
                 "top_10_coverage": coverage_top_10,
                 "predominant_variant_size": variant_counts.first().copied().unwrap_or(0),
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -78,8 +74,7 @@ pub fn compute_activity_transition_matrix(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let activities = log.get_activities(activity_key);
 
             // Build activity vocabulary
@@ -132,9 +127,6 @@ pub fn compute_activity_transition_matrix(
                 "matrix": matrix_data,
                 "num_activities": activities.len(),
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -145,8 +137,7 @@ pub fn analyze_process_speedup(
     timestamp_key: &str,
     _window_size: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut time_gaps: Vec<f64> = Vec::new();
 
             for trace in &log.traces {
@@ -186,9 +177,6 @@ pub fn analyze_process_speedup(
                 "p75": percentile_75,
                 "speedup_range": percentile_75 - percentile_25,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -198,8 +186,7 @@ pub fn compute_trace_similarity_matrix(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut similarities = Vec::new();
 
             // Pre-compute HashSet<&str> per trace — O(n log n) once, O(1) per pair lookup
@@ -237,9 +224,6 @@ pub fn compute_trace_similarity_matrix(
                 "similar_pairs": similarities,
                 "total_pairs": (log.traces.len() * (log.traces.len() - 1)) / 2,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -250,8 +234,7 @@ pub fn analyze_temporal_bottlenecks(
     activity_key: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut activity_durations: std::collections::BTreeMap<String, Vec<f64>> =
                 std::collections::BTreeMap::new();
 
@@ -300,9 +283,6 @@ pub fn analyze_temporal_bottlenecks(
             to_js_str(&json!({
                 "bottlenecks": bottlenecks,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -312,8 +292,7 @@ pub fn extract_activity_ordering(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut mandatory_predecessors: std::collections::BTreeMap<
                 String,
                 std::collections::BTreeSet<String>,
@@ -357,9 +336,6 @@ pub fn extract_activity_ordering(
             to_js_str(&json!({
                 "activity_ordering": result,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
