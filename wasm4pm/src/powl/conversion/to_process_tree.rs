@@ -177,7 +177,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> Result<ProcessTree, 
                     component_trees.push(apply_recursive(arena, child_idx)?);
                     continue;
                 }
-                let local_to_global: Vec<usize> = comp.clone();
+                let local_to_global: &[usize] = comp;
                 let global_to_local: Vec<Option<usize>> = {
                     let mut g2l = vec![None; n];
                     for (li, &gi) in local_to_global.iter().enumerate() {
@@ -256,7 +256,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> Result<ProcessTree, 
                     component_trees.push(apply_recursive(arena, child_idx)?);
                     continue;
                 }
-                let local_to_global: Vec<usize> = comp.clone();
+                let local_to_global: &[usize] = comp;
                 let global_to_local: Vec<Option<usize>> = {
                     let mut g2l = vec![None; n];
                     for (li, &gi) in local_to_global.iter().enumerate() {
