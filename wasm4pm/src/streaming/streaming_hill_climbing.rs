@@ -74,6 +74,7 @@ impl StreamingHillClimbingBuilder {
     /// Edges with relative frequency (count / max_count) below this threshold
     /// are excluded from the candidate set before hill climbing begins.
     /// Higher values = more aggressive pre-filtering (faster but may miss edges).
+    #[must_use]
     pub fn with_noise_threshold(mut self, threshold: f64) -> Self {
         self.noise_threshold = threshold.clamp(0.0, 1.0);
         self

@@ -78,11 +78,13 @@ impl ActivityEvidence {
         }
     }
 
+    #[must_use]
     pub fn with_inputs(mut self, inputs: Vec<ObjectEvidence>) -> Self {
         self.inputs = inputs;
         self
     }
 
+    #[must_use]
     pub fn with_outputs(mut self, outputs: Vec<ObjectEvidence>) -> Self {
         self.outputs = outputs;
         self

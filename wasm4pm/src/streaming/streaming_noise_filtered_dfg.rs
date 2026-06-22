@@ -75,6 +75,7 @@ impl StreamingNoiseFilteredDfgBuilder {
     ///
     /// Edges with relative frequency (count / max_count) below this threshold
     /// are removed as noise. Higher values = more aggressive pruning.
+    #[must_use]
     pub fn with_noise_threshold(mut self, threshold: f64) -> Self {
         self.noise_threshold = threshold.clamp(0.0, 1.0);
         self

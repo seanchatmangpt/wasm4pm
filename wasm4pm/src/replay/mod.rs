@@ -101,6 +101,7 @@ impl LogEvent {
     }
 
     /// Set the case/object ID for this event.
+    #[must_use]
     pub fn with_case_id(mut self, case_id: String) -> Self {
         self.case_id = Some(case_id);
         self

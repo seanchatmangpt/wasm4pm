@@ -220,25 +220,13 @@ pub fn holdout_validate(
     let test_size = split_result["test_size"].as_u64().unwrap_or(0) as usize;
 
     // Step 2: Build DFG from training set
-    let (train_edges, _train_nodes) = get_or_init_state().with_object(train_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(build_dfg_edge_set(log, activity_key)),
-        Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Train handle is not an EventLog")),
-        None => Err(wasm_err(codes::INTERNAL_ERROR, "Train handle not found")),
-    })?;
+    let (train_edges, _train_nodes) = get_or_init_state().with_event_log(train_handle, |log| Ok(build_dfg_edge_set(log, activity_key)))?;
 
     // Step 3: Compute train fitness
-    let train_fitness = get_or_init_state().with_object(train_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(avg_log_fitness(log, activity_key, &train_edges)),
-        Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Train handle is not an EventLog")),
-        None => Err(wasm_err(codes::INTERNAL_ERROR, "Train handle not found")),
-    })?;
+    let train_fitness = get_or_init_state().with_event_log(train_handle, |log| Ok(avg_log_fitness(log, activity_key, &train_edges)))?;
 
     // Step 4: Compute test fitness (unseen data)
-    let test_fitness = get_or_init_state().with_object(test_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(avg_log_fitness(log, activity_key, &train_edges)),
-        Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Test handle is not an EventLog")),
-        None => Err(wasm_err(codes::INTERNAL_ERROR, "Test handle not found")),
-    })?;
+    let test_fitness = get_or_init_state().with_event_log(test_handle, |log| Ok(avg_log_fitness(log, activity_key, &train_edges)))?;
 
     let overfitting_delta = train_fitness - test_fitness;
 
