@@ -91,21 +91,13 @@ impl SimpleImputer {
     /// Transform data by imputing missing values
     #[wasm_bindgen]
     pub fn transform(&self, data: &[f64]) -> Vec<f64> {
-        let n = data.len() / self.n_features;
-        let mut result = Vec::with_capacity(data.len());
-
-        for i in 0..n {
-            for f in 0..self.n_features {
-                let val = data[i * self.n_features + f];
-                result.push(if val.is_nan() {
-                    self.statistics[f]
-                } else {
-                    val
-                });
-            }
-        }
-
-        result
+        data.chunks(self.n_features)
+            .flat_map(|row| {
+                row.iter()
+                    .zip(&self.statistics)
+                    .map(|(&v, &stat)| if v.is_nan() { stat } else { v })
+            })
+            .collect()
     }
 
     /// Fit and transform in one operation
