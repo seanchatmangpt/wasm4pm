@@ -1,6 +1,6 @@
 use crate::models::{AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 /// Priority 2 — Log filtering suite.
 ///
 /// All filter functions create a new EventLog (subset of traces) and store it,
@@ -169,7 +169,7 @@ pub fn filter_by_variant_coverage(
             }
 
             // Build variant → count map
-            let mut variant_counts: HashMap<Vec<String>, usize> = HashMap::new();
+            let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
             for trace in &log.traces {
                 let variant: Vec<String> = trace
                     .events
@@ -238,7 +238,7 @@ pub fn filter_by_variants_top_k(
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             // Build variant → count map
-            let mut variant_counts: HashMap<Vec<String>, usize> = HashMap::new();
+            let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
             for trace in &log.traces {
                 let variant: Vec<String> = trace
                     .events
