@@ -40,14 +40,9 @@ pub fn apply(
         }
 
         Some(PowlNode::StrictPartialOrder(spo)) => {
-            let old_children = spo.children.clone();
             let old_order = spo.order.clone();
-            let mut new_children: Vec<u32> = Vec::new();
-            let n = old_children.len();
-
-            for &c in &old_children {
-                new_children.push(apply(arena, c, label_map, dest_arena));
-            }
+            let n = spo.children.len();
+            let new_children: Vec<u32> = spo.children.iter().map(|&c| apply(arena, c, label_map, dest_arena)).collect();
 
             let spo_idx = dest_arena.add_strict_partial_order(new_children);
 
@@ -64,14 +59,9 @@ pub fn apply(
 
         Some(PowlNode::DecisionGraph(dg)) => {
             // Treat as StrictPartialOrder for label replacement purposes
-            let old_children = dg.children.clone();
             let old_order = dg.order.clone();
-            let mut new_children: Vec<u32> = Vec::new();
-            let n = old_children.len();
-
-            for &c in &old_children {
-                new_children.push(apply(arena, c, label_map, dest_arena));
-            }
+            let n = dg.children.len();
+            let new_children: Vec<u32> = dg.children.iter().map(|&c| apply(arena, c, label_map, dest_arena)).collect();
 
             let spo_idx = dest_arena.add_strict_partial_order(new_children);
 
@@ -90,16 +80,16 @@ pub fn apply(
             // Recursively apply label replacement to every SubModel subtree;
             // preserve graph structure (Start/End/edges).
             let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
-            for n in cg.graph.nodes.clone().into_iter() {
+            for n in &cg.graph.nodes {
                 match n {
                     ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
                     ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
                     ChoiceGraphNode::Activity(l) => {
-                        let new_label = label_map.get(l.as_str()).cloned().unwrap_or(l);
+                        let new_label = label_map.get(l.as_str()).cloned().unwrap_or_else(|| l.clone());
                         new_nodes.push(ChoiceGraphNode::Activity(new_label))
                     }
                     ChoiceGraphNode::SubModel(child) => {
-                        let new_child = apply(arena, child, label_map, dest_arena);
+                        let new_child = apply(arena, *child, label_map, dest_arena);
                         new_nodes.push(ChoiceGraphNode::SubModel(new_child));
                     }
                 }
