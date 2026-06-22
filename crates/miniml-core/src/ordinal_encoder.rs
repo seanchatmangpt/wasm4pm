@@ -22,21 +22,14 @@ impl OrdinalEncoder {
             return Err(JsError::new("data cannot be empty"));
         }
 
-        self.categories = Vec::with_capacity(self.n_features);
-
-        for f in 0..self.n_features {
-            let mut feature_values: Vec<f64> = data
-                .iter()
-                .enumerate()
-                .filter(|(i, _)| i % self.n_features == f)
-                .map(|(_, &v)| v)
-                .collect();
-
-            feature_values.sort_unstable_by(|a, b| a.total_cmp(b));
-            feature_values.dedup();
-
-            self.categories.push(feature_values);
-        }
+        self.categories = (0..self.n_features)
+            .map(|f| {
+                let mut vals: Vec<f64> = data.chunks(self.n_features).map(|row| row[f]).collect();
+                vals.sort_unstable_by(|a, b| a.total_cmp(b));
+                vals.dedup();
+                vals
+            })
+            .collect();
 
         self.fitted = true;
         Ok(())
@@ -49,16 +42,11 @@ impl OrdinalEncoder {
             return Err(JsError::new("encoder not fitted"));
         }
 
-        let n_samples = data.len() / self.n_features;
         let mut result = Vec::with_capacity(data.len());
-
-        for i in 0..n_samples {
-            for f in 0..self.n_features {
-                let val = data[i * self.n_features + f];
+        for row in data.chunks(self.n_features) {
+            for (f, &val) in row.iter().enumerate() {
                 let categories = &self.categories[f];
-
-                let pos = categories.iter().position(|&c| (c - val).abs() < 1e-10);
-                match pos {
+                match categories.iter().position(|&c| (c - val).abs() < 1e-10) {
                     Some(idx) => result.push(idx as f64),
                     None => {
                         return Err(JsError::new(&format!(
