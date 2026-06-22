@@ -204,7 +204,7 @@ impl CognitionBreed for EventCalculus {
 
             // Holds set rendered as a `;`-separated list so consumers can parse the full
             // (possibly multi-fluent) state without ambiguity against the `,` field separator.
-            let holds_list = holds[t].iter().map(|s| s.as_str()).collect::<Vec<_>>().join(";");
+            let holds_list = holds[t].iter().map(String::as_str).collect::<Vec<_>>().join(";");
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "ec-infer".to_string(),

@@ -238,10 +238,10 @@ pub fn play_out_dfg_core(
     }
 
     // Collect start activity names
-    let start_names: Vec<&str> = start_activities.keys().map(|s| s.as_str()).collect();
+    let start_names: Vec<&str> = start_activities.keys().map(String::as_str).collect();
     if start_names.is_empty() {
         // Fallback: use all activities as potential starts
-        let all_starts: Vec<&str> = activities.iter().map(|s| s.as_str()).collect();
+        let all_starts: Vec<&str> = activities.iter().map(String::as_str).collect();
         return play_out_dfg_with_starts(&all_starts, &adj, end_activities, params);
     }
 

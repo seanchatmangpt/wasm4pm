@@ -567,7 +567,7 @@ mod tests {
                 ]
             })
             .collect();
-        let trace_refs: Vec<&[&str]> = traces.iter().map(|v| v.as_slice()).collect();
+        let trace_refs: Vec<&[&str]> = traces.iter().map(Vec::as_slice).collect();
         let log = make_log(&trace_refs);
 
         let col_owned = log.to_columnar_owned("concept:name");
@@ -658,7 +658,7 @@ mod tests {
                 ]
             })
             .collect();
-        let trace_refs: Vec<&[&str]> = traces.iter().map(|v| v.as_slice()).collect();
+        let trace_refs: Vec<&[&str]> = traces.iter().map(Vec::as_slice).collect();
         let log = make_log(&trace_refs);
 
         let algo_names: &[&str] = &["dfg", "alpha_plus_plus", "heuristic_miner"];
