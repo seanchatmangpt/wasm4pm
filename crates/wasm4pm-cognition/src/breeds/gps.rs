@@ -85,7 +85,7 @@ fn solve(
     let mut last_err = format!("no operator produces {}", goal);
     for action in actions {
         let adds = parse_adds(&action.conclusion);
-        if !adds.contains(&goal.to_string()) {
+        if !adds.iter().any(|a| a == goal) {
             continue;
         }
         tracing::debug!(breed.step = "operator_selected", breed = "gps", operator = %action.id, "L1 inference step");

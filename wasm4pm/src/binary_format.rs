@@ -25,9 +25,9 @@ use crate::error::Wasm4pmError;
 use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use rustc_hash::FxHashMap;
-use std::fmt::Write as _;
 use serde_json::json;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::mem::size_of;
 use wasm_bindgen::prelude::*;
 
@@ -472,7 +472,7 @@ impl<'a> BinaryLogView<'a> {
             return Err(format!(
                 "Trace index out of bounds: {} >= {}",
                 index, self.header.num_traces
-            );
+            ));
         }
 
         let offsets_start = self.header.section_offsets[1] as usize;

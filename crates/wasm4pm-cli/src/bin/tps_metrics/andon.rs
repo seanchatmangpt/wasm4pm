@@ -18,6 +18,7 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use git2::Repository;
+use std::fmt::Write as _;
 use std::fs;
 
 /// Andon status metrics
@@ -302,17 +303,18 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
         _ => "RED",
     };
 
-    report.push_str(&format!("  Health Score: {} / 100\n", metrics.health_score));
-    report.push_str(&format!("    Status: {}\n", health_color));
+    let _ = write!(report, "  Health Score: {} / 100\n", metrics.health_score);
+    let _ = write!(report, "    Status: {}\n", health_color);
 
     // Component status
     report.push_str(&"\nComponent Status:\n".bold());
 
     // Build status
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Build Success Rate: {:.1}%\n",
         metrics.build_success_rate
-    ));
+    );
     let build_status = if metrics.build_success_rate >= 95.0 {
         "PASS".green()
     } else if metrics.build_success_rate >= 80.0 {
@@ -320,13 +322,14 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     } else {
         "FAIL".red()
     };
-    report.push_str(&format!("    Status: {}\n", build_status));
+    let _ = write!(report, "    Status: {}\n", build_status);
 
     // Deploy status
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Last Deploy: {} ({:.1} hours ago)\n",
         metrics.last_deploy_status, metrics.last_deploy_hours_ago
-    ));
+    );
     let deploy_status =
         if metrics.last_deploy_status == "success" && metrics.last_deploy_hours_ago < 24.0 {
             "PASS".green()
@@ -335,13 +338,10 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
         } else {
             "FAIL".red()
         };
-    report.push_str(&format!("    Status: {}\n", deploy_status));
+    let _ = write!(report, "    Status: {}\n", deploy_status);
 
     // Test status
-    report.push_str(&format!(
-        "  Test Pass Rate: {:.1}%\n",
-        metrics.test_pass_rate
-    ));
+    let _ = write!(report, "  Test Pass Rate: {:.1}%\n", metrics.test_pass_rate);
     let test_status = if metrics.test_pass_rate >= 95.0 {
         "PASS".green()
     } else if metrics.test_pass_rate >= 80.0 {
@@ -349,13 +349,14 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     } else {
         "FAIL".red()
     };
-    report.push_str(&format!("    Status: {}\n", test_status));
+    let _ = write!(report, "    Status: {}\n", test_status);
 
     // Deferred defect markers (formerly mislabelled "Compiler Warnings")
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "  Deferred-Defect Markers (TODO/FIXME/HACK): {}\n",
         metrics.deferred_defect_markers
-    ));
+    );
     let marker_status = if metrics.deferred_defect_markers == 0 {
         "PASS".green()
     } else if metrics.deferred_defect_markers < 5 {
@@ -363,10 +364,10 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     } else {
         "FAIL".red()
     };
-    report.push_str(&format!("    Status: {}\n", marker_status));
+    let _ = write!(report, "    Status: {}\n", marker_status);
 
     // Work in progress
-    report.push_str(&format!("  Open Branches: {}\n", metrics.open_items));
+    let _ = write!(report, "  Open Branches: {}\n", metrics.open_items);
     let wip_status = if metrics.open_items <= 3 {
         "PASS".green()
     } else if metrics.open_items <= 7 {
@@ -374,7 +375,7 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     } else {
         "FAIL".red()
     };
-    report.push_str(&format!("    Status: {}\n", wip_status));
+    let _ = write!(report, "    Status: {}\n", wip_status);
 
     // Recommendations
     report.push_str(&"\nImmediate Actions:\n".bold());

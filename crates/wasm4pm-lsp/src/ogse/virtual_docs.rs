@@ -4,6 +4,7 @@
 //! current SubstrateIndex.  All rendering is pure — no I/O side effects.
 
 use crate::ogse::substrate_index::SubstrateIndex;
+use std::fmt::Write as _;
 
 // ── Public entry point ────────────────────────────────────────────────────────
 
@@ -125,7 +126,7 @@ fn render_crown_table(index: &SubstrateIndex) -> String {
 
     let mut rows = String::new();
     for (id, entry, standing) in index.all() {
-        rows.push_str(&format!(
+        let _ = write!(rows,
             "| {id} | {cat} | {declared} | {generated} | {receipted} | {falsified} | {admitted} | {crown} | {fitness:.3} |\n",
             id = id,
             cat = entry.category,
@@ -136,7 +137,7 @@ fn render_crown_table(index: &SubstrateIndex) -> String {
             admitted = check(standing.admitted),
             crown = check(standing.receipt_crown_valid),
             fitness = standing.fitness,
-        ));
+        );
     }
 
     if rows.is_empty() {
@@ -183,10 +184,10 @@ fn render_residuals(index: &SubstrateIndex) -> String {
         } else {
             blockers.join(", ")
         };
-        lines.push_str(&format!(
+        let _ = write!(lines,
             "- `{}` — missing: {} (fitness: {:.3})\n",
             id, blocker_str, standing.fitness
-        ));
+        );
     }
     lines
 }
@@ -242,7 +243,7 @@ fn render_category(cat: &str, index: &SubstrateIndex) -> String {
 
     let mut rows = String::new();
     for (id, entry, standing) in entries {
-        rows.push_str(&format!(
+        let _ = write!(rows,
             "| {id} | {citation} | {declared} | {generated} | {receipted} | {falsified} | {admitted} | {fitness:.3} |\n",
             id = id,
             citation = entry.citation,
@@ -252,7 +253,7 @@ fn render_category(cat: &str, index: &SubstrateIndex) -> String {
             falsified = check(standing.falsified),
             admitted = check(standing.admitted),
             fitness = standing.fitness,
-        ));
+        );
     }
 
     format!(

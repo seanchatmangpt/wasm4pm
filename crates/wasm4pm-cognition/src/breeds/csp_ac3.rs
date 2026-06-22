@@ -10,6 +10,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
+use std::fmt::Write as _;
 
 /// Constraint Satisfaction Problem breed
 pub struct CspAc3;
@@ -262,7 +263,7 @@ mod tests {
             if i > 0 {
                 big_domain.push(',');
             }
-            big_domain.push_str(&format!("d{}", i));
+            let _ = write!(big_domain, "d{}", i);
         }
         facts.push(fact("csp-var", &format!("V1:{}", big_domain)));
         let input = input_with(facts);
