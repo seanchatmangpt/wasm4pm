@@ -8,7 +8,7 @@ use crate::state::get_or_init_state;
 use rand::prelude::*;
 use rand_distr::LogNormal;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for Monte Carlo simulation.
@@ -64,8 +64,8 @@ pub struct MonteCarloReport {
     pub sojourn_time_p50_ms: f64,
     /// 95th percentile of per-case sojourn times in ms.
     pub sojourn_time_p95_ms: f64,
-    pub activity_statistics: HashMap<String, ActivityStats>,
-    pub resource_utilization: HashMap<String, f64>,
+    pub activity_statistics: BTreeMap<String, ActivityStats>,
+    pub resource_utilization: BTreeMap<String, f64>,
 }
 
 /// Statistics for a single activity.
@@ -159,7 +159,7 @@ pub fn run_monte_carlo_simulation(
     // Collect per-case sojourn times so we can compute P5/P50/P95/std after the loop.
     let mut per_case_sojourn_ms: Vec<f64> = Vec::with_capacity(completed_cases);
     let mut total_trace_length: usize = 0;
-    let mut activity_stats: HashMap<String, ActivityStats> = HashMap::new();
+    let mut activity_stats: BTreeMap<String, ActivityStats> = BTreeMap::new();
     let mut resource_pools: HashMap<String, ResourcePool> = _config
         .resource_capacity
         .iter()
@@ -403,7 +403,7 @@ pub fn run_monte_carlo_simulation(
     let completed_cases = per_case_sojourn_ms.len();
 
     // Calculate final resource utilization
-    let resource_utilization: HashMap<String, f64> = resource_pools
+    let resource_utilization: BTreeMap<String, f64> = resource_pools
         .iter()
         .map(|(r, pool)| (r.clone(), pool.utilization(current_time_ms)))
         .collect();

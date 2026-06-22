@@ -4,8 +4,8 @@ use crate::utilities::to_js_str;
 use hashbrown::HashMap;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
-use std::collections::BTreeMap;
 use serde_json::json;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
@@ -255,7 +255,8 @@ pub fn analyze_temporal_bottlenecks(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut activity_durations: HashMap<String, Vec<f64>> = HashMap::default();
+            let mut activity_durations: std::collections::BTreeMap<String, Vec<f64>> =
+                std::collections::BTreeMap::new();
 
             for trace in &log.traces {
                 let activities: Vec<(String, String)> = trace
@@ -316,7 +317,10 @@ pub fn extract_activity_ordering(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut mandatory_predecessors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
+            let mut mandatory_predecessors: std::collections::BTreeMap<
+                String,
+                std::collections::BTreeSet<String>,
+            > = std::collections::BTreeMap::new();
 
             for trace in &log.traces {
                 // Collect only events that carry the activity key, preserving order
