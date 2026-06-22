@@ -893,6 +893,7 @@ impl HealthCheck {
 
     /// Create new health check with custom config.
     #[allow(dead_code)]
+    #[must_use]
     pub fn with_config(config: HealthCheckConfig) -> Self {
         Self {
             config,
