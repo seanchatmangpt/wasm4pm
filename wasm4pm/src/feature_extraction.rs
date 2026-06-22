@@ -2,7 +2,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 /// Extract feature vectors from event log traces for ML training.
@@ -478,8 +478,8 @@ pub fn export_features_json(
 // ============================================================================
 
 /// Count activity occurrences in a trace
-fn count_activities(trace: &Trace, activity_key: &str) -> HashMap<String, usize> {
-    let mut counts = HashMap::new();
+fn count_activities(trace: &Trace, activity_key: &str) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
     for event in &trace.events {
         if let Some(activity) = event
             .attributes
@@ -493,8 +493,8 @@ fn count_activities(trace: &Trace, activity_key: &str) -> HashMap<String, usize>
 }
 
 /// Count activity occurrences in a slice of events
-fn count_activities_in_events(events: &[Event], activity_key: &str) -> HashMap<String, usize> {
-    let mut counts = HashMap::new();
+fn count_activities_in_events(events: &[Event], activity_key: &str) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
     for event in events {
         if let Some(activity) = event
             .attributes
