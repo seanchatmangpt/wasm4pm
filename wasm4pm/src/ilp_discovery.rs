@@ -71,8 +71,8 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
 
     // Stage 1: Build DF counts, start/end activity sets.
     let mut df: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-    let mut start_acts: HashSet<u32> = HashSet::new();
-    let mut end_acts: HashSet<u32> = HashSet::new();
+    let mut start_acts: std::collections::BTreeSet<u32> = std::collections::BTreeSet::new();
+    let mut end_acts: std::collections::BTreeSet<u32> = std::collections::BTreeSet::new();
 
     let trace_count = col.trace_offsets.len() - 1;
     for t in 0..trace_count {
@@ -91,7 +91,7 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
 
     // Stage 1b: Classify pairs as causal, parallel, or loop-1.
     let mut causal_pairs: Vec<(u32, u32)> = Vec::new();
-    let mut loop1_acts: HashSet<u32> = HashSet::new();
+    let mut loop1_acts: std::collections::BTreeSet<u32> = std::collections::BTreeSet::new();
     let mut parallel_pairs: HashSet<(u32, u32)> = HashSet::new();
 
     for &(a, b) in df.keys() {
@@ -263,9 +263,9 @@ fn build_ilp_petri_net(
     col: &ColumnarLog<'_>,
     log: &EventLog,
     activity_key: &str,
-    start_acts: &HashSet<u32>,
-    end_acts: &HashSet<u32>,
-    loop1_acts: &HashSet<u32>,
+    start_acts: &std::collections::BTreeSet<u32>,
+    end_acts: &std::collections::BTreeSet<u32>,
+    loop1_acts: &std::collections::BTreeSet<u32>,
 ) -> (PetriNet, f64, f64) {
     let mut petri_net = PetriNet::new();
 
