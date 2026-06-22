@@ -140,7 +140,7 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
     let mut circuit_drift_pairs = HashSet::new();
 
     // Per-dimension tracking: [dimension_index] -> set of observed values
-    let mut dimension_values: Vec<HashSet<u8>> = vec![HashSet::new(); 8];
+    let mut dimension_values: Vec<std::collections::BTreeSet<u8>> = vec![std::collections::BTreeSet::new(); 8];
 
     // Analyze each state
     for state in states {
@@ -193,12 +193,7 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
 
         // Compute gaps (missing ranges)
         let mut gaps = Vec::new();
-        let sorted_values: Vec<u8> = values
-            .iter()
-            .copied()
-            .collect::<std::collections::BTreeSet<_>>()
-            .into_iter()
-            .collect();
+        let sorted_values: Vec<u8> = values.iter().copied().collect();
         if !sorted_values.is_empty() {
             let mut gap_start = 0u8;
             for &val in &sorted_values {
