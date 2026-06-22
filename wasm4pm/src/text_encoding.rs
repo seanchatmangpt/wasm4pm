@@ -1,6 +1,7 @@
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write as _;
 use wasm_bindgen::prelude::*;
 
 /// Convert a DFG to human-readable English text
@@ -17,10 +18,7 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
 
             // Activity count and list
             let activity_count = dfg.nodes.len();
-            text.push_str(&format!(
-                "The process contains {} activities: ",
-                activity_count
-            ));
+            let _ = write!(text, "The process contains {} activities: ", activity_count);
             let activities: Vec<String> = dfg.nodes.iter().map(|n| n.label.clone()).collect();
             text.push_str(&activities.join(", "));
             text.push_str(".\n");
@@ -58,7 +56,7 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
 
             for (from_activity, outgoing) in edges_by_from.iter() {
                 let total_outgoing: usize = outgoing.iter().map(|(_, freq)| freq).sum();
-                text.push_str(&format!("- From {}: ", from_activity));
+                let _ = write!(text, "- From {}: ", from_activity);
 
                 let paths: Vec<String> = outgoing
                     .iter()
@@ -147,13 +145,14 @@ pub fn encode_variants_as_text(
             for (idx, (sequence, count)) in sorted_variants.iter().take(top_n).enumerate() {
                 let pct = (*count as f64 / total_cases) * 100.0;
                 let variant_str = sequence.join(" → ");
-                text.push_str(&format!(
+                let _ = write!(
+                    text,
                     "{}. {} ({} cases, {:.1}%)\n",
                     idx + 1,
                     variant_str,
                     count,
                     pct
-                ));
+                );
             }
 
             Ok(text.trim_end().to_string())
@@ -199,13 +198,14 @@ pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
             freq_pairs.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
 
             let mut text = String::from("Process log summary:\n");
-            text.push_str(&format!("- Total cases: {}\n", case_count));
-            text.push_str(&format!("- Total events: {}\n", event_count));
-            text.push_str(&format!(
+            let _ = write!(text, "- Total cases: {}\n", case_count);
+            let _ = write!(text, "- Total events: {}\n", event_count);
+            let _ = write!(
+                text,
                 "- Average events per case: {:.2}\n",
                 avg_events_per_case
-            ));
-            text.push_str(&format!("- Unique activities: {}\n", unique_activities));
+            );
+            let _ = write!(text, "- Unique activities: {}\n", unique_activities);
 
             text.push_str("- Activity frequencies: ");
             let freq_strs: Vec<String> = freq_pairs
@@ -247,16 +247,18 @@ pub fn encode_conformance_as_text(result_json: &str) -> Result<String, JsValue> 
     let non_conforming_pct = 100.0 - conforming_pct;
 
     let mut text = String::from("Conformance analysis:\n");
-    text.push_str(&format!("- Total cases checked: {}\n", total));
-    text.push_str(&format!(
+    let _ = write!(text, "- Total cases checked: {}\n", total);
+    let _ = write!(
+        text,
         "- Conforming cases: {} ({:.1}%)\n",
         conforming, conforming_pct
-    ));
-    text.push_str(&format!(
+    );
+    let _ = write!(
+        text,
         "- Non-conforming cases: {} ({:.1}%)\n",
         non_conforming, non_conforming_pct
-    ));
-    text.push_str(&format!("- Average case fitness: {:.2}", avg_fitness));
+    );
+    let _ = write!(text, "- Average case fitness: {:.2}", avg_fitness);
 
     Ok(text)
 }
@@ -291,23 +293,26 @@ pub fn encode_bottlenecks_as_text(result_json: &str) -> Result<String, JsValue> 
         let delayed = bn["delayed_cases"].as_u64().unwrap_or(0) as usize;
 
         if idx == 0 {
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- Slowest activity: {} (avg {:.1} hours, {} cases delayed)\n",
                 activity, duration, delayed
-            ));
+            );
         } else if idx == 1 {
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- Second slowest: {} (avg {:.1} hours, {} cases delayed)\n",
                 activity, duration, delayed
-            ));
+            );
         } else {
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- {}: {} (avg {:.1} hours, {} cases delayed)\n",
                 if delayed == 0 { "Fastest" } else { "Activity" },
                 activity,
                 duration,
                 delayed
-            ));
+            );
         }
     }
 
@@ -339,11 +344,12 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
                     p.label.clone()
                 })
                 .collect();
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- Places ({}): [{}]\n",
                 pn.places.len(),
                 place_labels.join(", ")
-            ));
+            );
 
             // Transitions
             let transition_labels: Vec<String> = pn
@@ -357,11 +363,12 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
                     }
                 })
                 .collect();
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- Transitions ({}): [{}]\n",
                 pn.transitions.len(),
                 transition_labels.join(", ")
-            ));
+            );
 
             // Arcs
             if !pn.arcs.is_empty() {
@@ -377,11 +384,12 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
                         }
                     })
                     .collect();
-                text.push_str(&format!(
+                let _ = write!(
+                    text,
                     "- Arcs ({}): {}\n",
                     pn.arcs.len(),
                     arc_strs.join(", ")
-                ));
+                );
             }
 
             // Initial marking
@@ -393,7 +401,7 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
                     .map(|(place, tokens)| format!("{}={}", place, tokens))
                     .collect();
                 if !markings.is_empty() {
-                    text.push_str(&format!("- Initial marking: {}\n", markings.join(", ")));
+                    let _ = write!(text, "- Initial marking: {}\n", markings.join(", "));
                 }
             }
 
@@ -407,13 +415,10 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
                         .collect();
                     if !markings.is_empty() {
                         if pn.final_markings.len() == 1 {
-                            text.push_str(&format!("- Final marking: {}", markings.join(", ")));
+                            let _ = write!(text, "- Final marking: {}", markings.join(", "));
                         } else {
-                            text.push_str(&format!(
-                                "- Final marking {}: {}",
-                                i + 1,
-                                markings.join(", ")
-                            ));
+                            let _ =
+                                write!(text, "- Final marking {}: {}", i + 1, markings.join(", "));
                         }
                         if i < pn.final_markings.len() - 1 {
                             text.push('\n');
@@ -449,11 +454,12 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
 
             // Event types
             if !ocel.event_types.is_empty() {
-                text.push_str(&format!(
+                let _ = write!(
+                    text,
                     ", {} event types ({})",
                     ocel.event_types.len(),
                     ocel.event_types.join(", ")
-                ));
+                );
             }
 
             // Object types with counts
@@ -470,11 +476,12 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
                         format!("{} ({})", ot, count)
                     })
                     .collect();
-                text.push_str(&format!(
+                let _ = write!(
+                    text,
                     ", {} object types: {}",
                     ocel.object_types.len(),
                     type_strs.join(", ")
-                ));
+                );
             }
 
             // Relationships summary
@@ -484,11 +491,12 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
                     .iter()
                     .map(|r| r.qualifier.as_str())
                     .collect();
-                text.push_str(&format!(
+                let _ = write!(
+                    text,
                     "\n- {} object relations (qualifiers: {})",
                     ocel.object_relations.len(),
                     qualifiers.into_iter().collect::<Vec<_>>().join(", ")
-                ));
+                );
             }
 
             Ok(text)
@@ -542,18 +550,20 @@ pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, 
 
                 let arc_count = net_json["arcs"].as_array().map_or(0, |arr| arr.len());
 
-                text.push_str(&format!("  {}:\n", obj_type));
-                text.push_str(&format!(
+                let _ = write!(text, "  {}:\n", obj_type);
+                let _ = write!(
+                    text,
                     "    Places ({}): [{}]\n",
                     places.len(),
                     places.join(", ")
-                ));
-                text.push_str(&format!(
+                );
+                let _ = write!(
+                    text,
                     "    Transitions ({}): [{}]\n",
                     transitions.len(),
                     transitions.join(", ")
-                ));
-                text.push_str(&format!("    Arcs: {}\n", arc_count));
+                );
+                let _ = write!(text, "    Arcs: {}\n", arc_count);
             }
 
             Ok(text.trim_end().to_string())
@@ -584,15 +594,13 @@ pub fn encode_model_comparison_as_text(
     let mut text = format!("Model comparison: {} vs {}\n", m1.name, m2.name);
 
     // Node/place counts
-    text.push_str(&format!(
-        "- Nodes: {} vs {}\n",
-        m1.node_count, m2.node_count
-    ));
-    text.push_str(&format!(
+    let _ = write!(text, "- Nodes: {} vs {}\n", m1.node_count, m2.node_count);
+    let _ = write!(
+        text,
         "- Edges/Arcs: {} vs {}\n",
         m1.edges.len(),
         m2.edges.len()
-    ));
+    );
 
     // Activities/nodes only in model 1
     let nodes1: HashSet<&str> = m1.nodes.iter().map(|s| s.as_str()).collect();
@@ -603,11 +611,11 @@ pub fn encode_model_comparison_as_text(
 
     if !only_in_1.is_empty() {
         let labels: Vec<&str> = only_in_1.into_iter().copied().collect();
-        text.push_str(&format!("- Only in {}: {}\n", m1.name, labels.join(", ")));
+        let _ = write!(text, "- Only in {}: {}\n", m1.name, labels.join(", "));
     }
     if !only_in_2.is_empty() {
         let labels: Vec<&str> = only_in_2.into_iter().copied().collect();
-        text.push_str(&format!("- Only in {}: {}\n", m2.name, labels.join(", ")));
+        let _ = write!(text, "- Only in {}: {}\n", m2.name, labels.join(", "));
     }
 
     // Edge differences
@@ -643,13 +651,10 @@ pub fn encode_model_comparison_as_text(
         });
         text.push_str("- Edge differences:\n");
         for (edge, f1, f2) in diffs.iter().take(10) {
-            text.push_str(&format!("    {}→{}: {} vs {}\n", edge.0, edge.1, f1, f2));
+            let _ = write!(text, "    {}→{}: {} vs {}\n", edge.0, edge.1, f1, f2);
         }
         if diffs.len() > 10 {
-            text.push_str(&format!(
-                "    ... and {} more differences\n",
-                diffs.len() - 10
-            ));
+            let _ = write!(text, "    ... and {} more differences\n", diffs.len() - 10);
         }
     } else {
         text.push_str("- No edge differences found.\n");
@@ -719,11 +724,12 @@ pub fn encode_ocel_summary_as_text(ocel_handle: &str) -> Result<String, JsValue>
 
             // Object types and counts
             let object_type_count = ocel.object_types.len();
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- Object types: {} ({})\n",
                 object_type_count,
                 ocel.object_types.join(", ")
-            ));
+            );
 
             // Count objects by type
             let mut object_counts: HashMap<String, usize> = HashMap::new();
@@ -733,19 +739,20 @@ pub fn encode_ocel_summary_as_text(ocel_handle: &str) -> Result<String, JsValue>
 
             for obj_type in &ocel.object_types {
                 let count = object_counts.get(obj_type).cloned().unwrap_or(0);
-                text.push_str(&format!("- {} instances: {}\n", obj_type, count));
+                let _ = write!(text, "- {} instances: {}\n", obj_type, count);
             }
 
             // Event types and count
             let event_type_count = ocel.event_types.len();
-            text.push_str(&format!(
+            let _ = write!(
+                text,
                 "- Event types: {} ({})\n",
                 event_type_count,
                 ocel.event_types.join(", ")
-            ));
+            );
 
             let total_events = ocel.event_count();
-            text.push_str(&format!("- Total events: {}", total_events));
+            let _ = write!(text, "- Total events: {}", total_events);
 
             Ok(text)
         }

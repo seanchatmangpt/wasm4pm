@@ -5,6 +5,7 @@
 
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write as _;
 
 const YAWL_NAMESPACE: &str = "http://www.yawlfoundation.org/yawlschema";
 
@@ -176,10 +177,10 @@ impl<'a> YawlExporter<'a> {
         xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 
         // Root specificationSet element
-        xml.push_str(&format!(
+        let _ = write!(xml,
             "<specificationSet xmlns=\"{}\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ",
             YAWL_NAMESPACE
-        ));
+        );
         xml.push_str("xsi:schemaLocation=\"http://www.yawlfoundation.org/yawlschema ");
         xml.push_str(
             "http://www.yawlfoundation.org/yawlschema/YAWLSchema2.0.xsd\" version=\"2.0\">\n",
@@ -195,15 +196,13 @@ impl<'a> YawlExporter<'a> {
     }
 
     fn export_specification(&mut self, xml: &mut String, root: u32) -> Result<(), YawlExportError> {
-        xml.push_str(&format!(
-            "  <specification uri=\"{}\">\n",
-            self.config.spec_id
-        ));
+        let _ = write!(xml, "  <specification uri=\"{}\">\n", self.config.spec_id);
         xml.push_str("    <meta>\n");
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <title>{}</title>\n",
             escape_xml(&self.config.spec_name)
-        ));
+        );
         xml.push_str("      <creator>wasm4pm</creator>\n");
         xml.push_str("      <description>Exported from POWL model</description>\n");
         xml.push_str("    </meta>\n");
@@ -235,13 +234,13 @@ impl<'a> YawlExporter<'a> {
 
         // Export input condition (start place)
         let input_id = self.alloc_condition();
-        xml.push_str(&format!("      <inputCondition id=\"{}\">\n", input_id));
+        let _ = write!(xml, "      <inputCondition id=\"{}\">\n", input_id);
         xml.push_str("        <name>Input Condition</name>\n");
         xml.push_str("      </inputCondition>\n");
 
         // Export output condition (end place)
         let output_id = self.alloc_condition();
-        xml.push_str(&format!("      <outputCondition id=\"{}\">\n", output_id));
+        let _ = write!(xml, "      <outputCondition id=\"{}\">\n", output_id);
         xml.push_str("        <name>Output Condition</name>\n");
         xml.push_str("      </outputCondition>\n");
 
@@ -290,20 +289,22 @@ impl<'a> YawlExporter<'a> {
         let task_id = self.alloc_task(node_id);
         let label = t.label.as_deref().unwrap_or("tau");
 
-        xml.push_str(&format!("      <task id=\"{}\">\n", task_id));
-        xml.push_str(&format!("        <name>{}</name>\n", escape_xml(label)));
+        let _ = write!(xml, "      <task id=\"{}\">\n", task_id);
+        let _ = write!(xml, "        <name>{}</name>\n", escape_xml(label));
         xml.push_str("      </task>\n");
 
         // Flows: input -> task -> output
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             input_id, task_id
-        ));
+        );
         self.flow_counter += 1;
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             task_id, output_id
-        ));
+        );
         self.flow_counter += 1;
 
         Ok(())
@@ -320,29 +321,28 @@ impl<'a> YawlExporter<'a> {
     ) -> Result<(), YawlExportError> {
         let task_id = self.alloc_task(node_id);
 
-        xml.push_str(&format!("      <task id=\"{}\">\n", task_id));
-        xml.push_str(&format!("        <name>{}</name>\n", escape_xml(&t.label)));
+        let _ = write!(xml, "      <task id=\"{}\">\n", task_id);
+        let _ = write!(xml, "        <name>{}</name>\n", escape_xml(&t.label));
 
         // Add decomposition info for frequent transitions
         if t.skippable || t.selfloop {
-            xml.push_str(&format!(
-                "        <decomposition id=\"decomp_{}\"/>\n",
-                node_id
-            ));
+            let _ = write!(xml, "        <decomposition id=\"decomp_{}\"/>\n", node_id);
         }
 
         xml.push_str("      </task>\n");
 
         // Flows
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             input_id, task_id
-        ));
+        );
         self.flow_counter += 1;
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             task_id, output_id
-        ));
+        );
         self.flow_counter += 1;
 
         Ok(())
@@ -375,8 +375,8 @@ impl<'a> YawlExporter<'a> {
                     "activity"
                 };
 
-            xml.push_str(&format!("      <task id=\"{}\">\n", task_id));
-            xml.push_str(&format!("        <name>{}</name>\n", escape_xml(label)));
+            let _ = write!(xml, "      <task id=\"{}\">\n", task_id);
+            let _ = write!(xml, "        <name>{}</name>\n", escape_xml(label));
             xml.push_str("      </task>\n");
 
             // Connect from input or previous task
@@ -385,10 +385,11 @@ impl<'a> YawlExporter<'a> {
             } else {
                 prev_task_id.as_ref().unwrap()
             };
-            xml.push_str(&format!(
+            let _ = write!(
+                xml,
                 "      <flow source=\"{}\" target=\"{}\"/>\n",
                 source_id, task_id
-            ));
+            );
             self.flow_counter += 1;
 
             prev_task_id = Some(task_id);
@@ -396,10 +397,11 @@ impl<'a> YawlExporter<'a> {
 
         // Connect last task to output
         if let Some(last_task_id) = prev_task_id {
-            xml.push_str(&format!(
+            let _ = write!(
+                xml,
                 "      <flow source=\"{}\" target=\"{}\"/>\n",
                 last_task_id, output_id
-            ));
+            );
             self.flow_counter += 1;
         }
 
@@ -423,28 +425,27 @@ impl<'a> YawlExporter<'a> {
             Operator::PartialOrder => "PARTIAL_ORDER",
         };
 
-        xml.push_str(&format!("      <task id=\"{}\">\n", task_id));
-        xml.push_str(&format!("        <name>{}</name>\n", op_name));
+        let _ = write!(xml, "      <task id=\"{}\">\n", task_id);
+        let _ = write!(xml, "        <name>{}</name>\n", op_name);
 
         // Add decomposition for composite operator
-        xml.push_str(&format!(
-            "        <decomposition id=\"decomp_{}\"/>\n",
-            node_id
-        ));
+        let _ = write!(xml, "        <decomposition id=\"decomp_{}\"/>\n", node_id);
         xml.push_str("      </task>\n");
 
         // Flow from input to this task
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             input_id, task_id
-        ));
+        );
         self.flow_counter += 1;
 
         // Flow from this task to output
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             task_id, output_id
-        ));
+        );
         self.flow_counter += 1;
 
         Ok(())
@@ -460,19 +461,21 @@ impl<'a> YawlExporter<'a> {
     ) -> Result<(), YawlExportError> {
         let task_id = self.alloc_task(node_id);
 
-        xml.push_str(&format!("      <task id=\"{}\">\n", task_id));
-        xml.push_str(&format!("        <name>{}</name>\n", escape_xml(label)));
+        let _ = write!(xml, "      <task id=\"{}\">\n", task_id);
+        let _ = write!(xml, "        <name>{}</name>\n", escape_xml(label));
         xml.push_str("      </task>\n");
 
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             input_id, task_id
-        ));
+        );
         self.flow_counter += 1;
-        xml.push_str(&format!(
+        let _ = write!(
+            xml,
             "      <flow source=\"{}\" target=\"{}\"/>\n",
             task_id, output_id
-        ));
+        );
         self.flow_counter += 1;
 
         Ok(())
