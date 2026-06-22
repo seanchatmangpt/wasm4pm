@@ -140,9 +140,9 @@ fn topological_sort(num_steps: usize, orderings: &BTreeSet<(usize, usize)>) -> V
 }
 
 fn resolve_threats(
-    steps: &Vec<Step>,
+    steps: &[Step],
     orderings: &mut BTreeSet<(usize, usize)>,
-    causal_links: &Vec<CausalLink>,
+    causal_links: &[CausalLink],
     trace: &mut Vec<TraceStep>,
     depth: usize,
 ) -> bool {

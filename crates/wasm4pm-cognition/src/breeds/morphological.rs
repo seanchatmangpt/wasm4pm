@@ -111,15 +111,15 @@ fn field_size(field: &BTreeMap<String, Vec<String>>) -> Option<u64> {
 /// Does the configuration (one value index per sorted parameter) violate the
 /// exclusion? Both conditions must hold for the configuration to be
 /// inconsistent.
-fn violates(params: &[(&String, &Vec<String>)], config: &[usize], ex: &Exclusion) -> bool {
+fn violates(params: &[(&str, &[String])], config: &[usize], ex: &Exclusion) -> bool {
     let mut hit_a = false;
     let mut hit_b = false;
     for (i, (name, values)) in params.iter().enumerate() {
         let v = &values[config[i]];
-        if **name == ex.param_a && *v == ex.value_a {
+        if *name == ex.param_a && *v == ex.value_a {
             hit_a = true;
         }
-        if **name == ex.param_b && *v == ex.value_b {
+        if *name == ex.param_b && *v == ex.value_b {
             hit_b = true;
         }
     }
@@ -221,7 +221,7 @@ impl CognitionBreed for Morphological {
         // Cross-Consistency Assessment: enumerate configurations in odometer
         // order over the sorted parameters; a configuration is consistent iff
         // it violates no exclusion judgment.
-        let params: Vec<(&String, &Vec<String>)> = field.iter().collect();
+        let params: Vec<(&str, &[String])> = field.iter().map(|(k, v)| (k.as_str(), v.as_slice())).collect();
         let mut excluded_per: Vec<u64> = vec![0; exclusions.len()];
         let mut consistent: u64 = 0;
         let mut first_consistent: Option<Vec<usize>> = None;
