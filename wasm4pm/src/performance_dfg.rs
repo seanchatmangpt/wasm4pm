@@ -67,9 +67,9 @@ pub fn discover_performance_dfg_from_log(
             .entry(pairs[pairs.len() - 1].0.clone())
             .or_insert(0) += 1;
 
-        for i in 0..pairs.len() - 1 {
-            let key = (pairs[i].0.clone(), pairs[i + 1].0.clone());
-            let dur = match (pairs[i].1, pairs[i + 1].1) {
+        for w in pairs.windows(2) {
+            let key = (w[0].0.clone(), w[1].0.clone());
+            let dur = match (w[0].1, w[1].1) {
                 (Some(t1), Some(t2)) if t2 >= t1 => (t2 - t1) as f64,
                 _ => f64::NAN,
             };
