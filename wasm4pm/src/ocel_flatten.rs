@@ -3,7 +3,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 /// List all unique object types in an OCEL
@@ -46,7 +46,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
             };
 
             // Collect unique object types and compute stats
-            let mut object_type_stats: HashMap<String, serde_json::Value> = HashMap::new();
+            let mut object_type_stats: BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
             for obj_type in &ocel.object_types {
                 let objects_of_type: Vec<&OCELObject> = ocel
