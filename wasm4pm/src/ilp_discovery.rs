@@ -571,11 +571,10 @@ fn calculate_precision(petri_net: &PetriNet, log: &EventLog, activity_key: &str)
         .iter()
         .flat_map(|trace| {
             trace.events.iter().filter_map(|e| {
-                if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key) {
-                    Some(a.clone())
-                } else {
-                    None
-                }
+                e.attributes
+                    .get(activity_key)?
+                    .as_string()
+                    .map(str::to_owned)
             })
         })
         .collect();

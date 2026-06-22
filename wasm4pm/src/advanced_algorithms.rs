@@ -218,9 +218,11 @@ pub fn analyze_infrequent_paths(
                         let path_str = trace
                             .events
                             .iter()
-                            .filter_map(|e| match e.attributes.get(activity_key) {
-                                Some(AttributeValue::String(s)) => Some(s.clone()),
-                                _ => None,
+                            .filter_map(|e| {
+                                e.attributes
+                                    .get(activity_key)?
+                                    .as_string()
+                                    .map(str::to_owned)
                             })
                             .collect::<Vec<String>>();
                         (path_str, 1)
@@ -276,10 +278,7 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
                 let mut activities: Vec<&str> = trace
                     .events
                     .iter()
-                    .filter_map(|e| match e.attributes.get(activity_key) {
-                        Some(AttributeValue::String(s)) => Some(s.as_str()),
-                        _ => None,
-                    })
+                    .filter_map(|e| e.attributes.get(activity_key)?.as_string())
                     .collect();
 
                 activities.sort_unstable();
