@@ -208,6 +208,17 @@ impl AppState {
             )),
         })
     }
+    /// Execute a closure with a mutable reference to the named `PetriNet`.
+    pub fn with_petri_net_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut PetriNet) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::PetriNet(net)) => f(net),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("PetriNet '{}' not found", id))),
+        })
+    }
 
     /// Execute a closure with the named `OCEL`, returning a typed error if not found.
     #[cfg(feature = "ocel")]
@@ -291,6 +302,56 @@ impl AppState {
             Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
             None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `NGramPredictor`, returning a typed error if not found.
+    pub fn with_ngram_predictor<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&NGramPredictor) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with a mutable reference to the named `NGramPredictor`.
+    pub fn with_ngram_predictor_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut NGramPredictor) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `StreamingDfgBuilder`, returning a typed error if not found.
+    #[cfg(feature = "streaming_basic")]
+    pub fn with_streaming_dfg<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&StreamingDfgBuilder) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::StreamingDfgBuilder(b)) => f(b),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingDfgBuilder")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingDfgBuilder '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with a mutable reference to the named `StreamingDfgBuilder`.
+    #[cfg(feature = "streaming_basic")]
+    pub fn with_streaming_dfg_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut StreamingDfgBuilder) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::StreamingDfgBuilder(b)) => f(b),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingDfgBuilder")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingDfgBuilder '{}' not found", id))),
         })
     }
 
