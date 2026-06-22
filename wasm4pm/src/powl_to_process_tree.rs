@@ -247,7 +247,7 @@ fn convert_partial_order(
         }
 
         // Build subgraph DAG for this component
-        let local_to_global: Vec<usize> = comp.clone();
+        let local_to_global: &[usize] = comp;
         let global_to_local: Vec<Option<usize>> = {
             let mut g2l = vec![None; n];
             for (li, &gi) in local_to_global.iter().enumerate() {
