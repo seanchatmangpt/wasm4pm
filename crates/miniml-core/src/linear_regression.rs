@@ -94,11 +94,7 @@ pub fn ridge_regression_impl(
     let coefficients = solve_symmetric(&xt_x, n_features, &xt_y)?;
 
     // Compute intercept (mean(y) - sum(coef * mean(x)))
-    let mut mean_y = 0.0;
-    for &t in targets {
-        mean_y += t;
-    }
-    mean_y /= n as f64;
+    let mean_y: f64 = targets.iter().sum::<f64>() / n as f64;
 
     let mut mean_x = vec![0.0f64; n_features];
     for f in 0..n_features {
@@ -243,11 +239,7 @@ pub fn lasso_regression_impl(
         mean_x[f] /= n as f64;
     }
 
-    let mut mean_y = 0.0;
-    for &t in targets {
-        mean_y += t;
-    }
-    mean_y /= n as f64;
+    let mean_y: f64 = targets.iter().sum::<f64>() / n as f64;
 
     let mut centered_data = vec![0.0f64; data.len()];
     for i in 0..n {
