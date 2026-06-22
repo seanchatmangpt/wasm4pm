@@ -281,7 +281,8 @@ pub fn filter_traces_containing_activities(
             .filter(|trace| {
                 required.iter().all(|r| {
                     trace.events.iter().any(|e| {
-                        e.attributes.get(activity_key).and_then(|v| v.as_string()) == Some(r.as_str())
+                        e.attributes.get(activity_key).and_then(|v| v.as_string())
+                            == Some(r.as_str())
                     })
                 })
             })

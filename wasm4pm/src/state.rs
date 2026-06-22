@@ -270,6 +270,30 @@ impl AppState {
         })
     }
 
+    /// Execute a closure with the named `NGramPredictor`, returning a typed error if not found.
+    pub fn with_ngram_predictor<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&NGramPredictor) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with a mutable reference to the named `NGramPredictor`.
+    pub fn with_ngram_predictor_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut NGramPredictor) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
+        })
+    }
+
     /// Delete an object by handle from the registry.
     ///
     /// # Errors
