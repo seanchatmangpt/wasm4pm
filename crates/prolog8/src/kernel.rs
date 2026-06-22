@@ -128,12 +128,7 @@ impl Kernel {
         if row.pred_id != query.pred_id || row.arity != query.arity {
             return false;
         }
-        for i in 0..row.arity as usize {
-            if query.is_bound(i as u8) && row.args[i] != query.args[i] {
-                return false;
-            }
-        }
-        true
+        (0..row.arity as usize).all(|i| !query.is_bound(i as u8) || row.args[i] == query.args[i])
     }
 
     /// SLD resolution step with flat-term Robinson unification over ?N positional variables.
