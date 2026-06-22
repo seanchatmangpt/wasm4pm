@@ -16,8 +16,8 @@ struct Step {
     id: usize,
     action_name: String, // "start", "end", or rule.id
     preconditions: Vec<String>,
-    adds: Vec<String>,
-    dels: Vec<String>,
+    adds: BTreeSet<String>,
+    dels: BTreeSet<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -29,22 +29,22 @@ struct CausalLink {
 
 #[derive(Debug, Clone)]
 struct ActionEffect {
-    adds: Vec<String>,
-    dels: Vec<String>,
+    adds: BTreeSet<String>,
+    dels: BTreeSet<String>,
 }
 
 fn parse_effect(conclusion: &str) -> ActionEffect {
-    let mut adds = Vec::new();
-    let mut dels = Vec::new();
+    let mut adds = BTreeSet::new();
+    let mut dels = BTreeSet::new();
     for tok in conclusion
         .split(';')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
     {
         if let Some(rest) = tok.strip_prefix('!') {
-            dels.push(rest.to_string());
+            dels.insert(rest.to_string());
         } else {
-            adds.push(tok.to_string());
+            adds.insert(tok.to_string());
         }
     }
     ActionEffect { adds, dels }
@@ -366,15 +366,15 @@ impl CognitionBreed for PartialOrderPlan {
                 id: 0,
                 action_name: "start".to_string(),
                 preconditions: vec![],
-                adds: initial_state,
-                dels: vec![],
+                adds: initial_state.into_iter().collect(),
+                dels: BTreeSet::new(),
             },
             Step {
                 id: 1,
                 action_name: "end".to_string(),
                 preconditions: goals,
-                adds: vec![],
-                dels: vec![],
+                adds: BTreeSet::new(),
+                dels: BTreeSet::new(),
             },
         ];
 
