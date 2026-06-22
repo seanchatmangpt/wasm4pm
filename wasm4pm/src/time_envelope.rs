@@ -310,7 +310,23 @@ pub fn build_time_envelope(
 pub fn score_time_motion(envelope_handle: &str, timestamp_ms: f64) -> Result<JsValue, JsValue> {
     let state = get_or_init_state();
 
-    let result_json = state.with_json_string(envelope_handle, |json_str| {
+    let result_json = state.with_object(envelope_handle, |obj| {
+        let json_str = match obj {
+            Some(StoredObject::JsonString(s)) => s,
+            Some(_) => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    "Handle is not a time envelope (wrong type)",
+                ))
+            }
+            None => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    format!("No object at handle '{envelope_handle}'"),
+                ))
+            }
+        };
+
         let envelope: TimeEnvelope = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
@@ -339,7 +355,23 @@ pub fn score_time_motion(envelope_handle: &str, timestamp_ms: f64) -> Result<JsV
 pub fn get_time_envelope_stats(envelope_handle: &str) -> Result<JsValue, JsValue> {
     let state = get_or_init_state();
 
-    let result_json = state.with_json_string(envelope_handle, |json_str| {
+    let result_json = state.with_object(envelope_handle, |obj| {
+        let json_str = match obj {
+            Some(StoredObject::JsonString(s)) => s,
+            Some(_) => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    "Handle is not a time envelope (wrong type)",
+                ))
+            }
+            None => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    format!("No object at handle '{envelope_handle}'"),
+                ))
+            }
+        };
+
         let envelope: TimeEnvelope = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
