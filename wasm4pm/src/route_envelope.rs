@@ -23,7 +23,7 @@
 #![cfg(feature = "miniml")]
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 use crate::error::{codes, js_val, wasm_err};
@@ -114,7 +114,7 @@ pub fn build_route_envelope(
         let total_traces = log.traces.len() as u32;
 
         // ── Count occurrences of each unique activity sequence ───────────────
-        let mut variant_counts: HashMap<Vec<String>, u32> = HashMap::new();
+        let mut variant_counts: BTreeMap<Vec<String>, u32> = BTreeMap::new();
 
         for trace in &log.traces {
             let activities: Vec<String> = trace

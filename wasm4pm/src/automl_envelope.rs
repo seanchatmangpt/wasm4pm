@@ -26,7 +26,7 @@
 #![cfg(feature = "miniml")]
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 use crate::error::{codes, js_val, wasm_err};
@@ -124,7 +124,7 @@ fn extract_motion_features(
     let vocab_size = vocab.len().max(1) as f64;
 
     // ── Step 3: Variant frequency map (activity-sequence → fraction) ──────────
-    let mut variant_counts: HashMap<Vec<String>, usize> = HashMap::new();
+    let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
     for seq in &sequences {
         *variant_counts.entry(seq.clone()).or_default() += 1;
     }
