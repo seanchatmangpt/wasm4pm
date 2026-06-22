@@ -5,7 +5,7 @@
 //! which runs multiple algorithms against the same log, triggering repeated
 //! conformance checks on identical log+model pairs.
 
-use rustc_hash::FxHashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -24,7 +24,7 @@ pub struct CachedConformanceResult {
 /// Conformance cache: (log_handle, model_hash) -> CachedConformanceResult.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConformanceCache {
-    cache: FxHashMap<(String, u64), CachedConformanceResult>,
+    cache: std::collections::BTreeMap<(String, u64), CachedConformanceResult>,
     hits: u64,
     misses: u64,
 }
@@ -33,7 +33,7 @@ impl ConformanceCache {
     /// Create an empty cache.
     pub fn new() -> Self {
         ConformanceCache {
-            cache: FxHashMap::default(),
+            cache: std::collections::BTreeMap::new(),
             hits: 0,
             misses: 0,
         }
