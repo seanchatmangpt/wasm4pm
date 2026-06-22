@@ -179,6 +179,44 @@ impl AppState {
         f(objects.get_mut(id))
     }
 
+
+    /// Execute a closure with the named `EventLog`, returning a typed error if not found.
+    pub fn with_event_log<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&EventLog) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => f(log),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `PetriNet`, returning a typed error if not found.
+    pub fn with_petri_net<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&PetriNet) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::PetriNet(net)) => f(net),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("PetriNet '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `OCEL`, returning a typed error if not found.
+    #[cfg(feature = "ocel")]
+    pub fn with_ocel<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&OCEL) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::OCEL(ocel)) => f(ocel),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", id))),
+        })
+    }
+
     /// Delete an object by handle from the registry.
     ///
     /// # Errors
