@@ -193,7 +193,6 @@ fn find_best_stump(
 
             // Predict -1 for <= threshold, 1 for >
             let mut error_pos = 0.0;
-            let mut error_neg = 0.0;
 
             for j in 0..n {
                 let val = data[j * n_features + f];
@@ -202,12 +201,11 @@ fn find_best_stump(
                 if prediction != y[j] {
                     error_pos += weights[j];
                 }
-
-                let prediction_neg = -prediction;
-                if prediction_neg != y[j] {
-                    error_neg += weights[j];
-                }
             }
+
+            // error_neg = total_weight - error_pos: predictions are {-1,1}, each
+            // sample contributes to exactly one error bucket.
+            let error_neg = total_weight - error_pos;
 
             if error_pos < min_error {
                 min_error = error_pos;
