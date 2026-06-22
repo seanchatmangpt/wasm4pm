@@ -171,7 +171,11 @@ impl CognitionBreed for SituationCalculus {
             "load-axioms",
             format!(
                 "S0 |= {{{}}}; {} actions; {} steps",
-                initial.iter().map(String::as_str).collect::<Vec<_>>().join(","),
+                initial
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>()
+                    .join(","),
                 actions.len(),
                 sequence.len()
             ),
@@ -211,8 +215,16 @@ impl CognitionBreed for SituationCalculus {
                     a,
                     n,
                     n + 1,
-                    def.add.iter().map(String::as_str).collect::<Vec<_>>().join(","),
-                    def.del.iter().map(String::as_str).collect::<Vec<_>>().join(",")
+                    def.add
+                        .iter()
+                        .map(String::as_str)
+                        .collect::<Vec<_>>()
+                        .join(","),
+                    def.del
+                        .iter()
+                        .map(String::as_str)
+                        .collect::<Vec<_>>()
+                        .join(",")
                 ),
             );
         }

@@ -41,7 +41,11 @@ fn subset_to_string(subset: Subset, inverse_mapping: &HashMap<u8, String>) -> St
     parts.join(",")
 }
 
-fn combine_bpas(bpa1: &Bpa, bpa2: &Bpa, inverse_mapping: &HashMap<u8, String>) -> Result<(Bpa, f64), String> {
+fn combine_bpas(
+    bpa1: &Bpa,
+    bpa2: &Bpa,
+    inverse_mapping: &HashMap<u8, String>,
+) -> Result<(Bpa, f64), String> {
     let mut combined: Bpa = BTreeMap::new();
     let mut k_conflict = 0.0;
 
@@ -74,12 +78,17 @@ impl CognitionBreed for DempsterShafer {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["dempster_shafer".to_string(), "belief_combination".to_string()]
+        vec![
+            "dempster_shafer".to_string(),
+            "belief_combination".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         if input.rules.is_empty() {
-            return Err("DempsterShafer requires basic probability assignments in rules".to_string());
+            return Err(
+                "DempsterShafer requires basic probability assignments in rules".to_string(),
+            );
         }
         let query_var = input
             .goals
@@ -132,7 +141,10 @@ impl CognitionBreed for DempsterShafer {
         if hypotheses.len() > 8 {
             return Err(BreedError {
                 breed: BreedId::DempsterShafer,
-                message: format!("Frame of discernment exceeds 8 hypotheses: {}", hypotheses.len()),
+                message: format!(
+                    "Frame of discernment exceeds 8 hypotheses: {}",
+                    hypotheses.len()
+                ),
             });
         }
 
@@ -168,7 +180,11 @@ impl CognitionBreed for DempsterShafer {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "ds-load-bpa".to_string(),
-            detail: format!("Loaded {} sources over frame of size {}", sources.len(), mapping.len()),
+            detail: format!(
+                "Loaded {} sources over frame of size {}",
+                sources.len(),
+                mapping.len()
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -189,7 +205,10 @@ impl CognitionBreed for DempsterShafer {
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "ds-combine".to_string(),
-                        detail: format!("Combined {} with {}, K={}", current_name, next_name, k_conflict),
+                        detail: format!(
+                            "Combined {} with {}, K={}",
+                            current_name, next_name, k_conflict
+                        ),
                         depth: 0,
                         objects: vec![],
                     });
@@ -239,7 +258,10 @@ impl CognitionBreed for DempsterShafer {
 
         let explanation = format!(
             "Dempster-Shafer query '{}' Bel={}, Pl={} across frame {}",
-            query_str, bel, pl, subset_to_string(frame_mask, &inverse_mapping)
+            query_str,
+            bel,
+            pl,
+            subset_to_string(frame_mask, &inverse_mapping)
         );
 
         Ok(BreedOutput {
@@ -265,8 +287,5 @@ impl CognitionBreed for DempsterShafer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::{Candidate, Goal, Rule, Fact};
-
-
-
+    use crate::breeds::{Candidate, Fact, Goal, Rule};
 }

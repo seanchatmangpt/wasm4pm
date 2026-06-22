@@ -2,7 +2,8 @@ fn main() {}
 
 #[test]
 fn test_debug() {
-    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(r#"{
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(
+        r#"{
       "intent": "Jaffar & Lassez 1987 - Constraint Logic Programming core propagation",
       "candidates": [],
       "facts": [
@@ -16,7 +17,9 @@ fn test_debug() {
       "rules": [],
       "goals": [],
       "state": []
-    }"#).unwrap();
+    }"#,
+    )
+    .unwrap();
     let breed = wasm4pm_cognition::breeds::clp::Clp;
     use wasm4pm_cognition::breeds::CognitionBreed;
     let out = breed.run(&input).unwrap();

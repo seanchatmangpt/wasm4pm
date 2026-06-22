@@ -37,20 +37,25 @@ impl CognitionBreed for DefaultLogic {
             objects: vec![],
         });
 
-        let mut extension: BTreeSet<String> = input
-            .facts
-            .iter()
-            .map(|f| f.value.clone())
-            .collect();
+        let mut extension: BTreeSet<String> = input.facts.iter().map(|f| f.value.clone()).collect();
 
         let mut step_idx = 1;
         let mut rules = input.rules.clone();
 
         // Sort rules by specificity order: positive premise count (descending), certainty (descending), lex id (descending)
         rules.sort_by(|a, b| {
-            let a_unless = a.premise.iter().filter(|p| p.starts_with("unless:")).count();
-            let b_unless = b.premise.iter().filter(|p| p.starts_with("unless:")).count();
-            a_unless.cmp(&b_unless)
+            let a_unless = a
+                .premise
+                .iter()
+                .filter(|p| p.starts_with("unless:"))
+                .count();
+            let b_unless = b
+                .premise
+                .iter()
+                .filter(|p| p.starts_with("unless:"))
+                .count();
+            a_unless
+                .cmp(&b_unless)
                 .then_with(|| b.certainty.total_cmp(&a.certainty))
                 .then_with(|| b.id.cmp(&a.id))
         });
@@ -154,17 +159,24 @@ impl CognitionBreed for DefaultLogic {
             objects: vec![],
         });
 
-        let facts = sorted_extension.into_iter().enumerate().map(|(i, v)| Fact {
-            key: format!("ext_{}", i),
-            value: v,
-        }).collect();
+        let facts = sorted_extension
+            .into_iter()
+            .enumerate()
+            .map(|(i, v)| Fact {
+                key: format!("ext_{}", i),
+                value: v,
+            })
+            .collect();
 
         Ok(BreedOutput {
             breed: BreedId::DefaultLogic,
             candidates: vec![],
             facts,
             selected: Some(ext_str.clone()),
-            explanation: format!("DefaultLogic: extension finalized with {} facts", ext_str.split(", ").count()),
+            explanation: format!(
+                "DefaultLogic: extension finalized with {} facts",
+                ext_str.split(", ").count()
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
@@ -175,7 +187,10 @@ impl CognitionBreed for DefaultLogic {
         if output.inference_trace.is_empty() {
             return Err("DefaultLogic must emit at least one trace step".to_string());
         }
-        let has_extension = output.inference_trace.iter().any(|t| t.kind == "default-extension");
+        let has_extension = output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "default-extension");
         if !has_extension {
             return Err("DefaultLogic trace must contain a default-extension step".to_string());
         }
@@ -192,7 +207,13 @@ mod tests {
         BreedInput {
             intent: "test".to_string(),
             candidates: vec![],
-            facts: facts.into_iter().map(|f| Fact { key: f.to_string(), value: f.to_string() }).collect(),
+            facts: facts
+                .into_iter()
+                .map(|f| Fact {
+                    key: f.to_string(),
+                    value: f.to_string(),
+                })
+                .collect(),
             cases: vec![],
             rules,
             goals: vec![],
@@ -228,7 +249,11 @@ mod tests {
         let output = breed.run(&input).unwrap();
         assert!(output.selected.as_ref().unwrap().contains("glows"));
         assert!(!output.selected.as_ref().unwrap().contains("not_glows"));
-        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
+        let trace_kinds: Vec<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
         assert!(trace_kinds.contains(&"default-fire".to_string()));
     }
 
@@ -253,10 +278,18 @@ mod tests {
         let output = breed.run(&input).unwrap();
         assert!(output.selected.as_ref().unwrap().contains("not_glows"));
         assert!(!output.selected.as_ref().unwrap().contains(" glows"));
-        
-        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
+
+        let trace_kinds: Vec<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
         assert!(trace_kinds.contains(&"default-block".to_string()));
-        let block_step = output.inference_trace.iter().find(|t| t.kind == "default-block").unwrap();
+        let block_step = output
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "default-block")
+            .unwrap();
         assert!(block_step.detail.contains("dark_wibble"));
     }
 
@@ -302,14 +335,28 @@ mod tests {
         ];
         let input = make_input(vec!["a"], rules);
         let output = breed.run(&input).unwrap();
-        assert!(!output.selected.as_ref().unwrap().contains("c"), "extension must EXCLUDE the default conclusion");
-        
-        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        assert!(trace_kinds.contains(&"default-block".to_string()), "trace must contain a default-block step");
-        
-        let block_step = output.inference_trace.iter().find(|t| t.kind == "default-block").unwrap();
+        assert!(
+            !output.selected.as_ref().unwrap().contains("c"),
+            "extension must EXCLUDE the default conclusion"
+        );
+
+        let trace_kinds: Vec<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
+        assert!(
+            trace_kinds.contains(&"default-block".to_string()),
+            "trace must contain a default-block step"
+        );
+
+        let block_step = output
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "default-block")
+            .unwrap();
         assert!(block_step.detail.contains("b"), "naming the blocking fact");
-        
+
         // Negative control without the blocker derives it
         let rules2 = vec![
             Rule {

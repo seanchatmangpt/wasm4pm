@@ -129,7 +129,6 @@ fn test_full_ensemble_consistency() {
     let model = wasm4pm_cognition::ocel::lifecycle_model_for("meta_reasoning")
         .expect("meta_reasoning lifecycle model must exist");
     let result = wasm4pm_cognition::ocel::validate_ocel_alignment(&ocel_log, model);
-    
-    assert_eq!(result.fitness, 1.0, "meta_reasoning fitness must be 1.0");
 
+    assert_eq!(result.fitness, 1.0, "meta_reasoning fitness must be 1.0");
 }

@@ -115,17 +115,20 @@ pub static BAYESIAN_NETWORK_MODEL: BreedLifecycleModel = BreedLifecycleModel {
 /// HTN Planning lifecycle: decompose/apply/backtrack* -> plan
 pub static HTN_PLANNING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "htn_planning",
-    phases: &[
-        LifecyclePhase {
-            name: "planning",
-            kinds: &["htn-decompose", "htn-apply", "htn-backtrack", "htn-plan", "decision", "no-plan-found"],
-            min_occurrences: 1,
-            max_occurrences: usize::MAX,
-        },
-    ],
+    phases: &[LifecyclePhase {
+        name: "planning",
+        kinds: &[
+            "htn-decompose",
+            "htn-apply",
+            "htn-backtrack",
+            "htn-plan",
+            "decision",
+            "no-plan-found",
+        ],
+        min_occurrences: 1,
+        max_occurrences: usize::MAX,
+    }],
 };
-
-
 
 /// Dempster-Shafer lifecycle: ds-load-bpa -> ds-combine* -> ds-belief
 pub static DEMPSTER_SHAFER_MODEL: BreedLifecycleModel = BreedLifecycleModel {
@@ -251,6 +254,3 @@ pub static EBL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         },
     ],
 };
-
-
-

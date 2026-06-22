@@ -1,6 +1,4 @@
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
-};
+use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
 use std::collections::{HashMap, HashSet};
 
 /// Frame-based inheritance with overrides (Minsky 1974).
@@ -33,7 +31,10 @@ impl CognitionBreed for FramesInheritance {
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let parts: Vec<&str> = input.intent.split_whitespace().collect();
         if parts.len() < 3 || parts[0] != "resolve" {
-            return Err(BreedError { breed: self.id(), message: "intent must be 'resolve <frame> <slot>'".to_string() });
+            return Err(BreedError {
+                breed: self.id(),
+                message: "intent must be 'resolve <frame> <slot>'".to_string(),
+            });
         }
         let target_frame = parts[1].to_string();
         let target_slot = parts[2].to_string();
@@ -52,18 +53,31 @@ impl CognitionBreed for FramesInheritance {
             } else if key_parts.len() == 4 && key_parts[0] == "frame" && key_parts[2] == "slot" {
                 let f = key_parts[1].to_string();
                 let s = key_parts[3].to_string();
-                own_slots.entry(f).or_default().insert(s, fact.value.clone());
-            } else if key_parts.len() == 5 && key_parts[0] == "frame" && key_parts[2] == "slot" && key_parts[4] == "default" {
+                own_slots
+                    .entry(f)
+                    .or_default()
+                    .insert(s, fact.value.clone());
+            } else if key_parts.len() == 5
+                && key_parts[0] == "frame"
+                && key_parts[2] == "slot"
+                && key_parts[4] == "default"
+            {
                 let f = key_parts[1].to_string();
                 let s = key_parts[3].to_string();
-                default_slots.entry(f).or_default().insert(s, fact.value.clone());
+                default_slots
+                    .entry(f)
+                    .or_default()
+                    .insert(s, fact.value.clone());
             }
         }
 
         trace.push(TraceStep {
             step: trace.len(),
             kind: "frame-load".to_string(),
-            detail: format!("Loaded {} frames", own_slots.len() + default_slots.len() + isa_map.len()),
+            detail: format!(
+                "Loaded {} frames",
+                own_slots.len() + default_slots.len() + isa_map.len()
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -98,7 +112,7 @@ impl CognitionBreed for FramesInheritance {
                     break;
                 }
             }
-            
+
             if default_val.is_none() {
                 if let Some(slots) = default_slots.get(&current_frame) {
                     if let Some(val) = slots.get(&target_slot) {
@@ -126,7 +140,10 @@ impl CognitionBreed for FramesInheritance {
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "frame-resolve".to_string(),
-                detail: format!("{} slot {} resolved to {} at {} ({})", target_frame, target_slot, val, found_frame, kind),
+                detail: format!(
+                    "{} slot {} resolved to {} at {} ({})",
+                    target_frame, target_slot, val, found_frame, kind
+                ),
                 depth: distance,
                 objects: vec![],
             });
@@ -135,7 +152,10 @@ impl CognitionBreed for FramesInheritance {
                 candidates: vec![],
                 facts: vec![],
                 selected: Some(val.clone()),
-                explanation: format!("resolved {} {} to {} at distance {}", target_frame, target_slot, val, distance),
+                explanation: format!(
+                    "resolved {} {} to {} at distance {}",
+                    target_frame, target_slot, val, distance
+                ),
                 inference_trace: trace,
                 ocel_log: None,
                 retained_cases: vec![],
@@ -189,10 +209,22 @@ mod tests {
             intent: "resolve zilk color".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "frame:zilk:isa".to_string(), value: "welp".to_string() },
-                Fact { key: "frame:welp:isa".to_string(), value: "snorf".to_string() },
-                Fact { key: "frame:snorf:slot:color:default".to_string(), value: "blue".to_string() },
-                Fact { key: "frame:welp:slot:color:default".to_string(), value: "red".to_string() },
+                Fact {
+                    key: "frame:zilk:isa".to_string(),
+                    value: "welp".to_string(),
+                },
+                Fact {
+                    key: "frame:welp:isa".to_string(),
+                    value: "snorf".to_string(),
+                },
+                Fact {
+                    key: "frame:snorf:slot:color:default".to_string(),
+                    value: "blue".to_string(),
+                },
+                Fact {
+                    key: "frame:welp:slot:color:default".to_string(),
+                    value: "red".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -201,11 +233,15 @@ mod tests {
         };
         let out = breed.run(&input).expect("should succeed");
         assert_eq!(out.selected, Some("red".to_string()));
-        
-        let walk_steps: Vec<_> = out.inference_trace.iter().filter(|s| s.kind == "frame-walk").collect();
+
+        let walk_steps: Vec<_> = out
+            .inference_trace
+            .iter()
+            .filter(|s| s.kind == "frame-walk")
+            .collect();
         assert_eq!(walk_steps.len(), 3);
     }
-    
+
     #[test]
     fn test_frames_inheritance_cycle_detection() {
         let breed = FramesInheritance;
@@ -213,8 +249,14 @@ mod tests {
             intent: "resolve zilk color".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "frame:zilk:isa".to_string(), value: "welp".to_string() },
-                Fact { key: "frame:welp:isa".to_string(), value: "zilk".to_string() },
+                Fact {
+                    key: "frame:zilk:isa".to_string(),
+                    value: "welp".to_string(),
+                },
+                Fact {
+                    key: "frame:welp:isa".to_string(),
+                    value: "zilk".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![],

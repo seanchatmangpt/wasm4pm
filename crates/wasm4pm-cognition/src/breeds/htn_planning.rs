@@ -20,7 +20,12 @@ fn applicable(rule: &Rule, state: &BTreeSet<String>) -> bool {
 
 fn apply_effect(rule: &Rule, state: &BTreeSet<String>) -> BTreeSet<String> {
     let mut next = state.clone();
-    for tok in rule.conclusion.split(';').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+    for tok in rule
+        .conclusion
+        .split(';')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
         if let Some(rest) = tok.strip_prefix('!') {
             next.remove(rest);
         } else {
@@ -60,7 +65,9 @@ fn htn_seek(
                     objects: vec![],
                 });
                 let next_state = apply_effect(op_rule, state);
-                if let Some(plan_rest) = htn_seek(&next_state, rest, rules, depth + 1, expansion_count, trace) {
+                if let Some(plan_rest) =
+                    htn_seek(&next_state, rest, rules, depth + 1, expansion_count, trace)
+                {
                     let mut plan = vec![t1.clone()];
                     plan.extend(plan_rest);
                     return Some(plan);
@@ -86,7 +93,8 @@ fn htn_seek(
                     objects: vec![],
                 });
 
-                let subtasks: Vec<String> = m_rule.conclusion
+                let subtasks: Vec<String> = m_rule
+                    .conclusion
                     .split(';')
                     .map(|s| s.trim().to_string())
                     .filter(|s| !s.is_empty())
@@ -95,7 +103,9 @@ fn htn_seek(
                 let mut new_tasks = subtasks;
                 new_tasks.extend_from_slice(rest);
 
-                if let Some(plan) = htn_seek(state, &new_tasks, rules, depth + 1, expansion_count, trace) {
+                if let Some(plan) =
+                    htn_seek(state, &new_tasks, rules, depth + 1, expansion_count, trace)
+                {
                     return Some(plan);
                 }
 
@@ -125,7 +135,10 @@ impl CognitionBreed for HtnPlanning {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["htn_planning".to_string(), "total_order_decomposition".to_string()]
+        vec![
+            "htn_planning".to_string(),
+            "total_order_decomposition".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
@@ -144,7 +157,14 @@ impl CognitionBreed for HtnPlanning {
         let mut trace = Vec::new();
         let mut expansion_count = 0;
 
-        let plan_opt = htn_seek(&initial, &tasks, &input.rules, 0, &mut expansion_count, &mut trace);
+        let plan_opt = htn_seek(
+            &initial,
+            &tasks,
+            &input.rules,
+            0,
+            &mut expansion_count,
+            &mut trace,
+        );
 
         let plan = match plan_opt {
             Some(p) => p,
@@ -185,16 +205,18 @@ impl CognitionBreed for HtnPlanning {
             let plan: Vec<&str> = plan_str.split(',').filter(|s| !s.is_empty()).collect();
             let mut audit_state = atoms_of(&input.state);
             for step in plan {
-                let op_rule = input.rules.iter().find(|r| r.id == step).ok_or_else(|| {
-                    format!("plan references unknown operator {}", step)
-                })?;
+                let op_rule = input
+                    .rules
+                    .iter()
+                    .find(|r| r.id == step)
+                    .ok_or_else(|| format!("plan references unknown operator {}", step))?;
                 if !applicable(op_rule, &audit_state) {
                     return Err(format!("plan self-audit failed at {}", step));
                 }
                 audit_state = apply_effect(op_rule, &audit_state);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -204,7 +226,6 @@ mod tests {
     use super::*;
     use crate::breeds::{Goal, Rule, StateAtom};
 
-
     #[test]
     fn htn_planning_determinism() {
         let input = BreedInput {
@@ -213,10 +234,24 @@ mod tests {
             facts: vec![],
             cases: vec![],
             state: vec![],
-            goals: vec![Goal { id: "g1".into(), predicate: "task".into(), value: "t1".into() }],
+            goals: vec![Goal {
+                id: "g1".into(),
+                predicate: "task".into(),
+                value: "t1".into(),
+            }],
             rules: vec![
-                Rule { id: "method:t1:m1".into(), premise: vec![], conclusion: "op:o1".into(), certainty: 1.0 },
-                Rule { id: "op:o1".into(), premise: vec![], conclusion: "done=yes".into(), certainty: 1.0 },
+                Rule {
+                    id: "method:t1:m1".into(),
+                    premise: vec![],
+                    conclusion: "op:o1".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "op:o1".into(),
+                    premise: vec![],
+                    conclusion: "done=yes".into(),
+                    certainty: 1.0,
+                },
             ],
         };
         let out1 = HtnPlanning.run(&input).unwrap();

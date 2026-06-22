@@ -561,7 +561,10 @@ fn frames_inheritance_invalid_intent_refused() {
     let mut input = empty_base();
     input.intent = "invalid_intent".into();
     let result = FramesInheritance.preconditions(&input);
-    assert!(result.is_err(), "FramesInheritance must refuse invalid intent");
+    assert!(
+        result.is_err(),
+        "FramesInheritance must refuse invalid intent"
+    );
     assert!(result.unwrap_err().contains("intent"));
 }
 
@@ -663,10 +666,9 @@ fn version_space_empty_refused() {
 
     let input = empty_base();
     let result = VersionSpace.preconditions(&input);
-    assert!(result.is_err(), "VersionSpace must refuse empty attributes/examples");
+    assert!(
+        result.is_err(),
+        "VersionSpace must refuse empty attributes/examples"
+    );
     assert!(result.unwrap_err().contains("attribute"));
 }
-
-
-
-

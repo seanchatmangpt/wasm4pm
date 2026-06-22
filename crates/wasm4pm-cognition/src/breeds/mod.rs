@@ -128,7 +128,6 @@ pub mod version_space;
 
 pub use dispatch::{dispatch_breed, dispatch_breed_test};
 
-
 /// Declarative breed registration: one entry per line, string id literal
 /// verbatim (greppable; integrator unions entries alphabetically per tier,
 /// same merge profile as the former hand-written enum + match arms).

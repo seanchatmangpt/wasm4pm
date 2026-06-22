@@ -408,8 +408,14 @@ fn dispatch_situation_calculus_routes() {
     // situation_calculus requires at least one `do:<n>` action step plus the
     // action's effect axioms (`action:<name>:add`).
     input.facts = vec![
-        Fact { key: "do:0".into(), value: "a1".into() },
-        Fact { key: "action:a1:add".into(), value: "f1".into() },
+        Fact {
+            key: "do:0".into(),
+            value: "a1".into(),
+        },
+        Fact {
+            key: "action:a1:add".into(),
+            value: "f1".into(),
+        },
     ];
     let output = dispatch_breed_test("situation_calculus", &input)
         .expect("situation_calculus dispatch failed");
@@ -425,11 +431,14 @@ fn dispatch_situation_calculus_routes() {
 fn dispatch_circumscription_routes() {
     let mut input = minimal_input();
     input.intent = "entail".into();
-    input.rules = vec![
-        Rule { id: "rule".into(), premise: vec![], conclusion: "".into(), certainty: 1.0 },
-    ];
-    let output = dispatch_breed_test("circumscription", &input)
-        .expect("circumscription dispatch failed");
+    input.rules = vec![Rule {
+        id: "rule".into(),
+        premise: vec![],
+        conclusion: "".into(),
+        certainty: 1.0,
+    }];
+    let output =
+        dispatch_breed_test("circumscription", &input).expect("circumscription dispatch failed");
 
     assert_eq!(output.breed, BreedId::Circumscription, "breed mismatch");
     assert!(
@@ -437,7 +446,6 @@ fn dispatch_circumscription_routes() {
         "circumscription must produce non-empty trace"
     );
 }
-
 
 #[test]
 fn dispatch_empty_breed_rejects() {
@@ -633,7 +641,6 @@ fn test_all_55_breeds_exhaustiveness() {
     }
 }
 
-
 /// Exhaustiveness: model_source and lifecycle_model_for agree for every BreedId —
 /// an implemented breed has BOTH an OCPN JSON source (which must parse) and a
 /// lifecycle model; an unimplemented breed has NEITHER.
@@ -656,30 +663,56 @@ fn model_source_matches_lifecycle_model_for_every_breed() {
         if let Some(json) = src {
             let parsed: serde_json::Value = serde_json::from_str(json)
                 .unwrap_or_else(|e| panic!("breed {}: OCPN JSON does not parse: {}", name, e));
-            assert!(parsed.is_object(), "breed {}: OCPN JSON root must be an object", name);
+            assert!(
+                parsed.is_object(),
+                "breed {}: OCPN JSON root must be an object",
+                name
+            );
         }
         if let Some(m) = model {
-            assert_eq!(m.breed_id, name, "breed {}: lifecycle model breed_id mismatch", name);
-            assert!(!m.phases.is_empty(), "breed {}: lifecycle model has no phases", name);
+            assert_eq!(
+                m.breed_id, name,
+                "breed {}: lifecycle model breed_id mismatch",
+                name
+            );
+            assert!(
+                !m.phases.is_empty(),
+                "breed {}: lifecycle model has no phases",
+                name
+            );
         }
     }
 }
 
-
 #[test]
 fn test_clp_smoke() {
-    let out = wasm4pm_cognition::breeds::dispatch_breed("clp", &BreedInput {
-        intent: "".to_string(),
-        candidates: vec![], goals: vec![], rules: vec![], state: vec![], cases: vec![],
-        facts: vec![
-            Fact { key: "clp-var".to_string(), value: "x:1,2,3".to_string() },
-            Fact { key: "clp-var".to_string(), value: "y:1,2,3".to_string() },
-            Fact { key: "clp-constraint".to_string(), value: "x<y".to_string() },
-        ]
-    });
+    let out = wasm4pm_cognition::breeds::dispatch_breed(
+        "clp",
+        &BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            goals: vec![],
+            rules: vec![],
+            state: vec![],
+            cases: vec![],
+            facts: vec![
+                Fact {
+                    key: "clp-var".to_string(),
+                    value: "x:1,2,3".to_string(),
+                },
+                Fact {
+                    key: "clp-var".to_string(),
+                    value: "y:1,2,3".to_string(),
+                },
+                Fact {
+                    key: "clp-constraint".to_string(),
+                    value: "x<y".to_string(),
+                },
+            ],
+        },
+    );
     if let Err(ref e) = out {
         println!("test_clp_smoke failed: {}", e);
     }
     assert!(out.is_ok());
 }
-

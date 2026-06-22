@@ -13,7 +13,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Case, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeSet, BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use tracing;
 
 /// Case-Based Reasoning breed.

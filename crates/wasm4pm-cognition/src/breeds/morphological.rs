@@ -221,7 +221,10 @@ impl CognitionBreed for Morphological {
         // Cross-Consistency Assessment: enumerate configurations in odometer
         // order over the sorted parameters; a configuration is consistent iff
         // it violates no exclusion judgment.
-        let params: Vec<(&str, &[String])> = field.iter().map(|(k, v)| (k.as_str(), v.as_slice())).collect();
+        let params: Vec<(&str, &[String])> = field
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_slice()))
+            .collect();
         let mut excluded_per: Vec<u64> = vec![0; exclusions.len()];
         let mut consistent: u64 = 0;
         let mut first_consistent: Option<Vec<usize>> = None;
