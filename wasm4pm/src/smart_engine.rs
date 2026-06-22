@@ -15,7 +15,7 @@
 //! when algorithms recursively access shared state during execution.
 
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
 use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
@@ -264,8 +264,8 @@ impl FusedMultiPass {
         // Build DFG (without interner for non-streaming profiles)
         let mut node_counts: HashMap<String, usize> = HashMap::new();
         let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
-        let mut start_counts: HashMap<String, usize> = HashMap::new();
-        let mut end_counts: HashMap<String, usize> = HashMap::new();
+        let mut start_counts: BTreeMap<String, usize> = BTreeMap::new();
+        let mut end_counts: BTreeMap<String, usize> = BTreeMap::new();
 
         for trace in traces {
             if trace.is_empty() {
