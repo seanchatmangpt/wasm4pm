@@ -145,12 +145,11 @@ pub fn analyze_process_speedup(
             let mut time_gaps: Vec<f64> = Vec::new();
 
             for trace in &log.traces {
-                let mut timestamps: Vec<String> = Vec::new();
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(ts)) = event.attributes.get(timestamp_key) {
-                        timestamps.push(ts.clone());
-                    }
-                }
+                let timestamps: Vec<&str> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| e.attributes.get(timestamp_key)?.as_string())
+                    .collect();
 
                 // Calculate gaps using real ISO-8601 timestamp parsing
                 for pair in timestamps.windows(2) {
