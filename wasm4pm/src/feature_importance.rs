@@ -272,11 +272,11 @@ pub fn global_feature_importance(
 #[cfg(test)]
 mod tests {
     use crate::models::NGramPredictor;
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     fn make_ngram_predictor() -> NGramPredictor {
         // Build predictor from traces: A->B->C (3 times), A->B->D (2 times)
-        let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
+        let mut counts: BTreeMap<Vec<String>, BTreeMap<String, usize>> = BTreeMap::new();
 
         // A->B context: next is C (3x) or D (2x)
         let ab_dist = counts

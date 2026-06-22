@@ -31,10 +31,10 @@ pub fn build_ngram_predictor(
     let n = n.max(2); // minimum bigram
     let predictor = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut counts: std::collections::HashMap<
+            let mut counts: std::collections::BTreeMap<
                 Vec<String>,
-                std::collections::HashMap<String, usize>,
-            > = std::collections::HashMap::new();
+                std::collections::BTreeMap<String, usize>,
+            > = std::collections::BTreeMap::new();
 
             for trace in &log.traces {
                 let acts: Vec<String> = trace
