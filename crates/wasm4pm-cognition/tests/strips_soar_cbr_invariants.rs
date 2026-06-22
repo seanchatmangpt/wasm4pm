@@ -9,7 +9,7 @@
 //! - **Rank-2 (domain contract)**: Design-decided properties (pre/postconditions,
 //!   encoding contracts).
 
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use wasm4pm_cognition::breeds::cbr::{jaccard, Cbr};
 use wasm4pm_cognition::breeds::prolog::Prolog;
 use wasm4pm_cognition::breeds::soar::Soar;
@@ -72,7 +72,7 @@ fn mk_case(id: &str, architecture: &str, outcome_score: f32, facts: Vec<Fact>) -
     }
 }
 
-fn hset(items: &[&str]) -> HashSet<String> {
+fn hset(items: &[&str]) -> BTreeSet<String> {
     items.iter().map(|s| s.to_string()).collect()
 }
 
@@ -81,8 +81,8 @@ fn simulate_plan(
     initial: &[(&str, &str)],
     plan_steps: &[&str],
     actions: &[Rule],
-) -> Result<HashSet<String>, String> {
-    let mut state: HashSet<String> = initial
+) -> Result<BTreeSet<String>, String> {
+    let mut state: BTreeSet<String> = initial
         .iter()
         .map(|(p, v)| format!("{}={}", p, v))
         .collect();
@@ -770,7 +770,7 @@ fn cbr_jaccard_identical_sets_score_one() {
 /// Rank-1 (Jaccard empty convention): both empty sets → 0.0 (by convention).
 #[test]
 fn cbr_jaccard_both_empty_returns_zero() {
-    let empty: HashSet<String> = HashSet::new();
+    let empty: BTreeSet<String> = BTreeSet::new();
     let score = jaccard(&empty, &empty);
     assert!(
         score.abs() < 1e-6,

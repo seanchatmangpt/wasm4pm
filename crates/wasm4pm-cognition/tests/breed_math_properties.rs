@@ -4,11 +4,11 @@
 //! `noisy_or` (hearsay.rs) so a future refactor cannot silently violate them
 //! (the same FM-5 trap PR #53 fixed for combine_cf).
 
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use wasm4pm_cognition::breeds::cbr::jaccard;
 use wasm4pm_cognition::breeds::hearsay::noisy_or;
 
-fn set_of(items: &[&str]) -> HashSet<String> {
+fn set_of(items: &[&str]) -> BTreeSet<String> {
     items.iter().map(|s| s.to_string()).collect()
 }
 
@@ -38,7 +38,7 @@ fn jaccard_zero_for_disjoint_sets() {
 fn jaccard_empty_empty_convention_zero() {
     // Documented convention per cbr.rs:26 — pin behavior so a refactor
     // cannot silently change CBR similarity semantics.
-    let empty: HashSet<String> = HashSet::new();
+    let empty: BTreeSet<String> = BTreeSet::new();
     assert_eq!(jaccard(&empty, &empty), 0.0);
 }
 
