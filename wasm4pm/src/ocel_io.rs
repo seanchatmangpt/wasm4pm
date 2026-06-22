@@ -183,8 +183,7 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(handle, |ocel| {
             let errors = validate_ocel_inner(ocel);
             let is_valid = errors.is_empty();
 
@@ -198,9 +197,6 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
                 crate::error::js_val(&format!("Failed to serialize validation report: {}", e))
             })?;
             Ok(crate::error::js_val(&report_json))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
-        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
@@ -256,8 +252,7 @@ pub struct ProvenanceQueryResult {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result<String, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             let query: ProvenanceQuery = serde_json::from_str(query_json)
                 .map_err(|e| crate::error::js_val(&format!("Failed to parse query JSON: {}", e)))?;
 
@@ -425,9 +420,6 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                 crate::error::js_val(&format!("Failed to serialize query result: {}", e))
             })?;
             Ok(result_json)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
-        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 

@@ -10,8 +10,7 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             let mut object_types: Vec<String> = ocel
                 .objects
                 .iter()
@@ -23,12 +22,6 @@ pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
             object_types.retain(|t| seen.insert(t.clone()));
 
             to_js(&object_types)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("OCEL '{}' not found", ocel_handle),
-        )),
     })
 }
 
@@ -36,8 +29,7 @@ pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             // Collect unique event types
             let event_types: Vec<String> = {
                 let types: std::collections::BTreeSet<String> =
@@ -91,12 +83,6 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
             });
 
             to_js(&stats)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("OCEL '{}' not found", ocel_handle),
-        )),
     })
 }
 
@@ -306,8 +292,7 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn measure_ocel_flattening_loss(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             // Collect unique object types
             let mut seen = HashSet::new();
             let object_types: Vec<String> = ocel
@@ -340,12 +325,6 @@ pub fn measure_ocel_flattening_loss(ocel_handle: &str) -> Result<JsValue, JsValu
                 .collect();
 
             to_js(&json!({ "flattening_loss": reports }))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("OCEL '{}' not found", ocel_handle),
-        )),
     })
 }
 

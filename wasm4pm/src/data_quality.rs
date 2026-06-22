@@ -136,8 +136,7 @@ pub fn check_data_quality(
 /// Check data quality of an OCEL
 #[wasm_bindgen]
 pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             let mut issues = Vec::new();
 
             // Build set of valid object IDs
@@ -224,9 +223,6 @@ pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
             });
 
             to_js(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
-        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
@@ -293,8 +289,7 @@ pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
 /// Infer schema from OCEL
 #[wasm_bindgen]
 pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             // Event type distribution
             let mut event_types: BTreeMap<String, usize> = BTreeMap::new();
             for event in &ocel.events {
@@ -360,9 +355,6 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
             });
 
             to_js(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
-        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 

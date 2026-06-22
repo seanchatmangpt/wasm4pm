@@ -231,16 +231,9 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
 /// Discover a Directly-Follows Graph (DFG) from an OCEL
 #[wasm_bindgen]
 pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             let dfg = discover_ocel_dfg_pure(ocel);
             to_js_str(&dfg)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("OCEL '{}' not found", ocel_handle),
-        )),
     })
 }
 
@@ -257,8 +250,7 @@ fn bitmask_check(mask: u64, id: usize) -> bool {
 /// Discover a Directly-Follows Graph (DFG) per object type from an OCEL
 #[wasm_bindgen]
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
             let mut result: std::collections::BTreeMap<String, DFG> = std::collections::BTreeMap::new();
 
             // Build sorted activity vocabulary for stable index assignment
@@ -385,12 +377,6 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
 
             // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
             to_js_str(&result)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("OCEL '{}' not found", ocel_handle),
-        )),
     })
 }
 
