@@ -392,8 +392,8 @@ mod tests {
 
     #[test]
     fn test_jaccard_distance() {
-        let set1: HashSet<i32> = [1, 2, 3].iter().cloned().collect();
-        let set2: HashSet<i32> = [2, 3, 4].iter().cloned().collect();
+        let set1: HashSet<i32> = [1, 2, 3].iter().copied().collect();
+        let set2: HashSet<i32> = [2, 3, 4].iter().copied().collect();
 
         let dist = jaccard_distance(&set1, &set2);
 
@@ -404,8 +404,8 @@ mod tests {
 
     #[test]
     fn test_jaccard_distance_identical() {
-        let set1: HashSet<i32> = [1, 2, 3].iter().cloned().collect();
-        let set2: HashSet<i32> = [1, 2, 3].iter().cloned().collect();
+        let set1: HashSet<i32> = [1, 2, 3].iter().copied().collect();
+        let set2: HashSet<i32> = [1, 2, 3].iter().copied().collect();
 
         let dist = jaccard_distance(&set1, &set2);
 

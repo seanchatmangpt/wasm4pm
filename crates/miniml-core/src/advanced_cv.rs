@@ -466,7 +466,7 @@ pub fn bootstrap(
         }
 
         // Find out-of-bag samples (not selected in training)
-        let train_set: std::collections::HashSet<usize> = train_indices.iter().cloned().collect();
+        let train_set: std::collections::HashSet<usize> = train_indices.iter().copied().collect();
 
         for i in 0..n_samples {
             if !train_set.contains(&i) {
