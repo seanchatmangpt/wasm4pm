@@ -133,7 +133,7 @@ pub fn analyze_lead_time(repo_path: &str, days: usize) -> Result<LeadTimeMetrics
     }
 
     // Calculate statistics
-    lead_times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    lead_times.sort_by(|a, b| a.total_cmp(b));
 
     let average = lead_times.iter().sum::<f64>() / lead_times.len() as f64;
     let median = lead_times[lead_times.len() / 2];
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn test_p95_ge_median_for_sorted_sequence() {
         let mut times = vec![0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0];
-        times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        times.sort_by(|a, b| a.total_cmp(b));
 
         let median = times[times.len() / 2];
         let p95_index = (times.len() as f64 * 0.95) as usize;
@@ -345,12 +345,12 @@ mod tests {
         );
 
         let mut base_sorted = base.clone();
-        base_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        base_sorted.sort_by(|a, b| a.total_cmp(b));
         let p95_base_idx = (base_sorted.len() as f64 * 0.95) as usize;
         let p95_base = base_sorted[p95_base_idx];
 
         let mut out_sorted = with_outlier.clone();
-        out_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        out_sorted.sort_by(|a, b| a.total_cmp(b));
         let p95_out_idx = (out_sorted.len() as f64 * 0.95) as usize;
         let p95_out = out_sorted[p95_out_idx];
 

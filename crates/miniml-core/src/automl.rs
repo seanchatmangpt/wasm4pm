@@ -421,7 +421,7 @@ impl AutoMLEngine {
         }
 
         // Sort by score (descending)
-        algorithm_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        algorithm_scores.sort_by(|a, b| b.1.total_cmp(&a.1));
 
         let best_algorithm_name = algorithm_scores
             .first()
@@ -647,7 +647,7 @@ impl AutoMLEngine {
             .collect();
 
         // Sort by variance descending (higher variance = more informative)
-        feature_scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        feature_scores.sort_by(|a, b| b.1.total_cmp(&a.1));
 
         // Select top-k features
         feature_scores
