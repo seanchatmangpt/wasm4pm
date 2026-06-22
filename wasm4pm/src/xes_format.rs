@@ -167,12 +167,16 @@ pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> 
 
             for trace in log.traces.iter() {
                 xes.push_str("  <trace>\n");
-                for (key, value) in &trace.attributes {
+                let mut trace_attrs: Vec<_> = trace.attributes.iter().collect();
+                trace_attrs.sort_by_key(|(k, _)| k.as_str());
+                for (key, value) in trace_attrs {
                     write_attribute(&mut xes, 2, key, value);
                 }
                 for event in trace.events.iter() {
                     xes.push_str("    <event>\n");
-                    for (key, value) in &event.attributes {
+                    let mut event_attrs: Vec<_> = event.attributes.iter().collect();
+                    event_attrs.sort_by_key(|(k, _)| k.as_str());
+                    for (key, value) in event_attrs {
                         write_attribute(&mut xes, 3, key, value);
                     }
                     xes.push_str("    </event>\n");
