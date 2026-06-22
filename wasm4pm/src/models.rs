@@ -142,7 +142,7 @@ pub enum AttributeValue {
     /// List of attribute values.
     List(Vec<AttributeValue>),
     /// Nested container of named attribute values.
-    Container(HashMap<String, AttributeValue>),
+    Container(BTreeMap<String, AttributeValue>),
 }
 
 impl AttributeValue {
@@ -361,7 +361,7 @@ fn convert_attribute_value(
             Some(AttributeValue::List(list))
         }
         wasm4pm_compat::event_log::AttributeValue::Container(c) => {
-            let mut map = HashMap::new();
+            let mut map = BTreeMap::new();
             for attr in c {
                 if let Some(cv) = convert_attribute_value(attr.value) {
                     map.insert(attr.key, cv);
@@ -1237,7 +1237,7 @@ pub struct StreamingConformanceChecker {
     pub incidence: Option<wasm4pm_compat::models::FlatIncidenceMatrix>,
 
     // Shared state
-    pub open_traces: HashMap<String, OpenTraceState>,
+    pub open_traces: BTreeMap<String, OpenTraceState>,
     pub results: Vec<StreamingConformanceTraceResult>,
     pub event_count: usize,
 }
@@ -1262,7 +1262,7 @@ impl StreamingConformanceChecker {
             end_activities: Some(end_activities),
             net: None,
             incidence: None,
-            open_traces: HashMap::new(),
+            open_traces: BTreeMap::new(),
             results: Vec::new(),
             event_count: 0,
         }
@@ -1315,7 +1315,7 @@ impl StreamingConformanceChecker {
             end_activities: None,
             net: Some(net),
             incidence: Some(incidence),
-            open_traces: HashMap::new(),
+            open_traces: BTreeMap::new(),
             results: Vec::new(),
             event_count: 0,
         }
