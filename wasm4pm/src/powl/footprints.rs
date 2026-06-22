@@ -7,8 +7,8 @@ use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 
-pub type ActivitySet = HashSet<String>;
-pub type ActivityPairs = HashSet<(String, String)>;
+pub type ActivitySet = std::collections::BTreeSet<String>;
+pub type ActivityPairs = std::collections::BTreeSet<(String, String)>;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Footprints {
