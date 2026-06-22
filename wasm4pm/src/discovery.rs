@@ -266,7 +266,7 @@ fn bitmask_check(mask: u64, id: usize) -> bool {
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut result: FxHashMap<String, DFG> = FxHashMap::default();
+            let mut result: std::collections::BTreeMap<String, DFG> = std::collections::BTreeMap::new();
 
             // Build sorted activity vocabulary for stable index assignment
             let mut activity_vocab: Vec<String> = {
