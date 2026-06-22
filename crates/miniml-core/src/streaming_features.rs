@@ -39,9 +39,9 @@ pub struct IncrementalTfIdf {
 impl IncrementalTfIdf {
     pub fn update(&mut self, terms: &[String]) {
         self.document_count += 1;
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = std::collections::HashSet::<&str>::new();
         for term in terms {
-            if seen.insert(term.clone()) {
+            if seen.insert(term.as_str()) {
                 *self.term_doc_freq.entry(term.clone()).or_default() += 1;
             }
         }

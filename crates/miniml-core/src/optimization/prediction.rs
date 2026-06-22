@@ -402,7 +402,7 @@ pub fn extract_prefix_features<T: std::hash::Hash + Eq + Clone + std::fmt::Displ
     let rework_count = if length > 1 {
         prefix
             .windows(2)
-            .filter(|w| w[0].to_string() == w[1].to_string())
+            .filter(|w| w[0] == w[1])
             .count()
     } else {
         0

@@ -37,12 +37,11 @@ pub fn davies_bouldin_impl(
     let mut avg_distances = Vec::with_capacity(n_clusters);
 
     for &cluster_id in &cluster_ids {
-        let mut cluster_points: Vec<usize> = Vec::new();
-        for (i, &label) in labels.iter().enumerate() {
-            if (label - cluster_id).abs() < 1e-10 {
-                cluster_points.push(i);
-            }
-        }
+        let cluster_points: Vec<usize> = labels
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &l)| ((l - cluster_id).abs() < 1e-10).then_some(i))
+            .collect();
 
         if cluster_points.is_empty() {
             return Err(MlError::new("empty cluster found"));
@@ -155,12 +154,11 @@ pub fn calinski_harabasz_impl(
     let mut wgss = 0.0;
 
     for &cluster_id in &cluster_ids {
-        let mut cluster_points: Vec<usize> = Vec::new();
-        for (i, &label) in labels.iter().enumerate() {
-            if (label - cluster_id).abs() < 1e-10 {
-                cluster_points.push(i);
-            }
-        }
+        let cluster_points: Vec<usize> = labels
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &l)| ((l - cluster_id).abs() < 1e-10).then_some(i))
+            .collect();
 
         if cluster_points.is_empty() {
             continue;
