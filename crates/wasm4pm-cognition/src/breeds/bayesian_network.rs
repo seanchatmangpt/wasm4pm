@@ -3,7 +3,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, CognitionError, Fact,
     TraceStep,
 };
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 
 /// Bayesian Network breed (Pearl 1988).
 /// Exact boolean variable elimination and Bayes-ball d-separation.
@@ -114,7 +114,7 @@ impl CognitionBreed for BayesianNetwork {
         }
 
         // Group rules by child variable to build CPTs
-        let mut child_rules: HashMap<String, Vec<&crate::breeds::Rule>> = HashMap::new();
+        let mut child_rules: BTreeMap<String, Vec<&crate::breeds::Rule>> = BTreeMap::new();
         for rule in &input.rules {
             let concl = rule.conclusion.trim();
             if let Some(eq_idx) = concl.find('=') {
@@ -141,7 +141,7 @@ impl CognitionBreed for BayesianNetwork {
             let parents_sorted: Vec<&String> = parents.iter().collect();
             let mut probs = vec![0.0; 1 << parents_sorted.len()];
             for p_idx in 0..(1 << parents_sorted.len()) {
-                let mut parent_vals = HashMap::new();
+                let mut parent_vals = BTreeMap::new();
                 for (j, p_name) in parents_sorted.iter().enumerate() {
                     let val = ((p_idx >> (parents_sorted.len() - 1 - j)) & 1) == 1;
                     parent_vals.insert((*p_name).clone(), val);

@@ -17,7 +17,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use tracing;
 
 /// AutoinstinctVision breed: symbolic Blocks World perception.
@@ -35,8 +35,8 @@ pub struct AutoinstinctVision;
 /// - Every returned `Polyhedron` has a non-empty `id` and `shape`.
 /// - Support map is populated only for objects that also appear as shape observations.
 fn parse_polyhedra(input: &BreedInput) -> Vec<Polyhedron> {
-    let mut shapes: HashMap<String, String> = HashMap::new(); // id → shape
-    let mut supports: HashMap<String, String> = HashMap::new(); // id → supported_by id
+    let mut shapes: BTreeMap<String, String> = BTreeMap::new(); // id → shape
+    let mut supports: BTreeMap<String, String> = BTreeMap::new(); // id → supported_by id
 
     for fact in &input.facts {
         if let Some(obj_id) = fact.key.strip_prefix("supported_by:") {

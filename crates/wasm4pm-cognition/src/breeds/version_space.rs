@@ -8,7 +8,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Version Space Breed
 pub struct VersionSpace;
@@ -99,7 +99,7 @@ impl CognitionBreed for VersionSpace {
         //  (2) fixture: key="vs:attrs", value="name1,name2,..." (positional, domains
         //      inferred from observed example values)
         let mut attr_names = Vec::new();
-        let mut attr_domains: HashMap<String, Vec<String>> = HashMap::new();
+        let mut attr_domains: BTreeMap<String, Vec<String>> = BTreeMap::new();
         let mut positional = false;
         for fact in &input.facts {
             if fact.key == "vs:attrs" {
@@ -177,7 +177,7 @@ impl CognitionBreed for VersionSpace {
                     || label_str == "1"
                     || label_str == "true";
 
-                let mut val_map = HashMap::new();
+                let mut val_map = BTreeMap::new();
                 for part in &parts[..parts.len() - 1] {
                     if let Some(eq) = part.find('=') {
                         let k = part[..eq].trim().to_string();
@@ -321,7 +321,7 @@ impl CognitionBreed for VersionSpace {
         for fact in &input.facts {
             if fact.key == "classify" {
                 let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
-                let mut val_map = HashMap::new();
+                let mut val_map = BTreeMap::new();
                 for part in &parts {
                     if let Some(eq) = part.find('=') {
                         let k = part[..eq].trim().to_string();

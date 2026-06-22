@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::Write as _;
 
 /// Qualitative Reasoning (QR) breed based on de Kleer-Brown sign algebra.
@@ -110,7 +110,7 @@ impl CognitionBreed for QualitativeReason {
 
         // 1. Parse confluences and variables
         let mut variables: BTreeSet<String> = BTreeSet::new();
-        let mut initial_signs = HashMap::new();
+        let mut initial_signs = BTreeMap::new();
         let mut confluences = Vec::new();
 
         // Fact-encoded inputs (de Kleer & Brown fixture convention):
