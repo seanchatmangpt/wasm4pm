@@ -9,7 +9,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 /// Fuzzy Logic breed
 pub struct FuzzyLogic;
@@ -177,7 +177,7 @@ impl CognitionBreed for FuzzyLogic {
             }
         }
 
-        let mut inputs: HashMap<String, f32> = HashMap::new();
+        let mut inputs: BTreeMap<String, f32> = BTreeMap::new();
         for fact in &input.facts {
             if let Some(var) = fact.key.strip_prefix("fuzzy:input:") {
                 if let Ok(val) = fact.value.parse::<f32>() {
@@ -195,7 +195,7 @@ impl CognitionBreed for FuzzyLogic {
             }
         }
 
-        let mut fuzzified: HashMap<String, f32> = HashMap::new();
+        let mut fuzzified: BTreeMap<String, f32> = BTreeMap::new();
         let mut out_vars: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
         for (term_key, mf) in &terms {

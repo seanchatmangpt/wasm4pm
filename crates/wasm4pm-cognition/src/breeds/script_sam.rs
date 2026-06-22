@@ -2,7 +2,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// SAM (Script Applier Mechanism) breed (Schank 1977).
 ///
@@ -62,7 +62,7 @@ impl ScriptSam {
         None
     }
 
-    fn match_scene(pattern: &str, instance: &str, bindings: &mut HashMap<String, String>) -> bool {
+    fn match_scene(pattern: &str, instance: &str, bindings: &mut BTreeMap<String, String>) -> bool {
         let (p_name, p_args) = Self::parse_scene(pattern);
         let (i_name, i_args) = Self::parse_scene(instance);
 
@@ -89,7 +89,7 @@ impl ScriptSam {
         true
     }
 
-    fn apply_bindings(pattern: &str, bindings: &HashMap<String, String>) -> String {
+    fn apply_bindings(pattern: &str, bindings: &BTreeMap<String, String>) -> String {
         let (name, args) = Self::parse_scene(pattern);
         if args.is_empty() {
             return name;
@@ -169,7 +169,7 @@ impl CognitionBreed for ScriptSam {
 
         let mut best_script = None;
         let mut best_alignment = None;
-        let mut best_bindings = HashMap::new();
+        let mut best_bindings = BTreeMap::new();
 
         for script_rule in scripts.as_ref() {
             trace.push(TraceStep {
@@ -181,7 +181,7 @@ impl CognitionBreed for ScriptSam {
             });
 
             let script = &script_rule.premise;
-            let mut bindings = HashMap::new();
+            let mut bindings = BTreeMap::new();
             let mut alignment = Vec::new();
             let mut last_idx = 0;
             let mut possible = true;
