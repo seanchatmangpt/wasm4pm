@@ -1,4 +1,3 @@
-
 //! # Prolog8 — Byte-Capped Proof Engine
 //!
 //! Implements the Prolog8 PRD/ARD: a Rust/WASM proof engine for bounded
