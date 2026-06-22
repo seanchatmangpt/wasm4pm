@@ -106,8 +106,8 @@ impl IncrementalDFG {
     pub fn snapshot(&self) -> DFG {
         let mut dfg = DFG::new();
 
-        // Nodes
-        dfg.nodes = self
+        // Nodes — sort by id for deterministic DFG serialization
+        let mut nodes: Vec<DFGNode> = self
             .node_counts
             .iter()
             .map(|(&id, &count)| {
@@ -119,9 +119,11 @@ impl IncrementalDFG {
                 }
             })
             .collect();
+        nodes.sort_by(|a, b| a.id.cmp(&b.id));
+        dfg.nodes = nodes;
 
-        // Edges
-        dfg.edges = self
+        // Edges — sort by (from, to) for deterministic serialization
+        let mut edges: Vec<DirectlyFollowsRelation> = self
             .edges
             .iter()
             .map(|(&(from, to), &freq)| DirectlyFollowsRelation {
@@ -130,6 +132,8 @@ impl IncrementalDFG {
                 frequency: freq as usize,
             })
             .collect();
+        edges.sort_by(|a, b| a.from.cmp(&b.from).then_with(|| a.to.cmp(&b.to)));
+        dfg.edges = edges;
 
         // Start / end activities
         for &id in &self.start_activities {
@@ -249,8 +253,8 @@ impl StreamingDFG {
     pub fn snapshot(&self) -> DFG {
         let mut dfg = DFG::new();
 
-        // Nodes
-        dfg.nodes = self
+        // Nodes — sort by id for deterministic DFG serialization
+        let mut nodes: Vec<DFGNode> = self
             .inner
             .node_counts
             .iter()
@@ -263,9 +267,11 @@ impl StreamingDFG {
                 })
             })
             .collect();
+        nodes.sort_by(|a, b| a.id.cmp(&b.id));
+        dfg.nodes = nodes;
 
-        // Edges
-        dfg.edges = self
+        // Edges — sort by (from, to) for deterministic serialization
+        let mut edges: Vec<DirectlyFollowsRelation> = self
             .inner
             .edges
             .iter()
@@ -279,6 +285,8 @@ impl StreamingDFG {
                 })
             })
             .collect();
+        edges.sort_by(|a, b| a.from.cmp(&b.from).then_with(|| a.to.cmp(&b.to)));
+        dfg.edges = edges;
 
         // Start / end activities
         for &id in &self.inner.start_activities {
