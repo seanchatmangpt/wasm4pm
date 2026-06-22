@@ -64,7 +64,7 @@ impl Normalizer {
 }
 
 #[wasm_bindgen(js_name = "normalizer")]
-pub fn normalizer(n_features: usize, norm: String) -> Normalizer {
+pub fn normalizer(n_features: usize, norm: &str) -> Normalizer {
     let norm_lower = norm.to_lowercase();
     let norm_valid = if norm_lower == "l1" || norm_lower == "l2" || norm_lower == "max" {
         norm_lower
@@ -88,7 +88,7 @@ mod tests {
             3.0, 4.0, // L2 norm = 5
             1.0, 0.0, // L2 norm = 1
         ];
-        let norm = normalizer(2, "l2".to_string());
+        let norm = normalizer(2, "l2");
         let transformed = norm.transform(&data);
 
         // First row: [3, 4] -> [3/5, 4/5]
@@ -104,7 +104,7 @@ mod tests {
         let data = vec![
             1.0, 2.0, 3.0, // L1 norm = 6
         ];
-        let norm = normalizer(3, "l1".to_string());
+        let norm = normalizer(3, "l1");
         let transformed = norm.transform(&data);
 
         // [1, 2, 3] -> [1/6, 2/6, 3/6]
@@ -118,7 +118,7 @@ mod tests {
         let data = vec![
             2.0, 4.0, 1.0, // Max norm = 4
         ];
-        let norm = normalizer(3, "max".to_string());
+        let norm = normalizer(3, "max");
         let transformed = norm.transform(&data);
 
         // [2, 4, 1] -> [2/4, 4/4, 1/4] = [0.5, 1.0, 0.25]
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn test_zero_row() {
         let data = vec![0.0, 0.0, 0.0];
-        let norm = normalizer(3, "l2".to_string());
+        let norm = normalizer(3, "l2");
         let transformed = norm.transform(&data);
 
         // All zeros stay zeros
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn test_negative_values() {
         let data = vec![-3.0, 4.0];
-        let norm = normalizer(2, "l2".to_string());
+        let norm = normalizer(2, "l2");
         let transformed = norm.transform(&data);
 
         // [-3, 4] L2 norm = 5
