@@ -22,7 +22,7 @@ pub struct CachedConformanceResult {
 }
 
 /// Conformance cache: (log_handle, model_hash) -> CachedConformanceResult.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ConformanceCache {
     cache: std::collections::BTreeMap<(String, u64), CachedConformanceResult>,
     hits: u64,
@@ -131,11 +131,6 @@ impl ConformanceCache {
     }
 }
 
-impl Default for ConformanceCache {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 // ---------------------------------------------------------------------------
 // WASM bindings
