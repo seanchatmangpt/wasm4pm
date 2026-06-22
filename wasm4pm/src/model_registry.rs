@@ -170,7 +170,7 @@ impl ProcessModelRegistry {
         let expired: Vec<String> = self
             .models
             .iter()
-            .filter(|(_, e)| e.expires_at.map_or(false, |exp| now > exp))
+            .filter(|(_, e)| e.expires_at.is_some_and(|exp| now > exp))
             .map(|(k, _)| k.clone())
             .collect();
         for k in expired {
