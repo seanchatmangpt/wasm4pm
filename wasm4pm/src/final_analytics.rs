@@ -316,7 +316,7 @@ pub fn extract_activity_ordering(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut mandatory_predecessors: HashMap<String, HashSet<String>> = HashMap::default();
+            let mut mandatory_predecessors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
 
             for trace in &log.traces {
                 // Collect only events that carry the activity key, preserving order
@@ -334,20 +334,21 @@ pub fn extract_activity_ordering(
 
                 for (pos, &activity) in activities.iter().enumerate() {
                     // All activities that appear before this position are predecessors
-                    let predecessors: HashSet<String> =
+                    let predecessors: std::collections::BTreeSet<String> =
                         activities.iter().take(pos).map(|&a| a.to_owned()).collect();
                     // Mandatory predecessor = present before this activity in EVERY trace.
                     // Vacant: seed with full predecessor set.
                     // Occupied: intersect to keep only those seen in all traces so far.
                     mandatory_predecessors
                         .entry(activity.to_owned())
-                        .and_modify(|existing: &mut HashSet<String>| {
+                        .and_modify(|existing: &mut std::collections::BTreeSet<String>| {
                             existing.retain(|p| predecessors.contains(p.as_str()));
                         })
                         .or_insert(predecessors);
                 }
             }
 
+            // BTreeMap iterates in sorted key order; BTreeSet values also sorted.
             let result: Vec<_> = mandatory_predecessors
                 .iter()
                 .map(|(activity, preds)| {
