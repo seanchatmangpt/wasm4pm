@@ -475,7 +475,7 @@ pub fn evaluate_custody_layer(motion: &RequestMotion) -> LayerVerdict {
             evidence_provided = evidence_count as u32,
             evidence_missing = missing_count as u32,
             evidence_quality = decision_quality,
-            verdict = verdict.verdict.to_string().as_str(),
+            verdict = %verdict.verdict,
             confidence = verdict.confidence,
             decision_rationale = verdict.reason.as_str(),
             service_name = "wpm",
@@ -826,7 +826,7 @@ pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
         request_id = motion.request_id.as_str(),
         actor = motion.actor.as_str(),
         action = motion.requested_action.as_str(),
-        final_verdict = final_verdict.to_string().as_str(),
+        final_verdict = %final_verdict,
         decisive_layer = decisive_layer.as_str(),
         confidence = receipt
             .layer_verdicts
@@ -924,7 +924,7 @@ pub fn classify_motion_internal_with_envelopes(
         request_id = motion.request_id.as_str(),
         actor = motion.actor.as_str(),
         action = motion.requested_action.as_str(),
-        final_verdict = final_verdict.to_string().as_str(),
+        final_verdict = %final_verdict,
         decisive_layer = decisive_layer.as_str(),
         confidence = receipt
             .layer_verdicts
@@ -1010,7 +1010,7 @@ pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
         "autonomic.wasm_classify_motion",
         request_id = receipt.request_id.as_str(),
         actor = motion_with_ts.actor.as_str(),
-        final_verdict = receipt.final_verdict.to_string().as_str(),
+        final_verdict = %receipt.final_verdict,
         downstream_admitted = receipt.downstream_admitted,
         duration_ms = elapsed_ms,
         service_name = "wpm",
@@ -1294,7 +1294,7 @@ pub fn classify_motion_with_envelopes(
         "autonomic.wasm_classify_with_envelopes",
         request_id = receipt.request_id.as_str(),
         actor = motion_with_ts.actor.as_str(),
-        final_verdict = receipt.final_verdict.to_string().as_str(),
+        final_verdict = %receipt.final_verdict,
         downstream_admitted = receipt.downstream_admitted,
         layer_count = receipt.layer_verdicts.len() as u32,
         duration_ms = elapsed_ms,
