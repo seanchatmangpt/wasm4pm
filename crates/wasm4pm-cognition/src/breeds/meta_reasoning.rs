@@ -266,17 +266,18 @@ impl CognitionBreed for MetaReasoning {
             });
         }
 
+        let explanation = format!(
+            "Meta-reasoning over {} reports: {} conflict(s) detected; resolved to {}",
+            reports.len(),
+            conflicts,
+            selected
+        );
         Ok(BreedOutput {
             breed: BreedId::MetaReasoning,
             candidates: input.candidates.clone(),
             facts,
-            selected: Some(selected.clone()),
-            explanation: format!(
-                "Meta-reasoning over {} reports: {} conflict(s) detected; resolved to {}",
-                reports.len(),
-                conflicts,
-                selected
-            ),
+            selected: Some(selected),
+            explanation,
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
