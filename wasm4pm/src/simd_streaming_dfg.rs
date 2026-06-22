@@ -468,8 +468,7 @@ impl Default for SimdStreamingDfg {
 /// JSON `DFG` with nodes, edges, start_activities, end_activities.
 #[wasm_bindgen]
 pub fn discover_dfg_simd(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
                 .unwrap_or_else(|| {
                     let owned = log.to_columnar_owned(activity_key);
@@ -485,12 +484,6 @@ pub fn discover_dfg_simd(eventlog_handle: &str, activity_key: &str) -> Result<Js
             builder.add_events(&col.events, &col.trace_offsets);
             let dfg = builder.finish(&col.vocab);
             to_js(&dfg)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 
@@ -502,8 +495,7 @@ pub fn discover_dfg_simd_handle(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let dfg = get_or_init_state().with_event_log(eventlog_handle, |log| {
             let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
                 .unwrap_or_else(|| {
                     let owned = log.to_columnar_owned(activity_key);
@@ -518,12 +510,6 @@ pub fn discover_dfg_simd_handle(
             let mut builder = SimdStreamingDfg::new();
             builder.add_events(&col.events, &col.trace_offsets);
             Ok(builder.finish(&col.vocab))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;

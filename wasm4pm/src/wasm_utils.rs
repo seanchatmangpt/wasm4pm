@@ -158,8 +158,7 @@ pub fn identify_high_variance_activities(
     activity_key: &str,
     threshold: f64,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             use std::collections::HashMap;
 
             // Count occurrences per trace
@@ -232,9 +231,6 @@ pub fn identify_high_variance_activities(
                 "high_variance_activities": high_variance,
                 "total_activities": activity_per_trace.len(),
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

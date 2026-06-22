@@ -145,8 +145,7 @@ pub fn score_log_anomalies(
         *source_totals.entry(f.as_str()).or_default() += c;
     }
 
-    let results_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let results_json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut results: Vec<serde_json::Value> = Vec::new();
             for trace in &log.traces {
                 let case_id = trace
@@ -214,9 +213,6 @@ pub fn score_log_anomalies(
                 }
             }
             serde_json::to_string(&results).map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("log_handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&results_json))

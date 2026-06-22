@@ -135,9 +135,6 @@ pub fn split_log(
     // Extract trace count and clone traces inside closure (borrowed).
     let (traces, attributes) = get_or_init_state().with_event_log(log_handle, |log| {
             Ok((log.traces.clone(), log.attributes.clone()))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     let total = traces.len();
@@ -290,9 +287,6 @@ pub fn cross_validate(
     // Extract all traces
     let (traces, attributes) = get_or_init_state().with_event_log(log_handle, |log| {
             Ok((log.traces.clone(), log.attributes.clone()))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     let total = traces.len();

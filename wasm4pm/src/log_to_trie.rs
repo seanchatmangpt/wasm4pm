@@ -267,8 +267,7 @@ pub fn discover_prefix_tree(
     activity_key: &str,
     max_path_length: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let max_len = if max_path_length > 0 {
                 Some(max_path_length)
             } else {
@@ -279,12 +278,6 @@ pub fn discover_prefix_tree(
                 Ok(result) => to_js(&result),
                 Err(e) => Err(wasm_err(codes::INVALID_INPUT, e)),
             }
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 

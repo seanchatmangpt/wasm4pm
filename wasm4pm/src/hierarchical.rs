@@ -327,8 +327,7 @@ pub fn discover_dfg_hierarchical(
     activity_key: &str,
     num_chunks: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             if num_chunks == 0 {
                 return Err(wasm_err(codes::INVALID_INPUT, "num_chunks must be >= 1"));
             }
@@ -353,12 +352,6 @@ pub fn discover_dfg_hierarchical(
             let dfg = result.to_dfg(&col.vocab);
 
             to_js_str(&dfg)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 
@@ -372,8 +365,7 @@ pub fn discover_dfg_hierarchical_by_events(
     activity_key: &str,
     max_chunk_events: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             if max_chunk_events == 0 {
                 return Err(wasm_err(
                     codes::INVALID_INPUT,
@@ -401,12 +393,6 @@ pub fn discover_dfg_hierarchical_by_events(
             let dfg = result.to_dfg(&col.vocab);
 
             to_js_str(&dfg)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
     })
 }
 

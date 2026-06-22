@@ -12,8 +12,7 @@ pub fn check_data_quality(
     activity_key: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut issues = Vec::new();
             let mut missing_attrs: BTreeMap<String, usize> = BTreeMap::new();
             let mut has_ordering_issues = false;
@@ -131,9 +130,6 @@ pub fn check_data_quality(
             });
 
             to_js(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -237,8 +233,7 @@ pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
 /// Infer schema from EventLog by analyzing attribute patterns
 #[wasm_bindgen]
 pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             // Collect all attributes and their value distributions
             let mut attr_stats: BTreeMap<String, AttributeStats> = BTreeMap::new();
 
@@ -292,9 +287,6 @@ pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
             });
 
             to_js(&result)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

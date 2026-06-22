@@ -94,8 +94,7 @@ pub fn build_transition_probabilities(
 ) -> Result<JsValue, JsValue> {
     let activity_key = activity_key.to_string();
 
-    let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             // Compute edge counts alongside the transition graph so we can
             // include raw counts in the output.
             let mut edge_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
@@ -138,9 +137,6 @@ pub fn build_transition_probabilities(
 
             serde_json::to_string(&result)
                 .map_err(|e| crate::error::js_val(&format!("Serialization error: {}", e)))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     Ok(crate::error::js_val(&result_json))
