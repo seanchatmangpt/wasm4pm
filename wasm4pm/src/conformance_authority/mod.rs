@@ -571,12 +571,12 @@ impl std::error::Error for RefusalReport {}
 #[derive(Debug, Clone)]
 pub struct ReachabilityHeuristic {
     /// Shortest path distances precomputed via BFS/Dijkstra
-    pub distances: HashMap<String, u32>,
+    pub distances: std::collections::BTreeMap<String, u32>,
 }
 
 impl ReachabilityHeuristic {
     /// Construct heuristic with precomputed distances.
-    pub fn new(distances: HashMap<String, u32>) -> Self {
+    pub fn new(distances: std::collections::BTreeMap<String, u32>) -> Self {
         Self { distances }
     }
 
@@ -780,7 +780,7 @@ mod tests {
 
     #[test]
     fn test_reachability_heuristic() {
-        let mut distances = HashMap::new();
+        let mut distances = std::collections::BTreeMap::new();
         distances.insert("M1".to_string(), 5);
         distances.insert("M2".to_string(), 3);
 

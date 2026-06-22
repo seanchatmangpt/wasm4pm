@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm4pm_compat::ocel::OCEL;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OntologyDiscoveryAgent {
-    pub object_type_density: HashMap<String, f64>,
+    pub object_type_density: BTreeMap<String, f64>,
     pub learned_relationships: Vec<(String, String, String)>, // (from, to, qualifier)
 }
 

@@ -52,7 +52,7 @@ pub struct PowlPlace {
 pub struct PowlTransition {
     pub name: String,
     pub label: Option<String>,
-    pub properties: HashMap<String, serde_json::Value>,
+    pub properties: std::collections::BTreeMap<String, serde_json::Value>,
 }
 
 /// Directed arc connecting places and transitions in a POWL Petri net.
@@ -119,7 +119,7 @@ impl PowlPetriNet {
         self.transitions.push(PowlTransition {
             name: name.to_string(),
             label,
-            properties: HashMap::new(),
+            properties: std::collections::BTreeMap::new(),
         });
         name.to_string()
     }
@@ -128,7 +128,7 @@ impl PowlPetriNet {
         &mut self,
         name: &str,
         label: Option<String>,
-        props: HashMap<String, serde_json::Value>,
+        props: std::collections::BTreeMap<String, serde_json::Value>,
     ) -> String {
         self.transitions.push(PowlTransition {
             name: name.to_string(),

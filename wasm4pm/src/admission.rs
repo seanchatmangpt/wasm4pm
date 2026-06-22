@@ -19,7 +19,7 @@ pub struct AdmissionPolicy {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundaryMap {
-    pub transitions: HashMap<String, Vec<String>>,
+    pub transitions: std::collections::BTreeMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -143,12 +143,12 @@ pub fn load_boundary_map(path: &str) -> Option<BoundaryMap> {
     } else {
         v
     };
-    let transitions: HashMap<String, Vec<String>> = serde_json::from_value(map_value).ok()?;
+    let transitions: std::collections::BTreeMap<String, Vec<String>> = serde_json::from_value(map_value).ok()?;
     Some(BoundaryMap { transitions })
 }
 
 pub fn default_boundary_map() -> BoundaryMap {
-    let mut transitions: HashMap<String, Vec<String>> = HashMap::new();
+    let mut transitions: std::collections::BTreeMap<String, Vec<String>> = std::collections::BTreeMap::new();
     transitions.insert("idle".to_string(), vec!["start".to_string()]);
     transitions.insert(
         "running".to_string(),
@@ -595,7 +595,7 @@ pub fn admit_change_with_contents(
             } else {
                 v
             };
-            serde_json::from_value::<HashMap<String, Vec<String>>>(map_v).ok()
+            serde_json::from_value::<std::collections::BTreeMap<String, Vec<String>>>(map_v).ok()
         })
         .map(|t| BoundaryMap { transitions: t })
         .unwrap_or_else(default_boundary_map);

@@ -16,8 +16,8 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 pub struct MonteCarloConfig {
     pub num_cases: usize,
     pub inter_arrival_mean_ms: f64,
-    pub activity_service_time_ms: HashMap<String, LogNormalParams>,
-    pub resource_capacity: HashMap<String, usize>,
+    pub activity_service_time_ms: std::collections::BTreeMap<String, LogNormalParams>,
+    pub resource_capacity: std::collections::BTreeMap<String, usize>,
     pub simulation_time_ms: u64,
     pub random_seed: u64,
 }
@@ -27,8 +27,8 @@ impl Default for MonteCarloConfig {
         Self {
             num_cases: 100,
             inter_arrival_mean_ms: 1000.0,
-            activity_service_time_ms: HashMap::new(),
-            resource_capacity: HashMap::new(),
+            activity_service_time_ms: std::collections::BTreeMap::new(),
+            resource_capacity: std::collections::BTreeMap::new(),
             simulation_time_ms: 60000,
             random_seed: 42,
         }
