@@ -269,8 +269,9 @@ pub fn compute_fitness(
     } else {
         trace_results.iter().map(|r| r.precision).sum::<f64>() / total_traces as f64
     };
-    let (total_produced, total_consumed, total_missing, total_remaining) =
-        trace_results.iter().fold((0u32, 0u32, 0u32, 0u32), |(p, c, m, r), x| {
+    let (total_produced, total_consumed, total_missing, total_remaining) = trace_results
+        .iter()
+        .fold((0u32, 0u32, 0u32, 0u32), |(p, c, m, r), x| {
             (
                 p + x.produced_tokens,
                 c + x.consumed_tokens,

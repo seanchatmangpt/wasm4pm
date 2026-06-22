@@ -14,9 +14,7 @@
 /// `bench_data/`. Throughput is reported as `Throughput::Elements(events)`,
 /// so criterion reports events/second. Synthetic data generation is a TPS
 /// violation in this crate (see `helpers::generate_event_log`) and is not used.
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 use std::fs;
@@ -289,11 +287,9 @@ fn bench_dfg_batch(c: &mut Criterion) {
     for ds in &datasets {
         let handle = store_log(ds.log.clone());
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(
-            BenchmarkId::new("dataset", ds.label),
-            &handle,
-            |b, h| b.iter(|| black_box(discover_dfg(black_box(h), ACTIVITY_KEY).unwrap())),
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &handle, |b, h| {
+            b.iter(|| black_box(discover_dfg(black_box(h), ACTIVITY_KEY).unwrap()))
+        });
     }
     group.finish();
 }
@@ -309,11 +305,9 @@ fn bench_dfg_streaming(c: &mut Criterion) {
 
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(
-            BenchmarkId::new("dataset", ds.label),
-            &ds.log,
-            |b, l| b.iter(|| black_box(streaming_dfg_from_log(black_box(l), ACTIVITY_KEY))),
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, l| {
+            b.iter(|| black_box(streaming_dfg_from_log(black_box(l), ACTIVITY_KEY)))
+        });
     }
     group.finish();
 }
@@ -329,11 +323,9 @@ fn bench_dfg_simd(c: &mut Criterion) {
 
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(
-            BenchmarkId::new("dataset", ds.label),
-            &ds.log,
-            |b, l| b.iter(|| black_box(simd_dfg_from_log(black_box(l), ACTIVITY_KEY))),
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, l| {
+            b.iter(|| black_box(simd_dfg_from_log(black_box(l), ACTIVITY_KEY)))
+        });
     }
     group.finish();
 }
@@ -354,20 +346,16 @@ fn bench_parity_check(c: &mut Criterion) {
 
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(
-            BenchmarkId::new("dataset", ds.label),
-            &ds.log,
-            |b, l| {
-                b.iter(|| {
-                    let batch = batch_dfg_from_log(black_box(l), ACTIVITY_KEY);
-                    let streaming = streaming_dfg_from_log(black_box(l), ACTIVITY_KEY);
-                    let batch_map = edges_to_map(&batch);
-                    let streaming_map = edges_to_map(&streaming);
-                    let _equal = batch_map.len() == streaming_map.len();
-                    black_box(batch_map.len() + streaming_map.len())
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, l| {
+            b.iter(|| {
+                let batch = batch_dfg_from_log(black_box(l), ACTIVITY_KEY);
+                let streaming = streaming_dfg_from_log(black_box(l), ACTIVITY_KEY);
+                let batch_map = edges_to_map(&batch);
+                let streaming_map = edges_to_map(&streaming);
+                let _equal = batch_map.len() == streaming_map.len();
+                black_box(batch_map.len() + streaming_map.len())
+            })
+        });
     }
     group.finish();
 }

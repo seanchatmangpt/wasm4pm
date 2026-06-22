@@ -9,9 +9,7 @@
 // cannot elide the work, and size-parameterized loops are reported with
 // `Throughput::Elements` so per-element cost is comparable across sizes.
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use wasm4pm::cache_resident::{decode_rl_state, encode_rl_state, QTable, VariantMap};
 use wasm4pm::RlState;
 

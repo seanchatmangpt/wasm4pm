@@ -202,7 +202,9 @@ fn bench_variant_complexity(c: &mut Criterion) {
         group.throughput(Throughput::Elements(ds.events as u64));
         group.bench_with_input(BenchmarkId::new("log", ds.label), &ds.handle, |b, h| {
             b.iter(|| {
-                black_box(analyze_variant_complexity(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
+                black_box(
+                    analyze_variant_complexity(black_box(h), black_box(ACTIVITY_KEY)).unwrap(),
+                )
             })
         });
     }

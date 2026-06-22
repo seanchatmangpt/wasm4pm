@@ -6,9 +6,7 @@
 //! not just synthetic activity ids. Synthetic logs are retained only for the
 //! size-parameterized throughput sweep.
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::path::Path;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};

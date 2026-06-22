@@ -126,7 +126,9 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
     // 4. Declared Types Consistency
     let declared_event_types: HashSet<&str> = ocel.event_types.iter().map(String::as_str).collect();
     for event in &ocel.events {
-        if !declared_event_types.is_empty() && !declared_event_types.contains(event.event_type.as_str()) {
+        if !declared_event_types.is_empty()
+            && !declared_event_types.contains(event.event_type.as_str())
+        {
             errors.push(format!(
                 "Event '{}' has undeclared type: '{}'",
                 event.id, event.event_type
@@ -134,9 +136,11 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
         }
     }
 
-    let declared_object_types: HashSet<&str> = ocel.object_types.iter().map(String::as_str).collect();
+    let declared_object_types: HashSet<&str> =
+        ocel.object_types.iter().map(String::as_str).collect();
     for object in &ocel.objects {
-        if !declared_object_types.is_empty() && !declared_object_types.contains(object.object_type.as_str())
+        if !declared_object_types.is_empty()
+            && !declared_object_types.contains(object.object_type.as_str())
         {
             errors.push(format!(
                 "Object '{}' has undeclared type: '{}'",

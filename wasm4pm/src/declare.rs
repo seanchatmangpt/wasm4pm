@@ -135,9 +135,8 @@ mod serde_activity_name {
     impl<'de> Deserialize<'de> for ActivityName {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
             let raw = <&str>::deserialize(d)?;
-            ActivityName::from_str(raw).ok_or_else(|| {
-                serde::de::Error::custom("ActivityName must be non-empty")
-            })
+            ActivityName::from_str(raw)
+                .ok_or_else(|| serde::de::Error::custom("ActivityName must be non-empty"))
         }
     }
 }
@@ -203,9 +202,8 @@ mod serde_support {
     impl<'de> Deserialize<'de> for Support {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
             let v = f64::deserialize(d)?;
-            Support::new(v).ok_or_else(|| {
-                serde::de::Error::custom("Support must be finite and in [0.0, 1.0]")
-            })
+            Support::new(v)
+                .ok_or_else(|| serde::de::Error::custom("Support must be finite and in [0.0, 1.0]"))
         }
     }
 }
@@ -319,7 +317,6 @@ pub enum DeclareTemplate {
     // -----------------------------------------------------------------------
     // Unary existence templates (Pesic & van der Aalst 2008 §3.1)
     // -----------------------------------------------------------------------
-
     /// `Existence(min, A)`: activity `A` must occur at least `min` times.
     ///
     /// LTL: `◇A` (for `min = 1`), generalised for larger `min`.
@@ -359,7 +356,6 @@ pub enum DeclareTemplate {
     // Binary relation templates — responded existence / response family
     // (Pesic & van der Aalst 2008 §3.2)
     // -----------------------------------------------------------------------
-
     /// `RespondedExistence(A, B)`: if `A` occurs, `B` must also occur
     /// (before or after).
     ///
@@ -387,7 +383,6 @@ pub enum DeclareTemplate {
     // -----------------------------------------------------------------------
     // Binary relation templates — precedence family
     // -----------------------------------------------------------------------
-
     /// `Precedence(A, B)`: `B` may only occur after `A` has occurred.
     ///
     /// LTL: `¬B U A` (at trace start), or equivalently `◇B ⇒ (¬B U A)`.
@@ -408,7 +403,6 @@ pub enum DeclareTemplate {
     // -----------------------------------------------------------------------
     // Binary relation templates — co-existence / succession family
     // -----------------------------------------------------------------------
-
     /// `CoExistence(A, B)`: `A` and `B` must either both occur or both be
     /// absent.
     ///
@@ -431,7 +425,6 @@ pub enum DeclareTemplate {
     // -----------------------------------------------------------------------
     // Binary negative relation templates
     // -----------------------------------------------------------------------
-
     /// `NotCoExistence(A, B)`: `A` and `B` cannot both occur in the same
     /// trace.
     ///
@@ -523,7 +516,11 @@ impl DeclareTemplate {
     #[must_use]
     #[inline]
     pub fn arity(&self) -> usize {
-        if self.is_unary() { 1 } else { 2 }
+        if self.is_unary() {
+            1
+        } else {
+            2
+        }
     }
 
     /// Attempt to construct a [`DeclareTemplate`] from its canonical string
@@ -589,9 +586,9 @@ impl fmt::Display for DeclareTemplate {
 mod serde_declare_template {
     use super::DeclareTemplate;
     use alloc::string::String;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-    use serde::de::{self, MapAccess, Visitor};
     use core::fmt;
+    use serde::de::{self, MapAccess, Visitor};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     /// Wire format:
     /// ```json
@@ -652,7 +649,9 @@ mod serde_declare_template {
                     "min" => min = Some(map.next_value()?),
                     "max" => max = Some(map.next_value()?),
                     "n" => n = Some(map.next_value()?),
-                    _ => { let _ = map.next_value::<serde::de::IgnoredAny>()?; }
+                    _ => {
+                        let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                    }
                 }
             }
 
@@ -667,15 +666,32 @@ mod serde_declare_template {
                 "ExactlyN" => Ok(DeclareTemplate::ExactlyN {
                     n: n.ok_or_else(|| de::Error::missing_field("n"))?,
                 }),
-                other => DeclareTemplate::from_canonical_name(other)
-                    .ok_or_else(|| de::Error::unknown_variant(other, &[
-                        "Existence", "Absence", "ExactlyN", "Init", "End",
-                        "RespondedExistence", "Response", "AlternateResponse",
-                        "ChainResponse", "Precedence", "AlternatePrecedence",
-                        "ChainPrecedence", "CoExistence", "Succession",
-                        "AlternateSuccession", "ChainSuccession",
-                        "NotCoExistence", "NotSuccession", "NotChainSuccession",
-                    ])),
+                other => DeclareTemplate::from_canonical_name(other).ok_or_else(|| {
+                    de::Error::unknown_variant(
+                        other,
+                        &[
+                            "Existence",
+                            "Absence",
+                            "ExactlyN",
+                            "Init",
+                            "End",
+                            "RespondedExistence",
+                            "Response",
+                            "AlternateResponse",
+                            "ChainResponse",
+                            "Precedence",
+                            "AlternatePrecedence",
+                            "ChainPrecedence",
+                            "CoExistence",
+                            "Succession",
+                            "AlternateSuccession",
+                            "ChainSuccession",
+                            "NotCoExistence",
+                            "NotSuccession",
+                            "NotChainSuccession",
+                        ],
+                    )
+                }),
             }
         }
     }
@@ -716,7 +732,7 @@ mod serde_declare_template {
 pub struct DeclareConstraint {
     /// The LTL-encoded template for this constraint.
     ///
-    /// Replaces the stringly-typed `template: String` field in the 
+    /// Replaces the stringly-typed `template: String` field in the
     /// wasm4pm model.
     pub template: DeclareTemplate,
 
@@ -758,7 +774,12 @@ impl DeclareConstraint {
         support: f64,
         confidence: f64,
     ) -> Self {
-        DeclareConstraint { template, activities, support, confidence }
+        DeclareConstraint {
+            template,
+            activities,
+            support,
+            confidence,
+        }
     }
 
     /// Return `true` if this constraint satisfies all structural invariants:
@@ -769,12 +790,9 @@ impl DeclareConstraint {
     #[must_use]
     pub fn is_well_formed(&self) -> bool {
         let arity_ok = self.activities.len() == self.template.arity();
-        let support_ok = self.support.is_finite()
-            && self.support >= 0.0
-            && self.support <= 1.0;
-        let confidence_ok = self.confidence.is_finite()
-            && self.confidence >= 0.0
-            && self.confidence <= 1.0;
+        let support_ok = self.support.is_finite() && self.support >= 0.0 && self.support <= 1.0;
+        let confidence_ok =
+            self.confidence.is_finite() && self.confidence >= 0.0 && self.confidence <= 1.0;
         arity_ok && support_ok && confidence_ok
     }
 
@@ -837,11 +855,7 @@ mod serde_declare_constraint {
         fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
             let wire = DeclareConstraintWire {
                 template: self.template.clone(),
-                activities: self
-                    .activities
-                    .iter()
-                    .map(|a| a.as_str().into())
-                    .collect(),
+                activities: self.activities.iter().map(|a| a.as_str().into()).collect(),
                 support: self.support,
                 confidence: self.confidence,
             };
@@ -856,10 +870,12 @@ mod serde_declare_constraint {
                 .activities
                 .into_iter()
                 .map(|s| {
-                    ActivityName::new(s.clone())
-                        .ok_or_else(|| serde::de::Error::custom(
-                            alloc::format!("activity name must be non-empty, got {:?}", s),
+                    ActivityName::new(s.clone()).ok_or_else(|| {
+                        serde::de::Error::custom(alloc::format!(
+                            "activity name must be non-empty, got {:?}",
+                            s
                         ))
+                    })
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(DeclareConstraint {
@@ -960,7 +976,9 @@ impl DeclareModel {
     /// invariants as defined by [`DeclareConstraint::is_well_formed`].
     #[must_use]
     pub fn is_well_formed(&self) -> bool {
-        self.constraints.iter().all(DeclareConstraint::is_well_formed)
+        self.constraints
+            .iter()
+            .all(DeclareConstraint::is_well_formed)
     }
 
     /// Iterate over all constraints whose template matches `template`.
@@ -971,9 +989,7 @@ impl DeclareModel {
         template: &DeclareTemplate,
     ) -> impl Iterator<Item = &DeclareConstraint> + '_ {
         let t = template.clone();
-        self.constraints
-            .iter()
-            .filter(move |c| c.template == t)
+        self.constraints.iter().filter(move |c| c.template == t)
     }
 
     /// Return all constraints whose support is at or above `min_support`.
@@ -1031,11 +1047,7 @@ mod serde_declare_model {
     impl serde::Serialize for DeclareModel {
         fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
             let wire = DeclareModelWire {
-                activities: self
-                    .activities
-                    .iter()
-                    .map(|a| a.as_str().into())
-                    .collect(),
+                activities: self.activities.iter().map(|a| a.as_str().into()).collect(),
                 constraints: self.constraints.clone(),
             };
             wire.serialize(s)
@@ -1225,10 +1237,7 @@ mod tests {
     fn constraint_well_formed_when_valid() {
         let c = DeclareConstraint::new(
             DeclareTemplate::Response,
-            vec![
-                ActivityName::trusted("A"),
-                ActivityName::trusted("B"),
-            ],
+            vec![ActivityName::trusted("A"), ActivityName::trusted("B")],
             0.9,
             0.95,
         );
@@ -1251,7 +1260,7 @@ mod tests {
         let c = DeclareConstraint::new(
             DeclareTemplate::Init,
             vec![ActivityName::trusted("Start")],
-            1.1,   // out of range
+            1.1, // out of range
             0.95,
         );
         assert!(!c.is_well_formed());
@@ -1261,10 +1270,7 @@ mod tests {
     fn constraint_trigger_and_target() {
         let c = DeclareConstraint::new(
             DeclareTemplate::Precedence,
-            vec![
-                ActivityName::trusted("A"),
-                ActivityName::trusted("B"),
-            ],
+            vec![ActivityName::trusted("A"), ActivityName::trusted("B")],
             0.8,
             0.9,
         );
@@ -1276,10 +1282,7 @@ mod tests {
     fn constraint_display_is_informative() {
         let c = DeclareConstraint::new(
             DeclareTemplate::ChainResponse,
-            vec![
-                ActivityName::trusted("X"),
-                ActivityName::trusted("Y"),
-            ],
+            vec![ActivityName::trusted("X"), ActivityName::trusted("Y")],
             0.75,
             0.88,
         );
@@ -1305,10 +1308,7 @@ mod tests {
         let mut m = DeclareModel::new();
         m.add_constraint(DeclareConstraint::new(
             DeclareTemplate::Response,
-            vec![
-                ActivityName::trusted("A"),
-                ActivityName::trusted("B"),
-            ],
+            vec![ActivityName::trusted("A"), ActivityName::trusted("B")],
             0.9,
             1.0,
         ));
@@ -1334,7 +1334,11 @@ mod tests {
         m.add_activity(ActivityName::trusted("A"));
         m.add_activity(ActivityName::trusted("B"));
         let names: Vec<&str> = m.activities.iter().map(|a| a.as_str()).collect();
-        assert_eq!(names, ["A", "B", "C"], "BTreeSet must iterate in sorted order");
+        assert_eq!(
+            names,
+            ["A", "B", "C"],
+            "BTreeSet must iterate in sorted order"
+        );
     }
 
     #[test]

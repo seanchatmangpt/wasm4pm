@@ -71,7 +71,12 @@ fn bench_ml_forecasting(c: &mut Criterion) {
         let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
         group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
         group.bench_with_input(BenchmarkId::from_parameter(traces), &handle, |b, h| {
-            b.iter(|| black_box(discover_ml_forecast(black_box(h), black_box("concept:name"))))
+            b.iter(|| {
+                black_box(discover_ml_forecast(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
         });
     }
     group.finish();
@@ -83,7 +88,12 @@ fn bench_ml_classification(c: &mut Criterion) {
         let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
         group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
         group.bench_with_input(BenchmarkId::from_parameter(traces), &handle, |b, h| {
-            b.iter(|| black_box(discover_ml_classify(black_box(h), black_box("concept:name"))))
+            b.iter(|| {
+                black_box(discover_ml_classify(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
         });
     }
     group.finish();
@@ -106,24 +116,22 @@ fn bench_ml_automl(c: &mut Criterion) {
     for &traces in TRACE_SIZES {
         let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
         group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
-        group.bench_with_input(
-            BenchmarkId::new("forecast", traces),
-            &handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(discover_automl_forecast(black_box(h), black_box("concept:name")))
-                })
-            },
-        );
-        group.bench_with_input(
-            BenchmarkId::new("classify", traces),
-            &handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(discover_automl_classify(black_box(h), black_box("concept:name")))
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("forecast", traces), &handle, |b, h| {
+            b.iter(|| {
+                black_box(discover_automl_forecast(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
+        });
+        group.bench_with_input(BenchmarkId::new("classify", traces), &handle, |b, h| {
+            b.iter(|| {
+                black_box(discover_automl_classify(
+                    black_box(h),
+                    black_box("concept:name"),
+                ))
+            })
+        });
     }
     group.finish();
 }

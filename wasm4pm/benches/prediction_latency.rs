@@ -13,9 +13,7 @@
 //! so the optimizer cannot elide the timed work, and size-parameterized
 //! workloads use `Throughput` so results are comparable across datasets.
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::fs;
 
@@ -56,8 +54,10 @@ fn load_real_log(label: &'static str, candidates: &[&str]) -> Option<RealLog> {
 /// in `bench_data/`); the others enrich the sweep when available.
 fn real_logs() -> Vec<RealLog> {
     let mut sets = Vec::new();
-    if let Some(ds) = load_real_log("sepsis", &["bench_data/sepsis.xes", "../bench_data/sepsis.xes"])
-    {
+    if let Some(ds) = load_real_log(
+        "sepsis",
+        &["bench_data/sepsis.xes", "../bench_data/sepsis.xes"],
+    ) {
         sets.push(ds);
     }
     if !is_fast_mode() {
@@ -133,8 +133,7 @@ fn build_bigram_model(log: &EventLog) -> HashMap<Vec<String>, Vec<(String, f64)>
 
 fn benchmark_next_activity_latency(c: &mut Criterion, ds: &RealLog) {
     let probabilities = build_bigram_model(&ds.log);
-    let test_prefixes: Vec<Vec<String>> =
-        probabilities.keys().take(100).cloned().collect();
+    let test_prefixes: Vec<Vec<String>> = probabilities.keys().take(100).cloned().collect();
 
     c.bench_with_input(
         BenchmarkId::new("prediction_next_activity/inference", ds.label),
@@ -208,7 +207,13 @@ fn benchmark_outcome_latency(c: &mut Criterion, ds: &RealLog) {
         event_counts.sort_unstable();
         event_counts[event_counts.len() / 2]
     };
-    let test_traces: Vec<usize> = ds.log.traces.iter().take(100).map(|t| t.events.len()).collect();
+    let test_traces: Vec<usize> = ds
+        .log
+        .traces
+        .iter()
+        .take(100)
+        .map(|t| t.events.len())
+        .collect();
 
     c.bench_with_input(
         BenchmarkId::new("prediction_outcome/inference", ds.label),
@@ -238,8 +243,13 @@ fn benchmark_drift_latency(c: &mut Criterion, ds: &RealLog) {
             *activity_freq.entry(act).or_insert(0) += 1;
         }
     }
-    let test_activities: Vec<Vec<String>> =
-        ds.log.traces.iter().take(100).map(trace_activities).collect();
+    let test_activities: Vec<Vec<String>> = ds
+        .log
+        .traces
+        .iter()
+        .take(100)
+        .map(trace_activities)
+        .collect();
 
     c.bench_with_input(
         BenchmarkId::new("prediction_drift/inference", ds.label),
@@ -292,7 +302,13 @@ fn benchmark_features_latency(c: &mut Criterion, ds: &RealLog) {
 // ============================================================================
 
 fn benchmark_resource_latency(c: &mut Criterion, ds: &RealLog) {
-    let test_traces: Vec<usize> = ds.log.traces.iter().take(100).map(|t| t.events.len()).collect();
+    let test_traces: Vec<usize> = ds
+        .log
+        .traces
+        .iter()
+        .take(100)
+        .map(|t| t.events.len())
+        .collect();
     let mean_trace_len: f64 =
         test_traces.iter().sum::<usize>() as f64 / test_traces.len().max(1) as f64;
 

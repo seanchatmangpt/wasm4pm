@@ -42,7 +42,11 @@ pub fn apply(
         Some(PowlNode::StrictPartialOrder(spo)) => {
             let old_order = spo.order.clone();
             let n = spo.children.len();
-            let new_children: Vec<u32> = spo.children.iter().map(|&c| apply(arena, c, label_map, dest_arena)).collect();
+            let new_children: Vec<u32> = spo
+                .children
+                .iter()
+                .map(|&c| apply(arena, c, label_map, dest_arena))
+                .collect();
 
             let spo_idx = dest_arena.add_strict_partial_order(new_children);
 
@@ -61,7 +65,11 @@ pub fn apply(
             // Treat as StrictPartialOrder for label replacement purposes
             let old_order = dg.order.clone();
             let n = dg.children.len();
-            let new_children: Vec<u32> = dg.children.iter().map(|&c| apply(arena, c, label_map, dest_arena)).collect();
+            let new_children: Vec<u32> = dg
+                .children
+                .iter()
+                .map(|&c| apply(arena, c, label_map, dest_arena))
+                .collect();
 
             let spo_idx = dest_arena.add_strict_partial_order(new_children);
 
@@ -85,7 +93,10 @@ pub fn apply(
                     ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
                     ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
                     ChoiceGraphNode::Activity(l) => {
-                        let new_label = label_map.get(l.as_str()).cloned().unwrap_or_else(|| l.clone());
+                        let new_label = label_map
+                            .get(l.as_str())
+                            .cloned()
+                            .unwrap_or_else(|| l.clone());
                         new_nodes.push(ChoiceGraphNode::Activity(new_label))
                     }
                     ChoiceGraphNode::SubModel(child) => {

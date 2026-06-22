@@ -176,13 +176,7 @@ fn bench_ngram_build_unigram(c: &mut Criterion) {
     group.throughput(Throughput::Elements(events as u64));
     group.bench_function("real_or_synth", |b| {
         // n=1 is clamped to 2 inside build_ngram; this exercises the minimum-order path
-        b.iter(|| {
-            build_ngram(
-                black_box(&log),
-                black_box(ACTIVITY_KEY),
-                black_box(1),
-            )
-        })
+        b.iter(|| build_ngram(black_box(&log), black_box(ACTIVITY_KEY), black_box(1)))
     });
     group.finish();
 }
@@ -207,13 +201,7 @@ fn bench_ngram_build_bigram(c: &mut Criterion) {
 
     group.throughput(Throughput::Elements(events as u64));
     group.bench_function("real_or_synth", |b| {
-        b.iter(|| {
-            build_ngram(
-                black_box(&log),
-                black_box(ACTIVITY_KEY),
-                black_box(2),
-            )
-        })
+        b.iter(|| build_ngram(black_box(&log), black_box(ACTIVITY_KEY), black_box(2)))
     });
     group.finish();
 }

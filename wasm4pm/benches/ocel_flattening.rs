@@ -272,7 +272,10 @@ fn bench_ocel_many_to_many(c: &mut Criterion) {
 /// so no trace cap is needed; it grounds the flattening measurement on real
 /// many-to-many object-centric structure rather than only synthetic shapes.
 fn load_real_ocel() -> OCEL {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../bench_data/ocel20_example.jsonocel");
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../bench_data/ocel20_example.jsonocel"
+    );
     let content = std::fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("bench: failed to read real OCEL {}: {}", path, e));
     serde_json::from_str(&content)
@@ -299,11 +302,18 @@ fn bench_ocel_real_log(c: &mut Criterion) {
     let object_types = ocel.object_types.clone();
     for object_type in &object_types {
         group.throughput(Throughput::Elements(total_events));
-        group.bench_with_input(BenchmarkId::new("object_type", object_type), &ocel, |b, o| {
-            b.iter(|| {
-                black_box(measure_flattening_loss(black_box(o), black_box(object_type.as_str())))
-            })
-        });
+        group.bench_with_input(
+            BenchmarkId::new("object_type", object_type),
+            &ocel,
+            |b, o| {
+                b.iter(|| {
+                    black_box(measure_flattening_loss(
+                        black_box(o),
+                        black_box(object_type.as_str()),
+                    ))
+                })
+            },
+        );
     }
     group.finish();
 }

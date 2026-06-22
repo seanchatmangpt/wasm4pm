@@ -138,23 +138,19 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
     // Size sweep at minimal parameters across all real datasets.
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.events));
-        group.bench_with_input(
-            BenchmarkId::new("p10_g5", ds.label),
-            &ds.handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(
-                        discover_genetic_algorithm(
-                            black_box(h),
-                            black_box(ACTIVITY_KEY),
-                            black_box(10),
-                            black_box(5),
-                        )
-                        .unwrap(),
+        group.bench_with_input(BenchmarkId::new("p10_g5", ds.label), &ds.handle, |b, h| {
+            b.iter(|| {
+                black_box(
+                    discover_genetic_algorithm(
+                        black_box(h),
+                        black_box(ACTIVITY_KEY),
+                        black_box(10),
+                        black_box(5),
                     )
-                })
-            },
-        );
+                    .unwrap(),
+                )
+            })
+        });
     }
     group.finish();
 }
@@ -200,23 +196,19 @@ fn bench_pso(c: &mut Criterion) {
     // Size sweep at minimal parameters across all real datasets.
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.events));
-        group.bench_with_input(
-            BenchmarkId::new("s10_i10", ds.label),
-            &ds.handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(
-                        discover_pso_algorithm(
-                            black_box(h),
-                            black_box(ACTIVITY_KEY),
-                            black_box(10),
-                            black_box(10),
-                        )
-                        .unwrap(),
+        group.bench_with_input(BenchmarkId::new("s10_i10", ds.label), &ds.handle, |b, h| {
+            b.iter(|| {
+                black_box(
+                    discover_pso_algorithm(
+                        black_box(h),
+                        black_box(ACTIVITY_KEY),
+                        black_box(10),
+                        black_box(10),
                     )
-                })
-            },
-        );
+                    .unwrap(),
+                )
+            })
+        });
     }
     group.finish();
 }
@@ -234,17 +226,11 @@ fn bench_ilp(c: &mut Criterion) {
 
     for ds in real_datasets() {
         group.throughput(Throughput::Elements(ds.events));
-        group.bench_with_input(
-            BenchmarkId::new("cases", ds.label),
-            &ds.handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(
-                        discover_ilp_petri_net(black_box(h), black_box(ACTIVITY_KEY)).unwrap(),
-                    )
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", ds.label), &ds.handle, |b, h| {
+            b.iter(|| {
+                black_box(discover_ilp_petri_net(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
+            })
+        });
     }
     group.finish();
 }

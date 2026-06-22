@@ -620,7 +620,12 @@ fn bench_edge_cases(c: &mut Criterion) {
         .map(|i| format!("act_b_{}", i))
         .collect::<HashSet<_>>();
     group.bench_function("all_different_activities", |b| {
-        b.iter(|| black_box(jaccard_distance(black_box(&all_diff_a), black_box(&all_diff_b))));
+        b.iter(|| {
+            black_box(jaccard_distance(
+                black_box(&all_diff_a),
+                black_box(&all_diff_b),
+            ))
+        });
     });
 
     group.finish();

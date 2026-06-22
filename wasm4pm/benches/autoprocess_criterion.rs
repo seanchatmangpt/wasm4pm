@@ -9,9 +9,7 @@
 //!   computation, not synthetic input, per the bench TPS rule (helpers.rs forbids
 //!   synthetic log generation).
 
-use criterion::{
-    black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
-};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::{collections::HashMap, fs, time::Duration};
 
 use wasm4pm::discovery::discover_dfg_from_log;
@@ -222,9 +220,11 @@ fn dfg_discovery_throughput(c: &mut Criterion) {
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted, |b, log| {
-            b.iter(|| black_box(discover_dfg_from_log(black_box(log), ACTIVITY_KEY)))
-        });
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &admitted,
+            |b, log| b.iter(|| black_box(discover_dfg_from_log(black_box(log), ACTIVITY_KEY))),
+        );
     }
 
     group.finish();
@@ -248,8 +248,11 @@ fn conformance_token_replay(c: &mut Criterion) {
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         let dfg = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
-        let allowed: std::collections::HashSet<(String, String)> =
-            dfg.edges.iter().map(|e| (e.from.clone(), e.to.clone())).collect();
+        let allowed: std::collections::HashSet<(String, String)> = dfg
+            .edges
+            .iter()
+            .map(|e| (e.from.clone(), e.to.clone()))
+            .collect();
         let variants: Vec<Vec<String>> = ds.log.traces.iter().map(trace_variant).collect();
 
         group.throughput(Throughput::Elements(ds.event_count));
@@ -299,7 +302,8 @@ fn variant_deduplication(c: &mut Criterion) {
             &variants,
             |b, variants| {
                 b.iter(|| {
-                    let mut distinct: std::collections::HashSet<u64> = std::collections::HashSet::new();
+                    let mut distinct: std::collections::HashSet<u64> =
+                        std::collections::HashSet::new();
                     for variant in variants.iter() {
                         // FNV-1a over the activity sequence.
                         let mut fp = 0xcbf29ce484222325u64;

@@ -255,7 +255,11 @@ fn bench_simulated_annealing(c: &mut Criterion) {
         for (temp, cooling) in [(10.0_f64, 0.90_f64), (50.0, 0.95), (100.0, 0.99)] {
             group.bench_with_input(
                 BenchmarkId::new(
-                    format!("params_temp{}_cool{}", temp as u32, (cooling * 100.0) as u32),
+                    format!(
+                        "params_temp{}_cool{}",
+                        temp as u32,
+                        (cooling * 100.0) as u32
+                    ),
                     temp as u32,
                 ),
                 &fixed_handle,
@@ -309,7 +313,8 @@ fn bench_astar(c: &mut Criterion) {
                 |b, h| {
                     b.iter(|| {
                         black_box(
-                            discover_astar(black_box(h), ACTIVITY_KEY, black_box(max_iter)).unwrap(),
+                            discover_astar(black_box(h), ACTIVITY_KEY, black_box(max_iter))
+                                .unwrap(),
                         )
                     })
                 },

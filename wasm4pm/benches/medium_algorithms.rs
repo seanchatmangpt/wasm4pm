@@ -145,7 +145,10 @@ fn datasets(max_traces: Option<usize>) -> Vec<Dataset> {
     let mut out = Vec::new();
     // Road traffic fines — 100 traces, small & fast.
     if let Some(d) = load_dataset(
-        &["bench_data/roadtraffic100traces.xes", "data/small-example.xes"],
+        &[
+            "bench_data/roadtraffic100traces.xes",
+            "data/small-example.xes",
+        ],
         "roadtraffic100",
         max_traces,
     ) {
@@ -324,9 +327,7 @@ fn bench_trace_variants(c: &mut Criterion) {
         group.throughput(Throughput::Elements(ds.events));
         group.bench_with_input(BenchmarkId::new("log", ds.label), &ds.handle, |b, h| {
             b.iter(|| {
-                black_box(
-                    analyze_trace_variants(black_box(h), black_box(ACTIVITY_KEY)).unwrap(),
-                )
+                black_box(analyze_trace_variants(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
             })
         });
     }

@@ -132,7 +132,9 @@ fn bench_protection_guard_eval(c: &mut Criterion) {
     let action = wasm4pm::RlAction::Continue;
 
     group.bench_function("evaluate_guard_branchless", |b| {
-        b.iter(|| black_box(agent.evaluate_guard(black_box(&state), black_box(action), black_box(2u8))))
+        b.iter(|| {
+            black_box(agent.evaluate_guard(black_box(&state), black_box(action), black_box(2u8)))
+        })
     });
 
     group.finish();

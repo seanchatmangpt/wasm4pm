@@ -17,10 +17,10 @@ use wasm_bindgen::prelude::*;
 /// Represents a state in the A* alignment search.
 #[derive(Clone, Debug, PartialEq)]
 struct AlignmentState {
-    trace_index: usize,              // Position in the trace (0..len)
+    trace_index: usize,               // Position in the trace (0..len)
     marking: BTreeMap<String, usize>, // Current marking of petri net
-    cost: f64,                       // Cumulative cost to reach this state
-    path: Vec<String>,               // Sequence of moves: "sync:A", "log:B", "model:C"
+    cost: f64,                        // Cumulative cost to reach this state
+    path: Vec<String>,                // Sequence of moves: "sync:A", "log:B", "model:C"
 }
 
 /// Wrapper for priority queue (min-heap by f_score).
@@ -131,7 +131,11 @@ fn compute_trace_alignment(
 
     let initial_state = AlignmentState {
         trace_index: 0,
-        marking: petri_net.initial_marking.iter().map(|(k, v)| (k.clone(), *v)).collect(),
+        marking: petri_net
+            .initial_marking
+            .iter()
+            .map(|(k, v)| (k.clone(), *v))
+            .collect(),
         cost: 0.0,
         path: Vec::new(),
     };
@@ -162,10 +166,10 @@ fn compute_trace_alignment(
         // Check if goal reached (all trace consumed and marking is a final marking)
         if state.trace_index == trace_len
             && (petri_net.final_markings.is_empty()
-                || petri_net
-                    .final_markings
-                    .iter()
-                    .any(|fm| fm.len() == state.marking.len() && fm.iter().all(|(k, v)| state.marking.get(k) == Some(v))))
+                || petri_net.final_markings.iter().any(|fm| {
+                    fm.len() == state.marking.len()
+                        && fm.iter().all(|(k, v)| state.marking.get(k) == Some(v))
+                }))
         {
             let (sync_count, log_count, model_count) = count_moves(&state.path);
             best_solution = Some((
