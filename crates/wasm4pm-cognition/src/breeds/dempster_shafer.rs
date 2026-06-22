@@ -163,7 +163,7 @@ impl CognitionBreed for DempsterShafer {
             let source_id = rule.id.clone();
             let subset = parse_subset(&rule.conclusion, &mapping);
             let mass = rule.certainty.to_string().parse::<f64>().unwrap_or(0.0);
-            let bpa = sources.entry(source_id).or_insert_with(BTreeMap::new);
+            let bpa = sources.entry(source_id).or_default();
             *bpa.entry(subset).or_default() += mass;
         }
 
