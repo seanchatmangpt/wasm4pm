@@ -51,8 +51,7 @@ pub fn streaming_conformance_add_event(
     case_id: &str,
     activity: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingConformanceChecker(c)) => {
+    get_or_init_state().with_streaming_conformance_mut(handle, |c| {
             c.add_event(case_id, activity);
 
             let (fitness, state_str) = if let Some(trace_state) = c.open_traces.get(case_id) {
@@ -109,13 +108,6 @@ pub fn streaming_conformance_add_event(
             }))
             .map_err(|e| crate::error::js_val(&e.to_string()))?;
             Ok(crate::error::js_val(&json))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingConformanceChecker",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingConformanceChecker handle not found",
-        )),
     })
 }
 
@@ -125,29 +117,20 @@ pub fn streaming_conformance_add_event(
 /// `fitness`, `deviations`.
 #[wasm_bindgen]
 pub fn streaming_conformance_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingConformanceChecker(c)) => {
-            let val = match c.close_trace(case_id) {
-                Some(result) => json!({
-                    "ok": true,
-                    "case_id": result.case_id,
-                    "is_conforming": result.is_conforming,
-                    "state": result.state,
-                    "fitness": result.fitness,
-                    "deviations": result.deviations,
-                }),
-                None => json!({ "ok": false, "reason": "case_id not open" }),
-            };
-            let json =
-                serde_json::to_string(&val).map_err(|e| crate::error::js_val(&e.to_string()))?;
-            Ok(crate::error::js_val(&json))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingConformanceChecker",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingConformanceChecker handle not found",
-        )),
+    get_or_init_state().with_streaming_conformance_mut(handle, |c| {
+        let val = match c.close_trace(case_id) {
+            Some(result) => json!({
+                "ok": true,
+                "case_id": result.case_id,
+                "is_conforming": result.is_conforming,
+                "state": result.state,
+                "fitness": result.fitness,
+                "deviations": result.deviations,
+            }),
+            None => json!({ "ok": false, "reason": "case_id not open" }),
+        };
+        let json = serde_json::to_string(&val).map_err(|e| crate::error::js_val(&e.to_string()))?;
+        Ok(crate::error::js_val(&json))
     })
 }
 
@@ -157,31 +140,23 @@ pub fn streaming_conformance_close_trace(handle: &str, case_id: &str) -> Result<
 /// `conforming_traces`, `deviating_traces`, `avg_fitness`.
 #[wasm_bindgen]
 pub fn streaming_conformance_stats(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::StreamingConformanceChecker(c)) => {
-            let conforming = c.results.iter().filter(|r| r.is_conforming).count();
-            let avg_fitness = if c.results.is_empty() {
-                1.0_f64
-            } else {
-                c.results.iter().map(|r| r.fitness).sum::<f64>() / c.results.len() as f64
-            };
-            let json = serde_json::to_string(&json!({
-                "event_count": c.event_count,
-                "closed_traces": c.results.len(),
-                "open_traces": c.open_traces.len(),
-                "conforming_traces": conforming,
-                "deviating_traces": c.results.len() - conforming,
-                "avg_fitness": avg_fitness,
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))?;
-            Ok(crate::error::js_val(&json))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingConformanceChecker",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingConformanceChecker handle not found",
-        )),
+    get_or_init_state().with_streaming_conformance_mut(handle, |c| {
+        let conforming = c.results.iter().filter(|r| r.is_conforming).count();
+        let avg_fitness = if c.results.is_empty() {
+            1.0_f64
+        } else {
+            c.results.iter().map(|r| r.fitness).sum::<f64>() / c.results.len() as f64
+        };
+        let json = serde_json::to_string(&json!({
+            "event_count": c.event_count,
+            "closed_traces": c.results.len(),
+            "open_traces": c.open_traces.len(),
+            "conforming_traces": conforming,
+            "deviating_traces": c.results.len() - conforming,
+            "avg_fitness": avg_fitness,
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))?;
+        Ok(crate::error::js_val(&json))
     })
 }
 
