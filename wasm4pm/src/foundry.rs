@@ -828,7 +828,7 @@ fn order_flattened_trace() -> Vec<(String, String, DateTime<FixedOffset>)> {
         .filter(|e| e.relationships.iter().any(|r| r.object_id == "order-1"))
         .map(|e| (e.id.clone(), e.event_type.clone(), e.time))
         .collect();
-    rows.sort_by(|a, b| a.2.cmp(&b.2).then_with(|| a.0.cmp(&b.0)));
+    rows.sort_by_key(|x| (x.2, x.0.clone()));
     rows
 }
 
