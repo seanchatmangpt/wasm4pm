@@ -14,9 +14,9 @@ use wasm_bindgen::prelude::*;
 
 /// Pure-Rust handover network discovery without wasm-bindgen. Used by integration tests.
 pub fn discover_handover_network_from_log(log: &EventLog, resource_key: &str) -> String {
-    let mut handovers: std::collections::HashMap<(String, String), usize> =
-        std::collections::HashMap::new();
-    let mut workload: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut handovers: std::collections::BTreeMap<(String, String), usize> =
+        std::collections::BTreeMap::new();
+    let mut workload: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
 
     for trace in &log.traces {
         let resources: Vec<Option<String>> = trace
@@ -76,8 +76,8 @@ pub fn discover_handover_network(log_handle: &str, resource_key: &str) -> Result
 
 /// Pure-Rust working-together network discovery without wasm-bindgen. Used by integration tests.
 pub fn discover_working_together_network_from_log(log: &EventLog, resource_key: &str) -> String {
-    let mut co_occur: std::collections::HashMap<(String, String), usize> =
-        std::collections::HashMap::new();
+    let mut co_occur: std::collections::BTreeMap<(String, String), usize> =
+        std::collections::BTreeMap::new();
     let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
@@ -148,8 +148,8 @@ pub fn compute_network_metrics(log_handle: &str, resource_key: &str) -> Result<J
     })?;
 
     // Build network from handover relationships
-    let mut handovers: std::collections::HashMap<(String, String), usize> =
-        std::collections::HashMap::new();
+    let mut handovers: std::collections::BTreeMap<(String, String), usize> =
+        std::collections::BTreeMap::new();
     let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
@@ -226,8 +226,8 @@ pub fn compute_clustering_coefficient(
     })?;
 
     // Build network from working-together relationships
-    let mut co_occur: std::collections::HashMap<(String, String), usize> =
-        std::collections::HashMap::new();
+    let mut co_occur: std::collections::BTreeMap<(String, String), usize> =
+        std::collections::BTreeMap::new();
     let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
@@ -297,8 +297,8 @@ pub fn detect_communities(log_handle: &str, resource_key: &str) -> Result<JsValu
     })?;
 
     // Build network from working-together relationships
-    let mut co_occur: std::collections::HashMap<(String, String), usize> =
-        std::collections::HashMap::new();
+    let mut co_occur: std::collections::BTreeMap<(String, String), usize> =
+        std::collections::BTreeMap::new();
     let mut all_resources: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
