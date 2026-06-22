@@ -308,11 +308,11 @@ impl SocialNetwork {
         }
 
         // Relabel communities to be contiguous (0, 1, 2, ...)
-        let mut mapping: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+        let mut mapping: std::collections::BTreeMap<usize, usize> = std::collections::BTreeMap::new();
         let mut next_label = 0;
         for node in &self.nodes {
             let old_label = communities[&node.id];
-            if let std::collections::hash_map::Entry::Vacant(e) = mapping.entry(old_label) {
+            if let std::collections::btree_map::Entry::Vacant(e) = mapping.entry(old_label) {
                 e.insert(next_label);
                 next_label += 1;
             }
