@@ -122,7 +122,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
     let mut transitions: Vec<TransitionData> = Vec::new();
     let mut raw_arcs: Vec<ArcData> = Vec::new();
     let mut initial_marking: BTreeMap<String, usize> = BTreeMap::new();
-    let mut final_markings: Vec<HashMap<String, usize>> = Vec::new();
+    let mut final_markings: Vec<std::collections::BTreeMap<String, usize>> = Vec::new();
 
     // Scratch vars used while building the current element
     let mut cur_place_id = String::new();
@@ -143,7 +143,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
     // For marking contexts
     let mut cur_marking_idref = String::new();
     let mut cur_im_place_idref = String::new();
-    let mut cur_fm_marking: HashMap<String, usize> = HashMap::new();
+    let mut cur_fm_marking = std::collections::BTreeMap::new();
     let mut cur_fm_place_idref = String::new();
 
     // Track whether we've seen a <net> element at all
@@ -245,7 +245,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
                         state = ParseState::FinalMarkings;
                     }
                     (ParseState::FinalMarkings, "marking") => {
-                        cur_fm_marking = HashMap::new();
+                        cur_fm_marking = std::collections::BTreeMap::new();
                         state = ParseState::FinalMarkingsMarking;
                     }
                     (ParseState::FinalMarkingsMarking, "place") => {

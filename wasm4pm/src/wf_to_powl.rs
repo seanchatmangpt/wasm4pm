@@ -795,7 +795,7 @@ fn project_part(net: &WorkNet, part: &BTreeSet<usize>) -> PetriNet {
 
     let mut initial_marking = std::collections::BTreeMap::new();
     initial_marking.insert(ps_id.clone(), 1usize);
-    let mut final_mark = std::collections::HashMap::new();
+    let mut final_mark = std::collections::BTreeMap::new();
     final_mark.insert(pe_id.clone(), 1usize);
 
     let raw = PetriNet {
@@ -868,7 +868,7 @@ fn normalize(mut net: PetriNet, ps_id: &str, pe_id: &str) -> PetriNet {
             to: new_sink.clone(),
             weight: Some(1),
         });
-        let mut fm = std::collections::HashMap::new();
+        let mut fm = std::collections::BTreeMap::new();
         fm.insert(new_sink, 1usize);
         net.final_markings = vec![fm];
     }

@@ -27,7 +27,7 @@ use wasm_bindgen::prelude::*;
 // ---------------------------------------------------------------------------
 
 /// A marking maps place IDs to token counts (usize to match models::PetriNet).
-pub type Marking = HashMap<String, usize>;
+pub type Marking = std::collections::BTreeMap<String, usize>;
 
 // ---------------------------------------------------------------------------
 // Result types

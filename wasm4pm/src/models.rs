@@ -929,7 +929,7 @@ pub struct PetriNet {
     /// Initial marking mapping place ID to token count.
     pub initial_marking: BTreeMap<String, usize>,
     /// List of accepting final markings (place ID to token count).
-    pub final_markings: Vec<HashMap<String, usize>>,
+    pub final_markings: Vec<BTreeMap<String, usize>>,
 }
 
 impl PetriNet {
