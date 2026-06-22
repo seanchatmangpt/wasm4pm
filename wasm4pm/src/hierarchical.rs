@@ -101,7 +101,7 @@ impl Chunkable for DfgChunker {
 
             // Node frequencies
             for &id in ids {
-                *result.node_freqs.entry(id).or_insert(0) += 1;
+                *result.node_freqs.entry(id).or_default() += 1;
             }
 
             // Directly-follows edges
@@ -109,12 +109,12 @@ impl Chunkable for DfgChunker {
                 *result
                     .edge_counts
                     .entry((window[0], window[1]))
-                    .or_insert(0) += 1;
+                    .or_default() += 1;
             }
 
             // Start / end
-            *result.start_counts.entry(trace.start_id).or_insert(0) += 1;
-            *result.end_counts.entry(trace.end_id).or_insert(0) += 1;
+            *result.start_counts.entry(trace.start_id).or_default() += 1;
+            *result.end_counts.entry(trace.end_id).or_default() += 1;
         }
 
         result
@@ -125,16 +125,16 @@ impl Chunkable for DfgChunker {
             .into_iter()
             .reduce(|mut acc, m| {
                 for (k, v) in m.edge_counts {
-                    *acc.edge_counts.entry(k).or_insert(0) += v;
+                    *acc.edge_counts.entry(k).or_default() += v;
                 }
                 for (k, v) in m.node_freqs {
-                    *acc.node_freqs.entry(k).or_insert(0) += v;
+                    *acc.node_freqs.entry(k).or_default() += v;
                 }
                 for (k, v) in m.start_counts {
-                    *acc.start_counts.entry(k).or_insert(0) += v;
+                    *acc.start_counts.entry(k).or_default() += v;
                 }
                 for (k, v) in m.end_counts {
-                    *acc.end_counts.entry(k).or_insert(0) += v;
+                    *acc.end_counts.entry(k).or_default() += v;
                 }
                 acc
             })

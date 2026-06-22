@@ -66,10 +66,10 @@ pub fn analyze_takt_time(repo_path: &str, days: usize) -> Result<TaktTimeMetrics
         }
 
         let date_str = commit_date.format("%Y-%m-%d").to_string();
-        *commits_by_date.entry(date_str).or_insert(0) += 1;
+        *commits_by_date.entry(date_str).or_default() += 1;
 
         let hour = commit_date.hour();
-        *commits_by_hour.entry(hour).or_insert(0) += 1;
+        *commits_by_hour.entry(hour).or_default() += 1;
 
         commit_times.push(commit_date);
         total_commits += 1;

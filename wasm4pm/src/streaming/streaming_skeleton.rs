@@ -117,7 +117,7 @@ impl StreamingSkeletonBuilder {
         // Count edges from closed traces
         for trace in self.open_traces.values() {
             for pair in trace.windows(2) {
-                *edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
+                *edge_counts.entry((pair[0], pair[1])).or_default() += 1;
             }
         }
 

@@ -27,7 +27,7 @@ pub fn smote(
 
     for &label in y.iter() {
         let label_bits = label.to_bits();
-        *class_counts.entry(label_bits).or_insert(0) += 1;
+        *class_counts.entry(label_bits).or_default() += 1;
     }
 
     // Find minority class (smallest count)
@@ -172,7 +172,7 @@ pub fn random_oversample(
 
     for &label in y.iter() {
         let label_bits = label.to_bits();
-        *class_counts.entry(label_bits).or_insert(0) += 1;
+        *class_counts.entry(label_bits).or_default() += 1;
     }
 
     // Find minority class (smallest count)

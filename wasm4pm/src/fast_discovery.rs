@@ -148,10 +148,10 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DF
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
         for i in start..end {
-            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            *node_freq.entry(col.events[i]).or_default() += 1;
             if i + 1 < end {
                 let edge = (col.events[i], col.events[i + 1]);
-                *edge_freq.entry(edge).or_insert(0) += 1;
+                *edge_freq.entry(edge).or_default() += 1;
                 current_edges.insert(edge);
             }
         }
@@ -321,7 +321,7 @@ pub fn analyze_trace_variants(
                         path.push(activity.clone());
                     }
                 }
-                *variants.entry(path).or_insert(0) += 1;
+                *variants.entry(path).or_default() += 1;
             }
 
             let mut variant_list: Vec<(Vec<String>, usize)> = variants.into_iter().collect();
@@ -377,7 +377,7 @@ pub fn mine_sequential_patterns(
                     .collect();
 
                 for window in activities.windows(pattern_length) {
-                    *patterns.entry(window.to_vec()).or_insert(0) += 1;
+                    *patterns.entry(window.to_vec()).or_default() += 1;
                 }
             }
 
@@ -656,7 +656,7 @@ pub fn analyze_start_end_activities(
                     if let Some(AttributeValue::String(first)) =
                         trace.events[0].attributes.get(activity_key)
                     {
-                        *start_acts.entry(first.clone()).or_insert(0) += 1;
+                        *start_acts.entry(first.clone()).or_default() += 1;
                     }
 
                     if let Some(AttributeValue::String(last)) =
@@ -664,7 +664,7 @@ pub fn analyze_start_end_activities(
                             .attributes
                             .get(activity_key)
                     {
-                        *end_acts.entry(last.clone()).or_insert(0) += 1;
+                        *end_acts.entry(last.clone()).or_default() += 1;
                     }
 
                     if trace.events.len() >= 2 {
@@ -679,7 +679,7 @@ pub fn analyze_start_end_activities(
                         ) {
                             *start_end_pairs
                                 .entry((first.clone(), last.clone()))
-                                .or_insert(0) += 1;
+                                .or_default() += 1;
                         }
                     }
                 }
@@ -734,7 +734,7 @@ pub fn analyze_activity_cooccurrence(
                         } else {
                             (activities[j].clone(), activities[i].clone())
                         };
-                        *cooccurrence.entry(pair).or_insert(0) += 1;
+                        *cooccurrence.entry(pair).or_default() += 1;
                     }
                 }
             }

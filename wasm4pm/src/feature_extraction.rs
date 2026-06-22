@@ -486,7 +486,7 @@ fn count_activities(trace: &Trace, activity_key: &str) -> HashMap<String, usize>
             .get(activity_key)
             .and_then(|v| v.as_string())
         {
-            *counts.entry(activity.to_string()).or_insert(0) += 1;
+            *counts.entry(activity.to_string()).or_default() += 1;
         }
     }
     counts
@@ -501,7 +501,7 @@ fn count_activities_in_events(events: &[Event], activity_key: &str) -> HashMap<S
             .get(activity_key)
             .and_then(|v| v.as_string())
         {
-            *counts.entry(activity.to_string()).or_insert(0) += 1;
+            *counts.entry(activity.to_string()).or_default() += 1;
         }
     }
     counts

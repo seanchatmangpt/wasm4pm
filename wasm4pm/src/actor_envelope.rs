@@ -158,7 +158,7 @@ pub fn build_actor_envelope(
                     .or_insert_with(ActorAccumulator::new);
 
                 // Action count
-                *acc.action_counts.entry(action).or_insert(0) += 1;
+                *acc.action_counts.entry(action).or_default() += 1;
                 acc.total_events += 1;
 
                 // Hour-of-day from timestamp

@@ -122,7 +122,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
         let mut activity_counts: FxHashMap<String, usize> = FxHashMap::default();
         for events in events_by_object.values() {
             for (_, event_type, _) in events {
-                *activity_counts.entry(event_type.to_string()).or_insert(0) += 1;
+                *activity_counts.entry(event_type.to_string()).or_default() += 1;
             }
         }
 
@@ -144,10 +144,10 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
             if events.is_empty() {
                 continue;
             }
-            *start_acts.entry(events[0].1.to_string()).or_insert(0) += 1;
+            *start_acts.entry(events[0].1.to_string()).or_default() += 1;
             *end_acts
                 .entry(events[events.len() - 1].1.to_string())
-                .or_insert(0) += 1;
+                .or_default() += 1;
 
             for pair in events.windows(2) {
                 let from = pair[0].1;

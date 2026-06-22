@@ -59,7 +59,7 @@ pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: 
         for window in trace_activities.windows(2) {
             let from = &window[0];
             let to = &window[1];
-            *df_counts.entry((from.clone(), to.clone())).or_insert(0) += 1;
+            *df_counts.entry((from.clone(), to.clone())).or_default() += 1;
         }
     }
 

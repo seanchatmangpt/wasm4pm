@@ -191,11 +191,11 @@ impl StreamingAlgorithm for StreamingDeclareBuilder {
                 let a = events[i];
                 let b = events[j];
                 // Response[a,b]: a appears before b in this trace
-                *self.response_counts.entry((a, b)).or_insert(0) += 1;
+                *self.response_counts.entry((a, b)).or_default() += 1;
                 // Precedence[a,b]: a before b (subset of response)
-                *self.precedence_counts.entry((a, b)).or_insert(0) += 1;
+                *self.precedence_counts.entry((a, b)).or_default() += 1;
                 // Co-existence[a,b] and Co-existence[b,a]
-                *self.coexistence_counts.entry((a, b)).or_insert(0) += 1;
+                *self.coexistence_counts.entry((a, b)).or_default() += 1;
             }
         }
 

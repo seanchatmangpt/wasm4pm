@@ -297,12 +297,12 @@ pub fn build_transition_graph<T: std::hash::Hash + Eq + Clone + std::fmt::Displa
         for state in seq {
             let state_str = state.to_string();
             states_set.insert(state_str.clone());
-            *state_totals.entry(state_str.clone()).or_insert(0) += 1;
+            *state_totals.entry(state_str.clone()).or_default() += 1;
 
             if let Some(prev) = prev_state {
                 *edge_counts
                     .entry((prev.clone(), state_str.clone()))
-                    .or_insert(0) += 1;
+                    .or_default() += 1;
             }
             prev_state = Some(state_str);
         }
@@ -395,7 +395,7 @@ pub fn extract_prefix_features<T: std::hash::Hash + Eq + Clone + std::fmt::Displ
 
     let mut item_freq: HashMap<String, usize> = HashMap::new();
     for item in prefix {
-        *item_freq.entry(item.to_string()).or_insert(0) += 1;
+        *item_freq.entry(item.to_string()).or_default() += 1;
     }
     let unique_items = item_freq.len();
 

@@ -55,20 +55,20 @@ impl OCDFG {
                         .collect();
 
                     if let Some(first) = activities.first() {
-                        *start_acts.entry(first.clone()).or_insert(0) += 1;
+                        *start_acts.entry(first.clone()).or_default() += 1;
                     }
                     if let Some(last) = activities.last() {
-                        *end_acts.entry(last.clone()).or_insert(0) += 1;
+                        *end_acts.entry(last.clone()).or_default() += 1;
                     }
 
                     for act in &activities {
-                        *activity_freq.entry(act.clone()).or_insert(0) += 1;
+                        *activity_freq.entry(act.clone()).or_default() += 1;
                     }
 
                     for pair in activities.windows(2) {
                         *edge_freq
                             .entry((pair[0].clone(), pair[1].clone()))
-                            .or_insert(0) += 1;
+                            .or_default() += 1;
                     }
                 }
             }

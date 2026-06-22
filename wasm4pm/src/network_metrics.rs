@@ -33,8 +33,8 @@ impl SocialNetwork {
 
         let mut degrees: HashMap<String, usize> = HashMap::new();
         for edge in &self.edges {
-            *degrees.entry(edge.from.clone()).or_insert(0) += 1;
-            *degrees.entry(edge.to.clone()).or_insert(0) += 1;
+            *degrees.entry(edge.from.clone()).or_default() += 1;
+            *degrees.entry(edge.to.clone()).or_default() += 1;
         }
 
         let mut centrality = HashMap::new();

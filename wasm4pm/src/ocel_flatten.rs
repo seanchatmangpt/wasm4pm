@@ -251,7 +251,7 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
             .filter(|oid| target_objects.iter().any(|o| o.id == *oid))
             .count();
         if refs > 0 {
-            *event_ref_count.entry(&event.id).or_insert(0) += refs;
+            *event_ref_count.entry(&event.id).or_default() += refs;
         }
     }
 

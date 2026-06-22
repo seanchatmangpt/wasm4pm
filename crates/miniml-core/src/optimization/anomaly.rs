@@ -178,7 +178,7 @@ pub fn build_transition_model<T: std::hash::Hash + Eq + Clone>(
         }
 
         for w in seq.windows(2) {
-            *freq.entry((w[0].clone(), w[1].clone())).or_insert(0) += 1;
+            *freq.entry((w[0].clone(), w[1].clone())).or_default() += 1;
             total += 1;
         }
     }

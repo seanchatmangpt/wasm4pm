@@ -335,11 +335,11 @@ mod tests {
         let mut node_counts: HashMap<String, usize> = HashMap::new();
         for trace in traces {
             for &act in trace {
-                *node_counts.entry(act.to_string()).or_insert(0) += 1;
+                *node_counts.entry(act.to_string()).or_default() += 1;
             }
             for window in trace.windows(2) {
                 let key = (window[0].to_string(), window[1].to_string());
-                *edge_counts.entry(key).or_insert(0) += 1;
+                *edge_counts.entry(key).or_default() += 1;
             }
         }
         (edge_counts, node_counts)

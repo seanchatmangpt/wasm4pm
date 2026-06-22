@@ -110,7 +110,7 @@ fn fire(marking: &mut Marking, pre: &[String], post: &[String]) {
         *entry = entry.saturating_sub(1);
     }
     for p in post {
-        *marking.entry(p.clone()).or_insert(0) += 1;
+        *marking.entry(p.clone()).or_default() += 1;
     }
 }
 
@@ -210,7 +210,7 @@ fn precision_for_trace(
             for p in &preset(net, first) {
                 let have = marking.get(p).copied().unwrap_or(0);
                 if have == 0 {
-                    *marking.entry(p.clone()).or_insert(0) += 1;
+                    *marking.entry(p.clone()).or_default() += 1;
                 }
             }
             first.clone()

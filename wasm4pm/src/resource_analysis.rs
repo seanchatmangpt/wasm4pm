@@ -86,7 +86,7 @@ pub fn analyze_resource_utilization(
                                         .entry(resource.to_string())
                                         .or_default()
                                         .entry(activity.to_string())
-                                        .or_insert(0) += 1;
+                                        .or_default() += 1;
                                 }
                             }
                         }
@@ -210,8 +210,8 @@ pub fn analyze_resource_activity_matrix(
                             .and_then(|v| v.as_string())
                         {
                             let res_entry = matrix.entry(resource.to_string()).or_default();
-                            *res_entry.entry(activity.to_string()).or_insert(0) += 1;
-                            *resource_totals.entry(resource.to_string()).or_insert(0) += 1;
+                            *res_entry.entry(activity.to_string()).or_default() += 1;
+                            *resource_totals.entry(resource.to_string()).or_default() += 1;
                         }
                     }
                 }

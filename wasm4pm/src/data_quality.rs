@@ -45,10 +45,10 @@ pub fn check_data_quality(
                 for (idx, event) in trace.events.iter().enumerate() {
                     // Check for missing values
                     if !event.attributes.contains_key(activity_key) {
-                        *missing_attrs.entry(activity_key.to_string()).or_insert(0) += 1;
+                        *missing_attrs.entry(activity_key.to_string()).or_default() += 1;
                     }
                     if !event.attributes.contains_key(timestamp_key) {
-                        *missing_attrs.entry(timestamp_key.to_string()).or_insert(0) += 1;
+                        *missing_attrs.entry(timestamp_key.to_string()).or_default() += 1;
                     }
 
                     // Validate and parse timestamp
@@ -98,7 +98,7 @@ pub fn check_data_quality(
                         format!("{:?}", sorted_attrs),
                     );
 
-                    *event_signatures.entry(sig).or_insert(0) += 1;
+                    *event_signatures.entry(sig).or_default() += 1;
                 }
 
                 // Report duplicates
@@ -306,13 +306,13 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
             // Event type distribution
             let mut event_types: HashMap<String, usize> = HashMap::new();
             for event in &ocel.events {
-                *event_types.entry(event.event_type.clone()).or_insert(0) += 1;
+                *event_types.entry(event.event_type.clone()).or_default() += 1;
             }
 
             // Object type distribution
             let mut object_types: HashMap<String, usize> = HashMap::new();
             for object in &ocel.objects {
-                *object_types.entry(object.object_type.clone()).or_insert(0) += 1;
+                *object_types.entry(object.object_type.clone()).or_default() += 1;
             }
 
             // Relationship patterns (source_type -> target_type counts)
@@ -331,7 +331,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
                     .map(|o| o.object_type.clone());
 
                 if let (Some(st), Some(tt)) = (source_type, target_type) {
-                    *relationships.entry((st, tt)).or_insert(0) += 1;
+                    *relationships.entry((st, tt)).or_default() += 1;
                 }
             }
 
@@ -353,7 +353,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
             let mut qualifiers: HashMap<String, usize> = HashMap::new();
             for event in &ocel.events {
                 for obj_ref in &event.object_refs {
-                    *qualifiers.entry(obj_ref.qualifier.clone()).or_insert(0) += 1;
+                    *qualifiers.entry(obj_ref.qualifier.clone()).or_default() += 1;
                 }
             }
 

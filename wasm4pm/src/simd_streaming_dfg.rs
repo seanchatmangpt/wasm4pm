@@ -282,32 +282,32 @@ impl SimdStreamingDfg {
             *self
                 .edge_counts
                 .entry((trace[i], trace[i + 1]))
-                .or_insert(0) += 1;
+                .or_default() += 1;
             *self
                 .edge_counts
                 .entry((trace[i + 1], trace[i + 2]))
-                .or_insert(0) += 1;
+                .or_default() += 1;
             *self
                 .edge_counts
                 .entry((trace[i + 2], trace[i + 3]))
-                .or_insert(0) += 1;
+                .or_default() += 1;
             *self
                 .edge_counts
                 .entry((trace[i + 3], trace[i + 4]))
-                .or_insert(0) += 1;
+                .or_default() += 1;
             i += 4;
         }
         while i < end {
             *self
                 .edge_counts
                 .entry((trace[i], trace[i + 1]))
-                .or_insert(0) += 1;
+                .or_default() += 1;
             i += 1;
         }
 
         // Start / end activities
-        *self.start_counts.entry(trace[0]).or_insert(0) += 1;
-        *self.end_counts.entry(trace[trace.len() - 1]).or_insert(0) += 1;
+        *self.start_counts.entry(trace[0]).or_default() += 1;
+        *self.end_counts.entry(trace[trace.len() - 1]).or_default() += 1;
     }
 
     /// Process a full columnar log (flat events array + trace offsets).
@@ -427,15 +427,15 @@ impl SimdStreamingDfg {
 
         // Merge edge counts
         for (&key, &count) in &other.edge_counts {
-            *self.edge_counts.entry(key).or_insert(0) += count;
+            *self.edge_counts.entry(key).or_default() += count;
         }
 
         // Merge start/end counts
         for (&id, &count) in &other.start_counts {
-            *self.start_counts.entry(id).or_insert(0) += count;
+            *self.start_counts.entry(id).or_default() += count;
         }
         for (&id, &count) in &other.end_counts {
-            *self.end_counts.entry(id).or_insert(0) += count;
+            *self.end_counts.entry(id).or_default() += count;
         }
 
         self.trace_count += other.trace_count;
@@ -676,14 +676,14 @@ mod tests {
                 dfg.nodes[id as usize].frequency += 1;
             }
             for i in 0..trace.len().saturating_sub(1) {
-                *edge_counts.entry((trace[i], trace[i + 1])).or_insert(0) += 1;
+                *edge_counts.entry((trace[i], trace[i + 1])).or_default() += 1;
             }
             *dfg.start_activities
                 .entry(vocab[trace[0] as usize].to_owned())
-                .or_insert(0) += 1;
+                .or_default() += 1;
             *dfg.end_activities
                 .entry(vocab[trace[trace.len() - 1] as usize].to_owned())
-                .or_insert(0) += 1;
+                .or_default() += 1;
         }
 
         dfg.edges

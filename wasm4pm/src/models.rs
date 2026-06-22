@@ -652,7 +652,7 @@ impl EventLog {
             for i in start..end.saturating_sub(1) {
                 *counts
                     .entry((col.events[i], col.events[i + 1]))
-                    .or_insert(0) += 1;
+                    .or_default() += 1;
             }
         }
         counts

@@ -177,7 +177,7 @@ pub fn filter_by_variant_coverage(
                     .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                     .map(str::to_owned)
                     .collect();
-                *variant_counts.entry(variant).or_insert(0) += 1;
+                *variant_counts.entry(variant).or_default() += 1;
             }
 
             // Sort variants descending by count
@@ -246,7 +246,7 @@ pub fn filter_by_variants_top_k(
                     .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                     .map(str::to_owned)
                     .collect();
-                *variant_counts.entry(variant).or_insert(0) += 1;
+                *variant_counts.entry(variant).or_default() += 1;
             }
 
             // Sort variants descending by count and keep top k

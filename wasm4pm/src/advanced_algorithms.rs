@@ -44,14 +44,14 @@ pub fn discover_heuristic_miner_from_log(
         }
         for i in start..end - 1 {
             let (a, b) = (col.events[i], col.events[i + 1]);
-            *follows.entry((a, b)).or_insert(0) += 1;
+            *follows.entry((a, b)).or_default() += 1;
         }
         *dfg.start_activities
             .entry(col.vocab[col.events[start] as usize].to_owned())
-            .or_insert(0) += 1;
+            .or_default() += 1;
         *dfg.end_activities
             .entry(col.vocab[col.events[end - 1] as usize].to_owned())
-            .or_insert(0) += 1;
+            .or_default() += 1;
     }
 
     for (&(a, b), &count) in &follows {
@@ -291,7 +291,7 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
                     .windows(2)
                     .filter(|w| w[0] == w[1])
                     .inspect(|w| {
-                        *rework_stats.entry(w[0].to_owned()).or_insert(0) += 1;
+                        *rework_stats.entry(w[0].to_owned()).or_default() += 1;
                     })
                     .count();
 

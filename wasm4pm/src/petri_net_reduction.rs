@@ -416,7 +416,7 @@ fn count_identical_place_groups(net: &PetriNet) -> usize {
         let mut post = postset_transitions(net, &place.id);
         pre.sort();
         post.sort();
-        *sig_map.entry((pre, post)).or_insert(0) += 1;
+        *sig_map.entry((pre, post)).or_default() += 1;
     }
     // Count redundant places in groups larger than 1.
     sig_map.values().filter(|&&c| c > 1).map(|&c| c - 1).sum()

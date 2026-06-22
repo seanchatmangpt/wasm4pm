@@ -584,7 +584,7 @@ pub fn discover_dfg_filtered_from_log<W>(
             .and_then(|e| e.attributes.get(activity_key))
             .and_then(|v| v.as_string())
         {
-            *dfg.start_activities.entry(act.to_owned()).or_insert(0) += 1;
+            *dfg.start_activities.entry(act.to_owned()).or_default() += 1;
         }
         if let Some(act) = trace
             .events
@@ -592,7 +592,7 @@ pub fn discover_dfg_filtered_from_log<W>(
             .and_then(|e| e.attributes.get(activity_key))
             .and_then(|v| v.as_string())
         {
-            *dfg.end_activities.entry(act.to_owned()).or_insert(0) += 1;
+            *dfg.end_activities.entry(act.to_owned()).or_default() += 1;
         }
     }
 

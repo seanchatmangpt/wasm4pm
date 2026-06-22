@@ -52,7 +52,7 @@ fn fire(marking: &mut Marking, pre: &[String], post: &[String]) {
         *marking.entry(p.clone()).or_insert(0) -= 1;
     }
     for p in post {
-        *marking.entry(p.clone()).or_insert(0) += 1;
+        *marking.entry(p.clone()).or_default() += 1;
     }
 }
 

@@ -107,7 +107,7 @@ impl CognitionBreed for OcpmRouteDiscoverer {
             };
             for window in route.windows(2) {
                 let edge_key = format!("dfg:{}:{}->{}", obj_type, window[0], window[1]);
-                *dfg_edges.entry(edge_key).or_insert(0) += 1;
+                *dfg_edges.entry(edge_key).or_default() += 1;
             }
         }
         for (edge_key, count) in &dfg_edges {

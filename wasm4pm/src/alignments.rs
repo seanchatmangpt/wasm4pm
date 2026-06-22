@@ -102,7 +102,7 @@ fn fire_transition(
     for arc in &petri_net.arcs {
         if arc.from == transition_id {
             let weight = arc.weight.unwrap_or(1);
-            *new_marking.entry(arc.to.clone()).or_insert(0) += weight;
+            *new_marking.entry(arc.to.clone()).or_default() += weight;
         }
     }
 

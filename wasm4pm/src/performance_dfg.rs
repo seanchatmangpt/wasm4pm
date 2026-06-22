@@ -60,12 +60,12 @@ pub fn discover_performance_dfg_from_log(
         }
 
         for (act, _) in &pairs {
-            *node_freq.entry(act.clone()).or_insert(0) += 1;
+            *node_freq.entry(act.clone()).or_default() += 1;
         }
-        *start_acts.entry(pairs[0].0.clone()).or_insert(0) += 1;
+        *start_acts.entry(pairs[0].0.clone()).or_default() += 1;
         *end_acts
             .entry(pairs[pairs.len() - 1].0.clone())
-            .or_insert(0) += 1;
+            .or_default() += 1;
 
         for w in pairs.windows(2) {
             let key = (w[0].0.clone(), w[1].0.clone());

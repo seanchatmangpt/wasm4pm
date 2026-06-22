@@ -31,13 +31,13 @@ pub fn discover_handover_network_from_log(log: &EventLog, resource_key: &str) ->
             .collect();
 
         for (r, _) in resources.iter().filter_map(|r| r.as_ref().map(|x| (x, ()))) {
-            *workload.entry(r.clone()).or_insert(0) += 1;
+            *workload.entry(r.clone()).or_default() += 1;
         }
 
         for i in 0..resources.len().saturating_sub(1) {
             if let (Some(r1), Some(r2)) = (&resources[i], &resources[i + 1]) {
                 if r1 != r2 {
-                    *handovers.entry((r1.clone(), r2.clone())).or_insert(0) += 1;
+                    *handovers.entry((r1.clone(), r2.clone())).or_default() += 1;
                 }
             }
         }
@@ -101,7 +101,7 @@ pub fn discover_working_together_network_from_log(log: &EventLog, resource_key: 
         for i in 0..sorted.len() {
             for j in i + 1..sorted.len() {
                 let key = (sorted[i].clone(), sorted[j].clone());
-                *co_occur.entry(key).or_insert(0) += 1;
+                *co_occur.entry(key).or_default() += 1;
             }
         }
     }
@@ -172,7 +172,7 @@ pub fn compute_network_metrics(log_handle: &str, resource_key: &str) -> Result<J
         for i in 0..resources.len().saturating_sub(1) {
             if let (Some(r1), Some(r2)) = (&resources[i], &resources[i + 1]) {
                 if r1 != r2 {
-                    *handovers.entry((r1.clone(), r2.clone())).or_insert(0) += 1;
+                    *handovers.entry((r1.clone(), r2.clone())).or_default() += 1;
                 }
             }
         }
@@ -252,7 +252,7 @@ pub fn compute_clustering_coefficient(
         for i in 0..sorted.len() {
             for j in i + 1..sorted.len() {
                 let key = (sorted[i].clone(), sorted[j].clone());
-                *co_occur.entry(key).or_insert(0) += 1;
+                *co_occur.entry(key).or_default() += 1;
             }
         }
     }
@@ -324,7 +324,7 @@ pub fn detect_communities(log_handle: &str, resource_key: &str) -> Result<JsValu
         for i in 0..sorted.len() {
             for j in i + 1..sorted.len() {
                 let key = (sorted[i].clone(), sorted[j].clone());
-                *co_occur.entry(key).or_insert(0) += 1;
+                *co_occur.entry(key).or_default() += 1;
             }
         }
     }

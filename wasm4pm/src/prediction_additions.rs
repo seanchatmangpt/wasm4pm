@@ -198,9 +198,9 @@ pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionG
         for event in &trace.events {
             if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
                 activities_set.insert(act.clone());
-                *activity_totals.entry(act.clone()).or_insert(0) += 1;
+                *activity_totals.entry(act.clone()).or_default() += 1;
                 if let Some(prev) = prev_act {
-                    *edge_counts.entry((prev.clone(), act.clone())).or_insert(0) += 1;
+                    *edge_counts.entry((prev.clone(), act.clone())).or_default() += 1;
                 }
                 prev_act = Some(act.clone());
             }
@@ -280,7 +280,7 @@ pub fn extract_prefix_features(prefix: &[String]) -> PrefixFeatures {
 
     let mut activity_freq: HashMap<String, usize> = HashMap::new();
     for act in prefix {
-        *activity_freq.entry(act.clone()).or_insert(0) += 1;
+        *activity_freq.entry(act.clone()).or_default() += 1;
     }
     let unique_activities = activity_freq.len();
 

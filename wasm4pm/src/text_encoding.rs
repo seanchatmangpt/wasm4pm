@@ -130,7 +130,7 @@ pub fn encode_variants_as_text(
                     }
                 }
                 if !sequence.is_empty() {
-                    *variants.entry(sequence).or_insert(0) += 1;
+                    *variants.entry(sequence).or_default() += 1;
                 }
             }
 
@@ -189,7 +189,7 @@ pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
                         .get(activity_key)
                         .and_then(|v| v.as_string())
                     {
-                        *activity_freqs.entry(activity.to_string()).or_insert(0) += 1;
+                        *activity_freqs.entry(activity.to_string()).or_default() += 1;
                     }
                 }
             }
@@ -459,7 +459,7 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
             if !ocel.object_types.is_empty() {
                 let mut type_counts: HashMap<&str, usize> = HashMap::new();
                 for obj in &ocel.objects {
-                    *type_counts.entry(&obj.object_type).or_insert(0) += 1;
+                    *type_counts.entry(&obj.object_type).or_default() += 1;
                 }
                 let type_strs: Vec<String> = ocel
                     .object_types
@@ -727,7 +727,7 @@ pub fn encode_ocel_summary_as_text(ocel_handle: &str) -> Result<String, JsValue>
             // Count objects by type
             let mut object_counts: HashMap<String, usize> = HashMap::new();
             for obj in &ocel.objects {
-                *object_counts.entry(obj.object_type.clone()).or_insert(0) += 1;
+                *object_counts.entry(obj.object_type.clone()).or_default() += 1;
             }
 
             for obj_type in &ocel.object_types {

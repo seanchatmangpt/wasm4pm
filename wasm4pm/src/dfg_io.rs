@@ -220,8 +220,8 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
     // Build node map (activity → total frequency from edges + SA/EA)
     let mut node_freq: HashMap<String, usize> = HashMap::new();
     for ((from, to), count) in &result.dfg {
-        *node_freq.entry(from.clone()).or_insert(0) += *count as usize;
-        *node_freq.entry(to.clone()).or_insert(0) += *count as usize;
+        *node_freq.entry(from.clone()).or_default() += *count as usize;
+        *node_freq.entry(to.clone()).or_default() += *count as usize;
     }
     // Ensure SA and EA activities also appear even if isolated
     for act in result
