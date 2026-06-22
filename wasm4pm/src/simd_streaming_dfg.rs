@@ -194,7 +194,7 @@ impl SimdStreamingDfg {
         }
 
         // Find max ID to ensure capacity once
-        let max_id = *ids.iter().max().unwrap();
+        let max_id = *ids.iter().max().expect("invariant: has events → ids non-empty");
         self.ensure_capacity(max_id);
 
         #[cfg(target_arch = "wasm32")]

@@ -41,7 +41,7 @@ use std::collections::BTreeMap;
 /// let dfg = stream.snapshot();
 /// assert_eq!(dfg.edges.len(), 2); // A→B, B→C
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StreamingDfgBuilder {
     /// Activity string interner
     pub interner: Interner,
@@ -242,11 +242,6 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
     }
 }
 
-impl Default for StreamingDfgBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests {

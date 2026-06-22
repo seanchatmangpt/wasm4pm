@@ -144,7 +144,7 @@ pub trait ActivityInterner {
 /// - Edge counting uses `HashMap<(u32,u32), usize>` instead of `HashMap<(String,String), usize>`
 /// - Integer keys hash and compare in ~1 cycle vs. O(len) for strings
 /// - Memory per entry is ~12 bytes vs. ~80 bytes for string keys
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Interner {
     /// activity name → integer id
     vocab_map: HashMap<String, u32>,
@@ -205,11 +205,6 @@ impl ActivityInterner for Interner {
     }
 }
 
-impl Default for Interner {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 /// Helper macro to implement ActivityInterner for structs with an `interner` field.
 macro_rules! impl_activity_interner {

@@ -228,11 +228,6 @@ pub struct SimdEdgeAggregator {
     edges: FxHashMap<(u32, u32), u64>,
 }
 
-impl Default for SimdEdgeAggregator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl SimdEdgeAggregator {
     /// Create a new edge aggregator.
