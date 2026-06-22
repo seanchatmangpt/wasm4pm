@@ -212,7 +212,7 @@ pub fn discover_prefix_tree_inner(
 /// Single-pass sweep eliminates allocation of activity Vec during lookups.
 /// Deterministic iteration order via sorted fingerprints enables reproducible results.
 fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Variant>, String> {
-    let mut table: rustc_hash::FxHashMap<Vec<String>, usize> = rustc_hash::FxHashMap::default();
+    let mut table: std::collections::BTreeMap<Vec<String>, usize> = std::collections::BTreeMap::new();
 
     for trace in &log.traces {
         let activities: Result<Vec<String>, String> = trace
@@ -236,11 +236,8 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
         *table.entry(activities).or_default() += 1;
     }
 
-    // Extract variants and sort by activities for deterministic order
-    let mut variants: Vec<(Vec<String>, usize)> = table.into_iter().collect();
-    variants.sort_by(|a, b| a.0.cmp(&b.0));
-
-    Ok(variants
+    // BTreeMap iterates in lexicographic key order — sort is not needed.
+    Ok(table
         .into_iter()
         .map(|(activities, count)| Variant { activities, count })
         .collect())

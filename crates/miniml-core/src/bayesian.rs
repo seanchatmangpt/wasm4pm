@@ -311,27 +311,27 @@ pub fn credible_interval_impl(samples: &[f64], alpha: f64) -> (f64, f64) {
 
 /// Interpret a Bayes factor using Kass & Raftery (1995) guidelines.
 pub fn bayes_factor_impl(bf10: f64) -> BayesFactorResult {
-    let (interpretation, _) = if bf10 < 0.01 {
-        ("Very strong evidence against H1".to_string(), 0)
+    let interpretation: &'static str = if bf10 < 0.01 {
+        "Very strong evidence against H1"
     } else if bf10 < (1.0 / 3.0) {
-        ("Substantial evidence against H1".to_string(), 1)
+        "Substantial evidence against H1"
     } else if bf10 < 1.0 {
-        ("Anecdotal evidence against H1".to_string(), 2)
+        "Anecdotal evidence against H1"
     } else if bf10 < 3.0 {
-        ("Anecdotal evidence for H1".to_string(), 3)
+        "Anecdotal evidence for H1"
     } else if bf10 < 10.0 {
-        ("Moderate evidence for H1".to_string(), 4)
+        "Moderate evidence for H1"
     } else if bf10 < 30.0 {
-        ("Strong evidence for H1".to_string(), 5)
+        "Strong evidence for H1"
     } else if bf10 < 100.0 {
-        ("Very strong evidence for H1".to_string(), 6)
+        "Very strong evidence for H1"
     } else {
-        ("Decisive evidence for H1".to_string(), 7)
+        "Decisive evidence for H1"
     };
 
     BayesFactorResult {
         bayes_factor: bf10,
-        interpretation,
+        interpretation: interpretation.to_owned(),
     }
 }
 
