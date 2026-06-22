@@ -105,7 +105,11 @@ fn walk_estimates(root: &Path, cur: &Path, out: &mut Vec<Estimate>) {
         if path.is_dir() {
             walk_estimates(root, &path, out);
         } else if path.file_name().and_then(|n| n.to_str()) == Some("estimates.json")
-            && path.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str()) == Some("new")
+            && path
+                .parent()
+                .and_then(|p| p.file_name())
+                .and_then(|n| n.to_str())
+                == Some("new")
         {
             if let Some(est) = parse_estimate(root, &path) {
                 out.push(est);
@@ -119,15 +123,23 @@ fn parse_estimate(root: &Path, path: &Path) -> Option<Estimate> {
     let median = data.get("median")?;
     let pe = median.get("point_estimate")?.as_f64()?;
     let ci = median.get("confidence_interval");
-    let lo = ci.and_then(|c| c.get("lower_bound")).and_then(Value::as_f64);
-    let hi = ci.and_then(|c| c.get("upper_bound")).and_then(Value::as_f64);
+    let lo = ci
+        .and_then(|c| c.get("lower_bound"))
+        .and_then(Value::as_f64);
+    let hi = ci
+        .and_then(|c| c.get("upper_bound"))
+        .and_then(Value::as_f64);
     let std_dev = data
         .get("std_dev")
         .and_then(|s| s.get("point_estimate"))
         .and_then(Value::as_f64);
     // bench id = <new-dir>.parent relative to root
     let bench_dir = path.parent()?.parent()?;
-    let bench = bench_dir.strip_prefix(root).ok()?.to_string_lossy().replace('\\', "/");
+    let bench = bench_dir
+        .strip_prefix(root)
+        .ok()?
+        .to_string_lossy()
+        .replace('\\', "/");
     Some(Estimate {
         bench,
         median_ns: pe,
@@ -155,7 +167,13 @@ fn canonicalize(v: &Value) -> String {
             let sorted: BTreeMap<&String, &Value> = map.iter().collect();
             let parts: Vec<String> = sorted
                 .iter()
-                .map(|(k, val)| format!("{}:{}", serde_json::to_string(k).unwrap(), canonicalize(val)))
+                .map(|(k, val)| {
+                    format!(
+                        "{}:{}",
+                        serde_json::to_string(k).unwrap(),
+                        canonicalize(val)
+                    )
+                })
                 .collect();
             format!("{{{}}}", parts.join(","))
         }
@@ -242,7 +260,9 @@ fn chain_breaks(entries: &[Value]) -> usize {
     let mut breaks = 0;
     for i in 1..entries.len() {
         let prev_hash = entries[i - 1].get("receipt_hash").and_then(Value::as_str);
-        let claimed = entries[i].get("previous_receipt_hash").and_then(Value::as_str);
+        let claimed = entries[i]
+            .get("previous_receipt_hash")
+            .and_then(Value::as_str);
         if claimed != prev_hash {
             breaks += 1;
         }
@@ -280,7 +300,9 @@ fn cpu_governor() -> Option<String> {
 }
 
 fn environment() -> Value {
-    let cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(0);
+    let cores = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(0);
     serde_json::json!({
         "os": std::env::consts::OS,
         "arch": std::env::consts::ARCH,
@@ -339,7 +361,12 @@ fn cmd_report(criterion_dir: &Path, out_dir: &Path) -> i32 {
             (Some(lo), Some(hi)) => format!("[{}, {}]", fmt_time(lo), fmt_time(hi)),
             _ => "—".to_string(),
         };
-        md.push_str(&format!("| `{}` | {} | {} |\n", r.bench, fmt_time(r.median_ns), ci));
+        md.push_str(&format!(
+            "| `{}` | {} | {} |\n",
+            r.bench,
+            fmt_time(r.median_ns),
+            ci
+        ));
     }
     let report_md = out_dir.join("REPORT.md");
     if let Err(e) = fs::write(&report_md, md) {
@@ -381,10 +408,16 @@ fn cmd_regress(criterion_dir: &Path, baseline: &Path, threshold_pct: f64) -> i32
         eprintln!("no current estimates under {}", criterion_dir.display());
         return 1;
     }
-    let base_json: Value = match fs::read_to_string(baseline).ok().and_then(|s| serde_json::from_str(&s).ok()) {
+    let base_json: Value = match fs::read_to_string(baseline)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+    {
         Some(v) => v,
         None => {
-            eprintln!("no readable baseline at {} — run `bench-tools receipt` first", baseline.display());
+            eprintln!(
+                "no readable baseline at {} — run `bench-tools receipt` first",
+                baseline.display()
+            );
             return 1;
         }
     };
@@ -455,7 +488,11 @@ fn cmd_regress(criterion_dir: &Path, baseline: &Path, threshold_pct: f64) -> i32
     }
     eprintln!("REGRESSIONS ({}):", regressions.len());
     for (bench, base, now, pct) in &regressions {
-        eprintln!("  {bench}: {} → {} (+{pct:.1}%, CIs disjoint)", fmt_time(*base), fmt_time(*now));
+        eprintln!(
+            "  {bench}: {} → {} (+{pct:.1}%, CIs disjoint)",
+            fmt_time(*base),
+            fmt_time(*now)
+        );
     }
     1
 }
@@ -472,13 +509,19 @@ fn cmd_receipt(criterion_dir: &Path, write_baseline: bool, out: Option<&Path>, e
         fs::read_to_string(baseline_path())
             .ok()
             .and_then(|s| serde_json::from_str::<Value>(&s).ok())
-            .and_then(|v| v.get("receipt_hash").and_then(Value::as_str).map(str::to_string))
+            .and_then(|v| {
+                v.get("receipt_hash")
+                    .and_then(Value::as_str)
+                    .map(str::to_string)
+            })
     } else {
         None
     };
 
     let dirty = git_field(&["status", "--porcelain"]).map(|s| !s.is_empty());
-    let created_at = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
+    let created_at = chrono::Utc::now()
+        .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+        .to_string();
 
     // Body WITHOUT the hash fields (the hash cannot reference itself).
     // Calibration anchor median for this machine (if the calibration bench ran),
@@ -598,7 +641,10 @@ fn cmd_verify(receipt_path: &Path, allow_dirty: bool) -> i32 {
     let stored = match receipt.get("receipt_hash").and_then(Value::as_str) {
         Some(h) => h.to_string(),
         None => {
-            eprintln!("receipt has no receipt_hash field: {}", receipt_path.display());
+            eprintln!(
+                "receipt has no receipt_hash field: {}",
+                receipt_path.display()
+            );
             return 1;
         }
     };
@@ -611,13 +657,19 @@ fn cmd_verify(receipt_path: &Path, allow_dirty: bool) -> i32 {
     }
     let recomputed = blake3_hex(&canonicalize(&body));
 
-    let count = receipt.get("benchmark_count").and_then(Value::as_u64).unwrap_or(0);
+    let count = receipt
+        .get("benchmark_count")
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
     let commit = receipt
         .get("commit")
         .and_then(Value::as_str)
         .map(|c| &c[..8.min(c.len())])
         .unwrap_or("?");
-    let dirty = receipt.get("tree_dirty").and_then(Value::as_bool).unwrap_or(false);
+    let dirty = receipt
+        .get("tree_dirty")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
 
     if recomputed != stored {
         eprintln!(
@@ -657,7 +709,10 @@ fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
     let text = match fs::read_to_string(&lp) {
         Ok(t) => t,
         Err(_) => {
-            eprintln!("no ledger at {} — run `bench-tools receipt` to seed it", lp.display());
+            eprintln!(
+                "no ledger at {} — run `bench-tools receipt` to seed it",
+                lp.display()
+            );
             return 1;
         }
     };
@@ -675,7 +730,9 @@ fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
     let breaks = chain_breaks(&entries);
     for i in 1..entries.len() {
         let prev_hash = entries[i - 1].get("receipt_hash").and_then(Value::as_str);
-        let claimed = entries[i].get("previous_receipt_hash").and_then(Value::as_str);
+        let claimed = entries[i]
+            .get("previous_receipt_hash")
+            .and_then(Value::as_str);
         if claimed != prev_hash {
             eprintln!(
                 "  chain break at entry {i}: previous_receipt_hash {:?} != prior receipt_hash {:?}",
@@ -688,7 +745,10 @@ fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
     // 2. Per-bench trend: first vs last recorded median.
     let first = &entries[0]["medians_ns"];
     let last = &entries[entries.len() - 1]["medians_ns"];
-    let mut bench_names: Vec<&String> = last.as_object().map(|o| o.keys().collect()).unwrap_or_default();
+    let mut bench_names: Vec<&String> = last
+        .as_object()
+        .map(|o| o.keys().collect())
+        .unwrap_or_default();
     bench_names.sort();
 
     println!(
@@ -707,7 +767,11 @@ fn cmd_ledger(bench_filter: Option<&str>) -> i32 {
         let first_v = first.get(name).and_then(Value::as_f64);
         match (first_v, last_v) {
             (Some(fv), Some(lv)) => {
-                let pct = if fv != 0.0 { (lv - fv) / fv * 100.0 } else { 0.0 };
+                let pct = if fv != 0.0 {
+                    (lv - fv) / fv * 100.0
+                } else {
+                    0.0
+                };
                 let dir = if pct > 1.0 {
                     "▲ slower"
                 } else if pct < -1.0 {
@@ -747,7 +811,13 @@ fn cmd_attest(criterion_dir: &Path, out_dir: &Path) -> i32 {
     println!("running paper-grounded gate (cargo test --test paper_grounded)…");
     let grounded_out = run_capture(
         "cargo",
-        &["test", "-p", "wasm4pm-cognition", "--test", "paper_grounded"],
+        &[
+            "test",
+            "-p",
+            "wasm4pm-cognition",
+            "--test",
+            "paper_grounded",
+        ],
     );
     let Some(grounded_out) = grounded_out else {
         eprintln!("could not run the paper_grounded test (cargo unavailable or compile error)");
@@ -759,7 +829,9 @@ fn cmd_attest(criterion_dir: &Path, out_dir: &Path) -> i32 {
         let l = line.trim_start();
         if let Some(rest) = l.strip_prefix("test ") {
             if let Some(name) = rest.split("_paper_grounded").next() {
-                if rest.contains("_paper_grounded") && (rest.contains(" ... ok") || rest.contains(" ... FAILED")) {
+                if rest.contains("_paper_grounded")
+                    && (rest.contains(" ... ok") || rest.contains(" ... FAILED"))
+                {
                     grounded.insert(name.to_string(), rest.contains(" ... ok"));
                 }
             }
@@ -770,7 +842,13 @@ fn cmd_attest(criterion_dir: &Path, out_dir: &Path) -> i32 {
     println!("running falsification gate (cargo test --test paper_falsification)…");
     let fals_out = run_capture(
         "cargo",
-        &["test", "-p", "wasm4pm-cognition", "--test", "paper_falsification"],
+        &[
+            "test",
+            "-p",
+            "wasm4pm-cognition",
+            "--test",
+            "paper_falsification",
+        ],
     );
     let falsification_pass = fals_out
         .as_deref()
@@ -834,7 +912,11 @@ fn cmd_attest(criterion_dir: &Path, out_dir: &Path) -> i32 {
          (of {} breeds).\n\nA *trusted* latency is one whose breed provably reproduces \
          its source paper. A *fast-but-wrong* breed is the one a latency benchmark \
          alone would silently bless.\n",
-        trusted, fast_but_wrong, correct_unbenched, broken, grounded.len()
+        trusted,
+        fast_but_wrong,
+        correct_unbenched,
+        broken,
+        grounded.len()
     ));
 
     if let Err(e) = fs::create_dir_all(out_dir) {
@@ -904,7 +986,10 @@ fn cmd_budget(criterion_dir: &Path, budgets_file: &Path) -> i32 {
             return 1;
         }
     };
-    let default_ratio = cfg.get("default_ratio").and_then(Value::as_f64).unwrap_or(f64::INFINITY);
+    let default_ratio = cfg
+        .get("default_ratio")
+        .and_then(Value::as_f64)
+        .unwrap_or(f64::INFINITY);
     let overrides: BTreeMap<String, f64> = cfg
         .get("overrides")
         .and_then(Value::as_object)
@@ -917,7 +1002,10 @@ fn cmd_budget(criterion_dir: &Path, budgets_file: &Path) -> i32 {
 
     // Budgets are ratios against the calibration anchor — without it they cannot
     // be enforced machine-independently, so report and pass rather than block.
-    let calibration = rows.iter().find(|r| is_calibration_id(&r.bench)).map(|r| r.median_ns);
+    let calibration = rows
+        .iter()
+        .find(|r| is_calibration_id(&r.bench))
+        .map(|r| r.median_ns);
     let Some(cal) = calibration.filter(|&c| c > 0.0) else {
         println!(
             "budget: no calibration anchor in {} — run the `calibration/anchor` bench to enforce ratio budgets (skipping)",
@@ -957,7 +1045,10 @@ fn cmd_budget(criterion_dir: &Path, budgets_file: &Path) -> i32 {
 
 // --------------------------------------------------------------------------- arg parsing
 fn flag_value(args: &[String], name: &str) -> Option<String> {
-    args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned()
+    args.iter()
+        .position(|a| a == name)
+        .and_then(|i| args.get(i + 1))
+        .cloned()
 }
 
 fn has_flag(args: &[String], name: &str) -> bool {
@@ -997,7 +1088,9 @@ fn main() {
             cmd_report(&criterion_dir, &out_dir)
         }
         "regress" => {
-            let baseline = flag_value(rest, "--baseline").map(PathBuf::from).unwrap_or_else(baseline_path);
+            let baseline = flag_value(rest, "--baseline")
+                .map(PathBuf::from)
+                .unwrap_or_else(baseline_path);
             let threshold = flag_value(rest, "--threshold")
                 .and_then(|s| s.parse::<f64>().ok())
                 .unwrap_or(10.0);
@@ -1013,14 +1106,21 @@ fn main() {
             )
         }
         "verify" => {
-            let receipt = flag_value(rest, "--receipt").map(PathBuf::from).unwrap_or_else(baseline_path);
+            let receipt = flag_value(rest, "--receipt")
+                .map(PathBuf::from)
+                .unwrap_or_else(baseline_path);
             cmd_verify(&receipt, has_flag(rest, "--allow-dirty"))
         }
         "ledger" => cmd_ledger(flag_value(rest, "--bench").as_deref()),
         "budget" => {
             let budgets = flag_value(rest, "--budgets")
                 .map(PathBuf::from)
-                .unwrap_or_else(|| repo_root().join("docs").join("benchmarks").join("budgets.json"));
+                .unwrap_or_else(|| {
+                    repo_root()
+                        .join("docs")
+                        .join("benchmarks")
+                        .join("budgets.json")
+                });
             cmd_budget(&criterion_dir, &budgets)
         }
         "attest" => {
@@ -1081,16 +1181,37 @@ mod tests {
     #[test]
     fn regression_requires_threshold_crossing() {
         // +5% median, threshold 10% → not a regression even with disjoint CIs.
-        assert!(!is_regression(105.0, Some(104.0), None, 100.0, Some(101.0), 10.0));
+        assert!(!is_regression(
+            105.0,
+            Some(104.0),
+            None,
+            100.0,
+            Some(101.0),
+            10.0
+        ));
     }
 
     #[test]
     fn regression_requires_ci_non_overlap() {
         // +20% median (clears 10% threshold) but CIs overlap → NOT flagged.
         // cur_ci_lower 90 is below base_ci_upper 130 → overlap.
-        assert!(!is_regression(120.0, Some(90.0), None, 100.0, Some(130.0), 10.0));
+        assert!(!is_regression(
+            120.0,
+            Some(90.0),
+            None,
+            100.0,
+            Some(130.0),
+            10.0
+        ));
         // Same median shift but disjoint CIs (cur_lo 115 > base_hi 105) → flagged.
-        assert!(is_regression(120.0, Some(115.0), None, 100.0, Some(105.0), 10.0));
+        assert!(is_regression(
+            120.0,
+            Some(115.0),
+            None,
+            100.0,
+            Some(105.0),
+            10.0
+        ));
     }
 
     #[test]
@@ -1103,7 +1224,14 @@ mod tests {
 
     #[test]
     fn regression_handles_degenerate_baseline() {
-        assert!(!is_regression(100.0, Some(99.0), None, 0.0, Some(0.0), 10.0));
+        assert!(!is_regression(
+            100.0,
+            Some(99.0),
+            None,
+            0.0,
+            Some(0.0),
+            10.0
+        ));
     }
 
     // ---- cross-machine normalization ------------------------------------
@@ -1131,9 +1259,23 @@ mod tests {
         // looks like a +100% regression; normalized (×0.5) it is flat.
         let factor = normalize_factor(Some(100.0), Some(200.0)); // 0.5
         let normalized_median = 2000.0 * factor; // 1000
-        assert!(!is_regression(normalized_median, Some(990.0 * factor), None, 1000.0, Some(1010.0), 10.0));
+        assert!(!is_regression(
+            normalized_median,
+            Some(990.0 * factor),
+            None,
+            1000.0,
+            Some(1010.0),
+            10.0
+        ));
         // Without normalization it would be flagged.
-        assert!(is_regression(2000.0, Some(1980.0), None, 1000.0, Some(1010.0), 10.0));
+        assert!(is_regression(
+            2000.0,
+            Some(1980.0),
+            None,
+            1000.0,
+            Some(1010.0),
+            10.0
+        ));
     }
 
     #[test]

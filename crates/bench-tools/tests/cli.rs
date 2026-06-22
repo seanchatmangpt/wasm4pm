@@ -30,7 +30,10 @@ fn write_estimate(criterion_dir: &Path, bench_id: &str, median: f64, ci_lo: f64,
 }
 
 fn run(args: &[&str]) -> std::process::Output {
-    Command::new(BIN).args(args).output().expect("spawn bench-tools")
+    Command::new(BIN)
+        .args(args)
+        .output()
+        .expect("spawn bench-tools")
 }
 
 #[test]
@@ -62,7 +65,13 @@ fn report_on_empty_dir_exits_nonzero() {
     let dir = scratch("report-empty");
     let crit = dir.join("criterion");
     fs::create_dir_all(&crit).unwrap();
-    let out = run(&["report", "--criterion-dir", crit.to_str().unwrap(), "--out-dir", dir.to_str().unwrap()]);
+    let out = run(&[
+        "report",
+        "--criterion-dir",
+        crit.to_str().unwrap(),
+        "--out-dir",
+        dir.to_str().unwrap(),
+    ]);
     assert_eq!(out.status.code(), Some(1), "empty criterion dir → exit 1");
 }
 
@@ -88,7 +97,12 @@ fn receipt_then_verify_roundtrip_and_tamper() {
     assert!(body.contains("Wasm4pmBenchmarkReceipt.v1"));
 
     // A fresh receipt verifies (dirty allowed since tests run in a working tree).
-    let out = run(&["verify", "--receipt", receipt.to_str().unwrap(), "--allow-dirty"]);
+    let out = run(&[
+        "verify",
+        "--receipt",
+        receipt.to_str().unwrap(),
+        "--allow-dirty",
+    ]);
     assert!(out.status.success(), "fresh receipt should verify");
 
     // Tamper a median without updating the hash → verify must fail.
@@ -96,7 +110,12 @@ fn receipt_then_verify_roundtrip_and_tamper() {
     let mut tampered = v.clone();
     tampered["benchmarks"][0]["median_ns"] = serde_json::json!(999_999.0);
     fs::write(&receipt, serde_json::to_string_pretty(&tampered).unwrap()).unwrap();
-    let out = run(&["verify", "--receipt", receipt.to_str().unwrap(), "--allow-dirty"]);
+    let out = run(&[
+        "verify",
+        "--receipt",
+        receipt.to_str().unwrap(),
+        "--allow-dirty",
+    ]);
     assert_eq!(out.status.code(), Some(1), "tampered receipt → exit 1");
     assert!(String::from_utf8_lossy(&out.stderr).contains("TAMPERED"));
 }
@@ -125,14 +144,22 @@ fn regress_flags_a_real_regression_and_passes_noise() {
         "--threshold",
         "10",
     ]);
-    assert_eq!(out.status.code(), Some(1), "disjoint +30% → regression (exit 1)");
+    assert_eq!(
+        out.status.code(),
+        Some(1),
+        "disjoint +30% → regression (exit 1)"
+    );
 
     // Now make the baseline CIs overlap the current measurement → no regression.
     let base_overlap = serde_json::json!({
         "benchmarks": [{"bench": "grp/alpha", "median_ns": 1000.0,
                         "ci_lower_ns": 990.0, "ci_upper_ns": 1400.0}]
     });
-    fs::write(&baseline, serde_json::to_string_pretty(&base_overlap).unwrap()).unwrap();
+    fs::write(
+        &baseline,
+        serde_json::to_string_pretty(&base_overlap).unwrap(),
+    )
+    .unwrap();
     let out = run(&[
         "regress",
         "--criterion-dir",
@@ -142,7 +169,10 @@ fn regress_flags_a_real_regression_and_passes_noise() {
         "--threshold",
         "10",
     ]);
-    assert!(out.status.success(), "overlapping CIs → not a regression (exit 0)");
+    assert!(
+        out.status.success(),
+        "overlapping CIs → not a regression (exit 0)"
+    );
 }
 
 #[test]
