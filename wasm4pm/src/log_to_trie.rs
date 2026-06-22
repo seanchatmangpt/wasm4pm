@@ -228,7 +228,7 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
                             activity_key
                         )
                     })
-                    .map(|s| s.to_string())
+                    .map(str::to_string)
             })
             .collect();
 
