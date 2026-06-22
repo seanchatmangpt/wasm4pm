@@ -4,7 +4,7 @@ use crate::prediction_additions::{
 };
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 /// Case Feature Extraction — inputs for ML models and remaining-time prediction
 ///
 /// WASM-exported wrappers around the core feature extraction functions in
@@ -98,7 +98,7 @@ pub fn build_transition_probabilities(
         Some(StoredObject::EventLog(log)) => {
             // Compute edge counts alongside the transition graph so we can
             // include raw counts in the output.
-            let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
+            let mut edge_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
             let mut activity_totals: HashMap<String, usize> = HashMap::new();
 
             for trace in &log.traces {
