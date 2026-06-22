@@ -184,7 +184,7 @@ impl AttributeValue {
 }
 
 /// Type alias for a collection of named attributes.
-pub type Attributes = HashMap<String, AttributeValue>;
+pub type Attributes = BTreeMap<String, AttributeValue>;
 
 /// Custom deserializer for OCEL type names.
 fn deserialize_ocel_type_names<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
@@ -290,7 +290,7 @@ impl Event {
     #[must_use]
     pub fn new() -> Self {
         Event {
-            attributes: HashMap::default(),
+            attributes: BTreeMap::new(),
         }
     }
 }
@@ -315,7 +315,7 @@ impl Trace {
     #[must_use]
     pub fn new() -> Self {
         Trace {
-            attributes: HashMap::default(),
+            attributes: BTreeMap::new(),
             events: Vec::default(),
         }
     }
@@ -387,8 +387,8 @@ fn convert_attribute_value(
 
 fn convert_attributes(
     attrs: wasm4pm_compat::event_log::Attributes,
-) -> HashMap<String, AttributeValue> {
-    let mut map = HashMap::new();
+) -> Attributes {
+    let mut map = Attributes::new();
     for attr in attrs {
         if let Some(cv) = convert_attribute_value(attr.value) {
             map.insert(attr.key, cv);
@@ -533,7 +533,7 @@ impl EventLog {
     #[must_use]
     pub fn new() -> Self {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: Vec::new(),
         }
     }
@@ -753,7 +753,7 @@ pub struct OCELEvent {
     pub timestamp: String,
     /// Event attributes.
     #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
-    pub attributes: HashMap<String, AttributeValue>,
+    pub attributes: BTreeMap<String, AttributeValue>,
     /// List of object IDs directly associated with this event (OCEL 1.0).
     #[serde(default)]
     pub object_ids: Vec<String>,
@@ -801,7 +801,7 @@ pub struct OCELObject {
     pub object_type: String,
     /// Initial object attributes.
     #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
-    pub attributes: HashMap<String, AttributeValue>,
+    pub attributes: BTreeMap<String, AttributeValue>,
     /// History of attribute changes (OCEL 2.0).
     #[serde(default)]
     pub changes: Vec<OCELObjectAttributeChange>,

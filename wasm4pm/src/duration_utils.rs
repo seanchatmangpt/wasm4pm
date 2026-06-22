@@ -1,5 +1,5 @@
 use crate::models::{AttributeValue, EventLog};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Extract a timestamp in milliseconds from an `AttributeValue`.
 ///
@@ -174,10 +174,10 @@ pub fn extract_durations_by_event_attribute(
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn make_event(activity: &str, timestamp: &str) -> Event {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(activity.to_string()),
@@ -191,14 +191,14 @@ mod tests {
 
     fn make_trace(events: Vec<Event>) -> Trace {
         Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events,
         }
     }
 
     fn empty_log() -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: Vec::new(),
         }
     }

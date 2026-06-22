@@ -517,7 +517,7 @@ pub fn parallel_available() -> bool {
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     /// Helper: generate a unique test key to avoid collisions when tests run in parallel.
     fn unique_key(prefix: &str) -> String {
@@ -531,12 +531,12 @@ mod tests {
         let log_traces: Vec<Trace> = traces
             .iter()
             .map(|activities| Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: activities
                     .iter()
                     .map(|&act| Event {
                         attributes: {
-                            let mut m = HashMap::new();
+                            let mut m = std::collections::BTreeMap::new();
                             m.insert(
                                 "concept:name".to_string(),
                                 AttributeValue::String(act.to_string()),
@@ -548,7 +548,7 @@ mod tests {
             })
             .collect();
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: log_traces,
         }
     }

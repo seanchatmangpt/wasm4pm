@@ -104,7 +104,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
     object_type: &str,
 ) -> Result<crate::models::EventLog, JsValue> {
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     // Get all objects of the target type
     let target_objects: Vec<_> = ocel
@@ -138,7 +138,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
         // Create a trace
         let mut trace = Trace {
             attributes: {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(obj.id.clone()),
@@ -159,7 +159,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
 
         // Add events to trace
         for ocel_event in events_for_obj {
-            let mut event_attrs = HashMap::new();
+            let mut event_attrs = BTreeMap::new();
 
             // Add event type as activity
             event_attrs.insert(
@@ -227,7 +227,7 @@ mod tests {
                     id: "e1".to_string(),
                     event_type: "A".to_string(),
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
                 },
@@ -235,7 +235,7 @@ mod tests {
                     id: "e2".to_string(),
                     event_type: "B".to_string(),
                     timestamp: "2024-01-01T11:00:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
                 },
@@ -243,7 +243,7 @@ mod tests {
             objects: vec![OCELObject {
                 id: "order1".to_string(),
                 object_type: "Order".to_string(),
-                attributes: std::collections::HashMap::new(),
+                attributes: std::collections::BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             }],

@@ -7,7 +7,7 @@ use crate::models::{PetriNet, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for Petri net playout.
@@ -166,7 +166,7 @@ fn simulate_trace(
                 // Deadlock - no enabled transitions but not in final marking
                 return Ok((
                     Trace {
-                        attributes: HashMap::new(),
+                        attributes: BTreeMap::new(),
                         events,
                     },
                     states_visited,
@@ -195,7 +195,7 @@ fn simulate_trace(
 
         // Add visible transition to trace
         if let Some(label) = transition_labels.get(selected_id) {
-            let mut event_attrs = HashMap::new();
+            let mut event_attrs = BTreeMap::new();
             event_attrs.insert(
                 "concept:name".to_string(),
                 crate::models::AttributeValue::String(label.clone()),
@@ -210,7 +210,7 @@ fn simulate_trace(
 
     Ok((
         Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events,
         },
         states_visited,

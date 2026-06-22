@@ -155,7 +155,7 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
         // Create a trace with ID = object ID
         let mut trace = Trace {
             attributes: {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 // Add object ID and type as trace attributes
                 attrs.insert(
                     "object_id".to_string(),
@@ -174,7 +174,7 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
 
         // Add events to the trace
         for ocel_event in events_for_obj {
-            let mut event_attrs = HashMap::new();
+            let mut event_attrs = BTreeMap::new();
 
             // Add event type as activity
             event_attrs.insert(
@@ -353,7 +353,7 @@ pub fn measure_ocel_flattening_loss(ocel_handle: &str) -> Result<JsValue, JsValu
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn create_multi_object_ocel() -> OCEL {
         OCEL {
@@ -365,7 +365,7 @@ mod tests {
                     event_type: "Create".to_string(),
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
                     attributes: {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "action".to_string(),
                             AttributeValue::String("create".to_string()),
@@ -379,7 +379,7 @@ mod tests {
                     id: "e2".to_string(),
                     event_type: "Update".to_string(),
                     timestamp: "2024-01-01T11:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
                 },
@@ -387,7 +387,7 @@ mod tests {
                     id: "e3".to_string(),
                     event_type: "Create".to_string(),
                     timestamp: "2024-01-01T12:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["item1".to_string()],
                     object_refs: vec![],
                 },
@@ -397,7 +397,7 @@ mod tests {
                     id: "order1".to_string(),
                     object_type: "Order".to_string(),
                     attributes: {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert("value".to_string(), AttributeValue::Float(100.0));
                         attrs
                     },
@@ -407,7 +407,7 @@ mod tests {
                 OCELObject {
                     id: "item1".to_string(),
                     object_type: "Item".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },

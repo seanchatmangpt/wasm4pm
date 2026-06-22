@@ -22,7 +22,7 @@ mod tests {
                     event_type: "Order Created".to_string(),
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
                     attributes: {
-                        let mut attrs = std::collections::HashMap::new();
+                        let mut attrs = std::collections::BTreeMap::new();
                         attrs.insert("amount".to_string(), AttributeValue::Float(100.0));
                         attrs
                     },
@@ -33,7 +33,7 @@ mod tests {
                     id: "e2".to_string(),
                     event_type: "Payment".to_string(),
                     timestamp: "2024-01-01T11:00:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
                 },
@@ -42,7 +42,7 @@ mod tests {
                 id: "order1".to_string(),
                 object_type: "Order".to_string(),
                 attributes: {
-                    let mut attrs = std::collections::HashMap::new();
+                    let mut attrs = std::collections::BTreeMap::new();
                     attrs.insert(
                         "status".to_string(),
                         AttributeValue::String("pending".to_string()),
@@ -133,7 +133,7 @@ mod tests {
             id: "e1".to_string(),
             event_type: "Test".to_string(),
             timestamp: "2024-01-01T10:00:00Z".to_string(),
-            attributes: std::collections::HashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             object_ids: vec!["obj1".to_string(), "obj2".to_string()],
             object_refs: vec![],
         };
@@ -152,7 +152,7 @@ mod tests {
             id: "e1".to_string(),
             event_type: "Test".to_string(),
             timestamp: "2024-01-01T10:00:00Z".to_string(),
-            attributes: std::collections::HashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             object_ids: vec!["obj1".to_string()],
             object_refs: vec![OCELEventObjectRef {
                 object_id: "obj2".to_string(),

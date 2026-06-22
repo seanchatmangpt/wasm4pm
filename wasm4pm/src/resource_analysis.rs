@@ -442,14 +442,14 @@ fn format_timestamp(ms: i64) -> String {
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn create_test_log() -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![Trace {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("case1".to_string()),
@@ -459,7 +459,7 @@ mod tests {
                 events: vec![
                     Event {
                         attributes: {
-                            let mut attrs = HashMap::new();
+                            let mut attrs = BTreeMap::new();
                             attrs.insert(
                                 "concept:name".to_string(),
                                 AttributeValue::String("A".to_string()),
@@ -477,7 +477,7 @@ mod tests {
                     },
                     Event {
                         attributes: {
-                            let mut attrs = HashMap::new();
+                            let mut attrs = BTreeMap::new();
                             attrs.insert(
                                 "concept:name".to_string(),
                                 AttributeValue::String("B".to_string()),

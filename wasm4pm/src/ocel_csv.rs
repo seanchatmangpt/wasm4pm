@@ -28,7 +28,7 @@ use crate::models::{AttributeValue, OCELEvent, OCELEventObjectRef, OCELObject, O
 #[cfg(feature = "ocel")]
 use crate::state::{get_or_init_state, StoredObject};
 #[cfg(feature = "ocel")]
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 #[cfg(feature = "ocel")]
 use wasm_bindgen::prelude::*;
 
@@ -270,7 +270,7 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
         };
 
         // Event attributes
-        let mut attributes: HashMap<String, AttributeValue> = HashMap::new();
+        let mut attributes = BTreeMap::new();
         for (idx, col) in columns.iter().enumerate() {
             if let Column::EventAttr(attr_name) = col {
                 let cell = rec.get(idx).unwrap_or("").trim();
@@ -328,7 +328,7 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
                         .or_insert_with(|| OCELObject {
                             id: obj_id.clone(),
                             object_type: obj_type.clone(),
-                            attributes: HashMap::new(),
+                            attributes: BTreeMap::new(),
                             changes: vec![],
                             embedded_relations: vec![],
                         });

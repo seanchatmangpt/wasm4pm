@@ -199,10 +199,10 @@ pub fn discover_performance_spectrum_wasm(
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn make_event(name: &str, timestamp: &str) -> Event {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(name.to_string()),
@@ -215,7 +215,7 @@ mod tests {
     }
 
     fn make_event_no_ts(name: &str) -> Event {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(name.to_string()),
@@ -225,7 +225,7 @@ mod tests {
 
     fn make_log(traces: Vec<Trace>) -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces,
         }
     }
@@ -235,14 +235,14 @@ mod tests {
         // Two traces: A->B with known durations of 1000ms and 3000ms.
         let log = make_log(vec![
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T00:00:00Z"),
                     make_event("B", "2020-01-01T00:00:01Z"),
                 ],
             },
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T01:00:00Z"),
                     make_event("B", "2020-01-01T01:00:03Z"),
@@ -266,21 +266,21 @@ mod tests {
         // Three durations: 1000, 2000, 5000 -> median should be 2000.
         let log = make_log(vec![
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T00:00:00Z"),
                     make_event("B", "2020-01-01T00:00:01Z"), // 1000ms
                 ],
             },
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T01:00:00Z"),
                     make_event("B", "2020-01-01T01:00:02Z"), // 2000ms
                 ],
             },
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T02:00:00Z"),
                     make_event("B", "2020-01-01T02:00:05Z"), // 5000ms
@@ -297,14 +297,14 @@ mod tests {
         // A->B and A->C pairs.
         let log = make_log(vec![
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T00:00:00Z"),
                     make_event("B", "2020-01-01T00:00:02Z"),
                 ],
             },
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("A", "2020-01-01T01:00:00Z"),
                     make_event("C", "2020-01-01T01:00:10Z"),
@@ -324,7 +324,7 @@ mod tests {
     fn test_missing_timestamps_skipped() {
         // Events without timestamps should be silently skipped.
         let log = make_log(vec![Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: vec![
                 make_event_no_ts("A"),
                 make_event("B", "2020-01-01T00:00:05Z"),
@@ -337,7 +337,7 @@ mod tests {
     #[test]
     fn test_no_occurrences() {
         let log = make_log(vec![Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: vec![
                 make_event("X", "2020-01-01T00:00:00Z"),
                 make_event("Y", "2020-01-01T00:00:01Z"),
@@ -351,7 +351,7 @@ mod tests {
     fn test_multiple_occurrences_in_one_trace() {
         // A appears twice in one trace, each followed by a different activity.
         let log = make_log(vec![Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: vec![
                 make_event("A", "2020-01-01T00:00:00Z"),
                 make_event("B", "2020-01-01T00:00:01Z"),
@@ -366,7 +366,7 @@ mod tests {
     #[test]
     fn test_custom_attribute_keys() {
         // Use non-default attribute keys.
-        let mut attrs_a1 = HashMap::new();
+        let mut attrs_a1 = std::collections::BTreeMap::new();
         attrs_a1.insert(
             "activity".to_string(),
             AttributeValue::String("A".to_string()),
@@ -375,7 +375,7 @@ mod tests {
             "ts".to_string(),
             AttributeValue::Date("2020-01-01T00:00:00Z".to_string()),
         );
-        let mut attrs_b = HashMap::new();
+        let mut attrs_b = std::collections::BTreeMap::new();
         attrs_b.insert(
             "activity".to_string(),
             AttributeValue::String("B".to_string()),
@@ -386,7 +386,7 @@ mod tests {
         );
 
         let log = make_log(vec![Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: vec![
                 Event {
                     attributes: attrs_a1,

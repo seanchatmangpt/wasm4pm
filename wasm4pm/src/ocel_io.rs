@@ -573,7 +573,7 @@ mod tests {
                 event_type: "Create".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
                 attributes: {
-                    let mut attrs = std::collections::HashMap::new();
+                    let mut attrs = std::collections::BTreeMap::new();
                     attrs.insert("cost".to_string(), AttributeValue::Float(100.0));
                     attrs
                 },
@@ -584,7 +584,7 @@ mod tests {
                 id: "order1".to_string(),
                 object_type: "Order".to_string(),
                 attributes: {
-                    let mut attrs = std::collections::HashMap::new();
+                    let mut attrs = std::collections::BTreeMap::new();
                     attrs.insert(
                         "status".to_string(),
                         AttributeValue::String("new".to_string()),
@@ -637,7 +637,7 @@ mod tests {
             id: "e2".to_string(),
             event_type: "Test".to_string(),
             timestamp: "2024-01-01T11:00:00Z".to_string(),
-            attributes: std::collections::HashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             object_ids: vec!["nonexistent".to_string()],
             object_refs: vec![],
         });
@@ -663,7 +663,7 @@ mod tests {
         ocel.objects.push(OCELObject {
             id: "order1".to_string(), // Duplicate ID
             object_type: "Order".to_string(),
-            attributes: std::collections::HashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             changes: vec![],
             embedded_relations: vec![],
         });
@@ -748,7 +748,7 @@ mod tests {
             id: "e2".to_string(),
             event_type: "Complete".to_string(),
             timestamp: "2024-01-01T09:00:00Z".to_string(),
-            attributes: std::collections::HashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             object_ids: vec!["order1".to_string()],
             object_refs: vec![],
         });
@@ -778,7 +778,7 @@ mod tests {
                     id: "e_mod".to_string(),
                     event_type: "FileModification".to_string(),
                     timestamp: "2026-05-30T08:00:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
                         OCELEventObjectRef {
@@ -795,7 +795,7 @@ mod tests {
                     id: "e_check".to_string(),
                     event_type: "DiagnosticCheck".to_string(),
                     timestamp: "2026-05-30T08:05:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
                         OCELEventObjectRef {
@@ -816,7 +816,7 @@ mod tests {
                     id: "e_clear".to_string(),
                     event_type: "DiagnosticCleared".to_string(),
                     timestamp: "2026-05-30T08:10:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
                         OCELEventObjectRef {
@@ -837,7 +837,7 @@ mod tests {
                     id: "e_receipt".to_string(),
                     event_type: "ReceiptGeneration".to_string(),
                     timestamp: "2026-05-30T08:15:00Z".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
                         OCELEventObjectRef {
@@ -859,28 +859,28 @@ mod tests {
                 OCELObject {
                     id: "agent_1".to_string(),
                     object_type: "Agent".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
                 OCELObject {
                     id: "file_1".to_string(),
                     object_type: "File".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
                 OCELObject {
                     id: "diag_species_1".to_string(),
                     object_type: "DiagnosticSpecies".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
                 OCELObject {
                     id: "receipt_1".to_string(),
                     object_type: "Receipt".to_string(),
-                    attributes: std::collections::HashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![OCELObjectRelRef {
                         object_id: "file_1".to_string(),

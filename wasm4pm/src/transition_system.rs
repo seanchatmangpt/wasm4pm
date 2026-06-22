@@ -240,18 +240,18 @@ pub fn discover_transition_system_from_handle(
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn create_test_log() -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         Event {
                             attributes: {
-                                let mut map = HashMap::new();
+                                let mut map = std::collections::BTreeMap::new();
                                 map.insert(
                                     "concept:name".to_string(),
                                     AttributeValue::String("A".to_string()),
@@ -261,7 +261,7 @@ mod tests {
                         },
                         Event {
                             attributes: {
-                                let mut map = HashMap::new();
+                                let mut map = std::collections::BTreeMap::new();
                                 map.insert(
                                     "concept:name".to_string(),
                                     AttributeValue::String("B".to_string()),
@@ -271,7 +271,7 @@ mod tests {
                         },
                         Event {
                             attributes: {
-                                let mut map = HashMap::new();
+                                let mut map = std::collections::BTreeMap::new();
                                 map.insert(
                                     "concept:name".to_string(),
                                     AttributeValue::String("C".to_string()),
@@ -282,11 +282,11 @@ mod tests {
                     ],
                 },
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         Event {
                             attributes: {
-                                let mut map = HashMap::new();
+                                let mut map = std::collections::BTreeMap::new();
                                 map.insert(
                                     "concept:name".to_string(),
                                     AttributeValue::String("A".to_string()),
@@ -296,7 +296,7 @@ mod tests {
                         },
                         Event {
                             attributes: {
-                                let mut map = HashMap::new();
+                                let mut map = std::collections::BTreeMap::new();
                                 map.insert(
                                     "concept:name".to_string(),
                                     AttributeValue::String("B".to_string()),
@@ -345,7 +345,7 @@ mod tests {
     #[test]
     fn test_transition_system_empty_log() {
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![],
         };
         let ts = discover_transition_system(&log, "concept:name", 2, "forward");
@@ -359,11 +359,11 @@ mod tests {
     #[test]
     fn test_transition_system_trace_with_no_activities() {
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![Event {
-                    attributes: HashMap::new(), // No concept:name key
+                    attributes: BTreeMap::new(), // No concept:name key
                 }],
             }],
         };
