@@ -289,14 +289,14 @@ fn convert_partial_order(
                 .map(|&li| apply_recursive(arena, children[local_to_global[li]]))
                 .collect();
             if sub_trees.len() == 1 {
-                level_trees.push(sub_trees.into_iter().next().unwrap());
+                level_trees.push(sub_trees.into_iter().next().expect("invariant: sub_trees non-empty when len==1"));
             } else {
                 level_trees.push(PowlProcessTree::internal(PtOperator::Parallel, sub_trees));
             }
         }
 
         let subtree = if level_trees.len() == 1 {
-            level_trees.into_iter().next().unwrap()
+            level_trees.into_iter().next().expect("invariant: level_trees non-empty when len==1")
         } else {
             PowlProcessTree::internal(PtOperator::Sequence, level_trees)
         };
@@ -304,7 +304,7 @@ fn convert_partial_order(
     }
 
     if component_trees.len() == 1 {
-        component_trees.into_iter().next().unwrap()
+        component_trees.into_iter().next().expect("invariant: component_trees non-empty when len==1")
     } else {
         PowlProcessTree::internal(PtOperator::Parallel, component_trees)
     }

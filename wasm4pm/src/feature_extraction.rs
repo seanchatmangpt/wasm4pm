@@ -510,13 +510,13 @@ fn count_activities_in_events(events: &[Event], activity_key: &str) -> BTreeMap<
 /// E.g., if A appears 3 times: (3-1) = 2 extra executions
 fn count_rework(trace: &Trace, activity_key: &str) -> usize {
     let counts = count_activities(trace, activity_key);
-    counts.values().filter(|&&c| c > 1).map(|&c| c - 1).sum()
+    counts.values().filter_map(|&c| (c > 1).then(|| c - 1)).sum()
 }
 
 /// Count total rework in a slice of events
 fn count_rework_in_events(events: &[Event], activity_key: &str) -> usize {
     let counts = count_activities_in_events(events, activity_key);
-    counts.values().filter(|&&c| c > 1).map(|&c| c - 1).sum()
+    counts.values().filter_map(|&c| (c > 1).then(|| c - 1)).sum()
 }
 
 /// Count unique activities in a trace
