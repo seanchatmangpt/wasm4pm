@@ -1,6 +1,6 @@
 use crate::models::OCEL;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
 /// OC-DECLARE Templates
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -64,7 +64,7 @@ pub fn discover_oc_declare(ocel: &OCEL, options: OCDeclareOptions) -> Vec<OCDecl
     }
 
     // 3. Extract unique activities and object types
-    let activity_types: HashSet<String> =
+    let activity_types: BTreeSet<String> =
         ocel.events.iter().map(|e| e.event_type.clone()).collect();
     let object_types: &[String] = &ocel.object_types;
 
