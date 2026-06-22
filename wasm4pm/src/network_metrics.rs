@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write as _;
 
 /// Network metrics for social network analysis.
 /// Computes centrality, clustering coefficient, and community detection.
@@ -363,30 +364,30 @@ pub fn network_to_graphml(network: &SocialNetwork) -> String {
     xml.push_str("  <graph edgedefault=\"undirected\">\n");
 
     for node in &network.nodes {
-        xml.push_str(&format!("    <node id=\"{}\"", escape_xml(&node.id)));
+        let _ = write!(xml, "    <node id=\"{}\"", escape_xml(&node.id));
         if let Some(label) = &node.label {
-            xml.push_str(&format!(" label=\"{}\"", escape_xml(label)));
+            let _ = write!(xml, " label=\"{}\"", escape_xml(label));
         }
         xml.push_str(">\n");
         if let Some(workload) = node.workload {
-            xml.push_str(&format!(
+            let _ = write!(xml,
                 "      <data key=\"workload\">{}</data>\n",
                 workload
-            ));
+            );
         }
         xml.push_str("    </node>\n");
     }
 
     for edge in &network.edges {
-        xml.push_str(&format!(
+        let _ = write!(xml,
             "    <edge source=\"{}\" target=\"{}\">\n",
             escape_xml(&edge.from),
             escape_xml(&edge.to)
-        ));
-        xml.push_str(&format!(
+        );
+        let _ = write!(xml,
             "      <data key=\"weight\">{}</data>\n",
             edge.weight
-        ));
+        );
         xml.push_str("    </edge>\n");
     }
 
@@ -399,7 +400,7 @@ pub fn network_to_graphml(network: &SocialNetwork) -> String {
 pub fn network_to_csv(network: &SocialNetwork) -> String {
     let mut csv = String::from("from,to,weight\n");
     for edge in &network.edges {
-        csv.push_str(&format!("{},{},{}\n", edge.from, edge.to, edge.weight));
+        let _ = write!(csv, "{},{},{}\n", edge.from, edge.to, edge.weight);
     }
     csv
 }

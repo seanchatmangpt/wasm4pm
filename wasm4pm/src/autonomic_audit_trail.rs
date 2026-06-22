@@ -8,6 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::fmt::Write as _;
 
 /// Phase of the autonomic healing cycle
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -253,12 +254,12 @@ impl AutonomicAuditTrail {
                 AuditPhase::Escalation => "⚠️",
             };
 
-            timeline.push_str(&format!(
+            let _ = write!(timeline,
                 "│ {}: Cycle {} @ {}s\n",
                 phase_marker, event.cycle_count, timestamp
-            ));
-            timeline.push_str(&format!("│ Event: {}\n", event.event_type));
-            timeline.push_str(&format!("│ Details: {}\n", event.details));
+            );
+            let _ = write!(timeline, "│ Event: {}\n", event.event_type);
+            let _ = write!(timeline, "│ Details: {}\n", event.details);
 
             if idx < self.events.len() - 1 {
                 timeline.push_str("│\n");
@@ -266,11 +267,11 @@ impl AutonomicAuditTrail {
         }
 
         timeline.push_str("╰──────────────────────────────────────────────────────────\n");
-        timeline.push_str(&format!(
+        let _ = write!(timeline,
             "Checksum (Merkle root): {}\n",
             &self.checksum[..16]
-        ));
-        timeline.push_str(&format!("Chain verified: {}\n", self.verify_chain()));
+        );
+        let _ = write!(timeline, "Chain verified: {}\n", self.verify_chain());
 
         timeline
     }

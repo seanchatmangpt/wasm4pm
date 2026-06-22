@@ -9,6 +9,7 @@ use crate::reinforcement::{
     Agent, AgentMeta, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
 };
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write as _;
 use tracing::{error, span, warn, Level};
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
@@ -1579,10 +1580,10 @@ impl RlOrchestrator {
             if action_histogram.len() > r#"{"actions":{"#.len() {
                 action_histogram.push(',');
             }
-            action_histogram.push_str(&format!(
+            let _ = write!(action_histogram,
                 r#""{}": {{"total":{},"successful":{},"success_rate":{:.3}}}"#,
                 action, total, successful, rate
-            ));
+            );
         }
         action_histogram.push_str("}}");
 

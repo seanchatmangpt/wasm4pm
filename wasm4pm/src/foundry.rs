@@ -36,6 +36,7 @@
 //! every positive trace replays at fitness 1.0 (trace ∈ `wf_net_language`).
 
 use std::collections::HashMap;
+use std::fmt::Write as _;
 
 use chrono::{DateTime, FixedOffset, TimeZone};
 use serde::{Deserialize, Serialize};
@@ -842,14 +843,14 @@ pub fn field_xes() -> String {
     xes.push_str("    <string key=\"concept:name\" value=\"order-1\"/>\n");
     for (id, ty, time) in &rows {
         xes.push_str("    <event>\n");
-        xes.push_str(&format!(
+        let _ = write!(xes,
             "      <string key=\"concept:name\" value=\"{ty}\"/>\n"
-        ));
-        xes.push_str(&format!(
+        );
+        let _ = write!(xes,
             "      <date key=\"time:timestamp\" value=\"{}\"/>\n",
             time.to_rfc3339()
-        ));
-        xes.push_str(&format!("      <string key=\"id\" value=\"{id}\"/>\n"));
+        );
+        let _ = write!(xes, "      <string key=\"id\" value=\"{id}\"/>\n");
         xes.push_str("    </event>\n");
     }
     xes.push_str("  </trace>\n");
@@ -863,7 +864,7 @@ pub fn field_csv() -> String {
     let rows = order_flattened_trace();
     let mut csv = String::from("case_id,activity,timestamp,event_id\n");
     for (id, ty, time) in &rows {
-        csv.push_str(&format!("order-1,{ty},{},{id}\n", time.to_rfc3339()));
+        let _ = write!(csv, "order-1,{ty},{},{id}\n", time.to_rfc3339());
     }
     csv
 }

@@ -24,6 +24,7 @@
 
 use crate::RlState;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write as _;
 
 /// Dimension names for reporting
 const DIMENSION_NAMES: &[&str] = &[
@@ -293,12 +294,13 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
 pub fn format_dimensionality_report(analyzer: &DimensionalityAnalyzer) -> String {
     let mut report = String::new();
     report.push_str("=== RL State Space Dimensionality Analysis ===\n");
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "Cycles: {} | Unique states: {} / 368640 | Coverage: {:.2}%\n",
         analyzer.total_cycles,
         analyzer.clustering.unique_states,
         (analyzer.clustering.unique_states as f32 / 368_640.0) * 100.0
-    ));
+    );
     report.push_str("\n--- Per-Dimension Usage ---\n");
 
     for report_item in &analyzer.per_dimension_reports {
@@ -310,19 +312,17 @@ pub fn format_dimensionality_report(analyzer: &DimensionalityAnalyzer) -> String
             ""
         };
 
-        report.push_str(&format!(
-            "{:2}. {} [{}]: {:.1}% coverage ({} unique / {} max){}\n",
+        let _ = write!(
+            report,
+            "{:2}. {} [{:?}]: {:.1}% coverage ({} unique / {} max){}\n",
             report_item.dimension_index,
             report_item.dimension_name,
-            format!(
-                "{:?}",
-                &report_item.unique_values[..report_item.unique_values.len().min(5)]
-            ),
+            &report_item.unique_values[..report_item.unique_values.len().min(5)],
             report_item.coverage_percent,
             report_item.unique_count,
             DIMENSION_MAXES[report_item.dimension_index] + 1,
             bottleneck_marker
-        ));
+        );
 
         if !report_item.gaps.is_empty() {
             let gap_str = report_item
@@ -337,25 +337,28 @@ pub fn format_dimensionality_report(analyzer: &DimensionalityAnalyzer) -> String
                 })
                 .collect::<Vec<_>>()
                 .join(", ");
-            report.push_str(&format!("   Missing ranges: {}\n", gap_str));
+            let _ = write!(report, "   Missing ranges: {}\n", gap_str);
         }
     }
 
     report.push_str("\n--- Multi-Dimensional Interactions ---\n");
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "Health × SPC coverage: {:.1}% ({}/20 combinations)\n",
         analyzer.clustering.health_spc_interaction_coverage,
         (analyzer.clustering.health_spc_interaction_coverage * 20.0 / 100.0) as u8
-    ));
-    report.push_str(&format!(
+    );
+    let _ = write!(
+        report,
         "Circuit × Drift coverage: {:.1}% ({}/9 combinations)\n",
         analyzer.clustering.circuit_drift_interaction_coverage,
         (analyzer.clustering.circuit_drift_interaction_coverage * 9.0 / 100.0) as u8
-    ));
+    );
 
     report.push_str("\n--- Exploration Quality ---\n");
     if !analyzer.clustering.bottleneck_dimensions.is_empty() {
-        report.push_str(&format!(
+        let _ = write!(
+            report,
             "⚠️  Bottleneck dimensions (< 30% coverage): {:?}\n",
             analyzer
                 .clustering
@@ -363,13 +366,14 @@ pub fn format_dimensionality_report(analyzer: &DimensionalityAnalyzer) -> String
                 .iter()
                 .map(|&i| DIMENSION_NAMES[i])
                 .collect::<Vec<_>>()
-        ));
+        );
     }
 
-    report.push_str(&format!(
+    let _ = write!(
+        report,
         "State distribution entropy: {:.3} (0=concentrated, 1=uniform)\n",
         analyzer.clustering.state_distribution_entropy
-    ));
+    );
 
     report
 }
