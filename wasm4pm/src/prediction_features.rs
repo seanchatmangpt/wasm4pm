@@ -63,12 +63,11 @@ pub fn compute_rework_score(trace_json: &str) -> Result<JsValue, JsValue> {
     let denominator = if trace.len() > 1 { trace.len() - 1 } else { 1 };
     let rework_ratio = rework_count as f64 / denominator as f64;
 
-    let mut repeated_pairs: Vec<String> = Vec::new();
-    for i in 1..trace.len() {
-        if trace[i] == trace[i - 1] {
-            repeated_pairs.push(format!("{}→{}", trace[i - 1], trace[i]));
-        }
-    }
+    let repeated_pairs: Vec<String> = trace
+        .windows(2)
+        .filter(|w| w[0] == w[1])
+        .map(|w| format!("{}→{}", w[0], w[1]))
+        .collect();
 
     let result = json!({
         "rework_count": rework_count,

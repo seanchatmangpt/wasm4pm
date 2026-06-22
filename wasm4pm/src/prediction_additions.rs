@@ -255,13 +255,7 @@ pub fn estimate_queue_delay(
 
 /// Rework score: count of repeated activities per trace.
 pub fn calculate_rework_score(trace: &[String]) -> usize {
-    let mut rework_count = 0;
-    for i in 1..trace.len() {
-        if trace[i] == trace[i - 1] {
-            rework_count += 1;
-        }
-    }
-    rework_count
+    trace.windows(2).filter(|w| w[0] == w[1]).count()
 }
 
 /// Extract numeric features from a trace prefix.
