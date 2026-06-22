@@ -685,7 +685,7 @@ pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
 /// Pure-Rust process tree discovery without wasm-bindgen. Used by integration tests.
 #[must_use]
 pub fn discover_simple_process_tree_from_log(log: &EventLog, activity_key: &str) -> String {
-    let mut freq: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut freq: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
 
     for trace in &log.traces {
         let acts: Vec<String> = trace
