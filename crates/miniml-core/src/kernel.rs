@@ -5,11 +5,7 @@ use wasm_bindgen::prelude::*;
 #[inline]
 fn dot_product(x: &[f64], y: &[f64]) -> f64 {
     assert_eq!(x.len(), y.len(), "vectors must have same length");
-    let mut sum = 0.0;
-    for i in 0..x.len() {
-        sum += x[i] * y[i];
-    }
-    sum
+    x.iter().zip(y).map(|(xi, yi)| xi * yi).sum()
 }
 
 // ---------------------------------------------------------------------------
@@ -20,11 +16,7 @@ fn dot_product(x: &[f64], y: &[f64]) -> f64 {
 /// K(x, y) = exp(-gamma * ||x - y||^2)
 pub fn rbf_kernel_impl(x: &[f64], y: &[f64], gamma: f64) -> f64 {
     assert_eq!(x.len(), y.len(), "vectors must have same length");
-    let mut dist_sq = 0.0;
-    for i in 0..x.len() {
-        let d = x[i] - y[i];
-        dist_sq += d * d;
-    }
+    let dist_sq: f64 = x.iter().zip(y).map(|(xi, yi)| (xi - yi).powi(2)).sum();
     (-gamma * dist_sq).exp()
 }
 

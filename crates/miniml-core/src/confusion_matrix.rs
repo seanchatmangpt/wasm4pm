@@ -19,15 +19,9 @@ pub fn confusion_matrix_impl(y_true: &[f64], y_pred: &[f64]) -> Result<Vec<f64>,
 
     // Build confusion matrix
     let mut matrix = vec![0.0f64; n_classes * n_classes];
-    for i in 0..y_true.len() {
-        let true_idx = classes
-            .iter()
-            .position(|&c| (c - y_true[i]).abs() < 1e-10)
-            .unwrap();
-        let pred_idx = classes
-            .iter()
-            .position(|&c| (c - y_pred[i]).abs() < 1e-10)
-            .unwrap();
+    for (&t, &p) in y_true.iter().zip(y_pred) {
+        let true_idx = classes.iter().position(|&c| (c - t).abs() < 1e-10).unwrap();
+        let pred_idx = classes.iter().position(|&c| (c - p).abs() < 1e-10).unwrap();
         matrix[true_idx * n_classes + pred_idx] += 1.0;
     }
 
