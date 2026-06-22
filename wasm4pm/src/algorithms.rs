@@ -323,7 +323,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
     });
     pn.initial_marking.insert("p_source".to_string(), 1);
     pn.final_markings.push({
-        let mut m = HashMap::new();
+        let mut m = std::collections::BTreeMap::new();
         m.insert("p_sink".to_string(), 1);
         m
     });

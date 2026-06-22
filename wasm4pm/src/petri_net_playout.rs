@@ -296,7 +296,7 @@ mod tests {
 
         net.initial_marking.insert("p1".to_string(), 1);
         net.final_markings.push({
-            let mut m = HashMap::new();
+            let mut m = std::collections::BTreeMap::new();
             m.insert("p3".to_string(), 1);
             m
         });

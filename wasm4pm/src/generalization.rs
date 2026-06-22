@@ -457,7 +457,7 @@ mod tests {
                 m
             },
             final_markings: vec![{
-                let mut m = HashMap::new();
+                let mut m = std::collections::BTreeMap::new();
                 m.insert("sink".to_string(), 1);
                 m
             }],
@@ -550,7 +550,7 @@ mod tests {
                 m
             },
             final_markings: vec![{
-                let mut m = HashMap::new();
+                let mut m = std::collections::BTreeMap::new();
                 m.insert("sink".to_string(), 1);
                 m
             }],

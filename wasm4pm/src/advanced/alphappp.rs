@@ -184,7 +184,7 @@ pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: 
         label: "end".to_string(),
         marking: Some(0),
     });
-    let mut final_marking = HashMap::new();
+    let mut final_marking = std::collections::BTreeMap::new();
     final_marking.insert(p_out.clone(), 1);
     net.final_markings.push(final_marking);
 

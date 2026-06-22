@@ -297,7 +297,7 @@ fn build_ilp_petri_net(
     petri_net.initial_marking.insert(source.clone(), 1);
     petri_net
         .final_markings
-        .push(std::collections::HashMap::from([(sink.clone(), 1)]));
+        .push(std::collections::BTreeMap::from([(sink.clone(), 1)]));
 
     // Source → start activities.
     for &sa in start_acts {
