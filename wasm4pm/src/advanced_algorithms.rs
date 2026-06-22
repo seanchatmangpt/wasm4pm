@@ -107,8 +107,7 @@ pub fn discover_heuristic_miner(
     // discover_heuristic_miner_from_log accepts &EventLog, so no ownership needed.
     // The log_size and activity_count for tracing are derived from the DFG result,
     // eliminating the extra get_activities() pass that previously ran before the clone.
-    let (dfg, log_size) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (dfg, log_size) = get_or_init_state().with_event_log(eventlog_handle, |log| {
             let log_size = log.traces.len();
             tracing::info!(
                 target: "wasm4pm.discovery.heuristic_miner",
@@ -118,9 +117,6 @@ pub fn discover_heuristic_miner(
             );
             let dfg = discover_heuristic_miner_from_log(log, activity_key, dependency_threshold);
             Ok((dfg, log_size))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let n_nodes = dfg.nodes.len();
@@ -156,8 +152,7 @@ pub fn analyze_infrequent_paths(
     activity_key: &str,
     frequency_threshold: f64,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let total_traces = log.traces.len() as f64;
 
             // Build activity vocabulary
@@ -261,17 +256,13 @@ pub fn analyze_infrequent_paths(
                 "total_distinct_paths": total_distinct_paths,
                 "frequency_threshold": frequency_threshold,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
 /// Detect rework patterns (activities that are repeated in same trace)
 #[wasm_bindgen]
 pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut rework_stats: FxHashMap<String, usize> = FxHashMap::default();
             let mut traces_with_rework = 0;
             let mut total_rework_count = 0;
@@ -314,9 +305,6 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
                 "total_rework_instances": total_rework_count,
                 "rework_by_activity": rework_vec,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -328,8 +316,7 @@ pub fn detect_bottlenecks(
     timestamp_key: &str,
     duration_threshold_seconds: u64,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut activity_durations: FxHashMap<String, Vec<u64>> = FxHashMap::default();
 
             for trace in &log.traces {
@@ -384,9 +371,6 @@ pub fn detect_bottlenecks(
                 "bottlenecks": bottlenecks,
                 "duration_threshold": duration_threshold_seconds,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -396,8 +380,7 @@ pub fn compute_model_metrics(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let activities = log.get_activities(activity_key);
             let relations = log.get_directly_follows(activity_key);
 
@@ -438,9 +421,6 @@ pub fn compute_model_metrics(
                 "density": density,
                 "complexity_score": (activities.len() as f64 * variants.len() as f64).sqrt(),
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

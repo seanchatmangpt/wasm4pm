@@ -85,8 +85,7 @@ pub fn discover_hill_climbing(
         "Hill Climbing discovery started"
     );
 
-    let current_dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let current_dfg = get_or_init_state().with_event_log(eventlog_handle, |log| {
             tracing::info!(
                 target: "wasm4pm.discovery.hill_climbing",
                 checkpoint = "feature_extraction",
@@ -95,9 +94,6 @@ pub fn discover_hill_climbing(
                 "Log loaded and analyzed"
             );
             Ok(discover_hill_climbing_from_log(log, activity_key))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let node_count = current_dfg.nodes.len();
@@ -306,8 +302,7 @@ pub fn analyze_trace_variants(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut variants: std::collections::BTreeMap<Vec<String>, usize> =
                 std::collections::BTreeMap::new();
 
@@ -345,9 +340,6 @@ pub fn analyze_trace_variants(
                 "top_variants": top_variants,
                 "coverage": (top_variants.len() as f64 / variant_list.len().max(1) as f64 * 100.0),
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -359,8 +351,7 @@ pub fn mine_sequential_patterns(
     min_support: f64,
     pattern_length: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut patterns: std::collections::BTreeMap<Vec<String>, usize> =
                 std::collections::BTreeMap::new();
             let min_count = ((log.traces.len() as f64 * min_support).ceil()) as usize;
@@ -405,9 +396,6 @@ pub fn mine_sequential_patterns(
                 "patterns": result_patterns,
                 "min_support": min_support,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -418,8 +406,7 @@ pub fn detect_concept_drift(
     activity_key: &str,
     window_size: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut drifts = Vec::new();
             let mut previous_activities: HashSet<String> = HashSet::new();
 
@@ -463,9 +450,6 @@ pub fn detect_concept_drift(
                 "drifts": drifts,
                 "window_size": window_size,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -554,8 +538,7 @@ pub fn cluster_traces(
     activity_key: &str,
     num_clusters: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             if log.traces.is_empty() {
                 return to_js_str(&json!({
                     "num_clusters": num_clusters,
@@ -634,9 +617,6 @@ pub fn cluster_traces(
                 "total_traces": log.traces.len(),
                 "iterations": iteration,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -646,8 +626,7 @@ pub fn analyze_start_end_activities(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut start_acts: FxHashMap<String, usize> = FxHashMap::default();
             let mut end_acts: FxHashMap<String, usize> = FxHashMap::default();
             let mut start_end_pairs: FxHashMap<(String, String), usize> = FxHashMap::default();
@@ -699,9 +678,6 @@ pub fn analyze_start_end_activities(
                 "end_activities": ends.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
                 "start_end_pairs": pairs.iter().take(10).map(|(p, c)| json!({"start": p.0, "end": p.1, "count": c})).collect::<Vec<_>>(),
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -711,8 +687,7 @@ pub fn analyze_activity_cooccurrence(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut cooccurrence: FxHashMap<(String, String), usize> = FxHashMap::default();
 
             for trace in &log.traces {
@@ -757,9 +732,6 @@ pub fn analyze_activity_cooccurrence(
             to_js_str(&json!({
                 "cooccurrences": result,
             }))
-        }
-        Some(_) => Err(crate::error::js_val("Not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

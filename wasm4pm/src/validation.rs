@@ -133,8 +133,7 @@ pub fn split_log(
     }
 
     // Extract trace count and clone traces inside closure (borrowed).
-    let (traces, attributes) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (traces, attributes) = get_or_init_state().with_event_log(log_handle, |log| {
             Ok((log.traces.clone(), log.attributes.clone()))
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
@@ -266,7 +265,6 @@ pub fn holdout_validate(
             "moderate_overfitting"
         } else {
             "good_generalization"
-        }
     }))
 }
 
@@ -290,8 +288,7 @@ pub fn cross_validate(
     }
 
     // Extract all traces
-    let (traces, attributes) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (traces, attributes) = get_or_init_state().with_event_log(log_handle, |log| {
             Ok((log.traces.clone(), log.attributes.clone()))
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
