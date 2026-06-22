@@ -261,10 +261,10 @@ impl CognitionBreed for BeliefMerging {
 
         // Select minimal set under the chosen aggregation.
         let min_set: Vec<u32> = if p.gmax {
-            let best = scored.iter().map(|(_, _, v, _)| v.clone()).min().unwrap();
+            let best = scored.iter().map(|(_, _, v, _)| v).min().unwrap();
             scored
                 .iter()
-                .filter(|(_, _, v, _)| *v == best)
+                .filter(|(_, _, v, _)| v == best)
                 .map(|(w, _, _, _)| *w)
                 .collect()
         } else {
