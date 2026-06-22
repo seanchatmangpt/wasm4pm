@@ -23,7 +23,7 @@ pub fn train_test_split_impl(
     }
 
     let n_train = ((n as f64) * train_ratio).round() as usize;
-    let n_train = n_train.max(1).min(n - 1);
+    let n_train = n_train.clamp(1, n - 1);
     let n_test = n - n_train;
 
     // Create and shuffle indices
