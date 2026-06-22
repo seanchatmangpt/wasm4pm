@@ -1,7 +1,7 @@
 use crate::models::parse_timestamp_ms;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 /// Priority 5C — Resource-centric analysis.
 ///
 /// Analyzes which resources (people, machines) are performing which activities,
@@ -100,7 +100,7 @@ pub fn analyze_resource_utilization(
             }
 
             // Second pass: compute resource metrics
-            let mut resources_obj = HashMap::new();
+            let mut resources_obj: BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
             for (resource, events) in &resource_events {
                 if events.is_empty() {
@@ -193,7 +193,7 @@ pub fn analyze_resource_activity_matrix(
 ) -> Result<JsValue, JsValue> {
     let json = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut matrix: HashMap<String, HashMap<String, usize>> = HashMap::new();
+            let mut matrix: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
             let mut resource_totals: HashMap<String, usize> = HashMap::new();
 
             // Build resource-activity matrix
@@ -218,7 +218,7 @@ pub fn analyze_resource_activity_matrix(
             }
 
             // Compute specialization scores using Herfindahl index
-            let mut specialization_scores: HashMap<String, f64> = HashMap::new();
+            let mut specialization_scores: BTreeMap<String, f64> = BTreeMap::new();
             for (resource, activities) in &matrix {
                 let total = resource_totals.get(resource).copied().unwrap_or(1) as f64;
                 let herfindahl: f64 = activities
