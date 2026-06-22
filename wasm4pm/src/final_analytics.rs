@@ -78,10 +78,11 @@ pub fn compute_activity_transition_matrix(
         let activities = log.get_activities(activity_key);
 
         // Build activity vocabulary
-        let mut vocab: HashMap<String, u32> = HashMap::default();
-        for (idx, activity) in activities.iter().enumerate() {
-            vocab.insert(activity.clone(), idx as u32);
-        }
+        let vocab: HashMap<String, u32> = activities
+            .iter()
+            .enumerate()
+            .map(|(i, a)| (a.clone(), i as u32))
+            .collect();
 
         let mut transitions: BTreeMap<(u32, u32), usize> = BTreeMap::new();
         let mut activity_total: FxHashMap<u32, usize> = FxHashMap::default();
