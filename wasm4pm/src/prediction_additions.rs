@@ -191,7 +191,7 @@ pub struct TransitionGraph {
 pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionGraph {
     let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
     let mut activity_totals: HashMap<String, usize> = HashMap::new();
-    let mut activities_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut activities_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
         let mut prev_act: Option<String> = None;
@@ -217,8 +217,7 @@ pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionG
         .collect();
     edges.sort_unstable_by(|a, b| b.2.total_cmp(&a.2));
 
-    let mut activities: Vec<String> = activities_set.into_iter().collect();
-    activities.sort_unstable();
+    let activities: Vec<String> = activities_set.into_iter().collect();
 
     TransitionGraph { edges, activities }
 }
