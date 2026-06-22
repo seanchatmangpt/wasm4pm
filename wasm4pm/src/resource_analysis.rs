@@ -1,7 +1,7 @@
 use crate::models::parse_timestamp_ms;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 /// Priority 5C — Resource-centric analysis.
 ///
 /// Analyzes which resources (people, machines) are performing which activities,
@@ -43,8 +43,8 @@ pub fn analyze_resource_utilization(
 ) -> Result<JsValue, JsValue> {
     let json = get_or_init_state().with_event_log(log_handle, |log| {
         // Track per-resource info
-        let mut resource_events: HashMap<String, Vec<(usize, i64, String)>> = HashMap::new();
-        let mut resource_activities: HashMap<String, HashMap<String, usize>> = HashMap::new();
+        let mut resource_events: BTreeMap<String, Vec<(usize, i64, String)>> = BTreeMap::new();
+        let mut resource_activities: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
         let mut case_active_times: Vec<(i64, i64)> = Vec::new(); // (start, end) per case
 
         // First pass: collect events per resource and case durations
@@ -189,7 +189,7 @@ pub fn analyze_resource_activity_matrix(
 ) -> Result<JsValue, JsValue> {
     let json = get_or_init_state().with_event_log(log_handle, |log| {
         let mut matrix: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
-        let mut resource_totals: HashMap<String, usize> = HashMap::new();
+        let mut resource_totals: BTreeMap<String, usize> = BTreeMap::new();
 
         // Build resource-activity matrix
         for trace in &log.traces {
@@ -264,9 +264,9 @@ pub fn identify_resource_bottlenecks(
 ) -> Result<JsValue, JsValue> {
     let json = get_or_init_state().with_event_log(log_handle, |log| {
             // Per-resource, per-case: (case_id, first_activity_time, resource_start_time, resource_end_time, activity)
-            let mut resource_case_intervals: HashMap<String, Vec<(String, i64, i64, i64, String)>> =
-                HashMap::new();
-            let mut case_start_times: HashMap<String, i64> = HashMap::new();
+            let mut resource_case_intervals: BTreeMap<String, Vec<(String, i64, i64, i64, String)>> =
+                BTreeMap::new();
+            let mut case_start_times: BTreeMap<String, i64> = BTreeMap::new();
 
             // Collect all case start times (first event in each case)
             for trace in &log.traces {
@@ -301,8 +301,8 @@ pub fn identify_resource_bottlenecks(
                 let case_start = case_start_times.get(&case_id).copied().unwrap_or(0);
 
                 // Track per-resource first and last events in this case
-                let mut resource_first_last: HashMap<String, (i64, i64)> = HashMap::new();
-                let mut resource_activity: HashMap<String, String> = HashMap::new();
+                let mut resource_first_last: BTreeMap<String, (i64, i64)> = BTreeMap::new();
+                let mut resource_activity: BTreeMap<String, String> = BTreeMap::new();
 
                 for event in &trace.events {
                     if let Some(resource) = event
@@ -420,7 +420,7 @@ fn format_timestamp(ms: i64) -> String {
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::{BTreeMap};
 
     fn create_test_log() -> EventLog {
         EventLog {

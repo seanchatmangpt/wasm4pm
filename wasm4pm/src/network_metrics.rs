@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashSet, VecDeque};
 use std::fmt::Write as _;
 
 /// Network metrics for social network analysis.
@@ -32,7 +32,7 @@ impl SocialNetwork {
             return BTreeMap::new();
         }
 
-        let mut degrees: HashMap<String, usize> = HashMap::new();
+        let mut degrees: BTreeMap<String, usize> = BTreeMap::new();
         for edge in &self.edges {
             *degrees.entry(edge.from.clone()).or_default() += 1;
             *degrees.entry(edge.to.clone()).or_default() += 1;
@@ -58,7 +58,7 @@ impl SocialNetwork {
             self.nodes.iter().map(|n| (n.id.clone(), 0.0)).collect();
 
         // Build adjacency list
-        let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+        let mut adj: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for node in &self.nodes {
             adj.insert(node.id.clone(), Vec::new());
         }
@@ -75,8 +75,8 @@ impl SocialNetwork {
         for source in &self.nodes {
             let mut queue = VecDeque::new();
             let mut visited: HashSet<String> = HashSet::new();
-            let mut predecessors: HashMap<String, Vec<String>> = HashMap::new();
-            let mut distances: HashMap<String, usize> = HashMap::new();
+            let mut predecessors: BTreeMap<String, Vec<String>> = BTreeMap::new();
+            let mut distances: BTreeMap<String, usize> = BTreeMap::new();
 
             queue.push_back(source.id.clone());
             visited.insert(source.id.clone());
@@ -129,7 +129,7 @@ impl SocialNetwork {
         let mut closeness = BTreeMap::new();
 
         // Build adjacency list
-        let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+        let mut adj: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for node in &self.nodes {
             adj.insert(node.id.clone(), Vec::new());
         }
@@ -145,7 +145,7 @@ impl SocialNetwork {
         // BFS from each node
         for source in &self.nodes {
             let mut queue = VecDeque::new();
-            let mut distances: HashMap<String, usize> = HashMap::new();
+            let mut distances: BTreeMap<String, usize> = BTreeMap::new();
 
             queue.push_back(source.id.clone());
             distances.insert(source.id.clone(), 0);
@@ -192,7 +192,7 @@ impl SocialNetwork {
         let mut local_coefficients: BTreeMap<String, f64> = BTreeMap::new();
 
         // Build adjacency list
-        let mut adj: HashMap<String, HashSet<String>> = HashMap::new();
+        let mut adj: BTreeMap<String, HashSet<String>> = BTreeMap::new();
         for node in &self.nodes {
             adj.insert(node.id.clone(), HashSet::new());
         }
@@ -256,7 +256,7 @@ impl SocialNetwork {
         }
 
         // Build adjacency list with weights
-        let mut adj: HashMap<String, Vec<(String, usize)>> = HashMap::new();
+        let mut adj: BTreeMap<String, Vec<(String, usize)>> = BTreeMap::new();
         for node in &self.nodes {
             adj.insert(node.id.clone(), Vec::new());
         }
@@ -331,7 +331,7 @@ impl SocialNetwork {
         node_id: &str,
         old_comm: usize,
         new_comm: usize,
-        adj: &HashMap<String, Vec<(String, usize)>>,
+        adj: &BTreeMap<String, Vec<(String, usize)>>,
         communities: &BTreeMap<String, usize>,
     ) -> f64 {
         let neighbors = adj.get(node_id).cloned().unwrap_or_default();
