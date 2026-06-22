@@ -84,11 +84,12 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
             let edge_probs: Vec<Option<f64>> = if activities.len() < 2 {
                 Vec::new()
             } else {
-                (0..activities.len() - 1)
-                    .map(|i| {
+                activities
+                    .windows(2)
+                    .map(|w| {
                         dfg.edges
                             .iter()
-                            .find(|e| e.from == activities[i] && e.to == activities[i + 1])
+                            .find(|e| e.from == w[0] && e.to == w[1])
                             .map(|e| e.frequency as f64 / total_f)
                     })
                     .collect()
