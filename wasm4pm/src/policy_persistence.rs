@@ -4,7 +4,7 @@
 //! with BLAKE3 hash verification for integrity.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -37,7 +37,7 @@ pub struct PolicyCheckpoint {
 
     /// Q-table: state_bin → action → Q-value
     /// state_bin is the 32-bit encoding of 8D state (see encode_rl_state_key)
-    pub q_table: HashMap<u64, HashMap<u32, f32>>,
+    pub q_table: BTreeMap<u64, BTreeMap<u32, f32>>,
 
     /// LinUCB weight vectors: [per_agent][8D feature dimension]
     /// Index 0-4: QLearning, SARSA, DoubleQLearning, ExpectedSARSA, REINFORCE
@@ -58,7 +58,7 @@ impl PolicyCheckpoint {
     /// Create a new policy checkpoint
     pub fn new(
         agent_id: String,
-        q_table: HashMap<u64, HashMap<u32, f32>>,
+        q_table: BTreeMap<u64, BTreeMap<u32, f32>>,
         linucb_weights: Vec<Vec<f32>>,
         convergence_metrics: ConvergenceMetrics,
         checkpoint_epoch: u64,
@@ -168,12 +168,12 @@ impl PolicyCheckpoint {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
     use tempfile::NamedTempFile;
 
     #[test]
     fn test_policy_checkpoint_creation() {
-        let q_table = HashMap::new();
+        let q_table = BTreeMap::new();
         let linucb_weights = vec![vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]; 5];
         let metrics = ConvergenceMetrics::default();
 
@@ -196,8 +196,8 @@ mod tests {
         let temp_path = temp_file.path().to_path_buf();
 
         // Create checkpoint
-        let mut q_table = HashMap::new();
-        let mut action_map = HashMap::new();
+        let mut q_table = BTreeMap::new();
+        let mut action_map = BTreeMap::new();
         action_map.insert(0, 1.5);
         action_map.insert(1, 2.5);
         q_table.insert(42, action_map);
@@ -228,7 +228,7 @@ mod tests {
 
     #[test]
     fn test_hash_integrity_verification() {
-        let q_table = HashMap::new();
+        let q_table = BTreeMap::new();
         let linucb_weights = vec![vec![0.1; 8]; 5];
         let metrics = ConvergenceMetrics::default();
 
@@ -250,7 +250,7 @@ mod tests {
 
         let checkpoint = PolicyCheckpoint::new(
             "ExpectedSARSA".to_string(),
-            HashMap::new(),
+            BTreeMap::new(),
             vec![vec![0.1; 8]; 5],
             ConvergenceMetrics::default(),
             300,
@@ -285,7 +285,7 @@ mod tests {
 
         let checkpoint1 = PolicyCheckpoint::new(
             "Agent1".to_string(),
-            HashMap::new(),
+            BTreeMap::new(),
             vec![vec![0.1; 8]; 5],
             ConvergenceMetrics::default(),
             100,
@@ -296,7 +296,7 @@ mod tests {
         // Create second checkpoint
         let checkpoint2 = PolicyCheckpoint::new(
             "Agent2".to_string(),
-            HashMap::new(),
+            BTreeMap::new(),
             vec![vec![0.2; 8]; 5],
             ConvergenceMetrics::default(),
             200,

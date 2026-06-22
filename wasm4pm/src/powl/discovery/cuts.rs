@@ -15,7 +15,7 @@
 
 use crate::powl::discovery::DiscoveryConfig;
 use crate::powl_arena::{Operator, PowlArena};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, BTreeMap, HashSet};
 
 // ---------------------------------------------------------------------------
 // Eventually-follows graph (EFG) helper
@@ -83,7 +83,7 @@ pub fn detect_concurrency_cut(
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    let mut activity_to_idx: HashMap<String, usize> = HashMap::new();
+    let mut activity_to_idx: BTreeMap<String, usize> = BTreeMap::new();
     for (i, act) in activity_set.iter().enumerate() {
         activity_to_idx.insert(act.clone(), i);
     }
@@ -145,7 +145,7 @@ pub fn detect_sequence_cut(
     }
 
     // Build activity-to-index mapping
-    let mut act_to_idx: HashMap<String, usize> = HashMap::new();
+    let mut act_to_idx: BTreeMap<String, usize> = BTreeMap::new();
     for (i, a) in activities.iter().enumerate() {
         act_to_idx.insert(a.clone(), i);
     }
@@ -173,7 +173,7 @@ pub fn detect_sequence_cut(
     }
 
     // Build SCC-to-index mapping
-    let mut scc_to_idx: HashMap<usize, usize> = HashMap::new();
+    let mut scc_to_idx: BTreeMap<usize, usize> = BTreeMap::new();
     for (i, scc) in sccs.iter().enumerate() {
         for &node in scc {
             scc_to_idx.insert(node, i);
@@ -266,7 +266,7 @@ pub fn detect_sequence_cut(
             } else {
                 let scc_spo_idx = arena.add_strict_partial_order(scc_child_indices.clone());
                 // Add ordering edges based on DFG
-                let scc_act_to_idx: HashMap<String, usize> = scc_activities
+                let scc_act_to_idx: BTreeMap<String, usize> = scc_activities
                     .iter()
                     .enumerate()
                     .map(|(i, a)| (a.clone(), i))
@@ -420,7 +420,7 @@ pub fn detect_loop_cut(
         .collect::<Vec<_>>();
 
     // Build DFG reachability matrix
-    let mut act_to_idx: HashMap<String, usize> = HashMap::new();
+    let mut act_to_idx: BTreeMap<String, usize> = BTreeMap::new();
     for (i, a) in all_activities.iter().enumerate() {
         act_to_idx.insert(a.clone(), i);
     }
@@ -560,7 +560,7 @@ pub fn detect_loop_cut(
         }
 
         let do_spo_idx = arena.add_strict_partial_order(do_children.clone());
-        let do_act_to_idx: HashMap<String, usize> = do_part
+        let do_act_to_idx: BTreeMap<String, usize> = do_part
             .iter()
             .enumerate()
             .map(|(i, a)| (a.clone(), i))
@@ -592,7 +592,7 @@ pub fn detect_loop_cut(
         }
 
         let redo_spo_idx = arena.add_strict_partial_order(redo_children.clone());
-        let redo_act_to_idx: HashMap<String, usize> = redo_order
+        let redo_act_to_idx: BTreeMap<String, usize> = redo_order
             .iter()
             .enumerate()
             .map(|(i, a)| (a.clone(), i))
@@ -645,7 +645,7 @@ pub fn detect_xor_cut(
     }
 
     // Build activity-to-index mapping
-    let mut act_to_idx: HashMap<String, usize> = HashMap::new();
+    let mut act_to_idx: BTreeMap<String, usize> = BTreeMap::new();
     for (i, a) in activities.iter().enumerate() {
         act_to_idx.insert(a.clone(), i);
     }
@@ -766,7 +766,7 @@ pub fn detect_xor_cut(
             }
 
             let comp_spo_idx = arena.add_strict_partial_order(comp_children.clone());
-            let comp_act_to_idx: HashMap<String, usize> = component_activities
+            let comp_act_to_idx: BTreeMap<String, usize> = component_activities
                 .iter()
                 .enumerate()
                 .map(|(i, a)| (a.clone(), i))
@@ -818,7 +818,7 @@ pub fn detect_maximal_partial_order_cut(
     }
 
     // Build activity-to-index mapping
-    let mut act_to_idx: HashMap<String, usize> = HashMap::new();
+    let mut act_to_idx: BTreeMap<String, usize> = BTreeMap::new();
     for (i, a) in activities.iter().enumerate() {
         act_to_idx.insert(a.clone(), i);
     }

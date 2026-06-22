@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::error::{wasm_err, codes};
 use crate::utilities::to_js_str;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 /// Compute causal footprints: for each activity pair (from, to), measure
 /// the strength of the causal relationship based on temporal precedence
@@ -35,10 +35,10 @@ pub fn causal_footprint(
     }
 
     // Count: from_occurrences, to_occurrences, from_then_to, to_without_from
-    let mut from_count: HashMap<String, usize> = HashMap::new();
-    let mut to_count: HashMap<String, usize> = HashMap::new();
-    let mut from_to_count: HashMap<(String, String), usize> = HashMap::new();
-    let mut to_without_from: HashMap<(String, String), usize> = HashMap::new();
+    let mut from_count: BTreeMap<String, usize> = BTreeMap::new();
+    let mut to_count: BTreeMap<String, usize> = BTreeMap::new();
+    let mut from_to_count: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut to_without_from: BTreeMap<(String, String), usize> = BTreeMap::new();
 
     for trace in &traces {
         let acts: Vec<&str> = trace.events.iter()
@@ -180,7 +180,7 @@ pub fn granger_like_test(
 
     // Baseline rate: P(y) for each activity y
     let total_events: usize = traces.iter().map(|t| t.events.len()).sum();
-    let mut y_counts: HashMap<String, usize> = HashMap::new();
+    let mut y_counts: BTreeMap<String, usize> = BTreeMap::new();
     for trace in &traces {
         for event in &trace.events {
             if let Some(act) = event.attributes.get(activity_key).and_then(|v| v.as_string()) {
@@ -264,18 +264,18 @@ pub fn granger_like_test(
 mod tests {
     use super::*;
     use crate::models::{EventLog, Trace, Event, AttributeValue};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     fn make_test_log(traces: Vec<Vec<&str>>) -> EventLog {
         let mut log = EventLog::new();
         for activities in traces {
             let mut trace = Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             };
             for act in activities {
                 let mut event = Event {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 };
                 event.attributes.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
                 trace.events.push(event);
@@ -294,7 +294,7 @@ mod tests {
         ]);
 
         let traces = log.traces.clone();
-        let mut from_to_count: HashMap<(String, String), usize> = HashMap::new();
+        let mut from_to_count: BTreeMap<(String, String), usize> = BTreeMap::new();
         for trace in &traces {
             let acts: Vec<String> = trace.events.iter()
                 .filter_map(|e| e.attributes.get("concept:name").and_then(|v: &crate::models::AttributeValue| v.as_string()).map(str::to_owned))
