@@ -750,12 +750,12 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
         }
 
         for pair in events.windows(2) {
-            *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
+            *self.edge_counts.entry((pair[0], pair[1])).or_default() += 1;
         }
 
-        *self.start_counts.entry(events[0]).or_insert(0) += 1;
+        *self.start_counts.entry(events[0]).or_default() += 1;
         if let Some(last) = events.last() {
-            *self.end_counts.entry(*last).or_insert(0) += 1;
+            *self.end_counts.entry(*last).or_default() += 1;
         }
 
         self.trace_count += 1;

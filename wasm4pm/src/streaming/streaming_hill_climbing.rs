@@ -137,14 +137,14 @@ impl StreamingHillClimbingBuilder {
                 for w in trace.windows(2) {
                     let pair = (w[0], w[1]);
                     if current_edges.contains(&pair) {
-                        *pair_counts.entry(pair).or_insert(0) += 1;
+                        *pair_counts.entry(pair).or_default() += 1;
                     }
                 }
 
                 // Edges that appear exactly once in this trace are "essential" for it
                 for (&pair, &count) in &pair_counts {
                     if count == 1 {
-                        *removal_cost.entry(pair).or_insert(0) += 1;
+                        *removal_cost.entry(pair).or_default() += 1;
                     }
                 }
             }
@@ -237,12 +237,12 @@ impl StreamingAlgorithm for StreamingHillClimbingBuilder {
         }
 
         for pair in events.windows(2) {
-            *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
+            *self.edge_counts.entry((pair[0], pair[1])).or_default() += 1;
         }
 
-        *self.start_counts.entry(events[0]).or_insert(0) += 1;
+        *self.start_counts.entry(events[0]).or_default() += 1;
         if let Some(last) = events.last() {
-            *self.end_counts.entry(*last).or_insert(0) += 1;
+            *self.end_counts.entry(*last).or_default() += 1;
         }
 
         // Store trace sequence for hill climbing at snapshot time

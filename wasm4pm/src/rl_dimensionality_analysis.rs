@@ -239,7 +239,7 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
         (circuit_drift_pairs.len() as f32 / circuit_drift_theoretical as f32) * 100.0;
 
     // Compute state distribution entropy (Shannon entropy)
-    let mut state_frequencies = HashMap::new();
+    let mut state_frequencies: HashMap<_, usize> = HashMap::new();
     for state in states {
         let state_key = (
             state.health_level,
@@ -251,7 +251,7 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
             state.circuit_state,
             state.cycle_phase,
         );
-        *state_frequencies.entry(state_key).or_insert(0) += 1;
+        *state_frequencies.entry(state_key).or_default() += 1;
     }
 
     let total = states.len() as f32;

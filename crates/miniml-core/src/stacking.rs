@@ -201,7 +201,7 @@ impl VotingEnsemble {
 
                 for &pred in base_predictions {
                     let class = pred.round() as i32;
-                    *counts.entry(class).or_insert(0) += 1;
+                    *counts.entry(class).or_default() += 1;
                 }
 
                 // Find class with most votes. BTreeMap iterates ascending by

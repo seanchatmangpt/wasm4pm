@@ -88,7 +88,7 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
         start_acts.insert(trace[0]);
         end_acts.insert(*trace.last().unwrap());
         for w in trace.windows(2) {
-            *df.entry((w[0], w[1])).or_insert(0) += 1;
+            *df.entry((w[0], w[1])).or_default() += 1;
         }
     }
 
@@ -472,7 +472,7 @@ pub fn discover_optimized_dfg_from_log(
                 window[0].attributes.get(activity_key),
                 window[1].attributes.get(activity_key),
             ) {
-                *edge_counts.entry((act1.clone(), act2.clone())).or_insert(0) += 1;
+                *edge_counts.entry((act1.clone(), act2.clone())).or_default() += 1;
             }
         }
     }
@@ -495,13 +495,13 @@ pub fn discover_optimized_dfg_from_log(
             if let Some(AttributeValue::String(first_act)) =
                 trace.events[0].attributes.get(activity_key)
             {
-                *dfg.start_activities.entry(first_act.clone()).or_insert(0) += 1;
+                *dfg.start_activities.entry(first_act.clone()).or_default() += 1;
             }
             if let Some(AttributeValue::String(last_act)) = trace.events[trace.events.len() - 1]
                 .attributes
                 .get(activity_key)
             {
-                *dfg.end_activities.entry(last_act.clone()).or_insert(0) += 1;
+                *dfg.end_activities.entry(last_act.clone()).or_default() += 1;
             }
         }
     }

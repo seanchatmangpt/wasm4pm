@@ -316,8 +316,8 @@ pub fn validate_workflow_net(net: &PetriNet) -> Result<(), String> {
             ));
         }
 
-        *out_degrees.entry(from).or_insert(0) += 1;
-        *in_degrees.entry(to).or_insert(0) += 1;
+        *out_degrees.entry(from).or_default() += 1;
+        *in_degrees.entry(to).or_default() += 1;
 
         adj.get_mut(from).unwrap().push(to);
         rev_adj.get_mut(to).unwrap().push(from);

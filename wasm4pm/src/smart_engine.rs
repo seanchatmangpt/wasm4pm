@@ -274,20 +274,20 @@ impl FusedMultiPass {
 
             // Node frequencies
             for activity in trace {
-                *node_counts.entry(activity.clone()).or_insert(0) += 1;
+                *node_counts.entry(activity.clone()).or_default() += 1;
             }
 
             // Directly-follows edges
             for window in trace.windows(2) {
                 *edge_counts
                     .entry((window[0].clone(), window[1].clone()))
-                    .or_insert(0) += 1;
+                    .or_default() += 1;
             }
 
             // Start/end activities — trace non-empty guaranteed by check above
-            *start_counts.entry(trace[0].clone()).or_insert(0) += 1;
+            *start_counts.entry(trace[0].clone()).or_default() += 1;
             if let Some(last_activity) = trace.last() {
-                *end_counts.entry(last_activity.clone()).or_insert(0) += 1;
+                *end_counts.entry(last_activity.clone()).or_default() += 1;
             }
         }
 
@@ -461,18 +461,18 @@ impl FusedMultiPassStreaming {
 
             // Node frequencies
             for &id in &encoded {
-                *node_counts.entry(id).or_insert(0) += 1;
+                *node_counts.entry(id).or_default() += 1;
             }
 
             // Directly-follows edges
             for window in encoded.windows(2) {
-                *edge_counts.entry((window[0], window[1])).or_insert(0) += 1;
+                *edge_counts.entry((window[0], window[1])).or_default() += 1;
             }
 
             // Start/end activities — encoded non-empty guaranteed by check above
-            *start_counts.entry(encoded[0]).or_insert(0) += 1;
+            *start_counts.entry(encoded[0]).or_default() += 1;
             if let Some(last_id) = encoded.last() {
-                *end_counts.entry(*last_id).or_insert(0) += 1;
+                *end_counts.entry(*last_id).or_default() += 1;
             }
         }
 

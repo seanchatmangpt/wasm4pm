@@ -508,7 +508,7 @@ impl ActionHistory {
     pub fn distribution(&self) -> HashMap<String, u32> {
         let mut dist = HashMap::new();
         for e in &self.entries {
-            *dist.entry(e.action.clone()).or_insert(0) += 1;
+            *dist.entry(e.action.clone()).or_default() += 1;
         }
         dist
     }

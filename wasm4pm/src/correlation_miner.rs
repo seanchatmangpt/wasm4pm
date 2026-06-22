@@ -173,8 +173,8 @@ pub fn mine_correlation(
         }
         let src = &activities[i];
         let tgt = &activities[j];
-        *out_deg.entry(src.clone()).or_insert(0) += freq;
-        *in_deg.entry(tgt.clone()).or_insert(0) += freq;
+        *out_deg.entry(src.clone()).or_default() += freq;
+        *in_deg.entry(tgt.clone()).or_default() += freq;
         edges.push((src.clone(), tgt.clone(), freq));
     }
 
@@ -401,7 +401,7 @@ fn resolve_edges(
         let assign = out_rem[i].min(in_rem[j]);
         out_rem[i] -= assign;
         in_rem[j] -= assign;
-        *edge_freq.entry((i, j)).or_insert(0) += assign;
+        *edge_freq.entry((i, j)).or_default() += assign;
     }
     edge_freq
 }

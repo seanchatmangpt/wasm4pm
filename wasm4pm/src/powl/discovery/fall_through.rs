@@ -60,8 +60,8 @@ fn choice_graph_fall_through(
     }
 
     for (src, tgt) in &dfg {
-        *outgoing_count.entry(src.clone()).or_insert(0) += 1;
-        *incoming_count.entry(tgt.clone()).or_insert(0) += 1;
+        *outgoing_count.entry(src.clone()).or_default() += 1;
+        *incoming_count.entry(tgt.clone()).or_default() += 1;
     }
 
     let start_activities: HashSet<String> = activities

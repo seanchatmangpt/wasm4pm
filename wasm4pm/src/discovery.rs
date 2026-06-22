@@ -53,14 +53,14 @@ pub fn discover_dfg_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -
         for i in start..end - 1 {
             *edge_counts
                 .entry((col.events[i], col.events[i + 1]))
-                .or_insert(0) += 1;
+                .or_default() += 1;
         }
         *dfg.start_activities
             .entry(col.vocab[col.events[start] as usize].to_owned())
-            .or_insert(0) += 1;
+            .or_default() += 1;
         *dfg.end_activities
             .entry(col.vocab[col.events[end - 1] as usize].to_owned())
-            .or_insert(0) += 1;
+            .or_default() += 1;
     }
 
     let mut sorted_edges: Vec<_> = edge_counts.into_iter().collect();
@@ -213,7 +213,7 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
         for pair in events.windows(2) {
             let from = pair[0].1;
             let to = pair[1].1;
-            *edge_map.entry((from, to)).or_insert(0) += 1;
+            *edge_map.entry((from, to)).or_default() += 1;
         }
     }
 
@@ -233,10 +233,10 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
     for obj_id in events_by_object.keys() {
         if let Some(events) = events_by_object.get(obj_id) {
             if let Some(first) = events.first() {
-                *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
+                *dfg.start_activities.entry(first.1.to_string()).or_default() += 1;
             }
             if let Some(last) = events.last() {
-                *dfg.end_activities.entry(last.1.to_string()).or_insert(0) += 1;
+                *dfg.end_activities.entry(last.1.to_string()).or_default() += 1;
             }
         }
     }
@@ -307,7 +307,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
             let global_activity_counts: FxHashMap<String, usize> = {
                 let mut m: FxHashMap<String, usize> = FxHashMap::default();
                 for event in &ocel.events {
-                    *m.entry(event.event_type.clone()).or_insert(0) += 1;
+                    *m.entry(event.event_type.clone()).or_default() += 1;
                 }
                 m
             };
@@ -366,7 +366,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                     for pair in events.windows(2) {
                         let from = pair[0].1;
                         let to = pair[1].1;
-                        *edge_map.entry((from, to)).or_insert(0) += 1;
+                        *edge_map.entry((from, to)).or_default() += 1;
                     }
                 }
                 for ((from, to), freq) in edge_map {
@@ -382,7 +382,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                 for obj_id in events_by_object.keys() {
                     if let Some(events) = events_by_object.get(obj_id) {
                         if let Some(first) = events.first() {
-                            *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
+                            *dfg.start_activities.entry(first.1.to_string()).or_default() += 1;
                             if use_bitmask {
                                 if let Some(&id) = activity_index.get(first.1) {
                                     bitmask_mark(&mut trace_seen_bitmask, id);
@@ -390,7 +390,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                             }
                         }
                         if let Some(last) = events.last() {
-                            *dfg.end_activities.entry(last.1.to_string()).or_insert(0) += 1;
+                            *dfg.end_activities.entry(last.1.to_string()).or_default() += 1;
                         }
                     }
                 }

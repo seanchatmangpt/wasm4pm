@@ -990,7 +990,7 @@ pub fn autonomic_execute_cycle(
                 if let Some(models::AttributeValue::String(name)) =
                     event.attributes.get(activity_key)
                 {
-                    *activity_freq.entry(name.clone()).or_insert(0) += 1;
+                    *activity_freq.entry(name.clone()).or_default() += 1;
                 }
             }
         }
@@ -1144,7 +1144,7 @@ pub fn autonomic_execute_cycle(
                 if let Some(models::AttributeValue::String(name)) =
                     event.attributes.get(activity_key)
                 {
-                    *activity_frequencies.entry(name.clone()).or_insert(0) += 1;
+                    *activity_frequencies.entry(name.clone()).or_default() += 1;
                 }
             }
         }

@@ -257,15 +257,15 @@ impl SimdEdgeAggregator {
         let len = edge_pairs.len();
 
         while i + 4 <= len {
-            *self.edges.entry(edge_pairs[i]).or_insert(0) += 1;
-            *self.edges.entry(edge_pairs[i + 1]).or_insert(0) += 1;
-            *self.edges.entry(edge_pairs[i + 2]).or_insert(0) += 1;
-            *self.edges.entry(edge_pairs[i + 3]).or_insert(0) += 1;
+            *self.edges.entry(edge_pairs[i]).or_default() += 1;
+            *self.edges.entry(edge_pairs[i + 1]).or_default() += 1;
+            *self.edges.entry(edge_pairs[i + 2]).or_default() += 1;
+            *self.edges.entry(edge_pairs[i + 3]).or_default() += 1;
             i += 4;
         }
 
         while i < len {
-            *self.edges.entry(edge_pairs[i]).or_insert(0) += 1;
+            *self.edges.entry(edge_pairs[i]).or_default() += 1;
             i += 1;
         }
     }

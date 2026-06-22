@@ -108,7 +108,7 @@ fn build_causal_alpha(log: &EventLog, activity_key: &str) -> Result<CausalGraph,
                 pair[0].attributes.get(activity_key),
                 pair[1].attributes.get(activity_key),
             ) {
-                *edge_freq.entry((from.clone(), to.clone())).or_insert(0) += 1;
+                *edge_freq.entry((from.clone(), to.clone())).or_default() += 1;
                 activities.insert(from.clone());
                 activities.insert(to.clone());
             }
@@ -167,7 +167,7 @@ fn build_causal_heuristic(
                 pair[0].attributes.get(activity_key),
                 pair[1].attributes.get(activity_key),
             ) {
-                *edge_freq.entry((from.clone(), to.clone())).or_insert(0) += 1;
+                *edge_freq.entry((from.clone(), to.clone())).or_default() += 1;
                 activities.insert(from.clone());
                 activities.insert(to.clone());
             }

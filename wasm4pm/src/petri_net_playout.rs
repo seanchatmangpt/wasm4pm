@@ -189,7 +189,7 @@ fn simulate_trace(
 
         if let Some(output_places) = postset.get(selected_id) {
             for place_id in output_places {
-                *marking.entry(place_id.clone()).or_insert(0) += 1;
+                *marking.entry(place_id.clone()).or_default() += 1;
             }
         }
 

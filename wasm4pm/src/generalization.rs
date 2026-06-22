@@ -198,7 +198,7 @@ impl ReplayNet {
                 let postset_clone = postset.clone();
                 if self.is_enabled(&preset_clone) {
                     self.fire(&preset_clone, &postset_clone);
-                    *firing_counts.entry(trans_id).or_insert(0) += 1;
+                    *firing_counts.entry(trans_id).or_default() += 1;
                     fired = true;
                     break;
                 }
@@ -218,7 +218,7 @@ impl ReplayNet {
                         }
                     }
                     self.fire(&preset_clone, &postset_clone);
-                    *firing_counts.entry(trans_id).or_insert(0) += 1;
+                    *firing_counts.entry(trans_id).or_default() += 1;
                 }
             }
         }
@@ -302,7 +302,7 @@ fn compute_generalization(
 
         let trace_counts = replay_net.replay_trace(&activities);
         for (trans_id, count) in trace_counts {
-            *trans_occ.entry(trans_id).or_insert(0) += count;
+            *trans_occ.entry(trans_id).or_default() += count;
         }
     }
 

@@ -106,9 +106,9 @@ pub fn build_transition_probabilities(
                 let mut prev_act: Option<String> = None;
                 for event in &trace.events {
                     if let Some(AttributeValue::String(act)) = event.attributes.get(&activity_key) {
-                        *activity_totals.entry(act.clone()).or_insert(0) += 1;
+                        *activity_totals.entry(act.clone()).or_default() += 1;
                         if let Some(ref prev) = prev_act {
-                            *edge_counts.entry((prev.clone(), act.clone())).or_insert(0) += 1;
+                            *edge_counts.entry((prev.clone(), act.clone())).or_default() += 1;
                         }
                         prev_act = Some(act.clone());
                     }

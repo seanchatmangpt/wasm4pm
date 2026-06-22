@@ -126,7 +126,7 @@ fn extract_motion_features(
     // ── Step 3: Variant frequency map (activity-sequence → fraction) ──────────
     let mut variant_counts: HashMap<Vec<String>, usize> = HashMap::new();
     for seq in &sequences {
-        *variant_counts.entry(seq.clone()).or_insert(0) += 1;
+        *variant_counts.entry(seq.clone()).or_default() += 1;
     }
     let variant_freq: Vec<f64> = sequences
         .iter()

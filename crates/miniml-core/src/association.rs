@@ -159,7 +159,7 @@ pub fn apriori_impl(
     let mut item_counts: HashMap<usize, usize> = HashMap::new();
     for txn in &txns {
         for &item in txn {
-            *item_counts.entry(item).or_insert(0) += 1;
+            *item_counts.entry(item).or_default() += 1;
         }
     }
 

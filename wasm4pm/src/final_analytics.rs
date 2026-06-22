@@ -103,8 +103,8 @@ pub fn compute_activity_transition_matrix(
                         w[1].attributes.get(activity_key),
                     ) {
                         if let (Some(&a1_id), Some(&a2_id)) = (vocab.get(a1), vocab.get(a2)) {
-                            *transitions.entry((a1_id, a2_id)).or_insert(0) += 1;
-                            *activity_total.entry(a1_id).or_insert(0) += 1;
+                            *transitions.entry((a1_id, a2_id)).or_default() += 1;
+                            *activity_total.entry(a1_id).or_default() += 1;
                         }
                     }
                 });

@@ -133,7 +133,7 @@ pub fn build_route_envelope(
                 continue;
             }
 
-            *variant_counts.entry(activities).or_insert(0) += 1;
+            *variant_counts.entry(activities).or_default() += 1;
         }
 
         // ── Sort variants by count descending, then lexicographically ────────
@@ -241,7 +241,7 @@ pub fn score_route_motion(envelope_handle: &str, prefix_json: &str) -> Result<Js
             let mut next_counts: HashMap<String, u32> = HashMap::new();
             for v in &envelope.variants {
                 if let Some(first) = v.activities.first() {
-                    *next_counts.entry(first.clone()).or_insert(0) += v.count;
+                    *next_counts.entry(first.clone()).or_default() += v.count;
                 }
             }
             let mut top_next: Vec<(String, u32)> = next_counts.into_iter().collect();
@@ -284,7 +284,7 @@ pub fn score_route_motion(envelope_handle: &str, prefix_json: &str) -> Result<Js
         let mut next_counts: HashMap<String, u32> = HashMap::new();
         for v in &matching {
             if let Some(next_act) = v.activities.get(prefix_len) {
-                *next_counts.entry(next_act.clone()).or_insert(0) += v.count;
+                *next_counts.entry(next_act.clone()).or_default() += v.count;
             }
         }
         let mut top_next: Vec<(String, u32)> = next_counts.into_iter().collect();
@@ -574,7 +574,7 @@ mod tests {
         for v in &variants {
             if v.activities.len() >= prefix_len && v.activities[..prefix_len] == prefix[..] {
                 if let Some(next) = v.activities.get(prefix_len) {
-                    *next_counts.entry(next.clone()).or_insert(0) += v.count;
+                    *next_counts.entry(next.clone()).or_default() += v.count;
                 }
             }
         }

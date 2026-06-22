@@ -142,7 +142,7 @@ pub fn score_log_anomalies(
     // Build per-source totals for correct transition probability
     let mut source_totals: FxHashMap<&str, usize> = FxHashMap::default();
     for (f, _, c) in &edge_data {
-        *source_totals.entry(f.as_str()).or_insert(0) += c;
+        *source_totals.entry(f.as_str()).or_default() += c;
     }
 
     let results_json = get_or_init_state().with_object(log_handle, |obj| match obj {

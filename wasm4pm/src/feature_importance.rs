@@ -282,15 +282,15 @@ mod tests {
         let ab_dist = counts
             .entry(vec!["A".to_string(), "B".to_string()])
             .or_default();
-        *ab_dist.entry("C".to_string()).or_insert(0) += 3;
-        *ab_dist.entry("D".to_string()).or_insert(0) += 2;
+        *ab_dist.entry("C".to_string()).or_default() += 3;
+        *ab_dist.entry("D".to_string()).or_default() += 2;
 
         // B->C context: no continuation (end of trace)
         // B->D context: no continuation (end of trace)
 
         // A context: next is B (5x)
         let a_dist = counts.entry(vec!["A".to_string()]).or_default();
-        *a_dist.entry("B".to_string()).or_insert(0) += 5;
+        *a_dist.entry("B".to_string()).or_default() += 5;
 
         NGramPredictor { n: 2, counts }
     }

@@ -148,7 +148,7 @@ pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsVal
             pairs
         })
         .fold(std::collections::HashMap::new(), |mut acc, pair| {
-            *acc.entry(pair).or_insert(0) += 1;
+            *acc.entry(pair).or_default() += 1;
             acc
         });
 
@@ -330,7 +330,7 @@ mod tests {
                 pairs
             })
             .fold(std::collections::HashMap::new(), |mut acc, pair| {
-                *acc.entry(pair).or_insert(0) += 1;
+                *acc.entry(pair).or_default() += 1;
                 acc
             });
 
@@ -429,7 +429,7 @@ mod tests {
                 pairs
             })
             .fold(std::collections::HashMap::new(), |mut acc, pair| {
-                *acc.entry(pair).or_insert(0) += 1;
+                *acc.entry(pair).or_default() += 1;
                 acc
             });
 

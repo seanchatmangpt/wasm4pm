@@ -52,14 +52,14 @@ pub fn causal_footprint(
         let act_set: HashSet<&str> = acts.iter().copied().collect();
 
         for &a in &acts {
-            *from_count.entry(a.to_string()).or_insert(0) += 1;
+            *from_count.entry(a.to_string()).or_default() += 1;
         }
         for &b in &acts {
-            *to_count.entry(b.to_string()).or_insert(0) += 1;
+            *to_count.entry(b.to_string()).or_default() += 1;
         }
 
         for window in acts.windows(2) {
-            *from_to_count.entry((window[0].to_string(), window[1].to_string())).or_insert(0) += 1;
+            *from_to_count.entry((window[0].to_string(), window[1].to_string())).or_default() += 1;
         }
 
         // Count to_without_from: b occurs in trace but a does not
@@ -68,7 +68,7 @@ pub fn causal_footprint(
         for b in &all_tos {
             for a in &all_froms {
                 if act_set.contains(b.as_str()) && !act_set.contains(a.as_str()) {
-                    *to_without_from.entry((a.clone(), b.clone())).or_insert(0) += 1;
+                    *to_without_from.entry((a.clone(), b.clone())).or_default() += 1;
                 }
             }
         }
@@ -192,7 +192,7 @@ pub fn granger_like_test(
     for trace in &traces {
         for event in &trace.events {
             if let Some(act) = event.attributes.get(activity_key).and_then(|v| v.as_string()) {
-                *y_counts.entry(act.to_string()).or_insert(0) += 1;
+                *y_counts.entry(act.to_string()).or_default() += 1;
             }
         }
     }
@@ -308,7 +308,7 @@ mod tests {
                 .filter_map(|e| e.attributes.get("concept:name").and_then(|v: &crate::models::AttributeValue| v.as_string()).map(str::to_owned))
                 .collect();
             for window in acts.windows(2) {
-                *from_to_count.entry((window[0].clone(), window[1].clone())).or_insert(0) += 1;
+                *from_to_count.entry((window[0].clone(), window[1].clone())).or_default() += 1;
             }
         }
 

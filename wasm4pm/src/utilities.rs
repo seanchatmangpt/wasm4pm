@@ -507,7 +507,7 @@ pub fn get_activity_frequencies(
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
-                        *frequencies.entry(activity.clone()).or_insert(0) += 1;
+                        *frequencies.entry(activity.clone()).or_default() += 1;
                     }
                 }
             }

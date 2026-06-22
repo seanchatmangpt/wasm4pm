@@ -172,7 +172,7 @@ pub fn identify_high_variance_activities(
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
-                        *trace_counts.entry(activity.clone()).or_insert(0) += 1;
+                        *trace_counts.entry(activity.clone()).or_default() += 1;
                     }
                 }
 

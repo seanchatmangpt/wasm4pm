@@ -233,7 +233,7 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
             .collect();
 
         let activities = activities?;
-        *table.entry(activities).or_insert(0) += 1;
+        *table.entry(activities).or_default() += 1;
     }
 
     // Extract variants and sort by activities for deterministic order

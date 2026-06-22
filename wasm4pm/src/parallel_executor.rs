@@ -72,7 +72,7 @@ impl PartialDfg {
 
             // Node frequencies (no-op if safe_end == start)
             for &id in &col.events[start..safe_end] {
-                *partial.node_counts.entry(id).or_insert(0) += 1;
+                *partial.node_counts.entry(id).or_default() += 1;
             }
             // Directly-follows edges (no-op if safe_end <= start + 1)
             #[cfg(feature = "bcinr")]
@@ -84,7 +84,7 @@ impl PartialDfg {
                         *partial
                             .edge_counts
                             .entry((col.events[i], col.events[i + 1]))
-                            .or_insert(0) += 1;
+                            .or_default() += 1;
                     }
                 }
             }
@@ -95,7 +95,7 @@ impl PartialDfg {
                         *partial
                             .edge_counts
                             .entry((col.events[i], col.events[i + 1]))
-                            .or_insert(0) += 1;
+                            .or_default() += 1;
                     }
                 }
             }
@@ -105,21 +105,21 @@ impl PartialDfg {
                 let pass = (safe_end > start) as u64;
                 let mask = bcinr::mask::select_u64(pass, 1, 0);
                 if mask != 0 {
-                    *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
+                    *partial.start_counts.entry(col.events[start]).or_default() += 1;
                     *partial
                         .end_counts
                         .entry(col.events[safe_end - 1])
-                        .or_insert(0) += 1;
+                        .or_default() += 1;
                 }
             }
             #[cfg(not(feature = "bcinr"))]
             {
                 if safe_end > start {
-                    *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
+                    *partial.start_counts.entry(col.events[start]).or_default() += 1;
                     *partial
                         .end_counts
                         .entry(col.events[safe_end - 1])
-                        .or_insert(0) += 1;
+                        .or_default() += 1;
                 }
             }
         }
@@ -279,16 +279,16 @@ fn process_batch_unrolled(
     let full_chunks = events.len() / unroll_factor;
     for chunk_idx in 0..full_chunks {
         let base = chunk_idx * unroll_factor;
-        *node_counts.entry(events[base]).or_insert(0) += 1;
-        *node_counts.entry(events[base + 1]).or_insert(0) += 1;
-        *node_counts.entry(events[base + 2]).or_insert(0) += 1;
-        *node_counts.entry(events[base + 3]).or_insert(0) += 1;
+        *node_counts.entry(events[base]).or_default() += 1;
+        *node_counts.entry(events[base + 1]).or_default() += 1;
+        *node_counts.entry(events[base + 2]).or_default() += 1;
+        *node_counts.entry(events[base + 3]).or_default() += 1;
     }
 
     // Process remainder
     #[allow(clippy::needless_range_loop)]
     for i in (full_chunks * unroll_factor)..events.len() {
-        *node_counts.entry(events[i]).or_insert(0) += 1;
+        *node_counts.entry(events[i]).or_default() += 1;
     }
 
     // Count edges — skip positions that cross a trace boundary.
@@ -300,7 +300,7 @@ fn process_batch_unrolled(
         if boundary_set.contains(&(i + 1)) {
             continue;
         }
-        *edge_counts.entry((events[i], events[i + 1])).or_insert(0) += 1;
+        *edge_counts.entry((events[i], events[i + 1])).or_default() += 1;
     }
 
     // Mark trace starts/ends
@@ -313,9 +313,9 @@ fn process_batch_unrolled(
         };
 
         if batch_start < batch_end {
-            *start_counts.entry(events[batch_start]).or_insert(0) += 1;
+            *start_counts.entry(events[batch_start]).or_default() += 1;
             if batch_end > batch_start {
-                *end_counts.entry(events[batch_end - 1]).or_insert(0) += 1;
+                *end_counts.entry(events[batch_end - 1]).or_default() += 1;
             }
         }
     }

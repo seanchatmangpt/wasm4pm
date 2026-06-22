@@ -408,12 +408,12 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
                 let start = col.trace_offsets[t];
                 let end = col.trace_offsets[t + 1];
                 for i in start..end {
-                    *seen.entry(col.events[i]).or_insert(0) += 1;
+                    *seen.entry(col.events[i]).or_default() += 1;
                 }
                 for i in start..end.saturating_sub(1) {
                     *edge_counts
                         .entry((col.events[i], col.events[i + 1]))
-                        .or_insert(0) += 1;
+                        .or_default() += 1;
                 }
             }
 
@@ -573,7 +573,7 @@ fn make_dfg(edges: &[(&str, &str)]) -> DFG {
 
     let mut edge_counts: FxHashMap<(&str, &str), usize> = FxHashMap::default();
     for &(from, to) in edges {
-        *edge_counts.entry((from, to)).or_insert(0) += 1;
+        *edge_counts.entry((from, to)).or_default() += 1;
     }
 
     DFG {

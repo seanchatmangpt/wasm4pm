@@ -42,7 +42,7 @@ impl IncrementalTfIdf {
         let mut seen = std::collections::HashSet::new();
         for term in terms {
             if seen.insert(term.clone()) {
-                *self.term_doc_freq.entry(term.clone()).or_insert(0) += 1;
+                *self.term_doc_freq.entry(term.clone()).or_default() += 1;
             }
         }
     }

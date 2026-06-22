@@ -484,7 +484,7 @@ impl ProcessTree {
     fn collect_activity_frequencies(&self, acc: &mut BTreeMap<ActivityName, usize>) {
         match self {
             ProcessTree::Leaf(Some(name)) => {
-                *acc.entry(name.clone()).or_insert(0) += 1;
+                *acc.entry(name.clone()).or_default() += 1;
             }
             ProcessTree::Leaf(None) => {}
             ProcessTree::Operator { children, .. } => {
@@ -719,7 +719,7 @@ pub fn discover_simple_process_tree_from_log(log: &EventLog, activity_key: &str)
             })
             .collect();
         for a in &acts {
-            *freq.entry(a.clone()).or_insert(0) += 1;
+            *freq.entry(a.clone()).or_default() += 1;
         }
     }
 

@@ -57,7 +57,7 @@ pub fn build_ngram_predictor(
                     let context_len = (n - 1).min(i + 1);
                     let prefix: Vec<String> = acts[i + 1 - context_len..=i].to_vec();
                     let next = acts[i + 1].clone();
-                    *counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
+                    *counts.entry(prefix).or_default().entry(next).or_default() += 1;
                 }
             }
 

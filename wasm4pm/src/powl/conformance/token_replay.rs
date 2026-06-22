@@ -57,7 +57,7 @@ fn fire(marking: &mut Marking, pre: &[String], post: &[String]) -> (u32, u32) {
         *marking.entry(p.clone()).or_insert(0) -= 1;
     }
     for p in post {
-        *marking.entry(p.clone()).or_insert(0) += 1;
+        *marking.entry(p.clone()).or_default() += 1;
     }
     (pre.len() as u32, post.len() as u32)
 }
@@ -200,7 +200,7 @@ pub fn replay_trace(
         for p in &pre {
             let have = marking.get(p).copied().unwrap_or(0);
             if have == 0 {
-                *marking.entry(p.clone()).or_insert(0) += 1;
+                *marking.entry(p.clone()).or_default() += 1;
                 produced += 1;
                 missing += 1;
             }

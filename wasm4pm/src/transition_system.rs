@@ -154,7 +154,7 @@ pub fn discover_transition_system(
                     let activity = activities[i].clone();
                     let key = (prev_id, state_id, activity.clone());
 
-                    *transition_map.entry(key).or_insert(0) += 1;
+                    *transition_map.entry(key).or_default() += 1;
                 }
             }
 

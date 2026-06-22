@@ -491,7 +491,7 @@ fn build_df_subset(
             if let (Some(AttributeValue::String(c)), Some(AttributeValue::String(n))) = (curr, next)
             {
                 if let (Some(&ci), Some(&ni)) = (idx_map.get(c.as_str()), idx_map.get(n.as_str())) {
-                    *int_df.entry((ci, ni)).or_insert(0) += 1;
+                    *int_df.entry((ci, ni)).or_default() += 1;
                 }
             }
         }
@@ -791,7 +791,7 @@ pub fn discover_simulated_annealing_from_log(
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
         for i in start..end {
-            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            *node_freq.entry(col.events[i]).or_default() += 1;
             if i + 1 < end {
                 let edge = (col.events[i], col.events[i + 1]);
                 let cnt = edge_freq.entry(edge).or_insert(0.0);
@@ -910,9 +910,9 @@ pub fn extract_process_skeleton(
 
                 for event in &trace.events {
                     if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
-                        *activity_freqs.entry(act.clone()).or_insert(0) += 1;
+                        *activity_freqs.entry(act.clone()).or_default() += 1;
                         if first {
-                            *start_counts.entry(act.clone()).or_insert(0) += 1;
+                            *start_counts.entry(act.clone()).or_default() += 1;
                             first = false;
                         }
                         last_event = Some(act);
@@ -920,7 +920,7 @@ pub fn extract_process_skeleton(
                 }
 
                 if let Some(act) = last_event {
-                    *end_counts.entry(act.clone()).or_insert(0) += 1;
+                    *end_counts.entry(act.clone()).or_default() += 1;
                 }
             }
 

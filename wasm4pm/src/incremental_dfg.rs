@@ -78,7 +78,7 @@ impl IncrementalDFG {
             self.last_activity = Some(activity);
         } else if let Some(prev) = self.last_activity {
             // Record directly-follows edge
-            *self.edges.entry((prev, activity)).or_insert(0) += 1;
+            *self.edges.entry((prev, activity)).or_default() += 1;
             self.last_activity = Some(activity);
         } else {
             // No previous activity and not explicitly a start — treat as start
@@ -86,7 +86,7 @@ impl IncrementalDFG {
             self.last_activity = Some(activity);
         }
 
-        *self.node_counts.entry(activity).or_insert(0) += 1;
+        *self.node_counts.entry(activity).or_default() += 1;
         self.total_events += 1;
     }
 
@@ -149,11 +149,11 @@ impl IncrementalDFG {
     pub fn merge(&mut self, other: &IncrementalDFG) {
         // Merge edges
         for (&key, &count) in &other.edges {
-            *self.edges.entry(key).or_insert(0) += count;
+            *self.edges.entry(key).or_default() += count;
         }
         // Merge node counts
         for (&key, &count) in &other.node_counts {
-            *self.node_counts.entry(key).or_insert(0) += count;
+            *self.node_counts.entry(key).or_default() += count;
         }
         // Merge start/end activities
         self.start_activities.extend(&other.start_activities);
