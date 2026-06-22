@@ -10,7 +10,7 @@ use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
 use rustc_hash::FxHashMap;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Streaming Alpha++ builder.
 ///
@@ -39,7 +39,7 @@ pub struct StreamingAlphaPlusBuilder {
     pub event_count: usize,
     pub trace_count: usize,
     /// Open traces
-    pub open_traces: HashMap<String, Vec<u32>>,
+    pub open_traces: BTreeMap<String, Vec<u32>>,
 }
 
 impl_activity_interner!(StreamingAlphaPlusBuilder);
@@ -55,7 +55,7 @@ impl StreamingAlphaPlusBuilder {
             end_counts: FxHashMap::default(),
             event_count: 0,
             trace_count: 0,
-            open_traces: HashMap::new(),
+            open_traces: BTreeMap::new(),
         }
     }
 
@@ -238,13 +238,13 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
 
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
-        let memory_bytes = self.open_traces.capacity()
+        let memory_bytes = self.open_traces.len()
             * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
             + open_trace_events * std::mem::size_of::<u32>()
-            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
-            + self.edge_counts.capacity()
+            + self.activity_counts.len() * std::mem::size_of::<usize>()
+            + self.edge_counts.len()
                 * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>())
-            + self.reverse_edge_counts.capacity()
+            + self.reverse_edge_counts.len()
                 * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {

@@ -15,7 +15,7 @@ use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
 use rustc_hash::FxHashMap;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 /// Streaming Inductive Miner builder.
 ///
@@ -40,7 +40,7 @@ pub struct StreamingInductiveBuilder {
     pub event_count: usize,
     pub trace_count: usize,
     /// Open traces
-    pub open_traces: HashMap<String, Vec<u32>>,
+    pub open_traces: BTreeMap<String, Vec<u32>>,
 }
 
 impl_activity_interner!(StreamingInductiveBuilder);
@@ -55,7 +55,7 @@ impl StreamingInductiveBuilder {
             end_counts: FxHashMap::default(),
             event_count: 0,
             trace_count: 0,
-            open_traces: HashMap::new(),
+            open_traces: BTreeMap::new(),
         }
     }
 
@@ -86,8 +86,8 @@ impl StreamingInductiveBuilder {
         // Build sets for cut detection
         let starts: HashSet<u32> = self.start_counts.keys().cloned().collect();
         let ends: HashSet<u32> = self.end_counts.keys().cloned().collect();
-        let mut successors: HashMap<u32, HashSet<u32>> = HashMap::new();
-        let mut predecessors: HashMap<u32, HashSet<u32>> = HashMap::new();
+        let mut successors: BTreeMap<u32, HashSet<u32>> = BTreeMap::new();
+        let mut predecessors: BTreeMap<u32, HashSet<u32>> = BTreeMap::new();
 
         for &(from, to) in self.edge_counts.keys() {
             successors.entry(from).or_default().insert(to);
@@ -129,7 +129,7 @@ impl StreamingInductiveBuilder {
         activities: &[u32],
         starts: &HashSet<u32>,
         _ends: &HashSet<u32>,
-        successors: &HashMap<u32, HashSet<u32>>,
+        successors: &BTreeMap<u32, HashSet<u32>>,
     ) -> Option<Vec<Vec<u32>>> {
         // Sequential cut: partition activities into ordered groups where
         // each group has a single start and single end activity
@@ -204,7 +204,7 @@ impl StreamingInductiveBuilder {
     fn detect_exclusive_groups(
         &self,
         activities: &[u32],
-        successors: &HashMap<u32, HashSet<u32>>,
+        successors: &BTreeMap<u32, HashSet<u32>>,
     ) -> Vec<Vec<u32>> {
         // Build connectivity graph
         let activity_set: HashSet<u32> = activities.iter().copied().collect();
@@ -267,7 +267,7 @@ impl StreamingInductiveBuilder {
     fn detect_parallel_groups(
         &self,
         activities: &[u32],
-        _successors: &HashMap<u32, HashSet<u32>>,
+        _successors: &BTreeMap<u32, HashSet<u32>>,
     ) -> Vec<Vec<u32>> {
         if activities.len() <= 1 {
             return Vec::new();
@@ -770,11 +770,11 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
 
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
-        let memory_bytes = self.open_traces.capacity()
+        let memory_bytes = self.open_traces.len()
             * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
             + open_trace_events * std::mem::size_of::<u32>()
-            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
-            + self.edge_counts.capacity()
+            + self.activity_counts.len() * std::mem::size_of::<usize>()
+            + self.edge_counts.len()
                 * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {
