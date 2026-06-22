@@ -1,7 +1,7 @@
 //! Petri net data model for POWL conversions.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Place {
@@ -12,7 +12,7 @@ pub struct Place {
 pub struct Transition {
     pub name: String,
     pub label: Option<String>,
-    pub properties: HashMap<String, serde_json::Value>,
+    pub properties: BTreeMap<String, serde_json::Value>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -30,7 +30,7 @@ pub struct PetriNet {
     pub arcs: Vec<Arc>,
 }
 
-pub type Marking = HashMap<String, u32>;
+pub type Marking = BTreeMap<String, u32>;
 
 #[derive(Default)]
 pub struct Counts {
@@ -75,7 +75,7 @@ impl PetriNet {
         self.transitions.push(Transition {
             name: name.to_string(),
             label,
-            properties: HashMap::new(),
+            properties: BTreeMap::new(),
         });
         name.to_string()
     }
@@ -84,7 +84,7 @@ impl PetriNet {
         &mut self,
         name: &str,
         label: Option<String>,
-        props: HashMap<String, serde_json::Value>,
+        props: BTreeMap<String, serde_json::Value>,
     ) -> String {
         self.transitions.push(Transition {
             name: name.to_string(),

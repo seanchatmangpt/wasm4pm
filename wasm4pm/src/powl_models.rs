@@ -6,7 +6,7 @@
 
 use crate::powl_arena::PowlArena;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 // ─── PowlModel wrapper ──────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ pub struct PowlPetriNet {
 }
 
 /// Marking (token distribution) for a POWL Petri net.
-pub type PowlMarking = HashMap<String, u32>;
+pub type PowlMarking = BTreeMap<String, u32>;
 
 /// Counts of places, hidden transitions, and visible transitions.
 #[derive(Default)]
