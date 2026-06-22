@@ -35,12 +35,8 @@ pub fn ablation_study(
     }
 
     // Get original log data
-    let (traces, _attributes) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let (traces, _attributes) = get_or_init_state().with_event_log(log_handle, |log| {
             Ok((log.traces.clone(), log.attributes.clone()))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
     })?;
 
     let total_traces = traces.len();
