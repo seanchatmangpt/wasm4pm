@@ -259,10 +259,7 @@ pub fn build_automl_envelope(log_handle: &str, activity_key: &str) -> Result<JsV
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No EventLog at handle '{log_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         if log.traces.len() < MIN_TRACES {
             return Err(wasm_err(
@@ -368,10 +365,7 @@ pub fn score_motion_automl(
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No object at handle '{envelope_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         let model: AutomlEnvelopeModel = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
@@ -519,10 +513,7 @@ pub fn inspect_automl_envelope(envelope_handle: &str) -> Result<JsValue, JsValue
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No object at handle '{envelope_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         let model: AutomlEnvelopeModel = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
