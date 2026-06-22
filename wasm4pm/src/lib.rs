@@ -293,28 +293,8 @@ pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
     }
 }
 
-// Auto-generated registries from wasm4pm ontology (A = μ(O))
-// DO NOT EDIT — regenerate via: ostar manufacture wasm4pm
-#[allow(dead_code)]
-pub mod algorithm_registry;
-#[allow(dead_code)]
-pub mod benchmark_registry;
-#[allow(dead_code)]
-pub mod capability_registry_generated;
-#[allow(dead_code)]
-pub mod deployment_profile_constants;
-#[allow(dead_code)]
-pub mod feature_flag_registry;
-#[allow(dead_code)]
-pub mod module_category_constants;
-#[allow(dead_code)]
-pub mod operator_registry;
 #[allow(dead_code)]
 pub mod proof_gate_registry;
-#[allow(dead_code)]
-pub mod tps_metrics_registry;
-#[allow(dead_code)]
-pub mod wasm_export_registry;
 
 // Proof-of-concept gate validator — in-memory HashSet, NOT connected to SPARQL receipt store.
 // DO NOT add poc_gate_validator to browser/cloud/fog/edge/iot profiles.
@@ -2004,7 +1984,7 @@ pub fn autonomic_execute_cycle(
             (trace_count_val as f32 / 1_000.0).min(1.0),  // [1] trace_count (unused)
             (unique_activities_val as f32 / 100.0).min(1.0), // [2] activity_count
             (health_level as f32 / 4.0).min(1.0),         // [3] health (unused in from_features)
-            f64::from(circuit_allowed),                   // [4] circuit_state
+            if circuit_allowed { 1.0f32 } else { 0.0f32 }, // [4] circuit_state
             (all_special_causes.len() as f32 / 10.0).min(1.0), // [5] spc_alert_level
             activity_entropy,                             // [6] drift_status (activity entropy)
             (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0), // [7] cycle_phase
