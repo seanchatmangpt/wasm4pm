@@ -124,7 +124,7 @@ pub fn stratified_k_fold(
 
         for (i, fold) in folds.iter().enumerate() {
             if i != fold_idx {
-                train_indices.extend(fold.clone());
+                train_indices.extend(fold.iter().copied());
             }
         }
 
@@ -220,7 +220,7 @@ pub fn group_k_fold(
 
         for (i, fold) in folds.iter().enumerate() {
             if i != fold_idx {
-                train_indices.extend(fold.clone());
+                train_indices.extend(fold.iter().copied());
             }
         }
 
