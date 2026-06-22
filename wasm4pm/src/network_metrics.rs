@@ -188,8 +188,8 @@ impl SocialNetwork {
 
     /// Compute clustering coefficient: measure of local clustering.
     /// Global coefficient = average of local coefficients.
-    pub fn clustering_coefficient(&self) -> (f64, HashMap<String, f64>) {
-        let mut local_coefficients: HashMap<String, f64> = HashMap::new();
+    pub fn clustering_coefficient(&self) -> (f64, BTreeMap<String, f64>) {
+        let mut local_coefficients: BTreeMap<String, f64> = BTreeMap::new();
 
         // Build adjacency list
         let mut adj: HashMap<String, HashSet<String>> = HashMap::new();
@@ -249,8 +249,8 @@ impl SocialNetwork {
 
     /// Detect communities using Louvain algorithm (simplified greedy version).
     /// Returns a map of node_id -> community_id.
-    pub fn community_detection(&self) -> HashMap<String, usize> {
-        let mut communities: HashMap<String, usize> = HashMap::new();
+    pub fn community_detection(&self) -> BTreeMap<String, usize> {
+        let mut communities: BTreeMap<String, usize> = BTreeMap::new();
         for (idx, node) in self.nodes.iter().enumerate() {
             communities.insert(node.id.clone(), idx); // Start with each node in own community
         }
@@ -308,7 +308,7 @@ impl SocialNetwork {
         }
 
         // Relabel communities to be contiguous (0, 1, 2, ...)
-        let mut mapping: HashMap<usize, usize> = HashMap::new();
+        let mut mapping: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
         let mut next_label = 0;
         for node in &self.nodes {
             let old_label = communities[&node.id];
@@ -332,7 +332,7 @@ impl SocialNetwork {
         old_comm: usize,
         new_comm: usize,
         adj: &HashMap<String, Vec<(String, usize)>>,
-        communities: &HashMap<String, usize>,
+        communities: &BTreeMap<String, usize>,
     ) -> f64 {
         let neighbors = adj.get(node_id).cloned().unwrap_or_default();
 
