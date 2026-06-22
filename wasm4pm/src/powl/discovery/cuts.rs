@@ -28,10 +28,9 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 fn build_efg(traces: &[Vec<String>]) -> HashSet<(String, String)> {
     let mut efg = HashSet::new();
     for trace in traces {
-        let activities: Vec<&String> = trace.iter().collect();
-        for i in 0..activities.len() {
-            for j in (i + 1)..activities.len() {
-                efg.insert((activities[i].clone(), activities[j].clone()));
+        for i in 0..trace.len() {
+            for j in (i + 1)..trace.len() {
+                efg.insert((trace[i].clone(), trace[j].clone()));
             }
         }
     }
