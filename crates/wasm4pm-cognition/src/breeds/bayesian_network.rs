@@ -74,7 +74,6 @@ impl CognitionBreed for BayesianNetwork {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
         
         let mut cpts = Vec::new();
         let mut evidence = std::collections::BTreeMap::new();
@@ -217,24 +216,22 @@ impl CognitionBreed for BayesianNetwork {
         
         for (key, _) in &cpts {
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "bn-load-cpt".to_string(),
                 detail: key["cpt:".len()..].to_string(),
                 depth: 0,
                 objects: vec![],
             });
-            step_count += 1;
         }
         
         for (node, val) in &evidence {
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "bn-observe".to_string(),
                 detail: format!("{}={}", node, val),
                 depth: 0,
                 objects: vec![],
             });
-            step_count += 1;
         }
         
         let q_raw = query.ok_or_else(|| BreedError { breed: self.id(), message: "missing query goal".to_string() })?;
@@ -349,13 +346,12 @@ impl CognitionBreed for BayesianNetwork {
                 }
                 
                 trace.push(TraceStep {
-                    step: step_count,
+                    step: trace.len(),
                     kind: "bn-eliminate".to_string(),
                     detail: nodes[u].clone(),
                     depth: 0,
                     objects: vec![],
                 });
-                step_count += 1;
                 
                 let mut relevant = Vec::new();
                 let mut remaining = Vec::new();
@@ -402,7 +398,7 @@ impl CognitionBreed for BayesianNetwork {
             
             let verdict = format!("prob:{}={:.9}", q_node_name, prob);
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "bn-verdict".to_string(),
                 detail: verdict.clone(),
                 depth: 0,
@@ -504,7 +500,7 @@ impl CognitionBreed for BayesianNetwork {
             let dsep = !reachable;
             let verdict = format!("{}={}", q_str, dsep);
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "bn-verdict".to_string(),
                 detail: verdict.clone(),
                 depth: 0,

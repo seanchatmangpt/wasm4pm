@@ -138,7 +138,6 @@ impl CognitionBreed for AllenTemporal {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
         
         let mut node_names = Vec::new();
         let mut name_to_id = HashMap::new();
@@ -202,13 +201,12 @@ impl CognitionBreed for AllenTemporal {
                     if let (Ok(_s), Ok(_e)) = (parts[1].parse::<i32>(), parts[2].parse::<i32>()) {
                         let id = get_id!(parts[0]);
                         trace.push(TraceStep {
-                            step: step_count,
+                            step: trace.len(),
                             kind: "allen-load".into(),
                             detail: format!("interval {}", parts[0]),
                             depth: 0,
                             objects: vec![("interval".into(), parts[0].to_string())],
                         });
-                        step_count += 1;
                     }
                 }
             }
@@ -263,13 +261,12 @@ impl CognitionBreed for AllenTemporal {
                         matrix[id1][id2] &= mask;
                         matrix[id2][id1] = inverse_mask(matrix[id1][id2]);
                         trace.push(TraceStep {
-                            step: step_count,
+                            step: trace.len(),
                             kind: "allen-load".into(),
                             detail: format!("rel {},{},{}", node1, node2, rel_str),
                             depth: 0,
                             objects: vec![("interval".into(), node1.to_string()), ("interval".into(), node2.to_string())],
                         });
-                        step_count += 1;
                     }
                 }
             }
@@ -316,20 +313,19 @@ impl CognitionBreed for AllenTemporal {
                         q.push_back((k, j));
                         q.push_back((j, k));
                         trace.push(TraceStep {
-                            step: step_count,
+                            step: trace.len(),
                             kind: "allen-compose".into(),
                             detail: format!("{},{},{}", node_names[k], node_names[i], node_names[j]),
                             depth: 0,
                             objects: vec![("interval".into(), node_names[k].clone()), ("interval".into(), node_names[i].clone()), ("interval".into(), node_names[j].clone())],
                         });
-                        step_count += 1;
                     }
                 }
             }
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "allen-verdict".into(),
             detail: "path-consistency-fixpoint".into(),
             depth: 0,

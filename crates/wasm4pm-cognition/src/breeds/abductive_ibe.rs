@@ -29,7 +29,6 @@ impl CognitionBreed for AbductiveIbe {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
 
         // 1. Extract evidence, hypotheses, explanations, and contradictions
         let mut evidence = HashSet::new();
@@ -76,7 +75,7 @@ impl CognitionBreed for AbductiveIbe {
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "ibe-load".to_string(),
             detail: format!(
                 "Loaded {} evidence, {} hypotheses, {} explains, {} contradicts",
@@ -88,7 +87,6 @@ impl CognitionBreed for AbductiveIbe {
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // 2. Initialize ECHO network
         let all_nodes: BTreeSet<String> = evidence.union(&hypotheses).cloned().collect();
@@ -104,13 +102,12 @@ impl CognitionBreed for AbductiveIbe {
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "ibe-explain".to_string(),
             detail: format!("Running ECHO network over {} nodes", nodes_list.len()),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // ECHO Connectionist Update Parameters
         let decay = 0.05;
@@ -183,13 +180,12 @@ impl CognitionBreed for AbductiveIbe {
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "ibe-select".to_string(),
             detail: format!("Selected best explanation: {:?} with activation {:.4}", selected, best_act),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // Score candidates based on their activation mapped to [0.0, 1.0]
         let mut candidates = input.candidates.clone();

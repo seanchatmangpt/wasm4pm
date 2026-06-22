@@ -103,7 +103,6 @@ impl CognitionBreed for QualitativeReason {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        let mut step_count = 0;
 
         // 1. Parse confluences and variables
         let mut variables = HashSet::new();
@@ -174,13 +173,12 @@ impl CognitionBreed for QualitativeReason {
         };
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "limit-analysis".to_string(),
             detail: format!("Loaded {} variables and {} confluences", var_list.len(), confluences.len()),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // 2. Envisionment: find all valid states
         let mut valid_states = Vec::new();
@@ -243,13 +241,12 @@ impl CognitionBreed for QualitativeReason {
         }
 
         trace.push(TraceStep {
-            step: step_count,
+            step: trace.len(),
             kind: "branch-ambiguity".to_string(),
             detail: format!("Envisionment produced {} valid qualitative states", valid_states.len()),
             depth: 0,
             objects: vec![],
         });
-        step_count += 1;
 
         // 3. Prepare output
         let mut out_facts = Vec::new();
@@ -276,13 +273,12 @@ impl CognitionBreed for QualitativeReason {
                 value: state_str.clone(),
             });
             trace.push(TraceStep {
-                step: step_count,
+                step: trace.len(),
                 kind: "envision-state".to_string(),
                 detail: format!("Qualitative state {}: {}", idx, state_str.trim_end_matches(',')),
                 depth: 1,
                 objects: vec![],
             });
-            step_count += 1;
         }
 
         let explanation = format!(
