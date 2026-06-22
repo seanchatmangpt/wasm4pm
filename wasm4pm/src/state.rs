@@ -102,6 +102,7 @@ impl AppState {
     ///
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked.
+    #[must_use]
     pub fn store_object(&self, obj: StoredObject) -> Result<String, JsValue> {
         let mut counter = self.counter.lock().map_err(|e| {
             wasm_err(
@@ -129,6 +130,7 @@ impl AppState {
     ///
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked.
+    #[must_use]
     pub fn get_object(&self, id: &str) -> Result<Option<StoredObject>, JsValue> {
         let objects = self.objects.lock().map_err(|e| {
             wasm_err(
@@ -147,6 +149,7 @@ impl AppState {
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked or
     /// if the closure returns an error.
+    #[must_use]
     pub fn with_object<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(Option<&StoredObject>) -> Result<R, JsValue>,
@@ -167,6 +170,7 @@ impl AppState {
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked or
     /// if the closure returns an error.
+    #[must_use]
     pub fn with_object_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(Option<&mut StoredObject>) -> Result<R, JsValue>,
@@ -181,6 +185,7 @@ impl AppState {
     }
 
     /// Execute a closure with the named `EventLog`, returning a typed error if not found.
+    #[must_use]
     pub fn with_event_log<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&EventLog) -> Result<R, JsValue>,
@@ -196,6 +201,7 @@ impl AppState {
     }
 
     /// Execute a closure with the named `PetriNet`, returning a typed error if not found.
+    #[must_use]
     pub fn with_petri_net<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&PetriNet) -> Result<R, JsValue>,
@@ -210,6 +216,7 @@ impl AppState {
         })
     }
     /// Execute a closure with a mutable reference to the named `PetriNet`.
+    #[must_use]
     pub fn with_petri_net_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&mut PetriNet) -> Result<R, JsValue>,
@@ -238,6 +245,7 @@ impl AppState {
     }
 
     /// Execute a closure with the named `DFG`, returning a typed error if not found.
+    #[must_use]
     pub fn with_dfg<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&DFG) -> Result<R, JsValue>,
@@ -253,6 +261,7 @@ impl AppState {
     }
 
     /// Execute a closure with the named `JsonString`, returning a typed error if not found.
+    #[must_use]
     pub fn with_json_string<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&str) -> Result<R, JsValue>,
@@ -268,6 +277,7 @@ impl AppState {
     }
 
     /// Execute a closure with a mutable reference to the named `EventLog`.
+    #[must_use]
     pub fn with_event_log_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&mut EventLog) -> Result<R, JsValue>,
@@ -310,6 +320,7 @@ impl AppState {
 
 
     /// Execute a closure with the named `TemporalProfile`, returning a typed error if not found.
+    #[must_use]
     pub fn with_temporal_profile<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&TemporalProfile) -> Result<R, JsValue>,
@@ -322,6 +333,7 @@ impl AppState {
     }
 
     /// Execute a closure with the named `DeclareModel`, returning a typed error if not found.
+    #[must_use]
     pub fn with_declare_model<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&DeclareModel) -> Result<R, JsValue>,
@@ -334,6 +346,7 @@ impl AppState {
     }
 
     /// Execute a closure with a mutable reference to the named `StreamingConformanceChecker`.
+    #[must_use]
     pub fn with_streaming_conformance_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
     where
         F: FnOnce(&mut StreamingConformanceChecker) -> Result<R, JsValue>,
@@ -428,6 +441,7 @@ impl AppState {
     ///
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked.
+    #[must_use]
     pub fn delete_object(&self, id: &str) -> Result<bool, JsValue> {
         let mut objects = self.objects.lock().map_err(|e| {
             wasm_err(
@@ -442,6 +456,7 @@ impl AppState {
     ///
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked.
+    #[must_use]
     pub fn object_count(&self) -> Result<usize, JsValue> {
         let objects = self.objects.lock().map_err(|e| {
             wasm_err(
@@ -456,6 +471,7 @@ impl AppState {
     ///
     /// # Errors
     /// Returns a `JsValue` error if the internal mutex cannot be locked.
+    #[must_use]
     pub fn clear_all(&self) -> Result<(), JsValue> {
         let mut objects = self.objects.lock().map_err(|e| {
             wasm_err(
@@ -484,6 +500,7 @@ pub fn get_or_init_state() -> &'static AppState {
 
 /// JS-accessible function to delete a stored object by handle.
 #[wasm_bindgen]
+#[must_use]
 pub fn delete_object(id: &str) -> Result<bool, JsValue> {
     get_or_init_state().delete_object(id)
 }
@@ -498,12 +515,14 @@ pub fn object_exists(id: &str) -> bool {
 
 /// JS-accessible function to get the current number of stored objects.
 #[wasm_bindgen]
+#[must_use]
 pub fn object_count() -> Result<usize, JsValue> {
     get_or_init_state().object_count()
 }
 
 /// JS-accessible function to clear all stored objects.
 #[wasm_bindgen]
+#[must_use]
 pub fn clear_all_objects() -> Result<(), JsValue> {
     get_or_init_state().clear_all()
 }
