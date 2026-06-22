@@ -521,10 +521,13 @@ impl<'a> BinaryLogView<'a> {
         // Read all event IDs
         let events_start = self.header.section_offsets[2] as usize;
         let num_events = self.header.num_events as usize;
+        if events_start.saturating_add(num_events * 4) > self.data.len() {
+            return Err("corrupt binary: event section exceeds buffer".to_string());
+        }
         let mut events = Vec::with_capacity(num_events);
         let mut offset = events_start;
         for _ in 0..num_events {
-            let id = u32::from_le_bytes(self.data[offset..offset + 4].try_into().unwrap());
+            let id = u32::from_le_bytes(self.data[offset..offset + 4].try_into().expect("4-byte slice, bounds checked above"));
             events.push(id);
             offset += 4;
         }
@@ -532,11 +535,14 @@ impl<'a> BinaryLogView<'a> {
         // Read trace offsets
         let offsets_start = self.header.section_offsets[1] as usize;
         let num_traces = self.header.num_traces as usize;
+        if offsets_start.saturating_add((num_traces + 1) * 8) > self.data.len() {
+            return Err("corrupt binary: trace offset section exceeds buffer".to_string());
+        }
         let mut trace_offsets = Vec::with_capacity(num_traces + 1);
         offset = offsets_start;
         for _ in 0..=num_traces {
             let off =
-                u64::from_le_bytes(self.data[offset..offset + 8].try_into().unwrap()) as usize;
+                u64::from_le_bytes(self.data[offset..offset + 8].try_into().expect("8-byte slice, bounds checked above")) as usize;
             trace_offsets.push(off);
             offset += 8;
         }
@@ -623,16 +629,18 @@ impl<'a> BinaryTrace<'a> {
 
     /// Get the activity ID (vocab index) for event at the given index.
     pub fn event_id(&self, index: usize) -> u32 {
+        assert!(index < self.len(), "BinaryTrace::event_id index {index} out of bounds (len={})", self.len());
         let offset = index * 4;
-        u32::from_le_bytes(self.event_ids[offset..offset + 4].try_into().unwrap())
+        u32::from_le_bytes(self.event_ids[offset..offset + 4].try_into().expect("4-byte slice, index checked above"))
     }
 
     /// Get the timestamp (milliseconds since Unix epoch) for event at the given
     /// index. Returns `None` if timestamps are not present in the file.
     pub fn timestamp(&self, index: usize) -> Option<i64> {
+        assert!(index < self.len(), "BinaryTrace::timestamp index {index} out of bounds (len={})", self.len());
         self.timestamps.map(|ts_bytes| {
             let offset = index * 8;
-            i64::from_le_bytes(ts_bytes[offset..offset + 8].try_into().unwrap())
+            i64::from_le_bytes(ts_bytes[offset..offset + 8].try_into().expect("8-byte slice, index checked above"))
         })
     }
 }
