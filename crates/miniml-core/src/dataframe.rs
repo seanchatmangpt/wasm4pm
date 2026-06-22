@@ -64,7 +64,7 @@ impl Column {
 
     /// Check if column is empty
     pub fn is_empty(&self) -> bool {
-        self.is_empty()
+        self.len() == 0
     }
 }
 
