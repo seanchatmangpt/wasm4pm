@@ -19,7 +19,7 @@ impl OntologyDiscoveryAgent {
             *self
                 .object_type_density
                 .entry(obj.object_type.clone())
-                .or_insert(0.0) += density;
+                .or_default() += density;
 
             for rel in &obj.relationships {
                 let entry = (obj.id.clone(), rel.object_id.clone(), rel.qualifier.clone());

@@ -122,7 +122,7 @@ pub fn discover_genetic_algorithm_from_log(
             *node_freq.entry(col.events[i]).or_default() += 1;
             if i + 1 < end {
                 let edge = (col.events[i], col.events[i + 1]);
-                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                let cnt = edge_freq.entry(edge).or_default();
                 if *cnt == 0.0 {
                     edge_vocab.push(edge);
                 }
@@ -244,7 +244,7 @@ pub fn discover_pso_algorithm_from_log(
             *node_freq.entry(col.events[i]).or_default() += 1;
             if i + 1 < end {
                 let edge = (col.events[i], col.events[i + 1]);
-                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                let cnt = edge_freq.entry(edge).or_default();
                 if *cnt == 0.0 {
                     edge_vocab.push(edge);
                 }
@@ -479,7 +479,7 @@ pub fn discover_aco_algorithm_from_log(
             *node_freq.entry(col.events[i]).or_default() += 1;
             if i + 1 < end {
                 let edge = (col.events[i], col.events[i + 1]);
-                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                let cnt = edge_freq.entry(edge).or_default();
                 if *cnt == 0.0 {
                     edge_vocab.push(edge);
                 }

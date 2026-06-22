@@ -205,7 +205,7 @@ pub fn community_detection_impl(
             for j in 0..n_nodes {
                 let weight = adjacency[i * n_nodes + j];
                 if weight > 0.0 {
-                    *label_weights.entry(labels[j]).or_insert(0.0) += weight;
+                    *label_weights.entry(labels[j]).or_default() += weight;
                 }
             }
             if label_weights.is_empty() {
