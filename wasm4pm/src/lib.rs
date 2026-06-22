@@ -985,8 +985,8 @@ pub fn autonomic_execute_cycle(
         }
 
         // Activity frequencies
-        let mut activity_freq: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
+        let mut activity_freq: std::collections::BTreeMap<String, usize> =
+            std::collections::BTreeMap::new();
         for trace in &log.traces {
             for event in &trace.events {
                 if let Some(models::AttributeValue::String(name)) =
