@@ -195,7 +195,7 @@ fn convert_to_onnx(model: &PersistentModel) -> Result<OnnxModel, MlError> {
 /// Convert ONNX model to miniml format
 fn convert_from_onnx(onnx_model: &OnnxModel) -> Result<PersistentModel, MlError> {
     // Determine model type from graph structure
-    let model_type = infer_model_type(onnx_model)?;
+    let model_type = infer_model_type(onnx_model);
 
     // Extract parameters from ONNX graph
     let parameters = extract_parameters_from_onnx(onnx_model)?;
@@ -644,19 +644,19 @@ fn extract_parameters_from_onnx(onnx_model: &OnnxModel) -> Result<serde_json::Va
 }
 
 /// Infer model type from ONNX graph
-fn infer_model_type(onnx_model: &OnnxModel) -> Result<String, MlError> {
+fn infer_model_type(onnx_model: &OnnxModel) -> String {
     match &onnx_model.graph {
         ModelGraph::Sequential { layers } => {
             if let Some(first_layer) = layers.first() {
-                Ok(match first_layer.layer_type.as_str() {
+                match first_layer.layer_type.as_str() {
                     "Linear" | "Dense" => "NeuralNet".to_string(),
                     _ => "Unknown".to_string(),
-                })
+                }
             } else {
-                Ok("Unknown".to_string())
+                "Unknown".to_string()
             }
         }
-        ModelGraph::Functional { .. } => Ok("Unknown".to_string()),
+        ModelGraph::Functional { .. } => "Unknown".to_string(),
     }
 }
 
