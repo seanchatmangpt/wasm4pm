@@ -365,13 +365,7 @@ pub fn mine_sequential_patterns(
                 let activities: Vec<String> = trace
                     .events
                     .iter()
-                    .filter_map(|e| {
-                        if let Some(AttributeValue::String(act)) = e.attributes.get(activity_key) {
-                            Some(act.clone())
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
                     .collect();
 
                 for window in activities.windows(pattern_length) {
@@ -716,13 +710,7 @@ pub fn analyze_activity_cooccurrence(
                 let activities: Vec<String> = trace
                     .events
                     .iter()
-                    .filter_map(|e| {
-                        if let Some(AttributeValue::String(act)) = e.attributes.get(activity_key) {
-                            Some(act.clone())
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
                     .collect();
 
                 for i in 0..activities.len() {

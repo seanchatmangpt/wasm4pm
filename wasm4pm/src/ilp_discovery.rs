@@ -552,10 +552,7 @@ fn is_trace_fitting(
     let activities: Vec<&str> = trace
         .events
         .iter()
-        .filter_map(|e| match e.attributes.get(activity_key) {
-            Some(AttributeValue::String(s)) => Some(s.as_str()),
-            _ => None,
-        })
+        .filter_map(|e| e.attributes.get(activity_key)?.as_string())
         .collect();
 
     activities.windows(2).all(|w| {
