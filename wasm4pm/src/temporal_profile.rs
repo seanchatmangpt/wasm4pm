@@ -80,12 +80,8 @@ pub fn discover_temporal_profile(
     activity_key: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
-    })?;
-    let profile = discover_temporal_profile_from_log(&log, activity_key, timestamp_key);
+    let profile = get_or_init_state()
+        .with_event_log(log_handle, |log| Ok(discover_temporal_profile_from_log(log, activity_key, timestamp_key)))?;
     let handle = get_or_init_state().store_object(StoredObject::TemporalProfile(profile))?;
     Ok(crate::error::js_val(&handle))
 }
@@ -116,11 +112,7 @@ pub fn check_temporal_conformance(
     timestamp_key: &str,
     zeta: f64,
 ) -> Result<JsValue, JsValue> {
-    let profile_pairs = get_or_init_state().with_object(profile_handle, |obj| match obj {
-        Some(StoredObject::TemporalProfile(p)) => Ok(p.pairs.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not a TemporalProfile")),
-        None => Err(crate::error::js_val("TemporalProfile handle not found")),
-    })?;
+    let profile_pairs = get_or_init_state().with_temporal_profile(profile_handle, |p| Ok(p.pairs.clone()))?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
         let mut total_steps = 0usize;
