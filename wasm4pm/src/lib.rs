@@ -1138,22 +1138,8 @@ pub fn autonomic_execute_cycle(
             })
             .collect();
 
-        // Build activity frequencies HashMap
-        let mut activity_frequencies: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-        for trace in &log.traces {
-            for event in &trace.events {
-                if let Some(models::AttributeValue::String(name)) =
-                    event.attributes.get(activity_key)
-                {
-                    *activity_frequencies.entry(name.clone()).or_default() += 1;
-                }
-            }
-        }
-
         // Analyze trace structure to select pattern dynamically
-        let analysis =
-            pattern_analysis::analyze_trace_structure(&traces_for_analysis, &activity_frequencies);
+        let analysis = pattern_analysis::analyze_trace_structure(&traces_for_analysis);
 
         Ok::<pattern_analysis::TraceStructureAnalysis, JsValue>(analysis)
     })?;
