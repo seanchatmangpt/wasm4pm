@@ -212,16 +212,14 @@ pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> Dimensio
             }
         }
 
-        let mut unique_values: Vec<u8> = values.iter().copied().collect();
-        unique_values.sort_unstable();
-
+        // sorted_values already deduplicated + sorted via BTreeSet above — reuse it.
         per_dimension_reports.push(DimensionUsageReport {
             dimension_index: dim_idx,
             dimension_name: DIMENSION_NAMES[dim_idx].to_string(),
-            min_value: *unique_values.first().unwrap_or(&0),
-            max_value: *unique_values.last().unwrap_or(&0),
+            min_value: *sorted_values.first().unwrap_or(&0),
+            max_value: *sorted_values.last().unwrap_or(&0),
             unique_count,
-            unique_values,
+            unique_values: sorted_values,
             coverage_percent,
             is_bottleneck,
             is_high_variance,
