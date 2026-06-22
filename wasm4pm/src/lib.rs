@@ -210,7 +210,7 @@ fn get_drift_threshold_high() -> f32 {
 ///
 /// Returns 0.0 for unparseable or identical timestamps.
 /// WASM-compatible — no external dependencies.
-    #[must_use = "returns computed duration in seconds"]
+#[must_use = "returns computed duration in seconds"]
 pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
     fn parse_ts(s: &str) -> Option<i64> {
         let s = s.trim();
@@ -1384,7 +1384,7 @@ pub fn autonomic_execute_cycle(
                 cycle_count = current_cycle,
                 service_name = "wpm",
                 status = "error",
-                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join(", "),
                 "SPC rule violation classified"
             );
 
@@ -1537,7 +1537,7 @@ pub fn autonomic_execute_cycle(
                 cycle_count = current_cycle,
                 service_name = "wpm",
                 status = "error",
-                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join(", "),
                 "SPC rule violation classified"
             );
             all_special_causes.push(format!("trace_duration: {:?}", c));
@@ -1689,7 +1689,7 @@ pub fn autonomic_execute_cycle(
                 cycle_count = current_cycle,
                 service_name = "wpm",
                 status = "error",
-                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join(", "),
                 "SPC rule violation classified"
             );
             all_special_causes.push(format!("activity_frequency: {:?}", c));
@@ -1705,7 +1705,7 @@ pub fn autonomic_execute_cycle(
     // Record SPC snapshot to history (cross-cycle trend analysis)
     // Use cycle counter instead of system time (WASM doesn't support std::time)
     let cycle_num = SPC_HISTORY.with(|history| history.borrow().cycle_count + 1);
-    let timestamp = format!("cycle-{}", cycle_num);
+    let timestamp = format!("cycle-{cycle_num}");
     let event_rate_mean = if event_counts_per_trace.is_empty() {
         0.0
     } else {
@@ -1766,7 +1766,7 @@ pub fn autonomic_execute_cycle(
                 .iter()
                 .enumerate()
                 .map(|(i, &v)| spc::ChartData {
-                    timestamp: format!("cycle-{}", i),
+                    timestamp: format!("cycle-{i}"),
                     value: v,
                     ucl: mean_er_hist + 3.0 * std_er_hist,
                     cl: mean_er_hist,
@@ -1816,7 +1816,7 @@ pub fn autonomic_execute_cycle(
                 .iter()
                 .enumerate()
                 .map(|(i, &v)| spc::ChartData {
-                    timestamp: format!("cycle-{}", i),
+                    timestamp: format!("cycle-{i}"),
                     value: v,
                     ucl: mean_td_hist + 3.0 * std_td_hist,
                     cl: mean_td_hist,
@@ -1867,7 +1867,7 @@ pub fn autonomic_execute_cycle(
                 .iter()
                 .enumerate()
                 .map(|(i, &v)| spc::ChartData {
-                    timestamp: format!("cycle-{}", i),
+                    timestamp: format!("cycle-{i}"),
                     value: v,
                     ucl: mean_af_hist + 3.0 * std_af_hist,
                     cl: mean_af_hist,
@@ -2200,7 +2200,9 @@ pub fn autonomic_execute_cycle(
                     });
                 }
                 crate::prediction_resource::compute_ucb1_selection(
-                    guard.as_ref().unwrap(),
+                    guard.as_ref().expect(
+                        "invariant: guard is Some (set to Some in the is_none branch above)",
+                    ),
                     std::f64::consts::SQRT_2,
                 )
                 .map(|sel| sel.selected.clone())
@@ -2624,7 +2626,7 @@ pub fn rl_orchestrator_switch_agent(agent_type: u8) -> Result<String, JsValue> {
 pub fn rl_orchestrator_set_linucb(enabled: bool) -> Result<String, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
         orch.borrow_mut().set_linucb_selection(enabled);
-        Ok(format!("LinUCB selection: {}", enabled))
+        Ok(format!("LinUCB selection: {enabled}"))
     })
 }
 
@@ -2733,7 +2735,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
         };
 
         serde_json::to_string(&state)
-            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
     })
 }
 
@@ -2754,7 +2756,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
     let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
-        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {e}")))?;
 
     RL_ORCHESTRATOR
         .with(|orch| {
@@ -2796,7 +2798,7 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
                         restored, skipped
                     )
                 } else {
-                    format!("; all {} Q-tables restored successfully", restored)
+                    format!("; all {restored} Q-tables restored successfully")
                 };
             }
 
@@ -2823,7 +2825,7 @@ pub fn get_spc_history() -> Result<String, JsValue> {
             "cycle_count": history_ref.cycle_count
         });
         serde_json::to_string(&serialized)
-            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
     })
 }
 
@@ -2838,7 +2840,7 @@ pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
     }
 
     let data: SpcHistoryJson = serde_json::from_str(json)
-        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {e}")))?;
 
     let snapshot_count = data.snapshots.len();
     let cycle_count = data.cycle_count;
@@ -2849,7 +2851,7 @@ pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
         history.borrow_mut().restore(data.snapshots, cycle_count);
     });
 
-    Ok(format!("Restored {} SPC snapshots", snapshot_count))
+    Ok(format!("Restored {snapshot_count} SPC snapshots"))
 }
 
 /// Get circuit breaker state as JSON.
@@ -2860,7 +2862,7 @@ pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
         let cb_ref = cb.borrow();
         let state_json = cb_ref.to_state_json();
         serde_json::to_string(&state_json)
-            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
     })
 }
 
@@ -2869,7 +2871,7 @@ pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
     let state_json: self_healing::CircuitBreakerStateJson = serde_json::from_str(json)
-        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {e}")))?;
 
     CIRCUIT_BREAKER.with(|cb| {
         let mut cb_ref = cb.borrow_mut();
@@ -2906,7 +2908,7 @@ pub fn circuit_breaker_get_config() -> Result<String, JsValue> {
             half_open_timeout_ms: breaker_ref.half_open_timeout_ms(),
         };
         serde_json::to_string(&config)
-            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
     })
 }
 
@@ -3391,7 +3393,7 @@ pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
         "computed_receipt_hash": receipt
     });
 
-    Ok(serde_json::to_string(&out).unwrap())
+    Ok(serde_json::to_string(&out).expect("invariant: json! literal is always serializable"))
 }
 
 #[cfg(feature = "ocel")]

@@ -247,7 +247,7 @@ impl SyntheticMarkerScanner {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::PlaceholderEvidenceDetected,
                         json_path: path.to_string(),
-                        message: format!("Evidence field '{}' cannot be empty", path),
+                        message: format!("Evidence field '{path}' cannot be empty"),
                         severity: FindingSeverity::Deny,
                     });
                 }
@@ -279,7 +279,7 @@ impl SyntheticMarkerScanner {
             serde_json::Value::Array(items) => {
                 for (i, item) in items.iter().enumerate() {
                     Self::scan_value(
-                        &format!("{}[{}]", path, i),
+                        &format!("{path}[{i}]"),
                         item,
                         findings,
                         refusal_state_present,
@@ -289,9 +289,9 @@ impl SyntheticMarkerScanner {
             serde_json::Value::Object(map) => {
                 for (k, v) in map {
                     let next_path = if path == "$" {
-                        format!("$.{}", k)
+                        format!("$.{k}")
                     } else {
-                        format!("{}.{}", path, k)
+                        format!("{path}.{k}")
                     };
                     Self::scan_value(&next_path, v, findings, refusal_state_present);
                 }
@@ -358,7 +358,7 @@ impl OCELReceiptLinter {
         };
 
         for (algo_idx, algo) in algorithms.iter().enumerate() {
-            let algo_path_prefix = format!("$.algorithms[{}]", algo_idx);
+            let algo_path_prefix = format!("$.algorithms[{algo_idx}]");
 
             let expected_path = algo.get("expected_path");
             let observed_path = algo.get("observed_path");
@@ -392,7 +392,7 @@ impl OCELReceiptLinter {
             if expected_ocel2_val.is_none() {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::ExpectedOCELMissing,
-                    json_path: format!("{}.expected_path.expected_ocel2", algo_path_prefix),
+                    json_path: format!("{algo_path_prefix}.expected_path.expected_ocel2"),
                     message: "expected_path.expected_ocel2 is missing".to_string(),
                     severity: FindingSeverity::Deny,
                 });
@@ -400,7 +400,7 @@ impl OCELReceiptLinter {
             if observed_ocel2_val.is_none() {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::ObservedOCELMissing,
-                    json_path: format!("{}.observed_path.observed_ocel2", algo_path_prefix),
+                    json_path: format!("{algo_path_prefix}.observed_path.observed_ocel2"),
                     message: "observed_path.observed_ocel2 is missing".to_string(),
                     severity: FindingSeverity::Deny,
                 });
@@ -409,7 +409,7 @@ impl OCELReceiptLinter {
                 if expected_has_hash && observed_has_hash {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::PathHashOnlyReceipt,
-                        json_path: format!("{}.observed_path", algo_path_prefix),
+                        json_path: format!("{algo_path_prefix}.observed_path"),
                         message: "Receipt contains only hashes without backing logs".to_string(),
                         severity: FindingSeverity::Deny,
                     });
@@ -458,7 +458,7 @@ impl OCELReceiptLinter {
                                 if ev.get("id").and_then(|v| v.as_str()).is_none() {
                                     findings.push(ReceiptFinding {
                                         code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                        json_path: format!("{}.id", ev_path),
+                                        json_path: format!("{ev_path}.id"),
                                         message: "Event missing 'id'".to_string(),
                                         severity: FindingSeverity::Deny,
                                     });
@@ -468,7 +468,7 @@ impl OCELReceiptLinter {
                                 {
                                     findings.push(ReceiptFinding {
                                         code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                        json_path: format!("{}.type", ev_path),
+                                        json_path: format!("{ev_path}.type"),
                                         message: "Event missing 'type'".to_string(),
                                         severity: FindingSeverity::Deny,
                                     });
@@ -497,8 +497,8 @@ impl OCELReceiptLinter {
                                             if !known_object_ids.contains(ref_id) {
                                                 findings.push(ReceiptFinding {
                                                     code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                                    json_path: format!("{}.relationships[{}]", ev_path, r_idx),
-                                                    message: format!("Object reference '{}' is dangling", ref_id),
+                                                    json_path: format!("{ev_path}.relationships[{r_idx}]"),
+                                                    message: format!("Object reference '{ref_id}' is dangling"),
                                                     severity: FindingSeverity::Deny,
                                                 });
                                             }
@@ -564,7 +564,7 @@ impl OCELReceiptLinter {
                 if status_val != "Pass" && refusal_state.map_or(true, |r| r.is_null()) {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::ClosureOverclaimed,
-                        json_path: format!("{}.alignment.refusal_state", algo_path_prefix),
+                        json_path: format!("{algo_path_prefix}.alignment.refusal_state"),
                         message: "Non-passing alignment must have an explaining refusal_state"
                             .to_string(),
                         severity: FindingSeverity::Deny,
@@ -587,7 +587,7 @@ fn parse_timestamp(s: &str) -> Result<chrono::DateTime<chrono::FixedOffset>, chr
     }
     let with_z = if !formatted.contains('Z') && !formatted.contains('+') && !formatted.contains('-')
     {
-        format!("{}Z", formatted)
+        format!("{formatted}Z")
     } else {
         formatted
     };
@@ -602,7 +602,7 @@ impl ExpectedObservedCloneDetector {
         let mut findings = Vec::new();
         if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
             for (idx, algo) in algorithms.iter().enumerate() {
-                let algo_path = format!("$.algorithms[{}]", idx);
+                let algo_path = format!("$.algorithms[{idx}]");
 
                 let expected_hash = get_expected_ocel_hash(algo);
                 let observed_hash = get_observed_ocel_hash(algo);
@@ -612,7 +612,7 @@ impl ExpectedObservedCloneDetector {
                         // suspicious cloning
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ExpectedObservedCloneDetected,
-                            json_path: format!("{}.observed_path.observed_ocel2_hash", algo_path),
+                            json_path: format!("{algo_path}.observed_path.observed_ocel2_hash"),
                             message: "Observed OCEL hash matches expected hash exactly (unobserved clone suspect)".to_string(),
                             severity: FindingSeverity::Deny,
                         });
@@ -641,7 +641,7 @@ impl ExpectedObservedCloneDetector {
                                 {
                                     findings.push(ReceiptFinding {
                                         code: ReceiptTruthRefusal::ExpectedObservedCloneDetected,
-                                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
+                                        json_path: format!("{algo_path}.observed_path.observed_ocel2.events"),
                                         message: "Observed events contain static template timestamp constants".to_string(),
                                         severity: FindingSeverity::Deny,
                                     });
@@ -757,7 +757,7 @@ impl ExpectedObservedCloneDetector {
                                     });
                                     findings.push(ReceiptFinding {
                                         code: ReceiptTruthRefusal::FixtureMutationDetected,
-                                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
+                                        json_path: format!("{algo_path}.observed_path.observed_ocel2.events"),
                                         message: "Fixture mutation detected: observed events are isomorphic near-clone of expected events".to_string(),
                                         severity: FindingSeverity::Deny,
                                     });
@@ -781,7 +781,7 @@ impl BoundaryEvidenceVerifier {
 
         if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
             for (idx, algo) in algorithms.iter().enumerate() {
-                let algo_path = format!("$.algorithms[{}]", idx);
+                let algo_path = format!("$.algorithms[{idx}]");
                 let mut has_boundary = false;
 
                 // Check explicit boundary_evidence field (either at algo level or under observed_path)
@@ -848,7 +848,7 @@ impl BoundaryEvidenceVerifier {
                 if !passes {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::BoundaryEvidenceMissing,
-                        json_path: format!("{}.boundary_evidence", algo_path),
+                        json_path: format!("{algo_path}.boundary_evidence"),
                         message: "Observed path lacks boundary evidence events or fields"
                             .to_string(),
                         severity: FindingSeverity::Deny,
@@ -887,7 +887,7 @@ impl ClosureOverclaimDetector {
 
             if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
                 for (idx, algo) in algorithms.iter().enumerate() {
-                    let algo_path = format!("$.algorithms[{}]", idx);
+                    let algo_path = format!("$.algorithms[{idx}]");
 
                     // Check alignment
                     let mut has_pass = false;
@@ -901,15 +901,15 @@ impl ClosureOverclaimDetector {
                         } else {
                             findings.push(ReceiptFinding {
                                 code: ReceiptTruthRefusal::ClosureOverclaimed,
-                                json_path: format!("{}.alignment.expected_vs_observed", algo_path),
-                                message: format!("Cannot claim all_real=true with non-passing alignment status: {}", status_val),
+                                json_path: format!("{algo_path}.alignment.expected_vs_observed"),
+                                message: format!("Cannot claim all_real=true with non-passing alignment status: {status_val}"),
                                 severity: FindingSeverity::Deny,
                             });
                         }
                     } else {
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ClosureOverclaimed,
-                            json_path: format!("{}.alignment", algo_path),
+                            json_path: format!("{algo_path}.alignment"),
                             message: "Closed receipt requires alignment information".to_string(),
                             severity: FindingSeverity::Deny,
                         });
@@ -943,7 +943,7 @@ impl ClosureOverclaimDetector {
                         if !has_artifact_emitted {
                             findings.push(ReceiptFinding {
                                 code: ReceiptTruthRefusal::ClosureOverclaimed,
-                                json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
+                                json_path: format!("{algo_path}.observed_path.observed_ocel2.events"),
                                 message: "Closed receipt requires an artifact.emitted event in observed path".to_string(),
                                 severity: FindingSeverity::Deny,
                             });
@@ -980,7 +980,7 @@ impl CanonicalHashVerifier {
         // 1. Verify individual algorithms' expected and observed ocel hashes match canonical ocel serialization
         if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
             for (idx, algo) in algorithms.iter().enumerate() {
-                let algo_path = format!("$.algorithms[{}]", idx);
+                let algo_path = format!("$.algorithms[{idx}]");
                 if let Some(ocel) = get_observed_ocel(algo) {
                     if let Some(stored_hash) = get_observed_ocel_hash(algo) {
                         // Check that stored hash is not placeholder
@@ -1005,7 +1005,7 @@ impl CanonicalHashVerifier {
                         if stored_hash != blake3_computed && stored_hash != sha256_computed {
                             findings.push(ReceiptFinding {
                                     code: ReceiptTruthRefusal::OCELCanonicalHashMismatch,
-                                    json_path: format!("{}.observed_path.observed_ocel2_hash", algo_path),
+                                    json_path: format!("{algo_path}.observed_path.observed_ocel2_hash"),
                                     message: format!(
                                         "OCEL canonical hash mismatch. Stored: '{}', Computed BLAKE3: '{}', SHA256: '{}'",
                                         stored_hash, blake3_computed, sha256_computed
@@ -1040,7 +1040,7 @@ impl CanonicalHashVerifier {
                         if stored_hash != blake3_computed && stored_hash != sha256_computed {
                             findings.push(ReceiptFinding {
                                     code: ReceiptTruthRefusal::OCELCanonicalHashMismatch,
-                                    json_path: format!("{}.expected_path.expected_ocel2_hash", algo_path),
+                                    json_path: format!("{algo_path}.expected_path.expected_ocel2_hash"),
                                     message: format!(
                                         "OCEL canonical hash mismatch. Stored: '{}', Computed BLAKE3: '{}', SHA256: '{}'",
                                         stored_hash, blake3_computed, sha256_computed
@@ -2286,7 +2286,7 @@ impl ProofClassHierarchyVerifier {
                     if missing {
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ProofClassOverclaimed,
-                            json_path: format!("$.{}", field),
+                            json_path: format!("$.{field}"),
                             message: format!(
                                 "proof_class '{}' requires field '{}' but it is absent or null",
                                 proof_class_str, field
@@ -2413,7 +2413,7 @@ impl SelfCertifiedAlignmentVerifier {
                             if state.to_lowercase() == "pass" || state.to_lowercase() == "passed" {
                                 findings.push(ReceiptFinding {
                                     code: ReceiptTruthRefusal::SelfCertifiedAlignment,
-                                    json_path: format!("$.algorithms[{}].alignment.expected_vs_observed", idx),
+                                    json_path: format!("$.algorithms[{idx}].alignment.expected_vs_observed"),
                                     message: "Alignment state 'Pass' cannot be self-certified by the receipt producer.".to_string(),
                                     severity: FindingSeverity::Deny,
                                 });
