@@ -1,12 +1,12 @@
 use crate::models::{DFGNode, DirectlyFollowsRelation, DFG, OCEL};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Object-Centric Directly Follows Graph (OC-DFG)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCDFG {
     /// Mapping from object type to its specific Directly-Follows Graph
-    pub dfgs: HashMap<String, DFG>,
+    pub dfgs: BTreeMap<String, DFG>,
 }
 
 impl OCDFG {
@@ -14,7 +14,7 @@ impl OCDFG {
     ///
     /// Groups events by object ID, sorts them, and aggregates per object type.
     pub fn discover(ocel: &OCEL) -> Self {
-        let mut dfgs = HashMap::new();
+        let mut dfgs = BTreeMap::new();
 
         // 1. Map object ID to its type
         let obj_to_type: HashMap<String, String> = ocel
