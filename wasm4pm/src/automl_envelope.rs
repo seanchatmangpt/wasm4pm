@@ -216,8 +216,8 @@ fn compute_trace_duration_ms(trace: &crate::models::Trace) -> f64 {
         return 0.0;
     }
 
-    let min = timestamps.iter().cloned().fold(f64::MAX, f64::min);
-    let max = timestamps.iter().cloned().fold(f64::MIN, f64::max);
+    let min = timestamps.iter().copied().fold(f64::MAX, f64::min);
+    let max = timestamps.iter().copied().fold(f64::MIN, f64::max);
     (max - min).max(0.0)
 }
 

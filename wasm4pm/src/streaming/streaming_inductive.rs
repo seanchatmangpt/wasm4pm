@@ -140,13 +140,13 @@ impl StreamingInductiveBuilder {
         // Try to build a chain: each activity's successors determine the order
         let mut order: Vec<Vec<u32>> = Vec::new();
         let mut visited: HashSet<u32> = HashSet::new();
-        let mut remaining: HashSet<u32> = activities.iter().cloned().collect();
+        let mut remaining: HashSet<u32> = activities.iter().copied().collect();
 
         // Start from activities that have no predecessors (or only from start activities)
         let has_predecessor: HashSet<u32> = activities
             .iter()
             .filter(|id| successors.values().any(|s| s.contains(id)))
-            .cloned()
+            .copied()
             .collect();
 
         let mut current_starts: Vec<u32> = activities
@@ -207,7 +207,7 @@ impl StreamingInductiveBuilder {
         successors: &HashMap<u32, HashSet<u32>>,
     ) -> Vec<Vec<u32>> {
         // Build connectivity graph
-        let activity_set: HashSet<u32> = activities.iter().cloned().collect();
+        let activity_set: HashSet<u32> = activities.iter().copied().collect();
 
         // Find connected components
         let mut groups: Vec<HashSet<u32>> = Vec::new();

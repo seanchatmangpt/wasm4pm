@@ -78,7 +78,7 @@ impl NaiveBayesModel {
                 log_probs.push(log_prob);
             }
             // Softmax to convert log-probs to probabilities
-            let max_lp = log_probs.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+            let max_lp = log_probs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
             let sum_exp: f64 = log_probs.iter().map(|&lp| (lp - max_lp).exp()).sum();
             for lp in &log_probs {
                 result.push(((lp - max_lp).exp()) / sum_exp);

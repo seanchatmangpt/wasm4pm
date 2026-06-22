@@ -377,8 +377,8 @@ pub fn cross_validate(
     to_js_str(&serde_json::json!({
         "mean_fitness": mean_fitness,
         "std_fitness": std_fitness,
-        "min_fitness": fitnesses.iter().cloned().fold(f64::INFINITY, f64::min),
-        "max_fitness": fitnesses.iter().cloned().fold(f64::NEG_INFINITY, f64::max),
+        "min_fitness": fitnesses.iter().copied().fold(f64::INFINITY, f64::min),
+        "max_fitness": fitnesses.iter().copied().fold(f64::NEG_INFINITY, f64::max),
         "fold_results": fold_results,
         "k": k,
         "total_traces": total,
