@@ -637,7 +637,7 @@ mod tests {
         for trace in &log.traces {
             // Loop always executes do-branch at least once, producing at least 1 event
             assert!(
-                trace.events.len() >= 1,
+                !trace.events.is_empty(),
                 "Loop should produce at least 1 event (do-branch)"
             );
             // First event should be "A" (do-branch is child 0)

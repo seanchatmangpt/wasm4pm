@@ -158,7 +158,7 @@ impl CognitionBreed for AllenTemporal {
         for state in &input.state {
             if state.predicate == "interval" {
                 let parts: Vec<&str> = state.value.split(',').collect();
-                if parts.len() >= 1 {
+                if !parts.is_empty() {
                     get_id!(parts[0]);
                 }
             }
