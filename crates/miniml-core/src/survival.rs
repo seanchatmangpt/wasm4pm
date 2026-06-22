@@ -86,18 +86,15 @@ pub fn kaplan_meier_impl(times: &[f64], events: &[f64]) -> Result<KaplanMeierRes
         var_log_s.push(cum_var);
     }
     let z = 1.96;
-    let mut ci_lower = Vec::with_capacity(event_times.len());
-    let mut ci_upper = Vec::with_capacity(event_times.len());
-    for k in 0..event_times.len() {
-        let log_s = if survival_probs[k] > 0.0 {
-            survival_probs[k].ln()
-        } else {
-            f64::NEG_INFINITY
-        };
-        let se = var_log_s[k].sqrt();
-        ci_lower.push((log_s - z * se).exp().clamp(0.0, 1.0));
-        ci_upper.push((log_s + z * se).exp().clamp(0.0, 1.0));
-    }
+    let (ci_lower, ci_upper): (Vec<f64>, Vec<f64>) = survival_probs
+        .iter()
+        .zip(&var_log_s)
+        .map(|(&sp, &v)| {
+            let log_s = if sp > 0.0 { sp.ln() } else { f64::NEG_INFINITY };
+            let se = v.sqrt();
+            ((log_s - z * se).exp().clamp(0.0, 1.0), (log_s + z * se).exp().clamp(0.0, 1.0))
+        })
+        .unzip();
     let median_survival = survival_probs
         .iter()
         .position(|&sp| sp <= 0.5)
