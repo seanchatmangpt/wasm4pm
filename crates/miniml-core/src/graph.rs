@@ -115,7 +115,7 @@ pub fn pagerank(
     let result = pagerank_impl(adjacency, n_nodes, damping, max_iter, tol)
         .map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![
-        if result.converged { 1.0 } else { 0.0 },
+        f64::from(result.converged),
         result.iterations as f64,
     ];
     out.extend(&result.scores);

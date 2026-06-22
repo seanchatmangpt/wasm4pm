@@ -21,7 +21,7 @@ pub fn r2_score_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError> {
         // perfectly (ss_res == 0), R² = 1. Otherwise the metric is undefined
         // (division by zero) — return 0.0 to signal "no variance to explain",
         // consistent with sklearn's behaviour (returns 0.0 for this edge case).
-        return Ok(if ss_res == 0.0 { 1.0 } else { 0.0 });
+        return Ok(f64::from(ss_res == 0.0));
     }
 
     Ok(1.0 - ss_res / ss_tot)

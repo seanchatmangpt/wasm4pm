@@ -182,7 +182,7 @@ pub fn compute_classification_importance(
     let baseline_accuracy = (0..n_samples)
         .map(|i| {
             let features = &feature_matrix[i * n_features..(i + 1) * n_features];
-            let pred = if predict_fn(features) > 0.5 { 1.0 } else { 0.0 };
+            let pred = f64::from(predict_fn(features) > 0.5);
             if pred == true_labels[i] {
                 1.0
             } else {
@@ -218,7 +218,7 @@ pub fn compute_classification_importance(
                 let mut ablated = features.to_vec();
                 ablated[feat] = 0.0;
 
-                let pred = if predict_fn(&ablated) > 0.5 { 1.0 } else { 0.0 };
+                let pred = f64::from(predict_fn(&ablated) > 0.5);
                 if pred == true_labels[i] {
                     1.0
                 } else {
