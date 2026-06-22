@@ -67,7 +67,7 @@ pub struct DimensionUsageReport {
 }
 
 /// Multi-dimensional state clustering analysis
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct StateClustering {
     /// Total number of state observations (including duplicates)
     pub total_states_observed: usize,
@@ -83,20 +83,6 @@ pub struct StateClustering {
     pub high_variance_dimensions: Vec<usize>,
     /// Shannon entropy of state distribution (0=concentrated, 1=uniform)
     pub state_distribution_entropy: f32,
-}
-
-impl Default for StateClustering {
-    fn default() -> Self {
-        Self {
-            total_states_observed: 0,
-            unique_states: 0,
-            health_spc_interaction_coverage: 0.0,
-            circuit_drift_interaction_coverage: 0.0,
-            bottleneck_dimensions: Vec::new(),
-            high_variance_dimensions: Vec::new(),
-            state_distribution_entropy: 0.0,
-        }
-    }
 }
 
 /// Master dimensionality analyzer — comprehensive state space analysis

@@ -909,7 +909,7 @@ mod serde_declare_constraint {
 ///
 /// No `HashMap` is used anywhere in this type. `BTreeSet` gives reproducible
 /// activity ordering with `O(log n)` insertion and membership test.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct DeclareModel {
     /// The finite alphabet of activities referenced by the model.
     ///
@@ -1010,13 +1010,6 @@ impl DeclareModel {
         self.constraints
             .iter()
             .filter(move |c| c.confidence >= min_confidence)
-    }
-}
-
-impl Default for DeclareModel {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
     }
 }
 
