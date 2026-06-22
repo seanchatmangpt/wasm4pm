@@ -12,7 +12,7 @@ use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
 use rustc_hash::FxHashMap;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Streaming Heuristic Miner builder.
 ///
@@ -62,7 +62,7 @@ pub struct StreamingHeuristicBuilder {
     /// number of traces closed
     pub trace_count: usize,
     /// open (in-progress) traces
-    pub open_traces: HashMap<String, Vec<u32>>,
+    pub open_traces: BTreeMap<String, Vec<u32>>,
     /// Minimum dependency threshold for including edges
     pub dependency_threshold: f64,
 }
@@ -81,7 +81,7 @@ impl StreamingHeuristicBuilder {
             end_counts: FxHashMap::default(),
             event_count: 0,
             trace_count: 0,
-            open_traces: HashMap::new(),
+            open_traces: BTreeMap::new(),
             dependency_threshold: 0.0,
         }
     }
@@ -263,15 +263,15 @@ impl StreamingAlgorithm for StreamingHeuristicBuilder {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
         let memory_bytes =
             // open_traces
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
+            self.open_traces.len() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
             // open trace event buffers
             open_trace_events * std::mem::size_of::<u32>() +
             // activity_counts
-            self.activity_counts.capacity() * std::mem::size_of::<usize>() +
+            self.activity_counts.len() * std::mem::size_of::<usize>() +
             // edge_counts
-            self.edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
+            self.edge_counts.len() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
             // start/end counts
-            (self.start_counts.capacity() + self.end_counts.capacity()) * (std::mem::size_of::<u32>() + std::mem::size_of::<usize>());
+            (self.start_counts.len() + self.end_counts.len()) * (std::mem::size_of::<u32>() + std::mem::size_of::<usize>());
 
         StreamStats {
             event_count: self.event_count,

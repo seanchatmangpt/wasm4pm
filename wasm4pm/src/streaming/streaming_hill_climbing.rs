@@ -14,7 +14,7 @@ use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Default noise threshold — edges below this relative frequency are excluded
 /// from the candidate set entirely (pruning before hill climbing begins).
@@ -44,7 +44,7 @@ pub struct StreamingHillClimbingBuilder {
     pub event_count: usize,
     pub trace_count: usize,
     /// Open traces (being accumulated before close_trace)
-    pub open_traces: HashMap<String, Vec<u32>>,
+    pub open_traces: BTreeMap<String, Vec<u32>>,
     /// Closed trace sequences for marginal-gain computation at snapshot time
     closed_traces: Vec<Vec<u32>>,
     /// Noise threshold — edges below this relative frequency are pruned
@@ -63,7 +63,7 @@ impl StreamingHillClimbingBuilder {
             end_counts: FxHashMap::default(),
             event_count: 0,
             trace_count: 0,
-            open_traces: HashMap::new(),
+            open_traces: BTreeMap::new(),
             closed_traces: Vec::new(),
             noise_threshold: DEFAULT_NOISE_THRESHOLD,
         }
@@ -265,13 +265,13 @@ impl StreamingAlgorithm for StreamingHillClimbingBuilder {
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
         let closed_trace_events: usize = self.closed_traces.iter().map(|v| v.len()).sum();
-        let memory_bytes = self.open_traces.capacity()
+        let memory_bytes = self.open_traces.len()
             * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
             + open_trace_events * std::mem::size_of::<u32>()
-            + self.closed_traces.capacity() * std::mem::size_of::<Vec<u32>>()
+            + self.closed_traces.len() * std::mem::size_of::<Vec<u32>>()
             + closed_trace_events * std::mem::size_of::<u32>()
-            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
-            + self.edge_counts.capacity()
+            + self.activity_counts.len() * std::mem::size_of::<usize>()
+            + self.edge_counts.len()
                 * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {
