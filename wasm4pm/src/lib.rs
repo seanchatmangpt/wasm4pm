@@ -2022,7 +2022,7 @@ pub fn autonomic_execute_cycle(
             (trace_count_val as f32 / 1_000.0).min(1.0),  // [1] trace_count (unused)
             (unique_activities_val as f32 / 100.0).min(1.0), // [2] activity_count
             (health_level as f32 / 4.0).min(1.0),         // [3] health (unused in from_features)
-            if circuit_allowed { 1.0 } else { 0.0 },      // [4] circuit_state
+            f64::from(circuit_allowed),                            // [4] circuit_state
             (all_special_causes.len() as f32 / 10.0).min(1.0), // [5] spc_alert_level
             activity_entropy,                             // [6] drift_status (activity entropy)
             (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0), // [7] cycle_phase

@@ -602,7 +602,7 @@ mod tests {
             .position(|(a, _)| a == "nonexistent_action_xyz");
         assert!(rank.is_none());
         // action_score formula: rank == None → 1.0
-        let action_score: f64 = if rank.is_none() { 1.0 } else { 0.0 };
+        let action_score: f64 = f64::from(rank.is_none());
         assert_eq!(action_score, 1.0);
     }
 

@@ -325,7 +325,7 @@ impl CognitionBreed for BayesianNetwork {
             // Reduce with evidence
             for (ev_name, &ev_val) in &evidence {
                 let ev_id = node_id(ev_name);
-                let bit_val = if ev_val { 1 } else { 0 };
+                let bit_val = usize::from(ev_val);
                 for f in &mut factors {
                     if let Some(pos) = f.vars.iter().position(|&x| x == ev_id) {
                         for idx in 0..(1 << f.vars.len()) {

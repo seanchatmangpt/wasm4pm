@@ -476,7 +476,7 @@ mod tests {
         let product = mat_mul_8(&a, &a_inv);
         for i in 0..N_FEATURES {
             for j in 0..N_FEATURES {
-                let expected = if i == j { 1.0 } else { 0.0 };
+                let expected = f32::from(i == j);
                 assert!(
                     (product[i][j] - expected).abs() < 1e-3,
                     "A * A_inv [{i}][{j}] = {} (expected {expected})",
