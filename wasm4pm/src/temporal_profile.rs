@@ -53,14 +53,14 @@ pub fn discover_temporal_profile_from_log(
         }
     }
 
-    let mut pairs_map: std::collections::BTreeMap<(String, String), (f64, f64, usize)> =
-        std::collections::BTreeMap::new();
-    for ((a, b), (sum, sum_sq, cnt)) in acc {
-        let mean = sum / cnt as f64;
-        let variance = (sum_sq / cnt as f64) - mean * mean;
-        let stdev = variance.max(0.0).sqrt();
-        pairs_map.insert((a, b), (mean, stdev, cnt));
-    }
+    let pairs_map: std::collections::BTreeMap<(String, String), (f64, f64, usize)> = acc
+        .into_iter()
+        .map(|((a, b), (sum, sum_sq, cnt))| {
+            let mean = sum / cnt as f64;
+            let stdev = ((sum_sq / cnt as f64) - mean * mean).max(0.0).sqrt();
+            ((a, b), (mean, stdev, cnt))
+        })
+        .collect();
 
     TemporalProfile { pairs: pairs_map }
 }

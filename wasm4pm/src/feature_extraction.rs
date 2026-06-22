@@ -271,13 +271,13 @@ pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
         return Ok(String::new());
     }
 
-    // Collect all keys (columns) from all objects
-    let mut all_keys = std::collections::BTreeSet::new();
-    for feature in &features {
-        all_keys.extend(feature.keys().cloned());
-    }
-
-    let keys: Vec<String> = all_keys.into_iter().collect();
+    // Collect all keys (columns) from all objects — dedup via BTreeSet, preserves sort order
+    let keys: Vec<String> = features
+        .iter()
+        .flat_map(|f| f.keys().cloned())
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
 
     // Build CSV
     let mut csv = String::new();
