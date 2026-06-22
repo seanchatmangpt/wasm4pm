@@ -109,7 +109,7 @@ fn choice_graph_fall_through(
 /// Creates a DecisionGraph node where each partition is represented as
 /// an XOR of its activities, then connected via partition-level edges.
 fn build_choice_graph_model(
-    partitions: &[HashSet<String>],
+    partitions: &[std::collections::BTreeSet<String>],
     partition_edges: &HashSet<(usize, usize)>,
     start_activities: &HashSet<String>,
     end_activities: &HashSet<String>,
@@ -515,9 +515,9 @@ mod tests {
     #[test]
     fn test_build_choice_graph_model_two_partitions() {
         // Two partitions: {A}, {B}
-        let partitions = vec![
-            HashSet::from_iter(vec!["A".to_string()]),
-            HashSet::from_iter(vec!["B".to_string()]),
+        let partitions: Vec<std::collections::BTreeSet<String>> = vec![
+            std::collections::BTreeSet::from_iter(vec!["A".to_string()]),
+            std::collections::BTreeSet::from_iter(vec!["B".to_string()]),
         ];
         let partition_edges: HashSet<(usize, usize)> = HashSet::from_iter(vec![(0, 1)]);
         let start_activities = HashSet::from_iter(vec!["A".to_string()]);
@@ -538,10 +538,10 @@ mod tests {
     #[test]
     fn test_build_choice_graph_model_three_partitions() {
         // Three partitions: {A}, {B, C}, {D}
-        let partitions = vec![
-            HashSet::from_iter(vec!["A".to_string()]),
-            HashSet::from_iter(vec!["B".to_string(), "C".to_string()]),
-            HashSet::from_iter(vec!["D".to_string()]),
+        let partitions: Vec<std::collections::BTreeSet<String>> = vec![
+            std::collections::BTreeSet::from_iter(vec!["A".to_string()]),
+            std::collections::BTreeSet::from_iter(vec!["B".to_string(), "C".to_string()]),
+            std::collections::BTreeSet::from_iter(vec!["D".to_string()]),
         ];
         let partition_edges: HashSet<(usize, usize)> = HashSet::from_iter(vec![(0, 1), (1, 2)]);
         let start_activities = HashSet::from_iter(vec!["A".to_string()]);
