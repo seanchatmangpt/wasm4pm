@@ -1,6 +1,5 @@
 #![allow(missing_docs)]
-use std::collections::HashSet;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap, VecDeque};
 
 #[derive(Debug, Clone)]
 pub struct CspVar {
@@ -176,7 +175,7 @@ impl CspStore {
         }
 
         let mut assignments = HashMap::new();
-        let mut unassigned: HashSet<String> = self.vars.keys().cloned().collect();
+        let mut unassigned: BTreeSet<String> = self.vars.keys().cloned().collect();
         
         // If all domains are singletons, we are done
         let mut all_singletons = true;
@@ -200,7 +199,7 @@ impl CspStore {
         }
     }
 
-    fn select_unassigned_var(&self, unassigned: &HashSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
+    fn select_unassigned_var(&self, unassigned: &BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
 
@@ -220,7 +219,7 @@ impl CspStore {
         best_var.unwrap().clone()
     }
 
-    fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut HashSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
+    fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
         if unassigned.is_empty() {
             return true;
         }
@@ -433,7 +432,7 @@ impl CspSolver {
         true
     }
 
-    fn select_unassigned_var(&self, unassigned: &HashSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
+    fn select_unassigned_var(&self, unassigned: &BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
 
@@ -455,7 +454,7 @@ impl CspSolver {
         best_var.unwrap().clone()
     }
 
-    pub fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut HashSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
+    pub fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
         if unassigned.is_empty() {
             return true;
         }
@@ -529,7 +528,7 @@ impl CspSolver {
         }
 
         let mut assignments = HashMap::new();
-        let mut unassigned: HashSet<String> = self.vars.keys().cloned().collect();
+        let mut unassigned: BTreeSet<String> = self.vars.keys().cloned().collect();
 
         if self.backtrack(&mut assignments, &mut unassigned, &domains) {
             self.trace.push(TraceEvent::Verdict { satisfiable: true });
