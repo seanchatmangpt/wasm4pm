@@ -46,22 +46,26 @@ fn is_invisible(net: &PetriNet, trans_name: &str) -> bool {
 
 /// Names of transitions that have an arc into `node`.
 fn preset_transitions(net: &PetriNet, node: &str) -> Vec<String> {
-    net.arcs
+    let mut v: Vec<String> = net.arcs
         .iter()
         .filter(|a| a.to == node)
         .filter(|a| is_transition(net, &a.from))
         .map(|a| a.from.clone())
-        .collect()
+        .collect();
+    v.sort_unstable();
+    v
 }
 
-/// Names of transitions that have an arc out of `node`.
+/// Names of transitions that have an arc out of `node` — returned in sorted order.
 fn postset_transitions(net: &PetriNet, node: &str) -> Vec<String> {
-    net.arcs
+    let mut v: Vec<String> = net.arcs
         .iter()
         .filter(|a| a.from == node)
         .filter(|a| is_transition(net, &a.to))
         .map(|a| a.to.clone())
-        .collect()
+        .collect();
+    v.sort_unstable();
+    v
 }
 
 /// Names of places that have an arc into `node`.
@@ -340,10 +344,8 @@ fn eliminate_self_loop_places(net: &mut PetriNet) -> bool {
 fn eliminate_identical_places(net: &mut PetriNet) -> bool {
     let mut sig_map: HashMap<(Vec<String>, Vec<String>), Vec<String>> = HashMap::new();
     for place in &net.places {
-        let mut pre = preset_transitions(net, &place.id);
-        let mut post = postset_transitions(net, &place.id);
-        pre.sort();
-        post.sort();
+        let pre = preset_transitions(net, &place.id);
+        let post = postset_transitions(net, &place.id);
         sig_map
             .entry((pre, post))
             .or_default()
@@ -412,10 +414,8 @@ fn count_series_transitions(net: &PetriNet) -> usize {
 fn count_identical_place_groups(net: &PetriNet) -> usize {
     let mut sig_map: HashMap<(Vec<String>, Vec<String>), usize> = HashMap::new();
     for place in &net.places {
-        let mut pre = preset_transitions(net, &place.id);
-        let mut post = postset_transitions(net, &place.id);
-        pre.sort();
-        post.sort();
+        let pre = preset_transitions(net, &place.id);
+        let post = postset_transitions(net, &place.id);
         *sig_map.entry((pre, post)).or_default() += 1;
     }
     // Count redundant places in groups larger than 1.
