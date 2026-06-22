@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::fmt::Write as _;
 
 /// Network metrics for social network analysis.
@@ -26,10 +26,10 @@ pub struct SocialNetwork {
 
 impl SocialNetwork {
     /// Compute degree centrality: proportion of other nodes connected to this node.
-    pub fn degree_centrality(&self) -> HashMap<String, f64> {
+    pub fn degree_centrality(&self) -> BTreeMap<String, f64> {
         let n = self.nodes.len() as f64;
         if n <= 1.0 {
-            return HashMap::new();
+            return BTreeMap::new();
         }
 
         let mut degrees: HashMap<String, usize> = HashMap::new();
@@ -38,7 +38,7 @@ impl SocialNetwork {
             *degrees.entry(edge.to.clone()).or_default() += 1;
         }
 
-        let mut centrality = HashMap::new();
+        let mut centrality = BTreeMap::new();
         for node in &self.nodes {
             let degree = degrees.get(&node.id).copied().unwrap_or(0);
             centrality.insert(node.id.clone(), degree as f64 / (n - 1.0));
@@ -48,13 +48,13 @@ impl SocialNetwork {
 
     /// Compute betweenness centrality: measure of how often a node lies on shortest paths.
     /// Uses Brandes algorithm approximation for efficiency.
-    pub fn betweenness_centrality(&self) -> HashMap<String, f64> {
+    pub fn betweenness_centrality(&self) -> BTreeMap<String, f64> {
         let n = self.nodes.len();
         if n <= 2 {
-            return HashMap::new();
+            return BTreeMap::new();
         }
 
-        let mut betweenness: HashMap<String, f64> =
+        let mut betweenness: BTreeMap<String, f64> =
             self.nodes.iter().map(|n| (n.id.clone(), 0.0)).collect();
 
         // Build adjacency list
@@ -120,13 +120,13 @@ impl SocialNetwork {
     }
 
     /// Compute closeness centrality: average shortest path distance to all other nodes.
-    pub fn closeness_centrality(&self) -> HashMap<String, f64> {
+    pub fn closeness_centrality(&self) -> BTreeMap<String, f64> {
         let n = self.nodes.len();
         if n <= 1 {
-            return HashMap::new();
+            return BTreeMap::new();
         }
 
-        let mut closeness = HashMap::new();
+        let mut closeness = BTreeMap::new();
 
         // Build adjacency list
         let mut adj: HashMap<String, Vec<String>> = HashMap::new();
