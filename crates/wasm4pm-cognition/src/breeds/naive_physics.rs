@@ -82,15 +82,15 @@ fn parse_scene(input: &BreedInput) -> Result<Scene, String> {
     // Cycle detection on the support chain.
     for start in support.keys() {
         let mut seen = BTreeSet::new();
-        let mut cur = start.clone();
-        while let Some((next, _)) = support.get(&cur) {
-            if !seen.insert(cur.clone()) {
+        let mut cur: &str = start;
+        while let Some((next, _)) = support.get(cur) {
+            if !seen.insert(cur) {
                 return Err(format!(
                     "cyclic support chain involving '{}' (refusal)",
                     start
                 ));
             }
-            cur = next.clone();
+            cur = next;
         }
     }
     Ok(Scene {
