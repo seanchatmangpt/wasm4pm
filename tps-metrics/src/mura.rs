@@ -204,7 +204,7 @@ fn calculate_evenness(commits_by_date: &HashMap<String, usize>) -> f64 {
         return 1.0; // Single day is trivially even
     }
 
-    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    values.sort_by(|a, b| a.total_cmp(b));
 
     let n = values.len() as f64;
     let mean = values.iter().sum::<f64>() / n;
