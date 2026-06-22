@@ -288,8 +288,8 @@ pub(crate) fn alpha_plus_plus_inner<W>(
         .collect();
 
     // ── Step 7: Collect start and end activities ──────────────────────────────
-    let mut start_acts: HashSet<String> = HashSet::new();
-    let mut end_acts: HashSet<String> = HashSet::new();
+    let mut start_acts: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut end_acts: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     for trace in &log.value.traces {
         if let Some(AttributeValue::String(first)) = trace
             .events
