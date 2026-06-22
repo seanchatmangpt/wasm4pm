@@ -399,7 +399,7 @@ mod tests {
         let breed = FuzzyLogic;
         let input = make_input();
         let output = breed.run(&input).unwrap();
-        assert!(output.inference_trace.len() > 0);
+        assert!(!output.inference_trace.is_empty());
         let out_fact = output.facts.iter().find(|f| f.key == "fuzzy:output:fan").unwrap();
         assert!(out_fact.value.parse::<f32>().is_ok());
     }
