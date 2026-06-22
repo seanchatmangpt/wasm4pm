@@ -5,7 +5,7 @@
 
 use crate::models::ConformanceResult;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Activity-level fitness contribution
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,7 +61,7 @@ pub struct TraceConformanceDetail {
 pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown {
     let mut total_missing = 0usize;
     let mut total_remaining = 0usize;
-    let mut activity_map: HashMap<String, ActivityFitnessContribution> = HashMap::new();
+    let mut activity_map: BTreeMap<String, ActivityFitnessContribution> = BTreeMap::new();
 
     // Aggregate per-trace metrics
     for trace_result in &result.case_fitness {
