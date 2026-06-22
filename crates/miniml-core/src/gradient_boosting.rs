@@ -74,7 +74,7 @@ impl GradientBoostingClassifier {
                 }
             }
             // Softmax
-            let max_score = scores.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+            let max_score = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
             let sum_exp: f64 = scores.iter().map(|s| (s - max_score).exp()).sum();
             for s in &scores {
                 result.push(((s - max_score).exp()) / sum_exp);
