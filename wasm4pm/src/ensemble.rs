@@ -62,11 +62,7 @@ pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsVal
                         .map(str::to_owned)
                 })
                 .collect();
-            let mut pairs = Vec::new();
-            for window in acts.windows(2) {
-                pairs.push((window[0].clone(), window[1].clone()));
-            }
-            pairs
+            acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
         })
         .collect();
 
@@ -141,11 +137,7 @@ pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsVal
                         .map(str::to_owned)
                 })
                 .collect();
-            let mut pairs = Vec::new();
-            for window in acts.windows(2) {
-                pairs.push((window[0].to_owned(), window[1].to_owned()));
-            }
-            pairs
+            acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
         })
         .fold(std::collections::HashMap::new(), |mut acc, pair| {
             *acc.entry(pair).or_default() += 1;
@@ -288,11 +280,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -323,11 +311,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].to_owned(), window[1].to_owned()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .fold(std::collections::HashMap::new(), |mut acc, pair| {
                 *acc.entry(pair).or_default() += 1;
@@ -381,11 +365,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -422,11 +402,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].to_owned(), window[1].to_owned()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .fold(std::collections::HashMap::new(), |mut acc, pair| {
                 *acc.entry(pair).or_default() += 1;
@@ -458,11 +434,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -492,11 +464,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -546,11 +514,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -610,11 +574,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -642,11 +602,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
@@ -674,11 +630,7 @@ mod tests {
                             .map(str::to_owned)
                     })
                     .collect();
-                let mut pairs = Vec::new();
-                for window in acts.windows(2) {
-                    pairs.push((window[0].clone(), window[1].clone()));
-                }
-                pairs
+                acts.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect::<Vec<_>>()
             })
             .collect();
 
