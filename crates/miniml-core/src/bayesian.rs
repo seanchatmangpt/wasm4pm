@@ -262,8 +262,7 @@ pub fn bayesian_linear_regression_impl(
 
     // Approximate coefficient std from diagonal of (X^T X + lambda*I)^{-1} * sigma^2_hat
     // Invert xtx using Cholesky to get the covariance matrix
-    let precision = xtx.clone(); // (X^TX + lambdaI)
-    let cov = invert_symmetric(&precision, n_features);
+    let cov = invert_symmetric(&xtx, n_features); // invert (X^TX + lambdaI)
 
     let mut coefficient_std = Vec::with_capacity(n_features);
     for i in 0..n_features {
