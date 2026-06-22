@@ -13,7 +13,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 /// Explanation-Based Learning breed
 pub struct Ebl;
@@ -53,7 +53,7 @@ impl Term {
     }
 }
 
-type Subst = HashMap<String, String>;
+type Subst = BTreeMap<String, String>;
 
 fn apply_subst_var(var: &str, subst: &Subst) -> String {
     let mut current = var.to_string();
@@ -265,14 +265,14 @@ impl CognitionBreed for Ebl {
         };
         let goal = Term::parse(&goal_str);
 
-        let mut subst = HashMap::new();
+        let mut subst = BTreeMap::new();
         let proof = explain(&goal, &input.rules, &fact_set, 32, &mut subst, &mut trace)
             .ok_or_else(|| BreedError {
                 breed: self.id(),
                 message: "EBL explain phase failed: could not prove goal".to_string(),
             })?;
 
-        let mut gen_subst = HashMap::new();
+        let mut gen_subst = BTreeMap::new();
         // Create a generalized target goal by replacing the constant with ?target
         let mut gen_goal = goal.clone();
         if !gen_goal.args.is_empty() {

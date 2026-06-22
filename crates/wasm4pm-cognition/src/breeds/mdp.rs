@@ -7,7 +7,7 @@ use crate::breeds::support::mdp::MdpModel;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 /// Markov Decision Process solver
 pub struct Mdp;
@@ -106,11 +106,11 @@ impl CognitionBreed for Mdp {
             }
         }
 
-        let mut state_to_idx = HashMap::new();
+        let mut state_to_idx = BTreeMap::new();
         for (i, s) in states.iter().enumerate() {
             state_to_idx.insert(s.clone(), i);
         }
-        let mut action_to_idx = HashMap::new();
+        let mut action_to_idx = BTreeMap::new();
         for (i, a) in actions.iter().enumerate() {
             action_to_idx.insert(a.clone(), i);
         }
