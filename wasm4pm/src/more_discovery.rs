@@ -989,8 +989,8 @@ pub fn analyze_activity_dependencies(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut predecessors: FxHashMap<String, HashSet<String>> = FxHashMap::default();
-            let mut successors: FxHashMap<String, HashSet<String>> = FxHashMap::default();
+            let mut predecessors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
+            let mut successors: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
 
             for trace in &log.traces {
                 for (i, event) in trace.events.iter().enumerate() {
