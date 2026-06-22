@@ -334,95 +334,60 @@ pub fn pipeline_begin(config_json: &str) -> Result<String, JsValue> {
 /// Feed one event to the pipeline.
 #[wasm_bindgen]
 pub fn pipeline_add_event(handle: &str, case_id: &str, activity: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingPipeline(pipeline)) => {
-            pipeline.add_event(case_id, activity);
-            to_js_str(&json!({
-                "ok": true,
-                "total_events": pipeline.total_events,
-                "open_traces": pipeline.open_traces,
-            }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
-        None => Err(crate::error::js_val(&format!(
-            "Pipeline '{}' not found",
-            handle
-        ))),
+    get_or_init_state().with_streaming_pipeline_mut(handle, |pipeline| {
+        pipeline.add_event(case_id, activity);
+        to_js_str(&json!({
+            "ok": true,
+            "total_events": pipeline.total_events,
+            "open_traces": pipeline.open_traces,
+        }))
     })
 }
 
 /// Close a trace in the pipeline.
 #[wasm_bindgen]
 pub fn pipeline_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingPipeline(pipeline)) => {
-            pipeline.close_trace(case_id);
-            to_js_str(&json!({
-                "ok": true,
-                "total_traces": pipeline.total_traces,
-                "open_traces": pipeline.open_traces,
-            }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
-        None => Err(crate::error::js_val(&format!(
-            "Pipeline '{}' not found",
-            handle
-        ))),
+    get_or_init_state().with_streaming_pipeline_mut(handle, |pipeline| {
+        pipeline.close_trace(case_id);
+        to_js_str(&json!({
+            "ok": true,
+            "total_traces": pipeline.total_traces,
+            "open_traces": pipeline.open_traces,
+        }))
     })
 }
 
 /// Get pipeline statistics.
 #[wasm_bindgen]
 pub fn pipeline_stats(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::StreamingPipeline(pipeline)) => {
-            let stats = pipeline.stats();
-            serde_wasm_bindgen::to_value(&stats).map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
-        None => Err(crate::error::js_val(&format!(
-            "Pipeline '{}' not found",
-            handle
-        ))),
+    get_or_init_state().with_streaming_pipeline(handle, |pipeline| {
+        let stats = pipeline.stats();
+        serde_wasm_bindgen::to_value(&stats).map_err(|e| crate::error::js_val(&e.to_string()))
     })
 }
 
 /// Get combined snapshot from all active algorithms.
 #[wasm_bindgen]
 pub fn pipeline_snapshot(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::StreamingPipeline(pipeline)) => {
-            let snapshot = pipeline.snapshot_json();
-            to_js_str(&snapshot)
-        }
-        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
-        None => Err(crate::error::js_val(&format!(
-            "Pipeline '{}' not found",
-            handle
-        ))),
+    get_or_init_state().with_streaming_pipeline(handle, |pipeline| {
+        let snapshot = pipeline.snapshot_json();
+        to_js_str(&snapshot)
     })
 }
 
 /// Finalize all open traces and return final models.
 #[wasm_bindgen]
 pub fn pipeline_finalize(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingPipeline(pipeline)) => {
-            let result = pipeline.finalize();
-            to_js_str(&json!({
-                "ok": true,
-                "total_events": result.total_events,
-                "total_traces": result.total_traces,
-                "dfg": result.dfg.is_some(),
-                "skeleton": result.skeleton.is_some(),
-                "heuristic": result.heuristic.is_some(),
-            }))
-        }
-        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
-        None => Err(crate::error::js_val(&format!(
-            "Pipeline '{}' not found",
-            handle
-        ))),
+    get_or_init_state().with_streaming_pipeline_mut(handle, |pipeline| {
+        let result = pipeline.finalize();
+        to_js_str(&json!({
+            "ok": true,
+            "total_events": result.total_events,
+            "total_traces": result.total_traces,
+            "dfg": result.dfg.is_some(),
+            "skeleton": result.skeleton.is_some(),
+            "heuristic": result.heuristic.is_some(),
+        }))
     })
 }
 
