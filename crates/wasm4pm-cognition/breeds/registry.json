@@ -2,31 +2,21 @@
   {
     "breed_id": "abductive_ibe",
     "breed_name": "AbductiveIbe",
-    "historical_ancestor": "Harman, G. H. (1965). The Inference to the Best Explanation. The Philosophical Review, 74(1), 88–95. Thagard, P. R. (1978). The Best Explanation: Criteria for Theory Choice. The Journal of Philosophy, 75(2), 76–92.",
+    "historical_ancestor": "Harman, G. H. (1965). The Inference to the Best Explanation. The Philosophical Review, 74(1), 88\u201395. Thagard, P. R. (1978). The Best Explanation: Criteria for Theory Choice. The Journal of Philosophy, 75(2), 76\u201392.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "abductive_lp",
     "breed_name": "AbductiveLp",
-    "historical_ancestor": "Kakas, A. C., Kowalski, R. A., & Toni, F. (1992). Abductive Logic Programming. Journal of Logic and Computation, 2(6), 719–770.",
+    "historical_ancestor": "Kakas, A. C., Kowalski, R. A., & Toni, F. (1992). Abductive Logic Programming. Journal of Logic and Computation, 2(6), 719\u2013770.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "ilp",
-    "breed_name": "Inductive Logic Programming",
-    "historical_ancestor": "ILP (Muggleton, 1991) (inductive)",
-    "generalized_family": "R_generalized_inductive",
-    "input_schema": "inductive_input_v1",
-    "output_schema": "inductive_output_v1",
-    "specification_relation": "example_driven_rule_induction",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED",
-    "validation_level": "L1"
+    "breed_id": "act_r",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
   },
   {
     "breed_id": "allen_temporal",
@@ -61,39 +51,6 @@
     }
   },
   {
-    "breed_id": "abductive_ibe",
-    "breed_name": "Abductive Ibe",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "abductive_ibe_input_v1",
-    "output_schema": "abductive_ibe_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE",
-    "standing": "TRACEABLE",
-    "complexity_caps": {
-      "max_hypotheses": 10
-    }
-  },
-  {
-    "breed_id": "partial_order_plan",
-    "breed_name": "Partial Order Plan",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "partial_order_plan_input_v1",
-    "output_schema": "partial_order_plan_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE",
-    "standing": "DISPATCHABLE"
-  },
-  {
     "breed_id": "autoinstinct_learning",
     "breed_name": "AutoinstinctLearning",
     "historical_ancestor": "Sussman, Gerald Jay. \\\\",
@@ -110,14 +67,14 @@
   {
     "breed_id": "autoinstinct_semantics",
     "breed_name": "AutoinstinctSemantics",
-    "historical_ancestor": "Schank, R. C. (1972). Conceptual dependency: A theory of natural language understanding. Cognitive Psychology, 3(4), 552–631. https://doi.org/10.1016/0010-0285(72)90022-9",
+    "historical_ancestor": "Schank, R. C. (1972). Conceptual dependency: A theory of natural language understanding. Cognitive Psychology, 3(4), 552\u2013631. https://doi.org/10.1016/0010-0285(72)90022-9",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "autoinstinct_vision",
     "breed_name": "AutoinstinctVision",
-    "historical_ancestor": "Marr, D., & Poggio, T. (1976). Cooperative computation of stereo disparity. Science, 194(4262), 283–287. https://doi.org/10.1126/science.968816",
+    "historical_ancestor": "Marr, D., & Poggio, T. (1976). Cooperative computation of stereo disparity. Science, 194(4262), 283\u2013287. https://doi.org/10.1126/science.968816",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -131,22 +88,19 @@
   {
     "breed_id": "belief_merging",
     "breed_name": "BeliefMerging",
-    "historical_ancestor": "Konieczny, S., & Pino Pérez, R. (2002). Merging Information Under Constraints: A Logical Framework. Journal of Logic and Computation, 12(5), 773–808.",
+    "historical_ancestor": "Konieczny, S., & Pino P\u00e9rez, R. (2002). Merging Information Under Constraints: A Logical Framework. Journal of Logic and Computation, 12(5), 773\u2013808.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "script_sam",
-    "breed_name": "Script Sam",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "script_sam_input_v1",
-    "output_schema": "script_sam_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
+    "breed_id": "cbr",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "circumscription",
+    "breed_name": "Circumscription",
+    "historical_ancestor": "McCarthy, J. (1980). Artificial Intelligence, 13(1-2), 27-39.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -170,6 +124,299 @@
     }
   },
   {
+    "breed_id": "construction_grammar",
+    "breed_name": "Construction Grammar",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "construction_grammar_input_v1",
+    "output_schema": "construction_grammar_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "contingent_plan",
+    "breed_name": "Contingent Plan",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "contingent_plan_input_v1",
+    "output_schema": "contingent_plan_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "csp_ac3",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "ctl_check",
+    "breed_name": "Ctl Check",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "ctl_check_input_v1",
+    "output_schema": "ctl_check_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "ADMITTED",
+    "validation_level": "L1",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "default_logic",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "dempster_shafer",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "dendral",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "description_logic",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "ebl",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "episodic_memory",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "event_calculus",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "frame",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "frames_inheritance",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "fuzzy_logic",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "gps",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "hearsay",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "htn_planning",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "ilp",
+    "breed_name": "Inductive Logic Programming",
+    "historical_ancestor": "ILP (Muggleton, 1991) (inductive)",
+    "generalized_family": "R_generalized_inductive",
+    "input_schema": "inductive_input_v1",
+    "output_schema": "inductive_output_v1",
+    "specification_relation": "example_driven_rule_induction",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "ADMITTED",
+    "validation_level": "L1",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "ltl_monitor",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "markov_logic",
+    "breed_name": "Markov Logic",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "markov_logic_input_v1",
+    "output_schema": "markov_logic_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "mdp",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "meta_reasoning",
+    "breed_name": "Meta Reasoning",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "meta_reasoning_input_v1",
+    "output_schema": "meta_reasoning_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "ADMITTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "morphological",
+    "breed_name": "Morphological",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "morphological_input_v1",
+    "output_schema": "morphological_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "naive_physics",
+    "breed_name": "Naive Physics",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "naive_physics_input_v1",
+    "output_schema": "naive_physics_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "ADMITTED",
+    "validation_level": "L1",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "ocpm_route_discoverer",
+    "breed_name": "Ocpm Route Discoverer",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "ocpm_route_discoverer_input_v1",
+    "output_schema": "ocpm_route_discoverer_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "partial_order_plan",
+    "breed_name": "Partial Order Plan",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "partial_order_plan_input_v1",
+    "output_schema": "partial_order_plan_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "pomdp",
+    "breed_name": "Pomdp",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "pomdp_input_v1",
+    "output_schema": "pomdp_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "problog",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "production_rules",
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "prolog",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "qualitative_reason",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "rl_symbolic",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "sat_cdcl",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
+  },
+  {
+    "breed_id": "script_sam",
+    "breed_name": "Script Sam",
+    "historical_ancestor": "TBD",
+    "generalized_family": "TBD",
+    "input_schema": "script_sam_input_v1",
+    "output_schema": "script_sam_output_v1",
+    "specification_relation": "TBD",
+    "oracle_suite_id": "none",
+    "ocel_model_id": "none",
+    "receipt_schema_id": "none",
+    "wasm_export_name": "none",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
     "breed_id": "situation_calculus",
     "breed_name": "Situation Calculus",
     "historical_ancestor": "TBD",
@@ -185,111 +432,14 @@
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "circumscription",
-    "breed_name": "Circumscription",
-    "historical_ancestor": "McCarthy, J. (1980). Artificial Intelligence, 13(1-2), 27-39.",
-    "status": "PARTIAL_ALIVE",
-    "standing": "DISPATCHABLE"
+    "breed_id": "soar",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
   },
   {
-    "breed_id": "ctl_check",
-    "breed_name": "Ctl Check",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ctl_check_input_v1",
-    "output_schema": "ctl_check_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED",
-    "validation_level": "L1"
-  },
-  {
-    "breed_id": "naive_physics",
-    "breed_name": "Naive Physics",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "naive_physics_input_v1",
-    "output_schema": "naive_physics_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED",
-    "validation_level": "L1"
-  },
-  {
-    "breed_id": "pomdp",
-    "breed_name": "Pomdp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "pomdp_input_v1",
-    "output_schema": "pomdp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "markov_logic",
-    "breed_name": "Markov Logic",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "markov_logic_input_v1",
-    "output_schema": "markov_logic_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "meta_reasoning",
-    "breed_name": "Meta Reasoning",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "meta_reasoning_input_v1",
-    "output_schema": "meta_reasoning_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED"
-  },
-  {
-    "breed_id": "construction_grammar",
-    "breed_name": "Construction Grammar",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "construction_grammar_input_v1",
-    "output_schema": "construction_grammar_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "contingent_plan",
-    "breed_name": "Contingent Plan",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "contingent_plan_input_v1",
-    "output_schema": "contingent_plan_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "breed_id": "strips",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
   },
   {
     "breed_id": "tableaux",
@@ -303,21 +453,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "morphological",
-    "breed_name": "Morphological",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "morphological_input_v1",
-    "output_schema": "morphological_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
   },
   {
     "breed_id": "triz",
@@ -331,20 +468,12 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
   },
   {
-    "breed_id": "ocpm_route_discoverer",
-    "breed_name": "Ocpm Route Discoverer",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ocpm_route_discoverer_input_v1",
-    "output_schema": "ocpm_route_discoverer_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "breed_id": "version_space",
+    "status": "CANDIDATE",
+    "standing": "REGISTERED"
   }
 ]

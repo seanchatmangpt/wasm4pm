@@ -86,15 +86,13 @@ pub fn smote(
             }
 
             let start_a = idx * n_features;
-            let _end_a = start_a + n_features;
             let start_b = minority_idx * n_features;
-            let _end_b = start_b + n_features;
 
-            let mut dist = 0.0;
-            for j in 0..n_features {
-                let diff = x[start_a + j] - x[start_b + j];
-                dist += diff * diff;
-            }
+            let dist: f64 = x[start_a..start_a + n_features]
+                .iter()
+                .zip(&x[start_b..start_b + n_features])
+                .map(|(a, b)| (a - b).powi(2))
+                .sum();
 
             distances.push((dist.sqrt(), minority_idx));
         }
