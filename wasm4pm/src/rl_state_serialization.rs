@@ -5,7 +5,7 @@
 //! progress without restarting from scratch.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Encode an RlState into a compact u64 key.
 ///
@@ -60,7 +60,7 @@ pub struct SerializedAgentQTable {
     /// Agent type (0=QLearning, 1=SARSA, 2=DoubleQ, 3=ExpectedSARSA, 4=REINFORCE)
     pub agent_type: u8,
     /// State key (packed u64) → Q-values for each action
-    pub state_values: HashMap<u64, Vec<f32>>,
+    pub state_values: BTreeMap<u64, Vec<f32>>,
 }
 
 /// Serializable RL orchestrator state.
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_serialized_agent_q_table() {
-        let mut state_values = HashMap::new();
+        let mut state_values = BTreeMap::new();
         let key = encode_rl_state_key(1, 2, 3, 4, 5, 6, 7, 0);
         state_values.insert(key, vec![0.1, 0.2, 0.3, 0.4, 0.5]);
 
