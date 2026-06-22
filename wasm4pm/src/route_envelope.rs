@@ -96,10 +96,7 @@ pub fn build_route_envelope(
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No EventLog at handle '{log_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         if log.traces.len() < MIN_TRACES {
             return Err(wasm_err(
@@ -211,10 +208,7 @@ pub fn score_route_motion(envelope_handle: &str, prefix_json: &str) -> Result<Js
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No object at handle '{envelope_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         let envelope: RouteEnvelope = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
@@ -353,10 +347,7 @@ pub fn get_route_variants(envelope_handle: &str) -> Result<JsValue, JsValue> {
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No object at handle '{envelope_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         let envelope: RouteEnvelope = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(

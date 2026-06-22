@@ -120,10 +120,7 @@ pub fn build_actor_envelope(
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No EventLog at handle '{log_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         // ── Build per-actor accumulators ────────────────────────────────────
         let mut accumulators: HashMap<String, ActorAccumulator> = HashMap::new();
@@ -273,10 +270,7 @@ pub fn score_actor_motion(
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No object at handle '{envelope_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         let envelope: ActorEnvelope = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
@@ -413,10 +407,7 @@ pub fn get_actor_profiles(envelope_handle: &str) -> Result<JsValue, JsValue> {
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
-                    format!("No object at handle '{envelope_handle}'"),
-                ))
-            }
-        };
+                    let result_json = state.with_json_string(envelope_handle, |json_str| {
 
         let envelope: ActorEnvelope = serde_json::from_str(json_str).map_err(|e| {
             wasm_err(
