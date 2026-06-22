@@ -207,12 +207,12 @@ impl CognitionBreed for EpisodicMemory {
             breed: self.id(),
             candidates: input.candidates.clone(),
             facts,
-            selected: Some(best_id.clone()),
             explanation: format!(
                 "episodic recall selected '{}' by Jaccard + temporal kernel over {} episodes",
                 best_id,
                 episodes.len()
             ),
+            selected: Some(best_id),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
