@@ -227,8 +227,7 @@ pub fn detect_drift(
 ) -> Result<JsValue, JsValue> {
     let window_size = window_size.max(1);
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut drifts: Vec<serde_json::Value> = Vec::new();
             let mut previous_activities: Option<HashSet<String>> = None;
 
@@ -292,9 +291,6 @@ pub fn detect_drift(
             serde_json::to_string(&result)
                 .map(|s| crate::error::js_val(&s))
                 .map_err(|e| crate::error::js_val(&e.to_string()))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 

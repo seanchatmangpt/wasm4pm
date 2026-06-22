@@ -110,67 +110,46 @@ pub fn wasm_wrong_type(handle: &str, expected: &str) -> JsValue {
 /// Get trace count from EventLog
 #[wasm_bindgen]
 pub fn get_trace_count(eventlog_handle: &str) -> Result<usize, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.traces.len()),
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
-    })
+    get_or_init_state().with_event_log(eventlog_handle, |log| Ok(log.traces.len()))
 }
 
 /// Get total event count from EventLog
 #[wasm_bindgen]
 pub fn get_event_count(eventlog_handle: &str) -> Result<usize, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.event_count()),
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
-    })
+    get_or_init_state().with_event_log(eventlog_handle, |log| Ok(log.event_count()))
 }
 
 /// Get unique activities from EventLog
 #[wasm_bindgen]
 pub fn get_activities(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let activities = log.get_activities(activity_key);
             to_js(&activities)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
 /// Get all traces from EventLog as a list of activity sequences
 #[wasm_bindgen]
 pub fn get_traces(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let traces = log.get_traces(activity_key);
             to_js(&traces)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
 /// Get trace lengths (number of events per trace)
 #[wasm_bindgen]
 pub fn get_trace_lengths(eventlog_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let lengths: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
             to_js(&lengths)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
 /// Get min and max trace lengths
 #[wasm_bindgen]
 pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let lengths: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
 
             let stats = if !lengths.is_empty() {
@@ -215,9 +194,6 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
             };
 
             to_js(&stats)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -293,8 +269,7 @@ pub(crate) fn evaluate_edges_fitness(
 /// Get all attribute names used in the log
 #[wasm_bindgen]
 pub fn get_attribute_names(eventlog_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut attr_names = HashSet::new();
 
             for key in log.attributes.keys() {
@@ -317,9 +292,6 @@ pub fn get_attribute_names(eventlog_handle: &str) -> Result<JsValue, JsValue> {
             names.sort_unstable();
 
             to_js(&names)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -331,8 +303,7 @@ pub fn filter_log_by_activity(
     activity_name: &str,
 ) -> Result<JsValue, JsValue> {
     // Compute filtered log inside closure (borrowed), store outside (avoids mutex re-entry).
-    let filtered = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let filtered = get_or_init_state().with_event_log(eventlog_handle, |log| {
             let traces: Vec<Trace> = log
                 .traces
                 .iter()
@@ -353,9 +324,6 @@ pub fn filter_log_by_activity(
                 attributes: log.attributes.clone(),
                 traces,
             })
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })?;
 
     let trace_count = filtered.traces.len();
@@ -378,8 +346,7 @@ pub fn filter_log_by_trace_length(
     min_length: usize,
     max_length: usize,
 ) -> Result<JsValue, JsValue> {
-    let filtered = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    let filtered = get_or_init_state().with_event_log(eventlog_handle, |log| {
             let traces: Vec<Trace> = log
                 .traces
                 .iter()
@@ -393,9 +360,6 @@ pub fn filter_log_by_trace_length(
                 attributes: log.attributes.clone(),
                 traces,
             })
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })?;
 
     let trace_count = filtered.traces.len();
@@ -417,8 +381,7 @@ pub fn calculate_trace_durations(
     eventlog_handle: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut durations = Vec::new();
 
             for trace in &log.traces {
@@ -442,9 +405,6 @@ pub fn calculate_trace_durations(
             }
 
             to_js(&durations)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -454,8 +414,7 @@ pub fn validate_has_timestamps(
     eventlog_handle: &str,
     timestamp_key: &str,
 ) -> Result<bool, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let has_timestamps = log.traces.iter().all(|trace| {
                 trace.events.iter().all(|event| {
                     matches!(
@@ -465,17 +424,13 @@ pub fn validate_has_timestamps(
                 })
             });
             Ok(has_timestamps)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
 /// Validate that EventLog has activity attribute
 #[wasm_bindgen]
 pub fn validate_has_activities(eventlog_handle: &str, activity_key: &str) -> Result<bool, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let has_activities = log.traces.iter().all(|trace| {
                 trace.events.iter().all(|event| {
                     matches!(
@@ -485,9 +440,6 @@ pub fn validate_has_activities(eventlog_handle: &str, activity_key: &str) -> Res
                 })
             });
             Ok(has_activities)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -497,8 +449,7 @@ pub fn get_activity_frequencies(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
             let mut frequencies: HashMap<String, usize> = HashMap::new();
 
             for trace in &log.traces {
@@ -515,8 +466,5 @@ pub fn get_activity_frequencies(
             freq_vec.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             to_js(&freq_vec)
-        }
-        Some(_) => Err(js_val("Object is not an EventLog")),
-        None => Err(js_val("EventLog not found")),
     })
 }
