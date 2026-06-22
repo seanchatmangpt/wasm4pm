@@ -239,7 +239,7 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
             frequency: *freq,
         });
     }
-    dfg.nodes.sort_by(|a, b| a.id.cmp(&b.id));
+    dfg.nodes.sort_by_key(|x| x.id.clone());
 
     for ((from, to), count) in &result.dfg {
         dfg.edges.push(DirectlyFollowsRelation {
@@ -248,8 +248,7 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
             frequency: *count as usize,
         });
     }
-    dfg.edges
-        .sort_by(|a, b| (a.from.as_str(), a.to.as_str()).cmp(&(b.from.as_str(), b.to.as_str())));
+    dfg.edges.sort_by_key(|x| (x.from.clone(), x.to.clone()));
 
     for (act, count) in &result.start_activities {
         dfg.start_activities.insert(act.clone(), *count as usize);

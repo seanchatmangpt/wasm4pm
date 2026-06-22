@@ -133,7 +133,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
             .collect();
 
         // Sort events by timestamp
-        events_for_obj.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        events_for_obj.sort_by_key(|x| x.timestamp.clone());
 
         // Create a trace
         let mut trace = Trace {
