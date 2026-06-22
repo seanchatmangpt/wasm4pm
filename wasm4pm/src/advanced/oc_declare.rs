@@ -66,10 +66,10 @@ pub fn discover_oc_declare(ocel: &OCEL, options: OCDeclareOptions) -> Vec<OCDecl
     // 3. Extract unique activities and object types
     let activity_types: HashSet<String> =
         ocel.events.iter().map(|e| e.event_type.clone()).collect();
-    let object_types: Vec<String> = ocel.object_types.clone();
+    let object_types: &[String] = &ocel.object_types;
 
     // 4. Discovery Loop (Simplified for reference quality)
-    for ot in &object_types {
+    for ot in object_types {
         // Filter traces of this object type
         let traces_of_type: Vec<&Vec<String>> = object_traces
             .iter()
