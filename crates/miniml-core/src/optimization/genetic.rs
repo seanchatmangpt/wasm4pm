@@ -347,7 +347,6 @@ impl GeneticAlgorithm {
                 }
                 let mut sorted_points = idx.into_iter().take(points).collect::<Vec<_>>();
                 sorted_points.sort_unstable();
-                sorted_points.dedup();
 
                 let mut child = Vec::with_capacity(len);
                 let mut prev = 0;
