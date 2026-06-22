@@ -273,17 +273,12 @@ where
 }
 
 /// A single event within a trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Event {
     /// Attributes associated with this event (e.g., activity name, timestamp).
     pub attributes: Attributes,
 }
 
-impl Default for Event {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl Event {
     /// Create a new event with empty attributes.
@@ -296,7 +291,7 @@ impl Event {
 }
 
 /// A trace representing a single process instance (case).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Trace {
     /// Attributes associated with the case (e.g., case ID, customer ID).
     pub attributes: Attributes,
@@ -304,11 +299,6 @@ pub struct Trace {
     pub events: Vec<Event>,
 }
 
-impl Default for Trace {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl Trace {
     /// Create a new trace with empty attributes and events.
@@ -322,7 +312,7 @@ impl Trace {
 }
 
 /// An event log containing a collection of traces.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EventLog {
     /// Global attributes for the event log.
     pub attributes: Attributes,
@@ -811,7 +801,7 @@ pub struct OCELObject {
 }
 
 /// An Object-Centric Event Log (OCEL).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct OCEL {
     /// List of all event types (activities) in the log.
     #[serde(
@@ -918,7 +908,7 @@ pub struct PetriNetArc {
 ///
 /// Petri Nets provide a formal and precise representation of process workflows,
 /// supporting concurrency, synchronization, and conflict resolution.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PetriNet {
     /// All places in the net.
     pub places: Vec<PetriNetPlace>,
@@ -960,7 +950,7 @@ pub struct DirectlyFollowsRelation {
 /// A Directly-Follows Graph (DFG) representing process flow.
 ///
 /// The DFG shows which activities directly follow each other in the event log.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DFG {
     /// Activities in the graph with their occurrence frequencies.
     pub nodes: Vec<DFGNode>,
@@ -1010,7 +1000,7 @@ pub struct DeclareConstraint {
 }
 
 /// A DECLARE model containing declarative process rules.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DeclareModel {
     /// List of constraints with support and confidence metrics.
     pub constraints: Vec<DeclareConstraint>,
@@ -1697,7 +1687,7 @@ impl StreamingConformanceChecker {
 }
 
 /// Temporal profile: per-pair mean and standard-deviation of time differences (ms).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TemporalProfile {
     /// Mapping of (from, to) activity pairs to their timing statistics (mean, std, count).
     pub pairs: BTreeMap<(String, String), (f64, f64, usize)>,
@@ -1752,41 +1742,11 @@ impl NGramPredictor {
     }
 }
 
-impl Default for EventLog {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
-impl Default for OCEL {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
-impl Default for PetriNet {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
-impl Default for DFG {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
-impl Default for DeclareModel {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
-impl Default for TemporalProfile {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 /// A node in a process tree representation of a workflow.
 #[derive(Clone, Debug, Serialize, Deserialize)]
