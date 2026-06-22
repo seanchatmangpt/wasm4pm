@@ -285,12 +285,12 @@ fn fine_tune_linear_model(
     // Extract current weights
     let weights = if let Some(w) = model.parameters.get("weights") {
         w.as_array()
-            .ok_or_else(|| MlError::new("Weights must be an array".to_string()))?
+            .ok_or_else(|| MlError::new("Weights must be an array"))?
             .iter()
             .map(|v| v.as_f64().unwrap_or(0.0))
             .collect::<Vec<_>>()
     } else {
-        return Err(MlError::new("Model missing weights".to_string()));
+        return Err(MlError::new("Model missing weights"));
     };
 
     // Gradient descent fine-tuning
@@ -387,7 +387,7 @@ fn extract_neural_network_from_model(
         .parameters
         .get("network")
         .cloned()
-        .ok_or_else(|| MlError::new("Model is not a neural network".to_string()))
+        .ok_or_else(|| MlError::new("Model is not a neural network"))
 }
 
 /// Extract features from neural network
@@ -444,12 +444,12 @@ fn predict_model(
         "LogisticRegression" | "LinearRegression" => {
             let weights = if let Some(w) = model.parameters.get("weights") {
                 w.as_array()
-                    .ok_or_else(|| MlError::new("Weights must be an array".to_string()))?
+                    .ok_or_else(|| MlError::new("Weights must be an array"))?
                     .iter()
                     .map(|v| v.as_f64().unwrap_or(0.0))
                     .collect::<Vec<_>>()
             } else {
-                return Err(MlError::new("Model missing weights".to_string()));
+                return Err(MlError::new("Model missing weights"));
             };
 
             let mut predictions = Vec::with_capacity(n_samples);
