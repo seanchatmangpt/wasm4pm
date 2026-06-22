@@ -4,6 +4,7 @@ use crate::utilities::to_js_str;
 use hashbrown::HashMap;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
+use std::collections::BTreeMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
@@ -89,7 +90,7 @@ pub fn compute_activity_transition_matrix(
                 vocab.insert(activity.clone(), idx as u32);
             }
 
-            let mut transitions: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+            let mut transitions: BTreeMap<(u32, u32), usize> = BTreeMap::new();
             let mut activity_total: FxHashMap<u32, usize> = FxHashMap::default();
 
             for activity_id in vocab.values() {
