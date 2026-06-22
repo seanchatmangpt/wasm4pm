@@ -618,7 +618,9 @@ pub fn to_pnml(net: &PetriNet) -> String {
         xml.push_str("    <finalmarkings>\n");
         for marking in &net.final_markings {
             xml.push_str("      <marking>\n");
-            for (place_id, tokens) in marking {
+            let mut sorted_marking: Vec<_> = marking.iter().collect();
+            sorted_marking.sort_by_key(|(k, _)| k.as_str());
+            for (place_id, tokens) in sorted_marking {
                 if *tokens > 0 {
                     xml.push_str("        <place idref=\"");
                     xml.push_str(&escape_xml(place_id));

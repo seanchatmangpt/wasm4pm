@@ -167,8 +167,14 @@ pub fn discover_transition_system(
         }
     }
 
-    // Convert transition map to transitions
-    for ((from_state, to_state, activity), count) in transition_map {
+    // Convert transition map to transitions — sort for deterministic serialization
+    let mut trans_vec: Vec<_> = transition_map.into_iter().collect();
+    trans_vec.sort_unstable_by(|a, b| {
+        let ((af, at, aa), _) = a;
+        let ((bf, bt, ba), _) = b;
+        af.cmp(bf).then_with(|| at.cmp(bt)).then_with(|| aa.cmp(ba))
+    });
+    for ((from_state, to_state, activity), count) in trans_vec {
         transitions.push(TSTransition {
             from_state,
             to_state,
