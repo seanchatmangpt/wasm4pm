@@ -92,7 +92,10 @@ pub fn kaplan_meier_impl(times: &[f64], events: &[f64]) -> Result<KaplanMeierRes
         .map(|(&sp, &v)| {
             let log_s = if sp > 0.0 { sp.ln() } else { f64::NEG_INFINITY };
             let se = v.sqrt();
-            ((log_s - z * se).exp().clamp(0.0, 1.0), (log_s + z * se).exp().clamp(0.0, 1.0))
+            (
+                (log_s - z * se).exp().clamp(0.0, 1.0),
+                (log_s + z * se).exp().clamp(0.0, 1.0),
+            )
         })
         .unzip();
     let median_survival = survival_probs

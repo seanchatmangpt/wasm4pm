@@ -705,10 +705,10 @@ impl AutoMLEngine {
 /// x_json: JSON array of arrays (Vec<Vec<f64>>), y_json: JSON array of f64
 #[wasm_bindgen]
 pub fn auto_fit(x_json: &str, y_json: &str) -> Result<AutoMLResult, JsError> {
-    let x: Vec<Vec<f64>> = serde_json::from_str(x_json)
-        .map_err(|e| JsError::new(&format!("x parse error: {e}")))?;
-    let y: Vec<f64> = serde_json::from_str(y_json)
-        .map_err(|e| JsError::new(&format!("y parse error: {e}")))?;
+    let x: Vec<Vec<f64>> =
+        serde_json::from_str(x_json).map_err(|e| JsError::new(&format!("x parse error: {e}")))?;
+    let y: Vec<f64> =
+        serde_json::from_str(y_json).map_err(|e| JsError::new(&format!("y parse error: {e}")))?;
     let engine = AutoMLEngine::new(AutoMLOptions::default());
     engine
         .optimize_pipeline(&x, &y)

@@ -142,8 +142,7 @@ pub fn matrix_factorization(
     ratings: &[f64],
     config: &MatrixFactorizationConfig,
 ) -> Result<JsValue, JsError> {
-    let model =
-        matrix_factorization_impl(ratings, config).map_err(|e| JsError::new(&e.message))?;
+    let model = matrix_factorization_impl(ratings, config).map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![
         model.global_mean,
         model.n_users as f64,
