@@ -122,6 +122,7 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
         }
     }
 
+    #[inline]
     fn add_event(&mut self, case_id: &str, activity: &str) {
         let id = self.intern(activity);
         self.open_traces
@@ -137,6 +138,7 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
         self.event_count += 1;
     }
 
+    #[inline]
     fn close_trace(&mut self, case_id: &str) -> bool {
         let Some(events) = self.open_traces.remove(case_id) else {
             return false;
