@@ -106,7 +106,7 @@ pub fn discover_transition_system(
                 e.attributes
                     .get(activity_key)
                     .and_then(|v| v.as_string())
-                    .map(|s| s.to_owned())
+                    .map(str::to_string)
             })
             .collect();
 

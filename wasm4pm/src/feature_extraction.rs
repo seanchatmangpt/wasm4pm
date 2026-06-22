@@ -33,7 +33,7 @@ pub fn extract_case_features(
         .map(|arr| {
             arr.iter()
                 .filter_map(|v| v.as_str())
-                .map(|s| s.to_string())
+                .map(str::to_string)
                 .collect()
         })
         .unwrap_or_default();
@@ -352,7 +352,7 @@ pub fn export_features_json(
                 .map(|arr| {
                     arr.iter()
                         .filter_map(|v| v.as_str())
-                        .map(|s| s.to_string())
+                        .map(str::to_string)
                         .collect()
                 })
                 .unwrap_or_default();
