@@ -115,7 +115,7 @@ impl CognitionBreed for Mdp {
             action_to_idx.insert(a.clone(), i);
         }
 
-        let mut transitions = BTreeMap::new();
+        let mut transitions: BTreeMap<(usize, usize), Vec<(usize, f64)>> = BTreeMap::new();
         for tf in transition_facts {
             let parts: Vec<&str> = tf.split(',').map(|s| s.trim()).collect();
             if parts.len() == 4 {
@@ -128,10 +128,7 @@ impl CognitionBreed for Mdp {
                         action_to_idx.get(&action),
                         state_to_idx.get(&s_to),
                     ) {
-                        transitions
-                            .entry((u, a))
-                            .or_insert_with(Vec::new)
-                            .push((v, prob));
+                        transitions.entry((u, a)).or_default().push((v, prob));
                     }
                 }
             }

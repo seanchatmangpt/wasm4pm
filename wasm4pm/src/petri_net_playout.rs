@@ -91,12 +91,12 @@ pub fn play_petri_net(
 
 /// Build preset (input places) for each transition.
 fn build_preset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
-    let mut preset = HashMap::new();
+    let mut preset: HashMap<String, Vec<String>> = HashMap::new();
     for arc in &petri_net.arcs {
         if let Some(transition) = petri_net.transitions.iter().find(|t| t.id == arc.to) {
             preset
                 .entry(transition.id.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(arc.from.clone());
         }
     }
@@ -105,12 +105,12 @@ fn build_preset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
 
 /// Build postset (output places) for each transition.
 fn build_postset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
-    let mut postset = HashMap::new();
+    let mut postset: HashMap<String, Vec<String>> = HashMap::new();
     for arc in &petri_net.arcs {
         if let Some(transition) = petri_net.transitions.iter().find(|t| t.id == arc.from) {
             postset
                 .entry(transition.id.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(arc.to.clone());
         }
     }
