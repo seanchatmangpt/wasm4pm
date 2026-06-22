@@ -55,7 +55,7 @@ impl LogisticModel {
     pub fn predict(&self, data: &[f64]) -> Vec<u32> {
         self.predict_proba(data)
             .iter()
-            .map(|&p| if p >= 0.5 { 1 } else { 0 })
+            .map(|&p| u32::from(p >= 0.5))
             .collect()
     }
 
