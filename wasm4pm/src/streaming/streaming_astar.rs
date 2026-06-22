@@ -73,6 +73,7 @@ impl StreamingAStarBuilder {
     /// - 0.0 = optimize for fitness only (keep all edges)
     /// - 1.0 = optimize for precision only (prune aggressively)
     /// - 0.5 = balanced tradeoff
+    #[must_use]
     pub fn with_heuristic_weight(mut self, weight: f64) -> Self {
         self.heuristic_weight = weight.clamp(0.0, 1.0);
         self

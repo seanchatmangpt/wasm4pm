@@ -66,6 +66,7 @@ impl StreamingDeclareBuilder {
     }
 
     /// Set the confidence threshold for constraint emission (default: 0.6).
+    #[must_use]
     pub fn with_threshold(mut self, threshold: f64) -> Self {
         self.threshold = threshold.clamp(0.0, 1.0);
         self

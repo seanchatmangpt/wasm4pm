@@ -120,6 +120,7 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub fn with_hyperparams(lr: f32, df: f32, exp_rate: f32) -> Self {
         let mut agent = Self::new();
         agent.learning_rate = lr;
@@ -662,6 +663,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub fn with_hyperparams(lr: f32, df: f32, exp_rate: f32) -> Self {
         let mut agent = Self::new();
         agent.learning_rate = lr;
@@ -954,6 +956,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub fn with_hyperparams(lr: f32, df: f32, exp_rate: f32) -> Self {
         let mut agent = Self::new();
         agent.learning_rate = lr;
@@ -1197,6 +1200,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub fn with_hyperparams(lr: f32, df: f32) -> Self {
         let mut agent = Self::new();
         agent.learning_rate = lr;

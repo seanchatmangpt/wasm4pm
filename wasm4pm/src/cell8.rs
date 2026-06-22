@@ -28,6 +28,14 @@ struct CellManifest {
     gate_results: Vec<GateResult>,
 }
 
+impl<'a> TryFrom<&'a str> for CellManifest {
+    type Error = serde_json::Error;
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
+        serde_json::from_str(s)
+    }
+}
+
+
 // ============================================================================
 // Cell8 Conjunct Checks — Real gate logic with evidence
 // ============================================================================
@@ -255,7 +263,7 @@ pub fn cell_verify(cell_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(cell_handle, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(manifest_json)) => {
-                match serde_json::from_str::<CellManifest>(manifest_json) {
+                match CellManifest::try_from(manifest_json.as_str()) {
                     Ok(manifest) => json!({
                         "cell_id": manifest.cell_id,
                         "status": if manifest.ready { "verified" } else { "not_ready" },
@@ -299,7 +307,7 @@ pub fn cell_replay(cell_handle: &str, fixture_id: &str) -> Result<String, JsValu
     // Look up manifest by handle
     get_or_init_state().with_object(cell_handle, |obj| {
         let json_str = match obj {
-            Some(StoredObject::JsonString(manifest_json)) => match serde_json::from_str::<CellManifest>(manifest_json) {
+            Some(StoredObject::JsonString(manifest_json)) => match CellManifest::try_from(manifest_json.as_str()) {
                 Ok(manifest) => {
                     // Find the fixture in gate_results that matches fixture_id (simplified: use first fixture)
                     let fixture_gate = manifest
@@ -362,7 +370,7 @@ pub fn cell_export(cell_handle: &str, projection: &str) -> Result<String, JsValu
             // EARL-compatible JSON structure
             get_or_init_state().with_object(cell_handle, |obj| {
                 let json_str = match obj {
-                    Some(StoredObject::JsonString(manifest_json)) => match serde_json::from_str::<CellManifest>(manifest_json) {
+                    Some(StoredObject::JsonString(manifest_json)) => match CellManifest::try_from(manifest_json.as_str()) {
                         Ok(manifest) => {
                             let earl_assertions: Vec<_> = manifest
                                 .gate_results
@@ -434,7 +442,7 @@ pub fn cell_doctor(cell_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(cell_handle, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(manifest_json)) => {
-                match serde_json::from_str::<CellManifest>(manifest_json) {
+                match CellManifest::try_from(manifest_json.as_str()) {
                     Ok(manifest) => {
                         let failed_conjuncts: Vec<&str> = manifest
                             .gate_results

@@ -446,6 +446,7 @@ impl SmartEngine {
     }
 
     /// Create a smart engine with custom parameters.
+    #[must_use]
     pub fn with_params(
         cache_capacity: usize,
         convergence_window: usize,
