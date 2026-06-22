@@ -16,7 +16,7 @@
 
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 use crate::error::{codes, wasm_err};
@@ -48,7 +48,7 @@ struct WeibullParams {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct RemainingTimeModel {
     /// (last_activity, prefix_length) -> bucket statistics
-    buckets: HashMap<String, BucketStats>, // key = "activity|prefix_len"
+    buckets: BTreeMap<String, BucketStats>, // key = "activity|prefix_len"
     /// Fallback: global remaining-time stats (all prefixes combined)
     global: BucketStats,
     /// Weibull params fitted to complete case durations
@@ -184,7 +184,7 @@ pub fn build_remaining_time_model(
 
                 // Convert integer tuple keys back to String keys for the serializable
                 // model. Happens once at build time, not per event.
-                let bucket_samples_str: HashMap<String, Vec<f64>> = bucket_samples
+                let bucket_samples_str: BTreeMap<String, Vec<f64>> = bucket_samples
                     .into_iter()
                     .map(|((act_id, prefix_len), samples)| {
                         let act = id_to_activity[act_id as usize];
@@ -209,7 +209,7 @@ pub fn build_remaining_time_model(
         ));
     }
 
-    let buckets: HashMap<String, BucketStats> = bucket_samples
+    let buckets: BTreeMap<String, BucketStats> = bucket_samples
         .into_iter()
         .map(|(key, samples)| {
             let stats = compute_stats(&samples);
