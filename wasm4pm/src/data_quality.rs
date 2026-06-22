@@ -2,7 +2,7 @@ use crate::models::{parse_timestamp_ms, *};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde_json::{json, Value};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 /// Check data quality of an EventLog for common issues
@@ -15,7 +15,7 @@ pub fn check_data_quality(
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut issues = Vec::new();
-            let mut missing_attrs: HashMap<String, usize> = HashMap::new();
+            let mut missing_attrs: BTreeMap<String, usize> = BTreeMap::new();
             let mut has_ordering_issues = false;
             let mut has_duplicates = false;
 
@@ -240,7 +240,7 @@ pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             // Collect all attributes and their value distributions
-            let mut attr_stats: HashMap<String, AttributeStats> = HashMap::new();
+            let mut attr_stats: BTreeMap<String, AttributeStats> = BTreeMap::new();
 
             // Process log-level attributes
             for (key, val) in &log.attributes {
@@ -304,13 +304,13 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
             // Event type distribution
-            let mut event_types: HashMap<String, usize> = HashMap::new();
+            let mut event_types: BTreeMap<String, usize> = BTreeMap::new();
             for event in &ocel.events {
                 *event_types.entry(event.event_type.clone()).or_default() += 1;
             }
 
             // Object type distribution
-            let mut object_types: HashMap<String, usize> = HashMap::new();
+            let mut object_types: BTreeMap<String, usize> = BTreeMap::new();
             for object in &ocel.objects {
                 *object_types.entry(object.object_type.clone()).or_default() += 1;
             }
@@ -350,7 +350,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 .collect();
 
             // Analyze event-object qualifiers (co-occurrence patterns)
-            let mut qualifiers: HashMap<String, usize> = HashMap::new();
+            let mut qualifiers: BTreeMap<String, usize> = BTreeMap::new();
             for event in &ocel.events {
                 for obj_ref in &event.object_refs {
                     *qualifiers.entry(obj_ref.qualifier.clone()).or_default() += 1;
@@ -434,7 +434,7 @@ impl AttributeStats {
 }
 
 /// Infer activity key by looking for attributes with many unique values and common names
-fn infer_activity_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<String> {
+fn infer_activity_key(attr_stats: &BTreeMap<String, AttributeStats>) -> Option<String> {
     let activity_keywords = ["activity", "event", "action", "task", "event_type", "type"];
 
     // First try exact keyword matches
@@ -457,7 +457,7 @@ fn infer_activity_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
 }
 
 /// Infer timestamp key by looking for datetime attributes or common timestamp names
-fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<String> {
+fn infer_timestamp_key(attr_stats: &BTreeMap<String, AttributeStats>) -> Option<String> {
     let timestamp_keywords = ["timestamp", "time", "date", "start_time", "end_time", "ts"];
 
     // First pass: look for attributes with high date type density
@@ -491,7 +491,7 @@ fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<S
 }
 
 /// Infer resource key by looking for high-cardinality string attributes
-fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<String> {
+fn infer_resource_key(attr_stats: &BTreeMap<String, AttributeStats>) -> Option<String> {
     let resource_keywords = [
         "resource",
         "performer",
@@ -531,7 +531,7 @@ fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
 /// Infer case ID key by matching trace attributes to log structure
 fn infer_case_id_key(
     log: &EventLog,
-    attr_stats: &HashMap<String, AttributeStats>,
+    attr_stats: &BTreeMap<String, AttributeStats>,
 ) -> Option<String> {
     let case_keywords = [
         "case_id",
