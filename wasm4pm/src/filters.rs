@@ -279,13 +279,11 @@ pub fn filter_traces_containing_activities(
             .traces
             .iter()
             .filter(|trace| {
-                let activities: std::collections::HashSet<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                    .map(str::to_owned)
-                    .collect();
-                required.is_subset(&activities)
+                required.iter().all(|r| {
+                    trace.events.iter().any(|e| {
+                        e.attributes.get(activity_key).and_then(|v| v.as_string()) == Some(r.as_str())
+                    })
+                })
             })
             .cloned()
             .collect();

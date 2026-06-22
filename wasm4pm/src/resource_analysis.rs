@@ -351,26 +351,16 @@ pub fn identify_resource_bottlenecks(
                 }
 
                 // Average wait time: time from case start to resource's first activity
-                let mut wait_times_ms: Vec<i64> = Vec::new();
-                let mut processing_times_ms: Vec<i64> = Vec::new();
+                let (wait_times_ms, processing_times_ms): (Vec<i64>, Vec<i64>) = intervals
+                    .iter()
+                    .map(|(_, case_start, res_start, res_end, _)| {
+                        ((res_start - case_start).max(0), (res_end - res_start).max(0))
+                    })
+                    .unzip();
 
-                for (_, _case_start, res_start, res_end, _) in intervals {
-                    let wait = (res_start - _case_start).max(0);
-                    let processing = (res_end - res_start).max(0);
-                    wait_times_ms.push(wait);
-                    processing_times_ms.push(processing);
-                }
-
-                let avg_wait_ms = if !wait_times_ms.is_empty() {
-                    wait_times_ms.iter().sum::<i64>() / wait_times_ms.len() as i64
-                } else {
-                    0
-                };
-                let avg_processing_ms = if !processing_times_ms.is_empty() {
-                    processing_times_ms.iter().sum::<i64>() / processing_times_ms.len() as i64
-                } else {
-                    0
-                };
+                let avg_i64 = |v: &[i64]| if v.is_empty() { 0 } else { v.iter().sum::<i64>() / v.len() as i64 };
+                let avg_wait_ms = avg_i64(&wait_times_ms);
+                let avg_processing_ms = avg_i64(&processing_times_ms);
 
                 // Queue size: at each timestamp, count how many cases are waiting for this resource
                 // Approximate: count overlapping intervals at the resource's start times
