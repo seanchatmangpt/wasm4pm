@@ -362,7 +362,7 @@ mod tests {
             conclusion: "inHand=block;!onTable=block".to_string(),
             certainty: 1.0,
         };
-        let mut state: HashSet<String> = HashSet::new();
+        let mut state: BTreeSet<String> = BTreeSet::new();
         state.insert("onTable=block".to_string());
         state.insert("clear=block".to_string());
 

@@ -206,13 +206,11 @@ impl CognitionBreed for NaivePhysics {
                 break;
             }
         }
-        let mut falls_sorted: Vec<&String> = falls.iter().collect();
-        falls_sorted.sort();
-        for o in &falls_sorted {
+        for o in &falls {
             push(
                 &mut trace,
                 "apply-axiom",
-                format!("{}: '{}' falls", axiom_of[*o], o),
+                format!("{}: '{}' falls", axiom_of[o], o),
             );
         }
 
