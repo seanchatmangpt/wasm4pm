@@ -43,8 +43,8 @@ fn extract_case_durations_internal(log: &crate::models::EventLog, timestamp_key:
         if timestamps.len() < 2 {
             continue;
         }
-        let start = *timestamps.iter().min().unwrap();
-        let end = *timestamps.iter().max().unwrap();
+        let start = *timestamps.iter().min().expect("invariant: timestamps non-empty after len < 2 guard");
+        let end = *timestamps.iter().max().expect("invariant: timestamps non-empty after len < 2 guard");
         let dur = (end - start) as f64;
         if dur > 0.0 {
             durations.push(dur);
@@ -101,8 +101,8 @@ fn extract_durations_by_case_attribute_internal(
             continue;
         }
         // Use min/max for order-invariance — see note on extract_case_durations_internal.
-        let start = *timestamps.iter().min().unwrap();
-        let end = *timestamps.iter().max().unwrap();
+        let start = *timestamps.iter().min().expect("invariant: timestamps non-empty after len < 2 guard");
+        let end = *timestamps.iter().max().expect("invariant: timestamps non-empty after len < 2 guard");
         let dur = (end - start) as f64;
         if dur > 0.0 {
             groups.entry(label).or_default().push(dur);
