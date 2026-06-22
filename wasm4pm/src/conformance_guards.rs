@@ -35,7 +35,7 @@ pub fn guard_fitness_bounds(fitness: f64) -> f64 {
     }
     if fitness.is_infinite() {
         // Infinite case: clamp to bounds
-        return if fitness > 0.0 { 1.0 } else { 0.0 };
+        return f64::from(fitness > 0.0);
     }
     // Normal case: clamp to [0.0, 1.0]
     fitness.clamp(0.0, 1.0)

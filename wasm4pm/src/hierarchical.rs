@@ -301,7 +301,7 @@ pub fn discover_hierarchical<C: Chunkable>(
     let mut offset = 0usize;
 
     for i in 0..num_chunks {
-        let len = chunk_size + if i < remainder { 1 } else { 0 };
+        let len = chunk_size + usize::from(i < remainder);
         let chunk = &traces[offset..offset + len];
         offset += len;
 

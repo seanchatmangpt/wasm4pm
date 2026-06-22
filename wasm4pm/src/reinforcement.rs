@@ -1327,7 +1327,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             let old_weight = weights[action_idx];
             for (j, w) in weights.iter_mut().enumerate() {
                 let pi_j = softmax[j] * inv_sum;
-                let indicator = if j == action_idx { 1.0 } else { 0.0 };
+                let indicator = f64::from(j == action_idx);
                 *w += lr * g_t * (indicator - pi_j);
             }
             let new_weight = weights[action_idx];

@@ -926,7 +926,7 @@ fn pattern_implicit_termination(ctx: &PatternContext) -> PatternResult {
     let done = ctx.input_mask == 0 && ctx.state.load(Ordering::Acquire) == 0;
     PatternResult {
         success: done,
-        output_mask: if done { 1 } else { 0 },
+        output_mask: u64::from(done),
         ticks_used: elapsed_ticks(timer) as u32,
         next_pattern: None,
     }
