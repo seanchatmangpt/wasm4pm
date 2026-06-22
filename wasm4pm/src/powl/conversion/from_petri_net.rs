@@ -1021,8 +1021,8 @@ fn translate_partial_order(
 
     for &(g1, g2) in &connection_edges {
         if let (Some(&c1), Some(&c2)) = (group_to_child.get(&g1), group_to_child.get(&g2)) {
-            let pos1 = children_clone.iter().position(|&c| c == c1).unwrap();
-            let pos2 = children_clone.iter().position(|&c| c == c2).unwrap();
+            let pos1 = children_clone.iter().position(|&c| c == c1).expect("invariant: c1 was inserted into children_clone at group build time");
+            let pos2 = children_clone.iter().position(|&c| c == c2).expect("invariant: c2 was inserted into children_clone at group build time");
             arena.add_order_edge(spo_idx, pos1, pos2).ok();
         }
     }
