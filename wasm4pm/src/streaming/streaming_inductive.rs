@@ -25,7 +25,7 @@ use std::collections::{HashMap, HashSet};
 /// - Exclusive cuts create alternative branches
 /// - Parallel cuts create concurrent branches
 /// - Loop cuts create repetition structures
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StreamingInductiveBuilder {
     /// Activity string interner
     pub interner: Interner,
@@ -791,11 +791,6 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
     }
 }
 
-impl Default for StreamingInductiveBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests {
