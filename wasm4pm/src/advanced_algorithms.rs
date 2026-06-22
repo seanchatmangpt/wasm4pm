@@ -249,6 +249,11 @@ pub fn analyze_infrequent_paths(
                 freq_b
                     .partial_cmp(&freq_a)
                     .unwrap_or(std::cmp::Ordering::Equal)
+                    .then_with(|| {
+                        let pa = a["path"].as_array().map(|v| v.len()).unwrap_or(0);
+                        let pb = b["path"].as_array().map(|v| v.len()).unwrap_or(0);
+                        pa.cmp(&pb)
+                    })
             });
 
             to_js_str(&json!({
