@@ -124,7 +124,7 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
     }
 
     // 4. Declared Types Consistency
-    let declared_event_types: HashSet<String> = ocel.event_types.clone().into_iter().collect();
+    let declared_event_types: HashSet<String> = ocel.event_types.iter().cloned().collect();
     for event in &ocel.events {
         if !declared_event_types.is_empty() && !declared_event_types.contains(&event.event_type) {
             errors.push(format!(
@@ -134,7 +134,7 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
         }
     }
 
-    let declared_object_types: HashSet<String> = ocel.object_types.clone().into_iter().collect();
+    let declared_object_types: HashSet<String> = ocel.object_types.iter().cloned().collect();
     for object in &ocel.objects {
         if !declared_object_types.is_empty() && !declared_object_types.contains(&object.object_type)
         {
