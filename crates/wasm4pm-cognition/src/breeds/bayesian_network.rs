@@ -1,9 +1,9 @@
-use std::collections::{HashMap, HashSet, VecDeque};
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, CognitionError,
-    TraceStep, Fact,
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, CognitionError, Fact,
+    TraceStep,
 };
+use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Bayesian Network breed (Pearl 1988).
 /// Exact boolean variable elimination and Bayes-ball d-separation.
@@ -74,17 +74,17 @@ impl CognitionBreed for BayesianNetwork {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
-        
+
         let mut cpts = Vec::new();
         let mut evidence = std::collections::BTreeMap::new();
         let mut query = None;
-        
+
         for goal in &input.goals {
             if goal.predicate == "query" {
                 query = Some(goal.value.clone());
             }
         }
-        
+
         let mut all_nodes = HashSet::new();
         for fact in &input.facts {
             if fact.key.starts_with("cpt:") {
@@ -99,7 +99,11 @@ impl CognitionBreed for BayesianNetwork {
             } else {
                 let (node_name, val_bool) = if let Some(node) = fact.key.strip_prefix("evidence:") {
                     (node.to_string(), fact.value == "true")
-                } else if fact.key != "formula" && fact.key != "ltl:formula" && fact.key != "relation" && (fact.value == "true" || fact.value == "false") {
+                } else if fact.key != "formula"
+                    && fact.key != "ltl:formula"
+                    && fact.key != "relation"
+                    && (fact.value == "true" || fact.value == "false")
+                {
                     (fact.key.clone(), fact.value == "true")
                 } else {
                     continue;
@@ -149,7 +153,7 @@ impl CognitionBreed for BayesianNetwork {
                     for premise in &rule.premise {
                         if let Some(eq_idx) = premise.find('=') {
                             let p_name = premise[..eq_idx].trim();
-                            let p_val_str = premise[eq_idx+1..].trim();
+                            let p_val_str = premise[eq_idx + 1..].trim();
                             let expected_val = p_val_str == "true";
                             if parent_vals.get(p_name) != Some(&expected_val) {
                                 matches = false;
@@ -163,7 +167,7 @@ impl CognitionBreed for BayesianNetwork {
                     if matches {
                         let concl = rule.conclusion.trim();
                         if let Some(eq_idx) = concl.find('=') {
-                            let val_str = concl[eq_idx+1..].trim();
+                            let val_str = concl[eq_idx + 1..].trim();
                             if val_str == "true" {
                                 matched_prob = rule.certainty as f64;
                             } else {
@@ -179,32 +183,45 @@ impl CognitionBreed for BayesianNetwork {
             let cpt_key = if parents_sorted.is_empty() {
                 format!("cpt:{}", child_name)
             } else {
-                format!("cpt:{}|{}", child_name, parents_sorted.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(","))
+                format!(
+                    "cpt:{}|{}",
+                    child_name,
+                    parents_sorted
+                        .iter()
+                        .map(|s| s.as_str())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
             };
-            let cpt_val = probs.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",");
-            
+            let cpt_val = probs
+                .iter()
+                .map(|p| p.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+
             if !cpts.iter().any(|(k, _)| k == &cpt_key) {
                 cpts.push((cpt_key, cpt_val));
             }
         }
-        
+
         let mut nodes: Vec<String> = all_nodes.into_iter().collect();
         nodes.sort();
-        
-        let node_id = |name: &str| -> usize {
-            nodes.iter().position(|x| x == name).unwrap()
-        };
-        
+
+        let node_id = |name: &str| -> usize { nodes.iter().position(|x| x == name).unwrap() };
+
         let mut adj = vec![vec![]; nodes.len()];
         let mut parents_map = vec![vec![]; nodes.len()];
-        
+
         for (key, _) in &cpts {
             let parts: Vec<&str> = key["cpt:".len()..].split('|').collect();
             let c = node_id(parts[0]);
             if parts.len() > 1 && !parts[1].is_empty() {
                 let ps: Vec<&str> = parts[1].split(',').collect();
                 if ps.len() > 4 {
-                    return Err(BreedError { breed: self.id(), message: "max 4 parents supported".to_string() });
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: "max 4 parents supported".to_string(),
+                    });
                 }
                 for p_name in ps {
                     let p = node_id(p_name);
@@ -213,7 +230,7 @@ impl CognitionBreed for BayesianNetwork {
                 }
             }
         }
-        
+
         for (key, _) in &cpts {
             trace.push(TraceStep {
                 step: trace.len(),
@@ -223,7 +240,7 @@ impl CognitionBreed for BayesianNetwork {
                 objects: vec![],
             });
         }
-        
+
         for (node, val) in &evidence {
             trace.push(TraceStep {
                 step: trace.len(),
@@ -233,22 +250,28 @@ impl CognitionBreed for BayesianNetwork {
                 objects: vec![],
             });
         }
-        
-        let q_raw = query.ok_or_else(|| BreedError { breed: self.id(), message: "missing query goal".to_string() })?;
+
+        let q_raw = query.ok_or_else(|| BreedError {
+            breed: self.id(),
+            message: "missing query goal".to_string(),
+        })?;
         let q_str = if q_raw.starts_with("prob:") || q_raw.starts_with("dsep:") {
             q_raw
         } else {
             format!("prob:{}", q_raw)
         };
         let explanation;
-        
+
         if q_str.starts_with("prob:") {
             let q_node_name = &q_str["prob:".len()..];
             if !nodes.contains(&q_node_name.to_string()) {
-                return Err(BreedError { breed: self.id(), message: "query node not found".to_string() });
+                return Err(BreedError {
+                    breed: self.id(),
+                    message: "query node not found".to_string(),
+                });
             }
             let q_node = node_id(q_node_name);
-            
+
             // Build factors
             let mut factors = Vec::new();
             for (key, val) in &cpts {
@@ -260,11 +283,11 @@ impl CognitionBreed for BayesianNetwork {
                         p_ids.push(node_id(p));
                     }
                 }
-                
+
                 let mut f_vars = vec![x_id];
                 f_vars.extend(&p_ids);
                 let mut table = vec![0.0; 1 << f_vars.len()];
-                
+
                 let probs: Vec<f64> = val
                     .split(',')
                     .map(|s| s.parse::<f64>())
@@ -274,9 +297,12 @@ impl CognitionBreed for BayesianNetwork {
                         message: format!("invalid cpt probability in '{}'", val),
                     })?;
                 if probs.len() != (1 << p_ids.len()) {
-                    return Err(BreedError { breed: self.id(), message: "invalid cpt length".to_string() });
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: "invalid cpt length".to_string(),
+                    });
                 }
-                
+
                 for p_idx in 0..(1 << p_ids.len()) {
                     let p_val = probs[p_idx];
                     let mut idx_f = 0;
@@ -289,10 +315,13 @@ impl CognitionBreed for BayesianNetwork {
                     table[idx_f] = 1.0 - p_val;
                     table[idx_f | 1] = p_val;
                 }
-                
-                factors.push(Factor { vars: f_vars, table });
+
+                factors.push(Factor {
+                    vars: f_vars,
+                    table,
+                });
             }
-            
+
             // Reduce with evidence
             for (ev_name, &ev_val) in &evidence {
                 let ev_id = node_id(ev_name);
@@ -307,7 +336,7 @@ impl CognitionBreed for BayesianNetwork {
                     }
                 }
             }
-            
+
             // Variable elimination order
             // Reverse topo, then lex
             let mut in_degree = vec![0; nodes.len()];
@@ -316,7 +345,7 @@ impl CognitionBreed for BayesianNetwork {
                     in_degree[v] += 1;
                 }
             }
-            
+
             let mut topo = Vec::new();
             let mut zero_in = Vec::new();
             for u in 0..nodes.len() {
@@ -324,7 +353,7 @@ impl CognitionBreed for BayesianNetwork {
                     zero_in.push(u);
                 }
             }
-            
+
             while !zero_in.is_empty() {
                 zero_in.sort_by(|a, b| nodes[*a].cmp(&nodes[*b]));
                 let u = zero_in.remove(0);
@@ -336,15 +365,15 @@ impl CognitionBreed for BayesianNetwork {
                     }
                 }
             }
-            
+
             topo.reverse(); // Reverse topo
-            
+
             // Eliminate
             for &u in &topo {
                 if u == q_node || evidence.contains_key(&nodes[u]) {
                     continue;
                 }
-                
+
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "bn-eliminate".to_string(),
@@ -352,7 +381,7 @@ impl CognitionBreed for BayesianNetwork {
                     depth: 0,
                     objects: vec![],
                 });
-                
+
                 let mut relevant = Vec::new();
                 let mut remaining = Vec::new();
                 for f in factors {
@@ -362,7 +391,7 @@ impl CognitionBreed for BayesianNetwork {
                         remaining.push(f);
                     }
                 }
-                
+
                 if !relevant.is_empty() {
                     let mut prod = relevant[0].clone();
                     for i in 1..relevant.len() {
@@ -373,13 +402,13 @@ impl CognitionBreed for BayesianNetwork {
                 }
                 factors = remaining;
             }
-            
+
             // Final multiplication
             let mut final_f = factors[0].clone();
             for i in 1..factors.len() {
                 final_f = multiply_factors(&final_f, &factors[i]);
             }
-            
+
             let pos_q = final_f.vars.iter().position(|&x| x == q_node).unwrap();
             let mut prob_t = 0.0;
             let mut prob_f = 0.0;
@@ -395,7 +424,7 @@ impl CognitionBreed for BayesianNetwork {
             } else {
                 prob_t / (prob_t + prob_f)
             };
-            
+
             let verdict = format!("prob:{}={:.9}", q_node_name, prob);
             trace.push(TraceStep {
                 step: trace.len(),
@@ -405,7 +434,7 @@ impl CognitionBreed for BayesianNetwork {
                 objects: vec![],
             });
             explanation = verdict;
-            
+
             // Add probability fact
             let mut out_facts = input.facts.clone();
             out_facts.push(Fact {
@@ -429,17 +458,20 @@ impl CognitionBreed for BayesianNetwork {
             let ends: Vec<&str> = parts[0].split(',').collect();
             let mut start_nodes = vec![node_id(ends[0])];
             let mut end_nodes = vec![node_id(ends[1])];
-            
+
             let mut obs = HashSet::new();
             if parts.len() > 1 && !parts[1].is_empty() {
                 for o in parts[1].split(',') {
                     obs.insert(node_id(o));
                 }
             }
-            
+
             #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-            enum Dir { Up, Down }
-            
+            enum Dir {
+                Up,
+                Down,
+            }
+
             let mut ancestors_of_obs = HashSet::new();
             let mut q = VecDeque::new();
             for &o in &obs {
@@ -453,50 +485,60 @@ impl CognitionBreed for BayesianNetwork {
                     }
                 }
             }
-            
+
             let mut reachable = false;
             let mut visited = HashSet::new();
             let mut rq = VecDeque::new();
-            
+
             for &s in &start_nodes {
                 rq.push_back((s, Dir::Up));
                 visited.insert((s, Dir::Up));
             }
-            
+
             while let Some((n, dir)) = rq.pop_front() {
                 if end_nodes.contains(&n) {
                     reachable = true;
                     break;
                 }
                 let is_obs = obs.contains(&n);
-                
+
                 if dir == Dir::Up {
                     if !is_obs {
                         for &p in &parents_map[n] {
-                            if visited.insert((p, Dir::Up)) { rq.push_back((p, Dir::Up)); }
+                            if visited.insert((p, Dir::Up)) {
+                                rq.push_back((p, Dir::Up));
+                            }
                         }
                         for &c in &adj[n] {
-                            if visited.insert((c, Dir::Down)) { rq.push_back((c, Dir::Down)); }
+                            if visited.insert((c, Dir::Down)) {
+                                rq.push_back((c, Dir::Down));
+                            }
                         }
                     }
                 } else if dir == Dir::Down {
                     if !is_obs {
                         for &c in &adj[n] {
-                            if visited.insert((c, Dir::Down)) { rq.push_back((c, Dir::Down)); }
+                            if visited.insert((c, Dir::Down)) {
+                                rq.push_back((c, Dir::Down));
+                            }
                         }
                         if ancestors_of_obs.contains(&n) {
                             for &p in &parents_map[n] {
-                                if visited.insert((p, Dir::Up)) { rq.push_back((p, Dir::Up)); }
+                                if visited.insert((p, Dir::Up)) {
+                                    rq.push_back((p, Dir::Up));
+                                }
                             }
                         }
                     } else {
                         for &p in &parents_map[n] {
-                            if visited.insert((p, Dir::Up)) { rq.push_back((p, Dir::Up)); }
+                            if visited.insert((p, Dir::Up)) {
+                                rq.push_back((p, Dir::Up));
+                            }
                         }
                     }
                 }
             }
-            
+
             let dsep = !reachable;
             let verdict = format!("{}={}", q_str, dsep);
             trace.push(TraceStep {
@@ -508,7 +550,10 @@ impl CognitionBreed for BayesianNetwork {
             });
             explanation = verdict;
         } else {
-            return Err(BreedError { breed: self.id(), message: "unknown query type".to_string() });
+            return Err(BreedError {
+                breed: self.id(),
+                message: "unknown query type".to_string(),
+            });
         }
 
         Ok(BreedOutput {
@@ -527,7 +572,11 @@ impl CognitionBreed for BayesianNetwork {
         if output.inference_trace.is_empty() {
             return Err("Fraud: empty inference trace".to_string());
         }
-        if !output.inference_trace.iter().any(|t| t.kind == "bn-verdict") {
+        if !output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "bn-verdict")
+        {
             return Err("Missing bn-verdict in trace".to_string());
         }
         Ok(())
@@ -636,7 +685,7 @@ fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
         }
     }
     vars.sort_unstable();
-    
+
     let mut table = vec![0.0; 1 << vars.len()];
     for idx in 0..(1 << vars.len()) {
         let mut idx1 = 0;
@@ -646,7 +695,7 @@ fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
                 idx1 |= 1 << i;
             }
         }
-        
+
         let mut idx2 = 0;
         for (i, &v) in f2.vars.iter().enumerate() {
             let pos = vars.iter().position(|&x| x == v).unwrap();
@@ -662,14 +711,16 @@ fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
 fn sum_out_factor(f: &Factor, var_to_elim: usize) -> Factor {
     let mut vars = f.vars.clone();
     vars.retain(|&v| v != var_to_elim);
-    
+
     let mut table = vec![0.0; 1 << vars.len()];
     let pos_elim = f.vars.iter().position(|&x| x == var_to_elim).unwrap();
-    
+
     for idx in 0..(1 << f.vars.len()) {
         let mut new_idx = 0;
         for (i, &v) in f.vars.iter().enumerate() {
-            if i == pos_elim { continue; }
+            if i == pos_elim {
+                continue;
+            }
             let pos_new = vars.iter().position(|&x| x == v).unwrap();
             if (idx & (1 << i)) != 0 {
                 new_idx |= 1 << pos_new;

@@ -1,5 +1,5 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeSet, HashMap};
 
@@ -22,7 +22,9 @@ impl CognitionBreed for DescriptionLogic {
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         if input.facts.is_empty() {
-            return Err("DescriptionLogic requires at least one fact in the knowledge base".to_string());
+            return Err(
+                "DescriptionLogic requires at least one fact in the knowledge base".to_string(),
+            );
         }
         Ok(())
     }
@@ -141,7 +143,10 @@ impl CognitionBreed for DescriptionLogic {
             for (y, c2) in &member {
                 if x == y && disjoint.contains(&(c1.clone(), c2.clone())) {
                     consistent = false;
-                    clash_detail = format!("Individual '{}' belongs to disjoint classes '{}' and '{}'", x, c1, c2);
+                    clash_detail = format!(
+                        "Individual '{}' belongs to disjoint classes '{}' and '{}'",
+                        x, c1, c2
+                    );
                     break;
                 }
             }
@@ -153,7 +158,11 @@ impl CognitionBreed for DescriptionLogic {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "dl-consistent".to_string(),
-            detail: if consistent { "Ontology is consistent".to_string() } else { format!("Inconsistent: {}", clash_detail) },
+            detail: if consistent {
+                "Ontology is consistent".to_string()
+            } else {
+                format!("Inconsistent: {}", clash_detail)
+            },
             depth: 0,
             objects: vec![],
         });
@@ -205,7 +214,8 @@ impl CognitionBreed for DescriptionLogic {
             facts: out_facts,
             selected,
             explanation: if consistent {
-                "Description Logic: KB is consistent, subsumptions propagated successfully.".to_string()
+                "Description Logic: KB is consistent, subsumptions propagated successfully."
+                    .to_string()
             } else {
                 format!("Description Logic: KB is inconsistent. {}", clash_detail)
             },
@@ -219,7 +229,10 @@ impl CognitionBreed for DescriptionLogic {
         if output.inference_trace.is_empty() {
             return Err("DescriptionLogic must emit at least one trace step".to_string());
         }
-        let has_consistent = output.inference_trace.iter().any(|t| t.kind == "dl-consistent");
+        let has_consistent = output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "dl-consistent");
         if !has_consistent {
             return Err("DescriptionLogic trace must contain a dl-consistent step".to_string());
         }

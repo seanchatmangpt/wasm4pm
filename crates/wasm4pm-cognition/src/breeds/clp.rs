@@ -5,7 +5,7 @@
 
 use crate::breeds::support::csp::{CspStore, TraceEvent};
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 
 /// Constraint Logic Programming breed
@@ -48,8 +48,14 @@ impl Clp {
         };
         let raw = raw.trim();
         if let Some((lo, hi)) = raw.split_once("..") {
-            let lo: i64 = lo.trim().parse().map_err(|_| format!("malformed range for {}: {}", name, raw))?;
-            let hi: i64 = hi.trim().parse().map_err(|_| format!("malformed range for {}: {}", name, raw))?;
+            let lo: i64 = lo
+                .trim()
+                .parse()
+                .map_err(|_| format!("malformed range for {}: {}", name, raw))?;
+            let hi: i64 = hi
+                .trim()
+                .parse()
+                .map_err(|_| format!("malformed range for {}: {}", name, raw))?;
             if hi < lo {
                 return Err(format!("empty range for {}: {}", name, raw));
             }
@@ -69,8 +75,7 @@ impl Clp {
         // Arithmetic offset: lhs = rhsvar (+|-) const.
         // Only when lhs is a bare identifier (not part of <=, >=, !=, ==).
         if let Some((lhs, rest)) = expr.split_once('=') {
-            let lhs_clean = !lhs.is_empty()
-                && !lhs.ends_with(['<', '>', '!', '=']);
+            let lhs_clean = !lhs.is_empty() && !lhs.ends_with(['<', '>', '!', '=']);
             if lhs_clean && !rest.is_empty() {
                 // Distinguish `==` (handled below) from single `=`.
                 if !rest.starts_with('=') {
@@ -100,12 +105,21 @@ impl Clp {
                 }
             }
         }
-        Err(BreedError { breed: self.id(), message: format!("malformed constraint: {}", raw) })
+        Err(BreedError {
+            breed: self.id(),
+            message: format!("malformed constraint: {}", raw),
+        })
     }
 
     /// Post a binary comparison. If one side is an integer literal rather than a declared
     /// variable, introduce a singleton constant variable so the binary solver applies.
-    fn post_binary(&self, store: &mut CspStore, lhs: &str, rhs: &str, op: &str) -> Result<(), BreedError> {
+    fn post_binary(
+        &self,
+        store: &mut CspStore,
+        lhs: &str,
+        rhs: &str,
+        op: &str,
+    ) -> Result<(), BreedError> {
         let lhs = self.resolve_operand(store, lhs);
         let rhs = self.resolve_operand(store, rhs);
         store.add_constraint(&lhs, &rhs, op);
@@ -184,14 +198,12 @@ impl CognitionBreed for Clp {
                     "clp-revise".to_string(),
                     format!("x={} y={} pruned={}", x, y, pruned),
                 ),
-                TraceEvent::Assign { var, val } => (
-                    "clp-assign".to_string(),
-                    format!("var={} val={}", var, val),
-                ),
-                TraceEvent::Backtrack { var } => (
-                    "clp-backtrack".to_string(),
-                    format!("var={}", var),
-                ),
+                TraceEvent::Assign { var, val } => {
+                    ("clp-assign".to_string(), format!("var={} val={}", var, val))
+                }
+                TraceEvent::Backtrack { var } => {
+                    ("clp-backtrack".to_string(), format!("var={}", var))
+                }
                 TraceEvent::Verdict { satisfiable } => (
                     "clp-verdict".to_string(),
                     format!("satisfiable={}", satisfiable),
@@ -253,7 +265,10 @@ mod tests {
     }
 
     fn fact(key: &str, value: &str) -> Fact {
-        Fact { key: key.to_string(), value: value.to_string() }
+        Fact {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
     }
 
     fn input_with(facts: Vec<Fact>) -> BreedInput {
@@ -283,12 +298,18 @@ mod tests {
         let input = input_with(facts);
         let out = Clp.run(&input).expect("success");
         assert_eq!(out.explanation, "SAT: v3=3, x=1, y=2, z=3");
-        
-        let backtrack_count = out.inference_trace.iter().filter(|t| t.kind == "clp-backtrack").count();
+
+        let backtrack_count = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "clp-backtrack")
+            .count();
         assert_eq!(backtrack_count, 0, "must solve with zero backtracks");
-        
-        let has_propagate = out.inference_trace.iter().any(|t| t.kind == "clp-propagate");
+
+        let has_propagate = out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "clp-propagate");
         assert!(has_propagate, "must show propagation sequence");
     }
-
 }

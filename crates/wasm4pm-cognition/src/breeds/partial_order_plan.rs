@@ -64,7 +64,12 @@ fn goal_strings(goals: &[Goal]) -> Vec<String> {
         .collect()
 }
 
-fn has_path(start: usize, end: usize, num_nodes: usize, orderings: &BTreeSet<(usize, usize)>) -> bool {
+fn has_path(
+    start: usize,
+    end: usize,
+    num_nodes: usize,
+    orderings: &BTreeSet<(usize, usize)>,
+) -> bool {
     let mut adj = vec![vec![]; num_nodes];
     for &(u, v) in orderings {
         adj[u].push(v);
@@ -157,7 +162,7 @@ fn resolve_threats(
                 // to be before the source or after the destination.
                 let is_before = has_path(step.id, link.from, num_steps, orderings);
                 let is_after = has_path(link.to, step.id, num_steps, orderings);
-                
+
                 if is_before || is_after {
                     continue;
                 }
@@ -165,7 +170,7 @@ fn resolve_threats(
                 // Potential threat detected
                 let cannot_be_before = has_path(link.from, step.id, num_steps, orderings);
                 let cannot_be_after = has_path(step.id, link.to, num_steps, orderings);
-                
+
                 if cannot_be_before && cannot_be_after {
                     // Threat is unresolvable
                     return false;
@@ -174,7 +179,10 @@ fn resolve_threats(
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "detect-threat".to_string(),
-                    detail: format!("Threat detected: step {} deletes '{}' required by link {}->{}", step.id, link.condition, link.from, link.to),
+                    detail: format!(
+                        "Threat detected: step {} deletes '{}' required by link {}->{}",
+                        step.id, link.condition, link.from, link.to
+                    ),
                     depth: depth as u32,
                     objects: vec![],
                 });
@@ -239,7 +247,9 @@ fn pop_search(
     let mut open_pre = None;
     for step in steps.iter() {
         for pre in &step.preconditions {
-            let has_link = causal_links.iter().any(|l| l.to == step.id && &l.condition == pre);
+            let has_link = causal_links
+                .iter()
+                .any(|l| l.to == step.id && &l.condition == pre);
             if !has_link {
                 open_pre = Some((step.id, pre.clone()));
                 break;
@@ -382,7 +392,14 @@ impl CognitionBreed for PartialOrderPlan {
         orderings.insert((0, 1));
         let mut causal_links = Vec::new();
 
-        let success = pop_search(&mut steps, &mut orderings, &mut causal_links, &input.rules, &mut trace, 0);
+        let success = pop_search(
+            &mut steps,
+            &mut orderings,
+            &mut causal_links,
+            &input.rules,
+            &mut trace,
+            0,
+        );
 
         if !success {
             return Err(BreedError {
@@ -434,7 +451,11 @@ impl CognitionBreed for PartialOrderPlan {
         if output.inference_trace.is_empty() {
             return Err("Partial Order Planner must record search steps".to_string());
         }
-        let kinds: HashSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
+        let kinds: HashSet<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
         if !kinds.contains("pop-init") || !kinds.contains("pop-plan") {
             return Err("Partial Order Planner trace missing required kinds".to_string());
         }

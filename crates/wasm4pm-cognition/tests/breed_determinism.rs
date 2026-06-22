@@ -731,7 +731,10 @@ fn p3_input(breed: &str) -> BreedInput {
     };
     match breed {
         "problog" => {
-            input.facts = vec![p4_fact("pfact:burglary", "0.1"), p4_fact("pfact:quake", "0.2")];
+            input.facts = vec![
+                p4_fact("pfact:burglary", "0.1"),
+                p4_fact("pfact:quake", "0.2"),
+            ];
             input.rules = vec![
                 Rule {
                     id: "r1".into(),
@@ -1265,7 +1268,6 @@ fn test_clp_determinism() {
     assert_eq!(out1.facts, out2.facts);
 }
 
-
 // ===========================================================================
 // ABDUCTIVE IBE determinism test
 // ===========================================================================
@@ -1276,9 +1278,18 @@ fn abductive_ibe_determinism_test() {
         intent: "abductive ibe determinism".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "observation:O1".into(), value: "".into() },
-            Fact { key: "hyp:H1".into(), value: "10.0".into() },
-            Fact { key: "explains:H1:O1".into(), value: "".into() },
+            Fact {
+                key: "observation:O1".into(),
+                value: "".into(),
+            },
+            Fact {
+                key: "hyp:H1".into(),
+                value: "10.0".into(),
+            },
+            Fact {
+                key: "explains:H1:O1".into(),
+                value: "".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -1301,15 +1312,32 @@ fn event_calculus_determinism_test() {
         intent: "event calculus determinism".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "ec.initially:on".into(), value: "".into() },
-            Fact { key: "ec.happens:toggle1:5".into(), value: "".into() },
-            Fact { key: "ec.terminates:toggle1:on".into(), value: "".into() },
+            Fact {
+                key: "ec.initially:on".into(),
+                value: "".into(),
+            },
+            Fact {
+                key: "ec.happens:toggle1:5".into(),
+                value: "".into(),
+            },
+            Fact {
+                key: "ec.terminates:toggle1:on".into(),
+                value: "".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
         goals: vec![
-            Goal { id: "on".into(), predicate: "holdsat".into(), value: "4".into() },
-            Goal { id: "on".into(), predicate: "holdsat".into(), value: "6".into() }
+            Goal {
+                id: "on".into(),
+                predicate: "holdsat".into(),
+                value: "4".into(),
+            },
+            Goal {
+                id: "on".into(),
+                predicate: "holdsat".into(),
+                value: "6".into(),
+            },
         ],
         state: vec![],
     };
@@ -1330,15 +1358,21 @@ fn partial_order_plan_determinism_test() {
         candidates: vec![],
         facts: vec![],
         cases: vec![],
-        rules: vec![
-            Rule { id: "go-store".into(), premise: vec!["at=home".into()], conclusion: "at=store;!at=home".into(), certainty: 1.0 },
-        ],
-        goals: vec![
-            Goal { id: "at".into(), predicate: "at".into(), value: "store".into() }
-        ],
-        state: vec![
-            StateAtom { predicate: "at".into(), value: "home".into() }
-        ],
+        rules: vec![Rule {
+            id: "go-store".into(),
+            premise: vec!["at=home".into()],
+            conclusion: "at=store;!at=home".into(),
+            certainty: 1.0,
+        }],
+        goals: vec![Goal {
+            id: "at".into(),
+            predicate: "at".into(),
+            value: "store".into(),
+        }],
+        state: vec![StateAtom {
+            predicate: "at".into(),
+            value: "home".into(),
+        }],
     };
 
     let o1 = wasm4pm_cognition::breeds::dispatch_breed_test("partial_order_plan", &input).unwrap();
@@ -1370,18 +1404,42 @@ fn ctl_check_determinism() {
     // Transition system in the format ctl_check actually parses: `ts:init`,
     // `ts:edge:<s>` (successor), `ts:label:<s>` (atomic propositions).
     let facts = vec![
-        wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "A F q".into() },
-        wasm4pm_cognition::breeds::Fact { key: "ts:init".into(), value: "s0".into() },
-        wasm4pm_cognition::breeds::Fact { key: "ts:edge:s0".into(), value: "s1".into() },
-        wasm4pm_cognition::breeds::Fact { key: "ts:edge:s1".into(), value: "s1".into() },
-        wasm4pm_cognition::breeds::Fact { key: "ts:label:s0".into(), value: "p".into() },
-        wasm4pm_cognition::breeds::Fact { key: "ts:label:s1".into(), value: "q".into() },
+        wasm4pm_cognition::breeds::Fact {
+            key: "ctl:formula".into(),
+            value: "A F q".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "ts:init".into(),
+            value: "s0".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "ts:edge:s0".into(),
+            value: "s1".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "ts:edge:s1".into(),
+            value: "s1".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "ts:label:s0".into(),
+            value: "p".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "ts:label:s1".into(),
+            value: "q".into(),
+        },
     ];
 
     let input = wasm4pm_cognition::breeds::BreedInput {
-        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+        intent: "".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
     };
-    
+
     use wasm4pm_cognition::breeds::CognitionBreed;
     let out1 = breed.run(&input).unwrap();
     let out2 = breed.run(&input).unwrap();
@@ -1395,16 +1453,43 @@ fn ilp_determinism() {
     // ilp parses `pos:<atom>` / `neg:<atom>` / `bg:<atom>` where the atom lives
     // in the fact KEY (not the value).
     let facts = vec![
-        wasm4pm_cognition::breeds::Fact { key: "pos:target(1)".into(), value: "".into() },
-        wasm4pm_cognition::breeds::Fact { key: "pos:target(2)".into(), value: "".into() },
-        wasm4pm_cognition::breeds::Fact { key: "pos:target(3)".into(), value: "".into() },
-        wasm4pm_cognition::breeds::Fact { key: "neg:target(4)".into(), value: "".into() },
-        wasm4pm_cognition::breeds::Fact { key: "bg:good(1)".into(), value: "".into() },
-        wasm4pm_cognition::breeds::Fact { key: "bg:good(2)".into(), value: "".into() },
-        wasm4pm_cognition::breeds::Fact { key: "bg:good(3)".into(), value: "".into() },
+        wasm4pm_cognition::breeds::Fact {
+            key: "pos:target(1)".into(),
+            value: "".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "pos:target(2)".into(),
+            value: "".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "pos:target(3)".into(),
+            value: "".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "neg:target(4)".into(),
+            value: "".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "bg:good(1)".into(),
+            value: "".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "bg:good(2)".into(),
+            value: "".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "bg:good(3)".into(),
+            value: "".into(),
+        },
     ];
     let input = wasm4pm_cognition::breeds::BreedInput {
-        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+        intent: "".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
     };
     use wasm4pm_cognition::breeds::CognitionBreed;
     let out1 = breed.run(&input).unwrap();
@@ -1419,15 +1504,39 @@ fn naive_physics_determinism() {
     // naive_physics parses `np:on:<x>`, `np:in:<x>`, `np:liquid:<x>`,
     // `np:ground:<x>`, `np:remove:<x>` — a containment-transport scene.
     let facts = vec![
-        wasm4pm_cognition::breeds::Fact { key: "np:on:table".into(), value: "floor".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:ground:floor".into(), value: "true".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:on:cup".into(), value: "table".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:in:water".into(), value: "cup".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:liquid:water".into(), value: "cup".into() },
-        wasm4pm_cognition::breeds::Fact { key: "np:remove:table".into(), value: "true".into() },
+        wasm4pm_cognition::breeds::Fact {
+            key: "np:on:table".into(),
+            value: "floor".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "np:ground:floor".into(),
+            value: "true".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "np:on:cup".into(),
+            value: "table".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "np:in:water".into(),
+            value: "cup".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "np:liquid:water".into(),
+            value: "cup".into(),
+        },
+        wasm4pm_cognition::breeds::Fact {
+            key: "np:remove:table".into(),
+            value: "true".into(),
+        },
     ];
     let input = wasm4pm_cognition::breeds::BreedInput {
-        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+        intent: "".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
     };
     use wasm4pm_cognition::breeds::CognitionBreed;
     let out1 = breed.run(&input).unwrap();
@@ -1442,10 +1551,22 @@ fn meta_reasoning_determinism() {
         intent: "determinism test".into(),
         candidates: vec![],
         facts: vec![
-            wasm4pm_cognition::breeds::Fact { key: "breed:test1:conclusion".into(), value: "x=1".into() },
-            wasm4pm_cognition::breeds::Fact { key: "breed:test2:conclusion".into(), value: "x=2".into() },
-            wasm4pm_cognition::breeds::Fact { key: "breed:test1:confidence".into(), value: "0.8".into() },
-            wasm4pm_cognition::breeds::Fact { key: "breed:test2:confidence".into(), value: "0.8".into() },
+            wasm4pm_cognition::breeds::Fact {
+                key: "breed:test1:conclusion".into(),
+                value: "x=1".into(),
+            },
+            wasm4pm_cognition::breeds::Fact {
+                key: "breed:test2:conclusion".into(),
+                value: "x=2".into(),
+            },
+            wasm4pm_cognition::breeds::Fact {
+                key: "breed:test1:confidence".into(),
+                value: "0.8".into(),
+            },
+            wasm4pm_cognition::breeds::Fact {
+                key: "breed:test2:confidence".into(),
+                value: "0.8".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],

@@ -45,7 +45,7 @@ impl ScriptSam {
     /// Normalize a fact into an observed scene instance `scene(filler)`.
     ///
     /// Accepts two encodings:
-    /// - legacy: `key == "observation"`, value already `scene(filler)`.
+    /// - historical: `key == "observation"`, value already `scene(filler)`.
     /// - SAM fixture: `key == "sam:event:N"`, value `scene:filler`
     ///   (colon-separated scene token and role filler).
     fn observation_from_fact(f: &Fact) -> Option<String> {
@@ -62,11 +62,7 @@ impl ScriptSam {
         None
     }
 
-    fn match_scene(
-        pattern: &str,
-        instance: &str,
-        bindings: &mut HashMap<String, String>,
-    ) -> bool {
+    fn match_scene(pattern: &str, instance: &str, bindings: &mut HashMap<String, String>) -> bool {
         let (p_name, p_args) = Self::parse_scene(pattern);
         let (i_name, i_args) = Self::parse_scene(instance);
 
@@ -132,7 +128,9 @@ impl CognitionBreed for ScriptSam {
             .iter()
             .any(|f| Self::observation_from_fact(f).is_some());
         if !has_observations {
-            return Err("no observations to align (need 'observation' or 'sam:event:N' facts)".to_string());
+            return Err(
+                "no observations to align (need 'observation' or 'sam:event:N' facts)".to_string(),
+            );
         }
         // Scripts come either from input.rules or the built-in restaurant script.
         Ok(())
@@ -210,12 +208,19 @@ impl CognitionBreed for ScriptSam {
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "alignment-success".to_string(),
-                    detail: format!("Aligned script {} with {} matches", script_rule.conclusion, alignment.len()),
+                    detail: format!(
+                        "Aligned script {} with {} matches",
+                        script_rule.conclusion,
+                        alignment.len()
+                    ),
                     depth: 0,
                     objects: vec![("script".to_string(), script_rule.conclusion.clone())],
                 });
 
-                if best_alignment.as_ref().map_or(true, |a: &Vec<usize>| alignment.len() > a.len()) {
+                if best_alignment
+                    .as_ref()
+                    .map_or(true, |a: &Vec<usize>| alignment.len() > a.len())
+                {
                     best_script = Some(script_rule);
                     best_alignment = Some(alignment);
                     best_bindings = bindings;
@@ -254,14 +259,18 @@ impl CognitionBreed for ScriptSam {
             for i in min_idx..=max_idx {
                 if !alignment.contains(&i) {
                     let inferred_scene_pattern = &script_rule.premise[i];
-                    let inferred_scene = Self::apply_bindings(inferred_scene_pattern, &best_bindings);
+                    let inferred_scene =
+                        Self::apply_bindings(inferred_scene_pattern, &best_bindings);
                     let (scene_name, scene_args) = Self::parse_scene(&inferred_scene);
                     let filler = scene_args.first().cloned().unwrap_or_default();
 
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "gap-inference".to_string(),
-                        detail: format!("Inferred scene: {} ({}={})", inferred_scene, scene_name, filler),
+                        detail: format!(
+                            "Inferred scene: {} ({}={})",
+                            inferred_scene, scene_name, filler
+                        ),
                         depth: 0,
                         objects: vec![("scene".to_string(), inferred_scene.clone())],
                     });
@@ -284,7 +293,10 @@ impl CognitionBreed for ScriptSam {
             .count();
 
         let explanation = if let Some(s) = best_script {
-            format!("Successfully aligned to script '{}' and inferred {} missing scenes.", s.conclusion, inferred_count)
+            format!(
+                "Successfully aligned to script '{}' and inferred {} missing scenes.",
+                s.conclusion, inferred_count
+            )
         } else {
             "Could not align observations to any known script.".to_string()
         };

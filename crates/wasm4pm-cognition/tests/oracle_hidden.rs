@@ -1373,16 +1373,17 @@ fn autoinstinct_learning_hidden_surgical_curriculum() {
 fn ltl_monitor_hidden_response_pattern() {
     use wasm4pm_cognition::breeds::Fact;
     let mut input = base("LTL response pattern check");
-    input.facts = vec![
-        fact("formula", "G (req -> F res)"),
-    ];
+    input.facts = vec![fact("formula", "G (req -> F res)")];
     input.cases = vec![
         Case {
             id: "state0".into(),
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 1.0,
-            facts: vec![Fact { key: "req".into(), value: "true".into() }],
+            facts: vec![Fact {
+                key: "req".into(),
+                value: "true".into(),
+            }],
         },
         Case {
             id: "state1".into(),
@@ -1396,15 +1397,24 @@ fn ltl_monitor_hidden_response_pattern() {
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 1.0,
-            facts: vec![Fact { key: "res".into(), value: "true".into() }],
+            facts: vec![Fact {
+                key: "res".into(),
+                value: "true".into(),
+            }],
         },
     ];
 
-    let output = dispatch_breed_test("ltl_monitor", &input)
-        .expect("LTL Monitor run must succeed");
-    
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let conforms_fact = output.facts.iter().find(|f| f.key == "conforms").expect("conforms fact exists");
+    let output = dispatch_breed_test("ltl_monitor", &input).expect("LTL Monitor run must succeed");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+    let conforms_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "conforms")
+        .expect("conforms fact exists");
     assert_eq!(conforms_fact.value, "true");
 }
 
@@ -1412,16 +1422,20 @@ fn ltl_monitor_hidden_response_pattern() {
 #[ignore]
 fn allen_temporal_hidden_transitivity() {
     let mut input = base("Allen interval transitivity check");
-    input.facts = vec![
-        fact("relation", "A meets B"),
-        fact("relation", "B meets C"),
-    ];
+    input.facts = vec![fact("relation", "A meets B"), fact("relation", "B meets C")];
 
-    let output = dispatch_breed_test("allen_temporal", &input)
-        .expect("AllenTemporal run must succeed");
-    
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let rel_ac = output.facts.iter().find(|f| f.key == "relation:A:C").expect("relation:A:C exists");
+    let output =
+        dispatch_breed_test("allen_temporal", &input).expect("AllenTemporal run must succeed");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+    let rel_ac = output
+        .facts
+        .iter()
+        .find(|f| f.key == "relation:A:C")
+        .expect("relation:A:C exists");
     // A meets B and B meets C => A precedes C (i.e. 'p')
     assert_eq!(rel_ac.value, "p");
 }
@@ -1443,11 +1457,17 @@ fn fuzzy_logic_hidden_ventilation() {
         rule("r2", vec!["x is b"], "y is d", 1.0),
     ];
 
-    let output = dispatch_breed_test("fuzzy_logic", &input)
-        .expect("FuzzyLogic run must succeed");
-    
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let vent_fact = output.facts.iter().find(|f| f.key == "y").expect("y fact exists");
+    let output = dispatch_breed_test("fuzzy_logic", &input).expect("FuzzyLogic run must succeed");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+    let vent_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "y")
+        .expect("y fact exists");
     let vent_val: f64 = vent_fact.value.parse().expect("must parse as float");
     // Hand-integrated 101-point centroid is 22.18748
     assert!((vent_val - 22.18748).abs() < 1e-5);
@@ -1467,9 +1487,16 @@ fn bayesian_network_hidden_burglar_alarm() {
         fact("cpt:X|Q,Y", "0.1,0.2,0.3,0.4"), // P(X=t | Q,Y)
     ];
     input1.goals = vec![goal("g1", "query", "S")];
-    
+
     let out1 = dispatch_breed_test("bayesian_network", &input1).unwrap();
-    let prob_s: f64 = out1.facts.iter().find(|f| f.key == "probability:S").unwrap().value.parse().unwrap();
+    let prob_s: f64 = out1
+        .facts
+        .iter()
+        .find(|f| f.key == "probability:S")
+        .unwrap()
+        .value
+        .parse()
+        .unwrap();
     // P(R=t) = 0.3*0.8 + 0.7*0.4 = 0.24 + 0.28 = 0.52
     // P(S=t) = 0.52*0.7 + 0.48*0.1 = 0.364 + 0.048 = 0.412
     assert!((prob_s - 0.412).abs() < 1e-9);
@@ -1477,15 +1504,22 @@ fn bayesian_network_hidden_burglar_alarm() {
     let mut input2 = input1.clone();
     input2.facts.push(fact("evidence:R", "true"));
     let out2 = dispatch_breed_test("bayesian_network", &input2).unwrap();
-    let prob_s_r: f64 = out2.facts.iter().find(|f| f.key == "probability:S").unwrap().value.parse().unwrap();
+    let prob_s_r: f64 = out2
+        .facts
+        .iter()
+        .find(|f| f.key == "probability:S")
+        .unwrap()
+        .value
+        .parse()
+        .unwrap();
     // Markov-blanket screen P(S|R=t) = 0.7
     assert!((prob_s_r - 0.7).abs() < 1e-9);
-    
+
     let mut input3 = input1.clone();
     input3.goals = vec![goal("g2", "query", "dsep:Q,Y")];
     let out3 = dispatch_breed_test("bayesian_network", &input3).unwrap();
     assert_eq!(out3.explanation, "dsep:Q,Y=true");
-    
+
     let mut input4 = input1.clone();
     input4.goals = vec![goal("g3", "query", "dsep:Q,Y|X")];
     let out4 = dispatch_breed_test("bayesian_network", &input4).unwrap();
@@ -1505,10 +1539,12 @@ fn csp_ac3_hidden_coloring() {
         fact("csp-constraint", "A!=C"),
     ];
 
-    let output = dispatch_breed_test("csp_ac3", &input)
-        .expect("csp_ac3 run must succeed");
+    let output = dispatch_breed_test("csp_ac3", &input).expect("csp_ac3 run must succeed");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
     assert!(output.selected.is_some());
     assert_eq!(output.explanation, "SAT: A=1, B=2, C=3");
 }
@@ -1516,19 +1552,19 @@ fn csp_ac3_hidden_coloring() {
 #[test]
 fn default_logic_hidden_extension() {
     let mut input = base("Default logic bird example");
-    input.facts = vec![
-        fact("bird", "penguin"),
-        fact("penguin", "penguin"),
-    ];
+    input.facts = vec![fact("bird", "penguin"), fact("penguin", "penguin")];
     input.rules = vec![
         rule("r_default", vec!["bird", "unless:non_flying"], "flies", 1.0),
         rule("r_penguin", vec!["penguin"], "non_flying", 1.0),
     ];
 
-    let output = dispatch_breed_test("default_logic", &input)
-        .expect("default_logic run must succeed");
+    let output =
+        dispatch_breed_test("default_logic", &input).expect("default_logic run must succeed");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
     let selected = output.selected.as_ref().unwrap();
     assert!(selected.contains("non_flying"));
     assert!(!selected.contains("flies"));
@@ -1538,12 +1574,20 @@ fn default_logic_hidden_extension() {
 fn htn_planning_hidden_travel() {
     let mut input = base("HTN planning check");
     input.state = vec![
-        StateAtom { predicate: "at".into(), value: "home".into() },
-        StateAtom { predicate: "car_working".into(), value: "true".into() },
+        StateAtom {
+            predicate: "at".into(),
+            value: "home".into(),
+        },
+        StateAtom {
+            predicate: "car_working".into(),
+            value: "true".into(),
+        },
     ];
-    input.goals = vec![
-        Goal { id: "g1".into(), predicate: "task".into(), value: "go_to_dest".into() },
-    ];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "task".into(),
+        value: "go_to_dest".into(),
+    }];
     input.rules = vec![
         Rule {
             id: "method:go_to_dest:drive".into(),
@@ -1565,11 +1609,17 @@ fn htn_planning_hidden_travel() {
         },
     ];
 
-    let output = dispatch_breed_test("htn_planning", &input)
-        .expect("htn_planning run must succeed");
+    let output =
+        dispatch_breed_test("htn_planning", &input).expect("htn_planning run must succeed");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    assert_eq!(output.selected.as_deref(), Some("op:start_car,op:drive_to_dest"));
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+    assert_eq!(
+        output.selected.as_deref(),
+        Some("op:start_car,op:drive_to_dest")
+    );
 }
 
 #[test]
@@ -1580,19 +1630,38 @@ fn asp_hidden_stable_models() {
         rule("r2", vec!["not a"], "b", 1.0),
     ];
     input.candidates = vec![
-        Candidate { id: "a".into(), score: 0.5, eliminated: false, elimination_reason: None },
-        Candidate { id: "b".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        Candidate {
+            id: "a".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        },
+        Candidate {
+            id: "b".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        },
     ];
 
-    let output = dispatch_breed_test("asp", &input)
-        .expect("ASP run must succeed");
+    let output = dispatch_breed_test("asp", &input).expect("ASP run must succeed");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let count_fact = output.facts.iter().find(|f| f.key == "stable_models_count").expect("stable_models_count exists");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+    let count_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "stable_models_count")
+        .expect("stable_models_count exists");
     assert_eq!(count_fact.value, "2");
-    
+
     // One of a or b must be selected
-    let selected = output.selected.as_ref().expect("Should have selected a candidate");
+    let selected = output
+        .selected
+        .as_ref()
+        .expect("Should have selected a candidate");
     assert!(selected == "a" || selected == "b");
 }
 
@@ -1605,14 +1674,21 @@ fn description_logic_hidden_subsumption_and_consistency() {
         fact("class", "x,A"),
         fact("disjoint", "C,D"),
     ];
-    input.candidates = vec![
-        Candidate { id: "x".into(), score: 0.5, eliminated: false, elimination_reason: None },
-    ];
+    input.candidates = vec![Candidate {
+        id: "x".into(),
+        score: 0.5,
+        eliminated: false,
+        elimination_reason: None,
+    }];
 
     let output = dispatch_breed_test("description_logic", &input)
         .expect("DescriptionLogic run must succeed");
 
-    let consistent_fact = output.facts.iter().find(|f| f.key == "consistent").expect("consistent fact exists");
+    let consistent_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "consistent")
+        .expect("consistent fact exists");
     assert_eq!(consistent_fact.value, "true");
     assert_eq!(output.selected.as_deref(), Some("consistent"));
 
@@ -1627,10 +1703,17 @@ fn description_logic_hidden_subsumption_and_consistency() {
     let output_inc = dispatch_breed_test("description_logic", &input_inc)
         .expect("DescriptionLogic run must succeed");
 
-    let consistent_inc = output_inc.facts.iter().find(|f| f.key == "consistent").expect("consistent fact exists");
+    let consistent_inc = output_inc
+        .facts
+        .iter()
+        .find(|f| f.key == "consistent")
+        .expect("consistent fact exists");
     assert_eq!(consistent_inc.value, "false");
     assert_eq!(output_inc.selected.as_deref(), Some("inconsistent"));
-    assert!(output_inc.candidates[0].eliminated, "Candidate x must be eliminated due to inconsistency");
+    assert!(
+        output_inc.candidates[0].eliminated,
+        "Candidate x must be eliminated due to inconsistency"
+    );
 }
 
 #[test]
@@ -1648,18 +1731,25 @@ fn abductive_lp_hidden_explanation() {
         fact("abducible", "d"),
         fact("context", "d"), // d is true in the context
     ];
-    input.goals = vec![
-        goal("g1", "goal", "g"),
-    ];
-    input.candidates = vec![
-        Candidate { id: "c".into(), score: 0.5, eliminated: false, elimination_reason: None },
-    ];
+    input.goals = vec![goal("g1", "goal", "g")];
+    input.candidates = vec![Candidate {
+        id: "c".into(),
+        score: 0.5,
+        eliminated: false,
+        elimination_reason: None,
+    }];
 
-    let output = dispatch_breed_test("abductive_lp", &input)
-        .expect("AbductiveLP run must succeed");
+    let output = dispatch_breed_test("abductive_lp", &input).expect("AbductiveLP run must succeed");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let count_fact = output.facts.iter().find(|f| f.key == "explanations_count").expect("explanations_count exists");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+    let count_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "explanations_count")
+        .expect("explanations_count exists");
     // [a, b] is blocked because d is true, so only [c] is a valid explanation.
     assert_eq!(count_fact.value, "1");
     assert_eq!(output.selected.as_deref(), Some("c"));
@@ -1681,21 +1771,47 @@ fn abductive_ibe_hidden_coherence() {
         rule("expl3", vec!["H2"], "E1", 1.0),
     ];
     input.candidates = vec![
-        Candidate { id: "H1".into(), score: 0.5, eliminated: false, elimination_reason: None },
-        Candidate { id: "H2".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        Candidate {
+            id: "H1".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        },
+        Candidate {
+            id: "H2".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        },
     ];
 
-    let output = dispatch_breed_test("abductive_ibe", &input)
-        .expect("AbductiveIBE run must succeed");
+    let output =
+        dispatch_breed_test("abductive_ibe", &input).expect("AbductiveIBE run must succeed");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
+
     // H1 must be selected over H2 because H1 explains E1 and E2, while H2 only explains E1.
     assert_eq!(output.selected.as_deref(), Some("H1"));
-    
-    let score_h1 = output.candidates.iter().find(|c| c.id == "H1").unwrap().score;
-    let score_h2 = output.candidates.iter().find(|c| c.id == "H2").unwrap().score;
-    assert!(score_h1 > score_h2, "H1 score must be strictly greater than H2 score");
+
+    let score_h1 = output
+        .candidates
+        .iter()
+        .find(|c| c.id == "H1")
+        .unwrap()
+        .score;
+    let score_h2 = output
+        .candidates
+        .iter()
+        .find(|c| c.id == "H2")
+        .unwrap()
+        .score;
+    assert!(
+        score_h1 > score_h2,
+        "H1 score must be strictly greater than H2 score"
+    );
 }
 
 #[test]
@@ -1706,12 +1822,20 @@ fn htn_planning_hidden_oracle_backtrack() {
         facts: vec![],
         cases: vec![],
         state: vec![
-            StateAtom { predicate: "at".into(), value: "zorp_location".into() },
-            StateAtom { predicate: "cash".into(), value: "zorp_credits".into() },
+            StateAtom {
+                predicate: "at".into(),
+                value: "zorp_location".into(),
+            },
+            StateAtom {
+                predicate: "cash".into(),
+                value: "zorp_credits".into(),
+            },
         ],
-        goals: vec![
-            Goal { id: "g1".into(), predicate: "task".into(), value: "travel".into() },
-        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "task".into(),
+            value: "travel".into(),
+        }],
         rules: vec![
             Rule {
                 id: "method:travel:taxi".into(),
@@ -1746,15 +1870,23 @@ fn htn_planning_hidden_oracle_backtrack() {
         ],
     };
 
-    let output = dispatch_breed_test("htn_planning", &input)
-        .expect("HTN planning should find walk plan");
-    
+    let output =
+        dispatch_breed_test("htn_planning", &input).expect("HTN planning should find walk plan");
+
     assert_eq!(output.selected.as_deref(), Some("op:walk"));
-    
-    let backtrack_steps = output.inference_trace.iter().filter(|t| t.kind == "htn-backtrack").count();
+
+    let backtrack_steps = output
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "htn-backtrack")
+        .count();
     assert!(backtrack_steps > 0, "Must contain htn-backtrack step");
-    
-    let plan_steps = output.inference_trace.iter().filter(|t| t.kind == "htn-plan").count();
+
+    let plan_steps = output
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "htn-plan")
+        .count();
     assert_eq!(plan_steps, 1, "Must contain exactly one htn-plan step");
 }
 
@@ -1788,7 +1920,7 @@ fn dempster_shafer_hidden_oracle() {
     };
 
     let out = dispatch_breed_test("dempster_shafer", &input).unwrap();
-    
+
     let mut bel_zorp = 0.0;
     let mut bel_blee = 0.0;
     let query_zorp = BreedInput {
@@ -1851,12 +1983,12 @@ fn dempster_shafer_two_source_combination() {
     };
 
     let out = dispatch_breed_test("dempster_shafer", &input).unwrap();
-    
+
     let mut bel_zorp = 0.0;
     if let Some(fact) = out.facts.iter().find(|f| f.key == "belief:zorp") {
         bel_zorp = fact.value.parse::<f64>().unwrap();
     }
-    
+
     assert!((bel_zorp - 0.3103448275).abs() < 1e-9);
 }
 
@@ -1930,24 +2062,58 @@ fn partial_order_plan_hidden_threat() {
         goal("g2", "clean(blee_loc)", "true"),
     ];
     input.rules = vec![
-        rule("move-blee-glorp", vec!["robot_at=blee_loc"], "robot_at=glorp_loc;!robot_at=blee_loc;!clean(blee_loc)=true", 1.0),
-        rule("move-glorp-blee", vec!["robot_at=glorp_loc"], "robot_at=blee_loc;!robot_at=glorp_loc;!clean(glorp_loc)=true", 1.0),
-        rule("clean-blee", vec!["robot_at=blee_loc"], "clean(blee_loc)=true", 1.0),
-        rule("pick-zorp-blee", vec!["at(zorp_pkg)=blee_loc", "robot_at=blee_loc"], "holding(zorp_pkg)=true;!at(zorp_pkg)=blee_loc", 1.0),
-        rule("drop-zorp-glorp", vec!["holding(zorp_pkg)=true", "robot_at=glorp_loc"], "at(zorp_pkg)=glorp_loc;!holding(zorp_pkg)=true", 1.0),
+        rule(
+            "move-blee-glorp",
+            vec!["robot_at=blee_loc"],
+            "robot_at=glorp_loc;!robot_at=blee_loc;!clean(blee_loc)=true",
+            1.0,
+        ),
+        rule(
+            "move-glorp-blee",
+            vec!["robot_at=glorp_loc"],
+            "robot_at=blee_loc;!robot_at=glorp_loc;!clean(glorp_loc)=true",
+            1.0,
+        ),
+        rule(
+            "clean-blee",
+            vec!["robot_at=blee_loc"],
+            "clean(blee_loc)=true",
+            1.0,
+        ),
+        rule(
+            "pick-zorp-blee",
+            vec!["at(zorp_pkg)=blee_loc", "robot_at=blee_loc"],
+            "holding(zorp_pkg)=true;!at(zorp_pkg)=blee_loc",
+            1.0,
+        ),
+        rule(
+            "drop-zorp-glorp",
+            vec!["holding(zorp_pkg)=true", "robot_at=glorp_loc"],
+            "at(zorp_pkg)=glorp_loc;!holding(zorp_pkg)=true",
+            1.0,
+        ),
     ];
 
     let output = dispatch_breed_test("partial_order_plan", &input)
         .expect("POP hidden threat must not return Err");
 
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Trace must not be empty"
+    );
 
-    let has_threat = output.inference_trace.iter().any(|t| t.kind == "detect-threat");
+    let has_threat = output
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "detect-threat");
     assert!(has_threat, "Must detect at least one threat");
 
     let has_promote = output.inference_trace.iter().any(|t| t.kind == "promote");
     let has_demote = output.inference_trace.iter().any(|t| t.kind == "demote");
-    assert!(has_promote || has_demote, "Must resolve threat via promote or demote");
+    assert!(
+        has_promote || has_demote,
+        "Must resolve threat via promote or demote"
+    );
 
     assert!(output.selected.is_some(), "Plan must be found");
     let plan = output.selected.as_ref().unwrap();
@@ -1956,9 +2122,12 @@ fn partial_order_plan_hidden_threat() {
     assert!(plan.contains("move-blee-glorp"));
     assert!(plan.contains("drop-zorp-glorp"));
     assert!(plan.contains("clean-blee"));
-    
+
     // Ordering check: clean-blee must be after move-blee-glorp
     let move_pos = plan.find("move-blee-glorp").unwrap();
     let clean_pos = plan.find("clean-blee").unwrap();
-    assert!(clean_pos > move_pos, "clean-blee must happen after move-blee-glorp; plan={plan}");
+    assert!(
+        clean_pos > move_pos,
+        "clean-blee must happen after move-blee-glorp; plan={plan}"
+    );
 }

@@ -66,7 +66,11 @@ impl CognitionBreed for VersionSpace {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["learning".to_string(), "classification".to_string(), "version_space".to_string()]
+        vec![
+            "learning".to_string(),
+            "classification".to_string(),
+            "version_space".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
@@ -79,7 +83,9 @@ impl CognitionBreed for VersionSpace {
             .iter()
             .any(|f| f.key == "example" || f.key.starts_with("vs:example"));
         if !has_attributes || !has_examples {
-            return Err("Version Space requires attribute declarations and example facts".to_string());
+            return Err(
+                "Version Space requires attribute declarations and example facts".to_string(),
+            );
         }
         Ok(())
     }
@@ -89,7 +95,7 @@ impl CognitionBreed for VersionSpace {
 
         // Parse attributes and their domains.
         // Two encodings supported:
-        //  (1) legacy: key="attribute", value="Name:val1,val2,..." (explicit domain)
+        //  (1) historical: key="attribute", value="Name:val1,val2,..." (explicit domain)
         //  (2) fixture: key="vs:attrs", value="name1,name2,..." (positional, domains
         //      inferred from observed example values)
         let mut attr_names = Vec::new();
@@ -107,8 +113,7 @@ impl CognitionBreed for VersionSpace {
             } else if fact.key == "attribute" {
                 if let Some(colon) = fact.value.find(':') {
                     let name = fact.value[..colon].trim().to_string();
-                    let values: Vec<String> = fact
-                        .value[colon + 1..]
+                    let values: Vec<String> = fact.value[colon + 1..]
                         .split(',')
                         .map(|s| s.trim().to_string())
                         .collect();
@@ -121,10 +126,7 @@ impl CognitionBreed for VersionSpace {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "vs-init".to_string(),
-            detail: format!(
-                "Version Space initialized: attributes={:?}",
-                attr_names
-            ),
+            detail: format!("Version Space initialized: attributes={:?}", attr_names),
             depth: 0,
             objects: vec![],
         });
@@ -166,7 +168,7 @@ impl CognitionBreed for VersionSpace {
                 continue;
             }
 
-            // Legacy "k=v,...,label" encoding.
+            // Historical "k=v,...,label" encoding.
             let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
             if parts.len() > 1 {
                 let label_str = parts.last().unwrap().to_lowercase();
@@ -186,7 +188,10 @@ impl CognitionBreed for VersionSpace {
 
                 let mut values = Vec::new();
                 for attr in &attr_names {
-                    let val = val_map.get(attr).cloned().unwrap_or_else(|| "?".to_string());
+                    let val = val_map
+                        .get(attr)
+                        .cloned()
+                        .unwrap_or_else(|| "?".to_string());
                     values.push(val);
                 }
                 examples.push(Example { values, label });
@@ -267,7 +272,8 @@ impl CognitionBreed for VersionSpace {
                                             let h_spec = Hypothesis {
                                                 constraints: specialized,
                                             };
-                                            if s_set.iter().any(|s| h_spec.more_general_or_equal(s)) {
+                                            if s_set.iter().any(|s| h_spec.more_general_or_equal(s))
+                                            {
                                                 new_g.insert(h_spec);
                                             }
                                         }
@@ -325,7 +331,10 @@ impl CognitionBreed for VersionSpace {
                 }
                 let mut values = Vec::new();
                 for attr in &attr_names {
-                    let val = val_map.get(attr).cloned().unwrap_or_else(|| "?".to_string());
+                    let val = val_map
+                        .get(attr)
+                        .cloned()
+                        .unwrap_or_else(|| "?".to_string());
                     values.push(val);
                 }
                 classify_instance = Some(values);
@@ -414,8 +423,15 @@ impl CognitionBreed for VersionSpace {
         if output.inference_trace.is_empty() {
             return Err("Version Space must record update steps".to_string());
         }
-        let kinds: BTreeSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        if !kinds.contains("vs-init") || !kinds.contains("vs-update") || !kinds.contains("vs-verdict") {
+        let kinds: BTreeSet<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
+        if !kinds.contains("vs-init")
+            || !kinds.contains("vs-update")
+            || !kinds.contains("vs-verdict")
+        {
             return Err("Version Space trace missing required kinds".to_string());
         }
         Ok(())

@@ -8,7 +8,7 @@ use crate::breeds::support::csp::{CspSolver, TraceEvent};
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, TraceStep, Fact
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// Constraint Satisfaction Problem breed
@@ -89,7 +89,11 @@ impl CognitionBreed for CspAc3 {
             }
             let domain: Vec<&str> = parts[1].split(',').collect();
             if domain.len() > 16 {
-                return Err(format!("CSP domain size exceeded limit: {} > 16 for var {}", domain.len(), parts[0]));
+                return Err(format!(
+                    "CSP domain size exceeded limit: {} > 16 for var {}",
+                    domain.len(),
+                    parts[0]
+                ));
             }
         }
         Ok(())
@@ -102,7 +106,10 @@ impl CognitionBreed for CspAc3 {
             if fact.key == "csp-var" {
                 let parts: Vec<&str> = fact.value.split(':').collect();
                 if parts.len() != 2 {
-                    return Err(BreedError { breed: self.id(), message: format!("malformed var: {}", fact.value) });
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: format!("malformed var: {}", fact.value),
+                    });
                 }
                 let domain = parts[1].split(',').map(|s| s.to_string()).collect();
                 solver.add_var(parts[0], domain);
@@ -129,7 +136,10 @@ impl CognitionBreed for CspAc3 {
                         solver.add_constraint(parts[0], parts[1], "<");
                     }
                 } else {
-                    return Err(BreedError { breed: self.id(), message: format!("malformed constraint: {}", fact.value) });
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: format!("malformed constraint: {}", fact.value),
+                    });
                 }
             }
         }
@@ -147,18 +157,16 @@ impl CognitionBreed for CspAc3 {
                     "csp-revise".to_string(),
                     format!("x={} y={} pruned={}", x, y, pruned),
                 ),
-                TraceEvent::Assign { var, val } => (
-                    "csp-assign".to_string(),
-                    format!("var={} val={}", var, val),
-                ),
+                TraceEvent::Assign { var, val } => {
+                    ("csp-assign".to_string(), format!("var={} val={}", var, val))
+                }
                 TraceEvent::Propagate { var, domain } => (
                     "csp-propagate".to_string(),
                     format!("var={} domain={:?}", var, domain),
                 ),
-                TraceEvent::Backtrack { var } => (
-                    "csp-backtrack".to_string(),
-                    format!("var={}", var),
-                ),
+                TraceEvent::Backtrack { var } => {
+                    ("csp-backtrack".to_string(), format!("var={}", var))
+                }
                 TraceEvent::Verdict { satisfiable } => (
                     "csp-verdict".to_string(),
                     format!("satisfiable={}", satisfiable),
@@ -216,7 +224,10 @@ mod tests {
     }
 
     fn fact(key: &str, value: &str) -> Fact {
-        Fact { key: key.to_string(), value: value.to_string() }
+        Fact {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
     }
 
     fn input_with(facts: Vec<Fact>) -> BreedInput {
@@ -248,7 +259,9 @@ mod tests {
         let mut facts = vec![];
         let mut big_domain = String::new();
         for i in 0..17 {
-            if i > 0 { big_domain.push(','); }
+            if i > 0 {
+                big_domain.push(',');
+            }
             big_domain.push_str(&format!("d{}", i));
         }
         facts.push(fact("csp-var", &format!("V1:{}", big_domain)));
@@ -277,7 +290,7 @@ mod tests {
         ];
         let input = input_with(facts);
         let out = CspAc3.run(&input).expect("success");
-        // Lex-least: 
+        // Lex-least:
         // V1=B, V2=G, V3=R, V4=R
         assert_eq!(out.explanation, "SAT: V1=B, V2=G, V3=R, V4=R");
         assert!(out.inference_trace.iter().any(|t| t.kind == "csp-assign"));
@@ -300,14 +313,21 @@ mod tests {
         assert_eq!(out.explanation, "UNSAT");
         // Must have domain-wipeout revise step which means some revise causes domain to be empty,
         // or backtrack fails. Since 2 coloring a triangle needs backtrack or wipeout.
-        // Actually AC-3 might not wipeout on K3 with 2 colors without assignments! 
+        // Actually AC-3 might not wipeout on K3 with 2 colors without assignments!
         // K3 with 2 colors: AC-3 alone doesn't wipe out initially because each edge allows {A, B} if neighbors are {A, B}.
         // But with MAC, after assigning V1=A, V2 domain is {B}, V3 domain is {B}.
         // Then AC-3 revises V2 against V3 (both domain {B} and constraint V2!=V3).
         // V2 domain becomes empty. This is a wipeout during revise!
         let has_revise = out.inference_trace.iter().any(|t| t.kind == "csp-revise");
-        assert!(has_revise, "Trace must show a domain-wipeout csp-revise step");
-        let assign_count = out.inference_trace.iter().filter(|t| t.kind == "csp-assign").count();
+        assert!(
+            has_revise,
+            "Trace must show a domain-wipeout csp-revise step"
+        );
+        let assign_count = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "csp-assign")
+            .count();
         assert_eq!(assign_count, 0, "ZERO csp-assign steps");
     }
 
@@ -326,15 +346,24 @@ mod tests {
         let input = input_with(facts);
         let out = CspAc3.run(&input).expect("success");
         assert_eq!(out.explanation, "SAT: 3=3, x=1, y=2, z=3");
-        let backtrack_count = out.inference_trace.iter().filter(|t| t.kind == "csp-backtrack").count();
-        assert_eq!(backtrack_count, 0, "solve with zero backtracks (pure propagation)");
+        let backtrack_count = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "csp-backtrack")
+            .count();
+        assert_eq!(
+            backtrack_count, 0,
+            "solve with zero backtracks (pure propagation)"
+        );
     }
-    
+
     // Determinism audit
     #[test]
     fn determinism_audit() {
         let input = input_with(vec![
-            fact("csp-var", "X:0,1"), fact("csp-var", "Y:0,1"), fact("csp-constraint", "X!=Y")
+            fact("csp-var", "X:0,1"),
+            fact("csp-var", "Y:0,1"),
+            fact("csp-constraint", "X!=Y"),
         ]);
         let r1 = CspAc3.run(&input).unwrap();
         let r2 = CspAc3.run(&input).unwrap();

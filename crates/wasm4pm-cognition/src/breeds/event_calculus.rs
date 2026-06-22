@@ -3,9 +3,7 @@
 //! Steps: `ec-load`, `ec-infer`, `ec-model`.
 //! Supports initially, happens, initiates, terminates in facts and rules.
 
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
-};
+use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Event Calculus Solver
@@ -17,13 +15,17 @@ impl CognitionBreed for EventCalculus {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["reasoning".to_string(), "event_calculus".to_string(), "temporal".to_string()]
+        vec![
+            "reasoning".to_string(),
+            "event_calculus".to_string(),
+            "temporal".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         // Must have at least some initially state or event declaration.
         // Two key conventions are supported:
-        //   legacy: key == "initially" / "happens" (comma-separated value)
+        //   historical: key == "initially" / "happens" (comma-separated value)
         //   canonical (Kowalski-Sergot fixture): "ec:initially" / "ec:happens:<time>"
         let has_initially = input
             .facts
@@ -57,7 +59,10 @@ impl CognitionBreed for EventCalculus {
             // ec:initially -> value=<fluent>
             if let Some(time_str) = fact.key.strip_prefix("ec:happens:") {
                 if let Ok(time) = time_str.trim().parse::<usize>() {
-                    happens.entry(time).or_default().push(fact.value.trim().to_string());
+                    happens
+                        .entry(time)
+                        .or_default()
+                        .push(fact.value.trim().to_string());
                 }
             } else if let Some(event) = fact.key.strip_prefix("ec:initiates:") {
                 let fluent = fact.value.trim().to_string();
@@ -70,7 +75,7 @@ impl CognitionBreed for EventCalculus {
             } else if fact.key == "ec:initially" {
                 initially.insert(fact.value.trim().to_string());
                 all_fluents.insert(fact.value.trim().to_string());
-            // --- legacy comma-separated value convention ---
+            // --- historical comma-separated value convention ---
             } else if fact.key == "initially" {
                 initially.insert(fact.value.clone());
                 all_fluents.insert(fact.value.clone());
@@ -204,7 +209,11 @@ impl CognitionBreed for EventCalculus {
 
             // Holds set rendered as a `;`-separated list so consumers can parse the full
             // (possibly multi-fluent) state without ambiguity against the `,` field separator.
-            let holds_list = holds[t].iter().map(String::as_str).collect::<Vec<_>>().join(";");
+            let holds_list = holds[t]
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>()
+                .join(";");
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "ec-infer".to_string(),
@@ -229,10 +238,7 @@ impl CognitionBreed for EventCalculus {
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "ec-verdict".to_string(),
-                detail: format!(
-                    "{}: HoldsAt({}@{}) = {}",
-                    goal_id, fluent, time, holds_at
-                ),
+                detail: format!("{}: HoldsAt({}@{}) = {}", goal_id, fluent, time, holds_at),
                 depth: 0,
                 objects: vec![],
             });
@@ -284,7 +290,11 @@ impl CognitionBreed for EventCalculus {
         if output.inference_trace.is_empty() {
             return Err("Event Calculus must record inference steps".to_string());
         }
-        let kinds: BTreeSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
+        let kinds: BTreeSet<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
         if !kinds.contains("ec-load") || !kinds.contains("ec-model") {
             return Err("Event Calculus trace missing required kinds".to_string());
         }

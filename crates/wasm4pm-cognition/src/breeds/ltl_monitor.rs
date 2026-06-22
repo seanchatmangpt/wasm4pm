@@ -1,8 +1,8 @@
+use crate::breeds::support::formula::Formula;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeSet, HashSet};
-use crate::breeds::support::formula::Formula;
 
 /// LTL Monitor breed.
 /// Implements Havelund–Roşu progression rewriting over Ltl AST.
@@ -29,21 +29,32 @@ impl Ltl {
             Formula::False => Ltl::False,
             Formula::Atom(s) => Ltl::Atom(s.clone()),
             Formula::Not(a) => Ltl::Not(Box::new(Ltl::from_formula(a))),
-            Formula::And(a, b) => Ltl::And(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
-            Formula::Or(a, b) => Ltl::Or(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
-            Formula::Implies(a, b) => {
-                Ltl::Or(
-                    Box::new(Ltl::Not(Box::new(Ltl::from_formula(a)))),
-                    Box::new(Ltl::from_formula(b))
-                )
-            }
+            Formula::And(a, b) => Ltl::And(
+                Box::new(Ltl::from_formula(a)),
+                Box::new(Ltl::from_formula(b)),
+            ),
+            Formula::Or(a, b) => Ltl::Or(
+                Box::new(Ltl::from_formula(a)),
+                Box::new(Ltl::from_formula(b)),
+            ),
+            Formula::Implies(a, b) => Ltl::Or(
+                Box::new(Ltl::Not(Box::new(Ltl::from_formula(a)))),
+                Box::new(Ltl::from_formula(b)),
+            ),
             Formula::Next(a) => Ltl::Next(Box::new(Ltl::from_formula(a))),
             Formula::Eventually(a) => Ltl::Eventual(Box::new(Ltl::from_formula(a))),
             Formula::Globally(a) => Ltl::Always(Box::new(Ltl::from_formula(a))),
-            Formula::Until(a, b) => Ltl::Until(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
-            Formula::Release(a, b) => {
-                Ltl::Until(Box::new(Ltl::from_formula(b)), Box::new(Ltl::And(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b)))))
-            }
+            Formula::Until(a, b) => Ltl::Until(
+                Box::new(Ltl::from_formula(a)),
+                Box::new(Ltl::from_formula(b)),
+            ),
+            Formula::Release(a, b) => Ltl::Until(
+                Box::new(Ltl::from_formula(b)),
+                Box::new(Ltl::And(
+                    Box::new(Ltl::from_formula(a)),
+                    Box::new(Ltl::from_formula(b)),
+                )),
+            ),
             Formula::AllPaths(a) | Formula::ExistsPath(a) => Ltl::from_formula(a),
         }
     }
@@ -54,7 +65,13 @@ impl LtlMonitor {
         match phi {
             Ltl::True => Ltl::True,
             Ltl::False => Ltl::False,
-            Ltl::Atom(a) => if event.contains(a) { Ltl::True } else { Ltl::False },
+            Ltl::Atom(a) => {
+                if event.contains(a) {
+                    Ltl::True
+                } else {
+                    Ltl::False
+                }
+            }
             Ltl::Not(p) => {
                 let pp = Self::progress(p, event);
                 match pp {
@@ -62,47 +79,71 @@ impl LtlMonitor {
                     Ltl::False => Ltl::True,
                     _ => Ltl::Not(Box::new(pp)),
                 }
-            },
+            }
             Ltl::And(p, q) => {
                 let pp = Self::progress(p, event);
                 let qq = Self::progress(q, event);
-                if pp == Ltl::False || qq == Ltl::False { return Ltl::False; }
-                if pp == Ltl::True { return qq; }
-                if qq == Ltl::True { return pp; }
+                if pp == Ltl::False || qq == Ltl::False {
+                    return Ltl::False;
+                }
+                if pp == Ltl::True {
+                    return qq;
+                }
+                if qq == Ltl::True {
+                    return pp;
+                }
                 Ltl::And(Box::new(pp), Box::new(qq))
-            },
+            }
             Ltl::Or(p, q) => {
                 let pp = Self::progress(p, event);
                 let qq = Self::progress(q, event);
-                if pp == Ltl::True || qq == Ltl::True { return Ltl::True; }
-                if pp == Ltl::False { return qq; }
-                if qq == Ltl::False { return pp; }
+                if pp == Ltl::True || qq == Ltl::True {
+                    return Ltl::True;
+                }
+                if pp == Ltl::False {
+                    return qq;
+                }
+                if qq == Ltl::False {
+                    return pp;
+                }
                 Ltl::Or(Box::new(pp), Box::new(qq))
-            },
+            }
             Ltl::Next(p) => *p.clone(),
             Ltl::Always(p) => {
                 let pp = Self::progress(p, event);
-                if pp == Ltl::False { return Ltl::False; }
-                if pp == Ltl::True { return Ltl::Always(p.clone()); }
+                if pp == Ltl::False {
+                    return Ltl::False;
+                }
+                if pp == Ltl::True {
+                    return Ltl::Always(p.clone());
+                }
                 Ltl::And(Box::new(pp), Box::new(Ltl::Always(p.clone())))
-            },
+            }
             Ltl::Eventual(p) => {
                 let pp = Self::progress(p, event);
-                if pp == Ltl::True { return Ltl::True; }
-                if pp == Ltl::False { return Ltl::Eventual(p.clone()); }
+                if pp == Ltl::True {
+                    return Ltl::True;
+                }
+                if pp == Ltl::False {
+                    return Ltl::Eventual(p.clone());
+                }
                 Ltl::Or(Box::new(pp), Box::new(Ltl::Eventual(p.clone())))
-            },
+            }
             Ltl::Until(p, q) => {
                 let qq = Self::progress(q, event);
-                if qq == Ltl::True { return Ltl::True; }
+                if qq == Ltl::True {
+                    return Ltl::True;
+                }
                 let pp = Self::progress(p, event);
-                if pp == Ltl::False { return qq; }
+                if pp == Ltl::False {
+                    return qq;
+                }
                 Ltl::Or(
                     Box::new(qq),
                     Box::new(Ltl::And(
                         Box::new(pp),
-                        Box::new(Ltl::Until(p.clone(), q.clone()))
-                    ))
+                        Box::new(Ltl::Until(p.clone(), q.clone())),
+                    )),
                 )
             }
         }
@@ -130,11 +171,18 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["runtime_monitoring".to_string(), "ltl_progression".to_string()]
+        vec![
+            "runtime_monitoring".to_string(),
+            "ltl_progression".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let formula_str = if let Some(formula_fact) = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula") {
+        let formula_str = if let Some(formula_fact) = input
+            .facts
+            .iter()
+            .find(|f| f.key == "ltl:formula" || f.key == "formula")
+        {
             formula_fact.value.clone()
         } else if !input.intent.is_empty() {
             input.intent.clone()
@@ -143,11 +191,14 @@ impl CognitionBreed for LtlMonitor {
         };
 
         if formula_str.len() > 256 {
-            return Err(format!("Formula exceeds 256 chars (len={})", formula_str.len()));
+            return Err(format!(
+                "Formula exceeds 256 chars (len={})",
+                formula_str.len()
+            ));
         }
 
-        let formula_ast = Formula::parse(&formula_str)
-            .map_err(|e| format!("Formula parse error: {}", e))?;
+        let formula_ast =
+            Formula::parse(&formula_str).map_err(|e| format!("Formula parse error: {}", e))?;
 
         if formula_ast.size() > 100 {
             return Err("Formula exceeds node limit".to_string());
@@ -156,7 +207,11 @@ impl CognitionBreed for LtlMonitor {
         let trace_count = if !input.cases.is_empty() {
             input.cases.len()
         } else {
-            input.facts.iter().filter(|f| f.key.starts_with("trace:")).count()
+            input
+                .facts
+                .iter()
+                .filter(|f| f.key.starts_with("trace:"))
+                .count()
         };
 
         if trace_count > 1000 {
@@ -167,12 +222,19 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let formula_str = if let Some(formula_fact) = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula") {
+        let formula_str = if let Some(formula_fact) = input
+            .facts
+            .iter()
+            .find(|f| f.key == "ltl:formula" || f.key == "formula")
+        {
             formula_fact.value.clone()
         } else if !input.intent.is_empty() {
             input.intent.clone()
         } else {
-            return Err(BreedError { breed: self.id(), message: "missing ltl:formula fact".to_string() });
+            return Err(BreedError {
+                breed: self.id(),
+                message: "missing ltl:formula fact".to_string(),
+            });
         };
 
         let mut trace_events: Vec<(usize, BTreeSet<String>)> = Vec::new();
@@ -185,7 +247,12 @@ impl CognitionBreed for LtlMonitor {
             for fact in &input.facts {
                 if let Some(num_str) = fact.key.strip_prefix("trace:") {
                     if let Ok(idx) = num_str.parse::<usize>() {
-                        let ev: BTreeSet<String> = fact.value.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
+                        let ev: BTreeSet<String> = fact
+                            .value
+                            .split(',')
+                            .filter(|s| !s.is_empty())
+                            .map(|s| s.trim().to_string())
+                            .collect();
                         trace_events.push((idx, ev));
                     }
                 }
@@ -258,7 +325,10 @@ impl CognitionBreed for LtlMonitor {
             candidates: input.candidates.clone(),
             facts: out_facts,
             selected: Some(final_verdict.to_string()),
-            explanation: format!("LTL formula '{}' evaluated to {}", formula_str, final_verdict),
+            explanation: format!(
+                "LTL formula '{}' evaluated to {}",
+                formula_str, final_verdict
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
@@ -267,7 +337,10 @@ impl CognitionBreed for LtlMonitor {
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         let has_init = output.inference_trace.iter().any(|t| t.kind == "ltl-init");
-        let has_verdict = output.inference_trace.iter().any(|t| t.kind == "ltl-verdict");
+        let has_verdict = output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "ltl-verdict");
         if !has_init || !has_verdict {
             return Err("Trace must include ltl-init and ltl-verdict".to_string());
         }
@@ -287,7 +360,10 @@ mod tests {
         let input = BreedInput {
             intent: "".into(),
             candidates: vec![],
-            facts: vec![Fact { key: "ltl:formula".into(), value: long_formula }],
+            facts: vec![Fact {
+                key: "ltl:formula".into(),
+                value: long_formula,
+            }],
             cases: vec![],
             rules: vec![],
             goals: vec![],
@@ -300,9 +376,15 @@ mod tests {
     #[test]
     fn test_refusal_trace_too_long() {
         let breed = LtlMonitor;
-        let mut facts = vec![Fact { key: "ltl:formula".into(), value: "true".into() }];
+        let mut facts = vec![Fact {
+            key: "ltl:formula".into(),
+            value: "true".into(),
+        }];
         for i in 0..1001 {
-            facts.push(Fact { key: format!("trace:{}", i), value: "".into() });
+            facts.push(Fact {
+                key: format!("trace:{}", i),
+                value: "".into(),
+            });
         }
         let input = BreedInput {
             intent: "".into(),
@@ -324,11 +406,26 @@ mod tests {
             intent: "".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "ltl:formula".into(), value: "G zorp".into() },
-                Fact { key: "trace:0".into(), value: "zorp".into() },
-                Fact { key: "trace:1".into(), value: "zorp".into() },
-                Fact { key: "trace:2".into(), value: "zorp".into() },
-                Fact { key: "trace:3".into(), value: "foo".into() },
+                Fact {
+                    key: "ltl:formula".into(),
+                    value: "G zorp".into(),
+                },
+                Fact {
+                    key: "trace:0".into(),
+                    value: "zorp".into(),
+                },
+                Fact {
+                    key: "trace:1".into(),
+                    value: "zorp".into(),
+                },
+                Fact {
+                    key: "trace:2".into(),
+                    value: "zorp".into(),
+                },
+                Fact {
+                    key: "trace:3".into(),
+                    value: "foo".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -337,7 +434,11 @@ mod tests {
         };
         let out = breed.run(&input).unwrap();
         assert_eq!(out.selected.as_deref(), Some("false"));
-        let t_progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+        let t_progress = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-progress")
+            .count();
         assert_eq!(t_progress, 4); // evaluated at 0, 1, 2, 3 and failed at 3
     }
 
@@ -348,10 +449,22 @@ mod tests {
             intent: "".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "ltl:formula".into(), value: "quux U blee".into() },
-                Fact { key: "trace:0".into(), value: "quux".into() },
-                Fact { key: "trace:1".into(), value: "quux".into() },
-                Fact { key: "trace:2".into(), value: "blee".into() },
+                Fact {
+                    key: "ltl:formula".into(),
+                    value: "quux U blee".into(),
+                },
+                Fact {
+                    key: "trace:0".into(),
+                    value: "quux".into(),
+                },
+                Fact {
+                    key: "trace:1".into(),
+                    value: "quux".into(),
+                },
+                Fact {
+                    key: "trace:2".into(),
+                    value: "blee".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -360,7 +473,11 @@ mod tests {
         };
         let out = breed.run(&input).unwrap();
         assert_eq!(out.selected.as_deref(), Some("true"));
-        let t_progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+        let t_progress = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-progress")
+            .count();
         assert_eq!(t_progress, 3); // 0, 1, 2 (satisfied at 2)
     }
 
@@ -371,8 +488,14 @@ mod tests {
             intent: "".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "ltl:formula".into(), value: "G zorp".into() },
-                Fact { key: "trace:0".into(), value: "zorp".into() },
+                Fact {
+                    key: "ltl:formula".into(),
+                    value: "G zorp".into(),
+                },
+                Fact {
+                    key: "trace:0".into(),
+                    value: "zorp".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],

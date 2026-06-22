@@ -8,8 +8,8 @@
 //! Tests use graceful skip (if-let) if the fixture file is absent — they do not panic on
 //! missing files, but they do panic on bad parses or failed runs once the fixture is present.
 
-use wasm4pm_cognition::breeds::CognitionBreed;
 use std::fs;
+use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::*;
 
 // ============================================================================
@@ -41,9 +41,8 @@ where
 /// missing or unparseable fixture, per the no-silent-skip law.
 fn load_fixture(breed: &str) -> (serde_json::Value, BreedInput) {
     let path = format!("tests/fixtures/papers/{breed}.json");
-    let content = fs::read_to_string(&path).unwrap_or_else(|_| {
-        panic!("MISSING FIXTURE: {path} — paper-grounded tests must not skip")
-    });
+    let content = fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {path} — paper-grounded tests must not skip"));
     let json: serde_json::Value = serde_json::from_str(&content)
         .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {path}: {e}"));
     let inp = &json["input"];
@@ -1805,7 +1804,11 @@ fn ltl_monitor_paper_grounded() {
             }
 
             let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                intent: inp
+                    .get("intent")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 candidates: vec![],
                 facts: vec![],
                 cases,
@@ -1817,9 +1820,15 @@ fn ltl_monitor_paper_grounded() {
             let breed = ltl_monitor::LtlMonitor;
             assert!(breed.preconditions(&input).is_ok());
 
-            let output = breed.run(&input).expect("LtlMonitor paper grounded run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("LtlMonitor paper grounded run must succeed");
             assert_eq!(output.breed, BreedId::LtlMonitor);
-            let conforms = output.facts.iter().find(|f| f.key == "conforms").expect("conforms fact exists");
+            let conforms = output
+                .facts
+                .iter()
+                .find(|f| f.key == "conforms")
+                .expect("conforms fact exists");
             assert_eq!(conforms.value, "true");
         }
     }
@@ -1847,7 +1856,11 @@ fn allen_temporal_paper_grounded() {
             }
 
             let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                intent: inp
+                    .get("intent")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 candidates: vec![],
                 facts,
                 cases: vec![],
@@ -1859,9 +1872,15 @@ fn allen_temporal_paper_grounded() {
             let breed = allen_temporal::AllenTemporal;
             assert!(breed.preconditions(&input).is_ok());
 
-            let output = breed.run(&input).expect("AllenTemporal paper grounded run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("AllenTemporal paper grounded run must succeed");
             assert_eq!(output.breed, BreedId::AllenTemporal);
-            let rel = output.facts.iter().find(|f| f.key == "relation:A:C").expect("relation exists");
+            let rel = output
+                .facts
+                .iter()
+                .find(|f| f.key == "relation:A:C")
+                .expect("relation exists");
             assert_eq!(rel.value, "p");
         }
     }
@@ -1896,7 +1915,13 @@ fn fuzzy_logic_paper_grounded() {
                         r.get("conclusion").and_then(|v| v.as_str()),
                         r.get("certainty").and_then(|v| v.as_f64()),
                     ) {
-                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+                        let premises: Vec<String> = r
+                            .get("premise")
+                            .and_then(|v| v.as_array())
+                            .unwrap()
+                            .iter()
+                            .map(|v| v.as_str().unwrap().to_string())
+                            .collect();
                         rules.push(Rule {
                             id: id.to_string(),
                             premise: premises,
@@ -1908,7 +1933,11 @@ fn fuzzy_logic_paper_grounded() {
             }
 
             let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                intent: inp
+                    .get("intent")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 candidates: vec![],
                 facts,
                 cases: vec![],
@@ -1920,9 +1949,15 @@ fn fuzzy_logic_paper_grounded() {
             let breed = fuzzy_logic::FuzzyLogic;
             assert!(breed.preconditions(&input).is_ok());
 
-            let output = breed.run(&input).expect("FuzzyLogic paper grounded run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("FuzzyLogic paper grounded run must succeed");
             assert_eq!(output.breed, BreedId::FuzzyLogic);
-            let fact = output.facts.iter().find(|f| f.key == "ventilation").expect("ventilation exists");
+            let fact = output
+                .facts
+                .iter()
+                .find(|f| f.key == "ventilation")
+                .expect("ventilation exists");
             let val: f64 = fact.value.parse().unwrap();
             // Paper-grounded: assert the fixture's published Mamdani centroid value,
             // not a hard-coded constant (Mamdani 1975 §4, defuzzified_ventilation).
@@ -1968,7 +2003,10 @@ fn bayesian_network_paper_grounded() {
         .get("value")
         .and_then(|v| v.as_f64())
         .expect("fixture must declare expected.value (published posterior)");
-    let tolerance = exp.get("tolerance").and_then(|v| v.as_f64()).unwrap_or(1e-4);
+    let tolerance = exp
+        .get("tolerance")
+        .and_then(|v| v.as_f64())
+        .unwrap_or(1e-4);
 
     let fact = output
         .facts
@@ -2007,7 +2045,11 @@ fn csp_ac3_paper_grounded() {
             }
 
             let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                intent: inp
+                    .get("intent")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 candidates: vec![],
                 facts,
                 cases: vec![],
@@ -2019,7 +2061,9 @@ fn csp_ac3_paper_grounded() {
             let breed = csp_ac3::CspAc3;
             assert!(breed.preconditions(&input).is_ok());
 
-            let output = breed.run(&input).expect("CspAc3 paper grounded run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("CspAc3 paper grounded run must succeed");
             assert_eq!(output.breed, BreedId::CspAc3);
             assert!(output.selected.is_some());
             assert_eq!(output.explanation, "SAT: V1=B, V2=G");
@@ -2100,7 +2144,13 @@ fn htn_planning_paper_grounded() {
                         r.get("conclusion").and_then(|v| v.as_str()),
                         r.get("certainty").and_then(|v| v.as_f64()),
                     ) {
-                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+                        let premises: Vec<String> = r
+                            .get("premise")
+                            .and_then(|v| v.as_array())
+                            .unwrap()
+                            .iter()
+                            .map(|v| v.as_str().unwrap().to_string())
+                            .collect();
                         rules.push(Rule {
                             id: id.to_string(),
                             premise: premises,
@@ -2129,7 +2179,11 @@ fn htn_planning_paper_grounded() {
             }
 
             let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                intent: inp
+                    .get("intent")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 candidates: vec![],
                 facts: vec![],
                 cases: vec![],
@@ -2141,7 +2195,9 @@ fn htn_planning_paper_grounded() {
             let breed = htn_planning::HtnPlanning;
             assert!(breed.preconditions(&input).is_ok());
 
-            let output = breed.run(&input).expect("HtnPlanning paper grounded run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("HtnPlanning paper grounded run must succeed");
             assert_eq!(output.breed, BreedId::HtnPlanning);
             assert_eq!(output.selected.as_deref(), Some("op:walk"));
         }
@@ -2188,7 +2244,14 @@ fn dempster_shafer_paper_grounded() {
             assert!(breed.preconditions(&input).is_ok());
             let output = breed.run(&input).expect("DempsterShafer run must succeed");
             assert_eq!(output.breed, BreedId::DempsterShafer);
-            let bel_val = output.facts.iter().find(|f| f.key == "belief:flim").unwrap().value.parse::<f64>().unwrap();
+            let bel_val = output
+                .facts
+                .iter()
+                .find(|f| f.key == "belief:flim")
+                .unwrap()
+                .value
+                .parse::<f64>()
+                .unwrap();
             let expected_bel = json["expected"]["belief"].as_f64().unwrap();
             assert!((bel_val - expected_bel).abs() < 1e-5);
         }
@@ -2221,9 +2284,14 @@ fn frames_inheritance_paper_grounded() {
             };
             let breed = frames_inheritance::FramesInheritance;
             assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("FramesInheritance run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("FramesInheritance run must succeed");
             assert_eq!(output.breed, BreedId::FramesInheritance);
-            assert_eq!(output.selected.as_deref(), Some(json["expected"]["resolved_value"].as_str().unwrap()));
+            assert_eq!(
+                output.selected.as_deref(),
+                Some(json["expected"]["resolved_value"].as_str().unwrap())
+            );
         }
     }
 }
@@ -2246,7 +2314,12 @@ fn ebl_paper_grounded() {
             let mut rules = Vec::new();
             if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
                 for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    let premises: Vec<String> = r["premise"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|p| p.as_str().unwrap().to_string())
+                        .collect();
                     rules.push(Rule {
                         id: r["id"].as_str().unwrap().to_string(),
                         premise: premises,
@@ -2294,7 +2367,12 @@ fn asp_paper_grounded() {
             let mut rules = Vec::new();
             if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
                 for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    let premises: Vec<String> = r["premise"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|p| p.as_str().unwrap().to_string())
+                        .collect();
                     rules.push(Rule {
                         id: r["id"].as_str().unwrap().to_string(),
                         premise: premises,
@@ -2327,8 +2405,15 @@ fn asp_paper_grounded() {
             assert!(breed.preconditions(&input).is_ok());
             let output = breed.run(&input).expect("ASP run must succeed");
             assert_eq!(output.breed, BreedId::Asp);
-            let count_fact = output.facts.iter().find(|f| f.key == "stable_models_count").unwrap();
-            assert_eq!(count_fact.value, json["expected"]["stable_models_count"].as_str().unwrap());
+            let count_fact = output
+                .facts
+                .iter()
+                .find(|f| f.key == "stable_models_count")
+                .unwrap();
+            assert_eq!(
+                count_fact.value,
+                json["expected"]["stable_models_count"].as_str().unwrap()
+            );
         }
     }
 }
@@ -2370,10 +2455,15 @@ fn description_logic_paper_grounded() {
             };
             let breed = description_logic::DescriptionLogic;
             assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("DescriptionLogic run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("DescriptionLogic run must succeed");
             assert_eq!(output.breed, BreedId::DescriptionLogic);
             let consistent_fact = output.facts.iter().find(|f| f.key == "consistent").unwrap();
-            assert_eq!(consistent_fact.value, json["expected"]["consistent"].as_str().unwrap());
+            assert_eq!(
+                consistent_fact.value,
+                json["expected"]["consistent"].as_str().unwrap()
+            );
             let member_xc = output.facts.iter().find(|f| f.key == "member:x:C");
             assert!(member_xc.is_some());
         }
@@ -2398,7 +2488,12 @@ fn abductive_lp_paper_grounded() {
             let mut rules = Vec::new();
             if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
                 for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    let premises: Vec<String> = r["premise"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|p| p.as_str().unwrap().to_string())
+                        .collect();
                     rules.push(Rule {
                         id: r["id"].as_str().unwrap().to_string(),
                         premise: premises,
@@ -2441,9 +2536,19 @@ fn abductive_lp_paper_grounded() {
             assert!(breed.preconditions(&input).is_ok());
             let output = breed.run(&input).expect("AbductiveLp run must succeed");
             assert_eq!(output.breed, BreedId::AbductiveLp);
-            let count_fact = output.facts.iter().find(|f| f.key == "explanations_count").unwrap();
-            assert_eq!(count_fact.value, json["expected"]["explanations_count"].as_str().unwrap());
-            assert_eq!(output.selected.as_deref(), Some(json["expected"]["selected"].as_str().unwrap()));
+            let count_fact = output
+                .facts
+                .iter()
+                .find(|f| f.key == "explanations_count")
+                .unwrap();
+            assert_eq!(
+                count_fact.value,
+                json["expected"]["explanations_count"].as_str().unwrap()
+            );
+            assert_eq!(
+                output.selected.as_deref(),
+                Some(json["expected"]["selected"].as_str().unwrap())
+            );
         }
     }
 }
@@ -2466,7 +2571,12 @@ fn abductive_ibe_paper_grounded() {
             let mut rules = Vec::new();
             if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
                 for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    let premises: Vec<String> = r["premise"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|p| p.as_str().unwrap().to_string())
+                        .collect();
                     rules.push(Rule {
                         id: r["id"].as_str().unwrap().to_string(),
                         premise: premises,
@@ -2499,14 +2609,13 @@ fn abductive_ibe_paper_grounded() {
             assert!(breed.preconditions(&input).is_ok());
             let output = breed.run(&input).expect("AbductiveIbe run must succeed");
             assert_eq!(output.breed, BreedId::AbductiveIbe);
-            assert_eq!(output.selected.as_deref(), Some(json["expected"]["selected"].as_str().unwrap()));
+            assert_eq!(
+                output.selected.as_deref(),
+                Some(json["expected"]["selected"].as_str().unwrap())
+            );
         }
     }
 }
-
-
-
-
 
 // ============================================================================
 // Paper-grounded tests generated for breeds with fixtures but no prior test
@@ -2548,10 +2657,10 @@ fn act_r_paper_grounded() {
     );
 
     // Verify the activation value in the trace matches the paper's predicted A(fact34) ≈ 1.1667
-    let expected_activation = exp
-        .get("activation_fact34")
-        .and_then(|v| v.as_f64())
-        .expect("fixture must declare expected.activation_fact34") as f32;
+    let expected_activation =
+        exp.get("activation_fact34")
+            .and_then(|v| v.as_f64())
+            .expect("fixture must declare expected.activation_fact34") as f32;
     let tolerance = exp
         .get("activation_tolerance")
         .and_then(|v| v.as_f64())
@@ -2564,9 +2673,7 @@ fn act_r_paper_grounded() {
     let actual_activation = retrieve_step
         .detail
         .split_whitespace()
-        .find_map(|tok| {
-            tok.strip_prefix("A=").and_then(|v| v.parse::<f32>().ok())
-        })
+        .find_map(|tok| tok.strip_prefix("A=").and_then(|v| v.parse::<f32>().ok()))
         .expect("retrieve-chunk detail must contain A=<activation>");
     assert!(
         (actual_activation - expected_activation).abs() < tolerance,
@@ -2582,7 +2689,10 @@ fn act_r_paper_grounded() {
         .and_then(|v| v.as_str())
         .expect("fixture must declare expected.sum_fact.value");
     assert!(
-        output.facts.iter().any(|f| f.key == "sum" && f.value == expected_sum),
+        output
+            .facts
+            .iter()
+            .any(|f| f.key == "sum" && f.value == expected_sum),
         "sum={} from fact34 must propagate into working memory / output facts",
         expected_sum
     );
@@ -2646,7 +2756,9 @@ fn analogy_sme_paper_grounded() {
         .facts
         .iter()
         .filter(|f| f.key.starts_with("inference:"))
-        .any(|f| f.value.contains("cause") && f.value.contains("nucleus") && f.value.contains("electron"));
+        .any(|f| {
+            f.value.contains("cause") && f.value.contains("nucleus") && f.value.contains("electron")
+        });
     assert!(
         inference_found,
         "analogy_sme must carry over base:2 (cause expression) as candidate inference \
@@ -2688,7 +2800,7 @@ fn belief_merging_paper_grounded() {
     );
 
     let exp = &json["expected"];
-    
+
     // Paper-grounded assertion: Konieczny & Pino Pérez 2002.
     // The discriminating profile E = {K1 = p∧q, K2 = p∧q, K3 = ¬p∧¬q} with IC = ⊤.
     // Σ (majoritarian) selects the unique minimal world (p,q) with distance sum=2.
@@ -2710,11 +2822,9 @@ fn belief_merging_paper_grounded() {
         Some(exp_sum_world),
         "Sigma must select '{}' (majority world) per Konieczny & Pino Pérez 2002 Section 5 ({})",
         exp_sum_world,
-        exp["notes"]
-            .as_str()
-            .unwrap_or("majoritarian operator")
+        exp["notes"].as_str().unwrap_or("majoritarian operator")
     );
-    
+
     // Verify bm:model_count fact is present and correct
     let model_count_fact = output
         .facts
@@ -2725,7 +2835,7 @@ fn belief_merging_paper_grounded() {
         model_count_fact.value, "1",
         "Sigma aggregation must produce exactly 1 model"
     );
-    
+
     // Verify the selected model appears in bm:model:0
     let model_0 = output
         .facts
@@ -2784,9 +2894,7 @@ fn circumscription_paper_grounded() {
         "flies_tweety must be entailed (McCarthy 1980 p.27-39): ab_bird_tweety stays false by minimization"
     );
     assert_eq!(
-        entailed
-            .get("flies_tweety")
-            .and_then(|v| v.as_bool()),
+        entailed.get("flies_tweety").and_then(|v| v.as_bool()),
         Some(true),
         "fixture expected.entailed.flies_tweety must be true"
     );
@@ -2802,9 +2910,7 @@ fn circumscription_paper_grounded() {
         "flies_opus must NOT be entailed (McCarthy 1980 p.27-39): ab_bird_opus is forced by penguin_opus, blocking the rule"
     );
     assert_eq!(
-        entailed
-            .get("flies_opus")
-            .and_then(|v| v.as_bool()),
+        entailed.get("flies_opus").and_then(|v| v.as_bool()),
         Some(false),
         "fixture expected.entailed.flies_opus must be false"
     );
@@ -2837,7 +2943,7 @@ fn circumscription_paper_grounded() {
 fn clp_paper_grounded() {
     let (json, input) = load_fixture("clp");
     let breed = clp::Clp;
-    
+
     // The CLP implementation expects fact keys "clp-var" and "clp-constraint" (with hyphens),
     // but the fixture provides "clp:var:x" and "clp:constraint:c1" (with colons).
     // This causes preconditions to fail. The test documents this structural gap.
@@ -2845,27 +2951,35 @@ fn clp_paper_grounded() {
         Ok(_) => {
             // If preconditions unexpectedly pass (fixture or impl corrected),
             // verify the solution matches the Jaffar & Lassez 1987 scheme expectation.
-            let output = breed.run(&input).expect("clp paper-grounded run must succeed");
+            let output = breed
+                .run(&input)
+                .expect("clp paper-grounded run must succeed");
             assert_eq!(output.breed, BreedId::Clp);
-            assert!(!output.inference_trace.is_empty(), "clp trace must be non-empty");
-            
+            assert!(
+                !output.inference_trace.is_empty(),
+                "clp trace must be non-empty"
+            );
+
             let exp = &json["expected"];
             let expected_solution = exp
                 .get("value")
                 .and_then(|v| v.as_str())
                 .expect("fixture must declare expected.value");
-            
+
             // The explanation field formats the solution as "SAT: x=6, y=3"
             // (sorted key=value pairs joined by ", "). Extract and compare.
             assert!(
-                output.explanation.contains(expected_solution.replace(",", ", ").as_str()),
+                output
+                    .explanation
+                    .contains(expected_solution.replace(",", ", ").as_str()),
                 "clp solution must match Jaffar & Lassez 1987 paper: expected={}, got={}",
                 expected_solution,
                 output.explanation
             );
-            
+
             // Verify zero-backtrack behavior: propagation alone solves the constraints.
-            let backtrack_count = output.inference_trace
+            let backtrack_count = output
+                .inference_trace
                 .iter()
                 .filter(|t| t.kind == "clp-backtrack")
                 .count();
@@ -2887,18 +3001,26 @@ fn clp_paper_grounded() {
 fn construction_grammar_paper_grounded() {
     let (json, input) = load_fixture("construction_grammar");
     let breed = construction_grammar::ConstructionGrammar;
-    assert!(breed.preconditions(&input).is_ok(), "construction_grammar fixture must pass preconditions");
-    let output = breed.run(&input).expect("construction_grammar paper-grounded run must succeed");
+    assert!(
+        breed.preconditions(&input).is_ok(),
+        "construction_grammar fixture must pass preconditions"
+    );
+    let output = breed
+        .run(&input)
+        .expect("construction_grammar paper-grounded run must succeed");
     assert_eq!(output.breed, BreedId::ConstructionGrammar);
-    assert!(!output.inference_trace.is_empty(), "construction_grammar trace must be non-empty");
-    
+    assert!(
+        !output.inference_trace.is_empty(),
+        "construction_grammar trace must be non-empty"
+    );
+
     let exp = &json["expected"];
-    
+
     // Paper-grounded assertion: Goldberg 1995 Chapter 1-2 — "pat faxed bill the letter"
     // is licensed by the ditransitive construction (X CAUSES Y to RECEIVE Z).
     // The verb 'fax' is lexically transitive (arity 2), but the construction demands
     // arity 3, triggering coercion (the construction supplies the CAUSE-RECEIVE meaning).
-    
+
     // Assert selected construction is ditransitive (not transitive)
     let expected_construction = exp["construction"]
         .as_str()
@@ -2908,9 +3030,12 @@ fn construction_grammar_paper_grounded() {
         Some(expected_construction),
         "construction_grammar must match ditransitive construction per Goldberg 1995 §1"
     );
-    
+
     // Assert coercion flag: transitive verb in ditransitive frame → true
-    let coerced_fact = output.facts.iter().find(|f| f.key == "cxg:coerced")
+    let coerced_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "cxg:coerced")
         .expect("cxg:coerced fact must exist");
     let expected_coerced = exp["coerced"]
         .as_str()
@@ -2919,9 +3044,12 @@ fn construction_grammar_paper_grounded() {
         coerced_fact.value, expected_coerced,
         "coercion must be true: transitive 'fax' in ditransitive frame per Goldberg 1995 §1"
     );
-    
+
     // Assert meaning frame is CAUSE-RECEIVE
-    let meaning_fact = output.facts.iter().find(|f| f.key == "cxg:meaning")
+    let meaning_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "cxg:meaning")
         .expect("cxg:meaning fact must exist");
     let expected_frame = exp["meaning_frame"]
         .as_str()
@@ -2931,23 +3059,29 @@ fn construction_grammar_paper_grounded() {
         "ditransitive frame must supply CAUSE-RECEIVE meaning; got: {}",
         meaning_fact.value
     );
-    
+
     // Assert slot bindings: rec=bill, theme=the letter
     let expected_rec = exp["slot_rec"]
         .as_str()
         .expect("fixture must declare expected.slot_rec");
-    let rec_fact = output.facts.iter().find(|f| f.key == "cxg:slot:rec")
+    let rec_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "cxg:slot:rec")
         .expect("cxg:slot:rec fact must exist");
     assert_eq!(
         rec_fact.value, expected_rec,
         "recipient slot must be '{}' (first NP after verb) per Goldberg 1995 ditransitive frame",
         expected_rec
     );
-    
+
     let expected_theme = exp["slot_theme"]
         .as_str()
         .expect("fixture must declare expected.slot_theme");
-    let theme_fact = output.facts.iter().find(|f| f.key == "cxg:slot:theme")
+    let theme_fact = output
+        .facts
+        .iter()
+        .find(|f| f.key == "cxg:slot:theme")
         .expect("cxg:slot:theme fact must exist");
     assert_eq!(
         theme_fact.value, expected_theme,
@@ -3036,12 +3170,10 @@ fn ctl_check_paper_grounded() {
         breed.preconditions(&input).is_ok(),
         "ctl_check fixture must pass preconditions"
     );
-    let output = breed.run(&input).expect("ctl_check paper-grounded run must succeed");
-    assert_eq!(
-        output.breed,
-        BreedId::CtlCheck,
-        "breed id must be CtlCheck"
-    );
+    let output = breed
+        .run(&input)
+        .expect("ctl_check paper-grounded run must succeed");
+    assert_eq!(output.breed, BreedId::CtlCheck, "breed id must be CtlCheck");
     assert!(
         !output.inference_trace.is_empty(),
         "ctl_check trace must be non-empty"
@@ -3174,11 +3306,22 @@ fn episodic_memory_paper_grounded() {
 fn event_calculus_paper_grounded() {
     let (json, input) = load_fixture("event_calculus");
     let breed = event_calculus::EventCalculus;
-    assert!(breed.preconditions(&input).is_ok(), "event_calculus fixture must pass preconditions");
-    let output = breed.run(&input).expect("event_calculus paper-grounded run must succeed");
+    assert!(
+        breed.preconditions(&input).is_ok(),
+        "event_calculus fixture must pass preconditions"
+    );
+    let output = breed
+        .run(&input)
+        .expect("event_calculus paper-grounded run must succeed");
     assert_eq!(output.breed, BreedId::EventCalculus);
-    assert!(!output.inference_trace.is_empty(), "event_calculus trace must be non-empty");
-    assert!(output.inference_trace.iter().any(|t| t.kind == "ec-infer"), "event_calculus must emit ec-infer steps");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "event_calculus trace must be non-empty"
+    );
+    assert!(
+        output.inference_trace.iter().any(|t| t.kind == "ec-infer"),
+        "event_calculus must emit ec-infer steps"
+    );
 
     // Paper-grounded assertion: Kowalski & Sergot 1986 discrete event calculus over
     // the Mary hired/promoted narrative. Five HoldsAt queries at different time points.
@@ -3192,9 +3335,15 @@ fn event_calculus_paper_grounded() {
 
     // The breed exposes per-query verdicts directly via `ec-verdict` trace steps and the
     // `ec:verdict:<fluent>@<time>` keys in `output.selected`. Parse selected into a map.
-    let selected = output.selected.as_deref().expect("event_calculus must expose verdicts in selected");
+    let selected = output
+        .selected
+        .as_deref()
+        .expect("event_calculus must expose verdicts in selected");
     assert!(
-        output.inference_trace.iter().any(|t| t.kind == "ec-verdict"),
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "ec-verdict"),
         "event_calculus must emit ec-verdict steps for HoldsAt queries"
     );
     let mut computed: std::collections::HashMap<String, bool> = std::collections::HashMap::new();
@@ -3315,7 +3464,7 @@ fn markov_logic_paper_grounded() {
         breed.preconditions(&input).is_ok(),
         "markov_logic fixture must pass preconditions"
     );
-    
+
     let output = breed
         .run(&input)
         .expect("markov_logic paper-grounded run must succeed");
@@ -3324,9 +3473,9 @@ fn markov_logic_paper_grounded() {
         !output.inference_trace.is_empty(),
         "markov_logic trace must be non-empty"
     );
-    
+
     let exp = &json["expected"];
-    
+
     // Paper-grounded NUMERIC assertion: Richardson & Domingos 2006, Table 1 / Fig. 1.
     // The ground MLN for {anna, bob} with evidence smokes(anna) and friends(anna,bob)
     // reaches a MAP state with cost 0.0 (all clauses satisfied).
@@ -3343,7 +3492,7 @@ fn markov_logic_paper_grounded() {
         "Markov Logic MAP cost must equal {expected_cost_str} (Richardson & Domingos 2006 Table 1); got {}",
         cost_fact.value
     );
-    
+
     // Verify the MAP state entails the expected ground atoms: smokes_bob, cancer_anna, cancer_bob all true.
     // Richardson & Domingos 2006 Fig. 1 shows friends(anna,bob) + smokes(anna) ⇒ smokes(bob) by chain rule.
     let smokes_bob_val = exp["smokes_bob"]
@@ -3359,7 +3508,7 @@ fn markov_logic_paper_grounded() {
         "smokes_bob must be {} in MAP state (friends propagate smoking) per Richardson & Domingos 2006",
         smokes_bob_val
     );
-    
+
     let cancer_anna_val = exp["cancer_anna"]
         .as_str()
         .expect("fixture must declare expected.cancer_anna");
@@ -3373,7 +3522,7 @@ fn markov_logic_paper_grounded() {
         "cancer_anna must be {} in MAP state (smoker gets cancer) per Richardson & Domingos 2006",
         cancer_anna_val
     );
-    
+
     let cancer_bob_val = exp["cancer_bob"]
         .as_str()
         .expect("fixture must declare expected.cancer_bob");
@@ -3397,7 +3546,9 @@ fn mdp_paper_grounded() {
         breed.preconditions(&input).is_ok(),
         "mdp fixture must pass preconditions"
     );
-    let output = breed.run(&input).expect("mdp paper-grounded run must succeed");
+    let output = breed
+        .run(&input)
+        .expect("mdp paper-grounded run must succeed");
     assert_eq!(output.breed, BreedId::Mdp);
     assert!(
         !output.inference_trace.is_empty(),
@@ -3408,23 +3559,27 @@ fn mdp_paper_grounded() {
         "mdp trace must contain mdp-init step"
     );
     assert!(
-        output.inference_trace.iter().any(|t| t.kind == "mdp-iterate"),
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "mdp-iterate"),
         "mdp trace must contain mdp-iterate steps"
     );
     assert!(
-        output.inference_trace.iter().any(|t| t.kind == "mdp-policy"),
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "mdp-policy"),
         "mdp trace must contain mdp-policy step"
     );
 
     let exp = &json["expected"];
-    
+
     // Extract expected values per state from the fixture
     let expected_values = exp["values"]
         .as_object()
         .expect("fixture must declare expected.values object");
-    let tolerance = exp["tolerance"]
-        .as_f64()
-        .unwrap_or(1e-3);
+    let tolerance = exp["tolerance"].as_f64().unwrap_or(1e-3);
 
     // Extract value function from the last mdp-iterate trace step detail
     // Format: "Sweep N: delta=X, values=[v0, v1, v2, ...]"
@@ -3437,8 +3592,12 @@ fn mdp_paper_grounded() {
 
     // Parse values array from detail string
     let detail = &last_iterate.detail;
-    let values_start = detail.find('[').expect("values array must be present in trace");
-    let values_end = detail.find(']').expect("values array must be closed in trace");
+    let values_start = detail
+        .find('[')
+        .expect("values array must be present in trace");
+    let values_end = detail
+        .find(']')
+        .expect("values array must be closed in trace");
     let values_str = &detail[values_start + 1..values_end];
     let parsed_values: Vec<f64> = values_str
         .split(',')
@@ -3448,7 +3607,7 @@ fn mdp_paper_grounded() {
     // Map state names to their indices
     let state_names = vec!["s0", "s1", "goal"];
     assert_eq!(parsed_values.len(), 3, "MDP must have exactly 3 states");
-    
+
     for (idx, state_name) in state_names.iter().enumerate() {
         if let Some(expected_val) = expected_values.get(*state_name).and_then(|v| v.as_f64()) {
             let actual = parsed_values[idx];
@@ -3469,14 +3628,18 @@ fn mdp_paper_grounded() {
         .iter()
         .find(|t| t.kind == "mdp-policy")
         .expect("mdp must have mdp-policy step");
-    
+
     let expected_policy = exp["policy"]
         .as_object()
         .expect("fixture must declare expected.policy object");
 
     for (state_name, expected_action) in expected_policy {
-        let expected_action_str = expected_action.as_str().expect("policy action must be string");
-        let policy_contains = policy_step.detail.contains(&format!("{}:{}", state_name, expected_action_str));
+        let expected_action_str = expected_action
+            .as_str()
+            .expect("policy action must be string");
+        let policy_contains = policy_step
+            .detail
+            .contains(&format!("{}:{}", state_name, expected_action_str));
         assert!(
             policy_contains,
             "MDP policy must include action '{}' for state '{}' (Bellman optimal policy extraction)",
@@ -3490,32 +3653,42 @@ fn mdp_paper_grounded() {
 fn meta_reasoning_paper_grounded() {
     let (json, input) = load_fixture("meta_reasoning");
     let breed = meta_reasoning::MetaReasoning;
-    assert!(breed.preconditions(&input).is_ok(), "meta_reasoning fixture must pass preconditions");
-    let output = breed.run(&input).expect("meta_reasoning paper-grounded run must succeed");
-    
+    assert!(
+        breed.preconditions(&input).is_ok(),
+        "meta_reasoning fixture must pass preconditions"
+    );
+    let output = breed
+        .run(&input)
+        .expect("meta_reasoning paper-grounded run must succeed");
+
     assert_eq!(output.breed, BreedId::MetaReasoning);
-    assert!(!output.inference_trace.is_empty(), "meta_reasoning trace must be non-empty");
-    
+    assert!(
+        !output.inference_trace.is_empty(),
+        "meta_reasoning trace must be non-empty"
+    );
+
     // Paper-grounded: detect at least one conflict (Cox & Raja 2011, Ch. 1)
     let conflict_step = output
         .inference_trace
         .iter()
         .find(|t| t.kind == "conflict-detected")
-        .expect("meta_reasoning must detect conflict between mycin and prolog (Cox & Raja 2011, Ch. 1)");
+        .expect(
+            "meta_reasoning must detect conflict between mycin and prolog (Cox & Raja 2011, Ch. 1)",
+        );
     assert!(
         conflict_step.detail.contains("mycin") && conflict_step.detail.contains("prolog"),
         "conflict-detected trace must name both competing reasoners"
     );
-    
+
     // Verify resolve step exists
     let resolve_step = output
         .inference_trace
         .iter()
         .find(|t| t.kind == "resolve")
         .expect("meta_reasoning must produce a resolve step");
-    
+
     let exp = &json["expected"];
-    
+
     // Paper-grounded NUMERIC assertion: expect exactly 1 conflict
     let expected_conflicts = exp
         .get("conflicts")
@@ -3532,7 +3705,7 @@ fn meta_reasoning_paper_grounded() {
         "meta_reasoning conflict count must match fixture: expected {}, got {}",
         expected_conflicts, actual_conflicts
     );
-    
+
     // Paper-grounded: confidence-weighted selection must choose gentamicin (0.8) over none (0.6)
     let expected_selected = exp
         .get("selected")
@@ -3576,9 +3749,9 @@ fn morphological_paper_grounded() {
             .any(|t| t.kind == "synthesize-solution-space"),
         "morphological must synthesize solution space"
     );
-    
+
     let exp = &json["expected"];
-    
+
     // Paper-grounded assertion: Zwicky's 1947 propulsive system morphology
     // with one CCA exclusion (chemical-reactions=self-contained x thrust-augmentation-1=no-motion)
     // must select the first consistent configuration in lexicographic order
@@ -3593,7 +3766,7 @@ fn morphological_paper_grounded() {
         "morphological selected must equal Zwicky 1947 first consistent configuration; \
          citation: Zwicky, F. (1969). Discovery, Invention, Research Through the Morphological Approach. Macmillan."
     );
-    
+
     breed
         .postconditions(&input, &output)
         .expect("morphological postconditions must hold");
@@ -3715,7 +3888,10 @@ fn naive_physics_paper_grounded() {
     // Verify trace contains apply-axiom steps (the four Hayes axioms: support,
     // unsupported-falls, containment-transport, liquid-spill)
     assert!(
-        output.inference_trace.iter().any(|t| t.kind == "apply-axiom"),
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "apply-axiom"),
         "naive_physics must emit apply-axiom trace steps for Hayes axioms"
     );
 
@@ -3768,9 +3944,10 @@ fn ocpm_route_discoverer_paper_grounded() {
         let expected_route = expected_route_val
             .as_str()
             .expect("route values must be strings");
-        let found = output.facts.iter().any(|f| {
-            f.key.as_str() == obj_key.as_str() && f.value == expected_route
-        });
+        let found = output
+            .facts
+            .iter()
+            .any(|f| f.key.as_str() == obj_key.as_str() && f.value == expected_route);
         assert!(
             found,
             "ocpm_route_discoverer must discover route for {} = '{}' \
@@ -3778,7 +3955,11 @@ fn ocpm_route_discoverer_paper_grounded() {
              output facts: {:?}",
             obj_key,
             expected_route,
-            output.facts.iter().map(|f| (&f.key, &f.value)).collect::<Vec<_>>()
+            output
+                .facts
+                .iter()
+                .map(|f| (&f.key, &f.value))
+                .collect::<Vec<_>>()
         );
     }
 }
@@ -3787,14 +3968,19 @@ fn ocpm_route_discoverer_paper_grounded() {
 fn partial_order_plan_paper_grounded() {
     let (json, input) = load_fixture("partial_order_plan");
     let breed = partial_order_plan::PartialOrderPlan;
-    assert!(breed.preconditions(&input).is_ok(), "partial_order_plan fixture must pass preconditions");
-    let output = breed.run(&input).expect("partial_order_plan paper-grounded run must succeed");
+    assert!(
+        breed.preconditions(&input).is_ok(),
+        "partial_order_plan fixture must pass preconditions"
+    );
+    let output = breed
+        .run(&input)
+        .expect("partial_order_plan paper-grounded run must succeed");
     assert_eq!(output.breed, BreedId::PartialOrderPlan);
     assert!(
         !output.inference_trace.is_empty(),
         "partial_order_plan trace must be non-empty"
     );
-    
+
     // Paper-grounded assertion: McAllester & Rosenblitt 1991 Sussman anomaly.
     // The canonical solution is the interleaved plan: put_c_from_a_on_table; put_b_on_c; put_a_on_b
     // This requires SNLP threat detection and resolution (promotion/demotion per causal links).
@@ -3802,7 +3988,7 @@ fn partial_order_plan_paper_grounded() {
     let expected_plan_str = exp["plan"]
         .as_str()
         .expect("fixture must declare expected.plan");
-    
+
     // Extract the plan actions from output.selected (impl joins with ';', canonical delimiter)
     let selected = output.selected.as_deref().expect(
         "partial_order_plan must produce a selected plan per McAllester & Rosenblitt 1991 Sussman anomaly"
@@ -3811,7 +3997,7 @@ fn partial_order_plan_paper_grounded() {
     // The expected plan actions from the fixture
     let expected_actions: Vec<&str> = expected_plan_str.split(';').map(|s| s.trim()).collect();
     let actual_actions: Vec<&str> = selected.split(';').map(|s| s.trim()).collect();
-    
+
     // Verify the plan contains exactly the expected actions in the correct order
     assert_eq!(
         actual_actions.len(),
@@ -3820,7 +4006,7 @@ fn partial_order_plan_paper_grounded() {
         expected_actions.len(),
         actual_actions.len()
     );
-    
+
     for (actual, expected) in actual_actions.iter().zip(expected_actions.iter()) {
         assert_eq!(
             actual, expected,
@@ -3829,7 +4015,7 @@ fn partial_order_plan_paper_grounded() {
             expected, actual
         );
     }
-    
+
     // Assert that threat detection occurred (required_trace_kinds: ["detect-threat"])
     let has_threat_detection = output
         .inference_trace
@@ -3859,7 +4045,10 @@ fn pomdp_paper_grounded() {
         "pomdp trace must be non-empty"
     );
     assert!(
-        output.inference_trace.iter().any(|t| t.kind == "belief-update"),
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "belief-update"),
         "pomdp must have performed at least one belief update"
     );
 
@@ -3921,9 +4110,7 @@ fn problog_paper_grounded() {
     let expected_prob = exp["probability"]
         .as_f64()
         .expect("fixture must declare expected.probability");
-    let tolerance = exp["tolerance"]
-        .as_f64()
-        .unwrap_or(1e-6);
+    let tolerance = exp["tolerance"].as_f64().unwrap_or(1e-6);
 
     let selected_str = output
         .selected
@@ -4036,7 +4223,7 @@ fn qualitative_reason_paper_grounded() {
     );
 
     let exp = &json["expected"];
-    
+
     // Assert state_count matches expected (de Kleer & Brown 1984: three branches from ambiguous confluence)
     let state_count_str = exp["state_count"]
         .as_str()
@@ -4046,12 +4233,18 @@ fn qualitative_reason_paper_grounded() {
         .iter()
         .filter(|f| f.key == "state_count")
         .collect();
-    assert!(!state_count_facts.is_empty(), "output must include state_count fact");
+    assert!(
+        !state_count_facts.is_empty(),
+        "output must include state_count fact"
+    );
     assert_eq!(
-        state_count_facts[0].value, state_count_str,
+        state_count_facts[0].value,
+        state_count_str,
         "qualitative_reason state_count must match de Kleer & Brown pressure-regulator \
          envisionment ({}): got {} states (de Kleer & Brown 1984, Sections 1-3)",
-        json["provenance"]["locus"].as_str().unwrap_or("pressure-regulator"),
+        json["provenance"]["locus"]
+            .as_str()
+            .unwrap_or("pressure-regulator"),
         state_count_facts[0].value
     );
 
@@ -4065,9 +4258,10 @@ fn qualitative_reason_paper_grounded() {
             state_strings.push_str(&format!("{},", fact.value));
         }
     }
-    
+
     for expected_val in expected_q_values {
-        let expected_sign = expected_val.as_str()
+        let expected_sign = expected_val
+            .as_str()
             .expect("q_values array must contain strings");
         assert!(
             state_strings.contains(&format!("q:{},", expected_sign))
@@ -4095,11 +4289,11 @@ fn rl_symbolic_paper_grounded() {
         !output.inference_trace.is_empty(),
         "rl_symbolic trace must be non-empty"
     );
-    
+
     // Paper-grounded assertions from Watkins & Dayan (1992)
     // Theorem p. 281: Q-learning converges to Q* with probability 1
     let exp = &json["expected"];
-    
+
     // Extract Q-values from facts (key format: "q:{state}:{action}")
     let q_s0_go = output
         .facts
@@ -4109,7 +4303,7 @@ fn rl_symbolic_paper_grounded() {
         .value
         .parse::<f64>()
         .expect("q:s0:go value must be parseable as f64");
-    
+
     let q_s0_stay = output
         .facts
         .iter()
@@ -4118,7 +4312,7 @@ fn rl_symbolic_paper_grounded() {
         .value
         .parse::<f64>()
         .expect("q:s0:stay value must be parseable as f64");
-    
+
     // Expected values from closed-form Bellman fixed point
     let exp_q_go = exp["q_s0_go"]
         .as_f64()
@@ -4126,26 +4320,26 @@ fn rl_symbolic_paper_grounded() {
     let exp_q_stay = exp["q_s0_stay"]
         .as_f64()
         .expect("fixture must declare expected.q_s0_stay");
-    let tolerance = exp["tolerance"]
-        .as_f64()
-        .unwrap_or(1e-3);
-    
+    let tolerance = exp["tolerance"].as_f64().unwrap_or(1e-3);
+
     // Q*(s0,go) = 1 + γ·0 = 1 exactly (greedy policy chooses "go")
     assert!(
         (q_s0_go - exp_q_go).abs() < tolerance,
         "Q(s0,go) must converge to {:.4} per Watkins & Dayan (1992) Theorem p. 281 \
          one-step lookup Q*(s,a) = r + γ·max Q*(s',a'); got {:.6}",
-        exp_q_go, q_s0_go
+        exp_q_go,
+        q_s0_go
     );
-    
+
     // Q*(s0,stay) = 0 + γ·max Q*(s0,·) = 0.9·1.0 = 0.9 (Bellman fixed point)
     assert!(
         (q_s0_stay - exp_q_stay).abs() < tolerance,
         "Q(s0,stay) must converge to {:.4} per Watkins & Dayan (1992) Theorem p. 281 \
          self-loop τ-discount Q*(s,a) = γ·max Q*(s,·); got {:.6}",
-        exp_q_stay, q_s0_stay
+        exp_q_stay,
+        q_s0_stay
     );
-    
+
     // Assert greedy policy extracts "go" at start state
     let policy_s0 = output
         .selected
@@ -4160,7 +4354,7 @@ fn rl_symbolic_paper_grounded() {
          per Watkins & Dayan (1992) policy extraction",
         exp_policy, q_s0_go, q_s0_stay
     );
-    
+
     // Verify trace contains episode summaries and policy extraction
     assert!(
         output
@@ -4215,10 +4409,10 @@ fn sat_cdcl_paper_grounded() {
     // Paper-grounded assertion: GRASP-style conflict analysis must learn at least one clause.
     // PHP(3,2) is the canonical UNSAT benchmark; pure DPLL backtracking alone cannot prove UNSAT
     // without conflict-driven learning.
-    let min_learned_clauses = exp
-        .get("min_learned_clauses")
-        .and_then(|v| v.as_i64())
-        .expect("fixture must declare expected.min_learned_clauses") as usize;
+    let min_learned_clauses =
+        exp.get("min_learned_clauses")
+            .and_then(|v| v.as_i64())
+            .expect("fixture must declare expected.min_learned_clauses") as usize;
     let learned_count = output
         .facts
         .iter()
@@ -4257,7 +4451,7 @@ fn script_sam_paper_grounded() {
         breed.preconditions(&input).is_ok(),
         "script_sam fixture must pass preconditions"
     );
-    
+
     let output = breed
         .run(&input)
         .expect("script_sam paper-grounded run must succeed");
@@ -4270,7 +4464,7 @@ fn script_sam_paper_grounded() {
         !output.inference_trace.is_empty(),
         "script_sam trace must be non-empty"
     );
-    
+
     // Paper-grounded assertions, derived from the fixture's published values
     // (Schank & Abelson 1977 Chapter 3). SAM infers the missing eating scene
     // between order and pay with John as the filler.
@@ -4324,10 +4518,13 @@ fn script_sam_paper_grounded() {
             .unwrap_or_else(|| panic!("script_sam must emit role fact '{k}'"));
         assert_eq!(&fact.value, v.as_str().unwrap());
     }
-    
+
     // Verify gap-inference trace step exists
     assert!(
-        output.inference_trace.iter().any(|t| t.kind == "gap-inference"),
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "gap-inference"),
         "script_sam must emit gap-inference trace steps \
          per Schank & Abelson 1977 bounded inference principle"
     );
@@ -4356,7 +4553,7 @@ fn situation_calculus_paper_grounded() {
     // the fluents listed in expected.holds_final, with the unpersisted fluents removed.
     // The expected.value lists the canonical final fluents as a comma-separated string.
     let exp = &json["expected"];
-    
+
     // Extract final fluents from output facts (key format: "holds:<fluent>")
     let mut final_fluents: Vec<String> = output
         .facts
@@ -4365,7 +4562,7 @@ fn situation_calculus_paper_grounded() {
         .map(|f| f.key["holds:".len()..].to_string())
         .collect();
     final_fluents.sort();
-    
+
     // Expected fluents from the paper fixture
     let expected_holds: Vec<String> = exp["holds_final"]
         .as_array()
@@ -4375,7 +4572,7 @@ fn situation_calculus_paper_grounded() {
         .collect();
     let mut expected_sorted = expected_holds.clone();
     expected_sorted.sort();
-    
+
     assert_eq!(
         final_fluents,
         expected_sorted,
@@ -4457,9 +4654,9 @@ fn tableaux_paper_grounded() {
         !output.inference_trace.is_empty(),
         "tableaux trace must be non-empty"
     );
-    
+
     let exp = &json["expected"];
-    
+
     // Paper-grounded assertion: K-axiom A -> (B -> A) is valid via
     // alpha-only tableau (Smullyan 1968, Part I, Chapter II).
     // The claim is that zero beta-expansions occur: every branch closes
@@ -4468,15 +4665,15 @@ fn tableaux_paper_grounded() {
         .get("verdict")
         .and_then(|v| v.as_str())
         .expect("fixture must declare expected.verdict");
-    let expected_beta_count = exp
-        .get("beta_expansions")
-        .and_then(|v| v.as_u64())
-        .expect("fixture must declare expected.beta_expansions") as usize;
+    let expected_beta_count =
+        exp.get("beta_expansions")
+            .and_then(|v| v.as_u64())
+            .expect("fixture must declare expected.beta_expansions") as usize;
     let expected_selected = exp
         .get("selected")
         .and_then(|v| v.as_str())
         .expect("fixture must declare expected.selected");
-    
+
     // Assert the selected verdict matches the paper expectation.
     assert_eq!(
         output.selected.as_deref(),
@@ -4484,7 +4681,7 @@ fn tableaux_paper_grounded() {
         "tableaux selected must be '{}' (K-axiom tautology per Smullyan 1968 Part I, Chapter II)",
         expected_selected
     );
-    
+
     // Assert beta-expansion count: K-axiom proof must be alpha-only.
     let actual_beta_count = output
         .inference_trace
@@ -4532,7 +4729,8 @@ fn triz_paper_grounded() {
         Some(expected_principles),
         "TRIZ must select '{}' (Altshuller 1984 weight vs. strength contradiction) \
          per fixture rule matrix_1_2; got {:?}",
-        expected_principles, output.selected
+        expected_principles,
+        output.selected
     );
 
     // Assert that the trace records the technical contradiction resolution
@@ -4557,7 +4755,7 @@ fn version_space_paper_grounded() {
         breed.preconditions(&input).is_ok(),
         "version_space fixture must pass preconditions"
     );
-    
+
     let output = breed
         .run(&input)
         .expect("version_space paper-grounded run must succeed");
@@ -4566,17 +4764,29 @@ fn version_space_paper_grounded() {
         !output.inference_trace.is_empty(),
         "version_space trace must be non-empty"
     );
-    
+
     // Paper-grounded assertions from Mitchell 1982 Sections 3-4
     // and Mitchell, Machine Learning, 1997 Ch. 2 Tables 2.1/2.5
-    
+
     // Assert trace contains all required step kinds
-    let trace_kinds: std::collections::HashSet<_> = 
-        output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-    assert!(trace_kinds.contains("vs-init"), "version_space must emit vs-init");
-    assert!(trace_kinds.contains("vs-update"), "version_space must emit vs-update");
-    assert!(trace_kinds.contains("vs-verdict"), "version_space must emit vs-verdict");
-    
+    let trace_kinds: std::collections::HashSet<_> = output
+        .inference_trace
+        .iter()
+        .map(|t| t.kind.clone())
+        .collect();
+    assert!(
+        trace_kinds.contains("vs-init"),
+        "version_space must emit vs-init"
+    );
+    assert!(
+        trace_kinds.contains("vs-update"),
+        "version_space must emit vs-update"
+    );
+    assert!(
+        trace_kinds.contains("vs-verdict"),
+        "version_space must emit vs-verdict"
+    );
+
     // After processing all 4 examples (2 positive, 1 negative, 1 positive),
     // the S boundary should be <Sunny,Warm,?,Strong,?,?>
     // and G should have 2 members: <Sunny,?,?,?,?,?> and <?,Warm,?,?,?,?>
@@ -4585,11 +4795,12 @@ fn version_space_paper_grounded() {
         output.explanation.contains("S_size") && output.explanation.contains("G_size"),
         "version_space explanation must report boundary set sizes (Mitchell 1982 Sections 3-4)"
     );
-    
+
     // The update steps should show S and G evolution
-    let has_boundary_evolution = output.inference_trace.iter().any(|t| {
-        t.kind == "vs-update" && t.detail.contains("S=") && t.detail.contains("G=")
-    });
+    let has_boundary_evolution = output
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "vs-update" && t.detail.contains("S=") && t.detail.contains("G="));
     assert!(
         has_boundary_evolution,
         "version_space updates must display S and G boundaries (Mitchell 1982 p.204-226 candidate elimination algorithm)"
@@ -4614,15 +4825,17 @@ fn version_space_paper_grounded() {
         .iter()
         .find(|f| f.key == "vs:G")
         .expect("vs:G boundary fact must be emitted");
-    let g_members: std::collections::BTreeSet<&str> =
-        g_fact.value.split(" | ").collect();
+    let g_members: std::collections::BTreeSet<&str> = g_fact.value.split(" | ").collect();
     let exp_g: std::collections::BTreeSet<&str> = exp["g"]
         .as_array()
         .unwrap()
         .iter()
         .map(|v| v.as_str().unwrap())
         .collect();
-    assert_eq!(g_members, exp_g, "G4 boundary must equal published 2-member set");
+    assert_eq!(
+        g_members, exp_g,
+        "G4 boundary must equal published 2-member set"
+    );
 
     let ig_fact = output
         .facts
@@ -4641,7 +4854,8 @@ fn version_space_paper_grounded() {
         .find(|f| f.key == "vs:converged")
         .expect("vs:converged fact must be emitted");
     assert_eq!(
-        conv_fact.value, exp["converged"].as_str().unwrap(),
+        conv_fact.value,
+        exp["converged"].as_str().unwrap(),
         "version space must not have converged (S != G)"
     );
 }

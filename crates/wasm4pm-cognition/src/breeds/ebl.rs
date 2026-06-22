@@ -1,5 +1,5 @@
 //! Explanation-Based Learning (EBL) breed.
-//! 
+//!
 //! Learns generalized operational rules from a single training example
 //! using a domain theory.
 //! Algorithm:
@@ -161,7 +161,8 @@ fn explain(
             let mut all_success = true;
             for p in &rule.premise {
                 let p_term = rename_vars(&Term::parse(p), &suffix);
-                if let Some(child) = explain(&p_term, rules, facts, depth - 1, &mut local_subst, trace)
+                if let Some(child) =
+                    explain(&p_term, rules, facts, depth - 1, &mut local_subst, trace)
                 {
                     children.push(child);
                 } else {
@@ -213,7 +214,8 @@ fn generalize_proof(
 
             let mut leaves = Vec::new();
             for (i, child) in children.iter().enumerate() {
-                let premise_term = rename_vars(&Term::parse(&rule.premise[i]), &format!("_g{}", depth));
+                let premise_term =
+                    rename_vars(&Term::parse(&rule.premise[i]), &format!("_g{}", depth));
                 let gen_subgoal = apply_subst_term(&premise_term, gen_subst);
                 leaves.extend(generalize_proof(
                     child,
@@ -320,10 +322,20 @@ impl CognitionBreed for Ebl {
             .find(|f| f.key == "ebl:rule")
             .ok_or_else(|| "EBL must emit an ebl:rule fact".to_string())?;
         if !rule_fact.value.contains('?') {
-            return Err("Learned rule must contain >= 1 variable. A ground rule is a fraud signal.".to_string());
+            return Err(
+                "Learned rule must contain >= 1 variable. A ground rule is a fraud signal."
+                    .to_string(),
+            );
         }
-        let kinds: HashSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        if !kinds.contains("ebl-explain") || !kinds.contains("ebl-generalize") || !kinds.contains("ebl-operationalize") {
+        let kinds: HashSet<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
+        if !kinds.contains("ebl-explain")
+            || !kinds.contains("ebl-generalize")
+            || !kinds.contains("ebl-operationalize")
+        {
             return Err("EBL trace missing required kinds".to_string());
         }
         Ok(())
@@ -378,8 +390,14 @@ mod tests {
             intent: "learn".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "has_handle(obj1)".to_string(), value: "true".to_string() },
-                Fact { key: "concave(obj1)".to_string(), value: "true".to_string() },
+                Fact {
+                    key: "has_handle(obj1)".to_string(),
+                    value: "true".to_string(),
+                },
+                Fact {
+                    key: "concave(obj1)".to_string(),
+                    value: "true".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![
@@ -405,7 +423,8 @@ mod tests {
         };
 
         let output = Ebl.run(&input).expect("EBL run failed");
-        Ebl.postconditions(&input, &output).expect("Postconditions failed");
+        Ebl.postconditions(&input, &output)
+            .expect("Postconditions failed");
 
         let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
         // The rule should be something like "has_handle(?target), concave(?target) => drinkable(?target)"
@@ -431,8 +450,14 @@ mod tests {
             intent: "apply".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "has_handle(obj99)".to_string(), value: "true".to_string() },
-                Fact { key: "concave(obj99)".to_string(), value: "true".to_string() },
+                Fact {
+                    key: "has_handle(obj99)".to_string(),
+                    value: "true".to_string(),
+                },
+                Fact {
+                    key: "concave(obj99)".to_string(),
+                    value: "true".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![learned_rule],
@@ -445,7 +470,10 @@ mod tests {
         };
 
         let apply_output = Ebl.run(&apply_input).expect("EBL apply run failed");
-        let fired_learned = apply_output.inference_trace.iter().any(|t| t.kind == "ebl-explain" && t.detail == "rule: learned_rule_1");
+        let fired_learned = apply_output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "ebl-explain" && t.detail == "rule: learned_rule_1");
         assert!(fired_learned, "Trace must show the learned rule id firing");
     }
 }

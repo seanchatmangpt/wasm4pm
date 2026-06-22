@@ -55,9 +55,10 @@ impl SymbolicVisionSystem {
     /// ```
     pub fn find_clear_object(&self) -> Option<&Polyhedron> {
         self.objects.iter().find(|obj| {
-            !self.objects.iter().any(|other| {
-                other.supported_by.as_deref() == Some(obj.id.as_str())
-            })
+            !self
+                .objects
+                .iter()
+                .any(|other| other.supported_by.as_deref() == Some(obj.id.as_str()))
         })
     }
 }

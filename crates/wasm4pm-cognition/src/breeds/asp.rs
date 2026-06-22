@@ -1,5 +1,5 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::BTreeSet;
 
@@ -33,7 +33,11 @@ impl CognitionBreed for Asp {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "asp-load".to_string(),
-            detail: format!("Loaded {} rules, {} facts", input.rules.len(), input.facts.len()),
+            detail: format!(
+                "Loaded {} rules, {} facts",
+                input.rules.len(),
+                input.facts.len()
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -75,7 +79,7 @@ impl CognitionBreed for Asp {
         // 2. Generate stable models
         let mut stable_models = Vec::new();
         let n_atoms = atoms_list.len();
-        
+
         if n_atoms <= 16 {
             let limit = 1 << n_atoms;
             for mask in 0..limit {
@@ -146,7 +150,10 @@ impl CognitionBreed for Asp {
         } else {
             return Err(BreedError {
                 breed: BreedId::Asp,
-                message: format!("Too many atoms for exact ASP solver (max 16, got {})", n_atoms),
+                message: format!(
+                    "Too many atoms for exact ASP solver (max 16, got {})",
+                    n_atoms
+                ),
             });
         }
 

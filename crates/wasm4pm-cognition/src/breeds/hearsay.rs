@@ -274,11 +274,7 @@ impl CognitionBreed for Hearsay {
 
         // Determine top level: level of the highest-confidence posted hypothesis
         // that is NOT also at level-0 (i.e. not in the seed level).
-        let seed_level: &str = input
-            .facts
-            .first()
-            .map(|f| f.key.as_str())
-            .unwrap_or("");
+        let seed_level: &str = input.facts.first().map(|f| f.key.as_str()).unwrap_or("");
         let derived: Vec<(&String, f32)> = blackboard
             .iter()
             .filter(|(k, _)| level_of(k) != seed_level)

@@ -1,5 +1,5 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
@@ -45,7 +45,7 @@ impl Sign {
             }
         }
     }
-    
+
     fn negate(self) -> Self {
         match self {
             Sign::Plus => Sign::Minus,
@@ -68,7 +68,7 @@ impl QualitativeReason {
         for (var, is_pos) in terms {
             let val = state.get(var).cloned().unwrap_or(Sign::Zero);
             let val = if *is_pos { val } else { val.negate() };
-            
+
             let mut next_results = HashSet::new();
             for r in results {
                 for next_r in r.add(val) {
@@ -96,7 +96,10 @@ impl CognitionBreed for QualitativeReason {
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         if input.rules.is_empty() && input.facts.is_empty() {
-            return Err("QualitativeReason requires at least one confluence (rule) or initial sign (fact)".to_string());
+            return Err(
+                "QualitativeReason requires at least one confluence (rule) or initial sign (fact)"
+                    .to_string(),
+            );
         }
         Ok(())
     }
@@ -164,14 +167,18 @@ impl CognitionBreed for QualitativeReason {
                 right: r.conclusion.clone(),
             });
         }
-        
+
         variables.remove("0");
         let var_list: Vec<String> = variables.into_iter().collect();
 
         trace.push(TraceStep {
             step: trace.len(),
             kind: "limit-analysis".to_string(),
-            detail: format!("Loaded {} variables and {} confluences", var_list.len(), confluences.len()),
+            detail: format!(
+                "Loaded {} variables and {} confluences",
+                var_list.len(),
+                confluences.len()
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -179,11 +186,14 @@ impl CognitionBreed for QualitativeReason {
         // 2. Envisionment: find all valid states
         let mut valid_states = Vec::new();
         let n_vars = var_list.len();
-        
+
         if n_vars > 12 {
             return Err(BreedError {
                 breed: BreedId::QualitativeReason,
-                message: format!("Too many variables for exact envisionment (max 12, got {})", n_vars),
+                message: format!(
+                    "Too many variables for exact envisionment (max 12, got {})",
+                    n_vars
+                ),
             });
         }
 
@@ -224,7 +234,7 @@ impl CognitionBreed for QualitativeReason {
                 } else {
                     state.get(&conf.right).cloned().unwrap_or(Sign::Zero)
                 };
-                
+
                 if !sum_signs.contains(&target_sign) {
                     satisfied = false;
                     break;
@@ -239,7 +249,10 @@ impl CognitionBreed for QualitativeReason {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "branch-ambiguity".to_string(),
-            detail: format!("Envisionment produced {} valid qualitative states", valid_states.len()),
+            detail: format!(
+                "Envisionment produced {} valid qualitative states",
+                valid_states.len()
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -251,7 +264,9 @@ impl CognitionBreed for QualitativeReason {
             value: valid_states.len().to_string(),
         });
 
-        let has_equilibrium = valid_states.iter().any(|s| s.values().all(|&sign| sign == Sign::Zero));
+        let has_equilibrium = valid_states
+            .iter()
+            .any(|s| s.values().all(|&sign| sign == Sign::Zero));
         out_facts.push(Fact {
             key: "equilibrium_reachable".to_string(),
             value: has_equilibrium.to_string(),
@@ -269,7 +284,11 @@ impl CognitionBreed for QualitativeReason {
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "envision-state".to_string(),
-                detail: format!("Qualitative state {}: {}", idx, state_str.trim_end_matches(',')),
+                detail: format!(
+                    "Qualitative state {}: {}",
+                    idx,
+                    state_str.trim_end_matches(',')
+                ),
                 depth: 1,
                 objects: vec![],
             });

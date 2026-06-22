@@ -3,10 +3,10 @@
 //! Steps: `mdp-init`, `mdp-iterate`, `mdp-policy`.
 //! Uses transitions, rewards, states, actions and gamma from facts.
 
+use crate::breeds::support::mdp::MdpModel;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use crate::breeds::support::mdp::MdpModel;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Markov Decision Process solver
@@ -18,7 +18,11 @@ impl CognitionBreed for Mdp {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["reinforcement_learning".to_string(), "planning".to_string(), "mdp".to_string()]
+        vec![
+            "reinforcement_learning".to_string(),
+            "planning".to_string(),
+            "mdp".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
@@ -28,8 +32,7 @@ impl CognitionBreed for Mdp {
         //       states and actions are derived (Bellman 1957 chain fixtures).
         let has_states = input.facts.iter().any(|f| f.key == "state");
         let has_actions = input.facts.iter().any(|f| f.key == "action");
-        let has_transitions =
-            input.facts.iter().any(|f| f.key.starts_with("mdp:trans:"));
+        let has_transitions = input.facts.iter().any(|f| f.key.starts_with("mdp:trans:"));
         if (has_states && has_actions) || has_transitions {
             Ok(())
         } else {
@@ -125,7 +128,10 @@ impl CognitionBreed for Mdp {
                         action_to_idx.get(&action),
                         state_to_idx.get(&s_to),
                     ) {
-                        transitions.entry((u, a)).or_insert_with(Vec::new).push((v, prob));
+                        transitions
+                            .entry((u, a))
+                            .or_insert_with(Vec::new)
+                            .push((v, prob));
                     }
                 }
             }
@@ -138,10 +144,9 @@ impl CognitionBreed for Mdp {
                 let state = parts[0].to_string();
                 let action = parts[1].to_string();
                 if let Ok(rew) = parts[2].parse::<f64>() {
-                    if let (Some(&u), Some(&a)) = (
-                        state_to_idx.get(&state),
-                        action_to_idx.get(&action),
-                    ) {
+                    if let (Some(&u), Some(&a)) =
+                        (state_to_idx.get(&state), action_to_idx.get(&action))
+                    {
                         rewards.insert((u, a), rew);
                     }
                 }
@@ -263,8 +268,15 @@ impl CognitionBreed for Mdp {
         if output.inference_trace.is_empty() {
             return Err("MDP must record sweep steps".to_string());
         }
-        let kinds: HashSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        if !kinds.contains("mdp-init") || !kinds.contains("mdp-iterate") || !kinds.contains("mdp-policy") {
+        let kinds: HashSet<_> = output
+            .inference_trace
+            .iter()
+            .map(|t| t.kind.clone())
+            .collect();
+        if !kinds.contains("mdp-init")
+            || !kinds.contains("mdp-iterate")
+            || !kinds.contains("mdp-policy")
+        {
             return Err("MDP trace missing required kinds".to_string());
         }
         Ok(())

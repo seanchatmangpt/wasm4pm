@@ -89,7 +89,8 @@ fn parse_ts(input: &BreedInput) -> Result<(Ts, String), String> {
         .enumerate()
         .map(|(i, s)| (s.clone(), i))
         .collect();
-    let mut succ: Vec<std::collections::BTreeSet<usize>> = vec![std::collections::BTreeSet::new(); states.len()];
+    let mut succ: Vec<std::collections::BTreeSet<usize>> =
+        vec![std::collections::BTreeSet::new(); states.len()];
     for (s, ts) in &edges {
         for t in ts {
             succ[index[s]].insert(index[t]);

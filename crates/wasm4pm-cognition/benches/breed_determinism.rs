@@ -201,14 +201,20 @@ fn ltl_monitor_input() -> BreedInput {
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 1.0,
-            facts: vec![Fact { key: "req".into(), value: "true".into() }],
+            facts: vec![Fact {
+                key: "req".into(),
+                value: "true".into(),
+            }],
         },
         Case {
             id: "state1".into(),
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 1.0,
-            facts: vec![Fact { key: "res".into(), value: "true".into() }],
+            facts: vec![Fact {
+                key: "res".into(),
+                value: "true".into(),
+            }],
         },
     ];
     input
@@ -219,8 +225,14 @@ fn allen_temporal_input() -> BreedInput {
         intent: "Allen".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "relation".into(), value: "A meets B".into() },
-            Fact { key: "relation".into(), value: "B meets C".into() },
+            Fact {
+                key: "relation".into(),
+                value: "A meets B".into(),
+            },
+            Fact {
+                key: "relation".into(),
+                value: "B meets C".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -234,19 +246,26 @@ fn fuzzy_logic_input() -> BreedInput {
         intent: "Fuzzy".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "temperature".into(), value: "25.0".into() },
-            Fact { key: "fuzzy_set:temperature:warm".into(), value: "triangular 20,25,30".into() },
-            Fact { key: "fuzzy_set:ventilation:medium".into(), value: "triangular 10,50,90".into() },
+            Fact {
+                key: "temperature".into(),
+                value: "25.0".into(),
+            },
+            Fact {
+                key: "fuzzy_set:temperature:warm".into(),
+                value: "triangular 20,25,30".into(),
+            },
+            Fact {
+                key: "fuzzy_set:ventilation:medium".into(),
+                value: "triangular 10,50,90".into(),
+            },
         ],
         cases: vec![],
-        rules: vec![
-            Rule {
-                id: "r1".into(),
-                premise: vec!["temperature is warm".into()],
-                conclusion: "ventilation is medium".into(),
-                certainty: 1.0,
-            }
-        ],
+        rules: vec![Rule {
+            id: "r1".into(),
+            premise: vec!["temperature is warm".into()],
+            conclusion: "ventilation is medium".into(),
+            certainty: 1.0,
+        }],
         goals: vec![],
         state: vec![],
     }
@@ -256,9 +275,10 @@ fn bayesian_network_input() -> BreedInput {
     BreedInput {
         intent: "Bayesian".into(),
         candidates: vec![],
-        facts: vec![
-            Fact { key: "Alarm".into(), value: "true".into() },
-        ],
+        facts: vec![Fact {
+            key: "Alarm".into(),
+            value: "true".into(),
+        }],
         cases: vec![],
         rules: vec![
             Rule {
@@ -298,13 +318,11 @@ fn bayesian_network_input() -> BreedInput {
                 certainty: 0.001,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "g1".into(),
-                predicate: "query".into(),
-                value: "Burglary".into(),
-            }
-        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "query".into(),
+            value: "Burglary".into(),
+        }],
         state: vec![],
     }
 }
@@ -316,16 +334,34 @@ fn situation_calculus_input() -> BreedInput {
         facts: vec![],
         cases: vec![],
         rules: vec![
-            Rule { id: "grab".into(), premise: vec!["at_gold=true".into()], conclusion: "has_gold=true".into(), certainty: 1.0 },
-            Rule { id: "drop".into(), premise: vec![], conclusion: "has_gold=false".into(), certainty: 1.0 }
+            Rule {
+                id: "grab".into(),
+                premise: vec!["at_gold=true".into()],
+                conclusion: "has_gold=true".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "drop".into(),
+                premise: vec![],
+                conclusion: "has_gold=false".into(),
+                certainty: 1.0,
+            },
         ],
         state: vec![
-            StateAtom { predicate: "has_gold".into(), value: "false".into() },
-            StateAtom { predicate: "at_gold".into(), value: "true".into() }
+            StateAtom {
+                predicate: "has_gold".into(),
+                value: "false".into(),
+            },
+            StateAtom {
+                predicate: "at_gold".into(),
+                value: "true".into(),
+            },
         ],
-        goals: vec![
-            Goal { id: "g1".into(), predicate: "action".into(), value: "grab".into() }
-        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "action".into(),
+            value: "grab".into(),
+        }],
     }
 }
 
@@ -333,13 +369,17 @@ fn circumscription_input() -> BreedInput {
     BreedInput {
         intent: "entail".into(),
         candidates: vec![],
-        facts: vec![
-            Fact { key: "bird".into(), value: "tweety".into() }
-        ],
+        facts: vec![Fact {
+            key: "bird".into(),
+            value: "tweety".into(),
+        }],
         cases: vec![],
-        rules: vec![
-            Rule { id: "r1".into(), premise: vec!["bird".into()], conclusion: "flies".into(), certainty: 1.0 }
-        ],
+        rules: vec![Rule {
+            id: "r1".into(),
+            premise: vec!["bird".into()],
+            conclusion: "flies".into(),
+            certainty: 1.0,
+        }],
         state: vec![],
         goals: vec![],
     }

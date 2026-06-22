@@ -29,25 +29,30 @@ impl Mf {
         if !is_tri && !is_trap {
             return None;
         }
-        
+
         let mut nums = Vec::new();
         let num_part = if let Some(idx) = s.find(':') {
-            &s[idx+1..]
+            &s[idx + 1..]
         } else {
-            if let Some(first_digit_idx) = s.find(|c: char| c.is_ascii_digit() || c == '-' || c == '.') {
+            if let Some(first_digit_idx) =
+                s.find(|c: char| c.is_ascii_digit() || c == '-' || c == '.')
+            {
                 &s[first_digit_idx..]
             } else {
                 return None;
             }
         };
-        
+
         for part in num_part.split(',') {
-            let cleaned: String = part.chars().filter(|&c| c.is_ascii_digit() || c == '-' || c == '.' || c == '+').collect();
+            let cleaned: String = part
+                .chars()
+                .filter(|&c| c.is_ascii_digit() || c == '-' || c == '.' || c == '+')
+                .collect();
             if let Ok(val) = cleaned.parse::<f32>() {
                 nums.push(val);
             }
         }
-        
+
         if is_tri && nums.len() == 3 {
             Some(Mf::Tri(nums[0], nums[1], nums[2]))
         } else if is_trap && nums.len() == 4 {
@@ -84,7 +89,7 @@ impl Mf {
         };
         (mu * 1e5).round() / 1e5
     }
-    
+
     pub fn min_x(&self) -> f32 {
         match *self {
             Mf::Tri(a, _, _) => a,
@@ -109,7 +114,10 @@ impl CognitionBreed for FuzzyLogic {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let has_input = input.facts.iter().any(|f| f.key.starts_with("fuzzy:input:") || f.value.parse::<f32>().is_ok());
+        let has_input = input
+            .facts
+            .iter()
+            .any(|f| f.key.starts_with("fuzzy:input:") || f.value.parse::<f32>().is_ok());
         let has_rules = !input.rules.is_empty();
         if !has_input || !has_rules {
             return Err("Fuzzy logic requires fuzzy:input facts and rules".to_string());
@@ -159,7 +167,10 @@ impl CognitionBreed for FuzzyLogic {
             } else {
                 fact.key.clone()
             };
-            if key_norm.starts_with("fuzzy:") && !key_norm.starts_with("fuzzy:input:") && !key_norm.starts_with("fuzzy:output:") {
+            if key_norm.starts_with("fuzzy:")
+                && !key_norm.starts_with("fuzzy:input:")
+                && !key_norm.starts_with("fuzzy:output:")
+            {
                 if let Some(mf) = Mf::parse(&fact.value) {
                     terms.insert(key_norm, mf);
                 }
@@ -172,7 +183,12 @@ impl CognitionBreed for FuzzyLogic {
                 if let Ok(val) = fact.value.parse::<f32>() {
                     inputs.insert(var.to_string(), val);
                 }
-            } else if fact.key != "formula" && fact.key != "ltl:formula" && fact.key != "relation" && !fact.key.starts_with("fuzzy_set:") && !fact.key.starts_with("fuzzy:") {
+            } else if fact.key != "formula"
+                && fact.key != "ltl:formula"
+                && fact.key != "relation"
+                && !fact.key.starts_with("fuzzy_set:")
+                && !fact.key.starts_with("fuzzy:")
+            {
                 if let Ok(val) = fact.value.parse::<f32>() {
                     inputs.insert(fact.key.clone(), val);
                 }
@@ -199,7 +215,10 @@ impl CognitionBreed for FuzzyLogic {
             if parts.len() == 3 {
                 let var = parts[1];
                 if !inputs.contains_key(var) {
-                    out_vars.entry(var.to_string()).or_default().push(term_key.clone());
+                    out_vars
+                        .entry(var.to_string())
+                        .or_default()
+                        .push(term_key.clone());
                 }
             }
         }
@@ -220,7 +239,10 @@ impl CognitionBreed for FuzzyLogic {
                 }
             }
             if can_fire {
-                add_trace("fuzzy-fire", format!("rule {} fired with strength {}", rule.id, fire_strength));
+                add_trace(
+                    "fuzzy-fire",
+                    format!("rule {} fired with strength {}", rule.id, fire_strength),
+                );
                 let out_term = normalize_term(&rule.conclusion);
                 let current = aggregated.get(&out_term).copied().unwrap_or(0.0);
                 if fire_strength > current {
@@ -230,7 +252,10 @@ impl CognitionBreed for FuzzyLogic {
         }
 
         for (out_term, &strength) in &aggregated {
-            add_trace("fuzzy-aggregate", format!("{} max strength = {}", out_term, strength));
+            add_trace(
+                "fuzzy-aggregate",
+                format!("{} max strength = {}", out_term, strength),
+            );
         }
 
         let mut out_facts = Vec::new();
@@ -239,8 +264,12 @@ impl CognitionBreed for FuzzyLogic {
             let mut max_val = f32::MIN;
             for tk in term_keys {
                 if let Some(mf) = terms.get(tk) {
-                    if mf.min_x() < min_val { min_val = mf.min_x(); }
-                    if mf.max_x() > max_val { max_val = mf.max_x(); }
+                    if mf.min_x() < min_val {
+                        min_val = mf.min_x();
+                    }
+                    if mf.max_x() > max_val {
+                        max_val = mf.max_x();
+                    }
                 }
             }
             if min_val >= max_val {
@@ -311,18 +340,33 @@ impl CognitionBreed for FuzzyLogic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::{BreedInput, Rule, Candidate, Goal, Fact};
+    use crate::breeds::{BreedInput, Candidate, Fact, Goal, Rule};
 
     fn make_input() -> BreedInput {
         BreedInput {
             intent: "Fuzzy Logic inference".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "fuzzy:temperature:cold".to_string(), value: "tri:0,0,20".to_string() },
-                Fact { key: "fuzzy:temperature:hot".to_string(), value: "tri:10,30,30".to_string() },
-                Fact { key: "fuzzy:fan:slow".to_string(), value: "tri:0,0,50".to_string() },
-                Fact { key: "fuzzy:fan:fast".to_string(), value: "tri:10,100,100".to_string() },
-                Fact { key: "fuzzy:input:temperature".to_string(), value: "15.0".to_string() },
+                Fact {
+                    key: "fuzzy:temperature:cold".to_string(),
+                    value: "tri:0,0,20".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:temperature:hot".to_string(),
+                    value: "tri:10,30,30".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:fan:slow".to_string(),
+                    value: "tri:0,0,50".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:fan:fast".to_string(),
+                    value: "tri:10,100,100".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:input:temperature".to_string(),
+                    value: "15.0".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![
@@ -358,7 +402,7 @@ mod tests {
         let mut input = make_input();
         input.facts.clear();
         input.rules.clear();
-        
+
         // Asymmetric aggregated shape: two rules, unequal firing strengths, overlapping trapezoids.
         // Rule 1: x is a -> y is c. Strength = 0.8
         // Rule 2: x is b -> y is d. Strength = 0.4
@@ -366,13 +410,28 @@ mod tests {
         // B = tri:0,10,20. At x=4, mu_B(4) = 4/10 = 0.4
         // C = trap:0,10,20,30
         // D = trap:15,30,40,50
-        input.facts.push(Fact { key: "fuzzy:x:a".to_string(), value: "tri:0,5,10".to_string() });
-        input.facts.push(Fact { key: "fuzzy:x:b".to_string(), value: "tri:0,10,20".to_string() });
-        input.facts.push(Fact { key: "fuzzy:y:c".to_string(), value: "trap:0,10,20,30".to_string() });
-        input.facts.push(Fact { key: "fuzzy:y:d".to_string(), value: "trap:15,30,40,50".to_string() });
-        
-        input.facts.push(Fact { key: "fuzzy:input:x".to_string(), value: "4.0".to_string() });
-        
+        input.facts.push(Fact {
+            key: "fuzzy:x:a".to_string(),
+            value: "tri:0,5,10".to_string(),
+        });
+        input.facts.push(Fact {
+            key: "fuzzy:x:b".to_string(),
+            value: "tri:0,10,20".to_string(),
+        });
+        input.facts.push(Fact {
+            key: "fuzzy:y:c".to_string(),
+            value: "trap:0,10,20,30".to_string(),
+        });
+        input.facts.push(Fact {
+            key: "fuzzy:y:d".to_string(),
+            value: "trap:15,30,40,50".to_string(),
+        });
+
+        input.facts.push(Fact {
+            key: "fuzzy:input:x".to_string(),
+            value: "4.0".to_string(),
+        });
+
         input.rules.push(Rule {
             id: "r1".to_string(),
             premise: vec!["fuzzy:x:a".to_string()],
@@ -385,12 +444,17 @@ mod tests {
             conclusion: "fuzzy:y:d".to_string(),
             certainty: 1.0,
         });
-        
+
         let output = breed.run(&input).unwrap();
-        
-        let out_fact = output.facts.iter().find(|f| f.key == "fuzzy:output:y").unwrap();
+
+        let out_fact = output
+            .facts
+            .iter()
+            .find(|f| f.key == "fuzzy:output:y")
+            .unwrap();
         // Hand-integrated 101-point centroid is 22.18748
-        println!("actual centroid is {}", out_fact.value); let centroid: f32 = out_fact.value.parse().unwrap();
+        println!("actual centroid is {}", out_fact.value);
+        let centroid: f32 = out_fact.value.parse().unwrap();
         assert!((centroid - 22.18748).abs() < 1e-5);
     }
 
@@ -400,7 +464,11 @@ mod tests {
         let input = make_input();
         let output = breed.run(&input).unwrap();
         assert!(!output.inference_trace.is_empty());
-        let out_fact = output.facts.iter().find(|f| f.key == "fuzzy:output:fan").unwrap();
+        let out_fact = output
+            .facts
+            .iter()
+            .find(|f| f.key == "fuzzy:output:fan")
+            .unwrap();
         assert!(out_fact.value.parse::<f32>().is_ok());
     }
 

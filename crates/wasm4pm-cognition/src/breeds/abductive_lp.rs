@@ -1,5 +1,5 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeSet, HashSet};
 
@@ -64,7 +64,11 @@ impl CognitionBreed for AbductiveLp {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "alp-load".to_string(),
-            detail: format!("Loaded {} rules, {} abducibles", input.rules.len(), abducibles.len()),
+            detail: format!(
+                "Loaded {} rules, {} abducibles",
+                input.rules.len(),
+                abducibles.len()
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -123,7 +127,10 @@ impl CognitionBreed for AbductiveLp {
                 }
 
                 // Verify goals are satisfied
-                let goals_satisfied = input.goals.iter().all(|g| model.contains(&g.value) || model.contains(&g.predicate));
+                let goals_satisfied = input
+                    .goals
+                    .iter()
+                    .all(|g| model.contains(&g.value) || model.contains(&g.predicate));
 
                 // Verify integrity constraints (rules with conclusion "false" must not fire)
                 let mut ic_violated = false;
@@ -145,14 +152,15 @@ impl CognitionBreed for AbductiveLp {
         } else {
             return Err(BreedError {
                 breed: BreedId::AbductiveLp,
-                message: format!("Too many abducibles for exact ALP (max 16, got {})", n_abducibles),
+                message: format!(
+                    "Too many abducibles for exact ALP (max 16, got {})",
+                    n_abducibles
+                ),
             });
         }
 
         // Sort valid explanations: first by size (minimal first), then lexicographically
-        valid_explanations.sort_by(|a, b| {
-            a.len().cmp(&b.len()).then_with(|| a.cmp(b))
-        });
+        valid_explanations.sort_by(|a, b| a.len().cmp(&b.len()).then_with(|| a.cmp(b)));
 
         // Filter for minimality: keep an explanation only if no subset of it is also a valid explanation.
         let mut minimal_explanations: Vec<Vec<String>> = Vec::new();
@@ -234,7 +242,10 @@ impl CognitionBreed for AbductiveLp {
             return Err("AbductiveLp must emit at least one trace step".to_string());
         }
         let has_load = output.inference_trace.iter().any(|t| t.kind == "alp-load");
-        let has_abduce = output.inference_trace.iter().any(|t| t.kind == "alp-abduce");
+        let has_abduce = output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "alp-abduce");
         if !has_load || !has_abduce {
             return Err("AbductiveLp trace must contain alp-load and alp-abduce".to_string());
         }

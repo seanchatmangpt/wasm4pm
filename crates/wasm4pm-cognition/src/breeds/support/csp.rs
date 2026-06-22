@@ -42,13 +42,26 @@ impl CspStore {
     }
 
     pub fn add_var(&mut self, name: &str, domain: Vec<String>) {
-        self.vars.insert(name.to_string(), CspVar { name: name.to_string(), domain: domain.clone() });
+        self.vars.insert(
+            name.to_string(),
+            CspVar {
+                name: name.to_string(),
+                domain: domain.clone(),
+            },
+        );
         self.domains.insert(name.to_string(), domain.clone());
-        self.trace.push(TraceEvent::Propagate { var: name.to_string(), domain });
+        self.trace.push(TraceEvent::Propagate {
+            var: name.to_string(),
+            domain,
+        });
     }
 
     pub fn add_constraint(&mut self, var1: &str, var2: &str, op: &str) {
-        self.constraints.push(CspConstraint { var1: var1.to_string(), var2: var2.to_string(), op: op.to_string() });
+        self.constraints.push(CspConstraint {
+            var1: var1.to_string(),
+            var2: var2.to_string(),
+            op: op.to_string(),
+        });
         self.propagate();
     }
 
@@ -91,8 +104,10 @@ impl CspStore {
     fn revise(&mut self, x: &str, y: &str) -> bool {
         let mut revised = false;
         let mut pruned_count = 0;
-        
-        let op = self.constraints.iter()
+
+        let op = self
+            .constraints
+            .iter()
             .find(|c| (c.var1 == x && c.var2 == y) || (c.var1 == y && c.var2 == x))
             .map(|c| {
                 if c.var1 == x {
@@ -120,7 +135,7 @@ impl CspStore {
 
         let dx = self.domains.get(x).unwrap().clone();
         let dy = self.domains.get(y).unwrap().clone();
-        
+
         let mut new_dx = Vec::new();
         for vx in &dx {
             let mut satisfied = false;
@@ -140,8 +155,15 @@ impl CspStore {
 
         if revised {
             self.domains.insert(x.to_string(), new_dx.clone());
-            self.trace.push(TraceEvent::Revise { x: x.to_string(), y: y.to_string(), pruned: pruned_count });
-            self.trace.push(TraceEvent::Propagate { var: x.to_string(), domain: new_dx });
+            self.trace.push(TraceEvent::Revise {
+                x: x.to_string(),
+                y: y.to_string(),
+                pruned: pruned_count,
+            });
+            self.trace.push(TraceEvent::Propagate {
+                var: x.to_string(),
+                domain: new_dx,
+            });
         }
 
         revised
@@ -176,7 +198,7 @@ impl CspStore {
 
         let mut assignments = HashMap::new();
         let mut unassigned: BTreeSet<String> = self.vars.keys().cloned().collect();
-        
+
         // If all domains are singletons, we are done
         let mut all_singletons = true;
         for (v, d) in &self.domains {
@@ -199,7 +221,11 @@ impl CspStore {
         }
     }
 
-    fn select_unassigned_var(&self, unassigned: &BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
+    fn select_unassigned_var(
+        &self,
+        unassigned: &BTreeSet<String>,
+        domains: &HashMap<String, Vec<String>>,
+    ) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
 
@@ -219,7 +245,12 @@ impl CspStore {
         best_var.unwrap().clone()
     }
 
-    fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
+    fn backtrack(
+        &mut self,
+        assignments: &mut HashMap<String, String>,
+        unassigned: &mut BTreeSet<String>,
+        domains: &HashMap<String, Vec<String>>,
+    ) -> bool {
         if unassigned.is_empty() {
             return true;
         }
@@ -248,22 +279,25 @@ impl CspStore {
 
             if consistent {
                 assignments.insert(var.clone(), val.clone());
-                self.trace.push(TraceEvent::Assign { var: var.clone(), val: val.clone() });
-                
+                self.trace.push(TraceEvent::Assign {
+                    var: var.clone(),
+                    val: val.clone(),
+                });
+
                 let mut new_domains = domains.clone();
                 new_domains.insert(var.clone(), vec![val.clone()]);
-                
+
                 // Temp solver for MAC
                 let mut temp_solver = CspSolver::new();
                 temp_solver.vars = self.vars.clone();
                 temp_solver.constraints = self.constraints.clone();
-                
+
                 if temp_solver.ac3(&mut new_domains) {
                     if self.backtrack(assignments, unassigned, &new_domains) {
                         return true;
                     }
                 }
-                
+
                 assignments.remove(&var);
                 self.trace.push(TraceEvent::Backtrack { var: var.clone() });
             }
@@ -432,7 +466,11 @@ impl CspSolver {
         true
     }
 
-    fn select_unassigned_var(&self, unassigned: &BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
+    fn select_unassigned_var(
+        &self,
+        unassigned: &BTreeSet<String>,
+        domains: &HashMap<String, Vec<String>>,
+    ) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
 
@@ -454,7 +492,12 @@ impl CspSolver {
         best_var.unwrap().clone()
     }
 
-    pub fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut BTreeSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
+    pub fn backtrack(
+        &mut self,
+        assignments: &mut HashMap<String, String>,
+        unassigned: &mut BTreeSet<String>,
+        domains: &HashMap<String, Vec<String>>,
+    ) -> bool {
         if unassigned.is_empty() {
             return true;
         }
@@ -490,8 +533,11 @@ impl CspSolver {
 
             if consistent {
                 assignments.insert(var.clone(), val.clone());
-                self.trace.push(TraceEvent::Assign { var: var.clone(), val: val.clone() });
-                
+                self.trace.push(TraceEvent::Assign {
+                    var: var.clone(),
+                    val: val.clone(),
+                });
+
                 let mut new_domains = domains.clone();
                 new_domains.insert(var.clone(), vec![val.clone()]);
 
@@ -500,7 +546,7 @@ impl CspSolver {
                         return true;
                     }
                 }
-                
+
                 assignments.remove(&var);
                 self.trace.push(TraceEvent::Backtrack { var: var.clone() });
             }

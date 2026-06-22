@@ -1,7 +1,7 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeSet, HashSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// Abduction by Inference to the Best Explanation (IBE) breed using Thagard's ECHO model.
 pub struct AbductiveIbe;
@@ -98,7 +98,10 @@ impl CognitionBreed for AbductiveIbe {
 
         let mut activations: HashMap<String, f32> = HashMap::new();
         for node in &nodes_list {
-            activations.insert(node.clone(), if evidence.contains(node) { 1.0 } else { 0.01 });
+            activations.insert(
+                node.clone(),
+                if evidence.contains(node) { 1.0 } else { 0.01 },
+            );
         }
 
         trace.push(TraceStep {
@@ -158,7 +161,8 @@ impl CognitionBreed for AbductiveIbe {
         }
 
         // Trace the resulting activations
-        let mut sorted_activations: Vec<(String, f32)> = activations.iter().map(|(k, v)| (k.clone(), *v)).collect();
+        let mut sorted_activations: Vec<(String, f32)> =
+            activations.iter().map(|(k, v)| (k.clone(), *v)).collect();
         sorted_activations.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
 
         let mut out_facts = Vec::new();
@@ -182,7 +186,10 @@ impl CognitionBreed for AbductiveIbe {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "ibe-select".to_string(),
-            detail: format!("Selected best explanation: {:?} with activation {:.4}", selected, best_act),
+            detail: format!(
+                "Selected best explanation: {:?} with activation {:.4}",
+                selected, best_act
+            ),
             depth: 0,
             objects: vec![],
         });
@@ -195,7 +202,8 @@ impl CognitionBreed for AbductiveIbe {
                 cand.score = (act + 1.0) / 2.0;
                 if Some(&cand.id) == selected.as_ref() && *act <= 0.0 {
                     cand.eliminated = true;
-                    cand.elimination_reason = Some("Hypothesis rejected by explanatory coherence".to_string());
+                    cand.elimination_reason =
+                        Some("Hypothesis rejected by explanatory coherence".to_string());
                 }
             }
         }
@@ -222,7 +230,10 @@ impl CognitionBreed for AbductiveIbe {
         if output.inference_trace.is_empty() {
             return Err("AbductiveIbe must emit at least one trace step".to_string());
         }
-        let has_select = output.inference_trace.iter().any(|t| t.kind == "ibe-select");
+        let has_select = output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "ibe-select");
         if !has_select {
             return Err("AbductiveIbe trace must contain an ibe-select step".to_string());
         }
