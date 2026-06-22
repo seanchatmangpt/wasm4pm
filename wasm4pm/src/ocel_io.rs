@@ -59,12 +59,12 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
     let mut errors = Vec::new();
 
     // Build a set of valid object IDs for quick lookup
-    let valid_object_ids: HashSet<String> = ocel.objects.iter().map(|o| o.id.clone()).collect();
+    let valid_object_ids: HashSet<&str> = ocel.objects.iter().map(|o| o.id.as_str()).collect();
 
     // 1. Event Referential Integrity
     for event in &ocel.events {
         for object_id in &event.object_ids {
-            if !valid_object_ids.contains(object_id) {
+            if !valid_object_ids.contains(object_id.as_str()) {
                 errors.push(format!(
                     "Event '{}' references non-existent object '{}'",
                     event.id, object_id
@@ -73,7 +73,7 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
         }
 
         for object_ref in &event.object_refs {
-            if !valid_object_ids.contains(&object_ref.object_id) {
+            if !valid_object_ids.contains(object_ref.object_id.as_str()) {
                 errors.push(format!(
                     "Event '{}' references non-existent object '{}' with qualifier '{}'",
                     event.id, object_ref.object_id, object_ref.qualifier
@@ -91,13 +91,13 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
 
     // 2. Object Relations Referential Integrity
     for rel in &ocel.object_relations {
-        if !valid_object_ids.contains(&rel.source_id) {
+        if !valid_object_ids.contains(rel.source_id.as_str()) {
             errors.push(format!(
                 "Object relation references non-existent source object '{}' with qualifier '{}'",
                 rel.source_id, rel.qualifier
             ));
         }
-        if !valid_object_ids.contains(&rel.target_id) {
+        if !valid_object_ids.contains(rel.target_id.as_str()) {
             errors.push(format!(
                 "Object relation references non-existent target object '{}' with qualifier '{}'",
                 rel.target_id, rel.qualifier
@@ -106,7 +106,7 @@ pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
     }
     for obj in &ocel.objects {
         for rel in &obj.embedded_relations {
-            if !valid_object_ids.contains(&rel.object_id) {
+            if !valid_object_ids.contains(rel.object_id.as_str()) {
                 errors.push(format!(
                     "Object '{}' embedded relation references non-existent object '{}' with qualifier '{}'",
                     obj.id, rel.object_id, rel.qualifier
