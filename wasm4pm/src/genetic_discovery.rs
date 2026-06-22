@@ -50,8 +50,7 @@ pub fn discover_genetic_algorithm(
     );
 
     let (best_dfg, best_fitness) =
-        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
+        get_or_init_state().with_event_log(eventlog_handle, |log| {
                 tracing::info!(
                     target: "wasm4pm.discovery.genetic_algorithm",
                     checkpoint = "feature_extraction",
@@ -61,9 +60,6 @@ pub fn discover_genetic_algorithm(
                 );
                 discover_genetic_algorithm_from_log(log, activity_key, population_size, generations)
                     .ok_or_else(|| crate::error::js_val("no_edges"))
-            }
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
     let node_count = best_dfg.nodes.len();
@@ -191,13 +187,9 @@ pub fn discover_pso_algorithm(
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
     let (best_dfg, best_fitness) =
-        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
+        get_or_init_state().with_event_log(eventlog_handle, |log| {
                 discover_pso_algorithm_from_log(log, activity_key, swarm_size, iterations)
                     .ok_or_else(|| crate::error::js_val("no_edges"))
-            }
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
     let handle = get_or_init_state()
@@ -606,13 +598,9 @@ pub fn discover_aco_algorithm(
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
     let (best_dfg, best_fitness) =
-        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
+        get_or_init_state().with_event_log(eventlog_handle, |log| {
                 discover_aco_algorithm_from_log(log, activity_key, ant_count, iterations)
                     .ok_or_else(|| crate::error::js_val("no_edges"))
-            }
-            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-            None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
     let handle = get_or_init_state()
