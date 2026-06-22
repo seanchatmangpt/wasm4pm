@@ -173,17 +173,16 @@ pub fn trend_forecast(data: &[f64], periods: usize) -> Result<TrendAnalysis, JsE
     }
 
     let n = data.len();
-    let x: Vec<f64> = (0..n).map(|i| i as f64).collect();
 
-    // Linear regression
-    let x_mean: f64 = x.iter().sum::<f64>() / n as f64;
+    // Linear regression — x indices are 0..n, so x_mean is the closed-form (n-1)/2.0
+    let x_mean: f64 = (n - 1) as f64 / 2.0;
     let y_mean: f64 = data.iter().sum::<f64>() / n as f64;
 
     let mut numerator = 0.0;
     let mut denominator = 0.0;
 
     for i in 0..n {
-        let x_diff = x[i] - x_mean;
+        let x_diff = i as f64 - x_mean;
         let y_diff = data[i] - y_mean;
         numerator += x_diff * y_diff;
         denominator += x_diff * x_diff;
@@ -201,7 +200,7 @@ pub fn trend_forecast(data: &[f64], periods: usize) -> Result<TrendAnalysis, JsE
     let mut ss_tot = 0.0;
 
     for i in 0..n {
-        let y_pred = slope * x[i] + intercept;
+        let y_pred = slope * i as f64 + intercept;
         ss_res += (data[i] - y_pred).powi(2);
         ss_tot += (data[i] - y_mean).powi(2);
     }
