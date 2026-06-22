@@ -59,7 +59,6 @@ pub struct StructureCharacteristics {
 /// # Arguments
 ///
 /// * `traces` - Vector of traces, where each trace is a vector of activity names
-/// * `activity_frequencies` - HashMap mapping activity names to occurrence counts
 ///
 /// # Returns
 ///
@@ -69,23 +68,18 @@ pub struct StructureCharacteristics {
 /// # Examples
 ///
 /// ```
-/// # use std::collections::HashMap;
 /// # use wasm4pm::pattern_analysis::analyze_trace_structure;
 /// # use wasm4pm::pattern_dispatch::PatternType;
 /// let traces = vec![
 ///     vec!["A".to_string(), "B".to_string(), "C".to_string()],
 ///     vec!["A".to_string(), "B".to_string(), "C".to_string()],
 /// ];
-/// let activity_frequencies = HashMap::new();
 ///
-/// let analysis = analyze_trace_structure(&traces, &activity_frequencies);
+/// let analysis = analyze_trace_structure(&traces);
 /// assert_eq!(analysis.primary_pattern, PatternType::Sequence);
 /// ```
-pub fn analyze_trace_structure(
-    traces: &[Vec<String>],
-    activity_frequencies: &HashMap<String, usize>,
-) -> TraceStructureAnalysis {
-    let chars = compute_characteristics(traces, activity_frequencies);
+pub fn analyze_trace_structure(traces: &[Vec<String>]) -> TraceStructureAnalysis {
+    let chars = compute_characteristics(traces);
     let (pattern, confidence) = select_pattern(&chars);
 
     TraceStructureAnalysis {
@@ -96,10 +90,7 @@ pub fn analyze_trace_structure(
 }
 
 /// Compute quantitative characteristics from traces
-fn compute_characteristics(
-    traces: &[Vec<String>],
-    _activity_frequencies: &HashMap<String, usize>,
-) -> StructureCharacteristics {
+fn compute_characteristics(traces: &[Vec<String>]) -> StructureCharacteristics {
     // Basic metrics
     let avg_trace_length = if !traces.is_empty() {
         traces.iter().map(|t| t.len()).sum::<usize>() as f64 / traces.len() as f64
@@ -294,7 +285,7 @@ mod tests {
             vec!["A".to_string(), "B".to_string(), "C".to_string()],
         ];
 
-        let analysis = analyze_trace_structure(&traces, &HashMap::new());
+        let analysis = analyze_trace_structure(&traces);
 
         assert_eq!(analysis.primary_pattern, PatternType::Sequence);
         assert!(!analysis.characteristics.has_repetitions);
@@ -310,7 +301,7 @@ mod tests {
             "C".to_string(),
         ]];
 
-        let analysis = analyze_trace_structure(&traces, &HashMap::new());
+        let analysis = analyze_trace_structure(&traces);
 
         assert!(analysis.characteristics.has_repetitions);
         assert!(analysis.characteristics.rework_score > 0.0);
@@ -323,7 +314,7 @@ mod tests {
             vec!["A".to_string(), "C".to_string(), "B".to_string()],
         ];
 
-        let analysis = analyze_trace_structure(&traces, &HashMap::new());
+        let analysis = analyze_trace_structure(&traces);
 
         assert!(analysis.characteristics.concurrency_score > 0.0);
     }
@@ -331,7 +322,7 @@ mod tests {
     #[test]
     fn test_empty_traces() {
         let traces: Vec<Vec<String>> = vec![];
-        let analysis = analyze_trace_structure(&traces, &HashMap::new());
+        let analysis = analyze_trace_structure(&traces);
 
         // Should default to Sequence with low confidence
         assert_eq!(analysis.primary_pattern, PatternType::Sequence);
