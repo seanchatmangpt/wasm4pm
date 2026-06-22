@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
 };
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 /// Answer Set Programming (stable models) breed.
 pub struct Asp;
@@ -39,7 +39,7 @@ impl CognitionBreed for Asp {
         });
 
         // 1. Gather all unique atoms
-        let mut all_atoms = HashSet::new();
+        let mut all_atoms: BTreeSet<String> = BTreeSet::new();
         for r in &input.rules {
             all_atoms.insert(r.conclusion.clone());
             for p in &r.premise {
@@ -62,8 +62,7 @@ impl CognitionBreed for Asp {
             all_atoms.insert(c.id.clone());
         }
 
-        let mut atoms_list: Vec<String> = all_atoms.into_iter().collect();
-        atoms_list.sort();
+        let atoms_list: Vec<String> = all_atoms.into_iter().collect();
 
         trace.push(TraceStep {
             step: trace.len(),
@@ -80,7 +79,7 @@ impl CognitionBreed for Asp {
         if n_atoms <= 16 {
             let limit = 1 << n_atoms;
             for mask in 0..limit {
-                let mut interpretation = HashSet::new();
+                let mut interpretation: BTreeSet<String> = BTreeSet::new();
                 for i in 0..n_atoms {
                     if (mask & (1 << i)) != 0 {
                         interpretation.insert(atoms_list[i].clone());
@@ -121,7 +120,7 @@ impl CognitionBreed for Asp {
                 }
 
                 // Compute least model of P^I
-                let mut least_model = HashSet::new();
+                let mut least_model: BTreeSet<String> = BTreeSet::new();
                 loop {
                     let mut added = false;
                     for (head, premises) in &reduct_rules {
@@ -140,8 +139,7 @@ impl CognitionBreed for Asp {
 
                 // If interpretation == least_model, then interpretation is stable!
                 if interpretation == least_model {
-                    let mut model_atoms: Vec<String> = interpretation.into_iter().collect();
-                    model_atoms.sort();
+                    let model_atoms: Vec<String> = interpretation.into_iter().collect();
                     stable_models.push(model_atoms);
                 }
             }
