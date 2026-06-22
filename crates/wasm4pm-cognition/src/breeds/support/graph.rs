@@ -38,7 +38,7 @@ impl DiGraph {
 
     /// All nodes in lexicographic order.
     pub fn nodes(&self) -> Vec<&str> {
-        self.adj.keys().map(|s| s.as_str()).collect()
+        self.adj.keys().map(String::as_str).collect()
     }
 
     /// Direct successors of `n` in lexicographic order (empty if unknown node).
@@ -172,7 +172,7 @@ mod tests {
         let g = diamond();
         let r = g.reachable("a");
         assert_eq!(
-            r.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+            r.iter().map(String::as_str).collect::<Vec<_>>(),
             vec!["b", "c", "d"]
         );
         assert!(g.has_path("a", "d"));
