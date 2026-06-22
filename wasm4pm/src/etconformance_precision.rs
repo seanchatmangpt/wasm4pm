@@ -19,7 +19,7 @@
 use crate::models::EventLog;
 use crate::models::PetriNet;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -414,16 +414,16 @@ mod tests {
 
     fn make_log(activity_key: &str, cases: &[&[&str]]) -> EventLog {
         EventLog {
-            attributes: HashMap::default(),
+            attributes: BTreeMap::new(),
             traces: cases
                 .iter()
                 .enumerate()
                 .map(|(_, acts)| crate::models::Trace {
-                    attributes: HashMap::default(),
+                    attributes: BTreeMap::new(),
                     events: acts
                         .iter()
                         .map(|&a| {
-                            let mut attrs = HashMap::default();
+                            let mut attrs = std::collections::BTreeMap::new();
                             attrs.insert(
                                 activity_key.to_string(),
                                 AttributeValue::String(a.to_string()),

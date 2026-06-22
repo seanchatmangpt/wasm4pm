@@ -320,14 +320,14 @@ pub fn discover_batches_wasm(
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn ts(minute: i64) -> String {
         format!("2024-01-01T00:{:02}:00+00:00", minute)
     }
 
     fn make_event(name: &str, minute: i64) -> Event {
-        let mut attrs = HashMap::default();
+        let mut attrs = std::collections::BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(name.to_string()),
@@ -340,7 +340,7 @@ mod tests {
     }
 
     fn make_trace(case_name: &str, events: Vec<Event>) -> Trace {
-        let mut attrs = HashMap::default();
+        let mut attrs = std::collections::BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(case_name.to_string()),
@@ -353,7 +353,7 @@ mod tests {
 
     fn make_log(traces: Vec<Trace>) -> EventLog {
         EventLog {
-            attributes: HashMap::default(),
+            attributes: BTreeMap::new(),
             traces,
         }
     }
@@ -368,12 +368,12 @@ mod tests {
 
     #[test]
     fn test_log_without_timestamps_returns_no_batches() {
-        let mut attrs_a = HashMap::default();
+        let mut attrs_a = std::collections::BTreeMap::new();
         attrs_a.insert(
             "concept:name".to_string(),
             AttributeValue::String("A".to_string()),
         );
-        let mut attrs_b = HashMap::default();
+        let mut attrs_b = std::collections::BTreeMap::new();
         attrs_b.insert(
             "concept:name".to_string(),
             AttributeValue::String("B".to_string()),
@@ -463,7 +463,7 @@ mod tests {
     #[test]
     fn test_custom_attribute_keys() {
         // Use non-default attribute keys.
-        let mut attrs1 = HashMap::default();
+        let mut attrs1 = std::collections::BTreeMap::new();
         attrs1.insert(
             "activity".to_string(),
             AttributeValue::String("Print".to_string()),
@@ -472,7 +472,7 @@ mod tests {
             "ts".to_string(),
             AttributeValue::Date("2024-01-01T00:10:00+00:00".to_string()),
         );
-        let mut attrs2 = HashMap::default();
+        let mut attrs2 = std::collections::BTreeMap::new();
         attrs2.insert(
             "activity".to_string(),
             AttributeValue::String("Print".to_string()),

@@ -438,7 +438,7 @@ fn empty_result() -> CorrelationResult {
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     /// Helper: build an EventLog from a list of `(activity, timestamp)` tuples.
     /// Uses `std::collections::HashMap` (NOT FxHashMap) for Event/Trace attributes.
@@ -446,7 +446,7 @@ mod tests {
         let trace_events: Vec<Event> = events
             .iter()
             .map(|(activity, ts)| {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_owned(),
                     AttributeValue::String((*activity).to_owned()),
@@ -459,9 +459,9 @@ mod tests {
             })
             .collect();
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: trace_events,
             }],
         }
@@ -470,15 +470,15 @@ mod tests {
     /// Helper: build an EventLog with multiple traces.
     fn make_multi_trace_log(traces: &[Vec<(&str, &str)>]) -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: traces
                 .iter()
                 .map(|events| Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: events
                         .iter()
                         .map(|(activity, ts)| {
-                            let mut attrs = HashMap::new();
+                            let mut attrs = BTreeMap::new();
                             attrs.insert(
                                 "concept:name".to_owned(),
                                 AttributeValue::String((*activity).to_owned()),
@@ -539,9 +539,9 @@ mod tests {
     #[test]
     fn correlation_empty_input() {
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             }],
         };
@@ -571,12 +571,12 @@ mod tests {
     #[test]
     fn correlation_no_timestamps_returns_empty() {
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_owned(),
                             AttributeValue::String("A".to_owned()),
@@ -584,7 +584,7 @@ mod tests {
                         Event { attributes: attrs }
                     },
                     {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_owned(),
                             AttributeValue::String("B".to_owned()),
@@ -661,11 +661,11 @@ mod tests {
     #[test]
     fn correlation_no_activities_returns_empty() {
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![{
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "time:timestamp".to_owned(),
                         AttributeValue::Date("2024-01-01T00:00:00Z".to_owned()),

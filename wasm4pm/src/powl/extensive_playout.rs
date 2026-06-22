@@ -7,7 +7,7 @@ use crate::models::Trace;
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_parser::parse_powl_model_string;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for extensive playout.
@@ -78,11 +78,11 @@ fn try_emit_trace(
         let trace_key = current_trace.to_vec();
         if seen.insert(trace_key) {
             traces.push(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: current_trace
                     .iter()
                     .map(|lbl| {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             crate::models::AttributeValue::String(lbl.clone()),

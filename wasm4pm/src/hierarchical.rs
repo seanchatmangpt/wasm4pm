@@ -417,7 +417,7 @@ pub fn discover_dfg_hierarchical_by_events(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     /// Helper: build a small EventLog with given traces.
     ///
@@ -426,12 +426,12 @@ mod tests {
         let mut log = EventLog::new();
         for trace_activities in traces {
             let mut trace = Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             };
             for &activity in *trace_activities {
                 let mut event = Event {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 };
                 event.attributes.insert(
                     "concept:name".to_string(),

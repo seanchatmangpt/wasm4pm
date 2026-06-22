@@ -211,15 +211,15 @@ fn build_causal_heuristic(
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn create_test_log() -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![
                 // Linear trace: A → B → C
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -249,7 +249,7 @@ mod tests {
                 },
                 // Another linear trace: A → B → C
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -283,11 +283,11 @@ mod tests {
 
     fn create_bidirectional_log() -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![
                 // A → B trace
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -309,7 +309,7 @@ mod tests {
                 },
                 // B → A trace (bidirectional)
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -335,11 +335,11 @@ mod tests {
 
     fn create_heuristic_log() -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![
                 // 5 traces: A → B
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -360,7 +360,7 @@ mod tests {
                     ],
                 },
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -381,7 +381,7 @@ mod tests {
                     ],
                 },
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -402,7 +402,7 @@ mod tests {
                     ],
                 },
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -423,7 +423,7 @@ mod tests {
                     ],
                 },
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();
@@ -445,7 +445,7 @@ mod tests {
                 },
                 // 1 trace: B → A
                 Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: vec![
                         {
                             let mut e = Event::new();

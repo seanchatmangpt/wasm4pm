@@ -26,7 +26,7 @@ use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use rustc_hash::FxHashMap;
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
 use std::mem::size_of;
 use wasm_bindgen::prelude::*;
@@ -565,7 +565,7 @@ impl<'a> BinaryLogView<'a> {
         for t in 0..num_traces {
             let binary_trace = self.trace(t)?;
             let mut trace = Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::with_capacity(binary_trace.len()),
             };
 
@@ -573,7 +573,7 @@ impl<'a> BinaryLogView<'a> {
                 let activity_id = binary_trace.event_id(e);
                 let activity = vocab.get(activity_id as usize).cloned().unwrap_or_default();
 
-                let mut attributes = HashMap::new();
+                let mut attributes = BTreeMap::new();
                 attributes.insert(activity_key.to_string(), AttributeValue::String(activity));
 
                 if has_timestamps {
@@ -766,13 +766,13 @@ fn parse_xes_to_event_log(content: &str) -> Result<EventLog, String> {
         match second {
             b't' if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
                 current_trace = Some(Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: Vec::with_capacity(20),
                 });
             }
             b'e' if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
                 current_event = Some(Event {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 });
             }
             b's' if trimmed.len() > 8

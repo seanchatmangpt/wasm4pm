@@ -12,7 +12,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde::{Deserialize, Serialize};
 #[cfg(test)]
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 /// Trie node representing a single activity in the prefix tree.
@@ -297,11 +297,11 @@ mod tests {
         let traces = activities
             .into_iter()
             .map(|acts| Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: acts
                     .into_iter()
                     .map(|a| {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             AttributeValue::String(a.to_string()),
@@ -312,7 +312,7 @@ mod tests {
             })
             .collect();
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces,
         }
     }
@@ -393,7 +393,7 @@ mod tests {
     #[test]
     fn test_discover_prefix_tree_empty_log() {
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![],
         };
         let result = discover_prefix_tree_inner(&log, "concept:name", None).unwrap();

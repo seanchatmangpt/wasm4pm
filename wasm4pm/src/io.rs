@@ -1,7 +1,7 @@
 use crate::models::{AttributeValue, EventLog, OCELEvent, OCELObject, OCEL};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 // SECURITY: Maximum byte length for any raw input passed to WASM entry points.
@@ -120,7 +120,7 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                     .attribute("timestamp")
                     .map_or_else(|| "1970-01-01T00:00:00Z".to_string(), |s| s.to_string());
 
-                let mut attributes = HashMap::new();
+                let mut attributes = BTreeMap::new();
                 let mut object_ids = Vec::new();
 
                 // Parse child elements (attributes and object references)
@@ -189,7 +189,7 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                     .attribute("type")
                     .map_or_else(|| "Object".to_string(), |s| s.to_string());
 
-                let mut attributes = HashMap::new();
+                let mut attributes = BTreeMap::new();
 
                 // Parse child elements (attributes)
                 for child in node.children() {

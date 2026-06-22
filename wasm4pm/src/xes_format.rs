@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -336,7 +336,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
                 current_trace = Some(Trace {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     events: Vec::with_capacity(20),
                 });
                 tag_stack.push(TagStackEntry {
@@ -352,7 +352,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
                 current_event = Some(Event {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 });
                 tag_stack.push(TagStackEntry {
                     tag_name: "event".to_string(),

@@ -242,18 +242,18 @@ pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsVal
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
 
     fn make_test_log(traces: Vec<Vec<&str>>) -> EventLog {
         let mut log = EventLog::new();
         for activities in traces {
             let mut trace = Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             };
             for act in activities {
                 let mut event = Event {
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                 };
                 event.attributes.insert(
                     "concept:name".to_string(),
@@ -582,11 +582,11 @@ mod tests {
     fn test_ensemble_missing_activity_key() {
         let mut log = EventLog::new();
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         let mut event = Event {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
         };
         // Missing concept:name attribute
         event.attributes.insert(

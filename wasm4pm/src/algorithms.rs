@@ -671,19 +671,19 @@ mod tests {
                 let events = acts
                     .iter()
                     .map(|a| {
-                        let mut attrs = StdHashMap::new();
+                        let mut attrs = std::collections::BTreeMap::new();
                         attrs.insert(key.to_string(), AttributeValue::String(a.to_string()));
                         Event { attributes: attrs }
                     })
                     .collect();
                 Trace {
-                    attributes: StdHashMap::new(),
+                    attributes: std::collections::BTreeMap::new(),
                     events,
                 }
             })
             .collect();
         EventLog {
-            attributes: StdHashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             traces: trace_list,
         }
     }

@@ -562,11 +562,11 @@ mod tests {
         let mut traces = Vec::new();
         for _i in 0..n {
             traces.push(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     Event {
                         attributes: {
-                            let mut attrs = HashMap::new();
+                            let mut attrs = BTreeMap::new();
                             attrs.insert(
                                 "concept:name".to_string(),
                                 AttributeValue::String("A".to_string()),
@@ -576,7 +576,7 @@ mod tests {
                     },
                     Event {
                         attributes: {
-                            let mut attrs = HashMap::new();
+                            let mut attrs = BTreeMap::new();
                             attrs.insert(
                                 "concept:name".to_string(),
                                 AttributeValue::String("B".to_string()),
@@ -588,7 +588,7 @@ mod tests {
             });
         }
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces,
         }
     }
@@ -678,7 +678,7 @@ mod tests {
     fn test_empty_log() {
         let net = make_sequential_net();
         let log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![],
         };
 
@@ -718,7 +718,7 @@ mod tests {
         // penalty_sum = visible_count → raw = 0, clamped = 0. Good.
         let net = make_sequential_net();
         let empty_log = EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces: vec![],
         };
         let result = compute_quality(&net, &empty_log, "concept:name").unwrap();
