@@ -439,7 +439,7 @@ impl PowlArena {
     /// Add a labeled transition; returns its arena index.
     pub fn add_transition(&mut self, label: Option<String>) -> u32 {
         let id = self.alloc_id();
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes
             .push(PowlNode::Transition(TransitionNode { label, id }));
         idx
@@ -462,7 +462,7 @@ impl PowlArena {
         max_freq: Option<i64>,
     ) -> u32 {
         let id = self.alloc_id();
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         let skippable = min_freq == 0;
         let selfloop = max_freq.is_none();
         let max_str = max_freq.map_or_else(|| "-".to_string(), |v| v.to_string());
@@ -487,7 +487,7 @@ impl PowlArena {
     /// Add a StrictPartialOrder node. `children` are arena indices.
     pub fn add_strict_partial_order(&mut self, children: Vec<u32>) -> u32 {
         let n = children.len();
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes
             .push(PowlNode::StrictPartialOrder(StrictPartialOrderNode {
                 children,
@@ -499,7 +499,7 @@ impl PowlArena {
     /// Add a Sequence (total order over children).
     pub fn add_sequence(&mut self, children: Vec<u32>) -> u32 {
         let n = children.len();
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         let mut order = BinaryRelation::new(n);
         for i in 0..n {
             for j in (i + 1)..n {
@@ -516,7 +516,7 @@ impl PowlArena {
 
     /// Add an OperatorPOWL node (XOR or LOOP).
     pub fn add_operator(&mut self, operator: Operator, children: Vec<u32>) -> u32 {
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes.push(PowlNode::OperatorPowl(OperatorPowlNode {
             operator,
             children,
@@ -537,7 +537,7 @@ impl PowlArena {
         end_nodes: Vec<usize>,
         empty_path: bool,
     ) -> u32 {
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes.push(PowlNode::DecisionGraph(DecisionGraphNode {
             children,
             order,
@@ -573,7 +573,7 @@ impl PowlArena {
             start_idx: graph.start_idx,
             end_idx: graph.end_idx,
         };
-        let idx = self.nodes.len() as u32;
+        let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
             graph: normalized,
         }));
@@ -856,7 +856,7 @@ impl PowlArena {
                     end_idx: cg.graph.end_idx,
                 };
                 // Add directly without re-normalizing (already normalized).
-                let idx = dest.nodes.len() as u32;
+                let idx = u32::try_from(dest.nodes.len()).expect("arena node count fits u32");
                 dest.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
                     graph: new_graph,
                 }));

@@ -81,7 +81,7 @@ pub fn compute_activity_transition_matrix(
         let vocab: HashMap<String, u32> = activities
             .iter()
             .enumerate()
-            .map(|(i, a)| (a.clone(), i as u32))
+            .map(|(i, a)| (a.clone(), u32::try_from(i).expect("activity vocab index fits u32")))
             .collect();
 
         let mut transitions: BTreeMap<(u32, u32), usize> = BTreeMap::new();
