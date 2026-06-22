@@ -15,7 +15,7 @@
 
 use crate::powl::discovery::DiscoveryConfig;
 use crate::powl_arena::{Operator, PowlArena};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 // ---------------------------------------------------------------------------
 // Eventually-follows graph (EFG) helper
@@ -137,10 +137,9 @@ pub fn detect_sequence_cut(
     let mut activities: Vec<String> = traces
         .iter()
         .flat_map(|t| t.iter().cloned())
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
-    activities.sort();
 
     if activities.is_empty() {
         return Err("No activities in traces".to_string());
@@ -417,10 +416,9 @@ pub fn detect_loop_cut(
     let mut all_activities: Vec<String> = traces
         .iter()
         .flat_map(|t| t.iter().cloned())
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
-    all_activities.sort();
 
     // Build DFG reachability matrix
     let mut act_to_idx: HashMap<String, usize> = HashMap::new();
@@ -647,10 +645,9 @@ pub fn detect_xor_cut(
     let mut activities: Vec<String> = traces
         .iter()
         .flat_map(|t| t.iter().cloned())
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
-    activities.sort();
 
     if activities.is_empty() {
         return Err("No activities in traces".to_string());
@@ -821,10 +818,9 @@ pub fn detect_maximal_partial_order_cut(
     let mut activities: Vec<String> = traces
         .iter()
         .flat_map(|t| t.iter().cloned())
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
-    activities.sort();
 
     if activities.len() < 2 {
         return Err("Not enough activities for maximal PO cut".to_string());
@@ -1013,10 +1009,9 @@ pub fn detect_dynamic_clustering_cut(
     let mut activities: Vec<String> = traces
         .iter()
         .flat_map(|t| t.iter().cloned())
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
-    activities.sort();
 
     if activities.len() < 2 {
         return Err("Not enough activities for dynamic clustering cut".to_string());
@@ -1172,10 +1167,9 @@ pub fn detect_brute_force_partial_order_cut(
     let mut activities: Vec<String> = traces
         .iter()
         .flat_map(|t| t.iter().cloned())
-        .collect::<HashSet<_>>()
+        .collect::<BTreeSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
-    activities.sort();
 
     if activities.len() < 2 {
         return Err("Not enough activities for brute force PO cut".to_string());
