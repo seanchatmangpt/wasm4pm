@@ -27,14 +27,7 @@ pub fn analyze_variant_complexity(
                     trace
                         .events
                         .iter()
-                        .filter_map(|e| {
-                            if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key)
-                            {
-                                Some(a.clone())
-                            } else {
-                                None
-                            }
-                        })
+                        .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
                         .collect::<Vec<String>>()
                 })
                 .counts();
@@ -327,13 +320,7 @@ pub fn extract_activity_ordering(
                 let activities: Vec<&str> = trace
                     .events
                     .iter()
-                    .filter_map(|e| {
-                        if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key) {
-                            Some(a.as_str())
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|e| e.attributes.get(activity_key)?.as_string())
                     .collect();
 
                 for (pos, &activity) in activities.iter().enumerate() {
