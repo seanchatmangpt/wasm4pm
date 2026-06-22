@@ -190,7 +190,7 @@ impl CognitionBreed for MetaReasoning {
                 .entry(r.key.clone())
                 .or_default()
                 .entry(r.value.clone())
-                .or_insert(0.0) += r.confidence;
+                .or_default() += r.confidence;
         }
         let mut decisions: Vec<(String, String, f64)> = Vec::new();
         for (key, values) in &tally {

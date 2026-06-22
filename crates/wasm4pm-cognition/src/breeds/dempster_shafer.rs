@@ -56,7 +56,7 @@ fn combine_bpas(
             if intersection == 0 {
                 k_conflict += mass;
             } else {
-                *combined.entry(intersection).or_insert(0.0) += mass;
+                *combined.entry(intersection).or_default() += mass;
             }
         }
     }
@@ -164,14 +164,14 @@ impl CognitionBreed for DempsterShafer {
             let subset = parse_subset(&rule.conclusion, &mapping);
             let mass = rule.certainty.to_string().parse::<f64>().unwrap_or(0.0);
             let bpa = sources.entry(source_id).or_insert_with(BTreeMap::new);
-            *bpa.entry(subset).or_insert(0.0) += mass;
+            *bpa.entry(subset).or_default() += mass;
         }
 
         // Add implicit ignorance mass to frame
         for bpa in sources.values_mut() {
             let sum: f64 = bpa.values().sum();
             if sum < 1.0 - 1e-9 {
-                *bpa.entry(frame_mask).or_insert(0.0) += 1.0 - sum;
+                *bpa.entry(frame_mask).or_default() += 1.0 - sum;
             }
         }
 
