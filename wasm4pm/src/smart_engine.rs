@@ -496,27 +496,21 @@ impl FusedMultiPassStreaming {
             });
         }
 
-        let mut start_activities: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-        for (&id, &cnt) in &start_counts {
-            if let Some(name) = self.interner.lookup(id) {
-                start_activities.insert(name.to_string(), cnt);
-            }
-        }
+        let start_activities: std::collections::BTreeMap<String, usize> = start_counts
+            .iter()
+            .filter_map(|(&id, &cnt)| self.interner.lookup(id).map(|name| (name.to_string(), cnt)))
+            .collect();
 
-        let mut end_activities: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-        for (&id, &cnt) in &end_counts {
-            if let Some(name) = self.interner.lookup(id) {
-                end_activities.insert(name.to_string(), cnt);
-            }
-        }
+        let end_activities: std::collections::BTreeMap<String, usize> = end_counts
+            .iter()
+            .filter_map(|(&id, &cnt)| self.interner.lookup(id).map(|name| (name.to_string(), cnt)))
+            .collect();
 
         let dfg = DFG {
             nodes,
             edges,
-            start_activities: start_activities.into_iter().collect(),
-            end_activities: end_activities.into_iter().collect(),
+            start_activities,
+            end_activities,
         };
 
         self.inner.dfg_log_hash = hash;
