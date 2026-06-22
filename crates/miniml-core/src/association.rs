@@ -209,10 +209,10 @@ pub fn apriori_impl(
         }
 
         let mut next_frequent: Vec<HashSet<usize>> = Vec::new();
-        for (ci, candidate) in candidates.iter().enumerate() {
+        for (ci, candidate) in candidates.into_iter().enumerate() {
             if candidate_counts[ci] >= min_count {
-                next_frequent.push(candidate.clone());
                 frequent_itemsets.push(candidate.clone());
+                next_frequent.push(candidate);
                 itemset_supports.push(candidate_counts[ci] as f64 / n_transactions as f64);
             }
         }
