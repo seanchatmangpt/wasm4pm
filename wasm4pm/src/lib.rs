@@ -210,6 +210,7 @@ fn get_drift_threshold_high() -> f32 {
 ///
 /// Returns 0.0 for unparseable or identical timestamps.
 /// WASM-compatible — no external dependencies.
+    #[must_use = "returns computed duration in seconds"]
 pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
     fn parse_ts(s: &str) -> Option<i64> {
         let s = s.trim();
@@ -2309,6 +2310,7 @@ pub struct RlState {
 
 impl RlState {
     /// Create from 8-dimensional feature vector and rework ratio
+    #[must_use = "returns constructed RlState"]
     pub fn from_features(features: &[f32; 8], health_level: u8, rework_ratio: f32) -> Self {
         // features[2] = unique_activities / 100
         let activity_count = (features[2] * 100.0) as u32;
@@ -2450,6 +2452,7 @@ pub enum RlAction {
 }
 
 impl RlAction {
+    #[must_use = "returns action name"]
     pub fn name(&self) -> &'static str {
         match self {
             RlAction::Continue => "Continue",
@@ -2947,26 +2950,31 @@ pub struct Data {
 #[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
 impl Data {
     /// Create a new Data container (statrs-compatible API)
+    #[must_use = "returns constructed Data"]
     pub fn new(data: Vec<f64>) -> Self {
         Self { inner: data }
     }
 
     /// Calculate median
+    #[must_use = "returns computed median"]
     pub fn median(&self) -> f64 {
         hand_stats::median(&mut self.inner.clone()).unwrap_or(0.0)
     }
 
     /// Calculate mean
+    #[must_use = "returns computed mean"]
     pub fn mean(&self) -> f64 {
         hand_stats::mean(&self.inner).unwrap_or(0.0)
     }
 
     /// Calculate percentile
+    #[must_use = "returns computed percentile"]
     pub fn percentile(&self, p: f64) -> f64 {
         hand_stats::percentile(&mut self.inner.clone(), p).unwrap_or(0.0)
     }
 
     /// Calculate standard deviation
+    #[must_use = "returns computed standard deviation"]
     pub fn std_deviation(&self) -> f64 {
         hand_stats::std_deviation(&self.inner).unwrap_or(0.0)
     }
