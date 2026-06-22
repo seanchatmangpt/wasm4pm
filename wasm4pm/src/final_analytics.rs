@@ -349,7 +349,7 @@ pub fn extract_activity_ordering(
                 .map(|(activity, preds)| {
                     json!({
                         "activity": activity,
-                        "mandatory_predecessors": preds.iter().cloned().collect::<Vec<_>>()
+                        "mandatory_predecessors": preds
                     })
                 })
                 .collect();
