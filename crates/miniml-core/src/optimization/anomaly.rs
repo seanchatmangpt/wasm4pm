@@ -248,7 +248,6 @@ pub fn isolation_forest_score(
 
     for _ in 0..n_trees {
         let mut depth = 0;
-        let current_point = point.to_vec();
         let mut indices: Vec<usize> = (0..reference.len()).collect();
 
         for d in 0..max_depth {
@@ -280,7 +279,7 @@ pub fn isolation_forest_score(
                 .collect();
 
             // Determine which side the point goes to
-            let point_val = current_point.get(feature).copied().unwrap_or(0.0);
+            let point_val = point.get(feature).copied().unwrap_or(0.0);
             indices = if point_val < split_value { left } else { right };
             depth += 1;
         }
