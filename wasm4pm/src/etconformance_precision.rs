@@ -64,7 +64,7 @@ fn transition_has_label(net: &PetriNet, trans_id: &str, label: &str) -> bool {
     net.transitions
         .iter()
         .find(|t| t.id == trans_id)
-        .map_or(false, |t| !t.label.is_empty() && t.label == label)
+        .is_some_and(|t| !t.label.is_empty() && t.label == label)
 }
 
 /// Check whether a node is a place.

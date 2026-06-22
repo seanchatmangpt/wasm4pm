@@ -371,7 +371,7 @@ impl OCELReceiptLinter {
                     .or_else(|| ep.get("expected_ocel"))
                     .or_else(|| ep.get("ocel"))
             });
-            let expected_has_hash = ep_val.map_or(false, |ep| {
+            let expected_has_hash = ep_val.is_some_and(|ep| {
                 ep.get("expected_ocel2_hash").is_some()
                     || ep.get("expected_ocel_hash").is_some()
                     || ep.get("ocel_hash").is_some()
@@ -382,7 +382,7 @@ impl OCELReceiptLinter {
                     .or_else(|| op.get("observed_ocel"))
                     .or_else(|| op.get("ocel"))
             });
-            let observed_has_hash = op_val.map_or(false, |op| {
+            let observed_has_hash = op_val.is_some_and(|op| {
                 op.get("observed_ocel2_hash").is_some()
                     || op.get("observed_ocel_hash").is_some()
                     || op.get("ocel_hash").is_some()
