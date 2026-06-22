@@ -148,16 +148,14 @@ pub fn compute_ucb1_selection(
     }
 
     // Forced exploration: pick first arm with zero pulls
-    for (i, arm) in state.arms.iter().enumerate() {
-        if arm.pull_count == 0 {
-            return Ok(SelectionResult {
-                selected: arm.name.clone(),
-                arm_index: i,
-                ucb_score: f64::INFINITY,
-                mean_reward: 0.0,
-                exploration_bonus: f64::INFINITY,
-            });
-        }
+    if let Some((i, arm)) = state.arms.iter().enumerate().find(|(_, a)| a.pull_count == 0) {
+        return Ok(SelectionResult {
+            selected: arm.name.clone(),
+            arm_index: i,
+            ucb_score: f64::INFINITY,
+            mean_reward: 0.0,
+            exploration_bonus: f64::INFINITY,
+        });
     }
 
     // UCB1: argmax( mean_reward + c * sqrt(ln(total_pulls) / pull_count) )
@@ -168,23 +166,17 @@ pub fn compute_ucb1_selection(
         std::f64::consts::SQRT_2
     };
 
-    let mut best_idx = 0;
-    let mut best_ucb = f64::NEG_INFINITY;
-    let mut best_mean = 0.0;
-    let mut best_bonus = 0.0;
-
-    for (i, arm) in state.arms.iter().enumerate() {
-        let mean = arm.total_reward / arm.pull_count as f64;
-        let bonus = c * (ln_total / arm.pull_count as f64).sqrt();
-        let ucb = mean + bonus;
-
-        if ucb > best_ucb {
-            best_ucb = ucb;
-            best_idx = i;
-            best_mean = mean;
-            best_bonus = bonus;
-        }
-    }
+    let (best_idx, best_ucb, best_mean, best_bonus) = state
+        .arms
+        .iter()
+        .enumerate()
+        .map(|(i, arm)| {
+            let mean = arm.total_reward / arm.pull_count as f64;
+            let bonus = c * (ln_total / arm.pull_count as f64).sqrt();
+            (i, mean + bonus, mean, bonus)
+        })
+        .max_by(|a, b| a.1.total_cmp(&b.1))
+        .expect("invariant: arms non-empty checked above");
 
     Ok(SelectionResult {
         selected: state.arms[best_idx].name.clone(),

@@ -53,12 +53,11 @@ pub fn predict_top_k_activities(
             };
         }
 
-        for (act_id, count) in next_acts.iter() {
-            if let Some(name) = activity_vocab.get(*act_id as usize) {
-                let prob = *count as f64 / total as f64;
-                candidates.push((name.clone(), prob));
-            }
-        }
+        candidates.extend(next_acts.iter().filter_map(|(act_id, count)| {
+            activity_vocab
+                .get(*act_id as usize)
+                .map(|name| (name.clone(), *count as f64 / total as f64))
+        }));
     }
 
     candidates.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
@@ -120,13 +119,12 @@ pub fn beam_search_paths(
                     continue;
                 }
 
-                for (act_id, count) in next_acts.iter() {
-                    let trans_prob = *count as f64 / total as f64;
-                    let new_prob = current_prob * trans_prob;
+                next_beams.extend(next_acts.iter().map(|(act_id, count)| {
+                    let new_prob = current_prob * (*count as f64 / total as f64);
                     let mut new_seq = current_seq.clone();
                     new_seq.push(*act_id);
-                    next_beams.push((new_seq, new_prob));
-                }
+                    (new_seq, new_prob)
+                }));
             }
         }
 
