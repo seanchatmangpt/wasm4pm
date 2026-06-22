@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
 };
-use std::collections::{HashSet, HashMap};
+use std::collections::{BTreeSet, HashSet, HashMap};
 
 /// Description Logic breed.
 pub struct DescriptionLogic;
@@ -76,52 +76,64 @@ impl CognitionBreed for DescriptionLogic {
         }
 
         // 1. Transitive closure of subsumes (TBox reasoning)
-        // Loop until no new subsumptions are derived
+        // Collect new (a,d) pairs into a BTreeSet each round — avoids cloning the full
+        // set and deduplicates in one pass before committing to `subsumes`.
         loop {
-            let mut added = false;
-            let current = subsumes.clone();
-            for (a, b) in &current {
-                for (c, d) in &current {
-                    if b == c {
-                        // a subsumes b, b subsumes d -> a subsumes d
-                        if !subsumes.contains(&(a.clone(), d.clone())) && a != d {
-                            subsumes.insert((a.clone(), d.clone()));
-                            trace.push(TraceStep {
-                                step: step_count,
-                                kind: "dl-subsume".to_string(),
-                                detail: format!("Derived: {} subsumes {}", a, d),
-                                depth: 0,
-                                objects: vec![("class".into(), a.clone()), ("class".into(), d.clone())],
-                            });
-                            step_count += 1;
-                            added = true;
-                        }
-                    }
-                }
-            }
-            if !added {
+            let new_pairs: BTreeSet<(String, String)> = subsumes
+                .iter()
+                .flat_map(|(a, b)| {
+                    subsumes
+                        .iter()
+                        .filter(|(c, _)| b == c)
+                        .filter_map(|(_, d)| {
+                            if a != d && !subsumes.contains(&(a.clone(), d.clone())) {
+                                Some((a.clone(), d.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            if new_pairs.is_empty() {
                 break;
+            }
+            for (a, d) in new_pairs {
+                trace.push(TraceStep {
+                    step: step_count,
+                    kind: "dl-subsume".to_string(),
+                    detail: format!("Derived: {} subsumes {}", a, d),
+                    depth: 0,
+                    objects: vec![("class".into(), a.clone()), ("class".into(), d.clone())],
+                });
+                step_count += 1;
+                subsumes.insert((a, d));
             }
         }
 
         // 2. Propagate class membership (ABox reasoning)
         // If member(x, C) and subsumes(D, C) -> member(x, D)
         loop {
-            let mut added = false;
-            let current_members = member.clone();
-            for (x, c) in &current_members {
-                for (d, class_c) in &subsumes {
-                    if c == class_c {
-                        if !member.contains(&(x.clone(), d.clone())) {
-                            member.insert((x.clone(), d.clone()));
-                            added = true;
-                        }
-                    }
-                }
-            }
-            if !added {
+            let new_members: BTreeSet<(String, String)> = member
+                .iter()
+                .flat_map(|(x, c)| {
+                    subsumes
+                        .iter()
+                        .filter(|(_, class_c)| c == class_c)
+                        .filter_map(|(d, _)| {
+                            if !member.contains(&(x.clone(), d.clone())) {
+                                Some((x.clone(), d.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            if new_members.is_empty() {
                 break;
             }
+            member.extend(new_members);
         }
 
         // 3. Consistency check
