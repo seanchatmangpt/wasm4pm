@@ -111,7 +111,7 @@ impl IncrementalDFG {
             .node_counts
             .iter()
             .map(|(&id, &count)| {
-                let label = format!("activity_{}", id);
+                let label = format!("activity_{id}");
                 DFGNode {
                     id: label.clone(),
                     label,
@@ -127,8 +127,8 @@ impl IncrementalDFG {
             .edges
             .iter()
             .map(|(&(from, to), &freq)| DirectlyFollowsRelation {
-                from: format!("activity_{}", from),
-                to: format!("activity_{}", to),
+                from: format!("activity_{from}"),
+                to: format!("activity_{to}"),
                 frequency: freq as usize,
             })
             .collect();
@@ -137,10 +137,10 @@ impl IncrementalDFG {
 
         // Start / end activities
         for &id in &self.start_activities {
-            dfg.start_activities.insert(format!("activity_{}", id), 0);
+            dfg.start_activities.insert(format!("activity_{id}"), 0);
         }
         for &id in &self.end_activities {
-            dfg.end_activities.insert(format!("activity_{}", id), 0);
+            dfg.end_activities.insert(format!("activity_{id}"), 0);
         }
 
         dfg
@@ -347,11 +347,11 @@ pub fn streaming_dfg_process_event(handle: &str, activity_id: u32) -> Result<(),
         }
         Some(_) => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("Object {} is not an IncrementalDFG", handle),
+            format!("Object {handle} is not an IncrementalDFG"),
         )),
         None => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("No object found for handle: {}", handle),
+            format!("No object found for handle: {handle}"),
         )),
     })
 }
@@ -368,11 +368,11 @@ pub fn streaming_dfg_end_trace(handle: &str) -> Result<(), JsValue> {
         }
         Some(_) => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("Object {} is not an IncrementalDFG", handle),
+            format!("Object {handle} is not an IncrementalDFG"),
         )),
         None => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("No object found for handle: {}", handle),
+            format!("No object found for handle: {handle}"),
         )),
     })
 }
@@ -388,17 +388,17 @@ pub fn incremental_dfg_snapshot(handle: &str) -> Result<String, JsValue> {
             serde_json::to_string(&dfg).map_err(|e| {
                 error::wasm_err(
                     codes::INTERNAL_ERROR,
-                    format!("JSON serialization failed: {}", e),
+                    format!("JSON serialization failed: {e}"),
                 )
             })
         }
         Some(_) => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("Object {} is not an IncrementalDFG", handle),
+            format!("Object {handle} is not an IncrementalDFG"),
         )),
         None => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("No object found for handle: {}", handle),
+            format!("No object found for handle: {handle}"),
         )),
     })
 }
@@ -419,17 +419,17 @@ pub fn incremental_dfg_stats(handle: &str) -> Result<String, JsValue> {
             serde_json::to_string(&stats).map_err(|e| {
                 error::wasm_err(
                     codes::INTERNAL_ERROR,
-                    format!("JSON serialization failed: {}", e),
+                    format!("JSON serialization failed: {e}"),
                 )
             })
         }
         Some(_) => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("Object {} is not an IncrementalDFG", handle),
+            format!("Object {handle} is not an IncrementalDFG"),
         )),
         None => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("No object found for handle: {}", handle),
+            format!("No object found for handle: {handle}"),
         )),
     })
 }
@@ -495,17 +495,17 @@ pub fn streaming_dfg_string_snapshot(handle: &str) -> Result<String, JsValue> {
             serde_json::to_string(&dfg).map_err(|e| {
                 error::wasm_err(
                     codes::INTERNAL_ERROR,
-                    format!("JSON serialization failed: {}", e),
+                    format!("JSON serialization failed: {e}"),
                 )
             })
         }
         Some(_) => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("Object {} is not a StreamingDFG", handle),
+            format!("Object {handle} is not a StreamingDFG"),
         )),
         None => Err(error::wasm_err(
             codes::INVALID_HANDLE,
-            format!("No object found for handle: {}", handle),
+            format!("No object found for handle: {handle}"),
         )),
     })
 }

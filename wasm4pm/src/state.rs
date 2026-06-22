@@ -107,16 +107,16 @@ impl AppState {
         let mut counter = self.counter.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock counter: {}", e),
+                format!("Failed to lock counter: {e}"),
             )
         })?;
-        let id = format!("obj_{}", counter);
+        let id = format!("obj_{counter}");
         *counter += 1;
 
         let mut objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         objects.insert(id.clone(), obj);
@@ -135,7 +135,7 @@ impl AppState {
         let objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         Ok(objects.get(id).cloned())
@@ -157,7 +157,7 @@ impl AppState {
         let objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         f(objects.get(id))
@@ -178,7 +178,7 @@ impl AppState {
         let mut objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         f(objects.get_mut(id))
@@ -195,7 +195,7 @@ impl AppState {
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
             None => Err(wasm_err(
                 codes::INVALID_HANDLE,
-                format!("EventLog '{}' not found", id),
+                format!("EventLog '{id}' not found"),
             )),
         })
     }
@@ -211,7 +211,7 @@ impl AppState {
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
             None => Err(wasm_err(
                 codes::INVALID_HANDLE,
-                format!("PetriNet '{}' not found", id),
+                format!("PetriNet '{id}' not found"),
             )),
         })
     }
@@ -224,7 +224,10 @@ impl AppState {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::PetriNet(net)) => f(net),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("PetriNet '{}' not found", id))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("PetriNet '{id}' not found"),
+            )),
         })
     }
 
@@ -239,7 +242,7 @@ impl AppState {
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
             None => Err(wasm_err(
                 codes::INVALID_HANDLE,
-                format!("OCEL '{}' not found", id),
+                format!("OCEL '{id}' not found"),
             )),
         })
     }
@@ -255,7 +258,7 @@ impl AppState {
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
             None => Err(wasm_err(
                 codes::INVALID_HANDLE,
-                format!("DFG '{}' not found", id),
+                format!("DFG '{id}' not found"),
             )),
         })
     }
@@ -271,7 +274,7 @@ impl AppState {
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a JsonString")),
             None => Err(wasm_err(
                 codes::INVALID_HANDLE,
-                format!("JsonString '{}' not found", id),
+                format!("JsonString '{id}' not found"),
             )),
         })
     }
@@ -287,7 +290,7 @@ impl AppState {
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
             None => Err(wasm_err(
                 codes::INVALID_HANDLE,
-                format!("EventLog '{}' not found", id),
+                format!("EventLog '{id}' not found"),
             )),
         })
     }
@@ -300,8 +303,14 @@ impl AppState {
     {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::StreamingDfgBuilder(b)) => f(b),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingDfgBuilder")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingDfgBuilder '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingDfgBuilder",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingDfgBuilder '{id}' not found"),
+            )),
         })
     }
 
@@ -313,11 +322,16 @@ impl AppState {
     {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::StreamingDfgBuilder(b)) => f(b),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingDfgBuilder")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingDfgBuilder '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingDfgBuilder",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingDfgBuilder '{id}' not found"),
+            )),
         })
     }
-
 
     /// Execute a closure with the named `TemporalProfile`, returning a typed error if not found.
     #[must_use]
@@ -327,8 +341,14 @@ impl AppState {
     {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::TemporalProfile(p)) => f(p),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a TemporalProfile")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("TemporalProfile '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a TemporalProfile",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("TemporalProfile '{id}' not found"),
+            )),
         })
     }
 
@@ -340,8 +360,14 @@ impl AppState {
     {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::DeclareModel(m)) => f(m),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DeclareModel")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("DeclareModel '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a DeclareModel",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("DeclareModel '{id}' not found"),
+            )),
         })
     }
 
@@ -353,11 +379,16 @@ impl AppState {
     {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::StreamingConformanceChecker(c)) => f(c),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingConformanceChecker")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingConformanceChecker '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingConformanceChecker",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingConformanceChecker '{id}' not found"),
+            )),
         })
     }
-
 
     /// Execute a closure with a mutable reference to the named `StreamingSkeletonBuilder`.
     #[cfg(feature = "streaming_basic")]
@@ -367,8 +398,14 @@ impl AppState {
     {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::StreamingSkeletonBuilder(b)) => f(b),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingSkeletonBuilder")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingSkeletonBuilder '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingSkeletonBuilder",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingSkeletonBuilder '{id}' not found"),
+            )),
         })
     }
 
@@ -380,8 +417,14 @@ impl AppState {
     {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::StreamingSkeletonBuilder(b)) => f(b),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingSkeletonBuilder")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingSkeletonBuilder '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingSkeletonBuilder",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingSkeletonBuilder '{id}' not found"),
+            )),
         })
     }
 
@@ -393,8 +436,14 @@ impl AppState {
     {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::StreamingHeuristicBuilder(b)) => f(b),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingHeuristicBuilder")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingHeuristicBuilder '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingHeuristicBuilder",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingHeuristicBuilder '{id}' not found"),
+            )),
         })
     }
 
@@ -406,8 +455,14 @@ impl AppState {
     {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::StreamingHeuristicBuilder(b)) => f(b),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingHeuristicBuilder")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingHeuristicBuilder '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingHeuristicBuilder",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingHeuristicBuilder '{id}' not found"),
+            )),
         })
     }
 
@@ -419,8 +474,14 @@ impl AppState {
     {
         self.with_object_mut(id, |obj| match obj {
             Some(StoredObject::StreamingPipeline(p)) => f(p),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingPipeline")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingPipeline '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingPipeline",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingPipeline '{id}' not found"),
+            )),
         })
     }
 
@@ -432,8 +493,14 @@ impl AppState {
     {
         self.with_object(id, |obj| match obj {
             Some(StoredObject::StreamingPipeline(p)) => f(p),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingPipeline")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingPipeline '{}' not found", id))),
+            Some(_) => Err(wasm_err(
+                codes::INVALID_INPUT,
+                "Object is not a StreamingPipeline",
+            )),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("StreamingPipeline '{id}' not found"),
+            )),
         })
     }
 
@@ -446,7 +513,7 @@ impl AppState {
         let mut objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         Ok(objects.remove(id).is_some())
@@ -461,7 +528,7 @@ impl AppState {
         let objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         Ok(objects.len())
@@ -476,14 +543,13 @@ impl AppState {
         let mut objects = self.objects.lock().map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!("Failed to lock objects: {}", e),
+                format!("Failed to lock objects: {e}"),
             )
         })?;
         objects.clear();
         Ok(())
     }
 }
-
 
 impl Default for AppState {
     fn default() -> Self {
