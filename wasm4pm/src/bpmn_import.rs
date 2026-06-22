@@ -17,7 +17,7 @@
 #[cfg(feature = "powl")]
 use crate::powl_arena::{Operator, PowlArena};
 use roxmltree::Document;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 // ─── BPMN element types ─────────────────────────────────────────────────────
 
@@ -80,11 +80,11 @@ fn attr_val<'a, 'input>(node: roxmltree::Node<'a, 'input>, key: &str) -> Option<
 }
 
 /// Type alias for the BPMN graph extraction result.
-type BpmnGraphResult = Result<(HashMap<String, BpmnNode>, Vec<(String, String)>), String>;
+type BpmnGraphResult = Result<(BTreeMap<String, BpmnNode>, Vec<(String, String)>), String>;
 
 /// Extract all BPMN elements and sequence flows from the XML.
 fn extract_bpmn_graph(xml: &str) -> BpmnGraphResult {
-    let mut nodes: HashMap<String, BpmnNode> = HashMap::new();
+    let mut nodes: BTreeMap<String, BpmnNode> = BTreeMap::new();
     let mut flows: Vec<(String, String)> = Vec::new();
 
     let doc = Document::parse(xml).map_err(|e| e.to_string())?;
@@ -148,15 +148,15 @@ fn extract_bpmn_graph(xml: &str) -> BpmnGraphResult {
 fn build_shortcut_outgoing(
     flows: &[(String, String)],
     connector_ids: &HashSet<String>,
-) -> HashMap<String, Vec<String>> {
+) -> BTreeMap<String, Vec<String>> {
     // Build raw adjacency
-    let mut raw: HashMap<String, Vec<String>> = HashMap::new();
+    let mut raw: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for (src, tgt) in flows {
         raw.entry(src.clone()).or_default().push(tgt.clone());
     }
 
     // For each node, resolve through connector chains
-    let mut resolved: HashMap<String, Vec<String>> = HashMap::new();
+    let mut resolved: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for (src, targets) in &raw {
         let mut final_targets: Vec<String> = Vec::new();
         for tgt in targets {
@@ -173,7 +173,7 @@ fn build_shortcut_outgoing(
 /// Follow a chain of connector nodes to find the real target.
 fn resolve_through_connectors(
     start: &str,
-    raw: &HashMap<String, Vec<String>>,
+    raw: &BTreeMap<String, Vec<String>>,
     connector_ids: &HashSet<String>,
 ) -> String {
     let mut current = start.to_string();
@@ -202,8 +202,8 @@ fn resolve_through_connectors(
 /// through the model.
 fn bpmn_graph_to_powl(
     arena: &mut PowlArena,
-    nodes: &HashMap<String, BpmnNode>,
-    outgoing: &HashMap<String, Vec<String>>,
+    nodes: &BTreeMap<String, BpmnNode>,
+    outgoing: &BTreeMap<String, Vec<String>>,
 ) -> Result<u32, String> {
     // Find start nodes
     let start_nodes = find_start_nodes(nodes, outgoing);
@@ -229,8 +229,8 @@ fn bpmn_graph_to_powl(
 
 /// Find start event nodes (startEvent elements, or nodes with no incoming edges).
 fn find_start_nodes(
-    nodes: &HashMap<String, BpmnNode>,
-    outgoing: &HashMap<String, Vec<String>>,
+    nodes: &BTreeMap<String, BpmnNode>,
+    outgoing: &BTreeMap<String, Vec<String>>,
 ) -> Vec<String> {
     // Prefer explicit start events
     let start_events: Vec<String> = nodes
@@ -267,8 +267,8 @@ fn find_start_nodes(
 fn build_subtree(
     arena: &mut PowlArena,
     node_id: &str,
-    nodes: &HashMap<String, BpmnNode>,
-    outgoing: &HashMap<String, Vec<String>>,
+    nodes: &BTreeMap<String, BpmnNode>,
+    outgoing: &BTreeMap<String, Vec<String>>,
     visited: &mut HashSet<String>,
 ) -> Result<u32, String> {
     // Cycle guard

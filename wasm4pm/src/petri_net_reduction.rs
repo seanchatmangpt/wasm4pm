@@ -18,7 +18,7 @@
 //! Adapted from pm4wasm `algorithms::reduction` to wasm4pm's `models::PetriNet`.
 
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -344,7 +344,7 @@ fn eliminate_self_loop_places(net: &mut PetriNet) -> bool {
 /// Merge places that have identical preset and postset transitions.
 /// The first such place is kept; the others are removed.
 fn eliminate_identical_places(net: &mut PetriNet) -> bool {
-    let mut sig_map: HashMap<(Vec<String>, Vec<String>), Vec<String>> = HashMap::new();
+    let mut sig_map: BTreeMap<(Vec<String>, Vec<String>), Vec<String>> = BTreeMap::new();
     for place in &net.places {
         let pre = preset_transitions(net, &place.id);
         let post = postset_transitions(net, &place.id);
@@ -414,7 +414,7 @@ fn count_series_transitions(net: &PetriNet) -> usize {
 }
 
 fn count_identical_place_groups(net: &PetriNet) -> usize {
-    let mut sig_map: HashMap<(Vec<String>, Vec<String>), usize> = HashMap::new();
+    let mut sig_map: BTreeMap<(Vec<String>, Vec<String>), usize> = BTreeMap::new();
     for place in &net.places {
         let pre = preset_transitions(net, &place.id);
         let post = postset_transitions(net, &place.id);
