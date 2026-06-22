@@ -272,7 +272,7 @@ mod tests {
         // Should have 2 edges (HashMap order is non-deterministic, check by content)
         assert_eq!(dfg.edges.len(), 2);
         let mut edges: Vec<_> = dfg.edges.iter().map(|e| (&e.from, &e.to)).collect();
-        edges.sort();
+        edges.sort_unstable();
         assert_eq!((edges[0].0.as_str(), edges[0].1.as_str()), ("A", "B"));
         assert_eq!((edges[1].0.as_str(), edges[1].1.as_str()), ("B", "C"));
 

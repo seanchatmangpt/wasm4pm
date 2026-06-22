@@ -90,7 +90,7 @@ const DISRUPTIVE_THRESHOLD: usize = 5;
 
 /// Merge overlapping time intervals. Two intervals [a,b] and [c,d] overlap if a <= c <= b.
 fn merge_overlapping(mut intervals: Vec<Interval>) -> Vec<Interval> {
-    intervals.sort();
+    intervals.sort_unstable();
     let mut merged: Vec<Interval> = Vec::new();
     for interval in intervals {
         if let Some(last) = merged.last_mut() {
@@ -110,7 +110,7 @@ fn merge_overlapping(mut intervals: Vec<Interval>) -> Vec<Interval> {
 
 /// Merge non-overlapping intervals closer than `max_distance` milliseconds.
 fn merge_near(mut intervals: Vec<Interval>, max_distance: i64) -> Vec<Interval> {
-    intervals.sort();
+    intervals.sort_unstable();
     let mut merged: Vec<Interval> = Vec::new();
     for interval in intervals {
         if let Some(last) = merged.last_mut() {

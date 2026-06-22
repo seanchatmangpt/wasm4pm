@@ -46,7 +46,7 @@ impl TopologyPolicy {
         }
 
         // Remove duplicates (sort/dedup is simple for the small set)
-        topologies.sort();
+        topologies.sort_unstable();
         topologies.dedup();
 
         Ok(topologies)

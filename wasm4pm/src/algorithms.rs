@@ -211,7 +211,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
                             new_a.push(x.clone());
                         }
                     }
-                    new_a.sort();
+                    new_a.sort_unstable();
                     // Check: all pairs in new_a are in # relation
                     let a_ok = (0..new_a.len()).all(|p| {
                         (p + 1..new_a.len())
@@ -238,7 +238,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
                             new_b.push(x.clone());
                         }
                     }
-                    new_b.sort();
+                    new_b.sort_unstable();
                     // Check: all pairs in new_b are in # relation
                     let b_ok = (0..new_b.len()).all(|p| {
                         (p + 1..new_b.len())

@@ -154,7 +154,7 @@ impl StreamingInductiveBuilder {
             .filter(|id| !has_predecessor.contains(id) || starts.contains(id))
             .cloned()
             .collect();
-        current_starts.sort();
+        current_starts.sort_unstable();
 
         if current_starts.is_empty() {
             return None;
@@ -189,7 +189,7 @@ impl StreamingInductiveBuilder {
                 }
             }
             current_starts = next.into_iter().collect();
-            current_starts.sort();
+            current_starts.sort_unstable();
         }
 
         // Only accept if we covered all activities and found a multi-group sequence

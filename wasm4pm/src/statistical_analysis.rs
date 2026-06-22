@@ -204,7 +204,7 @@ pub fn compare_cohort_durations(
         // least 2 observations for a t-test to be meaningful (df = n_a+n_b−2);
         // single-observation groups would give Inf variance under miniml.
         let mut sorted_keys: Vec<&String> = groups.keys().collect();
-        sorted_keys.sort();
+        sorted_keys.sort_unstable();
         let total_cohorts = sorted_keys.len();
 
         // Pick the first two alphabetically-sorted cohorts whose size ≥ 2.

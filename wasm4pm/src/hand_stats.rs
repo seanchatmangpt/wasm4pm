@@ -185,7 +185,7 @@ pub fn median_timestamp(data: &mut [DateTime<Utc>]) -> Option<DateTime<Utc>> {
         .iter()
         .map(|ts: &DateTime<Utc>| ts.timestamp_millis())
         .collect();
-    ms.sort();
+    ms.sort_unstable();
     let len = ms.len();
     let median_ms = if len.is_multiple_of(2) {
         (ms[len / 2 - 1] + ms[len / 2]) / 2

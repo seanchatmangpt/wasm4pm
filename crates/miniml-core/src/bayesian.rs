@@ -58,7 +58,6 @@ pub struct BayesianLinearModel {
     coefficient_std: Vec<f64>,
     intercept: f64,
     intercept_std: f64,
-    _posterior_samples: Vec<f64>,
 }
 
 #[wasm_bindgen]
@@ -280,19 +279,11 @@ pub fn bayesian_linear_regression_impl(
     intercept += (0..n).map(|k| targets[k]).sum::<f64>() / n as f64;
     let intercept_std = intercept_var.sqrt().max(1e-10);
 
-    // Generate posterior samples for prediction intervals (optional)
-    let mut posterior_samples = Vec::with_capacity(n.min(1000));
-    let _rng = Rng::new(42);
-    for _ in 0..n.min(1000) {
-        posterior_samples.push(intercept);
-    }
-
     Ok(BayesianLinearModel {
         coefficients: w,
         coefficient_std,
         intercept,
         intercept_std,
-        _posterior_samples: posterior_samples,
     })
 }
 
