@@ -147,15 +147,16 @@ impl CognitionBreed for FramesInheritance {
                 depth: distance,
                 objects: vec![],
             });
+            let explanation = format!(
+                "resolved {} {} to {} at distance {}",
+                target_frame, target_slot, val, distance
+            );
             Ok(BreedOutput {
                 breed: self.id(),
                 candidates: vec![],
                 facts: vec![],
-                selected: Some(val.clone()),
-                explanation: format!(
-                    "resolved {} {} to {} at distance {}",
-                    target_frame, target_slot, val, distance
-                ),
+                selected: Some(val),
+                explanation,
                 inference_trace: trace,
                 ocel_log: None,
                 retained_cases: vec![],

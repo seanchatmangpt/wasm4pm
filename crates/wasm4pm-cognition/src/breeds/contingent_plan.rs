@@ -372,12 +372,12 @@ impl CognitionBreed for ContingentPlan {
             breed: BreedId::ContingentPlan,
             candidates: input.candidates.clone(),
             facts,
-            selected: Some(serialized.clone()),
             explanation: format!(
                 "Contingent plan over {} initial world(s): {}",
                 belief.len(),
                 serialized
             ),
+            selected: Some(serialized),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],

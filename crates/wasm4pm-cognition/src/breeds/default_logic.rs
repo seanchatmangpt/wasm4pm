@@ -172,11 +172,11 @@ impl CognitionBreed for DefaultLogic {
             breed: BreedId::DefaultLogic,
             candidates: vec![],
             facts,
-            selected: Some(ext_str.clone()),
             explanation: format!(
                 "DefaultLogic: extension finalized with {} facts",
                 ext_str.split(", ").count()
             ),
+            selected: Some(ext_str),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],

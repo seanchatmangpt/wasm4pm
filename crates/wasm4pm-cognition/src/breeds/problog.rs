@@ -188,13 +188,13 @@ impl CognitionBreed for Problog {
                 key: format!("prob:{}", query),
                 value: formatted.clone(),
             }],
-            selected: Some(formatted.clone()),
             explanation: format!(
                 "problog enumerated {} possible worlds exactly; P({}) = {}",
                 1u32 << k,
                 query,
                 formatted
             ),
+            selected: Some(formatted),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
