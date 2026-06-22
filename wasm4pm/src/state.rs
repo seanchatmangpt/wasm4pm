@@ -281,30 +281,6 @@ impl AppState {
         })
     }
 
-    /// Execute a closure with the named `NGramPredictor`, returning a typed error if not found.
-    pub fn with_ngram_predictor<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
-    where
-        F: FnOnce(&NGramPredictor) -> Result<R, JsValue>,
-    {
-        self.with_object(id, |obj| match obj {
-            Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
-        })
-    }
-
-    /// Execute a closure with a mutable reference to the named `NGramPredictor`.
-    pub fn with_ngram_predictor_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
-    where
-        F: FnOnce(&mut NGramPredictor) -> Result<R, JsValue>,
-    {
-        self.with_object_mut(id, |obj| match obj {
-            Some(StoredObject::NGramPredictor(ngram)) => f(ngram),
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an NGramPredictor")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, format!("NGramPredictor '{}' not found", id))),
-        })
-    }
-
     /// Execute a closure with the named `StreamingDfgBuilder`, returning a typed error if not found.
     #[cfg(feature = "streaming_basic")]
     pub fn with_streaming_dfg<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
@@ -365,6 +341,85 @@ impl AppState {
             Some(StoredObject::StreamingConformanceChecker(c)) => f(c),
             Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingConformanceChecker")),
             None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingConformanceChecker '{}' not found", id))),
+        })
+    }
+
+
+    /// Execute a closure with a mutable reference to the named `StreamingSkeletonBuilder`.
+    #[cfg(feature = "streaming_basic")]
+    pub fn with_streaming_skeleton_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut StreamingSkeletonBuilder) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::StreamingSkeletonBuilder(b)) => f(b),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingSkeletonBuilder")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingSkeletonBuilder '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `StreamingSkeletonBuilder` (immutable).
+    #[cfg(feature = "streaming_basic")]
+    pub fn with_streaming_skeleton<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&StreamingSkeletonBuilder) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::StreamingSkeletonBuilder(b)) => f(b),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingSkeletonBuilder")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingSkeletonBuilder '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with a mutable reference to the named `StreamingHeuristicBuilder`.
+    #[cfg(feature = "streaming_basic")]
+    pub fn with_streaming_heuristic_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut StreamingHeuristicBuilder) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::StreamingHeuristicBuilder(b)) => f(b),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingHeuristicBuilder")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingHeuristicBuilder '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `StreamingHeuristicBuilder` (immutable).
+    #[cfg(feature = "streaming_basic")]
+    pub fn with_streaming_heuristic<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&StreamingHeuristicBuilder) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::StreamingHeuristicBuilder(b)) => f(b),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingHeuristicBuilder")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingHeuristicBuilder '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with a mutable reference to the named `StreamingPipeline`.
+    #[cfg(feature = "streaming_full")]
+    pub fn with_streaming_pipeline_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut StreamingPipeline) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::StreamingPipeline(p)) => f(p),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingPipeline")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingPipeline '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `StreamingPipeline` (immutable).
+    #[cfg(feature = "streaming_full")]
+    pub fn with_streaming_pipeline<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&StreamingPipeline) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::StreamingPipeline(p)) => f(p),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a StreamingPipeline")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("StreamingPipeline '{}' not found", id))),
         })
     }
 

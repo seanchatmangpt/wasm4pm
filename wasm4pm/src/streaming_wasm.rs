@@ -178,42 +178,26 @@ pub fn streaming_skeleton_add_event(
     case_id: &str,
     activity: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingSkeletonBuilder(b)) => {
-            b.add_event(case_id, activity);
-            let stats = b.stats();
-            to_js_str(&json!({
-                "ok": true,
-                "event_count": stats.event_count,
-                "open_traces": stats.open_traces,
-            }))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingSkeletonBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingSkeletonBuilder handle not found",
-        )),
+    get_or_init_state().with_streaming_skeleton_mut(handle, |b| {
+        b.add_event(case_id, activity);
+        let stats = b.stats();
+        to_js_str(&json!({
+            "ok": true,
+            "event_count": stats.event_count,
+            "open_traces": stats.open_traces,
+        }))
     })
 }
 
 /// Close a Skeleton trace.
 #[wasm_bindgen]
 pub fn streaming_skeleton_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingSkeletonBuilder(b)) => {
-            let closed = b.close_trace(case_id);
-            to_js_str(&json!({
-                "ok": closed,
-                "trace_count": b.trace_count,
-            }))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingSkeletonBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingSkeletonBuilder handle not found",
-        )),
+    get_or_init_state().with_streaming_skeleton_mut(handle, |b| {
+        let closed = b.close_trace(case_id);
+        to_js_str(&json!({
+            "ok": closed,
+            "trace_count": b.trace_count,
+        }))
     })
 }
 
@@ -222,37 +206,21 @@ pub fn streaming_skeleton_close_trace(handle: &str, case_id: &str) -> Result<JsV
 /// Returns a JSON string — callers must `JSON.parse()` the result.
 #[wasm_bindgen]
 pub fn streaming_skeleton_snapshot(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::StreamingSkeletonBuilder(b)) => {
-            let dfg = b.snapshot();
-            to_js_str(&dfg)
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingSkeletonBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingSkeletonBuilder handle not found",
-        )),
+    get_or_init_state().with_streaming_skeleton(handle, |b| {
+        let dfg = b.snapshot();
+        to_js_str(&dfg)
     })
 }
 
 /// Finalize Skeleton stream.
 #[wasm_bindgen]
 pub fn streaming_skeleton_finalize(handle: &str) -> Result<JsValue, JsValue> {
-    let dfg = get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingSkeletonBuilder(b)) => {
-            let case_ids: Vec<String> = b.open_trace_ids();
-            for id in case_ids {
-                b.close_trace(&id);
-            }
-            Ok(b.snapshot())
+    let dfg = get_or_init_state().with_streaming_skeleton_mut(handle, |b| {
+        let case_ids: Vec<String> = b.open_trace_ids();
+        for id in case_ids {
+            b.close_trace(&id);
         }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingSkeletonBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingSkeletonBuilder handle not found",
-        )),
+        Ok(b.snapshot())
     })?;
 
     let n_nodes = dfg.nodes.len();
@@ -290,42 +258,26 @@ pub fn streaming_heuristic_add_event(
     case_id: &str,
     activity: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingHeuristicBuilder(b)) => {
-            b.add_event(case_id, activity);
-            let stats = b.stats();
-            to_js_str(&json!({
-                "ok": true,
-                "event_count": stats.event_count,
-                "open_traces": stats.open_traces,
-            }))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingHeuristicBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingHeuristicBuilder handle not found",
-        )),
+    get_or_init_state().with_streaming_heuristic_mut(handle, |b| {
+        b.add_event(case_id, activity);
+        let stats = b.stats();
+        to_js_str(&json!({
+            "ok": true,
+            "event_count": stats.event_count,
+            "open_traces": stats.open_traces,
+        }))
     })
 }
 
 /// Close a Heuristic trace.
 #[wasm_bindgen]
 pub fn streaming_heuristic_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingHeuristicBuilder(b)) => {
-            let closed = b.close_trace(case_id);
-            to_js_str(&json!({
-                "ok": closed,
-                "trace_count": b.trace_count,
-            }))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingHeuristicBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingHeuristicBuilder handle not found",
-        )),
+    get_or_init_state().with_streaming_heuristic_mut(handle, |b| {
+        let closed = b.close_trace(case_id);
+        to_js_str(&json!({
+            "ok": closed,
+            "trace_count": b.trace_count,
+        }))
     })
 }
 
@@ -334,37 +286,21 @@ pub fn streaming_heuristic_close_trace(handle: &str, case_id: &str) -> Result<Js
 /// Returns a JSON string — callers must `JSON.parse()` the result.
 #[wasm_bindgen]
 pub fn streaming_heuristic_snapshot(handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::StreamingHeuristicBuilder(b)) => {
-            let dfg = b.snapshot();
-            to_js_str(&dfg)
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingHeuristicBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingHeuristicBuilder handle not found",
-        )),
+    get_or_init_state().with_streaming_heuristic(handle, |b| {
+        let dfg = b.snapshot();
+        to_js_str(&dfg)
     })
 }
 
 /// Finalize Heuristic stream.
 #[wasm_bindgen]
 pub fn streaming_heuristic_finalize(handle: &str) -> Result<JsValue, JsValue> {
-    let dfg = get_or_init_state().with_object_mut(handle, |obj| match obj {
-        Some(StoredObject::StreamingHeuristicBuilder(b)) => {
-            let case_ids: Vec<String> = b.open_trace_ids();
-            for id in case_ids {
-                b.close_trace(&id);
-            }
-            Ok(b.snapshot())
+    let dfg = get_or_init_state().with_streaming_heuristic_mut(handle, |b| {
+        let case_ids: Vec<String> = b.open_trace_ids();
+        for id in case_ids {
+            b.close_trace(&id);
         }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a StreamingHeuristicBuilder",
-        )),
-        None => Err(crate::error::js_val(
-            "StreamingHeuristicBuilder handle not found",
-        )),
+        Ok(b.snapshot())
     })?;
 
     let n_nodes = dfg.nodes.len();
