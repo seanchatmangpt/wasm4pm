@@ -96,9 +96,7 @@ impl Collector {
 
 /// Recursively compute CFC (returned) and side-effect all other metrics.
 fn visit(arena: &PowlArena, idx: u32, depth: usize, col: &mut Collector) -> usize {
-    if depth > col.max_depth {
-        col.max_depth = depth;
-    }
+    col.max_depth = col.max_depth.max(depth);
 
     match arena.get(idx) {
         None => 1,
