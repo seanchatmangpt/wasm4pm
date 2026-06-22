@@ -26,8 +26,7 @@ pub fn filter_by_start_activity(
     let keep: std::collections::HashSet<String> = serde_json::from_str(activities_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -43,9 +42,6 @@ pub fn filter_by_start_activity(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -59,8 +55,7 @@ pub fn filter_by_end_activity(
     let keep: std::collections::HashSet<String> = serde_json::from_str(activities_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -76,9 +71,6 @@ pub fn filter_by_end_activity(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -90,8 +82,7 @@ pub fn filter_by_case_size(
     min_events: usize,
     max_events: usize,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -101,9 +92,6 @@ pub fn filter_by_case_size(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -125,8 +113,7 @@ pub fn filter_by_directly_follows(
     let pair_set: std::collections::HashSet<(String, String)> =
         pairs.into_iter().map(|[f, t]| (f, t)).collect();
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -144,9 +131,6 @@ pub fn filter_by_directly_follows(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -159,8 +143,7 @@ pub fn filter_by_variant_coverage(
     coverage_pct: f64,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let total = log.traces.len();
             if total == 0 {
                 let mut out = EventLog::new();
@@ -222,9 +205,6 @@ pub fn filter_by_variant_coverage(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -235,8 +215,7 @@ pub fn filter_by_variants_top_k(
     k: usize,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             // Build variant → count map
             let mut variant_counts: BTreeMap<Vec<String>, usize> = BTreeMap::new();
             for trace in &log.traces {
@@ -280,9 +259,6 @@ pub fn filter_by_variants_top_k(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -296,8 +272,7 @@ pub fn filter_traces_containing_activities(
     let required: std::collections::HashSet<String> = serde_json::from_str(activities_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -315,9 +290,6 @@ pub fn filter_traces_containing_activities(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -331,8 +303,7 @@ pub fn filter_traces_excluding_activities(
     let excluded: std::collections::HashSet<String> = serde_json::from_str(activities_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -349,9 +320,6 @@ pub fn filter_traces_excluding_activities(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -364,8 +332,7 @@ pub fn filter_by_time_range(
     max_dt: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -384,9 +351,6 @@ pub fn filter_by_time_range(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -398,8 +362,7 @@ pub fn filter_by_case_performance(
     max_ms: i64,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -433,17 +396,13 @@ pub fn filter_by_case_performance(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
 /// Filter traces containing rework (repeated activities).
 #[wasm_bindgen]
 pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -469,9 +428,6 @@ pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsVa
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -482,8 +438,7 @@ pub fn filter_by_trace_attribute(
     attribute_key: &str,
     attribute_value: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -499,9 +454,6 @@ pub fn filter_by_trace_attribute(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -512,8 +464,7 @@ pub fn filter_by_event_attribute_value(
     attribute_key: &str,
     attribute_value: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -530,9 +481,6 @@ pub fn filter_by_event_attribute_value(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -546,8 +494,7 @@ pub fn filter_by_case_ids(
     let keep_ids: std::collections::HashSet<String> = serde_json::from_str(case_ids_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -563,9 +510,6 @@ pub fn filter_by_case_ids(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -579,8 +523,7 @@ pub fn filter_traces_starting_with_sequence(
     let sequence: Vec<String> = serde_json::from_str(sequence_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -605,9 +548,6 @@ pub fn filter_traces_starting_with_sequence(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -621,8 +561,7 @@ pub fn filter_traces_ending_with_sequence(
     let sequence: Vec<String> = serde_json::from_str(sequence_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
+    get_or_init_state().with_event_log(log_handle, |log| {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
             out.traces = log
@@ -643,8 +582,5 @@ pub fn filter_traces_ending_with_sequence(
                 .cloned()
                 .collect();
             store_filtered(out)
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
