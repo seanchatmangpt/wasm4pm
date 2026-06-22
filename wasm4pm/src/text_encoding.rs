@@ -1,6 +1,6 @@
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt::Write as _;
 use wasm_bindgen::prelude::*;
 
@@ -486,7 +486,7 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
 
             // Relationships summary
             if !ocel.object_relations.is_empty() {
-                let qualifiers: HashSet<&str> = ocel
+                let qualifiers: BTreeSet<&str> = ocel
                     .object_relations
                     .iter()
                     .map(|r| r.qualifier.as_str())
