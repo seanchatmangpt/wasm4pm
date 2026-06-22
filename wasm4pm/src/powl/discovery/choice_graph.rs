@@ -89,8 +89,8 @@ impl UnionFind {
         }
     }
 
-    fn get_partitions(&mut self) -> Vec<HashSet<String>> {
-        let mut partitions: HashMap<String, HashSet<String>> = HashMap::new();
+    fn get_partitions(&mut self) -> Vec<std::collections::BTreeSet<String>> {
+        let mut partitions: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
         let keys: Vec<String> = self.parent.keys().cloned().collect();
         for k in keys {
             let root = self.find(&k);
@@ -104,7 +104,7 @@ impl UnionFind {
 /// Returns a set of (src_partition_idx, tgt_partition_idx) edges.
 fn build_partition_edges(
     dfg: &HashSet<(String, String)>,
-    partitions: &[HashSet<String>],
+    partitions: &[std::collections::BTreeSet<String>],
 ) -> HashSet<(usize, usize)> {
     let mut edges = HashSet::new();
 
@@ -144,7 +144,7 @@ pub fn discover_choice_graph(
     _start_activities: &HashSet<String>,
     _end_activities: &HashSet<String>,
     _has_empty_trace: bool,
-) -> Option<(Vec<HashSet<String>>, HashSet<(usize, usize)>)> {
+) -> Option<(Vec<std::collections::BTreeSet<String>>, HashSet<(usize, usize)>)> {
     // Step 1: Initialize each activity as its own partition
     let mut uf = UnionFind::new(activities);
 
@@ -172,7 +172,7 @@ pub fn discover_choice_graph(
 #[derive(Clone, Debug)]
 pub struct ChoiceGraphCut {
     /// Partition of `Σ_L`. Each entry is one part `Aᵢ`.
-    pub partition: Vec<HashSet<String>>,
+    pub partition: Vec<std::collections::BTreeSet<String>>,
     /// The validated choice graph (Definition 1 invariants enforced).
     /// Nodes are: `Start`, `End`, plus one `Activity(repr)` per part.
     /// `repr` is the lexicographically-smallest activity name in the part.
