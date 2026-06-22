@@ -390,11 +390,7 @@ pub fn compute_alignments(
         })?;
 
     let start_activities: std::collections::HashSet<String> =
-        get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DFG(dfg)) => Ok(dfg.start_activities.keys().cloned().collect()),
-            Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
-            None => Err(crate::error::js_val("DFG handle not found")),
-        })?;
+        get_or_init_state().with_dfg(dfg_handle, |dfg| Ok(dfg.start_activities.keys().cloned().collect()))?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
             let mut alignments: Vec<serde_json::Value> = Vec::new();

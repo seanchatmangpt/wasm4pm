@@ -613,14 +613,9 @@ pub fn discover_dfg_filtered(
 /// Export DFG to JSON
 #[wasm_bindgen]
 pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
-    get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::DFG(dfg)) => serde_json::to_string(dfg)
-            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e))),
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("DFG '{}' not found", handle),
-        )),
+    get_or_init_state().with_dfg(handle, |dfg| {
+        serde_json::to_string(dfg)
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
     })
 }
 

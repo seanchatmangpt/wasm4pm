@@ -217,6 +217,42 @@ impl AppState {
         })
     }
 
+    /// Execute a closure with the named `DFG`, returning a typed error if not found.
+    pub fn with_dfg<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&DFG) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::DFG(dfg)) => f(dfg),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("DFG '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with the named `JsonString`, returning a typed error if not found.
+    pub fn with_json_string<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&str) -> Result<R, JsValue>,
+    {
+        self.with_object(id, |obj| match obj {
+            Some(StoredObject::JsonString(s)) => f(s),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a JsonString")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("JsonString '{}' not found", id))),
+        })
+    }
+
+    /// Execute a closure with a mutable reference to the named `EventLog`.
+    pub fn with_event_log_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(&mut EventLog) -> Result<R, JsValue>,
+    {
+        self.with_object_mut(id, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => f(log),
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+            None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", id))),
+        })
+    }
+
     /// Delete an object by handle from the registry.
     ///
     /// # Errors

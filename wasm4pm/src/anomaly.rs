@@ -43,8 +43,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
     let activities: Vec<String> = serde_json::from_str(activities_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid activities JSON: {}", e)))?;
 
-    get_or_init_state().with_object(dfg_handle, |obj| match obj {
-        Some(StoredObject::DFG(dfg)) => {
+    get_or_init_state().with_dfg(dfg_handle, |dfg| {
             if activities.len() < 2 {
                 return Ok(JsValue::from_f64(0.0));
             }
@@ -73,9 +72,6 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
                 };
             }
             Ok(JsValue::from_f64(cost_sum / steps as f64))
-        }
-        Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
-        None => Err(crate::error::js_val("DFG handle not found")),
     })
 }
 
