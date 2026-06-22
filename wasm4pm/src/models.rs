@@ -655,16 +655,20 @@ impl EventLog {
                     .or_default() += 1;
             }
         }
-        counts
-            .into_iter()
-            .map(|((from, to), count)| {
-                (
-                    col.vocab[from as usize].to_string(),
-                    col.vocab[to as usize].to_string(),
-                    count,
-                )
-            })
-            .collect()
+        {
+            let mut result: Vec<(String, String, usize)> = counts
+                .into_iter()
+                .map(|((from, to), count)| {
+                    (
+                        col.vocab[from as usize].to_string(),
+                        col.vocab[to as usize].to_string(),
+                        count,
+                    )
+                })
+                .collect();
+            result.sort_unstable_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+            result
+        }
     }
 
     /// Get all traces as activity sequences.
