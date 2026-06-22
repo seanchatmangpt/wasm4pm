@@ -724,7 +724,7 @@ pub fn discover_simple_process_tree_from_log(log: &EventLog, activity_key: &str)
     }
 
     let mut sorted_acts: Vec<(String, usize)> = freq.into_iter().collect();
-    sorted_acts.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+    sorted_acts.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
 
     let children: Vec<serde_json::Value> = sorted_acts
         .iter()
