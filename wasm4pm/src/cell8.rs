@@ -81,7 +81,7 @@ fn check_contracts_embedded(config: &Value) -> GateResult {
     let passed = config
         .get("fixtures")
         .and_then(|f| f.as_array())
-        .map(|a| a.len() > 0)
+        .map(|a| !a.is_empty())
         .unwrap_or(false);
     let count = config
         .get("fixtures")

@@ -1324,7 +1324,7 @@ pub fn autonomic_execute_cycle(
             let (rule_violated, rule_number, rule_attrs) = match c {
                 spc::SpecialCause::OutOfControl { value, .. } => {
                     // Rule 1: Point beyond 3σ (outlier)
-                    let z_score = if chart_data.len() > 0 {
+                    let z_score = if !chart_data.is_empty() {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
                         let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
                         let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
@@ -1481,7 +1481,7 @@ pub fn autonomic_execute_cycle(
             // Classify rule type and emit detailed span with attributes
             let (rule_violated, rule_number, rule_attrs) = match c {
                 spc::SpecialCause::OutOfControl { value, .. } => {
-                    let z_score = if chart_data.len() > 0 {
+                    let z_score = if !chart_data.is_empty() {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
                         let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
                         let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
@@ -1633,7 +1633,7 @@ pub fn autonomic_execute_cycle(
             // Classify rule type and emit detailed span with attributes
             let (rule_violated, rule_number, rule_attrs) = match c {
                 spc::SpecialCause::OutOfControl { value, .. } => {
-                    let z_score = if chart_data.len() > 0 {
+                    let z_score = if !chart_data.is_empty() {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
                         let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
                         let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
