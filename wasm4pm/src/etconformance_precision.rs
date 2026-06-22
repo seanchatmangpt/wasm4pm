@@ -72,11 +72,6 @@ fn is_place(net: &PetriNet, name: &str) -> bool {
     net.places.iter().any(|p| p.id == name)
 }
 
-/// Check whether a node is a transition.
-#[allow(dead_code)]
-fn is_transition(net: &PetriNet, name: &str) -> bool {
-    net.transitions.iter().any(|t| t.id == name)
-}
 
 /// Input places (preset) of a transition.
 fn preset(net: &PetriNet, trans_id: &str) -> Vec<String> {
