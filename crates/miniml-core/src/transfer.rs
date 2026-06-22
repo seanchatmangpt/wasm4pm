@@ -598,7 +598,7 @@ fn convert_layers_to_onnx(model: &PersistentModel) -> Vec<LayerSpec> {
             if let Some(network) = model.parameters.get("layers") {
                 network
                     .as_array()
-                    .unwrap_or(&vec![])
+                    .map(Vec::as_slice).unwrap_or(&[])
                     .iter()
                     .map(|layer| LayerSpec {
                         layer_type: "Dense".to_string(),
