@@ -25,11 +25,7 @@ pub fn causal_footprint(
     log_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let traces = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.traces.clone()),
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
-    })?;
+    let traces = get_or_init_state().with_event_log(log_handle, |log| Ok(log.traces.clone()))?;
 
     if traces.is_empty() {
         return to_js_str(&serde_json::json!({
@@ -161,11 +157,7 @@ pub fn granger_like_test(
     _timestamp_key: &str,
     max_lag: usize,
 ) -> Result<JsValue, JsValue> {
-    let traces = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.traces.clone()),
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
-    })?;
+    let traces = get_or_init_state().with_event_log(log_handle, |log| Ok(log.traces.clone()))?;
 
     if traces.is_empty() {
         return to_js_str(&serde_json::json!({
