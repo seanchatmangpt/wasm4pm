@@ -12,6 +12,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::BTreeSet;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -147,25 +148,14 @@ impl DfgChunkResult {
     pub fn to_dfg(&self, vocab: &[&str]) -> DFG {
         let mut dfg = DFG::new();
 
-        // Nodes -- include all activities seen in any count map
-        let mut all_ids: FxHashSet<u32> = FxHashSet::default();
-        for &id in self.node_freqs.keys() {
-            all_ids.insert(id);
-        }
-        for &(id, _) in self.edge_counts.keys() {
-            all_ids.insert(id);
-        }
-        // Ensure we have entries for start/end only activities
-        for &id in self.start_counts.keys() {
-            all_ids.insert(id);
-        }
-        for &id in self.end_counts.keys() {
-            all_ids.insert(id);
-        }
+                // BTreeSet gives sorted unique IDs by contract — "Sort IDs for deterministic output" becomes a type invariant.
+        let mut all_ids: BTreeSet<u32> = BTreeSet::new();
+        for &id in self.node_freqs.keys() { all_ids.insert(id); }
+        for &(id, _) in self.edge_counts.keys() { all_ids.insert(id); }
+        for &id in self.start_counts.keys() { all_ids.insert(id); }
+        for &id in self.end_counts.keys() { all_ids.insert(id); }
 
-        // Sort IDs for deterministic output
-        let mut sorted_ids: Vec<u32> = all_ids.into_iter().collect();
-        sorted_ids.sort_unstable();
+        let sorted_ids: Vec<u32> = all_ids.into_iter().collect();
 
         dfg.nodes = sorted_ids
             .iter()
