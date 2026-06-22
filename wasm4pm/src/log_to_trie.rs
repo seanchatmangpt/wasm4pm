@@ -240,7 +240,7 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
     // BTreeMap iterates in lexicographic key order — sort is not needed.
     Ok(table
         .into_iter()
-        .map(|(activities, count)| Variant { activities, count })
+        .map(|(activities, _count)| Variant { activities })
         .collect())
 }
 
@@ -248,8 +248,6 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
 #[derive(Clone, Debug)]
 struct Variant {
     activities: Vec<String>,
-    #[allow(dead_code)]
-    count: usize,
 }
 
 /// WASM export: Discover a prefix tree from an event log.

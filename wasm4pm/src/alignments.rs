@@ -51,18 +51,6 @@ impl PartialOrd for PriorityAlignmentState {
     }
 }
 
-/// Get activities that transition can fire for.
-/// For simplicity, transition label is treated as the activity name.
-#[allow(dead_code)]
-fn get_transition_activities(petri_net: &PetriNet, transition_id: &str) -> Vec<String> {
-    petri_net
-        .transitions
-        .iter()
-        .find(|t| t.id == transition_id)
-        .map(|t| vec![t.label.clone()])
-        .unwrap_or_default()
-}
-
 /// Check if a transition can fire with current marking.
 fn can_fire(petri_net: &PetriNet, marking: &BTreeMap<String, usize>, transition_id: &str) -> bool {
     // For each arc from a place to this transition, check if place has sufficient tokens
