@@ -1,5 +1,5 @@
 #![allow(missing_docs)]
-use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 #[derive(Debug, Clone)]
 pub struct CspVar {
@@ -25,18 +25,18 @@ pub enum TraceEvent {
 }
 
 pub struct CspStore {
-    pub vars: HashMap<String, CspVar>,
+    pub vars: BTreeMap<String, CspVar>,
     pub constraints: Vec<CspConstraint>,
-    pub domains: HashMap<String, Vec<String>>,
+    pub domains: BTreeMap<String, Vec<String>>,
     pub trace: Vec<TraceEvent>,
 }
 
 impl CspStore {
     pub fn new() -> Self {
         CspStore {
-            vars: HashMap::new(),
+            vars: BTreeMap::new(),
             constraints: Vec::new(),
-            domains: HashMap::new(),
+            domains: BTreeMap::new(),
             trace: Vec::new(),
         }
     }
@@ -191,12 +191,12 @@ impl CspStore {
         true
     }
 
-    pub fn solve(&mut self) -> Option<HashMap<String, String>> {
+    pub fn solve(&mut self) -> Option<BTreeMap<String, String>> {
         if !self.propagate() {
             return None;
         }
 
-        let mut assignments = HashMap::new();
+        let mut assignments = BTreeMap::new();
         let mut unassigned: BTreeSet<String> = self.vars.keys().cloned().collect();
 
         // If all domains are singletons, we are done
@@ -224,7 +224,7 @@ impl CspStore {
     fn select_unassigned_var(
         &self,
         unassigned: &BTreeSet<String>,
-        domains: &HashMap<String, Vec<String>>,
+        domains: &BTreeMap<String, Vec<String>>,
     ) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
@@ -247,9 +247,9 @@ impl CspStore {
 
     fn backtrack(
         &mut self,
-        assignments: &mut HashMap<String, String>,
+        assignments: &mut BTreeMap<String, String>,
         unassigned: &mut BTreeSet<String>,
-        domains: &HashMap<String, Vec<String>>,
+        domains: &BTreeMap<String, Vec<String>>,
     ) -> bool {
         if unassigned.is_empty() {
             return true;
@@ -309,7 +309,7 @@ impl CspStore {
 }
 
 pub struct CspSolver {
-    pub vars: HashMap<String, CspVar>,
+    pub vars: BTreeMap<String, CspVar>,
     pub constraints: Vec<CspConstraint>,
     pub trace: Vec<TraceEvent>,
 }
@@ -317,7 +317,7 @@ pub struct CspSolver {
 impl CspSolver {
     pub fn new() -> Self {
         CspSolver {
-            vars: HashMap::new(),
+            vars: BTreeMap::new(),
             constraints: Vec::new(),
             trace: Vec::new(),
         }
@@ -389,7 +389,7 @@ impl CspSolver {
         }
     }
 
-    fn revise(&mut self, domains: &mut HashMap<String, Vec<String>>, x: &str, y: &str) -> bool {
+    fn revise(&mut self, domains: &mut BTreeMap<String, Vec<String>>, x: &str, y: &str) -> bool {
         let mut revised = false;
         let mut pruned_count = 0;
 
@@ -444,7 +444,7 @@ impl CspSolver {
         revised
     }
 
-    pub fn ac3(&mut self, domains: &mut HashMap<String, Vec<String>>) -> bool {
+    pub fn ac3(&mut self, domains: &mut BTreeMap<String, Vec<String>>) -> bool {
         let mut queue: VecDeque<(String, String)> = VecDeque::new();
         for c in &self.constraints {
             queue.push_back((c.var1.clone(), c.var2.clone()));
@@ -469,7 +469,7 @@ impl CspSolver {
     fn select_unassigned_var(
         &self,
         unassigned: &BTreeSet<String>,
-        domains: &HashMap<String, Vec<String>>,
+        domains: &BTreeMap<String, Vec<String>>,
     ) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
@@ -494,9 +494,9 @@ impl CspSolver {
 
     pub fn backtrack(
         &mut self,
-        assignments: &mut HashMap<String, String>,
+        assignments: &mut BTreeMap<String, String>,
         unassigned: &mut BTreeSet<String>,
-        domains: &HashMap<String, Vec<String>>,
+        domains: &BTreeMap<String, Vec<String>>,
     ) -> bool {
         if unassigned.is_empty() {
             return true;
@@ -556,13 +556,13 @@ impl CspSolver {
         false
     }
 
-    pub fn solve(&mut self) -> Option<HashMap<String, String>> {
+    pub fn solve(&mut self) -> Option<BTreeMap<String, String>> {
         self.trace.push(TraceEvent::Init {
             vars: self.vars.len(),
             constraints: self.constraints.len(),
         });
 
-        let mut domains: HashMap<String, Vec<String>> = self
+        let mut domains: BTreeMap<String, Vec<String>> = self
             .vars
             .iter()
             .map(|(k, v)| (k.clone(), v.domain.clone()))
@@ -573,7 +573,7 @@ impl CspSolver {
             return None;
         }
 
-        let mut assignments = HashMap::new();
+        let mut assignments = BTreeMap::new();
         let mut unassigned: BTreeSet<String> = self.vars.keys().cloned().collect();
 
         if self.backtrack(&mut assignments, &mut unassigned, &domains) {

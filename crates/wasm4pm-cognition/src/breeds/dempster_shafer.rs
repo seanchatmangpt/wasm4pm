@@ -6,7 +6,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Dempster-Shafer breed
 pub struct DempsterShafer;
@@ -14,7 +14,7 @@ pub struct DempsterShafer;
 type Subset = u8;
 type Bpa = BTreeMap<Subset, f64>;
 
-fn parse_subset(s: &str, mapping: &HashMap<String, u8>) -> Subset {
+fn parse_subset(s: &str, mapping: &BTreeMap<String, u8>) -> Subset {
     let mut mask = 0;
     for part in s.split(',') {
         let p = part.trim();
@@ -25,7 +25,7 @@ fn parse_subset(s: &str, mapping: &HashMap<String, u8>) -> Subset {
     mask
 }
 
-fn subset_to_string(subset: Subset, inverse_mapping: &HashMap<u8, String>) -> String {
+fn subset_to_string(subset: Subset, inverse_mapping: &BTreeMap<u8, String>) -> String {
     if subset == 0 {
         return "∅".to_string();
     }
@@ -44,7 +44,7 @@ fn subset_to_string(subset: Subset, inverse_mapping: &HashMap<u8, String>) -> St
 fn combine_bpas(
     bpa1: &Bpa,
     bpa2: &Bpa,
-    inverse_mapping: &HashMap<u8, String>,
+    inverse_mapping: &BTreeMap<u8, String>,
 ) -> Result<(Bpa, f64), String> {
     let mut combined: Bpa = BTreeMap::new();
     let mut k_conflict = 0.0;
@@ -148,8 +148,8 @@ impl CognitionBreed for DempsterShafer {
             });
         }
 
-        let mut mapping = HashMap::new();
-        let mut inverse_mapping = HashMap::new();
+        let mut mapping = BTreeMap::new();
+        let mut inverse_mapping = BTreeMap::new();
         for (i, h) in hypotheses.into_iter().enumerate() {
             mapping.insert(h.clone(), i as u8);
             inverse_mapping.insert(i as u8, h);
