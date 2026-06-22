@@ -178,7 +178,7 @@ mod tests {
             .iter()
             .map(|&x| {
                 let delta = (rand_f64() - 0.5) * 0.5; // Small perturbation
-                (x + delta).max(-10.0).min(10.0)
+                (x + delta).clamp(-10.0, 10.0)
             })
             .collect()
     }

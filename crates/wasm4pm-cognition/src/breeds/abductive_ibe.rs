@@ -155,7 +155,7 @@ impl CognitionBreed for AbductiveIbe {
                 };
 
                 // Clamp new activation
-                let clamped = new_act.max(min_act).min(max_act);
+                let clamped = new_act.clamp(min_act, max_act);
                 activations.insert(node.clone(), clamped);
             }
         }

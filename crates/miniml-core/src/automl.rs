@@ -463,7 +463,7 @@ impl AutoMLEngine {
             return 0.0;
         }
 
-        let cv_folds = self.options.cv_folds.max(2).min(n_samples);
+        let cv_folds = self.options.cv_folds.clamp(2, n_samples);
         let fold_size = n_samples / cv_folds;
 
         // Detect problem type

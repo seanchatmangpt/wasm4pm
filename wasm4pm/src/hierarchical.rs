@@ -290,9 +290,9 @@ pub fn discover_hierarchical<C: Chunkable>(
     // Determine actual chunk count
     let num_chunks = if let Some(max_events) = config.max_chunk_events {
         let total_events: usize = traces.iter().map(|t| t.activity_ids.len()).sum();
-        (total_events / max_events.max(1)).max(1).min(traces.len())
+        (total_events / max_events.max(1)).clamp(1, traces.len())
     } else {
-        config.num_chunks.max(1).min(traces.len())
+        config.num_chunks.clamp(1, traces.len())
     };
 
     // Partition: distribute traces round-robin into `num_chunks` buckets
