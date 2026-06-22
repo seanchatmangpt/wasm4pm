@@ -349,30 +349,33 @@ fn verify_challenge(args: &VerifyChallengeArgs) -> Result<()> {
 fn canonicalize_value(v: &serde_json::Value) -> serde_json::Value {
     match v {
         serde_json::Value::Object(map) => {
-            let mut sorted_map = serde_json::Map::new();
-            let mut btree = std::collections::BTreeMap::new();
-            for (key, val) in map {
-                let mut canonical_val = canonicalize_value(val);
-                if key == "events" || key == "objects" {
-                    if let serde_json::Value::Array(ref mut arr) = canonical_val {
-                        arr.sort_by(|a, b| {
-                            let id_a = a
-                                .as_object()
-                                .and_then(|obj| obj.get("id"))
-                                .and_then(|id| id.as_str())
-                                .unwrap_or("");
-                            let id_b = b
-                                .as_object()
-                                .and_then(|obj| obj.get("id"))
-                                .and_then(|id| id.as_str())
-                                .unwrap_or("");
-                            id_a.cmp(id_b)
-                        });
+            let mut entries: Vec<(&String, serde_json::Value)> = map
+                .iter()
+                .map(|(key, val)| {
+                    let mut canonical_val = canonicalize_value(val);
+                    if key == "events" || key == "objects" {
+                        if let serde_json::Value::Array(ref mut arr) = canonical_val {
+                            arr.sort_by(|a, b| {
+                                let id_a = a
+                                    .as_object()
+                                    .and_then(|obj| obj.get("id"))
+                                    .and_then(|id| id.as_str())
+                                    .unwrap_or("");
+                                let id_b = b
+                                    .as_object()
+                                    .and_then(|obj| obj.get("id"))
+                                    .and_then(|id| id.as_str())
+                                    .unwrap_or("");
+                                id_a.cmp(id_b)
+                            });
+                        }
                     }
-                }
-                btree.insert(key, canonical_val);
-            }
-            for (key, val) in btree {
+                    (key, canonical_val)
+                })
+                .collect();
+            entries.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+            let mut sorted_map = serde_json::Map::with_capacity(entries.len());
+            for (key, val) in entries {
                 sorted_map.insert(key.clone(), val);
             }
             serde_json::Value::Object(sorted_map)
