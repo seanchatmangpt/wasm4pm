@@ -55,7 +55,7 @@ pub struct Clause {
 impl Clause {
     /// Build a canonical clause: literals sorted and deduplicated.
     pub fn new(mut lits: Vec<Lit>) -> Self {
-        lits.sort();
+        lits.sort_unstable();
         lits.dedup();
         Clause { lits }
     }
@@ -121,7 +121,7 @@ impl Clause {
             .copied()
             .filter(|l| l.var != var)
             .collect();
-        lits.sort();
+        lits.sort_unstable();
         lits.dedup();
         Some(Clause { lits })
     }

@@ -803,7 +803,7 @@ mod tests {
             ActivityName::new("A"),
             ActivityName::new("B"),
         ];
-        names.sort();
+        names.sort_unstable();
         assert_eq!(
             names.iter().map(|n| n.as_str()).collect::<Vec<_>>(),
             vec!["A", "B", "C"]

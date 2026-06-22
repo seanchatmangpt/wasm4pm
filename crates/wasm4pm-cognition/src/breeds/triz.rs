@@ -193,7 +193,7 @@ impl CognitionBreed for Triz {
         }
 
         // Sort to ensure determinism
-        selected_principles.sort();
+        selected_principles.sort_unstable();
         selected_principles.dedup();
         let selected = selected_principles.first().cloned();
 

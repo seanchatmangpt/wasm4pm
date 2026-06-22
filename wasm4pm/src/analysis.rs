@@ -107,7 +107,7 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
             let mut event_counts: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
 
             let stats = if !event_counts.is_empty() {
-                event_counts.sort();
+                event_counts.sort_unstable();
                 let sum: usize = event_counts.iter().sum();
                 let avg = sum as f64 / event_counts.len() as f64;
 

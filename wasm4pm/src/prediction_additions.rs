@@ -218,7 +218,7 @@ pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionG
     edges.sort_unstable_by(|a, b| b.2.total_cmp(&a.2));
 
     let mut activities: Vec<String> = activities_set.into_iter().collect();
-    activities.sort();
+    activities.sort_unstable();
 
     TransitionGraph { edges, activities }
 }
@@ -319,7 +319,7 @@ pub fn boundary_coverage(prefix: &[String], all_complete_traces: &[Vec<String>])
     let lengths: Vec<usize> = matching_traces.iter().map(|t| t.len()).collect();
     let sorted_lengths = {
         let mut sorted = lengths.clone();
-        sorted.sort();
+        sorted.sort_unstable();
         sorted
     };
 

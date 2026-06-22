@@ -266,7 +266,7 @@ pub fn oc_performance_analysis_inner(ocel: &OCEL) -> serde_json::Value {
         let mut durations: Vec<f64> = Vec::new();
         for timestamps in events_by_object.values() {
             let mut sorted_ts: Vec<i64> = timestamps.iter().filter_map(|t| *t).collect();
-            sorted_ts.sort();
+            sorted_ts.sort_unstable();
             for pair in sorted_ts.windows(2) {
                 durations.push((pair[1] - pair[0]).abs() as f64);
             }

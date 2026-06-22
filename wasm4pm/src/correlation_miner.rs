@@ -192,7 +192,7 @@ pub fn mine_correlation(
         .map(|(i, a)| (a.clone(), act_counts[i] as u32))
         .collect();
 
-    edges.sort();
+    edges.sort_unstable();
 
     CorrelationResult {
         edges,

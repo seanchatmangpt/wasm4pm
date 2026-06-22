@@ -226,7 +226,7 @@ pub fn community_detection_impl(
         }
     }
     let mut unique_labels: Vec<usize> = labels.to_vec();
-    unique_labels.sort();
+    unique_labels.sort_unstable();
     unique_labels.dedup();
     let mut label_map: HashMap<usize, usize> = HashMap::new();
     for (new_label, &old_label) in unique_labels.iter().enumerate() {

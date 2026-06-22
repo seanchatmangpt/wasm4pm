@@ -314,7 +314,7 @@ pub fn get_attribute_names(eventlog_handle: &str) -> Result<JsValue, JsValue> {
             }
 
             let mut names: Vec<String> = attr_names.into_iter().collect();
-            names.sort();
+            names.sort_unstable();
 
             to_js(&names)
         }

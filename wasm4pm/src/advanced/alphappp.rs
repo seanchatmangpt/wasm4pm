@@ -69,7 +69,7 @@ pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: 
     // 3. Compute Causality Matrix (Alpha++ style with heuristics)
     let sorted_activities: Vec<String> = {
         let mut v: Vec<_> = activities.into_iter().collect();
-        v.sort();
+        v.sort_unstable();
         v
     };
 

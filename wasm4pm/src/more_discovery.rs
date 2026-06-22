@@ -292,7 +292,7 @@ impl InductiveMiner {
     ) -> Result<TypedProcessTree, String> {
         let activities = log.value.get_activities(activity_key);
         let mut sorted_acts: Vec<_> = activities.to_vec();
-        sorted_acts.sort(); // Deterministic ordering
+        sorted_acts.sort_unstable(); // Deterministic ordering
         let recursive_tree = inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0)
             .map_err(|e| {
             e.as_string()
@@ -313,7 +313,7 @@ pub fn discover_inductive_miner_from_log<W>(
 ) -> String {
     let activities = log.value.get_activities(activity_key);
     let mut sorted_acts: Vec<_> = activities.to_vec();
-    sorted_acts.sort();
+    sorted_acts.sort_unstable();
     match inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0) {
         Ok(tree) => {
             let nodes = tree.count_nodes();
@@ -377,7 +377,7 @@ pub fn discover_inductive_miner(
             );
 
             let mut sorted_acts: Vec<_> = activities.to_vec();
-            sorted_acts.sort(); // Deterministic ordering
+            sorted_acts.sort_unstable(); // Deterministic ordering
 
             let admitted =
                 wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
