@@ -96,7 +96,7 @@ pub fn discover_causal_heuristic(
 /// Internal: Build causal graph using alpha miner variant.
 fn build_causal_alpha(log: &EventLog, activity_key: &str) -> Result<CausalGraph, JsValue> {
     let mut edge_freq: FxHashMap<(String, String), usize> = FxHashMap::default();
-    let mut activities: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut activities: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     // Build frequency map from directly-follows relations
     for trace in &log.traces {
@@ -139,8 +139,7 @@ fn build_causal_alpha(log: &EventLog, activity_key: &str) -> Result<CausalGraph,
         }
     }
 
-    let mut activities_vec: Vec<String> = activities.into_iter().collect();
-    activities_vec.sort();
+    let activities_vec: Vec<String> = activities.into_iter().collect();
 
     Ok(CausalGraph {
         relations: causal_relations,
@@ -155,7 +154,7 @@ fn build_causal_heuristic(
     threshold: f64,
 ) -> Result<CausalGraph, JsValue> {
     let mut edge_freq: FxHashMap<(String, String), usize> = FxHashMap::default();
-    let mut activities: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut activities: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     // Build frequency map from directly-follows relations
     for trace in &log.traces {
@@ -197,8 +196,7 @@ fn build_causal_heuristic(
         }
     }
 
-    let mut activities_vec: Vec<String> = activities.into_iter().collect();
-    activities_vec.sort();
+    let activities_vec: Vec<String> = activities.into_iter().collect();
 
     Ok(CausalGraph {
         relations: causal_relations,
