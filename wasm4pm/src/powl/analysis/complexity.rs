@@ -80,15 +80,15 @@ fn visit(arena: &PowlArena, idx: u32, depth: usize, col: &mut Collector) -> usiz
         }
 
         Some(PowlNode::OperatorPowl(op)) => {
-            let operator = op.operator.as_str().to_string();
+            let operator: &'static str = op.operator.as_str();
             let children = op.children.clone();
             let n = children.len();
 
-            col.operator_types.insert(operator.clone());
+            col.operator_types.insert(operator.to_string());
             col.operator_total += 1;
             col.operator_children_counts.push(n);
 
-            match operator.as_str() {
+            match operator {
                 "X" => {
                     col.cyclomatic += n.saturating_sub(1);
                     col.cognitive += depth + 1;
