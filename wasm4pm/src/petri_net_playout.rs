@@ -7,7 +7,7 @@ use crate::models::{PetriNet, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for Petri net playout.
@@ -50,7 +50,7 @@ pub fn play_petri_net(
     // Build adjacency structures for efficient traversal
     let preset = build_preset(petri_net);
     let postset = build_postset(petri_net);
-    let transition_labels: HashMap<_, _> = petri_net
+    let transition_labels: BTreeMap<_, _> = petri_net
         .transitions
         .iter()
         .filter(|t| !t.is_invisible.unwrap_or(false))
@@ -90,8 +90,8 @@ pub fn play_petri_net(
 }
 
 /// Build preset (input places) for each transition.
-fn build_preset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
-    let mut preset: HashMap<String, Vec<String>> = HashMap::new();
+fn build_preset(petri_net: &PetriNet) -> BTreeMap<String, Vec<String>> {
+    let mut preset: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for arc in &petri_net.arcs {
         if let Some(transition) = petri_net.transitions.iter().find(|t| t.id == arc.to) {
             preset
@@ -104,8 +104,8 @@ fn build_preset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
 }
 
 /// Build postset (output places) for each transition.
-fn build_postset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
-    let mut postset: HashMap<String, Vec<String>> = HashMap::new();
+fn build_postset(petri_net: &PetriNet) -> BTreeMap<String, Vec<String>> {
+    let mut postset: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for arc in &petri_net.arcs {
         if let Some(transition) = petri_net.transitions.iter().find(|t| t.id == arc.from) {
             postset
@@ -120,9 +120,9 @@ fn build_postset(petri_net: &PetriNet) -> HashMap<String, Vec<String>> {
 /// Simulate a single trace through the Petri net.
 fn simulate_trace(
     petri_net: &PetriNet,
-    preset: &HashMap<String, Vec<String>>,
-    postset: &HashMap<String, Vec<String>>,
-    transition_labels: &HashMap<&String, String>,
+    preset: &BTreeMap<String, Vec<String>>,
+    postset: &BTreeMap<String, Vec<String>>,
+    transition_labels: &BTreeMap<&String, String>,
     rng: &mut StdRng,
     max_length: usize,
 ) -> Result<(Trace, usize, bool), String> {

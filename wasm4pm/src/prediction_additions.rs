@@ -13,7 +13,7 @@
 /// 10. Greedy intervention ranking
 use crate::models::{AttributeValue, EventLog};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Shannon entropy of a probability distribution
 fn entropy(probs: &[f64]) -> f64 {
@@ -35,7 +35,7 @@ pub struct NextActivityPrediction {
 
 /// Get top-k next activities from n-gram model.
 pub fn predict_top_k_activities(
-    ngram_counts: &HashMap<Vec<u32>, HashMap<u32, usize>>,
+    ngram_counts: &BTreeMap<Vec<u32>, BTreeMap<u32, usize>>,
     activity_vocab: &[String],
     prefix: &[u32],
     k: usize,
@@ -102,7 +102,7 @@ pub struct BeamPath {
 }
 
 pub fn beam_search_paths(
-    ngram_counts: &HashMap<Vec<u32>, HashMap<u32, usize>>,
+    ngram_counts: &BTreeMap<Vec<u32>, BTreeMap<u32, usize>>,
     activity_vocab: &[String],
     prefix: &[u32],
     beam_width: usize,
@@ -153,7 +153,7 @@ pub fn beam_search_paths(
 
 /// Log-likelihood of a trace (sum of log-probabilities of observed transitions)
 pub fn trace_log_likelihood(
-    ngram_counts: &HashMap<Vec<u32>, HashMap<u32, usize>>,
+    ngram_counts: &BTreeMap<Vec<u32>, BTreeMap<u32, usize>>,
     trace: &[u32],
     ngram_size: usize,
 ) -> f64 {
@@ -189,8 +189,8 @@ pub struct TransitionGraph {
 }
 
 pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionGraph {
-    let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
-    let mut activity_totals: HashMap<String, usize> = HashMap::new();
+    let mut edge_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut activity_totals: BTreeMap<String, usize> = BTreeMap::new();
     let mut activities_set: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
@@ -271,7 +271,7 @@ pub fn extract_prefix_features(prefix: &[String]) -> PrefixFeatures {
     let length = prefix.len();
     let last_activity = prefix.last().cloned().unwrap_or_default();
 
-    let mut activity_freq: HashMap<String, usize> = HashMap::new();
+    let mut activity_freq: BTreeMap<String, usize> = BTreeMap::new();
     for act in prefix {
         *activity_freq.entry(act.clone()).or_default() += 1;
     }
@@ -364,8 +364,8 @@ mod tests {
 
     #[test]
     fn test_top_k_activities() {
-        let mut counts: HashMap<Vec<u32>, HashMap<u32, usize>> = HashMap::new();
-        let mut next = HashMap::new();
+        let mut counts: BTreeMap<Vec<u32>, BTreeMap<u32, usize>> = BTreeMap::new();
+        let mut next = BTreeMap::new();
         next.insert(1, 8);
         next.insert(2, 2);
         counts.insert(vec![0], next);
