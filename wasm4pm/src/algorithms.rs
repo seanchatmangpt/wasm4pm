@@ -77,14 +77,7 @@ pub fn discover_footprints_from_log<W>(
 /// `"Parallel"` (both directions), `"NeverFollows"` (no succession).
 #[wasm_bindgen]
 pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
-    })?;
+    let log = get_or_init_state().with_event_log(eventlog_handle, |log| Ok(log.clone()))?;
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
     to_js_str(&discover_footprints_from_log(&admitted, activity_key))
 }
@@ -599,14 +592,7 @@ pub fn discover_dfg_filtered(
     activity_key: &str,
     min_frequency: usize,
 ) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            format!("EventLog '{}' not found", eventlog_handle),
-        )),
-    })?;
+    let log = get_or_init_state().with_event_log(eventlog_handle, |log| Ok(log.clone()))?;
 
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
     let dfg = discover_dfg_filtered_from_log(&admitted, activity_key, min_frequency);
