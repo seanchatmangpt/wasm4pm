@@ -91,9 +91,9 @@ pub fn discover_performance_dfg_from_log(
             } else {
                 valid.iter().sum::<f64>() / valid.len() as f64
             };
-            let data = Data::new(valid.clone());
-            let median_ms = data.median();
             let mut sorted = valid.clone();
+            let data = Data::new(valid);
+            let median_ms = data.median();
             sorted.sort_unstable_by(f64::total_cmp);
             let p95_idx = ((sorted.len() as f64 - 1.0) * 0.95).round() as usize;
             let p95_ms = if sorted.is_empty() {
