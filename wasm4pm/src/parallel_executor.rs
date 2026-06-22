@@ -580,8 +580,8 @@ mod tests {
         assert_eq!(parallel.nodes.len(), sequential.nodes.len());
         let mut par_nodes: Vec<_> = parallel.nodes.iter().collect();
         let mut seq_nodes: Vec<_> = sequential.nodes.iter().collect();
-        par_nodes.sort_by_key(|n| &n.id);
-        seq_nodes.sort_by_key(|n| &n.id);
+        par_nodes.sort_unstable_by_key(|n| &n.id);
+        seq_nodes.sort_unstable_by_key(|n| &n.id);
         for (p, s) in par_nodes.iter().zip(seq_nodes.iter()) {
             assert_eq!(p.id, s.id, "node id mismatch");
             assert_eq!(
@@ -595,8 +595,8 @@ mod tests {
         assert_eq!(parallel.edges.len(), sequential.edges.len());
         let mut par_edges: Vec<_> = parallel.edges.iter().collect();
         let mut seq_edges: Vec<_> = sequential.edges.iter().collect();
-        par_edges.sort_by_key(|e| (&e.from, &e.to));
-        seq_edges.sort_by_key(|e| (&e.from, &e.to));
+        par_edges.sort_unstable_by_key(|e| (&e.from, &e.to));
+        seq_edges.sort_unstable_by_key(|e| (&e.from, &e.to));
         for (p, s) in par_edges.iter().zip(seq_edges.iter()) {
             assert_eq!(p.from, s.from, "edge from mismatch");
             assert_eq!(p.to, s.to, "edge to mismatch");

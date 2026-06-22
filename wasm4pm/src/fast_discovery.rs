@@ -235,7 +235,7 @@ pub fn discover_astar_from_log(
     let mut iterations = 0;
 
     while !open_set.is_empty() && iterations < max_iterations {
-        open_set.sort_by(|a, b| a.1.total_cmp(&b.1));
+        open_set.sort_unstable_by(|a, b| a.1.total_cmp(&b.1));
         let (current_dfg, _score) = match open_set.pop() {
             Some(item) => item,
             None => break,
@@ -295,7 +295,7 @@ pub fn discover_astar_from_log(
         }
         open_set.extend(new_candidates);
         // Beam: sort descending by score and cap the open set to prevent memory explosion.
-        open_set.sort_by(|a, b| b.1.total_cmp(&a.1));
+        open_set.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
         open_set.truncate(128);
         iterations += 1;
     }
@@ -325,7 +325,7 @@ pub fn analyze_trace_variants(
             }
 
             let mut variant_list: Vec<(Vec<String>, usize)> = variants.into_iter().collect();
-            variant_list.sort_by_key(|b| std::cmp::Reverse(b.1));
+            variant_list.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             let top_variants: Vec<_> = variant_list
                 .iter()
@@ -385,7 +385,7 @@ pub fn mine_sequential_patterns(
                 .into_iter()
                 .filter(|(_, count)| *count >= min_count)
                 .collect();
-            frequent_patterns.sort_by_key(|b| std::cmp::Reverse(b.1));
+            frequent_patterns.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             let result_patterns: Vec<_> = frequent_patterns
                 .iter()
@@ -689,9 +689,9 @@ pub fn analyze_start_end_activities(
             let mut ends: Vec<_> = end_acts.into_iter().collect();
             let mut pairs: Vec<_> = start_end_pairs.into_iter().collect();
 
-            starts.sort_by_key(|b| std::cmp::Reverse(b.1));
-            ends.sort_by_key(|b| std::cmp::Reverse(b.1));
-            pairs.sort_by_key(|b| std::cmp::Reverse(b.1));
+            starts.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+            ends.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+            pairs.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             to_js_str(&json!({
                 "start_activities": starts.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
@@ -740,7 +740,7 @@ pub fn analyze_activity_cooccurrence(
             }
 
             let mut pairs: Vec<_> = cooccurrence.into_iter().collect();
-            pairs.sort_by_key(|b| std::cmp::Reverse(b.1));
+            pairs.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             let result: Vec<_> = pairs
                 .iter()

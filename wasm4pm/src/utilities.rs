@@ -513,7 +513,7 @@ pub fn get_activity_frequencies(
             }
 
             let mut freq_vec: Vec<(String, usize)> = frequencies.into_iter().collect();
-            freq_vec.sort_by_key(|b| std::cmp::Reverse(b.1));
+            freq_vec.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             to_js(&freq_vec)
         }

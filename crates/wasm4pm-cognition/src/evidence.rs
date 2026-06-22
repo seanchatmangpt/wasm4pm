@@ -335,7 +335,7 @@ impl EvidenceSource for OtelEvidenceSource {
                 Some((ts, t))
             })
             .collect();
-        entries.sort_by_key(|(ts, _)| *ts);
+        entries.sort_unstable_by_key(|(ts, _)| *ts);
         entries.into_iter().map(|(_, v)| v).collect()
     }
 }

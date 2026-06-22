@@ -208,7 +208,7 @@ impl ProcessModelRegistry {
 
     pub fn resolve_model(&self, key: &VariantKey) -> Option<String> {
         let mut sorted = self.variant_rules.clone();
-        sorted.sort_by_key(|r| -r.priority);
+        sorted.sort_unstable_by_key(|r| -r.priority);
 
         for rule in sorted {
             if rule.guards.iter().all(|g| g.matches(key)) {

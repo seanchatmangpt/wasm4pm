@@ -545,7 +545,7 @@ pub fn compute_bootstrap_result(
 
     // Percentile-based confidence interval
     let mut sorted_scores = scores.clone();
-    sorted_scores.sort_by(|a, b| a.total_cmp(b));
+    sorted_scores.sort_unstable_by(|a, b| a.total_cmp(b));
 
     let alpha = 1.0 - confidence_level;
     let lower_idx = ((alpha / 2.0) * n as f64).floor() as usize;

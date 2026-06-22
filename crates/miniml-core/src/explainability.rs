@@ -377,7 +377,7 @@ pub fn prediction_interval(predictions: &[f64], confidence: f64) -> Result<js_sy
 
     // Sort predictions
     let mut sorted = predictions.to_vec();
-    sorted.sort_by(|a, b| a.total_cmp(b));
+    sorted.sort_unstable_by(|a, b| a.total_cmp(b));
 
     let n = sorted.len();
     let alpha = 1.0 - confidence;

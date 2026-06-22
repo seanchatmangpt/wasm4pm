@@ -39,7 +39,7 @@ pub fn kaplan_meier_impl(times: &[f64], events: &[f64]) -> Result<KaplanMeierRes
         .zip(events.iter())
         .map(|(&t, &e)| (t, e))
         .collect();
-    pairs.sort_by(|a, b| a.0.total_cmp(&b.0));
+    pairs.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
     let mut event_times: Vec<f64> = Vec::new();
     let mut n_at_risk_vals: Vec<f64> = Vec::new();
     let mut n_events: Vec<usize> = Vec::new();
@@ -158,7 +158,7 @@ pub fn cox_proportional_hazards_impl(
         return Err(MlError::new("max_iter must be > 0"));
     }
     let mut indices: Vec<usize> = (0..n_samples).collect();
-    indices.sort_by(|&a, &b| {
+    indices.sort_unstable_by(|&a, &b| {
         times[a]
             .partial_cmp(&times[b])
             .unwrap_or(std::cmp::Ordering::Equal)

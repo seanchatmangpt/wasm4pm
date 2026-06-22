@@ -153,7 +153,7 @@ fn calculate_burst_score(commit_times: &[DateTime<Utc>]) -> f64 {
     }
 
     let mut sorted_times = commit_times.to_vec();
-    sorted_times.sort_by(|a, b| b.cmp(a)); // Newest first
+    sorted_times.sort_unstable_by(|a, b| b.cmp(a)); // Newest first
 
     // Calculate inter-commit gaps (in hours)
     let mut gaps: Vec<f64> = Vec::new();
@@ -204,7 +204,7 @@ fn calculate_evenness(commits_by_date: &HashMap<String, usize>) -> f64 {
         return 1.0; // Single day is trivially even
     }
 
-    values.sort_by(|a, b| a.total_cmp(b));
+    values.sort_unstable_by(|a, b| a.total_cmp(b));
 
     let n = values.len() as f64;
     let mean = values.iter().sum::<f64>() / n;

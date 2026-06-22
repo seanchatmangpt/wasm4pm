@@ -191,7 +191,7 @@ impl CognitionBreed for LtlMonitor {
                 }
             }
         }
-        trace_events.sort_by_key(|k| k.0);
+        trace_events.sort_unstable_by_key(|k| k.0);
 
         let mut trace = Vec::new();
         let mut step = 0;

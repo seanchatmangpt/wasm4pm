@@ -52,7 +52,7 @@ impl OCLanguageAbstraction {
 
                 // Group events by object instance and sort by timestamp
                 let mut sorted_indices = event_indices;
-                sorted_indices.sort_by_key(|&idx| &ocel.events[idx].timestamp);
+                sorted_indices.sort_unstable_by_key(|&idx| &ocel.events[idx].timestamp);
 
                 let first_ev = &ocel.events[sorted_indices[0]].event_type;
                 let last_ev = &ocel.events[*sorted_indices.last().unwrap()].event_type;

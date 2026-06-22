@@ -169,7 +169,7 @@ fn beam_search_on_ngram(
             break;
         }
 
-        next_beams.sort_by(|a, b| b.1.total_cmp(&a.1));
+        next_beams.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
         // Deduplicate beams that are identical (keep highest prob)
         beams = next_beams.into_iter().take(beam_width).collect();
     }

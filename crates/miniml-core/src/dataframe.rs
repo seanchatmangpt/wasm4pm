@@ -173,7 +173,7 @@ impl DataFrame {
         let mut indices: Vec<usize> = (0..self.n_rows).collect();
 
         // Sort indices by column values
-        indices.sort_by(|&a, &b| {
+        indices.sort_unstable_by(|&a, &b| {
             let val_a = self.data[col_idx][a];
             let val_b = self.data[col_idx][b];
             if ascending {
@@ -228,7 +228,7 @@ impl DataFrame {
             let std = variance.sqrt();
 
             let mut sorted = col.clone();
-            sorted.sort_by(|a, b| a.total_cmp(b));
+            sorted.sort_unstable_by(|a, b| a.total_cmp(b));
 
             let q1_idx = (n * 0.25).floor() as usize;
             let q2_idx = (n * 0.50).floor() as usize;
@@ -286,7 +286,7 @@ impl DataFrame {
                         0.0
                     } else {
                         let mut sorted = col.clone();
-                        sorted.sort_by(|a, b| a.total_cmp(b));
+                        sorted.sort_unstable_by(|a, b| a.total_cmp(b));
                         let idx = (q * sorted.len() as f64).floor() as usize;
                         sorted.get(idx).copied().unwrap_or(0.0)
                     }
