@@ -62,11 +62,7 @@ impl KMeansModel {
             let mut best_dist = f64::INFINITY;
             for c in 0..self.k {
                 let centroid = &self.centroids[c * self.n_features..(c + 1) * self.n_features];
-                let mut d = 0.0;
-                for j in 0..self.n_features {
-                    let diff = point[j] - centroid[j];
-                    d += diff * diff;
-                }
+                let d: f64 = point.iter().zip(centroid).map(|(a, b)| (a - b).powi(2)).sum();
                 if d < best_dist {
                     best_dist = d;
                     best = c as u32;
@@ -174,17 +170,15 @@ pub fn kmeans_impl(
         for (i, &assign) in assignments.iter().enumerate().take(n) {
             let c = assign as usize;
             counts[c] += 1;
-            let start = i * n_features;
-            for j in 0..n_features {
-                centroids[c * n_features + j] += data[start + j];
-            }
+            let data_slice = &data[i * n_features..(i + 1) * n_features];
+            let centroid_slice = &mut centroids[c * n_features..(c + 1) * n_features];
+            centroid_slice.iter_mut().zip(data_slice).for_each(|(cv, &dv)| *cv += dv);
         }
         for (c, &count) in counts.iter().enumerate().take(k) {
             if count > 0 {
                 let start = c * n_features;
-                for j in 0..n_features {
-                    centroids[start + j] /= count as f64;
-                }
+                let inv = 1.0 / count as f64;
+                centroids[start..start + n_features].iter_mut().for_each(|cv| *cv *= inv);
             }
         }
     }
