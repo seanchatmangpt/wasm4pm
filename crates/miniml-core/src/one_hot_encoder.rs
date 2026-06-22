@@ -64,7 +64,7 @@ impl OneHotEncoder {
                 let categories = &self.categories[f];
 
                 for &cat in categories {
-                    result.push(if (val - cat).abs() < 1e-10 { 1.0 } else { 0.0 });
+                    result.push(f64::from((val - cat).abs() < 1e-10));
                 }
             }
         }

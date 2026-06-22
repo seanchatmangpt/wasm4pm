@@ -40,7 +40,7 @@ pub fn cross_validate_score_impl(
     let mut folds: Vec<Vec<usize>> = Vec::with_capacity(k_folds);
     let mut offset = 0;
     for f in 0..k_folds {
-        let size = fold_size + if f < remainder { 1 } else { 0 };
+        let size = fold_size + usize::from(f < remainder);
         folds.push(indices[offset..offset + size].to_vec());
         offset += size;
     }

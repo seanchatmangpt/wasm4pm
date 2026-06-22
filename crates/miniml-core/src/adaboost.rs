@@ -48,7 +48,7 @@ impl AdaBoostClassifier {
                 score += self.alphas[stump_idx] * vote;
             }
 
-            result.push(if score > 0.0 { 1.0 } else { 0.0 });
+            result.push(f64::from(score > 0.0));
         }
 
         result

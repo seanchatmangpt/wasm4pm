@@ -537,7 +537,7 @@ mod tests {
         // 5 features, find optimal subset
         let feature_fitness = |genes: &[f64]| {
             // Binary genes: 1 means feature included
-            let selected_features: usize = genes.iter().map(|&g| if g > 0.5 { 1 } else { 0 }).sum();
+            let selected_features: usize = genes.iter().map(|&g| usize::from(g > 0.5)).sum();
 
             // Simulated accuracy (higher is better)
             // Prefer 3 features (optimal subset size)
@@ -562,7 +562,7 @@ mod tests {
             .best
             .genes
             .iter()
-            .map(|&g| if g > 0.5 { 1 } else { 0 })
+            .map(|&g| usize::from(g > 0.5))
             .sum();
         assert!(selected == 3 || result.best.fitness > 0.8);
     }
