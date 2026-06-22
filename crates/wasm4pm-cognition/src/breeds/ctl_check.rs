@@ -34,7 +34,7 @@ pub struct CtlCheck;
 struct Ts {
     states: Vec<String>,
     index: BTreeMap<String, usize>,
-    succ: Vec<Vec<usize>>,
+    succ: Vec<std::collections::BTreeSet<usize>>,
     labels: Vec<BTreeSet<String>>,
     init: usize,
 }
@@ -89,15 +89,11 @@ fn parse_ts(input: &BreedInput) -> Result<(Ts, String), String> {
         .enumerate()
         .map(|(i, s)| (s.clone(), i))
         .collect();
-    let mut succ: Vec<Vec<usize>> = vec![Vec::new(); states.len()];
+    let mut succ: Vec<std::collections::BTreeSet<usize>> = vec![std::collections::BTreeSet::new(); states.len()];
     for (s, ts) in &edges {
         for t in ts {
-            succ[index[s]].push(index[t]);
+            succ[index[s]].insert(index[t]);
         }
-    }
-    for v in &mut succ {
-        v.sort_unstable();
-        v.dedup();
     }
     if let Some(s) = succ.iter().position(|v| v.is_empty()) {
         return Err(format!(
