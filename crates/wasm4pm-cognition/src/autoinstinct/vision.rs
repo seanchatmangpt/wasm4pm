@@ -56,11 +56,7 @@ impl SymbolicVisionSystem {
     pub fn find_clear_object(&self) -> Option<&Polyhedron> {
         self.objects.iter().find(|obj| {
             !self.objects.iter().any(|other| {
-                if let Some(support) = &other.supported_by {
-                    support == &obj.id
-                } else {
-                    false
-                }
+                other.supported_by.as_deref() == Some(obj.id.as_str())
             })
         })
     }
