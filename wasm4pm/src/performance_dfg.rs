@@ -1,7 +1,7 @@
 use crate::models::{parse_timestamp_ms, AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::{Data, Median};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 /// Priority 1 — Performance DFG (time-annotated directly-follows graph).
 ///
 /// Extends the standard DFG with per-edge timing statistics computed from
@@ -29,10 +29,10 @@ pub fn discover_performance_dfg_from_log(
     activity_key: &str,
     timestamp_key: &str,
 ) -> String {
-    let mut edge_times: HashMap<(String, String), Vec<f64>> = HashMap::new();
-    let mut node_freq: HashMap<String, usize> = HashMap::new();
-    let mut start_acts: HashMap<String, usize> = HashMap::new();
-    let mut end_acts: HashMap<String, usize> = HashMap::new();
+    let mut edge_times: BTreeMap<(String, String), Vec<f64>> = BTreeMap::new();
+    let mut node_freq: BTreeMap<String, usize> = BTreeMap::new();
+    let mut start_acts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut end_acts: BTreeMap<String, usize> = BTreeMap::new();
 
     for trace in &log.traces {
         let pairs: Vec<(String, Option<i64>)> = trace
