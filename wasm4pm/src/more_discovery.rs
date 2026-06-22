@@ -1052,7 +1052,7 @@ pub fn analyze_case_attributes(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut attribute_values: FxHashMap<String, HashSet<String>> = FxHashMap::default();
+            let mut attribute_values: std::collections::BTreeMap<String, std::collections::BTreeSet<String>> = std::collections::BTreeMap::new();
             let mut attribute_activity_map: FxHashMap<(String, String), Vec<String>> =
                 FxHashMap::default();
 
