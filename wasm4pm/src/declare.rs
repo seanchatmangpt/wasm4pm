@@ -969,10 +969,11 @@ impl DeclareModel {
     pub fn constraints_by_template(
         &self,
         template: &DeclareTemplate,
-    ) -> impl Iterator<Item = &DeclareConstraint> {
+    ) -> impl Iterator<Item = &DeclareConstraint> + '_ {
+        let t = template.clone();
         self.constraints
             .iter()
-            .filter(move |c| &c.template == template)
+            .filter(move |c| c.template == t)
     }
 
     /// Return all constraints whose support is at or above `min_support`.

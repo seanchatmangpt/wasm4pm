@@ -489,6 +489,8 @@ pub mod streaming_wasm;
 
 // Conformance (gated by conformance_basic or conformance_full features)
 #[cfg(feature = "conformance_basic")]
+pub mod declare;
+#[cfg(feature = "conformance_basic")]
 pub mod declare_conformance;
 #[cfg(feature = "conformance_basic")]
 pub mod simd_token_replay;

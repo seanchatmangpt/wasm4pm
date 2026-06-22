@@ -510,8 +510,7 @@ mod source_place_tests {
         let idx_c = *net.place_ids.get("C").unwrap() as usize;
 
         let trace = vec![idx_a as u32, idx_b as u32, idx_c as u32];
-        let vocab_refs: Vec<&str> = vocab.clone();
-        let result = net.replay_trace(trace.into_iter(), &vocab_refs);
+        let result = net.replay_trace(trace.into_iter(), &vocab);
 
         assert_eq!(
             result.missing, 0,
