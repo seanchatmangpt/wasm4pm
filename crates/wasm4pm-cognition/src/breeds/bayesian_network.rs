@@ -122,7 +122,7 @@ impl CognitionBreed for BayesianNetwork {
 
         for (child_name, rules) in child_rules {
             all_nodes.insert(child_name.clone());
-            let mut parents = HashSet::new();
+            let mut parents: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
             for rule in &rules {
                 for premise in &rule.premise {
                     if let Some(eq_idx) = premise.find('=') {
@@ -131,18 +131,17 @@ impl CognitionBreed for BayesianNetwork {
                     }
                 }
             }
-            let mut parents_sorted: Vec<String> = parents.into_iter().collect();
-            parents_sorted.sort();
-            for p in &parents_sorted {
+            for p in &parents {
                 all_nodes.insert(p.clone());
             }
 
+            let parents_sorted: Vec<&String> = parents.iter().collect();
             let mut probs = vec![0.0; 1 << parents_sorted.len()];
             for p_idx in 0..(1 << parents_sorted.len()) {
                 let mut parent_vals = HashMap::new();
                 for (j, p_name) in parents_sorted.iter().enumerate() {
                     let val = ((p_idx >> (parents_sorted.len() - 1 - j)) & 1) == 1;
-                    parent_vals.insert(p_name.clone(), val);
+                    parent_vals.insert((*p_name).clone(), val);
                 }
 
                 let mut matched_prob = 0.0;
@@ -181,7 +180,7 @@ impl CognitionBreed for BayesianNetwork {
             let cpt_key = if parents_sorted.is_empty() {
                 format!("cpt:{}", child_name)
             } else {
-                format!("cpt:{}|{}", child_name, parents_sorted.join(","))
+                format!("cpt:{}|{}", child_name, parents_sorted.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(","))
             };
             let cpt_val = probs.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",");
             
