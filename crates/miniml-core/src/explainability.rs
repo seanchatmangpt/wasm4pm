@@ -3,6 +3,7 @@
 //! Provides SHAP-like feature attribution, LIME-like local explanations,
 //! decision paths for trees, confidence intervals, and counterfactuals.
 
+use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -289,13 +290,13 @@ pub fn lime_explain(
 /// or the instance is "pure" (dominant class probability > 80%).
 ///
 /// Returns `Err` if `x.len() < n_features`.
-pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNode>, String> {
+pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNode>, MlError> {
     if x.len() < n_features {
-        return Err(format!(
+        return Err(MlError::new(format!(
             "x has {} elements but n_features={}",
             x.len(),
             n_features
-        ));
+        )));
     }
 
     let mut path = Vec::new();
@@ -358,7 +359,7 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
 /// * `n_features` - Number of features
 #[wasm_bindgen]
 pub fn decision_path(x: &[f64], n_features: usize) -> Result<JsValue, JsError> {
-    let path = decision_path_impl(x, n_features).map_err(|e| JsError::new(&e))?;
+    let path = decision_path_impl(x, n_features).map_err(|e| JsError::new(&e.to_string()))?;
 
     serde_wasm_bindgen::to_value(&path)
         .map_err(|e| JsError::new(&format!("Failed to convert path: {}", e)))
