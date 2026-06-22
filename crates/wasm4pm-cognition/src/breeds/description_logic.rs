@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
 };
-use std::collections::{BTreeSet, HashSet, HashMap};
+use std::collections::{BTreeSet, HashMap};
 
 /// Description Logic breed.
 pub struct DescriptionLogic;
@@ -41,11 +41,11 @@ impl CognitionBreed for DescriptionLogic {
         step_count += 1;
 
         // TBox: subsumes(A, B) -> class A subsumes class B (B is a subclass of A)
-        let mut subsumes: HashSet<(String, String)> = HashSet::new();
+        let mut subsumes: BTreeSet<(String, String)> = BTreeSet::new();
         // ABox: member(individual, class)
-        let mut member: HashSet<(String, String)> = HashSet::new();
+        let mut member: BTreeSet<(String, String)> = BTreeSet::new();
         // Disjointness: disjoint(A, B)
-        let mut disjoint: HashSet<(String, String)> = HashSet::new();
+        let mut disjoint: BTreeSet<(String, String)> = BTreeSet::new();
 
         for f in &input.facts {
             if f.key == "subsumes" {
@@ -168,18 +168,14 @@ impl CognitionBreed for DescriptionLogic {
             value: consistent.to_string(),
         });
 
-        // Add derived subsumptions and memberships to facts (sorted for determinism)
-        let mut sorted_subsumes: Vec<(String, String)> = subsumes.into_iter().collect();
-        sorted_subsumes.sort();
-        for (a, b) in sorted_subsumes {
+        // BTreeSet iterates in ascending order — no sort scaffolding needed
+        for (a, b) in &subsumes {
             out_facts.push(Fact {
                 key: format!("subsumes:{}:{}", a, b),
                 value: "true".to_string(),
             });
         }
-        let mut sorted_member: Vec<(String, String)> = member.iter().cloned().collect();
-        sorted_member.sort();
-        for (x, c) in sorted_member {
+        for (x, c) in &member {
             out_facts.push(Fact {
                 key: format!("member:{}:{}", x, c),
                 value: "true".to_string(),
