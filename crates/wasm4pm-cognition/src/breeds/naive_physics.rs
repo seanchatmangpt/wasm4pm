@@ -153,17 +153,17 @@ impl CognitionBreed for NaivePhysics {
             if scene.removed.contains(o) {
                 continue;
             }
-            let mut cur = o.clone();
+            let mut cur: &str = o.as_str();
             let is_stable = loop {
-                if scene.grounds.contains(&cur) {
+                if scene.grounds.contains(cur) {
                     break true;
                 }
-                match scene.support.get(&cur) {
+                match scene.support.get(cur) {
                     Some((sup, _)) => {
-                        if scene.removed.contains(sup) {
+                        if scene.removed.contains(sup.as_str()) {
                             break false;
                         }
-                        cur = sup.clone();
+                        cur = sup.as_str();
                     }
                     None => break false, // unsupported, not ground
                 }
