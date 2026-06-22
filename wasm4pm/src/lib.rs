@@ -938,15 +938,7 @@ pub fn autonomic_execute_cycle(
     // Helper: extract event log metrics for Perception layer
     // -----------------------------------------------------------------------
     let t_perception_start = wall_clock_us();
-    let perception_result = state.with_object(log_handle, |obj| {
-        let log = match obj {
-            Some(StoredObject::EventLog(l)) => l,
-            _ => {
-                return Err(crate::error::js_val(
-                    "autonomic_execute_cycle: handle does not reference an EventLog",
-                ));
-            }
-        };
+    let perception_result = get_or_init_state().with_event_log(log_handle, |log| {
 
         let trace_count = log.traces.len();
         let event_count: usize = log.traces.iter().map(|t| t.events.len()).sum();
@@ -1109,15 +1101,7 @@ pub fn autonomic_execute_cycle(
     // -----------------------------------------------------------------------
     // Pattern Analysis: Dynamic pattern selection based on trace structure
     // -----------------------------------------------------------------------
-    let pattern_analysis = state.with_object(log_handle, |obj| {
-        let log = match obj {
-            Some(StoredObject::EventLog(l)) => l,
-            _ => {
-                return Err(crate::error::js_val(
-                    "pattern_analysis: handle does not reference an EventLog",
-                ));
-            }
-        };
+    let pattern_analysis = get_or_init_state().with_event_log(log_handle, |log| {
 
         // Extract traces as Vec<Vec<String>> for pattern analysis
         let traces_for_analysis: Vec<Vec<String>> = log
