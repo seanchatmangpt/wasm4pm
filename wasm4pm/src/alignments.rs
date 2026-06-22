@@ -460,13 +460,13 @@ pub fn compute_alignments(
                     log_move_count += 1;
                 }
 
-                for i in 1..acts.len() {
-                    let edge = (acts[i - 1].clone(), acts[i].clone());
+                for w in acts.windows(2) {
+                    let edge = (w[0].clone(), w[1].clone());
                     if edge_map.contains_key(&edge) {
-                        moves.push(json!({"type": "sync", "activity": acts[i]}));
+                        moves.push(json!({"type": "sync", "activity": w[1]}));
                         sync_count += 1;
                     } else {
-                        moves.push(json!({"type": "log", "activity": acts[i]}));
+                        moves.push(json!({"type": "log", "activity": w[1]}));
                         log_move_count += 1;
                     }
                 }
