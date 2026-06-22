@@ -96,14 +96,15 @@ impl StreamingNoiseFilteredDfgBuilder {
             return DFG::new();
         }
 
-        // Filter: keep only edges above noise threshold
+        // Filter: keep only edges above noise threshold — sort for deterministic DFG output
         let max_freq = self.edge_counts.values().copied().max().unwrap_or(1);
-        let filtered_edges: Vec<((u32, u32), usize)> = self
+        let mut filtered_edges: Vec<((u32, u32), usize)> = self
             .edge_counts
             .iter()
             .filter(|&(_, &count)| count as f64 / max_freq as f64 >= self.noise_threshold)
             .map(|(&k, &v)| (k, v))
             .collect();
+        filtered_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
 
         // Build DFG from filtered edges
         let mut dfg = DFG::new();

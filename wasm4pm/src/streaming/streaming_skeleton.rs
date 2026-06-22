@@ -121,8 +121,8 @@ impl StreamingSkeletonBuilder {
             }
         }
 
-        // Filter edges by min frequency
-        dfg.edges = edge_counts
+        // Filter edges by min frequency — sort by (from, to) for deterministic output
+        let mut edges: Vec<crate::models::DirectlyFollowsRelation> = edge_counts
             .into_iter()
             .filter_map(|((f, t), freq)| {
                 if freq >= min_freq {
@@ -136,6 +136,8 @@ impl StreamingSkeletonBuilder {
                 }
             })
             .collect();
+        edges.sort_by(|a, b| a.from.cmp(&b.from).then_with(|| a.to.cmp(&b.to)));
+        dfg.edges = edges;
 
         dfg
     }
