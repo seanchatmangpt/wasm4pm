@@ -27,7 +27,7 @@ fn new_visible_trans(
 ) -> String {
     let n = counts.inc_visible();
     let name = format!("vis_{}", n);
-    let mut props = HashMap::new();
+    let mut props = std::collections::BTreeMap::new();
     props.insert(
         "activity".to_string(),
         serde_json::Value::String(activity.to_string()),
