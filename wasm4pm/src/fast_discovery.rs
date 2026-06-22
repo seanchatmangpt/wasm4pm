@@ -308,17 +308,14 @@ pub fn analyze_trace_variants(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut variants: FxHashMap<Vec<String>, usize> = FxHashMap::default();
+            let mut variants: std::collections::BTreeMap<Vec<String>, usize> = std::collections::BTreeMap::new();
 
             for trace in &log.traces {
-                let mut path = Vec::new();
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(activity)) =
-                        event.attributes.get(activity_key)
-                    {
-                        path.push(activity.clone());
-                    }
-                }
+                let path: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| e.attributes.get(activity_key)?.as_string().map(str::to_owned))
+                    .collect();
                 *variants.entry(path).or_default() += 1;
             }
 
@@ -358,7 +355,7 @@ pub fn mine_sequential_patterns(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut patterns: FxHashMap<Vec<String>, usize> = FxHashMap::default();
+            let mut patterns: std::collections::BTreeMap<Vec<String>, usize> = std::collections::BTreeMap::new();
             let min_count = ((log.traces.len() as f64 * min_support).ceil()) as usize;
 
             for trace in &log.traces {
