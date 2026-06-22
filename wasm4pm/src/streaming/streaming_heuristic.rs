@@ -141,8 +141,8 @@ impl StreamingHeuristicBuilder {
             })
             .collect();
 
-        // Edges filtered by dependency score
-        dfg.edges = self
+        // Edges filtered by dependency score — sorted by (from, to) for deterministic output
+        let mut edges: Vec<crate::models::DirectlyFollowsRelation> = self
             .edge_counts
             .iter()
             .filter_map(|(&(from, to), &freq)| {
@@ -168,6 +168,8 @@ impl StreamingHeuristicBuilder {
                 })
             })
             .collect();
+        edges.sort_by(|a, b| a.from.cmp(&b.from).then_with(|| a.to.cmp(&b.to)));
+        dfg.edges = edges;
 
         // Start/end activities
         for (&id, &cnt) in &self.start_counts {

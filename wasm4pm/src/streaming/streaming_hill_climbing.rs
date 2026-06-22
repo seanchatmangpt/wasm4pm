@@ -176,7 +176,8 @@ impl StreamingHillClimbingBuilder {
             })
             .collect();
 
-        dfg.edges = current_edges
+        // Sort edges by (from_label, to_label) for deterministic DFG output
+        let mut edges: Vec<DirectlyFollowsRelation> = current_edges
             .iter()
             .filter_map(|&edge| {
                 let freq = self.edge_counts.get(&edge)?;
@@ -187,6 +188,8 @@ impl StreamingHillClimbingBuilder {
                 })
             })
             .collect();
+        edges.sort_by(|a, b| a.from.cmp(&b.from).then_with(|| a.to.cmp(&b.to)));
+        dfg.edges = edges;
 
         for (&id, &cnt) in &self.start_counts {
             if let Some(name) = self.interner.get(id) {
