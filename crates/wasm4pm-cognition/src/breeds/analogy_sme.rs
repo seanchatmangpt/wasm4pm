@@ -21,7 +21,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// SME greedy-merge structure mapper.
 pub struct AnalogySme;
@@ -208,8 +208,8 @@ impl CognitionBreed for AnalogySme {
                 .then_with(|| a.tkey.cmp(&b.tkey))
         });
         let mut mapping: BTreeMap<String, String> = BTreeMap::new();
-        let mut used_targets: Vec<String> = Vec::new();
-        let mut matched_base: Vec<usize> = Vec::new();
+        let mut used_targets: BTreeSet<String> = BTreeSet::new();
+        let mut matched_base: BTreeSet<usize> = BTreeSet::new();
         let mut gmap_score: u64 = 0;
         for mh in &mhs {
             if matched_base.contains(&mh.bidx) || used_targets.contains(&mh.tkey) {
@@ -219,8 +219,8 @@ impl CognitionBreed for AnalogySme {
                 for (b, t) in &mh.pairs {
                     mapping.insert(b.clone(), t.clone());
                 }
-                used_targets.push(mh.tkey.clone());
-                matched_base.push(mh.bidx);
+                used_targets.insert(mh.tkey.clone());
+                matched_base.insert(mh.bidx);
                 gmap_score += mh.score;
                 push(
                     &mut trace,
