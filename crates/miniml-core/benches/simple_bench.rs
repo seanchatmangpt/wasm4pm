@@ -273,7 +273,7 @@ fn main() {
     });
 
     bench_row!("Preprocessing", "Normalizer (100Kx100)", 100, 1000, || {
-        let s = normalizer(100, "l2".to_string());
+        let s = normalizer(100, "l2");
         black_box(s.fit_transform(&x));
     });
 
