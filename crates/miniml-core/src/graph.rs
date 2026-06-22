@@ -175,8 +175,8 @@ pub fn shortest_path_impl(
 
 #[wasm_bindgen(js_name = "shortestPath")]
 pub fn shortest_path(adjacency: &[f64], n_nodes: usize, source: usize) -> Result<JsValue, JsError> {
-    let result = shortest_path_impl(adjacency, n_nodes, source)
-        .map_err(|e| JsError::new(&e.message))?;
+    let result =
+        shortest_path_impl(adjacency, n_nodes, source).map_err(|e| JsError::new(&e.message))?;
     let mut out = vec![result.source as f64];
     out.extend(&result.distances);
     out.extend(&result.predecessors);

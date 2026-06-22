@@ -19,38 +19,40 @@ impl LinearSVM {
         self.n_features
     }
 
+    fn score_sample(&self, sample: &[f64]) -> f64 {
+        self.bias
+            + self
+                .weights
+                .iter()
+                .zip(sample)
+                .map(|(w, x)| w * x)
+                .sum::<f64>()
+    }
+
     /// Predict class labels
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<f64> {
         let n = data.len() / self.n_features;
-        let mut result = Vec::with_capacity(n);
-
-        for i in 0..n {
-            let mut sum = self.bias;
-            for f in 0..self.n_features {
-                sum += self.weights[f] * data[i * self.n_features + f];
-            }
-            result.push(if sum > 0.0 { 1.0 } else { 0.0 });
-        }
-
-        result
+        (0..n)
+            .map(|i| {
+                let score =
+                    self.score_sample(&data[i * self.n_features..(i + 1) * self.n_features]);
+                if score > 0.0 {
+                    1.0
+                } else {
+                    0.0
+                }
+            })
+            .collect()
     }
 
     /// Predict decision function (raw scores)
     #[wasm_bindgen(js_name = "decisionFunction")]
     pub fn decision_function(&self, data: &[f64]) -> Vec<f64> {
         let n = data.len() / self.n_features;
-        let mut result = Vec::with_capacity(n);
-
-        for i in 0..n {
-            let mut sum = self.bias;
-            for f in 0..self.n_features {
-                sum += self.weights[f] * data[i * self.n_features + f];
-            }
-            result.push(sum);
-        }
-
-        result
+        (0..n)
+            .map(|i| self.score_sample(&data[i * self.n_features..(i + 1) * self.n_features]))
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "toString")]

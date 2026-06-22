@@ -863,8 +863,7 @@ pub fn t_test_one_sample(
     hypothesized_mean: f64,
     alpha: f64,
 ) -> Result<TTestResult, JsError> {
-    t_test_one_sample_impl(data, hypothesized_mean, alpha)
-        .map_err(|e| JsError::new(&e.message))
+    t_test_one_sample_impl(data, hypothesized_mean, alpha).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "tTestTwoSample")]
@@ -908,8 +907,7 @@ pub fn chi_square_independence(
     n_rows: usize,
     n_cols: usize,
 ) -> Result<ChiSquareResult, JsError> {
-    chi_square_independence_impl(contingency, n_rows, n_cols)
-        .map_err(|e| JsError::new(&e.message))
+    chi_square_independence_impl(contingency, n_rows, n_cols).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "oneWayAnova")]

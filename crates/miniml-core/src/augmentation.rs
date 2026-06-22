@@ -53,7 +53,10 @@ pub fn smote(
             .iter()
             .enumerate()
             .partition(|(_, &label)| label == minority_class);
-        (a.into_iter().map(|(i, _)| i).collect(), b.into_iter().map(|(i, _)| i).collect())
+        (
+            a.into_iter().map(|(i, _)| i).collect(),
+            b.into_iter().map(|(i, _)| i).collect(),
+        )
     };
 
     let n_minority = minority_indices.len();
@@ -198,7 +201,10 @@ pub fn random_oversample(
             .iter()
             .enumerate()
             .partition(|(_, &label)| label == minority_class);
-        (a.into_iter().map(|(i, _)| i).collect(), b.into_iter().map(|(i, _)| i).collect())
+        (
+            a.into_iter().map(|(i, _)| i).collect(),
+            b.into_iter().map(|(i, _)| i).collect(),
+        )
     };
 
     let n_minority = minority_indices.len();
