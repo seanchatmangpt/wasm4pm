@@ -35,7 +35,7 @@
 //! the lawful decomposition, the process tree's language equals the POWL's, and
 //! every positive trace replays at fitness 1.0 (trace ∈ `wf_net_language`).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
 
 use chrono::{DateTime, FixedOffset, TimeZone};
@@ -788,8 +788,8 @@ pub fn field_ocel() -> OCEL {
 /// lifecycle-opening/closing event types and the `[min,max]` instance windows for
 /// the key object types (the route `object_types` shape used by validation).
 #[must_use]
-pub fn field_cardinality() -> HashMap<String, ObjectTypeCardinality> {
-    let mut card = HashMap::new();
+pub fn field_cardinality() -> BTreeMap<String, ObjectTypeCardinality> {
+    let mut card = BTreeMap::new();
     card.insert(
         "Order".to_string(),
         ObjectTypeCardinality {
