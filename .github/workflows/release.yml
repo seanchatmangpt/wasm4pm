@@ -94,7 +94,7 @@ jobs:
 
       # Upload gate verification artifacts
       - name: Upload verification artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-verification
           path: |
@@ -311,7 +311,7 @@ jobs:
 
       # Generate and upload documentation site
       - name: Upload documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rust-docs
           path: ./wasm4pm/target/doc/
@@ -368,7 +368,7 @@ jobs:
           cat /tmp/release-summary.md
 
       - name: Upload release summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-summary
           path: /tmp/release-summary.md

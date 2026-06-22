@@ -218,7 +218,7 @@ jobs:
       # Upload docs as artifact
       - name: Upload documentation
         if: runner.os == 'Linux' && matrix.node-version == '20'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: documentation
           path: ./wasm4pm/docs/

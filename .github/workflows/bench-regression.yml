@@ -143,7 +143,7 @@ jobs:
       # Upload regression report as artifact
       - name: Upload regression report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: regression-report
           path: |

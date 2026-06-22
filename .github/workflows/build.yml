@@ -151,7 +151,7 @@ jobs:
 
       # Upload WASM artifacts
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-artifacts
           path: |
@@ -185,7 +185,7 @@ jobs:
           cat /tmp/build-summary.md
 
       - name: Upload build summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-summary
           path: /tmp/build-summary.md
