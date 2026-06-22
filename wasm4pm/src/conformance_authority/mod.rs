@@ -39,6 +39,8 @@
 
 use std::collections::HashMap;
 use std::fmt;
+const CONDITIONAL_FITNESS_THRESHOLD: f64 = 0.85;
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1. Core Verdict Type
@@ -129,8 +131,8 @@ impl ConformanceVerdicts {
     pub fn admission_verdict(&self) -> AdmissionVerdict {
         match self.fitness {
             Some(f) if f >= 0.95 => AdmissionVerdict::Pass,
-            Some(f) if f >= 0.85 => AdmissionVerdict::Conditional,
-            Some(f) if f < 0.85 => AdmissionVerdict::Reject,
+            Some(f) if f >= CONDITIONAL_FITNESS_THRESHOLD => AdmissionVerdict::Conditional,
+            Some(f) if f < CONDITIONAL_FITNESS_THRESHOLD => AdmissionVerdict::Reject,
             Some(_) => AdmissionVerdict::Unknown,
             None => AdmissionVerdict::Unavailable,
         }
@@ -407,8 +409,8 @@ impl ConformanceAdmissionGate {
     pub fn new() -> Self {
         Self {
             pass_threshold: 0.95,
-            conditional_threshold: 0.85,
-            reject_floor: 0.85,
+            conditional_threshold: CONDITIONAL_FITNESS_THRESHOLD,
+            reject_floor: CONDITIONAL_FITNESS_THRESHOLD,
         }
     }
 
@@ -763,7 +765,7 @@ mod tests {
     fn test_verdict_display() {
         let mut verdict = ConformanceVerdicts::new();
         verdict.fitness = Some(0.95);
-        verdict.precision = Some(0.85);
+        verdict.precision = Some(CONDITIONAL_FITNESS_THRESHOLD);
         verdict.generalization = Some(0.90);
 
         let display_str = verdict.to_string();

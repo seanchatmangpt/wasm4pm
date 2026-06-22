@@ -20,6 +20,10 @@ use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
+const DEFAULT_CORRELATION_THRESHOLD_SECS: f64 = 86_400.0;
+const CONCEPT_NAME_ATTR: &str = "concept:name";
+const TIMESTAMP_ATTR: &str = "time:timestamp";
+
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -37,7 +41,7 @@ pub struct CorrelationConfig {
 impl Default for CorrelationConfig {
     fn default() -> Self {
         CorrelationConfig {
-            correlation_threshold: 86400.0,
+            correlation_threshold: DEFAULT_CORRELATION_THRESHOLD_SECS,
             min_edge_frequency: 1,
         }
     }
@@ -69,8 +73,8 @@ pub struct CorrelationResult {
 /// # Arguments
 ///
 /// * `eventlog_handle` - Handle to an EventLog stored in the WASM state.
-/// * `activity_key` - Attribute key for activity names (e.g. `"concept:name"`).
-/// * `timestamp_key` - Attribute key for timestamps (e.g. `"time:timestamp"`).
+/// * `activity_key` - Attribute key for activity names (e.g. `CONCEPT_NAME_ATTR`).
+/// * `timestamp_key` - Attribute key for timestamps (e.g. `TIMESTAMP_ATTR`).
 /// * `threshold` - Correlation threshold in seconds (default: 86400).
 ///
 /// # Returns
@@ -85,7 +89,7 @@ pub fn discover_correlation(
     threshold: f64,
 ) -> Result<JsValue, JsValue> {
     let cfg = CorrelationConfig {
-        correlation_threshold: if threshold > 0.0 { threshold } else { 86400.0 },
+        correlation_threshold: if threshold > 0.0 { threshold } else { DEFAULT_CORRELATION_THRESHOLD_SECS },
         min_edge_frequency: 1,
     };
 
@@ -448,11 +452,11 @@ mod tests {
             .map(|(activity, ts)| {
                 let mut attrs = BTreeMap::new();
                 attrs.insert(
-                    "concept:name".to_owned(),
+                    CONCEPT_NAME_ATTR.to_owned(),
                     AttributeValue::String((*activity).to_owned()),
                 );
                 attrs.insert(
-                    "time:timestamp".to_owned(),
+                    TIMESTAMP_ATTR.to_owned(),
                     AttributeValue::Date((*ts).to_owned()),
                 );
                 Event { attributes: attrs }
@@ -480,11 +484,11 @@ mod tests {
                         .map(|(activity, ts)| {
                             let mut attrs = BTreeMap::new();
                             attrs.insert(
-                                "concept:name".to_owned(),
+                                CONCEPT_NAME_ATTR.to_owned(),
                                 AttributeValue::String((*activity).to_owned()),
                             );
                             attrs.insert(
-                                "time:timestamp".to_owned(),
+                                TIMESTAMP_ATTR.to_owned(),
                                 AttributeValue::Date((*ts).to_owned()),
                             );
                             Event { attributes: attrs }
@@ -513,7 +517,7 @@ mod tests {
             correlation_threshold: 5.0,
             min_edge_frequency: 1,
         };
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &cfg);
+        let result = mine_correlation(&log, CONCEPT_NAME_ATTR, TIMESTAMP_ATTR, &cfg);
 
         assert!(!result.edges.is_empty(), "Expected non-empty DFG edges");
         let ab = result.edges.iter().find(|(s, t, _)| s == "A" && t == "B");
@@ -547,8 +551,8 @@ mod tests {
         };
         let result = mine_correlation(
             &log,
-            "concept:name",
-            "time:timestamp",
+            CONCEPT_NAME_ATTR,
+            TIMESTAMP_ATTR,
             &CorrelationConfig::default(),
         );
         assert!(result.edges.is_empty() && result.start_activities.is_empty());
@@ -560,8 +564,8 @@ mod tests {
         let log = make_log(&[("A", "2024-01-01T00:00:00Z"), ("A", "2024-01-01T00:00:01Z")]);
         let result = mine_correlation(
             &log,
-            "concept:name",
-            "time:timestamp",
+            CONCEPT_NAME_ATTR,
+            TIMESTAMP_ATTR,
             &CorrelationConfig::default(),
         );
         assert!(result.edges.is_empty());
@@ -578,7 +582,7 @@ mod tests {
                     {
                         let mut attrs = BTreeMap::new();
                         attrs.insert(
-                            "concept:name".to_owned(),
+                            CONCEPT_NAME_ATTR.to_owned(),
                             AttributeValue::String("A".to_owned()),
                         );
                         Event { attributes: attrs }
@@ -586,7 +590,7 @@ mod tests {
                     {
                         let mut attrs = BTreeMap::new();
                         attrs.insert(
-                            "concept:name".to_owned(),
+                            CONCEPT_NAME_ATTR.to_owned(),
                             AttributeValue::String("B".to_owned()),
                         );
                         Event { attributes: attrs }
@@ -596,8 +600,8 @@ mod tests {
         };
         let result = mine_correlation(
             &log,
-            "concept:name",
-            "time:timestamp",
+            CONCEPT_NAME_ATTR,
+            TIMESTAMP_ATTR,
             &CorrelationConfig::default(),
         );
         assert!(result.edges.is_empty() && result.num_traces == 0);
@@ -611,8 +615,8 @@ mod tests {
         ]);
         let result = mine_correlation(
             &log,
-            "concept:name",
-            "time:timestamp",
+            CONCEPT_NAME_ATTR,
+            TIMESTAMP_ATTR,
             &CorrelationConfig::default(),
         );
         assert!(result.edges.iter().any(|(s, t, _)| s == "A" && t == "B"));
@@ -632,7 +636,7 @@ mod tests {
             correlation_threshold: 3600.0,
             min_edge_frequency: 5,
         };
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &cfg);
+        let result = mine_correlation(&log, CONCEPT_NAME_ATTR, TIMESTAMP_ATTR, &cfg);
         assert!(
             result.edges.is_empty(),
             "min_edge_frequency=5 should filter all edges"
@@ -651,7 +655,7 @@ mod tests {
             correlation_threshold: 3600.0,
             min_edge_frequency: 1,
         };
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &cfg);
+        let result = mine_correlation(&log, CONCEPT_NAME_ATTR, TIMESTAMP_ATTR, &cfg);
         assert_eq!(
             result.num_traces, 2,
             "2-hour gap should split into 2 traces"
@@ -667,7 +671,7 @@ mod tests {
                 events: vec![{
                     let mut attrs = BTreeMap::new();
                     attrs.insert(
-                        "time:timestamp".to_owned(),
+                        TIMESTAMP_ATTR.to_owned(),
                         AttributeValue::Date("2024-01-01T00:00:00Z".to_owned()),
                     );
                     Event { attributes: attrs }
@@ -676,8 +680,8 @@ mod tests {
         };
         let result = mine_correlation(
             &log,
-            "concept:name",
-            "time:timestamp",
+            CONCEPT_NAME_ATTR,
+            TIMESTAMP_ATTR,
             &CorrelationConfig::default(),
         );
         assert!(result.edges.is_empty());
