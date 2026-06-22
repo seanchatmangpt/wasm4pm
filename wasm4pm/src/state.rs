@@ -30,6 +30,7 @@ use wasm_bindgen::prelude::*;
 /// efficient serialization across the WASM boundary without requiring
 /// JavaScript to manage Rust object lifetimes.
 #[allow(clippy::large_enum_variant)]
+#[derive(Clone)]
 pub enum StoredObject {
     /// A case-centric event log.
     EventLog(EventLog),
@@ -467,44 +468,6 @@ impl AppState {
     }
 }
 
-impl Clone for StoredObject {
-    fn clone(&self) -> Self {
-        match self {
-            StoredObject::EventLog(el) => StoredObject::EventLog(el.clone()),
-            StoredObject::OCEL(o) => StoredObject::OCEL(o.clone()),
-            StoredObject::PetriNet(pn) => StoredObject::PetriNet(pn.clone()),
-            StoredObject::DFG(dfg) => StoredObject::DFG(dfg.clone()),
-            StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
-            StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
-            #[cfg(feature = "streaming_basic")]
-            StoredObject::StreamingDfgBuilder(b) => StoredObject::StreamingDfgBuilder(b.clone()),
-            #[cfg(feature = "streaming_basic")]
-            StoredObject::StreamingSkeletonBuilder(b) => {
-                StoredObject::StreamingSkeletonBuilder(b.clone())
-            }
-            #[cfg(feature = "streaming_basic")]
-            StoredObject::StreamingHeuristicBuilder(b) => {
-                StoredObject::StreamingHeuristicBuilder(b.clone())
-            }
-            StoredObject::StreamingConformanceChecker(c) => {
-                StoredObject::StreamingConformanceChecker(c.clone())
-            }
-            StoredObject::TemporalProfile(p) => StoredObject::TemporalProfile(p.clone()),
-            StoredObject::NGramPredictor(p) => StoredObject::NGramPredictor(p.clone()),
-            #[cfg(feature = "streaming_basic")]
-            StoredObject::IncrementalDFG(d) => StoredObject::IncrementalDFG(d.clone()),
-            #[cfg(feature = "streaming_basic")]
-            StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
-            #[cfg(feature = "streaming_full")]
-            StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),
-            #[cfg(feature = "powl")]
-            StoredObject::PowlModel { arena, root } => StoredObject::PowlModel {
-                arena: arena.clone(),
-                root: *root,
-            },
-        }
-    }
-}
 
 impl Default for AppState {
     fn default() -> Self {
