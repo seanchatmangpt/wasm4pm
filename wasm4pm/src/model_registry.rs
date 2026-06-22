@@ -240,7 +240,7 @@ static REGISTRY: Lazy<Mutex<ProcessModelRegistry>> = Lazy::new(|| {
 });
 
 pub fn get_registry() -> std::sync::MutexGuard<'static, ProcessModelRegistry> {
-    REGISTRY.lock().unwrap()
+    REGISTRY.lock().expect("mutex poisoned")
 }
 
 // ─── Verification & Helpers ──────────────────────────────────────────────────
