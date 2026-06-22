@@ -144,7 +144,7 @@ impl CognitionBreed for NaivePhysics {
                 scene.objects.len(),
                 scene.support.len(),
                 scene.liquids.len(),
-                scene.removed.iter().cloned().collect::<Vec<_>>().join(",")
+                scene.removed.iter().map(String::as_str).collect::<Vec<_>>().join(",")
             ),
         );
 

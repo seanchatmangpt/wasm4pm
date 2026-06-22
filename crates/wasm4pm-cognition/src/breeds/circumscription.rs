@@ -203,7 +203,7 @@ impl CognitionBreed for Circumscription {
                 "enumerate-model",
                 format!(
                     "S={{{}}} -> {}",
-                    s.iter().cloned().collect::<Vec<_>>().join(","),
+                    s.iter().map(String::as_str).collect::<Vec<_>>().join(","),
                     if consistent { "model" } else { "rejected" }
                 ),
             );
@@ -229,7 +229,7 @@ impl CognitionBreed for Circumscription {
                     "minimize",
                     format!(
                         "pruned S={{{}}}: strictly larger than another model's abnormality set",
-                        s.iter().cloned().collect::<Vec<_>>().join(",")
+                        s.iter().map(String::as_str).collect::<Vec<_>>().join(",")
                     ),
                 );
             } else {
