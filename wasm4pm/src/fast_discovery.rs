@@ -690,9 +690,9 @@ pub fn analyze_start_end_activities(
             let mut ends: Vec<_> = end_acts.into_iter().collect();
             let mut pairs: Vec<_> = start_end_pairs.into_iter().collect();
 
-            starts.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
-            ends.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
-            pairs.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+            starts.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+            ends.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+            pairs.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
 
             to_js_str(&json!({
                 "start_activities": starts.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
@@ -740,7 +740,7 @@ pub fn analyze_activity_cooccurrence(
             }
 
             let mut pairs: Vec<_> = cooccurrence.into_iter().collect();
-            pairs.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
+            pairs.sort_unstable_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
 
             let result: Vec<_> = pairs
                 .iter()
