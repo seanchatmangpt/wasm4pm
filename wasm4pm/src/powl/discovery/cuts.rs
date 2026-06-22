@@ -446,7 +446,7 @@ pub fn detect_loop_cut(
     }
 
     // Do-part: activities reachable from start activities, excluding start activities at later positions
-    let mut do_part: HashSet<String> = HashSet::new();
+    let mut do_part: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     // Collect all activities reachable from start activities
     for start_act in &start_activities {
@@ -462,7 +462,7 @@ pub fn detect_loop_cut(
     }
 
     // Identify redo-part: activities that connect the end of do-part back to start
-    let mut redo_part: HashSet<String> = HashSet::new();
+    let mut redo_part: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     // For each trace, identify activities between end of do-part and next start activity
     for trace in traces {
