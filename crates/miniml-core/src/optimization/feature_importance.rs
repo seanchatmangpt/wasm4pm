@@ -133,11 +133,7 @@ pub fn compute_permutation_importance(
     }
 
     // Sort by importance descending
-    importances.sort_by(|a, b| {
-        b.importance
-            .partial_cmp(&a.importance)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    importances.sort_unstable_by(|a, b| b.importance.total_cmp(&a.importance));
 
     // Normalize importances to sum to 1.0
     let total_importance: f64 = importances.iter().map(|imp| imp.importance).sum();
@@ -245,11 +241,7 @@ pub fn compute_classification_importance(
     }
 
     // Sort and normalize
-    importances.sort_by(|a, b| {
-        b.importance
-            .partial_cmp(&a.importance)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    importances.sort_unstable_by(|a, b| b.importance.total_cmp(&a.importance));
 
     let total_importance: f64 = importances.iter().map(|imp| imp.importance).sum();
 
