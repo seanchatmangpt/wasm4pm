@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 /// Abductive Logic Programming (ALP) breed.
 pub struct AbductiveLp;
@@ -35,7 +35,7 @@ impl CognitionBreed for AbductiveLp {
         let mut step_count = 0;
 
         // 1. Load abducibles, rules, and integrity constraints
-        let mut abducibles = HashSet::new();
+        let mut abducibles: BTreeSet<String> = BTreeSet::new();
         for f in &input.facts {
             if f.key == "abducible" {
                 abducibles.insert(f.value.clone());
@@ -71,11 +71,7 @@ impl CognitionBreed for AbductiveLp {
         });
         step_count += 1;
 
-        let abducibles_list: Vec<String> = {
-            let mut list: Vec<String> = abducibles.into_iter().collect();
-            list.sort();
-            list
-        };
+        let abducibles_list: Vec<String> = abducibles.into_iter().collect();
 
         trace.push(TraceStep {
             step: step_count,
@@ -94,7 +90,7 @@ impl CognitionBreed for AbductiveLp {
         if n_abducibles <= 16 {
             let limit = 1 << n_abducibles;
             for mask in 0..limit {
-                let mut hypothesis = HashSet::new();
+                let mut hypothesis: BTreeSet<String> = BTreeSet::new();
                 for i in 0..n_abducibles {
                     if (mask & (1 << i)) != 0 {
                         hypothesis.insert(abducibles_list[i].clone());
@@ -145,8 +141,7 @@ impl CognitionBreed for AbductiveLp {
                 }
 
                 if goals_satisfied && !ic_violated {
-                    let mut hyp_list: Vec<String> = hypothesis.into_iter().collect();
-                    hyp_list.sort();
+                    let hyp_list: Vec<String> = hypothesis.into_iter().collect();
                     valid_explanations.push(hyp_list);
                 }
             }
