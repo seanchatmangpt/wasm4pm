@@ -23,6 +23,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use hashbrown::{HashMap, HashSet};
+use std::collections::BTreeMap;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -57,15 +58,13 @@ impl PetriNetLookup {
         let mut place_idx: HashMap<String, usize> = HashMap::with_capacity(petri_net.places.len());
 
         // Build sorted label index (replaces activity_to_transition HashMap)
-        let mut label_map: HashMap<String, Vec<usize>> =
-            HashMap::with_capacity(petri_net.transitions.len());
+        let mut label_map: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         for (idx, trans) in petri_net.transitions.iter().enumerate() {
             if !trans.is_invisible.unwrap_or(false) && !trans.label.is_empty() {
                 label_map.entry(trans.label.clone()).or_default().push(idx);
             }
         }
-        let mut sorted_label_index: Vec<(String, Vec<usize>)> = label_map.into_iter().collect();
-        sorted_label_index.sort_by(|a, b| a.0.cmp(&b.0));
+        let sorted_label_index: Vec<(String, Vec<usize>)> = label_map.into_iter().collect();
 
         // Pre-filter invisible transitions for fixpoint firing
         let invisible_indices: Vec<usize> = petri_net
