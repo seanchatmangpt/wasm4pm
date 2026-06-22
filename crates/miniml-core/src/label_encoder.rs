@@ -31,14 +31,16 @@ impl LabelEncoder {
             return Err(MlError::new("encoder not fitted"));
         }
 
-        let mut result = Vec::with_capacity(labels.len());
-        for &label in labels {
-            let pos = self.classes.iter().position(|&c| (c - label).abs() < 1e-10);
-            match pos {
-                Some(idx) => result.push(idx as f64),
-                None => return Err(MlError::new(format!("unseen label: {}", label))),
-            }
-        }
+        let result = labels
+            .iter()
+            .map(|&label| {
+                self.classes
+                    .iter()
+                    .position(|&c| (c - label).abs() < 1e-10)
+                    .map(|idx| idx as f64)
+                    .ok_or_else(|| MlError::new(format!("unseen label: {}", label)))
+            })
+            .collect::<Result<Vec<f64>, _>>()?;
         Ok(result)
     }
 

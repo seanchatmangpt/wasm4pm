@@ -6,9 +6,6 @@ use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
-#[allow(dead_code)]
-type DirectlyFollowsSet = HashSet<(String, String)>;
-
 /// A candidate Petri net place with pre-set (inputs) and post-set (outputs) of activity indices.
 struct CandidatePlace {
     /// Sorted activity IDs that produce a token (pre-set transitions).
@@ -538,27 +535,6 @@ pub fn discover_optimized_dfg(
         "fitness_weight": fitness_weight,
         "simplicity_weight": simplicity_weight,
     }))
-}
-
-// Helper function to check if a trace conforms to directly-follows relations
-#[inline]
-#[allow(dead_code)]
-fn is_trace_fitting(
-    trace: &Trace,
-    activity_key: &str,
-    directly_follows: &DirectlyFollowsSet,
-) -> bool {
-    // Extract activity strings once, avoiding repeated attribute lookups in the pair loop
-    let activities: Vec<&str> = trace
-        .events
-        .iter()
-        .filter_map(|e| e.attributes.get(activity_key)?.as_string())
-        .collect();
-
-    activities.windows(2).all(|w| {
-        // Borrow-based lookup avoids cloning both sides of the pair
-        directly_follows.contains(&(w[0].to_owned(), w[1].to_owned()))
-    })
 }
 
 // Calculate precision: fraction of model transitions (visible activities) that are
