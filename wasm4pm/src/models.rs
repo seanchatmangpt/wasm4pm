@@ -82,7 +82,7 @@ pub struct AlignmentFitnessConfig {
 impl Default for AlignmentFitnessConfig {
     fn default() -> Self {
         Self {
-            max_iterations: 100000,
+            max_iterations: 100_000,
             sync_cost: 0.0,
             log_move_cost: 1.0,
             model_move_cost: 1.0,
