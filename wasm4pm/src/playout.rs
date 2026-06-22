@@ -18,7 +18,7 @@ use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "powl")]
@@ -234,7 +234,7 @@ pub fn play_out_dfg_core(
     params: &PlayOutParameters,
 ) -> EventLog {
     // Build adjacency list: activity -> Vec<successor>
-    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+    let mut adj: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for (from, to) in edges {
         adj.entry(from.clone()).or_default().push(to.clone());
     }
@@ -252,7 +252,7 @@ pub fn play_out_dfg_core(
 
 fn play_out_dfg_with_starts(
     start_names: &[&str],
-    adj: &HashMap<String, Vec<String>>,
+    adj: &BTreeMap<String, Vec<String>>,
     end_activities: &std::collections::BTreeMap<String, usize>,
     params: &PlayOutParameters,
 ) -> EventLog {
@@ -477,7 +477,7 @@ pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue
 mod tests {
     use super::*;
     use crate::powl_process_tree::ProcessTree;
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::BTreeMap;
 
     fn default_params() -> PlayOutParameters {
         PlayOutParameters {
