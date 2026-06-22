@@ -74,10 +74,10 @@ impl StreamingAlphaPlusBuilder {
 
         // Build pre-set and post-set for each activity
         // Causal: a > b iff edge_counts[(a,b)] > 0 and reverse_edge_counts[(b,a)] == 0
-        let mut pre_sets: Vec<std::collections::HashSet<u32>> =
-            vec![std::collections::HashSet::new(); n];
-        let mut post_sets: Vec<std::collections::HashSet<u32>> =
-            vec![std::collections::HashSet::new(); n];
+        let mut pre_sets: Vec<std::collections::BTreeSet<u32>> =
+            vec![std::collections::BTreeSet::new(); n];
+        let mut post_sets: Vec<std::collections::BTreeSet<u32>> =
+            vec![std::collections::BTreeSet::new(); n];
 
         for &(from, to) in self.edge_counts.keys() {
             // from > to (causal) if no reverse edge
