@@ -797,7 +797,7 @@ pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
     let missing_evidence: Vec<String> = layer_verdicts
         .iter()
         .flat_map(|lv| lv.missing_evidence.iter().cloned())
-        .collect::<std::collections::HashSet<_>>()
+        .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect();
 
@@ -884,7 +884,7 @@ pub fn classify_motion_internal_with_envelopes(
     let missing_evidence: Vec<String> = layer_verdicts
         .iter()
         .flat_map(|lv| lv.missing_evidence.iter().cloned())
-        .collect::<std::collections::HashSet<_>>()
+        .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect();
 
