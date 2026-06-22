@@ -26,7 +26,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet};
 use wasm_bindgen::prelude::*;
 
 /// A state in the transition system.
@@ -59,11 +59,11 @@ pub struct TransitionSystem {
     /// All transitions in the system.
     pub transitions: Vec<TSTransition>,
     /// Mapping from state name to state ID.
-    pub state_map: FxHashMap<String, usize>,
+    pub state_map: BTreeMap<String, usize>,
     /// Initial state ID (first state encountered).
     pub initial_state: Option<usize>,
     /// Final state IDs (states at the end of traces).
-    pub final_states: HashSet<usize>,
+    pub final_states: BTreeSet<usize>,
 }
 
 /// Core algorithm: discover a transition system from an event log.
@@ -90,10 +90,10 @@ pub fn discover_transition_system(
 ) -> TransitionSystem {
     let mut states: Vec<TSState> = Vec::new();
     let mut transitions: Vec<TSTransition> = Vec::new();
-    let mut state_map: FxHashMap<String, usize> = FxHashMap::default();
+    let mut state_map: BTreeMap<String, usize> = BTreeMap::new();
     let mut transition_map: FxHashMap<(usize, usize, String), usize> = FxHashMap::default();
     let mut initial_state: Option<usize> = None;
-    let mut final_states: HashSet<usize> = HashSet::default();
+    let mut final_states: BTreeSet<usize> = BTreeSet::new();
 
     let is_forward = direction == "forward";
 
