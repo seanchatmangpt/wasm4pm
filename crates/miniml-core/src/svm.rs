@@ -99,10 +99,7 @@ pub fn linear_svm_impl(
         let label = y[idx];
 
         // Compute decision value
-        let mut decision = bias;
-        for f in 0..n_features {
-            decision += weights[f] * x[f];
-        }
+        let decision = bias + weights.iter().zip(x).map(|(w, xi)| w * xi).sum::<f64>();
 
         // Subgradient step
         if label * decision < 1.0 {
