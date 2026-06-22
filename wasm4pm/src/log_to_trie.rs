@@ -23,7 +23,7 @@ use wasm_bindgen::prelude::*;
 /// - `children`: List of child node indices
 /// - `is_final`: True if this node represents the end of a trace
 /// - `depth`: Depth in the tree (root = 0)
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct TrieNode {
     /// Activity name (None for root node)
     pub label: Option<String>,
@@ -66,17 +66,12 @@ impl TrieNode {
 ///
 /// The trie is stored as a flat vector of nodes for efficient serialization.
 /// The root is always at index 0.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Trie {
     /// All nodes in the trie (index 0 is always the root)
     pub nodes: Vec<TrieNode>,
 }
 
-impl Default for Trie {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl Trie {
     /// Create a new empty trie with just a root node.

@@ -63,11 +63,7 @@ pub fn discover_handover_network_from_log(log: &EventLog, resource_key: &str) ->
 ///   (typically `"org:resource"` in XES).
 #[wasm_bindgen]
 pub fn discover_handover_network(log_handle: &str, resource_key: &str) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
-    })?;
+    let log = get_or_init_state().with_event_log(log_handle, |log| Ok(log.clone()))?;
     Ok(crate::error::js_val(&discover_handover_network_from_log(
         &log,
         resource_key,
@@ -125,11 +121,7 @@ pub fn discover_working_together_network(
     log_handle: &str,
     resource_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
-    })?;
+    let log = get_or_init_state().with_event_log(log_handle, |log| Ok(log.clone()))?;
     Ok(crate::error::js_val(
         &discover_working_together_network_from_log(&log, resource_key),
     ))
@@ -141,11 +133,7 @@ pub fn discover_working_together_network(
 /// from resource ID to centrality score (0-1).
 #[wasm_bindgen]
 pub fn compute_network_metrics(log_handle: &str, resource_key: &str) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
-    })?;
+    let log = get_or_init_state().with_event_log(log_handle, |log| Ok(log.clone()))?;
 
     // Build network from handover relationships
     let mut handovers: std::collections::BTreeMap<(String, String), usize> =
@@ -219,11 +207,7 @@ pub fn compute_clustering_coefficient(
     log_handle: &str,
     resource_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
-    })?;
+    let log = get_or_init_state().with_event_log(log_handle, |log| Ok(log.clone()))?;
 
     // Build network from working-together relationships
     let mut co_occur: std::collections::BTreeMap<(String, String), usize> =
@@ -290,11 +274,7 @@ pub fn compute_clustering_coefficient(
 /// Detect communities in the network using Louvain algorithm.
 #[wasm_bindgen]
 pub fn detect_communities(log_handle: &str, resource_key: &str) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog handle not found")),
-    })?;
+    let log = get_or_init_state().with_event_log(log_handle, |log| Ok(log.clone()))?;
 
     // Build network from working-together relationships
     let mut co_occur: std::collections::BTreeMap<(String, String), usize> =
