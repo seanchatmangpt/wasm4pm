@@ -4,6 +4,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use crate::{Data, Median};
 use rustc_hash::FxHashMap;
+use std::collections::BTreeMap;
 use serde::Serialize;
 use serde_json::json;
 /// Object-Centric Performance Analysis (Phase 2C).
@@ -38,8 +39,8 @@ struct PerformanceEdge {
 struct PerformanceDFG {
     nodes: Vec<PerformanceNode>,
     edges: Vec<PerformanceEdge>,
-    start_activities: FxHashMap<String, usize>,
-    end_activities: FxHashMap<String, usize>,
+    start_activities: BTreeMap<String, usize>,
+    end_activities: BTreeMap<String, usize>,
 }
 
 // -------------------------------------------------------------------------
@@ -78,8 +79,8 @@ fn compute_edge_stats(durs: &[f64]) -> (f64, f64, f64) {
 ///
 /// Optimized to use single-pass aggregation: builds type → events index
 /// in one pass instead of N+1 pattern (initialization + separate population).
-fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
-    let mut result: FxHashMap<String, PerformanceDFG> = FxHashMap::default();
+fn build_performance_dfgs(ocel: &OCEL) -> BTreeMap<String, PerformanceDFG> {
+    let mut result: BTreeMap<String, PerformanceDFG> = BTreeMap::new();
 
     // Pre-compute object_id → object_type lookup for O(1) access
     let obj_to_type: FxHashMap<String, &str> = ocel
@@ -137,8 +138,8 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
 
         // Edge durations + start/end
         let mut edge_times: FxHashMap<(String, String), Vec<f64>> = FxHashMap::default();
-        let mut start_acts: FxHashMap<String, usize> = FxHashMap::default();
-        let mut end_acts: FxHashMap<String, usize> = FxHashMap::default();
+        let mut start_acts: BTreeMap<String, usize> = BTreeMap::new();
+        let mut end_acts: BTreeMap<String, usize> = BTreeMap::new();
 
         for events in events_by_object.values() {
             if events.is_empty() {
