@@ -24,7 +24,8 @@ use crate::error::{codes, wasm_err};
 use crate::models::EventLog;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
-use rustc_hash::FxHashMap;
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -95,7 +96,7 @@ pub fn discover_causal_heuristic(
 
 /// Internal: Build causal graph using alpha miner variant.
 fn build_causal_alpha(log: &EventLog, activity_key: &str) -> Result<CausalGraph, JsValue> {
-    let mut edge_freq: FxHashMap<(String, String), usize> = FxHashMap::default();
+    let mut edge_freq: BTreeMap<(String, String), usize> = BTreeMap::new();
     let mut activities: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     // Build frequency map from directly-follows relations
@@ -153,7 +154,7 @@ fn build_causal_heuristic(
     activity_key: &str,
     threshold: f64,
 ) -> Result<CausalGraph, JsValue> {
-    let mut edge_freq: FxHashMap<(String, String), usize> = FxHashMap::default();
+    let mut edge_freq: BTreeMap<(String, String), usize> = BTreeMap::new();
     let mut activities: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
 
     // Build frequency map from directly-follows relations
