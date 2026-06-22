@@ -246,11 +246,10 @@ impl CognitionBreed for EventCalculus {
 
         // 3. ec-model phase
         let final_holds = &holds[max_time];
-        let final_holds_vec: Vec<String> = final_holds.iter().cloned().collect();
 
         let explanation = format!(
             "Event Calculus model computed at t={}: holds={:?}; verdicts={:?}",
-            max_time, final_holds_vec, verdicts
+            max_time, final_holds, verdicts
         );
 
         trace.push(TraceStep {
@@ -263,7 +262,7 @@ impl CognitionBreed for EventCalculus {
 
         // `selected` exposes per-query verdicts when queries are present, else final holds.
         let selected = if verdicts.is_empty() {
-            Some(final_holds_vec.join(","))
+            Some(final_holds.iter().map(String::as_str).collect::<Vec<_>>().join(","))
         } else {
             Some(
                 verdicts
