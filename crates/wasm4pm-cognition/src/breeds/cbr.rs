@@ -13,7 +13,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Case, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use tracing;
 
 /// Case-Based Reasoning breed.
@@ -60,8 +60,8 @@ fn case_fact_set(case: &Case) -> BTreeSet<String> {
 /// Properties (Rank-1):
 /// - Completeness: Every case with a feature appears in that feature's entry.
 /// - No false negatives: If a case contains a feature, it will be retrieved.
-fn build_index(cases: &[Case]) -> HashMap<String, Vec<usize>> {
-    let mut index: HashMap<String, Vec<usize>> = HashMap::new();
+fn build_index(cases: &[Case]) -> BTreeMap<String, Vec<usize>> {
+    let mut index: BTreeMap<String, Vec<usize>> = BTreeMap::new();
     for (idx, case) in cases.iter().enumerate() {
         for fact in &case.facts {
             let feature = format!("{}={}", fact.key, fact.value);
@@ -79,7 +79,7 @@ fn build_index(cases: &[Case]) -> HashMap<String, Vec<usize>> {
 /// - Optimality: No cases with zero feature overlap are returned.
 fn retrieve_candidates(
     query_features: &BTreeSet<String>,
-    index: &HashMap<String, Vec<usize>>,
+    index: &BTreeMap<String, Vec<usize>>,
 ) -> HashSet<usize> {
     if query_features.is_empty() {
         return HashSet::new();
