@@ -22,17 +22,16 @@ use crate::state::{get_or_init_state, StoredObject};
 #[cfg(any(feature = "statrs", feature = "hand_rolled_stats"))]
 use crate::{Data, Median};
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 
 /// Sorted edge vector for O(log n) membership testing — faster than HashSet for small edge counts.
 struct SortedEdgeSlice(Vec<(u32, u32)>);
 
 impl SortedEdgeSlice {
-    fn from_hash_set(set: &HashSet<(u32, u32)>) -> Self {
-        let mut v: Vec<(u32, u32)> = set.iter().copied().collect();
-        v.sort_unstable();
-        Self(v)
+    fn from_hash_set(set: &BTreeSet<(u32, u32)>) -> Self {
+        // BTreeSet iterates in ascending order — no sort needed.
+        Self(set.iter().copied().collect())
     }
 
     #[inline(always)]
@@ -234,7 +233,7 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
 /// binary search on larger vocabularies.
 #[inline]
 pub(crate) fn evaluate_edges_fitness(
-    edge_set: &HashSet<(u32, u32)>,
+    edge_set: &BTreeSet<(u32, u32)>,
     col: &ColumnarLog,
     edge_vocab_len: usize,
 ) -> f64 {
