@@ -134,8 +134,8 @@ impl StreamingHillClimbingBuilder {
 
                 // Count occurrences of each edge pair in this trace
                 let mut pair_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-                for i in 0..trace.len() - 1 {
-                    let pair = (trace[i], trace[i + 1]);
+                for w in trace.windows(2) {
+                    let pair = (w[0], w[1]);
                     if current_edges.contains(&pair) {
                         *pair_counts.entry(pair).or_insert(0) += 1;
                     }
