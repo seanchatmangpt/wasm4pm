@@ -358,7 +358,7 @@ pub fn mc_bootstrap_impl(
     }
 
     // Sort bootstrap statistics
-    bootstrap_stats.sort_by(|a, b| a.total_cmp(b));
+    bootstrap_stats.sort_unstable_by(|a, b| a.total_cmp(b));
 
     // Point estimate = mean of bootstrap statistics
     let estimate: f64 = bootstrap_stats.iter().sum::<f64>() / n_bootstrap as f64;
@@ -398,7 +398,7 @@ fn compute_statistic(data: &[f64], name: &str) -> f64 {
                 return 0.0;
             }
             let mut sorted = data.to_vec();
-            sorted.sort_by(|a, b| a.total_cmp(b));
+            sorted.sort_unstable_by(|a, b| a.total_cmp(b));
             let mid = sorted.len() / 2;
             if sorted.len().is_multiple_of(2) {
                 (sorted[mid - 1] + sorted[mid]) / 2.0

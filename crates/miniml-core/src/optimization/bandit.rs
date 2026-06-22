@@ -221,7 +221,7 @@ pub fn rank_interventions(
         })
         .collect();
 
-    scored.sort_by(|a, b| b.1.total_cmp(&a.1));
+    scored.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
 
     scored
         .into_iter()

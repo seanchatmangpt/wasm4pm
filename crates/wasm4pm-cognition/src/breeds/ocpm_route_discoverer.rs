@@ -60,7 +60,7 @@ impl CognitionBreed for OcpmRouteDiscoverer {
             }
         }
         // Sort by timestamp when available; stable sort preserves input order for ties/missing timestamps
-        events.sort_by_key(|(ts, _, _)| *ts);
+        events.sort_unstable_by_key(|(ts, _, _)| *ts);
 
         for (_, activity, objects) in events {
             for obj in &objects {

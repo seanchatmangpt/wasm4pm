@@ -146,7 +146,7 @@ fn classify_batch(
         .iter()
         .filter(|e| interval.case_ids.contains(&e.case_id))
         .collect();
-    batch_execs.sort_by_key(|e| e.start_ts);
+    batch_execs.sort_unstable_by_key(|e| e.start_ts);
 
     let min_start = batch_execs.iter().map(|e| e.start_ts).min().unwrap_or(0);
     let max_start = batch_execs.iter().map(|e| e.start_ts).max().unwrap_or(0);
@@ -184,7 +184,7 @@ fn detect_single(activity: &str, mut executions: Vec<Execution>) -> Vec<BatchIns
     if executions.len() < MIN_BATCH_SIZE {
         return Vec::new();
     }
-    executions.sort_by_key(|e| e.start_ts);
+    executions.sort_unstable_by_key(|e| e.start_ts);
 
     let intervals: Vec<Interval> = executions
         .iter()
@@ -275,7 +275,7 @@ pub fn discover_batches(
     for (activity, executions) in &activity_execs {
         all_batches.extend(detect_single(activity, executions.clone()));
     }
-    all_batches.sort_by_key(|b| std::cmp::Reverse(b.size));
+    all_batches.sort_unstable_by_key(|b| std::cmp::Reverse(b.size));
 
     BatchDetectionResult {
         total_batches: all_batches.len(),

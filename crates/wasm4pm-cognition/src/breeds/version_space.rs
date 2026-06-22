@@ -140,7 +140,7 @@ impl CognitionBreed for VersionSpace {
                 example_facts.push((idx, fact));
             }
         }
-        example_facts.sort_by_key(|(i, _)| *i);
+        example_facts.sort_unstable_by_key(|(i, _)| *i);
 
         let mut examples = Vec::new();
         for (_, fact) in &example_facts {

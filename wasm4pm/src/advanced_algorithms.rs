@@ -241,7 +241,7 @@ pub fn analyze_infrequent_paths(
                 }
             }
 
-            infrequent_paths.sort_by(|a, b| {
+            infrequent_paths.sort_unstable_by(|a, b| {
                 let freq_a = a["frequency"].as_f64().unwrap_or(0.0);
                 let freq_b = b["frequency"].as_f64().unwrap_or(0.0);
                 freq_b
@@ -302,7 +302,7 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
             }
 
             let mut rework_vec: Vec<(String, usize)> = rework_stats.into_iter().collect();
-            rework_vec.sort_by_key(|b| std::cmp::Reverse(b.1));
+            rework_vec.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             to_js_str(&json!({
                 "traces_with_rework": traces_with_rework,
@@ -367,7 +367,7 @@ pub fn detect_bottlenecks(
                 }
             }
 
-            bottlenecks.sort_by(|a, b| {
+            bottlenecks.sort_unstable_by(|a, b| {
                 let avg_a = a["avg_duration"].as_f64().unwrap_or(0.0);
                 let avg_b = b["avg_duration"].as_f64().unwrap_or(0.0);
                 avg_b

@@ -91,7 +91,7 @@ pub fn check_data_quality(
                         .unwrap_or("unknown");
                     // Sort attributes by key to ensure deterministic hashing
                     let mut sorted_attrs: Vec<_> = event.attributes.iter().collect();
-                    sorted_attrs.sort_by_key(|(k, _)| k.as_str());
+                    sorted_attrs.sort_unstable_by_key(|(k, _)| k.as_str());
                     let sig = (
                         activity.to_string(),
                         timestamp.to_string(),
@@ -337,7 +337,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             // Build common_relationships list sorted by frequency
             let mut common_rels: Vec<_> = relationships.into_iter().collect();
-            common_rels.sort_by_key(|b| std::cmp::Reverse(b.1));
+            common_rels.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
             let common_relationships: Vec<Value> = common_rels
                 .into_iter()
                 .map(|((src, tgt), cnt)| {
@@ -466,7 +466,7 @@ fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<S
         .filter(|(_, stats)| stats.is_date > 0)
         .map(|(k, stats)| (k.clone(), stats.is_date))
         .collect();
-    date_candidates.sort_by_key(|b| std::cmp::Reverse(b.1));
+    date_candidates.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
     if let Some((key, _)) = date_candidates.first() {
         return Some(key.clone());
@@ -523,7 +523,7 @@ fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
         .filter(|(_, stats)| stats.is_string > stats.count / 2)
         .map(|(k, stats)| (k.clone(), stats.is_string))
         .collect();
-    candidates.sort_by_key(|b| std::cmp::Reverse(b.1));
+    candidates.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
     candidates.first().map(|(k, _)| k.clone())
 }

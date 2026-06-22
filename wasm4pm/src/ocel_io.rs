@@ -485,7 +485,7 @@ pub fn validate_ocel_object_lifecycles(ocel: &OCEL) -> Vec<LifecycleViolation> {
     // For each object, sort by arrival index and check consecutive timestamp order
     let mut violations = Vec::new();
     for (object_id, mut events) in object_events {
-        events.sort_by_key(|(idx, _, _)| *idx);
+        events.sort_unstable_by_key(|(idx, _, _)| *idx);
         for pair in events.windows(2) {
             let (_, ref id_a, ts_a) = pair[0];
             let (_, ref id_b, ts_b) = pair[1];

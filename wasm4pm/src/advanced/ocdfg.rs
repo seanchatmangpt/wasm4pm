@@ -47,7 +47,7 @@ impl OCDFG {
                 if obj_to_type.get(obj_id) == Some(ot) {
                     // Sort indices by event timestamp
                     let mut sorted_indices = indices.clone();
-                    sorted_indices.sort_by_key(|&idx| &ocel.events[idx].timestamp);
+                    sorted_indices.sort_unstable_by_key(|&idx| &ocel.events[idx].timestamp);
 
                     let activities: Vec<String> = sorted_indices
                         .iter()

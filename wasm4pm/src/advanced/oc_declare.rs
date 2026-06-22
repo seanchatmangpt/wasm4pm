@@ -55,7 +55,7 @@ pub fn discover_oc_declare(ocel: &OCEL, options: OCDeclareOptions) -> Vec<OCDecl
     }
 
     for (obj_id, mut indices) in event_idx_by_obj {
-        indices.sort_by_key(|&idx| &ocel.events[idx].timestamp);
+        indices.sort_unstable_by_key(|&idx| &ocel.events[idx].timestamp);
         let activities: Vec<String> = indices
             .iter()
             .map(|&idx| ocel.events[idx].event_type.clone())

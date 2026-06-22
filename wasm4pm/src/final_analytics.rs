@@ -172,7 +172,7 @@ pub fn analyze_process_speedup(
                 }));
             }
 
-            time_gaps.sort_by(|a, b| a.total_cmp(b));
+            time_gaps.sort_unstable_by(|a, b| a.total_cmp(b));
 
             let mean: f64 = time_gaps.iter().sum::<f64>() / time_gaps.len() as f64;
 

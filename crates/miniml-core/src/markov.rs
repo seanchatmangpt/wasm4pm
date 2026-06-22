@@ -810,7 +810,7 @@ where
 
     // 95% credible interval (percentile method)
     let mut sorted = samples.clone();
-    sorted.sort_by(|a, b| a.total_cmp(b));
+    sorted.sort_unstable_by(|a, b| a.total_cmp(b));
     let ci_lower = sorted[(0.025 * n as f64) as usize];
     let ci_upper = sorted[(0.975 * n as f64) as usize];
 

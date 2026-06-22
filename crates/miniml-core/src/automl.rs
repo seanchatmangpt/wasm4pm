@@ -421,7 +421,7 @@ impl AutoMLEngine {
         }
 
         // Sort by score (descending)
-        algorithm_scores.sort_by(|a, b| b.1.total_cmp(&a.1));
+        algorithm_scores.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
 
         let best_algorithm_name = algorithm_scores
             .first()
@@ -647,7 +647,7 @@ impl AutoMLEngine {
             .collect();
 
         // Sort by variance descending (higher variance = more informative)
-        feature_scores.sort_by(|a, b| b.1.total_cmp(&a.1));
+        feature_scores.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
 
         // Select top-k features
         feature_scores

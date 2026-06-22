@@ -106,7 +106,7 @@ pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown
 
     // Identify bottleneck activities (those with highest deviation counts)
     let mut activities: Vec<_> = activity_map.values().collect();
-    activities.sort_by_key(|a| std::cmp::Reverse(a.missing_tokens));
+    activities.sort_unstable_by_key(|a| std::cmp::Reverse(a.missing_tokens));
     let bottleneck_activities: Vec<String> = activities
         .iter()
         .take(3)

@@ -75,7 +75,7 @@ pub fn predict_top_k(
         }
     }
 
-    candidates.sort_by(|a, b| {
+    candidates.sort_unstable_by(|a, b| {
         b.1.partial_cmp(&a.1)
             .unwrap_or(std::cmp::Ordering::Equal)
             .then_with(|| a.0.cmp(&b.0))
@@ -163,7 +163,7 @@ pub fn beam_search(
             }
         }
 
-        next_beams.sort_by(|a, b| b.1.total_cmp(&a.1));
+        next_beams.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
         beams = next_beams.into_iter().take(beam_width).collect();
     }
 
@@ -320,7 +320,7 @@ pub fn build_transition_graph<T: std::hash::Hash + Eq + Clone + std::fmt::Displa
             }
         })
         .collect();
-    edges.sort_by(|a, b| {
+    edges.sort_unstable_by(|a, b| {
         b.probability
             .partial_cmp(&a.probability)
             .unwrap_or(std::cmp::Ordering::Equal)

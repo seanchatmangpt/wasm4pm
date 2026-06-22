@@ -162,7 +162,7 @@ impl CognitionBreed for AbductiveIbe {
 
         // Trace the resulting activations
         let mut sorted_activations: Vec<(String, f32)> = activations.iter().map(|(k, v)| (k.clone(), *v)).collect();
-        sorted_activations.sort_by(|a, b| b.1.total_cmp(&a.1));
+        sorted_activations.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
 
         let mut out_facts = Vec::new();
         for (node, act) in &sorted_activations {

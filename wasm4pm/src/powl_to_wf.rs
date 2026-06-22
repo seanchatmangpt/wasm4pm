@@ -420,7 +420,7 @@ fn partial_order_to_tree(children: &[PowlSpec], order: &[(usize, usize)]) -> Pro
         // Topologically order by in-degree (a total order gives 0,1,2,…).
         let mut idx: Vec<usize> = (0..n).collect();
         let indeg: Vec<usize> = (0..n).map(|j| (0..n).filter(|&i| ord[i][j]).count()).collect();
-        idx.sort_by_key(|&j| indeg[j]);
+        idx.sort_unstable_by_key(|&j| indeg[j]);
         let ordered = idx.into_iter().map(|i| kids[i].clone()).collect();
         ProcessTreeSpec::Sequence { children: ordered }
     } else {

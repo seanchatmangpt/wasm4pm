@@ -79,7 +79,7 @@ impl StreamCircuitBreaker {
         let latest = *durations.last().unwrap();
 
         // Use Median and MAD for robust statistics
-        durations.sort_by(|a, b| a.total_cmp(b));
+        durations.sort_unstable_by(|a, b| a.total_cmp(b));
         let mid = durations.len() / 2;
         let median = if durations.len() % 2 == 0 {
             (durations[mid - 1] + durations[mid]) / 2.0
@@ -92,7 +92,7 @@ impl StreamCircuitBreaker {
             .iter()
             .map(|s| (s.duration_ms - median).abs())
             .collect();
-        absolute_deviations.sort_by(|a, b| a.total_cmp(b));
+        absolute_deviations.sort_unstable_by(|a, b| a.total_cmp(b));
         let mad = if absolute_deviations.len() % 2 == 0 {
             (absolute_deviations[mid - 1] + absolute_deviations[mid]) / 2.0
         } else {

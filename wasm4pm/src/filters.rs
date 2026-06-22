@@ -182,7 +182,7 @@ pub fn filter_by_variant_coverage(
 
             // Sort variants descending by count
             let mut sorted: Vec<(Vec<String>, usize)> = variant_counts.into_iter().collect();
-            sorted.sort_by_key(|b| std::cmp::Reverse(b.1));
+            sorted.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
 
             // Accumulate until coverage_pct reached
             let target = (total as f64 * coverage_pct / 100.0).ceil() as usize;
@@ -251,7 +251,7 @@ pub fn filter_by_variants_top_k(
 
             // Sort variants descending by count and keep top k
             let mut sorted: Vec<(Vec<String>, usize)> = variant_counts.into_iter().collect();
-            sorted.sort_by_key(|b| std::cmp::Reverse(b.1));
+            sorted.sort_unstable_by_key(|b| std::cmp::Reverse(b.1));
             let keep_variants: std::collections::HashSet<Vec<String>> =
                 sorted.into_iter().take(k).map(|(v, _)| v).collect();
 

@@ -69,7 +69,7 @@ impl SimpleImputer {
                                 counts.push((v, 1));
                             }
                         }
-                        counts.sort_by_key(|(_, c)| *c);
+                        counts.sort_unstable_by_key(|(_, c)| *c);
                         counts.last().map(|&(v, _)| v).unwrap_or(0.0)
                     }
                 }
