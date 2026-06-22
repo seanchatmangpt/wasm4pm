@@ -145,11 +145,11 @@ fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                 let src_local = token_to_local
                     .iter()
                     .position(|(t, _)| node_label_matches(t, src_str))
-                    .ok_or_else(|| format!("edge source '{}' not found in nodes", src_str))?;
+                    .ok_or_else(|| format!("edge source '{src_str}' not found in nodes"))?;
                 let tgt_local = token_to_local
                     .iter()
                     .position(|(t, _)| node_label_matches(t, tgt_str))
-                    .ok_or_else(|| format!("edge target '{}' not found in nodes", tgt_str))?;
+                    .ok_or_else(|| format!("edge target '{tgt_str}' not found in nodes"))?;
 
                 arena.add_order_edge(spo_idx, src_local, tgt_local).ok();
             }
@@ -201,11 +201,11 @@ fn parse_decision_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                 let src_local = token_to_local
                     .iter()
                     .position(|(t, _)| node_label_matches(t, src_str))
-                    .ok_or_else(|| format!("edge source '{}' not found in nodes", src_str))?;
+                    .ok_or_else(|| format!("edge source '{src_str}' not found in nodes"))?;
                 let tgt_local = token_to_local
                     .iter()
                     .position(|(t, _)| node_label_matches(t, tgt_str))
-                    .ok_or_else(|| format!("edge target '{}' not found in nodes", tgt_str))?;
+                    .ok_or_else(|| format!("edge target '{tgt_str}' not found in nodes"))?;
 
                 order.add_edge(src_local, tgt_local);
             }
@@ -236,7 +236,7 @@ fn parse_node_list(s: &str, token_to_local: &[(String, u32)]) -> Result<Vec<usiz
         let idx = token_to_local
             .iter()
             .position(|(t, _)| node_label_matches(t, tok))
-            .ok_or_else(|| format!("node '{}' not found in token list", tok))?;
+            .ok_or_else(|| format!("node '{tok}' not found in token list"))?;
         indices.push(idx);
     }
     Ok(indices)
@@ -270,7 +270,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                 tok[..eq].trim().to_string(),
                 tok[eq + 1..].trim().to_string(),
             ),
-            None => return Err(format!("CG node '{}' missing '=spec'", tok)),
+            None => return Err(format!("CG node '{tok}' missing '=spec'")),
         };
         let cg_node = parse_choice_graph_node_spec(&spec, arena)?;
         id_to_idx.push((id_str, nodes.len()));
@@ -288,10 +288,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
             };
             // Reject `-->` ( PO arrow): must be `->` only.
             if edge_tok.as_bytes().get(arrow_pos + 2) == Some(&b'>') {
-                return Err(format!(
-                    "CG edge '{}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar",
-                    edge_tok
-                ));
+                return Err(format!("CG edge '{edge_tok}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar"));
             }
             let src_id = edge_tok[..arrow_pos].trim();
             let tgt_id = edge_tok[arrow_pos + 2..].trim();
@@ -299,12 +296,12 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                 .iter()
                 .find(|(id, _)| id == src_id)
                 .map(|(_, i)| *i)
-                .ok_or_else(|| format!("CG edge source '{}' not found", src_id))?;
+                .ok_or_else(|| format!("CG edge source '{src_id}' not found"))?;
             let tgt = id_to_idx
                 .iter()
                 .find(|(id, _)| id == tgt_id)
                 .map(|(_, i)| *i)
-                .ok_or_else(|| format!("CG edge target '{}' not found", tgt_id))?;
+                .ok_or_else(|| format!("CG edge target '{tgt_id}' not found"))?;
             edges.push((src, tgt));
         }
     }
@@ -327,7 +324,7 @@ fn parse_choice_graph_node_spec(
     if let Some(rest) = s.strip_prefix("Activity(") {
         let inner = rest
             .strip_suffix(')')
-            .ok_or_else(|| format!("Activity(...) missing ')': '{}'", s))?;
+            .ok_or_else(|| format!("Activity(...) missing ')': '{s}'"))?;
         return Ok(ChoiceGraphNode::Activity(inner.trim().to_string()));
     }
     // Fallback: parse as nested POWL sub-model.
@@ -338,7 +335,7 @@ fn parse_choice_graph_node_spec(
 fn extract_bracketed_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
     let start = s
         .find(key)
-        .ok_or_else(|| format!("'{}' not found in '{}'", key, s))?;
+        .ok_or_else(|| format!("'{key}' not found in '{s}'"))?;
     let content_start = start + key.len();
     let rest = &s[content_start..];
     let mut depth = 1usize;
@@ -362,7 +359,7 @@ fn extract_bracketed_content<'a>(s: &'a str, key: &str) -> Result<&'a str, Strin
 fn extract_bool_value<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
     let start = s
         .find(key)
-        .ok_or_else(|| format!("'{}' not found in '{}'", key, s))?;
+        .ok_or_else(|| format!("'{key}' not found in '{s}'"))?;
     let content_start = start + key.len();
     let rest = &s[content_start..];
 
@@ -413,7 +410,7 @@ fn extract_braced_content_from<'a>(
 ) -> Result<(&'a str, usize), String> {
     let search_start = s
         .get(from..)
-        .ok_or_else(|| format!("offset {} out of range", from))?;
+        .ok_or_else(|| format!("offset {from} out of range"))?;
     let rel_start = search_start
         .find(key)
         .ok_or_else(|| format!("'{}' not found in '{}'", key, &s[from..]))?;
@@ -450,11 +447,11 @@ fn parse_operator(
 ) -> Result<u32, String> {
     let after_prefix = s[prefix.len()..].trim();
     let inner = strip_outer_parens(after_prefix)
-        .ok_or_else(|| format!("malformed operator expression: '{}'", s))?;
+        .ok_or_else(|| format!("malformed operator expression: '{s}'"))?;
 
     let child_tokens = tokenize(inner.trim());
     if child_tokens.is_empty() {
-        return Err(format!("operator '{}' has no children", prefix));
+        return Err(format!("operator '{prefix}' has no children"));
     }
 
     let mut children: Vec<u32> = Vec::new();
@@ -609,7 +606,7 @@ use wasm_bindgen::prelude::*;
 pub fn load_powl_from_string(powl_str: &str) -> Result<JsValue, JsValue> {
     let mut arena = PowlArena::new();
     let root_idx = parse_powl_model_string(powl_str, &mut arena)
-        .map_err(|e| crate::error::js_val(&format!("POWL parse error: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("POWL parse error: {e}")))?;
     let node_count = arena.len();
     let repr = arena.to_repr(root_idx);
     let handle = get_or_init_state()
@@ -631,7 +628,7 @@ pub fn load_powl_from_string(powl_str: &str) -> Result<JsValue, JsValue> {
 pub fn load_powl_v2_from_string(dsl: &str) -> Result<JsValue, JsValue> {
     let mut arena = PowlArena::new();
     let root_idx = parse_powl_v2_string(dsl, &mut arena)
-        .map_err(|e| crate::error::js_val(&format!("POWL v2 parse error: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("POWL v2 parse error: {e}")))?;
     let node_count = arena.len();
     let repr = arena.to_repr(root_idx);
     let handle = get_or_init_state()
@@ -688,7 +685,7 @@ pub fn parse_powl_v2_string(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4
 /// Only id and optional quoted label are stored; everything else is ignored.
 fn parse_v2_activity(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
     let inner = v2_strip_outer(s, "Activity(", ")")
-        .ok_or_else(|| Wasm4pmError::Parse(format!("malformed Activity: '{}'", s)))?;
+        .ok_or_else(|| Wasm4pmError::Parse(format!("malformed Activity: '{s}'")))?;
     // Split by comma at depth 0 to get positional/named args.
     let parts = v2_split_depth0(inner);
     // First part is the id (ignored for storage), second optional is quoted label.
@@ -712,7 +709,7 @@ fn parse_v2_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pm
     // Find the `{` block
     let brace_start = s
         .find('{')
-        .ok_or_else(|| Wasm4pmError::Parse(format!("PartialOrder missing '{{': '{}'", s)))?;
+        .ok_or_else(|| Wasm4pmError::Parse(format!("PartialOrder missing '{{': '{s}'")))?;
     let block = v2_extract_brace_block(&s[brace_start..])
         .ok_or_else(|| Wasm4pmError::Parse("PartialOrder: unmatched braces".to_string()))?;
 
@@ -756,18 +753,18 @@ fn parse_v2_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pm
         for etok in &edge_tokens {
             let etok = etok.trim().trim_matches('(').trim_end_matches(')');
             let comma = etok.find(',').ok_or_else(|| {
-                Wasm4pmError::Parse(format!("PartialOrder edge '{}' missing comma", etok))
+                Wasm4pmError::Parse(format!("PartialOrder edge '{etok}' missing comma"))
             })?;
             let src_id = etok[..comma].trim();
             let tgt_id = etok[comma + 1..].trim();
             let src_local = id_to_arena
                 .iter()
                 .position(|(id, _)| id == src_id)
-                .ok_or_else(|| Wasm4pmError::Parse(format!("edge src '{}' not found", src_id)))?;
+                .ok_or_else(|| Wasm4pmError::Parse(format!("edge src '{src_id}' not found")))?;
             let tgt_local = id_to_arena
                 .iter()
                 .position(|(id, _)| id == tgt_id)
-                .ok_or_else(|| Wasm4pmError::Parse(format!("edge tgt '{}' not found", tgt_id)))?;
+                .ok_or_else(|| Wasm4pmError::Parse(format!("edge tgt '{tgt_id}' not found")))?;
             arena.add_order_edge(spo_idx, src_local, tgt_local).ok();
         }
     }
@@ -779,7 +776,7 @@ fn parse_v2_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pm
 fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
     let brace_start = s
         .find('{')
-        .ok_or_else(|| Wasm4pmError::Parse(format!("ChoiceGraph missing '{{': '{}'", s)))?;
+        .ok_or_else(|| Wasm4pmError::Parse(format!("ChoiceGraph missing '{{': '{s}'")))?;
     let block = v2_extract_brace_block(&s[brace_start..])
         .ok_or_else(|| Wasm4pmError::Parse("ChoiceGraph: unmatched braces".to_string()))?;
 
@@ -848,7 +845,7 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
         for etok in &edge_tokens {
             let etok = etok.trim().trim_matches('(').trim_end_matches(')');
             let comma = etok.find(',').ok_or_else(|| {
-                Wasm4pmError::Parse(format!("ChoiceGraph edge '{}' missing comma", etok))
+                Wasm4pmError::Parse(format!("ChoiceGraph edge '{etok}' missing comma"))
             })?;
             let src_id = etok[..comma].trim();
             let tgt_id = etok[comma + 1..].trim();
@@ -856,12 +853,12 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
                 .iter()
                 .find(|(id, _)| id == src_id)
                 .map(|(_, i)| *i)
-                .ok_or_else(|| Wasm4pmError::Parse(format!("CG src '{}' not found", src_id)))?;
+                .ok_or_else(|| Wasm4pmError::Parse(format!("CG src '{src_id}' not found")))?;
             let tgt = id_to_cg_idx
                 .iter()
                 .find(|(id, _)| id == tgt_id)
                 .map(|(_, i)| *i)
-                .ok_or_else(|| Wasm4pmError::Parse(format!("CG tgt '{}' not found", tgt_id)))?;
+                .ok_or_else(|| Wasm4pmError::Parse(format!("CG tgt '{tgt_id}' not found")))?;
             edges.push((src, tgt));
         }
     }
@@ -879,7 +876,7 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
 fn parse_v2_loop(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
     let brace_start = s
         .find('{')
-        .ok_or_else(|| Wasm4pmError::Parse(format!("Loop missing '{{': '{}'", s)))?;
+        .ok_or_else(|| Wasm4pmError::Parse(format!("Loop missing '{{': '{s}'")))?;
     let block = v2_extract_brace_block(&s[brace_start..])
         .ok_or_else(|| Wasm4pmError::Parse("Loop: unmatched braces".to_string()))?;
 
@@ -966,7 +963,7 @@ fn v2_extract_brace_block(s: &str) -> Option<&str> {
 
 /// Extract field with bracket value: `key: [...]` → return content inside `[...]`.
 fn v2_extract_bracket_field<'a>(block: &'a str, key: &str) -> Option<&'a str> {
-    let search = format!("{}:", key);
+    let search = format!("{key}:");
     let pos = block.find(&search)?;
     let rest = block[pos + search.len()..].trim_start();
     if !rest.starts_with('[') {
@@ -991,7 +988,7 @@ fn v2_extract_bracket_field<'a>(block: &'a str, key: &str) -> Option<&'a str> {
 
 /// Extract scalar field value: `key: value` (up to next `,` or `}`).
 fn v2_extract_scalar_field<'a>(block: &'a str, key: &str) -> Option<&'a str> {
-    let search = format!("{}:", key);
+    let search = format!("{key}:");
     let pos = block.find(&search)?;
     let rest = block[pos + search.len()..].trim_start();
     // Skip past bracket/brace blocks for values that start with them
