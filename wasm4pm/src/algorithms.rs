@@ -324,7 +324,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
     // Transitions for each activity
     for activity in &activities {
         pn.transitions.push(PetriNetTransition {
-            id: format!("t_{}", activity),
+            id: format!("t_{activity}"),
             label: activity.clone(),
             is_invisible: None,
         });
@@ -334,7 +334,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
     for act in &start_acts {
         pn.arcs.push(PetriNetArc {
             from: "p_source".to_string(),
-            to: format!("t_{}", act),
+            to: format!("t_{act}"),
             weight: Some(1),
         });
     }
@@ -342,7 +342,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
     // End-activity transitions → sink
     for act in &end_acts {
         pn.arcs.push(PetriNetArc {
-            from: format!("t_{}", act),
+            from: format!("t_{act}"),
             to: "p_sink".to_string(),
             weight: Some(1),
         });
@@ -350,7 +350,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
 
     // Places for each maximal (A,B) candidate
     for (idx, (a_set, b_set)) in maximal.iter().enumerate() {
-        let place_id = format!("p_place_{}", idx);
+        let place_id = format!("p_place_{idx}");
         let label = format!("({} → {})", a_set.join(","), b_set.join(","));
         pn.places.push(PetriNetPlace {
             id: place_id.clone(),
@@ -360,7 +360,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
         // Arcs: all a ∈ A → place
         for a in a_set.iter() {
             pn.arcs.push(PetriNetArc {
-                from: format!("t_{}", a),
+                from: format!("t_{a}"),
                 to: place_id.clone(),
                 weight: Some(1),
             });
@@ -369,7 +369,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
         for b in b_set.iter() {
             pn.arcs.push(PetriNetArc {
                 from: place_id.clone(),
-                to: format!("t_{}", b),
+                to: format!("t_{b}"),
                 weight: Some(1),
             });
         }
@@ -377,21 +377,21 @@ pub(crate) fn alpha_plus_plus_inner<W>(
 
     // Self-loop places for L1L activities
     for act in &l1l {
-        let loop_place_id = format!("p_loop_{}", act);
+        let loop_place_id = format!("p_loop_{act}");
         pn.places.push(PetriNetPlace {
             id: loop_place_id.clone(),
-            label: format!("loop({})", act),
+            label: format!("loop({act})"),
             marking: None,
         });
         // t_act → loop_place → t_act  (self-loop in the net)
         pn.arcs.push(PetriNetArc {
-            from: format!("t_{}", act),
+            from: format!("t_{act}"),
             to: loop_place_id.clone(),
             weight: Some(1),
         });
         pn.arcs.push(PetriNetArc {
             from: loop_place_id.clone(),
-            to: format!("t_{}", act),
+            to: format!("t_{act}"),
             weight: Some(1),
         });
     }
@@ -402,27 +402,27 @@ pub(crate) fn alpha_plus_plus_inner<W>(
     for (a, b) in &l2l {
         // Avoid duplicating the symmetric pair
         let key = if a < b {
-            format!("{}_{}", a, b)
+            format!("{a}_{b}")
         } else {
-            format!("{}_{}", b, a)
+            format!("{b}_{a}")
         };
         if seen_l2l.insert(key) {
             // Forward arc: t_a → place → t_b is handled by maximal candidate places.
             // Back-arc: t_b → p_back_{a}_{b} → t_a
-            let back_id = format!("p_back_{}_{}", a, b);
+            let back_id = format!("p_back_{a}_{b}");
             pn.places.push(PetriNetPlace {
                 id: back_id.clone(),
-                label: format!("back({},{})", a, b),
+                label: format!("back({a},{b})"),
                 marking: None,
             });
             pn.arcs.push(PetriNetArc {
-                from: format!("t_{}", b),
+                from: format!("t_{b}"),
                 to: back_id.clone(),
                 weight: Some(1),
             });
             pn.arcs.push(PetriNetArc {
                 from: back_id.clone(),
-                to: format!("t_{}", a),
+                to: format!("t_{a}"),
                 weight: Some(1),
             });
         }
@@ -615,7 +615,7 @@ pub fn discover_dfg_filtered(
 pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_dfg(handle, |dfg| {
         serde_json::to_string(dfg)
-            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
     })
 }
 
@@ -628,7 +628,7 @@ pub fn export_petri_net_to_json(handle: &str) -> Result<String, JsValue> {
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
-            format!("PetriNet '{}' not found", handle),
+            format!("PetriNet '{handle}' not found"),
         )),
     })
 }
