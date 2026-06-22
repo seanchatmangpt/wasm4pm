@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
 };
-use std::collections::{HashSet, HashMap};
+use std::collections::{BTreeSet, HashSet, HashMap};
 
 /// Abduction by Inference to the Best Explanation (IBE) breed using Thagard's ECHO model.
 pub struct AbductiveIbe;
@@ -91,7 +91,7 @@ impl CognitionBreed for AbductiveIbe {
         step_count += 1;
 
         // 2. Initialize ECHO network
-        let all_nodes: HashSet<String> = evidence.union(&hypotheses).cloned().collect();
+        let all_nodes: BTreeSet<String> = evidence.union(&hypotheses).cloned().collect();
         let nodes_list: Vec<String> = {
             let mut list: Vec<String> = all_nodes.into_iter().collect();
             list.sort();

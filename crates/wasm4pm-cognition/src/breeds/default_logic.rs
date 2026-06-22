@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 /// DefaultLogic breed: Reiter normal defaults with specificity fixpoint.
 pub struct DefaultLogic;
@@ -37,7 +37,7 @@ impl CognitionBreed for DefaultLogic {
             objects: vec![],
         });
 
-        let mut extension: HashSet<String> = input
+        let mut extension: BTreeSet<String> = input
             .facts
             .iter()
             .map(|f| f.value.clone())

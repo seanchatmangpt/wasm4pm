@@ -13,7 +13,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Case, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeSet, BTreeMap, HashMap, HashSet};
 use tracing;
 
 /// Case-Based Reasoning breed.
@@ -30,7 +30,7 @@ pub struct Cbr;
 /// ```rust
 /// // Validation successful
 /// ```
-pub fn jaccard(a: &HashSet<String>, b: &HashSet<String>) -> f32 {
+pub fn jaccard(a: &BTreeSet<String>, b: &BTreeSet<String>) -> f32 {
     if a.is_empty() && b.is_empty() {
         return 0.0;
     }
@@ -43,14 +43,14 @@ pub fn jaccard(a: &HashSet<String>, b: &HashSet<String>) -> f32 {
     }
 }
 
-fn fact_set(facts: &[Fact]) -> HashSet<String> {
+fn fact_set(facts: &[Fact]) -> BTreeSet<String> {
     facts
         .iter()
         .map(|f| format!("{}={}", f.key, f.value))
         .collect()
 }
 
-fn case_fact_set(case: &Case) -> HashSet<String> {
+fn case_fact_set(case: &Case) -> BTreeSet<String> {
     fact_set(&case.facts)
 }
 
@@ -78,7 +78,7 @@ fn build_index(cases: &[Case]) -> HashMap<String, Vec<usize>> {
 /// - Soundness: Every returned case shares at least one feature with query.
 /// - Optimality: No cases with zero feature overlap are returned.
 fn retrieve_candidates(
-    query_features: &HashSet<String>,
+    query_features: &BTreeSet<String>,
     index: &HashMap<String, Vec<usize>>,
 ) -> HashSet<usize> {
     if query_features.is_empty() {
@@ -213,7 +213,7 @@ impl CognitionBreed for Cbr {
             });
 
             // --- Revise: Jaccard of adapted facts vs query ---
-            let adapted_set: HashSet<String> =
+            let adapted_set: BTreeSet<String> =
                 merged.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
             let sim_adapted = jaccard(&query, &adapted_set);
 

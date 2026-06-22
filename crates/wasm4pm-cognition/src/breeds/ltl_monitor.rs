@@ -1,7 +1,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use crate::breeds::support::formula::Formula;
 
 /// LTL Monitor breed.
@@ -50,7 +50,7 @@ impl Ltl {
 }
 
 impl LtlMonitor {
-    fn progress(phi: &Ltl, event: &HashSet<String>) -> Ltl {
+    fn progress(phi: &Ltl, event: &BTreeSet<String>) -> Ltl {
         match phi {
             Ltl::True => Ltl::True,
             Ltl::False => Ltl::False,
@@ -175,17 +175,17 @@ impl CognitionBreed for LtlMonitor {
             return Err(BreedError { breed: self.id(), message: "missing ltl:formula fact".to_string() });
         };
 
-        let mut trace_events: Vec<(usize, HashSet<String>)> = Vec::new();
+        let mut trace_events: Vec<(usize, BTreeSet<String>)> = Vec::new();
         if !input.cases.is_empty() {
             for (idx, case) in input.cases.iter().enumerate() {
-                let ev: HashSet<String> = case.facts.iter().map(|f| f.key.clone()).collect();
+                let ev: BTreeSet<String> = case.facts.iter().map(|f| f.key.clone()).collect();
                 trace_events.push((idx, ev));
             }
         } else {
             for fact in &input.facts {
                 if let Some(num_str) = fact.key.strip_prefix("trace:") {
                     if let Ok(idx) = num_str.parse::<usize>() {
-                        let ev: HashSet<String> = fact.value.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
+                        let ev: BTreeSet<String> = fact.value.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
                         trace_events.push((idx, ev));
                     }
                 }

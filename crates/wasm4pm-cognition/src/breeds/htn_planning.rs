@@ -2,23 +2,23 @@ use crate::breeds::support::breed_class::PlannerBreed;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Rule, StateAtom, TraceStep,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 /// Hierarchical Task Network Planning breed
 pub struct HtnPlanning;
 
-fn atoms_of(state: &[StateAtom]) -> HashSet<String> {
+fn atoms_of(state: &[StateAtom]) -> BTreeSet<String> {
     state
         .iter()
         .map(|a| format!("{}={}", a.predicate, a.value))
         .collect()
 }
 
-fn applicable(rule: &Rule, state: &HashSet<String>) -> bool {
+fn applicable(rule: &Rule, state: &BTreeSet<String>) -> bool {
     rule.premise.iter().all(|p| state.contains(p))
 }
 
-fn apply_effect(rule: &Rule, state: &HashSet<String>) -> HashSet<String> {
+fn apply_effect(rule: &Rule, state: &BTreeSet<String>) -> BTreeSet<String> {
     let mut next = state.clone();
     for tok in rule.conclusion.split(';').map(|s| s.trim()).filter(|s| !s.is_empty()) {
         if let Some(rest) = tok.strip_prefix('!') {
@@ -31,7 +31,7 @@ fn apply_effect(rule: &Rule, state: &HashSet<String>) -> HashSet<String> {
 }
 
 fn htn_seek(
-    state: &HashSet<String>,
+    state: &BTreeSet<String>,
     tasks: &[String],
     rules: &[Rule],
     depth: usize,

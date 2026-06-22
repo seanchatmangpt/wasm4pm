@@ -15,7 +15,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use tracing;
 
 /// GPS planner.
@@ -23,7 +23,7 @@ pub struct Gps;
 
 const MAX_RECURSION: u32 = 32;
 
-fn atoms_of(state: &[StateAtom]) -> HashSet<String> {
+fn atoms_of(state: &[StateAtom]) -> BTreeSet<String> {
     state
         .iter()
         .map(|a| format!("{}={}", a.predicate, a.value))
@@ -53,18 +53,18 @@ fn parse_dels(conclusion: &str) -> Vec<String> {
         .collect()
 }
 
-fn first_gap(goals: &[String], state: &HashSet<String>) -> Option<String> {
+fn first_gap(goals: &[String], state: &BTreeSet<String>) -> Option<String> {
     goals.iter().find(|g| !state.contains(*g)).cloned()
 }
 
 fn solve(
-    state: &mut HashSet<String>,
+    state: &mut BTreeSet<String>,
     goal: &str,
     actions: &[Rule],
     plan: &mut Vec<String>,
     trace: &mut Vec<TraceStep>,
     depth: u32,
-    visiting: &mut HashSet<String>,
+    visiting: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     if state.contains(goal) {
         return Ok(());
@@ -190,7 +190,7 @@ impl CognitionBreed for Gps {
                 });
             }
             last_gap_count = gap_count;
-            let mut visiting = HashSet::new();
+            let mut visiting = BTreeSet::new();
             if let Err(e) = solve(
                 &mut state,
                 &gap,

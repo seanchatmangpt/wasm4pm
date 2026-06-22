@@ -28,7 +28,7 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, Rule, TraceStep,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use tracing;
 
 /// SOAR breed.
@@ -36,10 +36,10 @@ pub struct Soar;
 
 #[derive(Debug, Default)]
 struct Prefs {
-    best: HashSet<String>,
-    worst: HashSet<String>,
-    require: HashSet<String>,
-    prohibit: HashSet<String>,
+    best: BTreeSet<String>,
+    worst: BTreeSet<String>,
+    require: BTreeSet<String>,
+    prohibit: BTreeSet<String>,
     /// (better, worse)
     better: Vec<(String, String)>,
 }
@@ -105,7 +105,7 @@ fn apply_better_dominance(
         if iters > max_iters {
             break;
         }
-        let alive_snapshot: HashSet<String> = candidates
+        let alive_snapshot: BTreeSet<String> = candidates
             .iter()
             .filter(|c| !c.eliminated)
             .map(|c| c.id.clone())
