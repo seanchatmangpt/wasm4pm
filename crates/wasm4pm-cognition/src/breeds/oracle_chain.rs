@@ -158,7 +158,7 @@ mod tests {
         let breed = MockBreed;
         let chain = TypedReceiptChain::new(&breed);
         assert_eq!(
-            chain.len() == 0,
+            chain.is_empty(),
             chain.is_empty(),
             "Length matches is_empty invariant"
         );
