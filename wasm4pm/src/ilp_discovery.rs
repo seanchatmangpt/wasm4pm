@@ -401,11 +401,7 @@ pub fn discover_ilp_petri_net(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let log_owned = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
-    })?;
+    let log_owned = get_or_init_state().with_event_log(eventlog_handle, |log| Ok(log.clone()))?;
     let (petri_net, fitness, precision) = discover_ilp_petri_net_from_log(&log_owned, activity_key);
     let simplicity = compute_simplicity(
         petri_net.places.len(),
@@ -513,11 +509,7 @@ pub fn discover_optimized_dfg(
     fitness_weight: f64,
     simplicity_weight: f64,
 ) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
-    })?;
+    let log = get_or_init_state().with_event_log(eventlog_handle, |log| Ok(log.clone()))?;
 
     let dfg =
         discover_optimized_dfg_from_log(&log, activity_key, fitness_weight, simplicity_weight);
