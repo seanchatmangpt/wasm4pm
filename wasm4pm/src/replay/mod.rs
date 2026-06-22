@@ -35,7 +35,7 @@ use std::marker::PhantomData;
 /// All replay operations are bound to a replay witness, which names
 /// the replay algorithm (token replay, simulation, path finding) and its
 /// foundational model.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ReplayAuthority {
     _phantom: PhantomData<()>,
 }
@@ -54,11 +54,6 @@ impl ReplayAuthority {
     }
 }
 
-impl Default for ReplayAuthority {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 /// Replay engine trait.
 ///

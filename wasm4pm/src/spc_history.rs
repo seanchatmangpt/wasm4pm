@@ -354,11 +354,6 @@ impl SpcHistory {
     }
 }
 
-impl Default for SpcHistory {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Step 3: Thread Local Storage (accessed from lib.rs)

@@ -45,7 +45,7 @@ use std::collections::HashMap;
 ///
 /// let dfg = stream.snapshot();
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StreamingHeuristicBuilder {
     /// Activity string interner
     pub interner: Interner,
@@ -287,11 +287,6 @@ impl StreamingAlgorithm for StreamingHeuristicBuilder {
     }
 }
 
-impl Default for StreamingHeuristicBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests {

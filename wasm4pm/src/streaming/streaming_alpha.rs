@@ -22,7 +22,7 @@ use std::collections::HashMap;
 ///
 /// From these relations, places are discovered connecting pre-sets
 /// to post-sets, yielding a Petri net.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StreamingAlphaPlusBuilder {
     /// Activity string interner
     pub interner: Interner,
@@ -261,11 +261,6 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
     }
 }
 
-impl Default for StreamingAlphaPlusBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests {
