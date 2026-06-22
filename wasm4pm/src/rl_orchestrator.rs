@@ -1121,9 +1121,9 @@ impl RlOrchestrator {
     ///
     /// Returns a map where the key is the action label and the value is a tuple:
     /// `(total_count, successful_count, success_rate)`.
-    pub fn get_action_stats(&self) -> std::collections::HashMap<String, (u32, u32, f32)> {
+    pub fn get_action_stats(&self) -> std::collections::BTreeMap<String, (u32, u32, f32)> {
         use std::collections::HashMap;
-        let mut stats: HashMap<String, (u32, u32)> = HashMap::new();
+        let mut stats: std::collections::BTreeMap<String, (u32, u32)> = std::collections::BTreeMap::new();
 
         // Count totals and successes per action
         for entry in &self.action_history.entries {
