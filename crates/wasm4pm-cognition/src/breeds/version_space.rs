@@ -8,12 +8,12 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// Version Space Breed
 pub struct VersionSpace;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Hypothesis {
     constraints: Vec<String>,
 }
@@ -194,12 +194,12 @@ impl CognitionBreed for VersionSpace {
         }
 
         // Initialize S and G sets
-        let mut s_set = HashSet::new();
+        let mut s_set: BTreeSet<Hypothesis> = BTreeSet::new();
         s_set.insert(Hypothesis {
             constraints: vec!["Ø".to_string(); attr_names.len()],
         });
 
-        let mut g_set = HashSet::new();
+        let mut g_set: BTreeSet<Hypothesis> = BTreeSet::new();
         g_set.insert(Hypothesis {
             constraints: vec!["?".to_string(); attr_names.len()],
         });
@@ -211,7 +211,7 @@ impl CognitionBreed for VersionSpace {
                 // Positive example
                 g_set.retain(|g| g.matches(&example.values));
 
-                let mut new_s = HashSet::new();
+                let mut new_s: BTreeSet<Hypothesis> = BTreeSet::new();
                 for s in &s_set {
                     if s.matches(&example.values) {
                         new_s.insert(s.clone());
@@ -233,7 +233,7 @@ impl CognitionBreed for VersionSpace {
                     }
                 }
 
-                let mut minimal_s = HashSet::new();
+                let mut minimal_s: BTreeSet<Hypothesis> = BTreeSet::new();
                 for h1 in &new_s {
                     let mut keep = true;
                     for h2 in &new_s {
@@ -251,7 +251,7 @@ impl CognitionBreed for VersionSpace {
                 // Negative example
                 s_set.retain(|s| !s.matches(&example.values));
 
-                let mut new_g = HashSet::new();
+                let mut new_g: BTreeSet<Hypothesis> = BTreeSet::new();
                 for g in &g_set {
                     if !g.matches(&example.values) {
                         new_g.insert(g.clone());
@@ -278,7 +278,7 @@ impl CognitionBreed for VersionSpace {
                     }
                 }
 
-                let mut maximal_g = HashSet::new();
+                let mut maximal_g: BTreeSet<Hypothesis> = BTreeSet::new();
                 for h1 in &new_g {
                     let mut keep = true;
                     for h2 in &new_g {
@@ -297,11 +297,9 @@ impl CognitionBreed for VersionSpace {
             g_sizes.push(g_set.len());
 
             // Deterministic, sorted constraint snapshots for the trace detail
-            // (s_set/g_set are HashSet — unsorted iteration would leak into output_hash).
-            let mut s_snap: Vec<_> = s_set.iter().map(|h| h.constraints.clone()).collect();
-            s_snap.sort();
-            let mut g_snap: Vec<_> = g_set.iter().map(|h| h.constraints.clone()).collect();
-            g_snap.sort();
+            // BTreeSet iteration is sorted by (PartialOrd, Ord) — no sort scaffolding needed.
+            let s_snap: Vec<_> = s_set.iter().map(|h| h.constraints.clone()).collect();
+            let g_snap: Vec<_> = g_set.iter().map(|h| h.constraints.clone()).collect();
 
             trace.push(TraceStep {
                 step: trace.len(),
@@ -346,16 +344,8 @@ impl CognitionBreed for VersionSpace {
         }
 
         // Deterministic, sorted boundary snapshots (BTreeSet ordering via sorted Vec).
-        let mut s_strs: Vec<String> = s_set
-            .iter()
-            .map(|h| h.constraints.join(","))
-            .collect();
-        s_strs.sort();
-        let mut g_strs: Vec<String> = g_set
-            .iter()
-            .map(|h| h.constraints.join(","))
-            .collect();
-        g_strs.sort();
+        let s_strs: Vec<String> = s_set.iter().map(|h| h.constraints.join(",")).collect();
+        let g_strs: Vec<String> = g_set.iter().map(|h| h.constraints.join(",")).collect();
 
         // |G| immediately after the final negative example (intermediate G3 in
         // Mitchell's worked EnjoySport derivation).
@@ -424,7 +414,7 @@ impl CognitionBreed for VersionSpace {
         if output.inference_trace.is_empty() {
             return Err("Version Space must record update steps".to_string());
         }
-        let kinds: HashSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
+        let kinds: BTreeSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
         if !kinds.contains("vs-init") || !kinds.contains("vs-update") || !kinds.contains("vs-verdict") {
             return Err("Version Space trace missing required kinds".to_string());
         }
