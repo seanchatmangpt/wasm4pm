@@ -75,7 +75,7 @@ fn playout_process_tree_node(
         }
     }
 
-    let op = operator.as_ref().unwrap();
+    let op = operator.as_ref().expect("invariant: is_none() guard above guarantees operator is Some");
     match op {
         PtOperator::Sequence => {
             // Execute children in order, concatenating results.

@@ -123,7 +123,7 @@ fn render_tree_recursive(
         r#"<rect id="{}" x="{}" y="{}" width="{}" height="{}" fill="{}" class="node" rx="5"/>"#,
         id, x, y, NODE_WIDTH, NODE_HEIGHT, fill
     )
-    .unwrap();
+    .expect("invariant: fmt::Write on String is infallible");
 
     let text_y = y + NODE_HEIGHT / 2 + 4;
     write!(
@@ -133,7 +133,7 @@ fn render_tree_recursive(
         text_y,
         escaped_label
     )
-    .unwrap();
+    .expect("invariant: fmt::Write on String is infallible");
 
     // Render children
     let children = get_children(arena, root);
@@ -160,7 +160,7 @@ fn render_tree_recursive(
             write!(buffer,
                 "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke=\"#333\" stroke-width=\"2\"/>",
                 parent_bottom_x, parent_bottom_y, child_top_x, child_top_y
-            ).unwrap();
+            ).expect("invariant: fmt::Write on String is infallible");
 
             // Recursively render child
             render_tree_recursive(arena, child_idx, child_x, child_y, buffer, id_counter);
@@ -192,22 +192,22 @@ pub fn render_process_tree_svg(arena: &PowlArena, root: u32) -> String {
         width + 40,
         height + 40
     )
-    .unwrap();
-    write!(buffer, "<style>").unwrap();
-    write!(buffer, ".node {{ stroke: #333; stroke-width: 2px; }}").unwrap();
+    .expect("invariant: fmt::Write on String is infallible");
+    write!(buffer, "<style>").expect("invariant: fmt::Write on String is infallible");
+    write!(buffer, ".node {{ stroke: #333; stroke-width: 2px; }}").expect("invariant: fmt::Write on String is infallible");
     write!(
         buffer,
         ".label {{ font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }}"
     )
-    .unwrap();
-    write!(buffer, "</style>").unwrap();
+    .expect("invariant: fmt::Write on String is infallible");
+    write!(buffer, "</style>").expect("invariant: fmt::Write on String is infallible");
 
     // Render tree
     let mut id_counter = 0;
     render_tree_recursive(arena, root, 20, 20, &mut buffer, &mut id_counter);
 
     // Write footer
-    write!(buffer, "</svg>").unwrap();
+    write!(buffer, "</svg>").expect("invariant: fmt::Write on String is infallible");
     buffer
 }
 
