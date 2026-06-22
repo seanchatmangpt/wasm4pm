@@ -198,18 +198,16 @@ impl EvidenceSource for OtelEvidenceSource {
     }
 
     fn gate_ids(&self) -> Vec<String> {
-        let mut ids: Vec<String> = self
-            .spans
+        self.spans
             .iter()
             .filter_map(|s| {
                 Self::span_attr(s, "gate.id")
                     .and_then(|v| v.as_str())
                     .map(String::from)
             })
-            .collect();
-        ids.sort();
-        ids.dedup();
-        ids
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect()
     }
 
     fn authority_text(&self, slot: &str) -> AuthorityKind {
@@ -431,11 +429,13 @@ impl EvidenceSource for CompositeEvidenceSource {
         self.otel.evidence_count(gate_id) + self.fs.evidence_count(gate_id)
     }
     fn gate_ids(&self) -> Vec<String> {
-        let mut ids = self.otel.gate_ids();
-        ids.extend(self.fs.gate_ids());
-        ids.sort();
-        ids.dedup();
-        ids
+        self.otel
+            .gate_ids()
+            .into_iter()
+            .chain(self.fs.gate_ids())
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect()
     }
     fn authority_text(&self, slot: &str) -> AuthorityKind {
         match self.otel.authority_text(slot) {
