@@ -7,7 +7,7 @@
 //! Oracle rank: Rank 2 (domain contract) — outputs must be non-degenerate
 //! on real-world logs that synthetic fixtures cannot replicate.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use wasm4pm::algorithms::discover_alpha_plus_plus_from_log;
 use wasm4pm::batches::discover_batches;
@@ -29,7 +29,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -40,7 +40,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

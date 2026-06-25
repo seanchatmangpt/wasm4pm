@@ -134,7 +134,7 @@ pub fn get_children(s: &str, arena_idx: u32) -> Result<JsValue, JsValue> {
         Some(crate::powl_arena::PowlNode::DecisionGraph(dg)) => dg.children.clone(),
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => cg
             .graph
-            .nodes
+            .nodes()
             .iter()
             .filter_map(|n| match n {
                 ChoiceGraphNode::SubModel(idx) => Some(*idx),
@@ -209,10 +209,10 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             })
         }
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
-            let edges: Vec<Vec<usize>> = cg.graph.edges.iter().map(|(a, b)| vec![*a, *b]).collect();
+            let edges: Vec<Vec<usize>> = cg.graph.edges().iter().map(|(a, b)| vec![*a, *b]).collect();
             let node_kinds: Vec<String> = cg
                 .graph
-                .nodes
+                .nodes()
                 .iter()
                 .map(|n| match n {
                     ChoiceGraphNode::Start => "Start".into(),
@@ -225,8 +225,8 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
                 "type": "choice_graph",
                 "nodes": node_kinds,
                 "edges": edges,
-                "start_idx": cg.graph.start_idx,
-                "end_idx": cg.graph.end_idx,
+                "start_idx": cg.graph.start_idx(),
+                "end_idx": cg.graph.end_idx(),
             })
         }
         None => serde_json::json!({ "error": "invalid index" }),
@@ -507,7 +507,7 @@ fn collect_freq_nodes(arena: &PowlArena, idx: u32, out: &mut Vec<serde_json::Val
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
             let sub_idxs: Vec<u32> = cg
                 .graph
-                .nodes
+                .nodes()
                 .iter()
                 .filter_map(|n| match n {
                     ChoiceGraphNode::SubModel(i) => Some(*i),

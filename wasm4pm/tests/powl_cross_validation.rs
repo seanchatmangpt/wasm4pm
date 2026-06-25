@@ -22,7 +22,7 @@ fn mk_event(name: &str) -> Event {
         name: name.to_string(),
         timestamp: None,
         lifecycle: None,
-        attributes: HashMap::new(),
+        attributes: std::collections::BTreeMap::new(),
     }
 }
 
@@ -188,7 +188,7 @@ fn test_choice_graph_sub_model_nesting() {
         (1, 3), // P → End
         (2, 3), // Q → End
     ];
-    let cg = ChoiceGraph::new(nodes, edges);
+    let cg = ChoiceGraph::new(nodes, edges).unwrap();
 
     let mut arena = PowlArena::new();
     let root = arena.add_choice_graph(&cg);

@@ -8,7 +8,7 @@
 //! - Rank 2 (Domain contract): system must not crash on dirty data, rework ratio accuracy
 //! - Rank 3 (Metamorphic): dirty data degrades conformance, proportional frequency effects
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{
     AttributeValue, ConformanceResult, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace,
     PetriNetTransition, Trace,
@@ -27,7 +27,7 @@ fn make_log_with_timestamps(traces: &[(&str, &[(&str, u64)])]) -> EventLog {
     for (case_id, events) in traces {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(case_id.to_string()),
@@ -37,7 +37,7 @@ fn make_log_with_timestamps(traces: &[(&str, &[(&str, u64)])]) -> EventLog {
             events: Vec::new(),
         };
         for (act, secs) in *events {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(act.to_string()),
@@ -161,10 +161,10 @@ fn make_abc_petri_net() -> PetriNet {
         },
     ];
 
-    let mut initial_marking = HashMap::new();
+    let mut initial_marking = BTreeMap::new();
     initial_marking.insert("start".to_string(), 1);
 
-    let mut final_marking = HashMap::new();
+    let mut final_marking = BTreeMap::new();
     final_marking.insert("end".to_string(), 1);
 
     PetriNet {
@@ -178,8 +178,8 @@ fn make_abc_petri_net() -> PetriNet {
 
 /// Compute edge frequencies from an EventLog using the activity key.
 /// Returns a map of (from, to) → frequency.
-fn compute_edge_frequencies(log: &EventLog) -> HashMap<(String, String), usize> {
-    let mut freqs: HashMap<(String, String), usize> = HashMap::new();
+fn compute_edge_frequencies(log: &EventLog) -> BTreeMap<(String, String), usize> {
+    let mut freqs: BTreeMap<(String, String), usize> = BTreeMap::new();
     for trace in &log.traces {
         let activities: Vec<String> = trace
             .events
@@ -200,8 +200,8 @@ fn compute_edge_frequencies(log: &EventLog) -> HashMap<(String, String), usize> 
 
 /// Compute per-activity average duration using the timestamp attribute.
 /// Returns a map of activity → mean_duration_millis.
-fn compute_avg_durations(log: &EventLog) -> HashMap<String, f64> {
-    let mut durations: HashMap<String, Vec<f64>> = HashMap::new();
+fn compute_avg_durations(log: &EventLog) -> BTreeMap<String, f64> {
+    let mut durations: BTreeMap<String, Vec<f64>> = BTreeMap::new();
 
     for trace in &log.traces {
         for pair in trace.events.windows(2) {
@@ -432,7 +432,7 @@ fn dfg_frequency_ratio_reflects_dirty_data_proportion() {
     for (i, acts) in traces.iter().enumerate() {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case{}", i)),
@@ -442,7 +442,7 @@ fn dfg_frequency_ratio_reflects_dirty_data_proportion() {
             events: Vec::new(),
         };
         for (j, act) in acts.iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(act.clone()),
@@ -512,7 +512,7 @@ fn bottleneck_activity_identifiable_from_timing() {
     for (case_id, events) in &traces {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(case_id.to_string()),
@@ -522,7 +522,7 @@ fn bottleneck_activity_identifiable_from_timing() {
             events: Vec::new(),
         };
         for (act, secs) in events {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(act.to_string()),
@@ -581,7 +581,7 @@ fn rework_ratio_measurable_at_30_percent() {
     for i in 0..7 {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case{}", i)),
@@ -591,7 +591,7 @@ fn rework_ratio_measurable_at_30_percent() {
             events: Vec::new(),
         };
         for (j, act) in ["A", "B", "C"].iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(act.to_string()),
@@ -609,7 +609,7 @@ fn rework_ratio_measurable_at_30_percent() {
     for i in 7..10 {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case{}", i)),
@@ -619,7 +619,7 @@ fn rework_ratio_measurable_at_30_percent() {
             events: Vec::new(),
         };
         for (j, act) in ["A", "B", "B", "C"].iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(act.to_string()),
@@ -685,7 +685,7 @@ fn dirty_data_conformance_impact_documented() {
         for i in 0..5 {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case{}", i)),
@@ -695,7 +695,7 @@ fn dirty_data_conformance_impact_documented() {
                 events: Vec::new(),
             };
             for (j, act) in ["A", "B", "C"].iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     ACTIVITY_KEY.to_string(),
                     AttributeValue::String(act.to_string()),
@@ -717,7 +717,7 @@ fn dirty_data_conformance_impact_documented() {
         for i in 5..7 {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case{}", i)),
@@ -727,7 +727,7 @@ fn dirty_data_conformance_impact_documented() {
                 events: Vec::new(),
             };
             for (j, act) in ["A", "X", "C"].iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     ACTIVITY_KEY.to_string(),
                     AttributeValue::String(act.to_string()),

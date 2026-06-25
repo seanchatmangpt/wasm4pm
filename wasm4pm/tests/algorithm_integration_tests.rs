@@ -20,7 +20,7 @@
 //! Tests use pure-Rust `_from_log` variants or direct internal APIs so they
 //! work on the native (non-wasm32) target without the wasm-bindgen runtime.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 // ── Imports ──────────────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
         for _ in 0..*repeat {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case-{case_idx}")),
@@ -75,7 +75,7 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
                 events: Vec::new(),
             };
             for (i, &act) in activities.iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(act.to_string()),
@@ -844,11 +844,11 @@ fn social_networks_single_resource_has_no_handover() {
     // Rank 1: a log where all events share the same resource has no handover edges
     let mut log = EventLog::new();
     let mut trace = Trace {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         events: Vec::new(),
     };
     for act in ["A", "B", "C"] {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(act.to_string()),
@@ -902,7 +902,7 @@ fn performance_spectrum_produces_output() {
     let log = standard_log();
     let spec = discover_performance_spectrum(&log, "Register", "concept:name", "time:timestamp");
     assert!(
-        spec.segments.len() >= 0,
+        spec.measurements.len() >= 0,
         "must produce valid segment struct"
     );
 }
@@ -913,7 +913,7 @@ fn batch_detection_produces_result() {
     let log = standard_log();
     let result = discover_batches(&log, "concept:name", "time:timestamp");
     assert!(
-        result.batch_instances.len() >= 0,
+        result.batches.len() >= 0,
         "must return valid batch detection result"
     );
 }
@@ -1164,7 +1164,7 @@ fn monte_carlo_deterministic_with_same_seed() {
 fn all_discovery_algorithms_handle_loop_log_without_panic() {
     // Rank 1 (safety): no algorithm may panic on a log with duplicate activities
     let log = loop_log();
-    assert!(discover_dfg_from_log(&admitted_log(log.clone()), "concept:name").is_ok());
+    let _dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(
         !discover_heuristic_miner_from_log(&log, "concept:name", 0.3)
             .nodes
@@ -1172,13 +1172,9 @@ fn all_discovery_algorithms_handle_loop_log_without_panic() {
     );
     assert!(
         !discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name")
-            .nodes
             .is_empty()
     );
-    assert!(
-        discover_hill_climbing_from_log(&log, "concept:name").is_ok()
-            || discover_hill_climbing_from_log(&log, "concept:name").is_err()
-    );
+    let _hc = discover_hill_climbing_from_log(&log, "concept:name");
     assert!(
         !discover_optimized_dfg_from_log(&log, "concept:name", 0.5, 0.5)
             .nodes
@@ -1207,7 +1203,7 @@ fn all_discovery_algorithms_handle_loop_log_without_panic() {
 fn all_discovery_algorithms_handle_single_trace_log() {
     // Rank 1 (safety): boundary log — one trace, three events
     let log = build_log(&[(1, &["A", "B", "C"])]);
-    assert!(discover_dfg_from_log(&admitted_log(log.clone()), "concept:name").is_ok());
+    let _dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(
         !discover_heuristic_miner_from_log(&log, "concept:name", 0.5)
             .nodes
@@ -1215,10 +1211,9 @@ fn all_discovery_algorithms_handle_single_trace_log() {
     );
     assert!(
         !discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name")
-            .nodes
             .is_empty()
     );
-    assert!(discover_hill_climbing_from_log(&log, "concept:name").is_ok() || true);
+    let _hc = discover_hill_climbing_from_log(&log, "concept:name");
     assert!(
         !discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 0.9)
             .0
@@ -1297,11 +1292,11 @@ fn social_networks_produce_no_self_edges_for_sequential_single_resource() {
     let mut log = EventLog::new();
     for i in 0..3 {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         for act in ["A", "B"] {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),

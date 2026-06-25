@@ -308,7 +308,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
         }
     }
 
-    let cg = ChoiceGraph::new(nodes, edges);
+    let cg = ChoiceGraph::new(nodes, edges).map_err(|e| format!("ChoiceGraph validation failed: {e}"))?;
     Ok(arena.add_choice_graph(&cg))
 }
 
@@ -865,12 +865,8 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
         }
     }
 
-    let cg = wasm4pm_compat::powl::ChoiceGraph {
-        nodes: cg_nodes,
-        edges,
-        start_idx,
-        end_idx,
-    };
+    let cg = wasm4pm_compat::powl::ChoiceGraph::new_raw(cg_nodes, edges, start_idx, end_idx)
+        .map_err(|e| Wasm4pmError::Parse(format!("ChoiceGraph validation failed: {e}")))?;
     Ok(arena.add_choice_graph(&cg))
 }
 

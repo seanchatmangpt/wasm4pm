@@ -22,7 +22,7 @@
 //! validated indirectly: the same underlying EventLog data (DFG, footprints, token
 //! replay) is exercised through the pure-Rust paths tested here.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use wasm4pm::algorithms::{discover_footprints_from_log, FootprintRelation};
 use wasm4pm::discovery::discover_dfg_from_log;
@@ -51,7 +51,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -62,7 +62,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

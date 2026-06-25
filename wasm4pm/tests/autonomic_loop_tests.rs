@@ -151,7 +151,7 @@ fn test_agent_trait_polymorphism() {
     let q = wasm4pm::reinforcement::QLearning::<RlState, RlAction>::new();
     let act1 = Agent::select_action(&q, &state);
     assert!(
-        act1 == RlAction::Continue || act1 == RlAction::Halt || act1 == RlAction::Fallback,
+        act1 == RlAction::Continue || act1 == RlAction::Scale || act1 == RlAction::Retry || act1 == RlAction::Restart || act1 == RlAction::Fallback,
         "Valid action returned"
     );
     Agent::update(&q, &state, &RlAction::Continue, 0.5, &next, false);
@@ -159,7 +159,7 @@ fn test_agent_trait_polymorphism() {
     let sa = wasm4pm::reinforcement::SARSAAgent::<RlState, RlAction>::new();
     let act2 = Agent::select_action(&sa, &state);
     assert!(
-        act2 == RlAction::Continue || act2 == RlAction::Halt || act2 == RlAction::Fallback,
+        act2 == RlAction::Continue || act2 == RlAction::Scale || act2 == RlAction::Retry || act2 == RlAction::Restart || act2 == RlAction::Fallback,
         "Valid action returned"
     );
     Agent::update(&sa, &state, &RlAction::Scale, 0.3, &next, false);
@@ -167,7 +167,7 @@ fn test_agent_trait_polymorphism() {
     let dq = wasm4pm::reinforcement::DoubleQLearning::<RlState, RlAction>::new();
     let act3 = Agent::select_action(&dq, &state);
     assert!(
-        act3 == RlAction::Continue || act3 == RlAction::Halt || act3 == RlAction::Fallback,
+        act3 == RlAction::Continue || act3 == RlAction::Scale || act3 == RlAction::Retry || act3 == RlAction::Restart || act3 == RlAction::Fallback,
         "Valid action returned"
     );
     Agent::update(&dq, &state, &RlAction::Retry, -0.2, &next, false);
@@ -175,7 +175,7 @@ fn test_agent_trait_polymorphism() {
     let es = wasm4pm::reinforcement::ExpectedSARSAAgent::<RlState, RlAction>::new();
     let act4 = Agent::select_action(&es, &state);
     assert!(
-        act4 == RlAction::Continue || act4 == RlAction::Halt || act4 == RlAction::Fallback,
+        act4 == RlAction::Continue || act4 == RlAction::Scale || act4 == RlAction::Retry || act4 == RlAction::Restart || act4 == RlAction::Fallback,
         "Valid action returned"
     );
     Agent::update(&es, &state, &RlAction::Fallback, 0.1, &next, false);
@@ -183,7 +183,7 @@ fn test_agent_trait_polymorphism() {
     let rf = wasm4pm::reinforcement::ReinforceAgent::<RlState, RlAction>::new();
     let act5 = Agent::select_action(&rf, &state);
     assert!(
-        act5 == RlAction::Continue || act5 == RlAction::Halt || act5 == RlAction::Fallback,
+        act5 == RlAction::Continue || act5 == RlAction::Scale || act5 == RlAction::Retry || act5 == RlAction::Restart || act5 == RlAction::Fallback,
         "Valid action returned"
     );
     Agent::update(&rf, &state, &RlAction::Restart, -1.0, &next, true);

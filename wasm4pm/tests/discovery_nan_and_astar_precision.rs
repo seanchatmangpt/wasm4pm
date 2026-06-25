@@ -24,7 +24,7 @@
 //!        0.99 probability cap saturated every edge → every ant deterministically
 //!        selected the full edge vocabulary, regardless of heuristic eta.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::genetic_discovery::discover_aco_algorithm_from_log;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::more_discovery::discover_simulated_annealing_from_log;
@@ -37,14 +37,14 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
     for (repeat, activities) in variants {
         for _ in 0..*repeat {
             let mut trace = Trace {
-                attributes: HashMap::from([(
+                attributes: BTreeMap::from([(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case-{}", case_idx)),
                 )]),
                 events: Vec::new(),
             };
             for (i, &act) in activities.iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(act.to_string()),

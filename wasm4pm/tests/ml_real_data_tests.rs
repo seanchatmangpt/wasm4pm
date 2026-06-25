@@ -12,7 +12,7 @@
 //!   - discover_automl_classify_internal: AutoML k-NN sweep
 //!   - extract_features + knn_sweep_cv: full classify pipeline on real log
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use wasm4pm::ml::automl::{discover_automl_classify_internal, discover_automl_forecast_internal};
 use wasm4pm::ml::classification::{extract_features, knn_sweep_cv};
@@ -34,7 +34,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -45,7 +45,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

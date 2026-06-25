@@ -11,7 +11,7 @@
 //!
 //! Tests use both synthetic logs and (when available) real BPI 2020 data.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 use wasm4pm::conformance::token_replay_pure;
@@ -45,7 +45,7 @@ fn parse_xes_file(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -56,7 +56,7 @@ fn parse_xes_file(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -124,15 +124,15 @@ fn load_bpi2020() -> Option<EventLog> {
 /// Build a synthetic log with given traces.
 fn make_synthetic_log(activity_key: &str, traces: &[&[&str]]) -> EventLog {
     EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: traces
             .iter()
             .map(|activities| Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: activities
                     .iter()
                     .map(|&a| {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             activity_key.to_string(),
                             AttributeValue::String(a.to_string()),
@@ -211,7 +211,7 @@ fn negative_subset_model_worse_than_full_model() {
 
     // Step 1: Discover model from a SUBSET of traces
     let subset_log = EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: full_log.traces[..subset_size].to_vec(),
     };
     let (subset_net, _, _) = discover_ilp_petri_net_from_log(&subset_log, ak);

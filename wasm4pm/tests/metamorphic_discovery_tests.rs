@@ -10,7 +10,7 @@
 //! - E3: More phases → larger DFG topology (activity diversity perturbation)
 
 use chrono::{Duration, Utc};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm4pm::discovery::discover_ocel_dfg_pure;
 use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 
@@ -32,7 +32,7 @@ fn build_test_ocel_with_phases(cycles: usize, phases: &[&str]) -> OCEL {
         objects.push(OCELObject {
             id: obj_id.clone(),
             object_type: "cycle_run".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: Vec::new(),
             embedded_relations: Vec::new(),
         });
@@ -49,7 +49,7 @@ fn build_test_ocel_with_phases(cycles: usize, phases: &[&str]) -> OCEL {
                 id: event_id,
                 event_type: phase.to_string(),
                 timestamp,
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec![obj_id.clone()],
                 object_refs: vec![OCELEventObjectRef {
                     object_id: obj_id.clone(),

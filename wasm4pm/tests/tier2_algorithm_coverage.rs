@@ -11,7 +11,7 @@
 //! - Rank 1 properties (mathematical theorems)
 //! - Rank 2 properties (domain contracts)
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::hierarchical::{
     discover_hierarchical, DfgChunkResult, DfgChunker, HierarchicalConfig,
 };
@@ -32,7 +32,7 @@ fn build_test_log(variants: &[(usize, &[&str])]) -> EventLog {
         for _ in 0..*repeat {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case-{}", case_idx)),
@@ -43,7 +43,7 @@ fn build_test_log(variants: &[(usize, &[&str])]) -> EventLog {
             };
 
             for (i, &act) in activities.iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(act.to_string()),

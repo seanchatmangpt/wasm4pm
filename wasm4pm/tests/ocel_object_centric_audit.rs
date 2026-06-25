@@ -10,7 +10,7 @@
 //! **Oracle:** Van der Aalst process mining — event logs are the only source of truth.
 //! All assertions use real OCEL data (no mocks) and verify mathematical properties.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use wasm4pm::discovery::discover_ocel_dfg_pure;
 use wasm4pm::models::{AttributeValue, OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
@@ -37,7 +37,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Create Order".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert("amount".to_string(), AttributeValue::Float(1000.0));
                     m.insert(
                         "customer".to_string(),
@@ -56,7 +56,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Check Payment".to_string(),
                 timestamp: "2024-01-01T10:05:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "status".to_string(),
                         AttributeValue::String("verified".to_string()),
@@ -71,7 +71,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Approve Order".to_string(),
                 timestamp: "2024-01-01T10:10:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "approver".to_string(),
                         AttributeValue::String("Manager1".to_string()),
@@ -87,7 +87,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Create Invoice".to_string(),
                 timestamp: "2024-01-01T10:15:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert("invoice_amount".to_string(), AttributeValue::Float(1000.0));
                     m
                 },
@@ -108,7 +108,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Ship Order".to_string(),
                 timestamp: "2024-01-01T10:20:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "carrier".to_string(),
                         AttributeValue::String("UPS".to_string()),
@@ -124,7 +124,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Create Order".to_string(),
                 timestamp: "2024-01-01T11:00:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert("amount".to_string(), AttributeValue::Float(500.0));
                     m.insert(
                         "customer".to_string(),
@@ -140,7 +140,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 event_type: "Check Payment".to_string(),
                 timestamp: "2024-01-01T11:05:00Z".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "status".to_string(),
                         AttributeValue::String("rejected".to_string()),
@@ -156,7 +156,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 id: "order1".to_string(),
                 object_type: "Order".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "status".to_string(),
                         AttributeValue::String("completed".to_string()),
@@ -171,7 +171,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 id: "order2".to_string(),
                 object_type: "Order".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "status".to_string(),
                         AttributeValue::String("rejected".to_string()),
@@ -186,7 +186,7 @@ fn create_order_invoice_ocel() -> OCEL {
                 id: "invoice1".to_string(),
                 object_type: "Invoice".to_string(),
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert("amount".to_string(), AttributeValue::Float(1000.0));
                     m.insert(
                         "date".to_string(),
@@ -335,7 +335,7 @@ fn test_discover_ocel_dfg_per_type() {
     let ocel = create_order_invoice_ocel();
 
     // Build per-type DFGs (mimics discover_ocel_dfg_per_type logic)
-    let mut per_type_dfgs: HashMap<String, Vec<(usize, &str)>> = HashMap::new();
+    let mut per_type_dfgs: BTreeMap<String, Vec<(usize, &str)>> = BTreeMap::new();
 
     for obj_type in &ocel.object_types {
         // Collect events for this object type
@@ -438,7 +438,7 @@ fn test_object_lifecycle_creation_violation() {
                 id: "e1".to_string(),
                 event_type: "Update Item".to_string(),
                 timestamp: "2024-01-01T10:05:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["item1".to_string()],
                 object_refs: vec![],
             },
@@ -448,7 +448,7 @@ fn test_object_lifecycle_creation_violation() {
                 id: "e2".to_string(),
                 event_type: "Create Item".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["item1".to_string()],
                 object_refs: vec![],
             },
@@ -456,7 +456,7 @@ fn test_object_lifecycle_creation_violation() {
         objects: vec![OCELObject {
             id: "item1".to_string(),
             object_type: "Item".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: vec![],
             embedded_relations: vec![],
         }],
@@ -499,7 +499,7 @@ fn test_object_lifecycle_multiple_violations() {
                 id: "e1".to_string(),
                 event_type: "B".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["obj1".to_string()],
                 object_refs: vec![],
             },
@@ -507,7 +507,7 @@ fn test_object_lifecycle_multiple_violations() {
                 id: "e2".to_string(),
                 event_type: "A".to_string(),
                 timestamp: "2024-01-01T09:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["obj1".to_string()],
                 object_refs: vec![],
             },
@@ -516,7 +516,7 @@ fn test_object_lifecycle_multiple_violations() {
                 id: "e3".to_string(),
                 event_type: "C".to_string(),
                 timestamp: "2024-01-01T11:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["obj2".to_string()],
                 object_refs: vec![],
             },
@@ -524,7 +524,7 @@ fn test_object_lifecycle_multiple_violations() {
                 id: "e4".to_string(),
                 event_type: "B".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["obj2".to_string()],
                 object_refs: vec![],
             },
@@ -533,14 +533,14 @@ fn test_object_lifecycle_multiple_violations() {
             OCELObject {
                 id: "obj1".to_string(),
                 object_type: "Type1".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             },
             OCELObject {
                 id: "obj2".to_string(),
                 object_type: "Type2".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             },
@@ -572,7 +572,7 @@ fn test_object_lifecycle_concurrent_events() {
                 id: "e1".to_string(),
                 event_type: "A".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["order1".to_string()],
                 object_refs: vec![],
             },
@@ -580,7 +580,7 @@ fn test_object_lifecycle_concurrent_events() {
                 id: "e2".to_string(),
                 event_type: "B".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(), // Same timestamp as e1
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec!["order1".to_string()],
                 object_refs: vec![],
             },
@@ -588,7 +588,7 @@ fn test_object_lifecycle_concurrent_events() {
         objects: vec![OCELObject {
             id: "order1".to_string(),
             object_type: "Order".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: vec![],
             embedded_relations: vec![],
         }],

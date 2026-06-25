@@ -15,7 +15,7 @@
 //! Requires fixture: tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
 //! (10,500 traces, 86,581 events). Skips gracefully if not present.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 use wasm4pm::conformance::token_replay_pure;
@@ -54,7 +54,7 @@ fn parse_xes_file(content: &str) -> EventLog {
 
         if trimmed.starts_with("<trace>") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -65,7 +65,7 @@ fn parse_xes_file(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -434,11 +434,11 @@ fn quality_degrades_on_mismatched_log() {
     let mut mismatched_log = EventLog::new();
     for _ in 0..50 {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         for activity in &["UNKNOWN_A", "UNKNOWN_B", "UNKNOWN_C"] {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(ak.to_string(), AttributeValue::String(activity.to_string()));
             trace.events.push(Event { attributes: attrs });
         }

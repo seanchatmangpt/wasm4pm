@@ -1,7 +1,7 @@
 //! Quick batch vs streaming comparison using synthetic data.
 //! Run: cargo test --test bench_compare -- --nocapture
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::time::Instant;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::fast_discovery::{discover_astar, discover_hill_climbing};
@@ -22,7 +22,7 @@ fn make_log(cases: usize) -> String {
     let mut log = EventLog::new();
     for case_id in 0..cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -31,7 +31,7 @@ fn make_log(cases: usize) -> String {
         );
         for evt in 0..20usize {
             let act = activities[evt % activities.len()];
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),

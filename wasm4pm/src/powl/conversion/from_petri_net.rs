@@ -1039,7 +1039,7 @@ fn translate_partial_order(
     Ok(spo_idx)
 }
 
-/// Translate a choice graph cut into an XOR POWL node.
+/// Translate a choice graph cut into a ChoiceGraph POWL node.
 fn translate_choice_graph(
     arena: &mut PowlArena,
     net: &InternalNet,
@@ -1047,7 +1047,10 @@ fn translate_choice_graph(
     start_place: &str,
     end_place: &str,
 ) -> Result<u32, String> {
+    use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
+
     let groups: Vec<&HashSet<String>> = partition.iter().collect();
+    let group_count = groups.len();
 
     // Map each transition to its group
     let mut transition_to_group: HashMap<String, usize> = HashMap::new();
@@ -1057,44 +1060,90 @@ fn translate_choice_graph(
         }
     }
 
-    let group_count = groups.len();
-    let mut group_start_places: Vec<HashSet<String>> = vec![HashSet::new(); group_count];
-    let mut group_end_places: Vec<HashSet<String>> = vec![HashSet::new(); group_count];
-    let mut start_groups: HashSet<usize> = HashSet::new();
-    let mut end_groups: HashSet<usize> = HashSet::new();
+    let mut complex_places = Vec::new();
+    let mut place_to_complex_idx = HashMap::new();
 
     for p_name in &net.places {
         let p = NodeId::Place(p_name.clone());
-
         let source_groups: HashSet<usize> = net
             .pre_set_transitions(&p)
             .iter()
             .filter_map(|t| transition_to_group.get(t).copied())
             .collect();
-
         let target_groups: HashSet<usize> = net
             .post_set_transitions(&p)
             .iter()
             .filter_map(|t| transition_to_group.get(t).copied())
             .collect();
 
+        if source_groups.len() > 1 && target_groups.len() > 1 {
+            place_to_complex_idx.insert(p_name.clone(), complex_places.len());
+            complex_places.push(p_name.clone());
+        }
+    }
+    let complex_count = complex_places.len();
+
+    let mut group_start_places: Vec<HashSet<String>> = vec![HashSet::new(); group_count];
+    let mut group_end_places: Vec<HashSet<String>> = vec![HashSet::new(); group_count];
+    let mut start_groups: HashSet<usize> = HashSet::new();
+    let mut start_complex_places: HashSet<usize> = HashSet::new();
+    let mut end_groups: HashSet<usize> = HashSet::new();
+    let mut end_complex_places: HashSet<usize> = HashSet::new();
+    let mut connection_edges: HashSet<(usize, usize)> = HashSet::new();
+    let mut group_to_complex_edges: HashSet<(usize, usize)> = HashSet::new();
+    let mut complex_to_group_edges: HashSet<(usize, usize)> = HashSet::new();
+
+    for p_name in &net.places {
+        let p = NodeId::Place(p_name.clone());
+        let source_groups: HashSet<usize> = net
+            .pre_set_transitions(&p)
+            .iter()
+            .filter_map(|t| transition_to_group.get(t).copied())
+            .collect();
+        let target_groups: HashSet<usize> = net
+            .post_set_transitions(&p)
+            .iter()
+            .filter_map(|t| transition_to_group.get(t).copied())
+            .collect();
+
+        let is_complex = place_to_complex_idx.contains_key(p_name);
+
         if p_name == start_place {
+            if is_complex {
+                let comp_idx = place_to_complex_idx[p_name];
+                start_complex_places.insert(comp_idx);
+            }
             for &g in &target_groups {
                 group_start_places[g].insert(p_name.clone());
-                start_groups.insert(g);
+                if !is_complex {
+                    start_groups.insert(g);
+                }
             }
         }
 
         if p_name == end_place {
+            if is_complex {
+                let comp_idx = place_to_complex_idx[p_name];
+                end_complex_places.insert(comp_idx);
+            }
             for &g in &source_groups {
                 group_end_places[g].insert(p_name.clone());
-                end_groups.insert(g);
+                if !is_complex {
+                    end_groups.insert(g);
+                }
             }
         }
 
         for &g1 in &source_groups {
             for &g2 in &target_groups {
                 if g1 != g2 {
+                    if is_complex {
+                        let comp_idx = place_to_complex_idx[p_name];
+                        group_to_complex_edges.insert((g1, comp_idx));
+                        complex_to_group_edges.insert((comp_idx, g2));
+                    } else {
+                        connection_edges.insert((g1, g2));
+                    }
                     group_end_places[g1].insert(p_name.clone());
                     group_start_places[g2].insert(p_name.clone());
                 }
@@ -1125,7 +1174,63 @@ fn translate_choice_graph(
         children.push(child);
     }
 
-    Ok(arena.add_operator(Operator::Xor, children))
+    // Add a silent transition to the arena for each complex place
+    let mut complex_children = Vec::new();
+    for _ in 0..complex_count {
+        let silent_idx = arena.add_transition(None);
+        complex_children.push(silent_idx);
+    }
+
+    // Construct nodes list
+    let mut nodes = Vec::new();
+    nodes.push(StandaloneChoiceGraphNode::Start); // Index 0
+    nodes.push(StandaloneChoiceGraphNode::End);   // Index 1
+
+    for &child in &children {
+        nodes.push(StandaloneChoiceGraphNode::SubModel(child));
+    }
+
+    for &silent_idx in &complex_children {
+        nodes.push(StandaloneChoiceGraphNode::SubModel(silent_idx));
+    }
+
+    // Construct edges list
+    let mut edges = Vec::new();
+
+    // 1. Start edges
+    for &g in &start_groups {
+        edges.push((0, 2 + g));
+    }
+    for &p in &start_complex_places {
+        edges.push((0, 2 + group_count + p));
+    }
+
+    // 2. End edges
+    for &g in &end_groups {
+        edges.push((2 + g, 1));
+    }
+    for &p in &end_complex_places {
+        edges.push((2 + group_count + p, 1));
+    }
+
+    // 3. Connection edges between groups
+    for &(g1, g2) in &connection_edges {
+        edges.push((2 + g1, 2 + g2));
+    }
+
+    // 4. Edges via complex places
+    for &(g, p) in &group_to_complex_edges {
+        edges.push((2 + g, 2 + group_count + p));
+    }
+    for &(p, g) in &complex_to_group_edges {
+        edges.push((2 + group_count + p, 2 + g));
+    }
+
+    let cg = ChoiceGraph::new(nodes, edges)
+        .map_err(|e| format!("Invalid ChoiceGraph constructed: {:?}", e))?;
+
+    let cg_idx = arena.add_choice_graph(&cg);
+    Ok(cg_idx)
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
@@ -1189,5 +1294,17 @@ mod tests {
         let pn_json = serde_json::to_string(&pn_result).unwrap();
         let result = petri_net_to_powl(&pn_json);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_choice_graph_translation() {
+        let mut arena = PowlArena::new();
+        let root = parse_powl_model_string("X ( A, B )", &mut arena).unwrap();
+        let pn_result = to_petri_net::apply(&arena, root);
+        let pn_json = serde_json::to_string(&pn_result).unwrap();
+        let (arena2, root2) = petri_net_to_powl(&pn_json).unwrap();
+        
+        let repr = arena2.to_repr(root2);
+        assert!(repr.contains("CG=(nodes={"));
     }
 }

@@ -18,7 +18,7 @@
 //! Algorithm family: Process Discovery — DFG streaming
 //! Gap: F (streaming batch equivalence)
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace, DFG};
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
@@ -34,7 +34,7 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
     for (idx, activities) in traces.iter().enumerate() {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case{}", idx)),
@@ -44,7 +44,7 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
             events: Vec::new(),
         };
         for (i, &act) in activities.iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),
@@ -88,7 +88,7 @@ fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
 /// Compute a batch DFG directly from an EventLog using the columnar approach
 /// (same logic as `discover_dfg` wasm_bindgen wrapper but without the JsValue layer).
 fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
-    use rustc_hash::FxHashMap;
+    use std::collections::HashMap;
     use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
 
     let col_owned = log.to_columnar_owned(activity_key);
@@ -103,7 +103,7 @@ fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
         frequency: 0,
     }));
 
-    let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    let mut edge_counts: HashMap<(u32, u32), usize> = HashMap::new();
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -141,7 +141,7 @@ fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
 }
 
 /// Build an order-independent edge map `(from, to) -> frequency` from a DFG.
-fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
+fn edges_to_map(dfg: &DFG) -> BTreeMap<(String, String), usize> {
     dfg.edges
         .iter()
         .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
@@ -191,12 +191,12 @@ fn streaming_dfg_full_log_equals_batch_dfg() {
     );
 
     // Node counts must also match
-    let batch_nodes: HashMap<&str, usize> = batch
+    let batch_nodes: BTreeMap<&str, usize> = batch
         .nodes
         .iter()
         .map(|n| (n.id.as_str(), n.frequency))
         .collect();
-    let stream_nodes: HashMap<&str, usize> = streaming
+    let stream_nodes: BTreeMap<&str, usize> = streaming
         .nodes
         .iter()
         .map(|n| (n.id.as_str(), n.frequency))
@@ -233,12 +233,12 @@ fn simd_streaming_dfg_equals_scalar_streaming_dfg() {
     );
 
     // Node counts must also agree
-    let scalar_nodes: HashMap<&str, usize> = scalar
+    let scalar_nodes: BTreeMap<&str, usize> = scalar
         .nodes
         .iter()
         .map(|n| (n.id.as_str(), n.frequency))
         .collect();
-    let simd_nodes: HashMap<&str, usize> = simd
+    let simd_nodes: BTreeMap<&str, usize> = simd
         .nodes
         .iter()
         .map(|n| (n.id.as_str(), n.frequency))

@@ -23,7 +23,7 @@
 //! - Edge case tests for empty logs, single-event logs, rare characters
 //! - Consistency guards for output schema validation
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::discovery::discover_dfg_from_log;
 use wasm4pm::genetic_discovery::{
@@ -47,7 +47,7 @@ fn single_trace_single_event() -> EventLog {
     let mut log = EventLog::new();
     let mut trace = Trace {
         attributes: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert(
                 "concept:name".to_string(),
                 AttributeValue::String("case-1".to_string()),
@@ -56,7 +56,7 @@ fn single_trace_single_event() -> EventLog {
         },
         events: vec![],
     };
-    let mut attrs = HashMap::new();
+    let mut attrs = BTreeMap::new();
     attrs.insert(
         "concept:name".to_string(),
         AttributeValue::String("Activity".to_string()),
@@ -71,7 +71,7 @@ fn standard_log() -> EventLog {
     for case in 0..10 {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case-{}", case)),
@@ -82,7 +82,7 @@ fn standard_log() -> EventLog {
         };
 
         for (i, act) in vec!["Start", "Process", "End"].iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),
@@ -102,7 +102,7 @@ fn rare_char_log() -> EventLog {
     let mut log = EventLog::new();
     let mut trace = Trace {
         attributes: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert(
                 "concept:name".to_string(),
                 AttributeValue::String("case-rare".to_string()),
@@ -114,7 +114,7 @@ fn rare_char_log() -> EventLog {
 
     // Test with non-ASCII characters, emoji, special symbols
     for act in &["Café", "データ処理", "🔧", "A|B"] {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(act.to_string()),

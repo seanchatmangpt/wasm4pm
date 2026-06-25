@@ -18,7 +18,7 @@
 //! Algorithm family: Process Discovery — DFG (batch, streaming, SIMD)
 //! Gap: F / cross-backend parity
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace, DFG};
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
@@ -33,7 +33,7 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
     for (idx, activities) in traces.iter().enumerate() {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     wasm4pm::models::AttributeValue::String(format!("case{}", idx)),
@@ -43,7 +43,7 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
             events: Vec::new(),
         };
         for (i, &act) in activities.iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),

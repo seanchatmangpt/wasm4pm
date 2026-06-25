@@ -232,11 +232,11 @@ fn recursively_add_tree(
             //                  each outgoing edge e (p_out_v → place(e)).
             //
             // Token-replay semantics on this net = ⋃_{Π ∈ →G} L(Π_1) · … · L(Π_|Π|).
-            let n_nodes = cg.graph.nodes.len();
+            let n_nodes = cg.graph.nodes().len();
             // Allocate one place per edge.
             let edge_places: Vec<String> = cg
                 .graph
-                .edges
+                .edges()
                 .iter()
                 .map(|_| new_place(net, counts))
                 .collect();
@@ -245,7 +245,7 @@ fn recursively_add_tree(
             let outgoing_edges: Vec<Vec<usize>> = (0..n_nodes)
                 .map(|v| {
                     cg.graph
-                        .edges
+                        .edges()
                         .iter()
                         .enumerate()
                         .filter_map(|(ei, &(a, _))| if a == v { Some(ei) } else { None })
@@ -255,7 +255,7 @@ fn recursively_add_tree(
             let incoming_edges: Vec<Vec<usize>> = (0..n_nodes)
                 .map(|v| {
                     cg.graph
-                        .edges
+                        .edges()
                         .iter()
                         .enumerate()
                         .filter_map(|(ei, &(_, b))| if b == v { Some(ei) } else { None })
@@ -264,9 +264,9 @@ fn recursively_add_tree(
                 .collect();
 
             // Snapshot the nodes vec so we can mutate `arena` indirectly via recursion.
-            let cg_nodes = cg.graph.nodes.clone();
-            let start_idx = cg.graph.start_idx;
-            let end_idx = cg.graph.end_idx;
+            let cg_nodes = cg.graph.nodes().to_vec();
+            let start_idx = cg.graph.start_idx();
+            let end_idx = cg.graph.end_idx();
 
             for (v, node) in cg_nodes.iter().enumerate() {
                 if v == start_idx {

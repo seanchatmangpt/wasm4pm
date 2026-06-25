@@ -557,8 +557,8 @@ impl PowlArena {
     /// Returns the arena index of the new ChoiceGraph node.
     pub fn add_choice_graph(&mut self, graph: &ChoiceGraph) -> u32 {
         // Normalize Activity(_) → SubModel(arena_idx_of_transition).
-        let mut normalized_nodes = Vec::with_capacity(graph.nodes.len());
-        for n in &graph.nodes {
+        let mut normalized_nodes = Vec::with_capacity(graph.nodes().len());
+        for n in graph.nodes() {
             match n {
                 ChoiceGraphNode::Activity(lbl) => {
                     let t_idx = self.add_transition(Some(lbl.clone()));
@@ -567,12 +567,12 @@ impl PowlArena {
                 other => normalized_nodes.push(other.clone()),
             }
         }
-        let normalized = ChoiceGraph {
-            nodes: normalized_nodes,
-            edges: graph.edges.clone(),
-            start_idx: graph.start_idx,
-            end_idx: graph.end_idx,
-        };
+        let normalized = ChoiceGraph::new_raw(
+            normalized_nodes,
+            graph.edges().to_vec(),
+            graph.start_idx(),
+            graph.end_idx(),
+        ).unwrap();
         let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
             graph: normalized,
@@ -652,7 +652,7 @@ impl PowlArena {
                 }
             }
             Some(PowlNode::ChoiceGraph(cg)) => {
-                for n in &cg.graph.nodes {
+                for n in cg.graph.nodes() {
                     if let ChoiceGraphNode::SubModel(idx) = n {
                         self.validate_partial_orders(*idx)?;
                     }
@@ -730,7 +730,7 @@ impl PowlArena {
             }
             Some(PowlNode::ChoiceGraph(cg)) => {
                 let mut node_strs: Vec<String> = Vec::new();
-                for n in &cg.graph.nodes {
+                for n in cg.graph.nodes() {
                     match n {
                         ChoiceGraphNode::Start => node_strs.push("Start".into()),
                         ChoiceGraphNode::End => node_strs.push("End".into()),
@@ -740,13 +740,13 @@ impl PowlArena {
                 }
                 let edges_str: Vec<String> = cg
                     .graph
-                    .edges
+                    .edges()
                     .iter()
                     .map(|&(a, b)| {
                         format!(
                             "{}->{}",
-                            cg_node_label(&cg.graph.nodes, a, self),
-                            cg_node_label(&cg.graph.nodes, b, self)
+                            cg_node_label(cg.graph.nodes(), a, self),
+                            cg_node_label(cg.graph.nodes(), b, self)
                         )
                     })
                     .collect();
@@ -835,8 +835,8 @@ impl PowlArena {
             }
             Some(PowlNode::ChoiceGraph(cg)) => {
                 // Recursively copy any SubModel sub-trees, preserving Start/End markers.
-                let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
-                for n in &cg.graph.nodes {
+                let mut new_nodes = Vec::with_capacity(cg.graph.nodes().len());
+                for n in cg.graph.nodes() {
                     match n {
                         ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
                         ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
@@ -849,12 +849,12 @@ impl PowlArena {
                         }
                     }
                 }
-                let new_graph = ChoiceGraph {
-                    nodes: new_nodes,
-                    edges: cg.graph.edges.clone(),
-                    start_idx: cg.graph.start_idx,
-                    end_idx: cg.graph.end_idx,
-                };
+                let new_graph = ChoiceGraph::new_raw(
+                    new_nodes,
+                    cg.graph.edges().to_vec(),
+                    cg.graph.start_idx(),
+                    cg.graph.end_idx(),
+                ).unwrap();
                 // Add directly without re-normalizing (already normalized).
                 let idx = u32::try_from(dest.nodes.len()).expect("arena node count fits u32");
                 dest.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {

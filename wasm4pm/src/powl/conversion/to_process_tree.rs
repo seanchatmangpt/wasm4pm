@@ -334,7 +334,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> Result<ProcessTree, 
 
         Some(PowlNode::ChoiceGraph(cg)) => {
             let mut sub_trees: Vec<ProcessTree> = Vec::new();
-            for n in &cg.graph.nodes {
+            for n in cg.graph.nodes() {
                 if let ChoiceGraphNode::SubModel(idx) = n {
                     sub_trees.push(apply_recursive(arena, *idx)?);
                 }

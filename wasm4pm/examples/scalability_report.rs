@@ -12,7 +12,7 @@
 //! output_dir defaults to .wasm4pm/benchmarks relative to cwd.
 
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::time::Instant;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -81,7 +81,7 @@ fn generate_uniform(num_cases: usize) -> EventLog {
     let mut log = EventLog::new();
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -96,7 +96,7 @@ fn generate_uniform(num_cases: usize) -> EventLog {
             } else {
                 base_idx
             };
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.into(),
                 AttributeValue::String(ACTIVITIES[act_idx].into()),
@@ -122,7 +122,7 @@ fn generate_skewed(num_cases: usize) -> EventLog {
     let mut log = EventLog::new();
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -136,7 +136,7 @@ fn generate_skewed(num_cases: usize) -> EventLog {
         };
         for evt_idx in 0..num_events {
             let act_idx = rng.next_usize_mod(ACTIVITIES.len());
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.into(),
                 AttributeValue::String(ACTIVITIES[act_idx].into()),
@@ -162,7 +162,7 @@ fn generate_adversarial(num_cases: usize) -> EventLog {
     let mut log = EventLog::new();
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -176,7 +176,7 @@ fn generate_adversarial(num_cases: usize) -> EventLog {
         for _evt_idx in 0..num_events {
             let act_idx = rng.next_usize_mod(ACTIVITIES.len());
             let ts_bucket = rng.next_usize_mod(10);
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.into(),
                 AttributeValue::String(ACTIVITIES[act_idx].into()),

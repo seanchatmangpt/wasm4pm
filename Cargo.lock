@@ -2539,8 +2539,6 @@ dependencies = [
 [[package]]
 name = "wasm4pm-compat"
 version = "26.6.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81a91889ae6aaadd8e23e86c7a88b2b046b8359abff8e5b2f76aa6056fe625b5"
 dependencies = [
  "blake3",
  "chrono",

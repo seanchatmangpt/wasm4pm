@@ -404,21 +404,223 @@ pub fn compute(
         }
 
         Some(PowlNode::ChoiceGraph(cg)) => {
-            // Approximate as XOR over SubModel sub-trees for footprint computation.
-            let sub_indices: Vec<u32> = cg
+            let n = cg.graph.nodes().len();
+            let start_idx = cg.graph.start_idx();
+            let end_idx = cg.graph.end_idx();
+
+            fn has_path_excluding(
+                n: usize,
+                successors: &[Vec<usize>],
+                start: usize,
+                end: usize,
+                exclude: usize,
+            ) -> bool {
+                if start == exclude {
+                    return false;
+                }
+                let mut visited = vec![false; n];
+                let mut q = VecDeque::new();
+                visited[start] = true;
+                q.push_back(start);
+                while let Some(u) = q.pop_front() {
+                    if u == end {
+                        return true;
+                    }
+                    for &v in &successors[u] {
+                        if v != exclude && !visited[v] {
+                            visited[v] = true;
+                            q.push_back(v);
+                        }
+                    }
+                }
+                false
+            }
+
+            fn is_reachable_via_skippable(
+                n: usize,
+                graph: &ChoiceGraph,
+                node_fps: &[Footprints],
+                u: usize,
+                v: usize,
+            ) -> bool {
+                if u == v {
+                    return true;
+                }
+                let mut visited = vec![false; n];
+                let mut q = VecDeque::new();
+                visited[u] = true;
+                q.push_back(u);
+                while let Some(curr) = q.pop_front() {
+                    for successor in graph.successors(curr) {
+                        if successor == v {
+                            return true;
+                        }
+                        if !visited[successor] && node_fps[successor].skippable {
+                            visited[successor] = true;
+                            q.push_back(successor);
+                        }
+                    }
+                }
+                false
+            }
+
+            let node_fps: Vec<Footprints> = cg
                 .graph
-                .nodes
+                .nodes()
                 .iter()
-                .filter_map(|n| match n {
-                    ChoiceGraphNode::SubModel(idx) => Some(*idx),
-                    _ => None,
+                .map(|node| match node {
+                    ChoiceGraphNode::Start | ChoiceGraphNode::End => Footprints::empty_skip(),
+                    ChoiceGraphNode::Activity(lbl) => Footprints::single(lbl),
+                    ChoiceGraphNode::SubModel(idx) => compute(arena, *idx, cache),
                 })
                 .collect();
-            let child_fps: Vec<Footprints> = sub_indices
-                .iter()
-                .map(|&c| compute(arena, c, cache))
-                .collect();
-            footprints_of_xor(&child_fps)
+
+            let mut activities = ActivitySet::new();
+            for fp in &node_fps {
+                activities.extend(fp.activities.clone());
+            }
+
+            let mut skippable_reachable = vec![false; n];
+            let mut q = VecDeque::new();
+            if node_fps[start_idx].skippable {
+                skippable_reachable[start_idx] = true;
+                q.push_back(start_idx);
+            }
+            while let Some(u) = q.pop_front() {
+                for successor in cg.graph.successors(u) {
+                    if node_fps[successor].skippable && !skippable_reachable[successor] {
+                        skippable_reachable[successor] = true;
+                        q.push_back(successor);
+                    }
+                }
+            }
+            let skippable = skippable_reachable[end_idx];
+
+            let mut start_reachable = vec![false; n];
+            start_reachable[start_idx] = true;
+            let mut q = VecDeque::new();
+            q.push_back(start_idx);
+            while let Some(u) = q.pop_front() {
+                for successor in cg.graph.successors(u) {
+                    if !start_reachable[successor] {
+                        start_reachable[successor] = true;
+                        if node_fps[successor].skippable {
+                            q.push_back(successor);
+                        }
+                    }
+                }
+            }
+            let mut start_activities = ActivitySet::new();
+            for u in 0..n {
+                if start_reachable[u] {
+                    start_activities.extend(node_fps[u].start_activities.clone());
+                }
+            }
+
+            let mut predecessors = vec![Vec::new(); n];
+            for u in 0..n {
+                for successor in cg.graph.successors(u) {
+                    predecessors[successor].push(u);
+                }
+            }
+            let mut end_reachable = vec![false; n];
+            end_reachable[end_idx] = true;
+            let mut q = VecDeque::new();
+            q.push_back(end_idx);
+            while let Some(v) = q.pop_front() {
+                for &u in &predecessors[v] {
+                    if !end_reachable[u] {
+                        end_reachable[u] = true;
+                        if node_fps[u].skippable {
+                            q.push_back(u);
+                        }
+                    }
+                }
+            }
+            let mut end_activities = ActivitySet::new();
+            for u in 0..n {
+                if end_reachable[u] {
+                    end_activities.extend(node_fps[u].end_activities.clone());
+                }
+            }
+
+            let mut dist = vec![usize::MAX; n];
+            dist[start_idx] = node_fps[start_idx].min_trace_length;
+            let mut queue = VecDeque::new();
+            queue.push_back(start_idx);
+            let mut in_queue = vec![false; n];
+            in_queue[start_idx] = true;
+
+            while let Some(u) = queue.pop_front() {
+                in_queue[u] = false;
+                let u_dist = dist[u];
+                for successor in cg.graph.successors(u) {
+                    let v_weight = node_fps[successor].min_trace_length;
+                    if u_dist != usize::MAX && u_dist + v_weight < dist[successor] {
+                        dist[successor] = u_dist + v_weight;
+                        if !in_queue[successor] {
+                            queue.push_back(successor);
+                            in_queue[successor] = true;
+                        }
+                    }
+                }
+            }
+            let min_trace_length = if dist[end_idx] == usize::MAX { 0 } else { dist[end_idx] };
+
+            let mut successors_vec = vec![Vec::new(); n];
+            for u in 0..n {
+                successors_vec[u] = cg.graph.successors(u).to_vec();
+            }
+            let mut obligatory_nodes = Vec::new();
+            for u in 0..n {
+                if u == start_idx || u == end_idx {
+                    continue;
+                }
+                let has_path = has_path_excluding(n, &successors_vec, start_idx, end_idx, u);
+                if !has_path {
+                    obligatory_nodes.push(u);
+                }
+            }
+            let mut activities_always_happening = ActivitySet::new();
+            for &u in &obligatory_nodes {
+                activities_always_happening.extend(node_fps[u].activities_always_happening.clone());
+            }
+
+            let mut sequence = ActivityPairs::new();
+            let mut parallel = ActivityPairs::new();
+
+            for fp in &node_fps {
+                sequence.extend(fp.sequence.clone());
+                parallel.extend(fp.parallel.clone());
+            }
+
+            for u in 0..n {
+                for v in 0..n {
+                    if u == v || u == start_idx || u == end_idx || v == start_idx || v == end_idx {
+                        continue;
+                    }
+                    if is_reachable_via_skippable(n, &cg.graph, &node_fps, u, v) {
+                        for a1 in &node_fps[u].end_activities {
+                            for a2 in &node_fps[v].start_activities {
+                                sequence.insert((a1.clone(), a2.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+
+            let (sequence, parallel) = fix_fp(sequence, parallel);
+
+            Footprints {
+                start_activities,
+                end_activities,
+                activities,
+                skippable,
+                sequence,
+                parallel,
+                activities_always_happening,
+                min_trace_length,
+            }
         }
     };
 
@@ -480,6 +682,75 @@ mod tests {
         // Concurrent PO produces bidirectional parallel edges
         let (arena, root) = build("PO=(nodes={A, B}, order={})");
         let fp = apply(&arena, root);
+        assert!(fp.parallel.contains(&("A".to_string(), "B".to_string())));
+        assert!(fp.parallel.contains(&("B".to_string(), "A".to_string())));
+    }
+
+    #[test]
+    fn test_footprints_choice_graph_sequential() {
+        use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
+        let mut arena = PowlArena::new();
+        let nodes = vec![
+            StandaloneChoiceGraphNode::Start,
+            StandaloneChoiceGraphNode::Activity("A".into()),
+            StandaloneChoiceGraphNode::Activity("B".into()),
+            StandaloneChoiceGraphNode::End,
+        ];
+        let edges = vec![(0, 1), (1, 2), (2, 3)];
+        let cg = ChoiceGraph::new(nodes, edges).unwrap();
+        let root = arena.add_choice_graph(&cg);
+        let fp = apply(&arena, root);
+
+        assert!(fp.start_activities.contains("A"));
+        assert!(fp.end_activities.contains("B"));
+        assert!(fp.sequence.contains(&("A".to_string(), "B".to_string())));
+        assert!(!fp.parallel.contains(&("A".to_string(), "B".to_string())));
+    }
+
+    #[test]
+    fn test_footprints_choice_graph_choice() {
+        use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
+        let mut arena = PowlArena::new();
+        let nodes = vec![
+            StandaloneChoiceGraphNode::Start,
+            StandaloneChoiceGraphNode::Activity("A".into()),
+            StandaloneChoiceGraphNode::Activity("B".into()),
+            StandaloneChoiceGraphNode::End,
+        ];
+        let edges = vec![(0, 1), (0, 2), (1, 3), (2, 3)];
+        let cg = ChoiceGraph::new(nodes, edges).unwrap();
+        let root = arena.add_choice_graph(&cg);
+        let fp = apply(&arena, root);
+
+        assert!(fp.start_activities.contains("A"));
+        assert!(fp.start_activities.contains("B"));
+        assert!(fp.end_activities.contains("A"));
+        assert!(fp.end_activities.contains("B"));
+        assert!(!fp.sequence.contains(&("A".to_string(), "B".to_string())));
+        assert!(!fp.sequence.contains(&("B".to_string(), "A".to_string())));
+        assert!(!fp.parallel.contains(&("A".to_string(), "B".to_string())));
+    }
+
+    #[test]
+    fn test_footprints_choice_graph_cycle() {
+        use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
+        let mut arena = PowlArena::new();
+        let nodes = vec![
+            StandaloneChoiceGraphNode::Start,
+            StandaloneChoiceGraphNode::Activity("A".into()),
+            StandaloneChoiceGraphNode::Activity("B".into()),
+            StandaloneChoiceGraphNode::End,
+        ];
+        let edges = vec![
+            (0, 1), // Start -> A
+            (1, 2), // A -> B
+            (2, 1), // B -> A
+            (1, 3), // A -> End
+        ];
+        let cg = ChoiceGraph::new(nodes, edges).unwrap();
+        let root = arena.add_choice_graph(&cg);
+        let fp = apply(&arena, root);
+
         assert!(fp.parallel.contains(&("A".to_string(), "B".to_string())));
         assert!(fp.parallel.contains(&("B".to_string(), "A".to_string())));
     }

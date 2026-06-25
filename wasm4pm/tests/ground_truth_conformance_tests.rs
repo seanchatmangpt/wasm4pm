@@ -20,7 +20,7 @@
 //! All nets use the bitmask fast path (≤ 64 places, all arc weights = 1,
 //! all initial markings single tokens), so the bitmask path analysis applies.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
     AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
@@ -35,15 +35,15 @@ use wasm4pm::models::{
 /// Uses "concept:name" as the activity key.
 fn make_log(traces: &[&[&str]]) -> EventLog {
     EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: traces
             .iter()
             .map(|activities| Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: activities
                     .iter()
                     .map(|&a| {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             AttributeValue::String(a.to_string()),
@@ -125,7 +125,7 @@ fn sequence_net() -> PetriNet {
         arc("tB", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -193,7 +193,7 @@ fn choice_net() -> PetriNet {
         arc("tC", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -288,7 +288,7 @@ fn parallel_net() -> PetriNet {
         arc("t_join", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -366,7 +366,7 @@ fn loop_net() -> PetriNet {
         arc("tC", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -444,7 +444,7 @@ fn silent_transition_net() -> PetriNet {
         arc("tB", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -558,7 +558,7 @@ fn duplicate_label_net() -> PetriNet {
         arc("tB", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -641,7 +641,7 @@ fn test_single_transition_net_empty_trace_zero_denominator() {
     net.transitions = vec![trans("tA", "A")];
     net.arcs = vec![arc("i", "tA"), arc("tA", "f")];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
 

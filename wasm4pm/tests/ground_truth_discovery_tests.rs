@@ -13,7 +13,7 @@
 //! Gap: B (ground-truth oracles) + C (algorithm weakness documentation)
 
 use rustc_hash::FxHashMap;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm4pm::models::{
     AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsRelation, Event, EventLog, Trace, DFG,
 };
@@ -32,7 +32,7 @@ fn make_log(traces: &[(usize, &[&str])]) -> EventLog {
         for _ in 0..*repeat {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case{}", case_idx)),
@@ -42,7 +42,7 @@ fn make_log(traces: &[(usize, &[&str])]) -> EventLog {
                 events: Vec::new(),
             };
             for (i, &act) in activities.iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(act.to_string()),

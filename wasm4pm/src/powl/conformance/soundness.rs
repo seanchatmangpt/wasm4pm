@@ -245,15 +245,15 @@ pub struct ChoiceGraphSoundness {
 /// after manual mutation or deserialization.
 pub fn check_choice_graph_soundness(cg: &ChoiceGraph) -> ChoiceGraphSoundness {
     // Acyclicity: rebuild adj and run a BFS/DFS check.
-    let n = cg.nodes.len();
+    let n = cg.nodes().len();
     let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n];
-    for &(a, b) in &cg.edges {
+    for &(a, b) in cg.edges() {
         adj[a].push(b);
     }
 
     // Topological-sort acyclicity check (Kahn's algorithm).
     let mut indeg = vec![0usize; n];
-    for &(_, b) in &cg.edges {
+    for &(_, b) in cg.edges() {
         indeg[b] += 1;
     }
     let mut queue: std::collections::VecDeque<usize> = std::collections::VecDeque::new();
@@ -277,7 +277,7 @@ pub fn check_choice_graph_soundness(cg: &ChoiceGraph) -> ChoiceGraphSoundness {
     // All nodes on Start→End path: forward-reachable from Start AND
     // backward-reachable from End.
     let mut radj: Vec<Vec<usize>> = vec![Vec::new(); n];
-    for &(a, b) in &cg.edges {
+    for &(a, b) in cg.edges() {
         radj[b].push(a);
     }
     fn bfs(adj: &[Vec<usize>], src: usize, n: usize) -> Vec<bool> {
@@ -295,12 +295,12 @@ pub fn check_choice_graph_soundness(cg: &ChoiceGraph) -> ChoiceGraphSoundness {
         }
         seen
     }
-    let fwd = bfs(&adj, cg.start_idx, n);
-    let bwd = bfs(&radj, cg.end_idx, n);
+    let fwd = bfs(&adj, cg.start_idx(), n);
+    let bwd = bfs(&radj, cg.end_idx(), n);
     let all_nodes_on_path = (0..n).all(|i| fwd[i] && bwd[i]);
 
     ChoiceGraphSoundness {
-        sound: acyclic && all_nodes_on_path,
+        sound: all_nodes_on_path,
         acyclic,
         all_nodes_on_path,
     }
@@ -338,5 +338,30 @@ mod tests {
         assert!(result.deadlock_free);
         assert!(result.bounded);
         assert!(result.liveness);
+    }
+
+    #[test]
+    fn test_choice_graph_cyclic_soundness() {
+        use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
+
+        // Create a simple ChoiceGraph with a self-loop (cycle) on transition A.
+        let cg = ChoiceGraph::new(
+            vec![
+                StandaloneChoiceGraphNode::Start,
+                StandaloneChoiceGraphNode::Activity("A".to_string()),
+                StandaloneChoiceGraphNode::End,
+            ],
+            vec![
+                (0, 1),
+                (1, 2),
+                (1, 1), // self loop / cycle
+            ]
+        ).unwrap();
+
+        let result = check_choice_graph_soundness(&cg);
+        // Under POWL 2.0, cyclic ChoiceGraphs are allowed to be sound.
+        assert!(result.sound);
+        assert!(!result.acyclic);
+        assert!(result.all_nodes_on_path);
     }
 }

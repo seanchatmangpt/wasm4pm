@@ -238,7 +238,7 @@ fn convert_powl_node_recursive(
         }
         ArenaNode::ChoiceGraph(cg) => {
             let mut cg_node_ids = Vec::new();
-            for n in &cg.graph.nodes {
+            for n in cg.graph.nodes() {
                 match n {
                     ChoiceGraphNode::Start => {
                         let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
@@ -271,7 +271,7 @@ fn convert_powl_node_recursive(
                 }
             }
             let mut cg_edges = Vec::new();
-            for &(from_idx, to_idx) in &cg.graph.edges {
+            for &(from_idx, to_idx) in cg.graph.edges() {
                 cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
                     cg_node_ids[from_idx],
                     cg_node_ids[to_idx],
