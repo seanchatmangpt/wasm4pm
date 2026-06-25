@@ -9,7 +9,7 @@ members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core",
 exclude = ["crates/wasm4pm-lsp"]
 
 [workspace.package]
-version = "26.6.12"
+version = "26.6.25"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
@@ -28,12 +28,12 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
-wasm4pm = { version = "26.6.10", path = "wasm4pm", features = ["cloud"] }
-wasm4pm-cognition = { version = "26.6.10", path = "crates/wasm4pm-cognition" }
-prolog8 = { version = "26.6.10", path = "crates/prolog8" }
-miniml = { version = "26.6.10", path = "crates/miniml-core" }
-ocpq = { version = "26.6.10", path = "crates/ocpq" }
+wasm4pm-compat = { version = "26.6.25", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm = { version = "26.6.25", path = "wasm4pm", features = ["cloud"] }
+wasm4pm-cognition = { version = "26.6.25", path = "crates/wasm4pm-cognition" }
+prolog8 = { version = "26.6.25", path = "crates/prolog8" }
+miniml = { version = "26.6.25", path = "crates/miniml-core" }
+ocpq = { version = "26.6.25", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 tempfile = "3.8"
@@ -49,5 +49,3 @@ strip = "debuginfo"
 opt-level = 3
 lto = false
 
-[patch.crates-io]
-wasm4pm = { path = "wasm4pm" }

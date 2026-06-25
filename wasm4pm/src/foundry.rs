@@ -406,7 +406,9 @@ fn topo_order(prec: &[Vec<bool>], members: &[usize]) -> Option<Vec<usize>> {
     for &i in members {
         for &j in members {
             if prec[i][j] {
-                *indeg.get_mut(&j).expect("invariant: j from members, all members are keys in indeg") += 1;
+                *indeg
+                    .get_mut(&j)
+                    .expect("invariant: j from members, all members are keys in indeg") += 1;
             }
         }
     }
@@ -423,7 +425,9 @@ fn topo_order(prec: &[Vec<bool>], members: &[usize]) -> Option<Vec<usize>> {
         out.push(next);
         for &j in &set {
             if prec[next][j] {
-                let d = indeg.get_mut(&j).expect("invariant: j from members, all members are keys in indeg");
+                let d = indeg
+                    .get_mut(&j)
+                    .expect("invariant: j from members, all members are keys in indeg");
                 *d -= 1;
                 if *d == 0 {
                     // insert keeping sorted
@@ -505,7 +509,10 @@ fn layered_sequence(children: &[PowlSpec], prec: &[Vec<bool>], members: &[usize]
         })
         .collect();
     if layer_trees.len() == 1 {
-        layer_trees.into_iter().next().expect("invariant: layer_trees.len() == 1 checked above")
+        layer_trees
+            .into_iter()
+            .next()
+            .expect("invariant: layer_trees.len() == 1 checked above")
     } else {
         FieldTree::Sequence {
             children: layer_trees,

@@ -2,8 +2,8 @@
   "receipt_type": "Wasm4pmExecutionReceipt",
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
-  "version": "26.6.10",
-  "commit": "18deadcc2697cad4903d72e063b84e1d3cf75dbb",
+  "version": "26.6.25",
+  "commit": "498d39ccf77747f19ac290b85d5e4ffb99f0338e",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "powl_to_process_tree",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128",
-      "duration_ms": 57.065,
+      "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b",
+      "duration_ms": 41.254,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.powl_to_process_tree.v1",
         "expected_ocel2": {
@@ -137,7 +137,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -155,7 +155,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128",
-                "duration_ms": 57.065
+                "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b",
+                "duration_ms": 41.254
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128"
+                "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128"
+                "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b"
               }
             },
             {
@@ -299,7 +299,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "7a671ef12f4c9133a4359cc5224fcc20b4b97d23e154e4d9ffc842086008293d"
+        "expected_ocel2_hash": "dcc72a89d051e609443ca75065178944473e27f8b93eacfe32b8e406926a36aa"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:35.148Z",
+              "time": "2026-06-25T20:27:33.914Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -412,7 +412,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:33.339Z",
+              "time": "2026-06-25T20:27:32.886Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -426,10 +426,10 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:35.660Z",
+              "time": "2026-06-25T20:27:36.639Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -440,14 +440,14 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:36.303Z",
+              "time": "2026-06-25T20:27:37.341Z",
               "relationships": [
                 {
                   "objectId": "algorithm_powl_to_process_tree",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -463,7 +463,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:35.780Z",
+              "time": "2026-06-25T20:27:33.640Z",
               "relationships": [
                 {
                   "objectId": "algorithm_powl_to_process_tree",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128",
-                "duration_ms": 57.065
+                "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b",
+                "duration_ms": 41.254
               }
             },
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:37.235Z",
+              "time": "2026-06-25T20:27:36.873Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128"
+                "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b"
               }
             },
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:36.932Z",
+              "time": "2026-06-25T20:27:34.780Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128"
+                "result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b"
               }
             },
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:36.850Z",
+              "time": "2026-06-25T20:27:37.581Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -540,7 +540,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:38.586Z",
+              "time": "2026-06-25T20:27:37.042Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -558,7 +558,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:36.652Z",
+              "time": "2026-06-25T20:27:37.365Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -591,7 +591,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "47f24eb32e39aa8b158d31946def2925dba5aced59d6a8b55d5e6a4221f95531",
-        "observed_result_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128"
+        "observed_ocel2_hash": "605fceebf5c42fd7390a79de3931fc62539c1605f89ac4c3c8dac91ccb842490",
+        "observed_result_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,8 +623,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "343984bd4f15996eb2749ad75a63e96c325cd2f7be1026621fe433a9dac48128",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "71f0c175b9936b76d580030cafe45d68b1b09fafcddd38ac1a8f1000be36320b",
+        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -632,8 +632,8 @@
       "id": "yawl_export",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93",
-      "duration_ms": 11.265,
+      "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b",
+      "duration_ms": 10.185,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.yawl_export.v1",
         "expected_ocel2": {
@@ -747,7 +747,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -765,7 +765,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93",
-                "duration_ms": 11.265
+                "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b",
+                "duration_ms": 10.185
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93"
+                "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93"
+                "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b"
               }
             },
             {
@@ -909,7 +909,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "865ac7bd48f36e085fdcc89ec50b0bb27992cc5a19fb66fc840a8441b5708786"
+        "expected_ocel2_hash": "2db2f2490dc89abf489182de95d8e90dd6b9319c1ab2339baecc3b85394f65be"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:31.489Z",
+              "time": "2026-06-25T20:27:35.921Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:32.901Z",
+              "time": "2026-06-25T20:27:32.828Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1036,10 +1036,10 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:35.162Z",
+              "time": "2026-06-25T20:27:33.252Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -1050,14 +1050,14 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:35.457Z",
+              "time": "2026-06-25T20:27:33.595Z",
               "relationships": [
                 {
                   "objectId": "algorithm_yawl_export",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:33.962Z",
+              "time": "2026-06-25T20:27:33.487Z",
               "relationships": [
                 {
                   "objectId": "algorithm_yawl_export",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93",
-                "duration_ms": 11.265
+                "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b",
+                "duration_ms": 10.185
               }
             },
             {
               "id": "evt_ecommerce_nba_yawl_export_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:36.646Z",
+              "time": "2026-06-25T20:27:34.091Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93"
+                "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b"
               }
             },
             {
               "id": "evt_ecommerce_nba_yawl_export_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:37.297Z",
+              "time": "2026-06-25T20:27:35.803Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93"
+                "result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b"
               }
             },
             {
               "id": "evt_ecommerce_nba_yawl_export_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:37.894Z",
+              "time": "2026-06-25T20:27:37.396Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:38.488Z",
+              "time": "2026-06-25T20:27:38.087Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:35.891Z",
+              "time": "2026-06-25T20:27:35.930Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1201,7 +1201,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "43db39dee03d774ff3f16de17a67abafb8021619278b05f9b93b22a4f44085a6",
-        "observed_result_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93"
+        "observed_ocel2_hash": "fd0cfcf3d2518ebc67cf9a2560c9457c8101ec8ebeaf5b5a5175a6896bd0e380",
+        "observed_result_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,8 +1233,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "4de1676dea9c5cfad5490bb3a473df01cc522b2d0711795254ec4556da825f93",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "0e5d61c255d2e1f7d38012434c1419430025800d112187e4bc83e41e2a873b9b",
+        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -1242,8 +1242,8 @@
       "id": "playout",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9",
-      "duration_ms": 53.187,
+      "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b",
+      "duration_ms": 46.253,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.playout.v1",
         "expected_ocel2": {
@@ -1357,7 +1357,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -1375,7 +1375,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9",
-                "duration_ms": 53.187
+                "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b",
+                "duration_ms": 46.253
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9"
+                "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9"
+                "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b"
               }
             },
             {
@@ -1519,7 +1519,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "6185d430e5175289b03c81467994ea36178d563f31652cd5eeb2fae74a05d371"
+        "expected_ocel2_hash": "c945c9d068dbda50e754512ea95d7892daefdef335082c1eae0f3a0a21fee431"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_ecommerce_nba_playout_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:33.197Z",
+              "time": "2026-06-25T20:27:35.464Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_ecommerce_nba_playout_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:33.964Z",
+              "time": "2026-06-25T20:27:33.264Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1646,10 +1646,10 @@
             {
               "id": "evt_ecommerce_nba_playout_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:34.397Z",
+              "time": "2026-06-25T20:27:33.036Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -1660,14 +1660,14 @@
             {
               "id": "evt_ecommerce_nba_playout_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:34.645Z",
+              "time": "2026-06-25T20:27:36.729Z",
               "relationships": [
                 {
                   "objectId": "algorithm_playout",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_ecommerce_nba_playout_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:34.187Z",
+              "time": "2026-06-25T20:27:37.541Z",
               "relationships": [
                 {
                   "objectId": "algorithm_playout",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9",
-                "duration_ms": 53.187
+                "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b",
+                "duration_ms": 46.253
               }
             },
             {
               "id": "evt_ecommerce_nba_playout_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:36.690Z",
+              "time": "2026-06-25T20:27:35.812Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9"
+                "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b"
               }
             },
             {
               "id": "evt_ecommerce_nba_playout_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:34.406Z",
+              "time": "2026-06-25T20:27:34.190Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9"
+                "result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b"
               }
             },
             {
               "id": "evt_ecommerce_nba_playout_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:36.485Z",
+              "time": "2026-06-25T20:27:36.048Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_ecommerce_nba_playout_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:37.683Z",
+              "time": "2026-06-25T20:27:36.244Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_ecommerce_nba_playout_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:36.065Z",
+              "time": "2026-06-25T20:27:36.168Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1811,7 +1811,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "e454661151619615d3c8a3f4ba8eb7e77313ded7c805a4ee905fcb5729275708",
-        "observed_result_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9"
+        "observed_ocel2_hash": "37a750770ca3d75b65b64e8bde1f2f89700a4daba72be6268f6c52a5351e7dad",
+        "observed_result_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,8 +1843,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "1e8604f1d84880dea6fc3a0394026765a091b1ad84a5f1405e4712b645b89cc9",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "dd15843c980316109b52f53311339746542110089b1f2cb8cfdea6bcafad905b",
+        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -1852,8 +1852,8 @@
       "id": "monte_carlo_simulation",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518",
-      "duration_ms": 39.662,
+      "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5",
+      "duration_ms": 23.004,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.monte_carlo_simulation.v1",
         "expected_ocel2": {
@@ -1967,7 +1967,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -1985,7 +1985,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518",
-                "duration_ms": 39.662
+                "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5",
+                "duration_ms": 23.004
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518"
+                "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518"
+                "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5"
               }
             },
             {
@@ -2129,7 +2129,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "d402c12045093baaafd0ff1974ba70377a7af0795e52599ca631e78504a1242b"
+        "expected_ocel2_hash": "5c116f88a5449c3f1f3a50dd133f8a3167ccd3684ceeff09fffc14f362b277b6"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:32.959Z",
+              "time": "2026-06-25T20:27:32.111Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:34.259Z",
+              "time": "2026-06-25T20:27:31.983Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -2256,10 +2256,10 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:34.671Z",
+              "time": "2026-06-25T20:27:35.203Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 }
               ],
@@ -2270,14 +2270,14 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:36.848Z",
+              "time": "2026-06-25T20:27:33.406Z",
               "relationships": [
                 {
                   "objectId": "algorithm_monte_carlo_simulation",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.6.25",
                   "qualifier": "registry"
                 },
                 {
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:37.283Z",
+              "time": "2026-06-25T20:27:34.652Z",
               "relationships": [
                 {
                   "objectId": "algorithm_monte_carlo_simulation",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518",
-                "duration_ms": 39.662
+                "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5",
+                "duration_ms": 23.004
               }
             },
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:34.869Z",
+              "time": "2026-06-25T20:27:34.783Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518"
+                "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5"
               }
             },
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:36.465Z",
+              "time": "2026-06-25T20:27:38.806Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518"
+                "result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5"
               }
             },
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:36.569Z",
+              "time": "2026-06-25T20:27:36.059Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:36.248Z",
+              "time": "2026-06-25T20:27:38.717Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:38.945Z",
+              "time": "2026-06-25T20:27:37.661Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2421,7 +2421,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.6.25",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "fe9e95fc9e4839092f02e949cfa07ef172614d1b956d4df5045d73e7c44e42b5",
-        "observed_result_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518"
+        "observed_ocel2_hash": "ccf0a047b456a32a6f2791402035b9b6ed13e3267c89be09bcd1cdb54cc94791",
+        "observed_result_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "04a2d430b8883084deae02b463376617a40a93e519de2349227d75a191e91518",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "94b47f9de7925fdc376b7b256f6436bce56ce0272d3b1c730a4344f327d651f5",
+        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-11T19:53:30.490Z",
+  "created_at": "2026-06-25T20:27:31.105Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "2fc0066acb2a91a8a75546fd30c1dfdc58f2e62de67a515056145a84499458ed"
+  "receipt_hash": "bed6f4133348ec5fdac691cd3371c68ac4caf11c193b0d03f48a993f32f61460"
 }

@@ -127,20 +127,47 @@ impl BinaryHeader {
 
         header.magic.copy_from_slice(&bytes[0..8]);
         // infallible: buffer length validated above (>= size_of::<BinaryHeader>())
-        header.version = u32::from_le_bytes(bytes[8..12].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"));
-        header.flags = u32::from_le_bytes(bytes[12..16].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"));
-        header.num_traces = u64::from_le_bytes(bytes[16..24].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"));
-        header.num_events = u64::from_le_bytes(bytes[24..32].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"));
-        header.vocab_count = u64::from_le_bytes(bytes[32..40].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"));
+        header.version = u32::from_le_bytes(
+            bytes[8..12]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+        );
+        header.flags = u32::from_le_bytes(
+            bytes[12..16]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+        );
+        header.num_traces = u64::from_le_bytes(
+            bytes[16..24]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+        );
+        header.num_events = u64::from_le_bytes(
+            bytes[24..32]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+        );
+        header.vocab_count = u64::from_le_bytes(
+            bytes[32..40]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+        );
 
         for i in 0..6 {
             let start = 40 + i * 8;
-            header.section_offsets[i] =
-                u64::from_le_bytes(bytes[start..start + 8].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"));
+            header.section_offsets[i] = u64::from_le_bytes(
+                bytes[start..start + 8]
+                    .try_into()
+                    .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+            );
             // infallible: same guard
         }
 
-        header.checksum = u64::from_le_bytes(bytes[88..96].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above")); // infallible: same guard
+        header.checksum = u64::from_le_bytes(
+            bytes[88..96]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+        ); // infallible: same guard
 
         Ok(header)
     }
@@ -448,8 +475,11 @@ impl<'a> BinaryLogView<'a> {
             if offset + 4 > self.data.len() {
                 return Err("Vocab section truncated".to_string());
             }
-            let len =
-                u32::from_le_bytes(self.data[offset..offset + 4].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above")) as usize;
+            let len = u32::from_le_bytes(
+                self.data[offset..offset + 4]
+                    .try_into()
+                    .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+            ) as usize;
             offset += 4;
 
             if offset + len > self.data.len() {
@@ -510,7 +540,9 @@ impl<'a> BinaryLogView<'a> {
             return Err("Out of bounds read".to_string());
         }
         Ok(u64::from_le_bytes(
-            self.data[offset..offset + 8].try_into().expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+            self.data[offset..offset + 8]
+                .try_into()
+                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
         ))
     }
 

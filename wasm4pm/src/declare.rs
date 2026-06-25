@@ -645,7 +645,7 @@ mod serde_declare_template {
 
             while let Some(key) = map.next_key::<String>()? {
                 match key.as_str() {
-                    "type" => typ = Some(map.next_value()?),
+                    "type" => typ = Some(map.next_value::<String>()?),
                     "min" => min = Some(map.next_value()?),
                     "max" => max = Some(map.next_value()?),
                     "n" => n = Some(map.next_value()?),

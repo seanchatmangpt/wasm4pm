@@ -315,7 +315,7 @@ impl QLearning<crate::RlState, crate::RlAction> {
         use std::collections::HashMap;
 
         let q_table = self.q_table.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::BTreeMap::new();
 
         for (state, q_values) in q_table.iter() {
             let key = encode_rl_state_key(
@@ -564,7 +564,7 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
         use std::collections::HashMap;
 
         let q_table = self.q_table.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::BTreeMap::new();
 
         for (state, q_values) in q_table.iter() {
             let key = encode_rl_state_key(
@@ -862,7 +862,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
 
         let qa = self.q_a.borrow();
         let _qb = self.q_b.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::BTreeMap::new();
 
         // Export Q_A; Q_B will be stored by RL orchestrator as separate entry
         for (state, q_values) in qa.iter() {
@@ -1105,7 +1105,7 @@ impl ExpectedSARSAAgent<crate::RlState, crate::RlAction> {
         use std::collections::HashMap;
 
         let q_table = self.q_table.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::BTreeMap::new();
 
         for (state, q_values) in q_table.iter() {
             let key = encode_rl_state_key(
@@ -1340,8 +1340,8 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             let old_weight = weights[action_idx];
             for (j, w) in weights.iter_mut().enumerate() {
                 let pi_j = softmax[j] * inv_sum;
-                let indicator = f64::from(j == action_idx);
-                *w += lr * g_t * (indicator - pi_j);
+                let indicator = if j == action_idx { 1.0f32 } else { 0.0f32 };
+                *w += (lr as f32) * (g_t as f32) * (indicator - pi_j);
             }
             let new_weight = weights[action_idx];
             debug!(
@@ -1402,7 +1402,7 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
         use std::collections::HashMap;
 
         let theta = self.theta.borrow();
-        let mut state_values = HashMap::new();
+        let mut state_values = std::collections::BTreeMap::new();
 
         for (state, weights) in theta.iter() {
             let key = encode_rl_state_key(

@@ -30,7 +30,8 @@ pub fn check_declare_conformance(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     // Clone constraints out so we don't hold two locks
-    let constraints = get_or_init_state().with_declare_model(declare_handle, |m| Ok(m.constraints.clone()))?;
+    let constraints =
+        get_or_init_state().with_declare_model(declare_handle, |m| Ok(m.constraints.clone()))?;
 
     let result_json = get_or_init_state().with_event_log(log_handle, |log| {
         let total = log.traces.len();

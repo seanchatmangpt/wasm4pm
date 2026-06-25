@@ -13,6 +13,8 @@
 #![feature(min_specialization)]
 #![feature(portable_simd)]
 #![allow(incomplete_features)]
+
+
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
@@ -91,6 +93,9 @@
 //! - [GitHub Repository](https://github.com/seanchatmangpt/wasm4pm)
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
+
+extern crate alloc;
+
 
 /// Accept(x) = C1..C7 admissibility framework.
 pub mod admission;

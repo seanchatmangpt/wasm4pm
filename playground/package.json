@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/playground",
-  "version": "26.6.10",
+  "version": "26.6.25",
   "description": "Local dev behavior simulation — tests local source using real harnesses",
   "private": true,
   "type": "module",

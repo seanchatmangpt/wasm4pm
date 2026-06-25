@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm-example-autopm",
-  "version": "26.6.10",
+  "version": "26.6.25",
   "private": true,
   "type": "module",
   "description": "End-to-end AutoPM example: evolve a pipeline genome and emit wasm4pm.toml",

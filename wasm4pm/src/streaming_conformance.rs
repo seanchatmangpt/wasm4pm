@@ -52,62 +52,62 @@ pub fn streaming_conformance_add_event(
     activity: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_streaming_conformance_mut(handle, |c| {
-            c.add_event(case_id, activity);
+        c.add_event(case_id, activity);
 
-            let (fitness, state_str) = if let Some(trace_state) = c.open_traces.get(case_id) {
-                if c.net.is_some() {
-                    let denom = (trace_state.consumed_tokens + trace_state.missing_tokens) as f64;
-                    let fit = if denom > 0.0 {
-                        1.0 - (trace_state.missing_tokens as f64 / denom)
-                    } else {
-                        1.0
-                    };
-                    let st = match trace_state.state {
-                        crate::models::TraceState::Alive => "ALIVE",
-                        crate::models::TraceState::FakeLive => "FAKE-LIVE",
-                        crate::models::TraceState::Blocked => "BLOCKED",
-                    };
-                    (fit, st)
+        let (fitness, state_str) = if let Some(trace_state) = c.open_traces.get(case_id) {
+            if c.net.is_some() {
+                let denom = (trace_state.consumed_tokens + trace_state.missing_tokens) as f64;
+                let fit = if denom > 0.0 {
+                    1.0 - (trace_state.missing_tokens as f64 / denom)
                 } else {
-                    // DFG Mode
-                    let mut deviations = 0;
-                    let total_steps = if trace_state.activities.len() > 1 {
-                        trace_state.activities.len() - 1
-                    } else {
-                        0
-                    };
-                    if let Some(ref dfg_edges) = c.dfg_edges {
-                        for i in 0..total_steps {
-                            let pair = (
-                                trace_state.activities[i].clone(),
-                                trace_state.activities[i + 1].clone(),
-                            );
-                            if !dfg_edges.contains(&pair) {
-                                deviations += 1;
-                            }
+                    1.0
+                };
+                let st = match trace_state.state {
+                    crate::models::TraceState::Alive => "ALIVE",
+                    crate::models::TraceState::FakeLive => "FAKE-LIVE",
+                    crate::models::TraceState::Blocked => "BLOCKED",
+                };
+                (fit, st)
+            } else {
+                // DFG Mode
+                let mut deviations = 0;
+                let total_steps = if trace_state.activities.len() > 1 {
+                    trace_state.activities.len() - 1
+                } else {
+                    0
+                };
+                if let Some(ref dfg_edges) = c.dfg_edges {
+                    for i in 0..total_steps {
+                        let pair = (
+                            trace_state.activities[i].clone(),
+                            trace_state.activities[i + 1].clone(),
+                        );
+                        if !dfg_edges.contains(&pair) {
+                            deviations += 1;
                         }
                     }
-                    let fit = if total_steps == 0 {
-                        1.0
-                    } else {
-                        (total_steps - deviations) as f64 / total_steps as f64
-                    };
-                    let st = if deviations > 0 { "BLOCKED" } else { "ALIVE" };
-                    (fit, st)
                 }
-            } else {
-                (1.0, "ALIVE")
-            };
+                let fit = if total_steps == 0 {
+                    1.0
+                } else {
+                    (total_steps - deviations) as f64 / total_steps as f64
+                };
+                let st = if deviations > 0 { "BLOCKED" } else { "ALIVE" };
+                (fit, st)
+            }
+        } else {
+            (1.0, "ALIVE")
+        };
 
-            let json = serde_json::to_string(&json!({
-                "ok": true,
-                "event_count": c.event_count,
-                "open_traces": c.open_traces.len(),
-                "fitness": fitness,
-                "state": state_str,
-            }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))?;
-            Ok(crate::error::js_val(&json))
+        let json = serde_json::to_string(&json!({
+            "ok": true,
+            "event_count": c.event_count,
+            "open_traces": c.open_traces.len(),
+            "fitness": fitness,
+            "state": state_str,
+        }))
+        .map_err(|e| crate::error::js_val(&e.to_string()))?;
+        Ok(crate::error::js_val(&json))
     })
 }
 

@@ -148,11 +148,23 @@ pub fn mine_correlation(
             edges: Vec::new(),
             start_activities: activities
                 .iter()
-                .map(|a| (a.clone(), u32::try_from(act_map[a].0.len()).expect("activity occurrence count fits u32")))
+                .map(|a| {
+                    (
+                        a.clone(),
+                        u32::try_from(act_map[a].0.len())
+                            .expect("activity occurrence count fits u32"),
+                    )
+                })
                 .collect(),
             end_activities: activities
                 .iter()
-                .map(|a| (a.clone(), u32::try_from(act_map[a].0.len()).expect("activity occurrence count fits u32")))
+                .map(|a| {
+                    (
+                        a.clone(),
+                        u32::try_from(act_map[a].0.len())
+                            .expect("activity occurrence count fits u32"),
+                    )
+                })
                 .collect(),
             num_traces: estimate_trace_count(&indexed, cfg),
         };
@@ -189,14 +201,24 @@ pub fn mine_correlation(
         .iter()
         .enumerate()
         .filter(|(_, a)| in_deg.get(*a).copied().unwrap_or(0) == 0)
-        .map(|(i, a)| (a.clone(), u32::try_from(act_counts[i]).expect("activity count fits u32")))
+        .map(|(i, a)| {
+            (
+                a.clone(),
+                u32::try_from(act_counts[i]).expect("activity count fits u32"),
+            )
+        })
         .collect();
 
     let end_activities: Vec<(String, u32)> = activities
         .iter()
         .enumerate()
         .filter(|(_, a)| out_deg.get(*a).copied().unwrap_or(0) == 0)
-        .map(|(i, a)| (a.clone(), u32::try_from(act_counts[i]).expect("activity count fits u32")))
+        .map(|(i, a)| {
+            (
+                a.clone(),
+                u32::try_from(act_counts[i]).expect("activity count fits u32"),
+            )
+        })
         .collect();
 
     edges.sort_unstable();
@@ -392,8 +414,14 @@ fn resolve_edges(
     }
     candidates.sort_unstable_by(|a, b| a.0.total_cmp(&b.0));
 
-    let mut out_rem: Vec<u32> = act_counts.iter().map(|&c| u32::try_from(c).expect("occurrence count fits u32")).collect();
-    let mut in_rem: Vec<u32> = act_counts.iter().map(|&c| u32::try_from(c).expect("occurrence count fits u32")).collect();
+    let mut out_rem: Vec<u32> = act_counts
+        .iter()
+        .map(|&c| u32::try_from(c).expect("occurrence count fits u32"))
+        .collect();
+    let mut in_rem: Vec<u32> = act_counts
+        .iter()
+        .map(|&c| u32::try_from(c).expect("occurrence count fits u32"))
+        .collect();
     let mut edge_freq: FxHashMap<(usize, usize), u32> = FxHashMap::default();
 
     for (_cost, i, j) in candidates {

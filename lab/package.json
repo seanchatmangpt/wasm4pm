@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/lab-cli-tests",
-  "version": "26.6.10",
+  "version": "26.6.25",
   "description": "CLI validation test suite for @wasm4pm/cli",
   "private": true,
   "type": "module",

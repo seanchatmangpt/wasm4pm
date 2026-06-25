@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm-examples",
-  "version": "26.6.10",
+  "version": "26.6.25",
   "description": "Comprehensive examples guide for wasm4pm process mining",
   "type": "module",
   "private": true,

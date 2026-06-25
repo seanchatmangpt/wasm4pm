@@ -192,7 +192,7 @@ checksum = "99408a1bac0657713ecef7e9a723d3241feb5c603d8edefe663773cf903d9d0b"
 
 [[package]]
 name = "bench-tools"
-version = "26.6.12"
+version = "26.6.25"
 dependencies = [
  "blake3",
  "chrono",
@@ -1193,7 +1193,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.6.12"
+version = "26.6.25"
 dependencies = [
  "base64",
  "bincode",
@@ -1325,7 +1325,7 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocpq"
-version = "26.6.12"
+version = "26.6.25"
 dependencies = [
  "chrono",
  "serde",
@@ -1464,7 +1464,7 @@ dependencies = [
 
 [[package]]
 name = "prolog8"
-version = "26.6.10"
+version = "26.6.25"
 dependencies = [
  "blake3",
  "js-sys",
@@ -2109,7 +2109,7 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 
 [[package]]
 name = "tps-metrics"
-version = "26.6.12"
+version = "26.6.25"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2441,7 +2441,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.6.12"
+version = "26.6.25"
 dependencies = [
  "bcinr",
  "blake3",
@@ -2490,7 +2490,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.6.12"
+version = "26.6.25"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2512,7 +2512,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cognition"
-version = "26.6.10"
+version = "26.6.25"
 dependencies = [
  "blake3",
  "criterion",
@@ -2538,9 +2538,9 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-compat"
-version = "26.6.13"
+version = "26.6.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b23a6ba8ede739ca7508ba5656f2086aafef90aa43653556cbe2327dae7dbdf"
+checksum = "81a91889ae6aaadd8e23e86c7a88b2b046b8359abff8e5b2f76aa6056fe625b5"
 dependencies = [
  "blake3",
  "chrono",

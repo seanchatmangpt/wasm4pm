@@ -15,7 +15,7 @@
 
 use crate::powl::discovery::DiscoveryConfig;
 use crate::powl_arena::{Operator, PowlArena};
-use std::collections::{BTreeSet, BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 // ---------------------------------------------------------------------------
 // Eventually-follows graph (EFG) helper

@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.6.10",
+  "version": "26.6.25",
   "description": "wasm4pm \u2014 High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {

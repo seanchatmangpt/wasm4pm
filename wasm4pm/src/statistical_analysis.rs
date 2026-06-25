@@ -273,7 +273,7 @@ pub fn compare_cohort_durations(
         });
 
         Ok(JsValue::from_str(&result.to_string()))
-    })
+    }).map_err(|e| JsError::new(&e.as_string().unwrap_or_else(|| "error".to_string())))
 }
 
 /// Compare processing durations across resources using one-way ANOVA.
@@ -344,7 +344,7 @@ pub fn compare_resource_performance(
         });
 
         Ok(JsValue::from_str(&result.to_string()))
-    })
+    }).map_err(|e| JsError::new(&e.as_string().unwrap_or_else(|| "error".to_string())))
 }
 
 /// Compute descriptive statistics for a numeric attribute across all traces or events.
@@ -403,7 +403,7 @@ pub fn describe_attribute(
         });
 
         Ok(JsValue::from_str(&result.to_string()))
-    })
+    }).map_err(|e| JsError::new(&e.as_string().unwrap_or_else(|| "error".to_string())))
 }
 
 // ---------------------------------------------------------------------------

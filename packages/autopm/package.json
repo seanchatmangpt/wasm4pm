@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/autopm",
-  "version": "26.6.10",
+  "version": "26.6.25",
   "publishConfig": {
     "access": "public"
   },

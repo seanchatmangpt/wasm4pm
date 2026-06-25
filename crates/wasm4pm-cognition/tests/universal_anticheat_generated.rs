@@ -12,12 +12,8 @@
 
 fn breed_source(module: &str) -> String {
     let src_path = format!("{}/src/breeds/{}.rs", env!("CARGO_MANIFEST_DIR"), module);
-    std::fs::read_to_string(&src_path).unwrap_or_else(|_| {
-        panic!(
-            "MISSING SOURCE: {} — every pointer-bearing breed must have its module on disk",
-            src_path
-        )
-    })
+    std::fs::read_to_string(&src_path)
+        .unwrap_or_else(|_| panic!("MISSING SOURCE: {} — every pointer-bearing breed must have its module on disk", src_path))
 }
 
 /// Strip ALL inline `#[cfg(test)]` modules/items, not just the first.
@@ -521,7 +517,7 @@ fn anticheat_clp_true_31_not_hardcoded() {
 #[test]
 fn anticheat_construction_grammar_decoy_32_not_in_source() {
     // Goldberg 1995, Constructions, Univ. of Chicago Press, Ch. 1-2 (ditransitive construction, 'Pat faxed Bill the letter')
-    // Why this is a decoy: A careless agent reading Goldberg's prose about the ditransitive construction \
+    // Why this is a decoy: A careless agent reading Goldberg's prose about the ditransitive construction "supplying the transfer meaning" would hardcode the meaning frame as CAUSE-TRANSFER instead of the paper's actual frame label CAUSE-RECEIVE. It is a plausible paraphrase miscitation of the same expected.meaning_frame from the same Goldberg 1995 citation, shares no substring with the true value CAUSE-RECEIVE, and avoids the genuine sibling frame CAUSE-MOVE (caused-motion) which legitimately appears in the source.
     let src = breed_source("construction_grammar");
     let needle = r#"CAUSE-TRANSFER"#;
     assert!(
@@ -1125,7 +1121,7 @@ fn anticheat_markov_logic_decoy_70_not_in_source() {
 #[test]
 fn anticheat_markov_logic_true_71_not_hardcoded() {
     // Richardson & Domingos 2006, Machine Learning 62(1-2):107-136, Table 1 / Fig. 1 (smokes/friends MLN, w=1.5 and w=1.1 clauses) grounded for {anna, bob}
-    // Derivation: expected.cost = \
+    // Derivation: expected.cost = "0.000000": the MAP state satisfies every ground clause (zero unsatisfied weight) and entails smokes_bob, cancer_anna, cancer_bob given evidence smokes(anna) and friends(anna,bob)
     // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
     // NOT by whether the value parses as a float. The full published literal is
     // currently absent from production, so this lock is a true constraint with
@@ -1143,7 +1139,7 @@ fn anticheat_markov_logic_true_71_not_hardcoded() {
 #[test]
 fn anticheat_mdp_decoy_72_not_in_source() {
     // Bellman 1957, Dynamic Programming, Princeton Univ. Press, Ch. III–IV (functional equation / value iteration)
-    // Why this is a decoy: A careless agent applies the discount factor γ one extra time to the converged optimal value: 0.9·V(s0)=0.9·1.8=1.62 (equivalently γ²·V(s1)=0.81·2.0=1.62), one over-discounted iteration short of the true fixed point V(s0)=1.8. Plausible mis-chained product, not a substring of \
+    // Why this is a decoy: A careless agent applies the discount factor γ one extra time to the converged optimal value: 0.9·V(s0)=0.9·1.8=1.62 (equivalently γ²·V(s1)=0.81·2.0=1.62), one over-discounted iteration short of the true fixed point V(s0)=1.8. Plausible mis-chained product, not a substring of "1.8", >=3 chars, absent from mdp.rs.
     let src = breed_source("mdp");
     let needle = r#"1.62"#;
     assert!(
@@ -1285,7 +1281,7 @@ fn anticheat_naive_physics_true_81_not_hardcoded() {
 #[test]
 fn anticheat_ocpm_route_discoverer_decoy_82_not_in_source() {
     // van der Aalst, W.M.P. 2019, Object-Centric Process Mining: Dealing with Divergence and Convergence — Route Discovery
-    // Why this is a decoy: A careless agent flattens all events into a single global route ignoring object identity — the exact divergence/convergence error the paper warns against. Sequencing e2(Pay) before e3(Ship) yields the bogus \
+    // Why this is a decoy: A careless agent flattens all events into a single global route ignoring object identity — the exact divergence/convergence error the paper warns against. Sequencing e2(Pay) before e3(Ship) yields the bogus "Pay->Ship" route, mixing the o1 (order) and i1 (item) lifecycles that should be kept separate. It is neither a substring of the true pointer "Create->Pay" nor contains it, and grep -c confirms 0 occurrences in src/breeds/ocpm_route_discoverer.rs.
     let src = breed_source("ocpm_route_discoverer");
     let needle = r#"Pay->Ship"#;
     assert!(
@@ -1651,7 +1647,7 @@ fn anticheat_strips_true_105_not_hardcoded() {
 #[test]
 fn anticheat_tableaux_decoy_106_not_in_source() {
     // Smullyan 1968, First-Order Logic, Part I Ch. II — Analytic Tableaux; F(A -> (B -> A)) tableau, beta (branching) expansion count
-    // Why this is a decoy: A careless agent miscounts the two implication connectives in A -> (B -> A) as requiring two beta (branching) expansions, hardcoding beta_expansions = 2.0. In fact the K-axiom signed tableau closes using only alpha (non-branching) rules, so the true beta_expansions is 0 and the verdict value is \
+    // Why this is a decoy: A careless agent miscounts the two implication connectives in A -> (B -> A) as requiring two beta (branching) expansions, hardcoding beta_expansions = 2.0. In fact the K-axiom signed tableau closes using only alpha (non-branching) rules, so the true beta_expansions is 0 and the verdict value is "valid". The number 2.0 is a plausible branch-miscount, is not a substring of "valid" (nor vice versa), is >=3 chars, and is grep-confirmed absent (count 0) from tableaux.rs.
     let src = breed_source("tableaux");
     let needle = r#"2.0"#;
     assert!(
@@ -1697,7 +1693,7 @@ fn anticheat_triz_true_109_not_hardcoded() {
 #[test]
 fn anticheat_version_space_decoy_110_not_in_source() {
     // Mitchell 1982, Artificial Intelligence 18(2), Sections 3-4 (candidate-elimination); EnjoySport worked instance in Mitchell 1997 ML, Ch. 2, Tables 2.1/2.5
-    // Why this is a decoy: This is the specific boundary S after example 2 (and unchanged by the negative example 3), i.e. S2/S3 = <Sunny,Warm,?,Strong,Warm,Same>. A careless agent stops one iteration short of processing the fourth positive EnjoySport example, which generalizes both water (Warm->?) and forecast (Same->?). The true converged S4 is \
+    // Why this is a decoy: This is the specific boundary S after example 2 (and unchanged by the negative example 3), i.e. S2/S3 = <Sunny,Warm,?,Strong,Warm,Same>. A careless agent stops one iteration short of processing the fourth positive EnjoySport example, which generalizes both water (Warm->?) and forecast (Same->?). The true converged S4 is "Sunny,Warm,?,Strong,?,?". This off-by-one-iteration hypothesis is a plausible misreading: it shares the prefix but is neither a substring of nor contains the true value.
     let src = breed_source("version_space");
     let needle = r#"Sunny,Warm,?,Strong,Warm,Same"#;
     assert!(
