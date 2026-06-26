@@ -37,7 +37,6 @@ fn convert_node_recursive(
                 "xor" => wasm4pm_compat::process_tree::ProcessTreeOperator::Xor,
                 "parallel" => wasm4pm_compat::process_tree::ProcessTreeOperator::Parallel,
                 "loop" => wasm4pm_compat::process_tree::ProcessTreeOperator::Loop,
-                "or" => wasm4pm_compat::process_tree::ProcessTreeOperator::Or,
                 _ => wasm4pm_compat::process_tree::ProcessTreeOperator::Silent,
             };
             let parent_id = wasm4pm_compat::process_tree::ProcessTreeNodeId(tree.nodes.len());

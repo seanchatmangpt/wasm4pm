@@ -225,8 +225,6 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
                 "type": "choice_graph",
                 "nodes": node_kinds,
                 "edges": edges,
-                "start_idx": cg.graph.start_idx(),
-                "end_idx": cg.graph.end_idx(),
             })
         }
         None => serde_json::json!({ "error": "invalid index" }),

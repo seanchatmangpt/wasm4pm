@@ -27,7 +27,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/agents": "workspace:*",
     "@wasm4pm/cognition": "workspace:*",
     "@wasm4pm/config": "workspace:*",
     "@wasm4pm/contracts": "workspace:*",

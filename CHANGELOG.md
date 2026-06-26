@@ -4,10 +4,21 @@ wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
 
-## [Unreleased]
+## [26.6.25] — 2026-06-25
 
 ### Added
-- Task D2: Recorded massive geometry expansion (from 8KB to 1.8MB)
+- POWL v2.0 semantics: complete ChoiceGraph implementation with full node/edge traversal, start/end sentinel removal, and validated construction via `ChoiceGraph::new`
+- POWL v2 test coverage: conformance, soundness, footprint, token replay, and cross-validation tests updated for v2 API
+- wasm4pm-compat v26.6 dependency pinned across all Rust crates
+
+### Changed
+- `powl_arena.rs`: migrated `ChoiceGraph::new_raw` calls to `ChoiceGraph::new` (API change in wasm4pm-compat v26.6)
+- `powl_parser.rs`: updated edge index types and error formatting for v2 ChoiceGraph API
+- `powl_api.rs`: removed `start_idx`/`end_idx` from `node_info_json` output (no longer part of public ChoiceGraph contract)
+- `more_discovery.rs`: removed `ProcessTreeOperator::Or` mapping (not in wasm4pm-compat v26.6 API)
+- Deleted `packages/agents` (superseded by cognition layer + MCP server architecture)
+
+## [Unreleased]
 
 ## [26.6.9] — 2026-06-09
 

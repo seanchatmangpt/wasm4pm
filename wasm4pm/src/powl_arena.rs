@@ -567,12 +567,8 @@ impl PowlArena {
                 other => normalized_nodes.push(other.clone()),
             }
         }
-        let normalized = ChoiceGraph::new_raw(
-            normalized_nodes,
-            graph.edges().to_vec(),
-            graph.start_idx(),
-            graph.end_idx(),
-        ).unwrap();
+        let normalized = ChoiceGraph::new(normalized_nodes, graph.edges().to_vec())
+            .expect("normalized ChoiceGraph is valid");
         let idx = u32::try_from(self.nodes.len()).expect("arena node count fits u32");
         self.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
             graph: normalized,
@@ -849,12 +845,8 @@ impl PowlArena {
                         }
                     }
                 }
-                let new_graph = ChoiceGraph::new_raw(
-                    new_nodes,
-                    cg.graph.edges().to_vec(),
-                    cg.graph.start_idx(),
-                    cg.graph.end_idx(),
-                ).unwrap();
+                let new_graph = ChoiceGraph::new(new_nodes, cg.graph.edges().to_vec())
+                    .expect("copied ChoiceGraph is valid");
                 // Add directly without re-normalizing (already normalized).
                 let idx = u32::try_from(dest.nodes.len()).expect("arena node count fits u32");
                 dest.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
