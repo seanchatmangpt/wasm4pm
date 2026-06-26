@@ -25,6 +25,10 @@ use serde::{Deserialize, Serialize};
 /// This partitions the u32 space cleanly — normal term IDs never have the high bit set.
 const VAR_SENTINEL_BASE: u32 = 0x8000_0000;
 
+/// Maximum recursive rule-chaining depth in `derive_atom`. Prevents infinite
+/// loops on recursive rules while supporting PARARULE-Plus depth-5 chains.
+const MAX_DERIVE_DEPTH: u32 = 32;
+
 type Subst = [Option<TermId>; ARITY_CAP as usize];
 
 fn var_term(i: usize) -> TermId {
@@ -216,15 +220,30 @@ impl Kernel {
             // Depth-first backtracking search over body atoms.
             self.solve_body(rule, subst, 0, &mut Vec::new(), &mut answers, q);
         }
+
+        // Deduplicate by bindings: two proofs for the same conclusion are one answer.
+        // This matches standard Prolog semantics for ground queries (first proof wins)
+        // while preserving distinct binding solutions for unbound queries.
+        let mut seen: Vec<Vec<TermId>> = Vec::with_capacity(answers.len());
+        answers.retain(|d| {
+            if seen.contains(&d.bindings) {
+                false
+            } else {
+                seen.push(d.bindings.clone());
+                true
+            }
+        });
+
         answers
     }
 
     /// Recursive backtracking solver for a rule's body atoms.
     ///
-    /// At each body position `bi`, collects every matching fact, extends the
-    /// substitution consistently (unifying each fact arg with the body atom's
-    /// term), then recurses. On failure the substitution is discarded and the
-    /// next candidate fact is tried. This is standard SLD resolution completeness.
+    /// Each body atom is evaluated via `derive_atom_with_support`, which resolves
+    /// it against base facts AND recursively against other rules (full SLD resolution).
+    /// On each candidate, the substitution is extended and we recurse to the next
+    /// body atom, backtracking on failure. All leaf base facts are collected into
+    /// `supporting` for proof generation.
     fn solve_body(
         &self,
         rule: &Rule8,
@@ -235,7 +254,6 @@ impl Kernel {
         q: &QueryAtom8,
     ) {
         if bi == rule.body_len as usize {
-            // All body atoms satisfied — assemble the answer.
             let mut bindings_arr = [TermId::sentinel(); ARITY_CAP as usize];
             for i in 0..rule.head.arity as usize {
                 let h = rule.head.args[i];
@@ -256,34 +274,141 @@ impl Kernel {
             let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
             let resolved = resolve_var(effective, &subst);
             if var_index(resolved).is_none() {
-                // Ground value — use as bound query arg.
                 concrete_args[ai] = resolved;
                 concrete_binding |= 1u8 << ai;
             }
-            // Unbound variable: leave as sentinel (matches any fact value).
         }
         let mut concrete = Atom8::new(body_atom.pred_id, body_atom.arity, &concrete_args);
         concrete.binding_mask = concrete_binding;
 
-        // Try every matching fact — this is the backtracking choice point.
-        for (fact_row, _) in self.scan_facts(&concrete, q.epoch) {
+        // Evaluate body atom recursively (facts + rules). Each solution is a set of
+        // concrete arg values plus the leaf base facts that supported the derivation.
+        for (sol_args, sol_facts) in self.derive_atom_with_support(&concrete, q.epoch, 0) {
             let mut new_subst = subst;
             let mut ok = true;
 
-            // Unify each body atom arg against the fact's value at that position.
             for ai in 0..body_atom.arity as usize {
                 let raw = body_atom.args[ai];
                 let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
-                if !unify_terms(effective, fact_row.args[ai], &mut new_subst) {
+                if !unify_terms(effective, sol_args[ai], &mut new_subst) {
                     ok = false;
                     break;
                 }
             }
 
             if ok {
-                supporting.push(fact_row);
+                let pre_len = supporting.len();
+                supporting.extend_from_slice(&sol_facts);
                 self.solve_body(rule, new_subst, bi + 1, supporting, answers, q);
-                supporting.pop();
+                supporting.truncate(pre_len);
+            }
+        }
+    }
+
+    /// Derive all solutions for `query`, returning `(concrete_args, leaf_facts)` pairs.
+    ///
+    /// Tries base facts first, then recursively fires rules whose head unifies with
+    /// the query. `depth` is incremented on each rule-recursive step and capped at
+    /// `MAX_DERIVE_DEPTH` to prevent infinite loops on recursive rules.
+    fn derive_atom_with_support(
+        &self,
+        query: &Atom8,
+        epoch: EpochId,
+        depth: u32,
+    ) -> Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)> {
+        if depth > MAX_DERIVE_DEPTH {
+            return Vec::new();
+        }
+
+        let mut out: Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)> = Vec::new();
+
+        // Base: matching facts.
+        for (row, _) in self.scan_facts(query, epoch) {
+            out.push((row.args, vec![row]));
+        }
+
+        // Inductive: matching rules.
+        for rule in &self.rules {
+            if rule.head.pred_id != query.pred_id || rule.head.arity != query.arity {
+                continue;
+            }
+            let mut head_subst: Subst = [None; ARITY_CAP as usize];
+            let mut head_ok = true;
+            for i in 0..rule.head.arity as usize {
+                let h = rule.head.args[i];
+                let he = if h.is_sentinel() { var_term(i) } else { h };
+                if query.is_bound(i as u8) {
+                    if !unify_terms(he, query.args[i], &mut head_subst) {
+                        head_ok = false;
+                        break;
+                    }
+                }
+            }
+            if !head_ok {
+                continue;
+            }
+            self.derive_body_with_support(rule, head_subst, 0, epoch, depth, &mut Vec::new(), &mut out);
+        }
+
+        out
+    }
+
+    /// Recursive body evaluator for `derive_atom_with_support`.
+    ///
+    /// When all body atoms are satisfied (`bi == body_len`), extracts the rule
+    /// head's concrete arg values and pushes them with the accumulated leaf facts.
+    fn derive_body_with_support(
+        &self,
+        rule: &Rule8,
+        subst: Subst,
+        bi: usize,
+        epoch: EpochId,
+        depth: u32,
+        supporting: &mut Vec<FactRow8>,
+        out: &mut Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)>,
+    ) {
+        if bi == rule.body_len as usize {
+            let mut args = [TermId::sentinel(); ARITY_CAP as usize];
+            for i in 0..rule.head.arity as usize {
+                let h = rule.head.args[i];
+                let he = if h.is_sentinel() { var_term(i) } else { h };
+                args[i] = resolve_var(he, &subst);
+            }
+            out.push((args, supporting.clone()));
+            return;
+        }
+
+        let body_atom = rule.body[bi];
+        let mut c_args = [TermId::sentinel(); ARITY_CAP as usize];
+        let mut c_mask = 0u8;
+        for ai in 0..body_atom.arity as usize {
+            let raw = body_atom.args[ai];
+            let eff = if raw.is_sentinel() { var_term(ai) } else { raw };
+            let res = resolve_var(eff, &subst);
+            if var_index(res).is_none() {
+                c_args[ai] = res;
+                c_mask |= 1u8 << ai;
+            }
+        }
+        let mut c_atom = Atom8::new(body_atom.pred_id, body_atom.arity, &c_args);
+        c_atom.binding_mask = c_mask;
+
+        for (sol_args, sol_facts) in self.derive_atom_with_support(&c_atom, epoch, depth + 1) {
+            let mut new_subst = subst;
+            let mut ok = true;
+            for ai in 0..body_atom.arity as usize {
+                let raw = body_atom.args[ai];
+                let eff = if raw.is_sentinel() { var_term(ai) } else { raw };
+                if !unify_terms(eff, sol_args[ai], &mut new_subst) {
+                    ok = false;
+                    break;
+                }
+            }
+            if ok {
+                let pre_len = supporting.len();
+                supporting.extend_from_slice(&sol_facts);
+                self.derive_body_with_support(rule, new_subst, bi + 1, epoch, depth, supporting, out);
+                supporting.truncate(pre_len);
             }
         }
     }
@@ -1102,17 +1227,16 @@ mod tests {
         }
     }
 
-    /// Backtracking test: first body-atom match leads to a dead end; solver must
-    /// try the second candidate to find the proof.
+    /// Backtracking test: solver must explore all intermediate nodes.
     ///
-    /// Facts:  link(a, b), link(a, c), link(b, END)
-    /// Rule:   path(?0, END) :- link(?0, ?1), link(?1, END)
-    /// Query:  path(a, END)
+    /// Facts:  link(a,b), link(a,c), link(b,END), link(c,END)
+    /// Rule:   via(?0, ?1) :- link(a, ?0), link(?0, ?1)
+    /// Query:  via(?, END) — unbound on pos-0 (intermediate node)
     ///
-    /// The body loop visits link(a,b) first, then checks link(b,END) → found ✓
-    /// It ALSO visits link(a,c), then checks link(c,END) → not found, backtracks.
-    /// Old greedy code found exactly 1 answer; backtracking finds exactly 1 as well,
-    /// but if we add link(c,END) both are found — proving the search is exhaustive.
+    /// Backtracking must find BOTH b and c as valid intermediates.
+    /// Old greedy code found only b (first match); correct SLD finds both.
+    /// Using the intermediate as a head variable gives DISTINCT bindings per path,
+    /// proving exhaustive search without relying on proof-count semantics.
     #[test]
     fn test_backtracking_finds_all_answers() {
         let mut cat = Catalog::new(CatalogId(99));
@@ -1126,7 +1250,7 @@ mod tests {
         });
         cat.add_predicate(PredicateMeta {
             pred_id: PredicateId(2),
-            label: "path".into(),
+            label: "via".into(),
             arity: 2,
             access_orders: vec![],
             proof_policy: PredicateProofPolicy::OnRequest,
@@ -1140,8 +1264,6 @@ mod tests {
 
         let mut k = Kernel::new(cat);
 
-        // link(a,b), link(a,c), link(b,END), link(c,END)
-        // Both b and c lead to END, so path(a,END) has two proofs.
         let rows = vec![
             FactRow8::new(PredicateId(1), 2, &[a, b], SourceId(0)),
             FactRow8::new(PredicateId(1), 2, &[a, c], SourceId(0)),
@@ -1150,14 +1272,16 @@ mod tests {
         ];
         k.load_facts(FactBlock8::new(PredicateId(1), 2, rows)).unwrap();
 
-        // Rule: path(?0, END) :- link(?0, ?1), link(?1, END)
+        // Rule: via(?0, ?1) :- link(a, ?0), link(?0, ?1)
+        // ?0 = intermediate node (appears in head — distinct per path)
+        // ?1 = destination (END for both paths)
         const VAR_BASE: u32 = 0x8000_0000;
         let v0 = TermId(VAR_BASE);
         let v1 = TermId(VAR_BASE + 1);
 
-        let head = Atom8::new(PredicateId(2), 2, &[v0, end]);
-        let body0 = Atom8::new(PredicateId(1), 2, &[v0, v1]);  // link(?0, ?1)
-        let body1 = Atom8::new(PredicateId(1), 2, &[v1, end]); // link(?1, END)
+        let head = Atom8::new(PredicateId(2), 2, &[v0, v1]);
+        let body0 = Atom8::new(PredicateId(1), 2, &[a, v0]);   // link(a, ?0)
+        let body1 = Atom8::new(PredicateId(1), 2, &[v0, v1]);  // link(?0, ?1)
         let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
         body_arr[0] = body0;
         body_arr[1] = body1;
@@ -1171,19 +1295,19 @@ mod tests {
             negation_mask: 0,
             builtin_mask: 0,
             var_count: 2,
-            var_live_mask: 0b01,
+            var_live_mask: 0b11,
             feature_mask: FeatureBit::Facts.mask() | FeatureBit::HornRules.mask(),
             proof_mask: 0,
             plan_id: PlanId::default(),
         };
         k.load_rule(rule).unwrap();
 
-        // Query: path(a, END)
-        let mut q_atom = Atom8::new(PredicateId(2), 2, &[a, end]);
-        q_atom.binding_mask = 0b11;
+        // Query: via(?, END) — find all intermediates reachable from a to END
+        let mut q_atom = Atom8::new(PredicateId(2), 2, &[TermId::sentinel(), end]);
+        q_atom.binding_mask = 0b10; // pos-1 (END) bound, pos-0 (intermediate) unbound
         let q = QueryAtom8 {
             atom: q_atom,
-            output_mask: 0,
+            output_mask: 0b01, // output pos-0 (the intermediate node)
             proof_mode: ProofMode::PositiveOnly,
             epoch: EpochId(0),
         };
@@ -1192,12 +1316,13 @@ mod tests {
             QueryResult::Answered(answers) => {
                 assert_eq!(
                     answers.len(), 2,
-                    "backtracking must find both proofs (via b and via c); got {}",
+                    "backtracking must find both intermediates (b and c); got {}",
                     answers.len()
                 );
-                for a in &answers {
-                    assert_eq!(a.kind, DecisionKind::Allow);
-                }
+                let intermediates: Vec<TermId> =
+                    answers.iter().filter_map(|a| a.bindings.first().copied()).collect();
+                assert!(intermediates.contains(&b), "b must be found as intermediate");
+                assert!(intermediates.contains(&c), "c must be found as intermediate");
             }
             other => panic!("expected Answered, got {other:?}"),
         }

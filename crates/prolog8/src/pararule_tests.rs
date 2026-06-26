@@ -385,60 +385,19 @@ fn pararule_d2_erin_not_poor_denied() {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Depth-2 chaining is NOT supported in a single query call.
+// 5. Depth-2 chaining — now fully supported via recursive SLD resolution.
 //
-//    PARARULE-Plus at depth 2 requires:
+//    PARARULE-Plus at depth 2:
 //      quiet(erin) ∧ smart(erin) → wealthy(erin)   [step 1]
 //      wealthy(erin)              → nice(erin)       [step 2]
 //
-//    prolog8's solve_body calls scan_facts() per body atom, not query().
-//    Therefore nice(erin) cannot be derived in a single query call because
-//    wealthy(erin) is not a base fact.
-//
-//    This test DOCUMENTS and ASSERTS the limitation. If it starts passing
-//    after a future recursive-query extension, the test must be updated.
+//    derive_atom_with_support recurses into rules, so both hops fire in a
+//    single query() call. The depth counter caps at MAX_DERIVE_DEPTH=32.
 // ---------------------------------------------------------------------------
 
 #[test]
-fn depth_2_chain_not_supported_in_single_query() {
-    let w = PeopleWorld::build();
-    // nice(erin) requires wealthy(erin) which requires quiet+smart.
-    // Two rule hops → not derivable in one query call.
-    let result = w.query_unary(w.nice, w.erin);
-    match result {
-        QueryResult::Denied(_) => {
-            // Correct: single-query evaluation cannot chain rule→rule.
-            // To derive nice(erin), caller must:
-            //   1. query wealthy(erin) → Answered
-            //   2. assert wealthy(erin) as a fact
-            //   3. query nice(erin) → Answered
-        }
-        QueryResult::Answered(_) => {
-            // If this starts passing, the kernel now supports recursive
-            // query. Update this test and verify ALL depth-N chain tests.
-            panic!(
-                "depth-2 chain now supported — update test suite for recursive query semantics"
-            );
-        }
-        QueryResult::Invalid(c) => panic!("unexpected Invalid: {c:?}"),
-    }
-}
-
-/// Demonstrates the workaround: caller materialises intermediate results.
-#[test]
-fn depth_2_chain_works_with_intermediate_materialisation() {
+fn depth_2_chain_works_in_single_query() {
     let mut w = PeopleWorld::build();
-
-    // Step 1: derive wealthy(erin)
-    let ans1 = answered(w.query_unary(w.wealthy, w.erin));
-    assert_eq!(ans1[0].kind, DecisionKind::Allow);
-
-    // Step 2: materialise wealthy(erin) as a base fact
-    let wealthy_fact = FactRow8::new(w.wealthy, 1, &[w.erin], SRC);
-    w.k
-        .load_facts(FactBlock8::new(w.wealthy, 1, vec![wealthy_fact]))
-        .unwrap();
-
     // Load the nice rule: wealthy(?0) → nice(?0)
     let nice_rule = simple_rule(
         99,
@@ -447,9 +406,18 @@ fn depth_2_chain_works_with_intermediate_materialisation() {
     );
     w.k.load_rule(nice_rule).unwrap();
 
-    // Step 3: now nice(erin) is derivable
-    let ans2 = answered(w.query_unary(w.nice, w.erin));
-    assert_eq!(ans2[0].kind, DecisionKind::Allow);
+    // nice(erin): quiet+smart → wealthy → nice  (two rule hops, one query call)
+    let ans = answered(w.query_unary(w.nice, w.erin));
+    assert_eq!(ans.len(), 1);
+    assert_eq!(ans[0].kind, DecisionKind::Allow);
+
+    // Counterfactual: charlie is not nice (not quiet, not wealthy)
+    let d = denied(w.query_unary(w.nice, w.charlie));
+    assert_eq!(d.kind, DecisionKind::Deny);
+
+    // Counterfactual: anne is not nice (poor, but poor→nice is not a rule here)
+    let d2 = denied(w.query_unary(w.nice, w.anne));
+    assert_eq!(d2.kind, DecisionKind::Deny);
 }
 
 // ---------------------------------------------------------------------------
@@ -544,16 +512,30 @@ fn build_multi_rule_world() -> (Kernel, TermId, TermId, TermId, PredicateId, Pre
     (k, alice, bob, carol, PredicateId(1), PredicateId(2), PredicateId(3))
 }
 
-/// alice has both kind and quiet → TWO rule derivations for smart(alice).
+/// alice has both kind and quiet → smart(alice) is proven (distinct-conclusion semantics).
+/// Two rules both fire but the answer is deduplicated to one conclusion per binding.
+/// To verify both rules fired, use an unbound query over distinct entities.
 #[test]
-fn multi_rule_alice_gets_two_derivations() {
+fn multi_rule_alice_is_smart() {
     let (k, alice, _bob, _carol, _kind, _quiet, smart) = build_multi_rule_world();
     let atom = bound(Atom8::new(smart, 1, &[alice]), 0b1);
     let ans = answered(k.query(&full_query(atom, 0)));
-    assert_eq!(ans.len(), 2, "alice has kind AND quiet — both rules must fire");
-    for a in &ans {
-        assert_eq!(a.kind, DecisionKind::Allow);
-    }
+    assert_eq!(ans.len(), 1, "one conclusion: alice is smart (two proofs deduped to one)");
+    assert_eq!(ans[0].kind, DecisionKind::Allow);
+}
+
+/// Unbound query: smart(?) returns three entities via two different rules.
+/// alice (kind+quiet), bob (kind only), carol (quiet only) — all distinct bindings.
+#[test]
+fn multi_rule_unbound_finds_all_entities() {
+    let (k, alice, bob, carol, _kind, _quiet, smart) = build_multi_rule_world();
+    let atom = Atom8::new(smart, 1, &[TermId::sentinel()]);
+    let ans = answered(k.query(&full_query(atom, 0b1)));
+    let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
+    assert!(bindings.contains(&alice), "alice should be smart");
+    assert!(bindings.contains(&bob), "bob should be smart via kind");
+    assert!(bindings.contains(&carol), "carol should be smart via quiet");
+    assert_eq!(bindings.len(), 3, "exactly three distinct entities");
 }
 
 /// bob has only kind → exactly ONE derivation.
@@ -1030,7 +1012,9 @@ fn animal_wolf_is_slow_via_dull_and_sleepy() {
 
 #[test]
 fn rule_ordering_does_not_affect_derivability() {
-    fn make_kernel_with_order(rule_order: &[u32]) -> (Kernel, TermId, PredicateId) {
+    // Each entity satisfies exactly one base predicate → exactly one rule.
+    // Three distinct entities x,y,z → three distinct binding answers regardless of rule order.
+    fn make_kernel_with_order(rule_order: &[u32]) -> (Kernel, TermId, TermId, TermId, PredicateId) {
         let mut cat = Catalog::new(CatalogId(100));
         for (id, label) in [(1u32, "a"), (2u32, "b"), (3u32, "c"), (4u32, "target")] {
             cat.add_predicate(PredicateMeta {
@@ -1042,35 +1026,32 @@ fn rule_ordering_does_not_affect_derivability() {
                 materialized: false,
             });
         }
-        let x = cat.intern_term("x");
+        let x = cat.intern_term("x"); // has only fact a(x) → matched by rule A
+        let y = cat.intern_term("y"); // has only fact b(y) → matched by rule B
+        let z = cat.intern_term("z"); // has only fact c(z) → matched by rule C
         let mut k = Kernel::new(cat);
 
         k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
             FactRow8::new(PredicateId(1), 1, &[x], SRC),
         ])).unwrap();
         k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-            FactRow8::new(PredicateId(2), 1, &[x], SRC),
+            FactRow8::new(PredicateId(2), 1, &[y], SRC),
         ])).unwrap();
         k.load_facts(FactBlock8::new(PredicateId(3), 1, vec![
-            FactRow8::new(PredicateId(3), 1, &[x], SRC),
+            FactRow8::new(PredicateId(3), 1, &[z], SRC),
         ])).unwrap();
 
         let rules: Vec<Rule8> = vec![
-            // target(?0) :- a(?0)
             simple_rule(1, Atom8::new(PredicateId(4), 1, &[v(0)]), &[Atom8::new(PredicateId(1), 1, &[v(0)])]),
-            // target(?0) :- b(?0)
             simple_rule(2, Atom8::new(PredicateId(4), 1, &[v(0)]), &[Atom8::new(PredicateId(2), 1, &[v(0)])]),
-            // target(?0) :- c(?0)
             simple_rule(3, Atom8::new(PredicateId(4), 1, &[v(0)]), &[Atom8::new(PredicateId(3), 1, &[v(0)])]),
         ];
         let rule_map: std::collections::HashMap<u32, Rule8> =
             rules.into_iter().map(|r| (r.rule_id.0, r)).collect();
-
         for &id in rule_order {
             k.load_rule(rule_map[&id].clone()).unwrap();
         }
-
-        (k, x, PredicateId(4))
+        (k, x, y, z, PredicateId(4))
     }
 
     let orders = [
@@ -1083,12 +1064,14 @@ fn rule_ordering_does_not_affect_derivability() {
     ];
 
     for order in &orders {
-        let (k, x, target) = make_kernel_with_order(order);
-        let atom = bound(Atom8::new(target, 1, &[x]), 0b1);
-        let ans = answered(k.query(&full_query(atom, 0)));
-        assert_eq!(
-            ans.len(), 3,
-            "all three rules must fire regardless of load order {order:?}"
-        );
+        let (k, x, y, z, target) = make_kernel_with_order(order);
+        // Unbound query: target(?) → should find x, y, z (three distinct entities)
+        let atom = Atom8::new(target, 1, &[TermId::sentinel()]);
+        let ans = answered(k.query(&full_query(atom, 0b1)));
+        let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
+        assert!(bindings.contains(&x), "x must be target via rule A (order {order:?})");
+        assert!(bindings.contains(&y), "y must be target via rule B (order {order:?})");
+        assert!(bindings.contains(&z), "z must be target via rule C (order {order:?})");
+        assert_eq!(bindings.len(), 3, "exactly three distinct entities (order {order:?})");
     }
 }
