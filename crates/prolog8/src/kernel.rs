@@ -281,26 +281,39 @@ impl Kernel {
         let mut concrete = Atom8::new(body_atom.pred_id, body_atom.arity, &concrete_args);
         concrete.binding_mask = concrete_binding;
 
-        // Evaluate body atom recursively (facts + rules). Each solution is a set of
-        // concrete arg values plus the leaf base facts that supported the derivation.
-        for (sol_args, sol_facts) in self.derive_atom_with_support(&concrete, q.epoch, 0) {
-            let mut new_subst = subst;
-            let mut ok = true;
+        let negated = (rule.negation_mask >> bi) & 1 == 1;
 
-            for ai in 0..body_atom.arity as usize {
-                let raw = body_atom.args[ai];
-                let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
-                if !unify_terms(effective, sol_args[ai], &mut new_subst) {
-                    ok = false;
-                    break;
-                }
+        if negated {
+            // NAF: body atom succeeds iff it has NO derivation.
+            // Negated atoms must not bind variables (stratification invariant);
+            // we evaluate with whatever is already ground in `subst`.
+            let solutions = self.derive_atom_with_support(&concrete, q.epoch, 0);
+            if solutions.is_empty() {
+                // NAF succeeds — no new bindings, continue to next body atom.
+                self.solve_body(rule, subst, bi + 1, supporting, answers, q);
             }
+            // else: NAF fails — backtrack (no recursive call).
+        } else {
+            // Positive atom: evaluate and extend substitution for each solution.
+            for (sol_args, sol_facts) in self.derive_atom_with_support(&concrete, q.epoch, 0) {
+                let mut new_subst = subst;
+                let mut ok = true;
 
-            if ok {
-                let pre_len = supporting.len();
-                supporting.extend_from_slice(&sol_facts);
-                self.solve_body(rule, new_subst, bi + 1, supporting, answers, q);
-                supporting.truncate(pre_len);
+                for ai in 0..body_atom.arity as usize {
+                    let raw = body_atom.args[ai];
+                    let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
+                    if !unify_terms(effective, sol_args[ai], &mut new_subst) {
+                        ok = false;
+                        break;
+                    }
+                }
+
+                if ok {
+                    let pre_len = supporting.len();
+                    supporting.extend_from_slice(&sol_facts);
+                    self.solve_body(rule, new_subst, bi + 1, supporting, answers, q);
+                    supporting.truncate(pre_len);
+                }
             }
         }
     }
@@ -393,22 +406,31 @@ impl Kernel {
         let mut c_atom = Atom8::new(body_atom.pred_id, body_atom.arity, &c_args);
         c_atom.binding_mask = c_mask;
 
-        for (sol_args, sol_facts) in self.derive_atom_with_support(&c_atom, epoch, depth + 1) {
-            let mut new_subst = subst;
-            let mut ok = true;
-            for ai in 0..body_atom.arity as usize {
-                let raw = body_atom.args[ai];
-                let eff = if raw.is_sentinel() { var_term(ai) } else { raw };
-                if !unify_terms(eff, sol_args[ai], &mut new_subst) {
-                    ok = false;
-                    break;
-                }
+        let negated = (rule.negation_mask >> bi) & 1 == 1;
+
+        if negated {
+            let solutions = self.derive_atom_with_support(&c_atom, epoch, depth + 1);
+            if solutions.is_empty() {
+                self.derive_body_with_support(rule, subst, bi + 1, epoch, depth, supporting, out);
             }
-            if ok {
-                let pre_len = supporting.len();
-                supporting.extend_from_slice(&sol_facts);
-                self.derive_body_with_support(rule, new_subst, bi + 1, epoch, depth, supporting, out);
-                supporting.truncate(pre_len);
+        } else {
+            for (sol_args, sol_facts) in self.derive_atom_with_support(&c_atom, epoch, depth + 1) {
+                let mut new_subst = subst;
+                let mut ok = true;
+                for ai in 0..body_atom.arity as usize {
+                    let raw = body_atom.args[ai];
+                    let eff = if raw.is_sentinel() { var_term(ai) } else { raw };
+                    if !unify_terms(eff, sol_args[ai], &mut new_subst) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if ok {
+                    let pre_len = supporting.len();
+                    supporting.extend_from_slice(&sol_facts);
+                    self.derive_body_with_support(rule, new_subst, bi + 1, epoch, depth, supporting, out);
+                    supporting.truncate(pre_len);
+                }
             }
         }
     }

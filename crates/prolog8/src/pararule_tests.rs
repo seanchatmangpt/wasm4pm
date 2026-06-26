@@ -557,19 +557,16 @@ fn multi_rule_carol_gets_one_derivation() {
 }
 
 // ---------------------------------------------------------------------------
-// 8. NegationRule-D2-6305 case study: Fiona is quiet
-//    Paper Section 5.1 case study:
-//      Facts: Fiona=smart  (not rough, not strong)
-//      Rule:  smart(X) ∧ ¬rough(X) → quiet(X)
+// 8. NegationRule-D2-6305 case study: NAF (negation-as-failure)
+//    Paper Section 5.1:
+//      Facts: Fiona=smart  (not rough — absence from fact base)
+//      Rule:  quiet(?0) :- smart(?0), \+rough(?0)
 //
-//    prolog8 does not implement NAF (negation_mask is unread in solve_body).
-//    This test documents the gap: the rule CANNOT fire because the kernel
-//    has no NAF evaluation. The result is DENIED even though PARARULE-Plus
-//    semantics would say TRUE.
+//    PARARULE-Plus semantics: \+rough(X) checks the initial fact base only.
+//    prolog8 NAF: \+P(X) succeeds iff derive_atom_with_support(P(X)) is empty.
 // ---------------------------------------------------------------------------
 
-#[test]
-fn pararule_naf_rule_not_supported_documents_gap() {
+fn naf_world() -> (Kernel, TermId, TermId, PredicateId, PredicateId, PredicateId) {
     let mut cat = Catalog::new(CatalogId(60));
     for (id, label) in [(1u32, "smart"), (2u32, "rough"), (3u32, "quiet")] {
         cat.add_predicate(PredicateMeta {
@@ -582,39 +579,87 @@ fn pararule_naf_rule_not_supported_documents_gap() {
         });
     }
     let fiona = cat.intern_term("fiona");
+    let gary = cat.intern_term("gary");
     let mut k = Kernel::new(cat);
 
-    // Fiona is smart (fact). Fiona is NOT rough (absence = NAF succeeds in PARARULE-Plus).
+    // fiona: smart only (not rough) → quiet should be derived
+    // gary:  smart AND rough        → quiet must NOT be derived
     k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
         FactRow8::new(PredicateId(1), 1, &[fiona], SRC),
+        FactRow8::new(PredicateId(1), 1, &[gary], SRC),
+    ])).unwrap();
+    k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
+        FactRow8::new(PredicateId(2), 1, &[gary], SRC), // only gary is rough
     ])).unwrap();
 
     // Rule: quiet(?0) :- smart(?0), \+rough(?0)
-    // We encode it as a POSITIVE rule (ignoring NAF) to show what the kernel
-    // treats it as: quiet(?0) :- smart(?0)  [the NAF body atom is dropped].
-    // In real SLDNF, the rule body includes the negated atom.
-    // Here we load the positive approximation to show quiet(fiona) would fire.
-    let positive_approx = simple_rule(
+    // negation_mask bit 1 = body[1] (rough) is negated
+    let mut naf_rule = simple_rule(
         1,
         Atom8::new(PredicateId(3), 1, &[v(0)]),
-        &[Atom8::new(PredicateId(1), 1, &[v(0)])],
+        &[
+            Atom8::new(PredicateId(1), 1, &[v(0)]), // body[0]: smart(?0)  — positive
+            Atom8::new(PredicateId(2), 1, &[v(0)]), // body[1]: \+rough(?0) — negated
+        ],
     );
-    k.load_rule(positive_approx).unwrap();
+    naf_rule.feature_mask |= FeatureBit::StratifiedNegation.mask();
+    naf_rule.negation_mask = 0b10; // bit 1 set → body[1] is negated
+    k.load_rule(naf_rule).unwrap();
 
-    let atom = bound(Atom8::new(PredicateId(3), 1, &[fiona]), 0b1);
+    (k, fiona, gary, PredicateId(1), PredicateId(2), PredicateId(3))
+}
+
+/// fiona is smart and NOT rough → quiet(fiona) must be derived.
+#[test]
+fn naf_quiet_fiona_derived_when_not_rough() {
+    let (k, fiona, _gary, _smart, _rough, quiet) = naf_world();
+    let atom = bound(Atom8::new(quiet, 1, &[fiona]), 0b1);
     let ans = answered(k.query(&full_query(atom, 0)));
-    assert_eq!(
-        ans.len(), 1,
-        "positive approximation derives quiet(fiona); NAF would need separate handling"
-    );
+    assert_eq!(ans.len(), 1);
+    assert_eq!(ans[0].kind, DecisionKind::Allow);
+}
 
-    // Show that admission BLOCKS rules with negation_mask set — the kernel
-    // correctly gates this feature at load time via `NegationRequiresFeature`.
-    // To inject a negated rule for gap-documentation, we bypass admission
-    // by pushing directly onto k.rules (only valid in tests).
-    let mut cat2 = Catalog::new(CatalogId(61));
-    for (id, label) in [(1u32, "smart"), (2u32, "rough"), (3u32, "quiet")] {
-        cat2.add_predicate(PredicateMeta {
+/// gary is smart AND rough → \+rough(gary) fails → quiet(gary) must be DENIED.
+#[test]
+fn naf_quiet_gary_denied_when_rough() {
+    let (k, _fiona, gary, _smart, _rough, quiet) = naf_world();
+    let atom = bound(Atom8::new(quiet, 1, &[gary]), 0b1);
+    let d = denied(k.query(&full_query(atom, 0)));
+    assert_eq!(d.kind, DecisionKind::Deny);
+}
+
+/// Unbound query: quiet(?) returns only fiona, not gary.
+#[test]
+fn naf_unbound_quiet_returns_only_not_rough_entities() {
+    let (k, fiona, gary, _smart, _rough, quiet) = naf_world();
+    let atom = Atom8::new(quiet, 1, &[TermId::sentinel()]);
+    let ans = answered(k.query(&full_query(atom, 0b1)));
+    let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
+    assert!(bindings.contains(&fiona), "fiona must be quiet");
+    assert!(!bindings.contains(&gary), "gary must NOT be quiet (is rough)");
+    assert_eq!(bindings.len(), 1);
+}
+
+/// Tamper test: add rough(fiona) as a fact — now quiet(fiona) must be DENIED.
+/// Proves the NAF check is live (not vacuous).
+#[test]
+fn naf_quiet_fiona_denied_after_rough_fact_added() {
+    let (mut k, fiona, _gary, _smart, rough, quiet) = naf_world();
+    k.load_facts(FactBlock8::new(rough, 1, vec![
+        FactRow8::new(rough, 1, &[fiona], SRC),
+    ])).unwrap();
+    let atom = bound(Atom8::new(quiet, 1, &[fiona]), 0b1);
+    let d = denied(k.query(&full_query(atom, 0)));
+    assert_eq!(d.kind, DecisionKind::Deny);
+}
+
+/// NAF with derived negated atom: \+derived(X) fails when a rule derives it.
+/// Tests NAF against rule-derived predicates, not just base facts.
+#[test]
+fn naf_blocks_when_negated_atom_derived_by_rule() {
+    let mut cat = Catalog::new(CatalogId(62));
+    for (id, label) in [(1u32, "base"), (2u32, "derived"), (3u32, "blocked")] {
+        cat.add_predicate(PredicateMeta {
             pred_id: PredicateId(id),
             label: label.into(),
             arity: 1,
@@ -623,19 +668,22 @@ fn pararule_naf_rule_not_supported_documents_gap() {
             materialized: false,
         });
     }
-    let fiona2 = cat2.intern_term("fiona");
-    let mut k2 = Kernel::new(cat2);
-    k2.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-        FactRow8::new(PredicateId(1), 1, &[fiona2], SRC),
-    ])).unwrap();
-    k2.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-        FactRow8::new(PredicateId(2), 1, &[fiona2], SRC), // rough(fiona) IS a fact
+    let x = cat.intern_term("x");
+    let mut k = Kernel::new(cat);
+
+    k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
+        FactRow8::new(PredicateId(1), 1, &[x], SRC),
     ])).unwrap();
 
-    // Bypass admission to inject a rule with negation_mask — kernel currently
-    // evaluates body[1] as a POSITIVE atom regardless of negation_mask.
-    let mut naf_rule = simple_rule(
-        2,
+    // Rule A: derived(?0) :- base(?0)
+    k.load_rule(simple_rule(1,
+        Atom8::new(PredicateId(2), 1, &[v(0)]),
+        &[Atom8::new(PredicateId(1), 1, &[v(0)])],
+    )).unwrap();
+
+    // Rule B: blocked(?0) :- base(?0), \+derived(?0)
+    // Since derived(x) IS derivable, blocked(x) must be DENIED.
+    let mut naf_rule = simple_rule(2,
         Atom8::new(PredicateId(3), 1, &[v(0)]),
         &[
             Atom8::new(PredicateId(1), 1, &[v(0)]),
@@ -643,24 +691,13 @@ fn pararule_naf_rule_not_supported_documents_gap() {
         ],
     );
     naf_rule.feature_mask |= FeatureBit::StratifiedNegation.mask();
-    naf_rule.negation_mask = 0b10; // bit 1 = body[1] is negated (unimplemented in kernel)
-    k2.rules.push(naf_rule); // bypass admission
+    naf_rule.negation_mask = 0b10;
+    k.load_rule(naf_rule).unwrap();
 
-    let atom2 = bound(Atom8::new(PredicateId(3), 1, &[fiona2]), 0b1);
-    // The kernel evaluates body[1] as a POSITIVE requirement, so rough(fiona) being
-    // present means the body SUCCEEDS (both atoms match) — wrong for NAF semantics.
-    // Correct NAF: body[1] negated means the rule body FAILS when rough(fiona) exists.
-    let result = k2.query(&full_query(atom2, 0));
-    match result {
-        QueryResult::Answered(_) => {
-            // Documents current gap: negation_mask is not evaluated by solve_body.
-            // The rule fires positively on both atoms even though body[1] is marked negated.
-        }
-        QueryResult::Denied(_) => {
-            panic!("kernel now implements NAF correctly — update this gap-documentation test");
-        }
-        QueryResult::Invalid(c) => panic!("unexpected Invalid: {c:?}"),
-    }
+    let atom = bound(Atom8::new(PredicateId(3), 1, &[x]), 0b1);
+    let d = denied(k.query(&full_query(atom, 0)));
+    assert_eq!(d.kind, DecisionKind::Deny,
+        "blocked(x) must fail because \\+derived(x) fails (derived(x) IS derivable)");
 }
 
 // ---------------------------------------------------------------------------
