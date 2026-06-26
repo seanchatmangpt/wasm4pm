@@ -41,6 +41,9 @@ pub mod types;
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
+#[cfg(test)]
+mod pararule_tests;
+
 pub use admission::{admit_atom, admit_rule, RejectionCode};
 pub use catalog::{Catalog, PredicateMeta, PredicateProofPolicy};
 pub use hash::{combine_roots, hash_bytes, link_hash, Hash, DOMAIN_PROLOG8_RECEIPT};

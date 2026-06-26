@@ -181,10 +181,14 @@ impl Kernel {
 
     /// Horn clause evaluation with backtracking: tries every matching fact per body
     /// atom, backtracks on dead ends, and collects all successful derivations.
-    /// Visited set (capped at 256) prevents loops across rule invocations.
+    ///
+    /// Every rule whose head unifies with the query is tried independently. The
+    /// visited-set is NOT used here because `solve_body` never recurses back into
+    /// rule evaluation (it calls `scan_facts` only), so there is no rule-level
+    /// recursion to prevent. Blocking duplicate (pred_id, args) entries would
+    /// incorrectly suppress multiple rules that derive the same head.
     fn scan_rules(&self, q: &QueryAtom8) -> Vec<Decision> {
         let mut answers = Vec::new();
-        let mut visited: Vec<(u32, [u32; ARITY_CAP as usize])> = Vec::with_capacity(64);
 
         for rule in &self.rules {
             if rule.head.pred_id != q.atom.pred_id || rule.head.arity != q.atom.arity {
@@ -207,22 +211,6 @@ impl Kernel {
             }
             if !head_ok {
                 continue;
-            }
-
-            // Visited-set cycle check (keyed on resolved head args).
-            {
-                let mut key = [0u32; ARITY_CAP as usize];
-                for i in 0..rule.head.arity as usize {
-                    key[i] = resolve_var(var_term(i), &subst).0;
-                }
-                let entry = (rule.head.pred_id.0, key);
-                if visited.contains(&entry) {
-                    continue;
-                }
-                if visited.len() >= 256 {
-                    break;
-                }
-                visited.push(entry);
             }
 
             // Depth-first backtracking search over body atoms.
