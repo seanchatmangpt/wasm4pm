@@ -1,0 +1,43 @@
+{
+  "model_id": "act_r-l1-v1",
+  "model_level": "L1",
+  "breed_id": "act_r",
+  "object_types": ["chunk", "production", "decision"],
+  "places": [
+    {"id": "p1", "name": "memory_empty",       "object_type": "chunk"},
+    {"id": "p2", "name": "memory_encoded",     "object_type": "chunk"},
+    {"id": "p3", "name": "cycle_open",         "object_type": "production"},
+    {"id": "p4", "name": "production_matched", "object_type": "production"},
+    {"id": "p5", "name": "retrieval_pending",  "object_type": "chunk"},
+    {"id": "p6", "name": "decision_emitted",   "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-chunk",        "label": "load-chunk"},
+    {"id": "t2", "name": "match-production",  "label": "match-production"},
+    {"id": "t3", "name": "fire-production",   "label": "fire-production"},
+    {"id": "t4", "name": "retrieval-request", "label": "retrieval-request"},
+    {"id": "t5", "name": "retrieve-chunk",    "label": "retrieve-chunk"},
+    {"id": "t6", "name": "retrieval-failure", "label": "retrieval-failure"},
+    {"id": "t7", "name": "decision",          "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p4", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p3", "type": "produce"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t7", "type": "consume"},
+    {"from": "t7", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

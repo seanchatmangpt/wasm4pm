@@ -1,0 +1,39 @@
+{
+  "model_id": "episodic_memory-l1-v1",
+  "model_level": "L1",
+  "breed_id": "episodic_memory",
+  "object_types": ["episode", "cue", "decision"],
+  "places": [
+    {"id": "p1", "name": "store_empty",      "object_type": "episode"},
+    {"id": "p2", "name": "episodes_encoded", "object_type": "episode"},
+    {"id": "p3", "name": "cue_presented",    "object_type": "cue"},
+    {"id": "p4", "name": "episodes_scored",  "object_type": "episode"},
+    {"id": "p5", "name": "memory_recalled",  "object_type": "episode"},
+    {"id": "p6", "name": "decision_emitted", "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "encode-episode", "label": "encode-episode"},
+    {"id": "t2", "name": "present-cue",    "label": "present-cue"},
+    {"id": "t3", "name": "score-episode",  "label": "score-episode"},
+    {"id": "t4", "name": "recall",         "label": "recall"},
+    {"id": "t5", "name": "decision",       "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

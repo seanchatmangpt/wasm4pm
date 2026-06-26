@@ -1,0 +1,46 @@
+{
+  "model_id": "tableaux-l1-v1",
+  "model_level": "L1",
+  "breed_id": "tableaux",
+  "object_types": ["formula", "branch", "verdict"],
+  "places": [
+    {"id": "p1", "name": "formula_pending",   "object_type": "formula"},
+    {"id": "p2", "name": "formula_parsed",    "object_type": "formula"},
+    {"id": "p3", "name": "root_signed",       "object_type": "branch"},
+    {"id": "p4", "name": "branch_open",       "object_type": "branch"},
+    {"id": "p5", "name": "branch_resolved",   "object_type": "branch"},
+    {"id": "p6", "name": "verdict_emitted",   "object_type": "verdict"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "parse-formula", "label": "parse-formula"},
+    {"id": "t2", "name": "sign-root",     "label": "sign-root"},
+    {"id": "t3", "name": "alpha-expand",  "label": "alpha-expand"},
+    {"id": "t4", "name": "beta-expand",   "label": "beta-expand"},
+    {"id": "t5", "name": "close-branch",  "label": "close-branch"},
+    {"id": "t6", "name": "open-branch",   "label": "open-branch"},
+    {"id": "t7", "name": "verdict",       "label": "verdict"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p3", "to": "t5", "type": "consume"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p4", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t7", "type": "consume"},
+    {"from": "t7", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

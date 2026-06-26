@@ -1,0 +1,40 @@
+{
+  "model_id": "strips-l1-v1",
+  "model_level": "L1",
+  "breed_id": "strips",
+  "object_types": ["state", "operator", "plan"],
+  "places": [
+    {"id": "p1", "name": "state_loaded",          "object_type": "state"},
+    {"id": "p2", "name": "operator_selected",     "object_type": "operator"},
+    {"id": "p3", "name": "precondition_checked",  "object_type": "operator"},
+    {"id": "p4", "name": "effect_applied",        "object_type": "state"},
+    {"id": "p5", "name": "goal_tested",           "object_type": "state"},
+    {"id": "p6", "name": "plan_emitted",          "object_type": "plan"},
+    {"id": "p7", "name": "plan_refused",          "object_type": "plan"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "state_loaded",         "label": "state_loaded"},
+    {"id": "t2", "name": "operator_selected",    "label": "operator_selected"},
+    {"id": "t3", "name": "precondition_checked", "label": "precondition_checked"},
+    {"id": "t4", "name": "effect_applied",       "label": "effect_applied"},
+    {"id": "t5", "name": "goal_tested",          "label": "goal_tested"},
+    {"id": "t6", "name": "plan_emitted",         "label": "plan_emitted"},
+    {"id": "t7", "name": "plan_refused",         "label": "plan_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p7", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}, {"p7": 1}]
+}

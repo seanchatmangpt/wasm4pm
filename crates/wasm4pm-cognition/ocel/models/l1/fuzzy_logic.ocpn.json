@@ -1,0 +1,37 @@
+{
+  "model_id": "fuzzy_logic-l1-v1",
+  "model_level": "L1",
+  "breed_id": "fuzzy_logic",
+  "object_types": ["term", "rule", "decision"],
+  "places": [
+    {"id": "p1", "name": "crisp_inputs",     "object_type": "term"},
+    {"id": "p2", "name": "fuzzified",        "object_type": "term"},
+    {"id": "p3", "name": "rules_fired",      "object_type": "rule"},
+    {"id": "p4", "name": "aggregated",       "object_type": "rule"},
+    {"id": "p5", "name": "crisp_output",     "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "fuzzy-fuzzify",   "label": "fuzzy-fuzzify"},
+    {"id": "t2", "name": "fuzzy-fire",      "label": "fuzzy-fire"},
+    {"id": "t3", "name": "fuzzy-aggregate", "label": "fuzzy-aggregate"},
+    {"id": "t4", "name": "fuzzy-defuzz",    "label": "fuzzy-defuzz"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

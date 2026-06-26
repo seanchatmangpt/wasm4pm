@@ -1,15 +1,15 @@
 /// Return the hand-authored OCPN model JSON source for a breed id, if any.
 pub fn model_source(breed_id: &str) -> Option<&'static str> {
     match breed_id {
-        "mycin" => Some(include_str!("../../../../ocel/models/l1/mycin.ocpn.json")),
-        "prolog" => Some(include_str!("../../../../ocel/models/l1/prolog.ocpn.json")),
-        "strips" => Some(include_str!("../../../../ocel/models/l1/strips.ocpn.json")),
-        "soar" => Some(include_str!("../../../../ocel/models/l1/soar.ocpn.json")),
-        "hearsay" => Some(include_str!("../../../../ocel/models/l1/hearsay.ocpn.json")),
-        "cbr" => Some(include_str!("../../../../ocel/models/l1/cbr.ocpn.json")),
-        "gps" => Some(include_str!("../../../../ocel/models/l1/gps.ocpn.json")),
-        "dendral" => Some(include_str!("../../../../ocel/models/l1/dendral.ocpn.json")),
-        "eliza" => Some(include_str!("../../../../ocel/models/l1/eliza.ocpn.json")),
+        "mycin" => Some(include_str!("../../ocel/models/l1/mycin.ocpn.json")),
+        "prolog" => Some(include_str!("../../ocel/models/l1/prolog.ocpn.json")),
+        "strips" => Some(include_str!("../../ocel/models/l1/strips.ocpn.json")),
+        "soar" => Some(include_str!("../../ocel/models/l1/soar.ocpn.json")),
+        "hearsay" => Some(include_str!("../../ocel/models/l1/hearsay.ocpn.json")),
+        "cbr" => Some(include_str!("../../ocel/models/l1/cbr.ocpn.json")),
+        "gps" => Some(include_str!("../../ocel/models/l1/gps.ocpn.json")),
+        "dendral" => Some(include_str!("../../ocel/models/l1/dendral.ocpn.json")),
+        "eliza" => Some(include_str!("../../ocel/models/l1/eliza.ocpn.json")),
         "autoinstinct_vision" => Some(include_str!(
             "../../../../ocel/models/l1/autoinstinct_vision.ocpn.json"
         )),
@@ -40,15 +40,15 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "dempster_shafer" => Some(include_str!(
             "../../../../ocel/models/l1/dempster_shafer.ocpn.json"
         )),
-        "csp_ac3" => Some(include_str!("../../../../ocel/models/l1/csp_ac3.ocpn.json")),
+        "csp_ac3" => Some(include_str!("../../ocel/models/l1/csp_ac3.ocpn.json")),
         "default_logic" => Some(include_str!(
             "../../../../ocel/models/l1/default_logic.ocpn.json"
         )),
         "frames_inheritance" => Some(include_str!(
             "../../../../ocel/models/l1/frames_inheritance.ocpn.json"
         )),
-        "ebl" => Some(include_str!("../../../../ocel/models/l1/ebl.ocpn.json")),
-        "asp" => Some(include_str!("../../../../ocel/models/l1/asp.ocpn.json")),
+        "ebl" => Some(include_str!("../../ocel/models/l1/ebl.ocpn.json")),
+        "asp" => Some(include_str!("../../ocel/models/l1/asp.ocpn.json")),
         "description_logic" => Some(include_str!(
             "../../../../ocel/models/l1/description_logic.ocpn.json"
         )),
@@ -64,7 +64,7 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "event_calculus" => Some(include_str!(
             "../../../../ocel/models/l1/event_calculus.ocpn.json"
         )),
-        "mdp" => Some(include_str!("../../../../ocel/models/l1/mdp.ocpn.json")),
+        "mdp" => Some(include_str!("../../ocel/models/l1/mdp.ocpn.json")),
         "version_space" => Some(include_str!(
             "../../../../ocel/models/l1/version_space.ocpn.json"
         )),
@@ -77,7 +77,7 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "script_sam" => Some(include_str!(
             "../../../../ocel/models/l1/script_sam.ocpn.json"
         )),
-        "clp" => Some(include_str!("../../../../ocel/models/l1/clp.ocpn.json")),
+        "clp" => Some(include_str!("../../ocel/models/l1/clp.ocpn.json")),
         "situation_calculus" => Some(include_str!(
             "../../../../ocel/models/l1/situation_calculus.ocpn.json"
         )),
@@ -87,8 +87,8 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "analogy_sme" => Some(include_str!(
             "../../../../ocel/models/l1/analogy_sme.ocpn.json"
         )),
-        "act_r" => Some(include_str!("../../../../ocel/models/l1/act_r.ocpn.json")),
-        "problog" => Some(include_str!("../../../../ocel/models/l1/problog.ocpn.json")),
+        "act_r" => Some(include_str!("../../ocel/models/l1/act_r.ocpn.json")),
+        "problog" => Some(include_str!("../../ocel/models/l1/problog.ocpn.json")),
         "sat_cdcl" => Some(include_str!(
             "../../../../ocel/models/l1/sat_cdcl.ocpn.json"
         )),
@@ -101,7 +101,7 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "ctl_check" => Some(include_str!(
             "../../../../ocel/models/l1/ctl_check.ocpn.json"
         )),
-        "ilp" => Some(include_str!("../../../../ocel/models/l1/ilp.ocpn.json")),
+        "ilp" => Some(include_str!("../../ocel/models/l1/ilp.ocpn.json")),
         "naive_physics" => Some(include_str!(
             "../../../../ocel/models/l1/naive_physics.ocpn.json"
         )),
@@ -114,7 +114,7 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "markov_logic" => Some(include_str!(
             "../../../../ocel/models/l1/markov_logic.ocpn.json"
         )),
-        "pomdp" => Some(include_str!("../../../../ocel/models/l1/pomdp.ocpn.json")),
+        "pomdp" => Some(include_str!("../../ocel/models/l1/pomdp.ocpn.json")),
         "contingent_plan" => Some(include_str!(
             "../../../../ocel/models/l1/contingent_plan.ocpn.json"
         )),
