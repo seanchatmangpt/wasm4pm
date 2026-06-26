@@ -36,6 +36,7 @@ miniml = { version = "26.6.25", path = "crates/miniml-core" }
 ocpq = { version = "26.6.25", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
+criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.8"
 
 [profile.release]

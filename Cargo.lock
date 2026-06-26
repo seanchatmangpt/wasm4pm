@@ -1328,6 +1328,7 @@ name = "ocpq"
 version = "26.6.25"
 dependencies = [
  "chrono",
+ "criterion",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -1467,6 +1468,7 @@ name = "prolog8"
 version = "26.6.25"
 dependencies = [
  "blake3",
+ "criterion",
  "js-sys",
  "proptest",
  "serde",
