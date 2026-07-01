@@ -1,6 +1,6 @@
 # Architecture Overview
 
-wasm4pm is a process mining platform with a real Rust cognition kernel. High-performance algorithms compile to WebAssembly. **21** cognition breeds (including abductive reasoning, temporal logic, Bayesian networks, Autoinstinct, and ILP variants) run natively in Rust, exposed through a thin TypeScript boundary, surfaced through a single CLI binary (`wpm`).
+wasm4pm is a process mining platform with a real Rust cognition kernel. High-performance algorithms compile to WebAssembly. **55** cognition breeds (including abductive reasoning, temporal logic, Bayesian networks, Autoinstinct, and ILP variants) run natively in Rust, exposed through a thin TypeScript boundary, surfaced through a single CLI binary (`wpm`).
 
 The doctrine: **Old AI is the factory. LLMs are the brochure.**
 
@@ -91,7 +91,7 @@ See [Deployment Profiles Reference](../reference/deployment_profiles.md) for fea
 
 **Truex:** OCEL 2.0 canonicalization + BLAKE3 receipt verification via `wpm truex verify`. Profile: [Truex OCEL 2.0 Canonical Profile](../truex-ocel2-canonical-profile.md).
 
-**Cognition:** 21 active breeds (17 PARTIAL_ALIVE + 4 ADMITTED) via `wpm cognition run --contract <breed>`. Full list: `breeds/registry.json`.
+**Cognition:** 55 active breeds (all PARTIAL_ALIVE) via `wpm cognition run --contract <breed>`. Full list: `breeds/registry.json`.
 
 **Prediction:** Next-activity, remaining-time, drift via `wpm predict`.
 

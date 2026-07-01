@@ -1,6 +1,6 @@
 # wasm4pm
 
-High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 39 Old-AI cognition breeds — all through one CLI (`wpm`).
+High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 55 Old-AI cognition breeds — all through one CLI (`wpm`).
 
 **Old AI is the factory. LLMs are the brochure.**
 
