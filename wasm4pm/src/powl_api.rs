@@ -209,7 +209,8 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             })
         }
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
-            let edges: Vec<Vec<usize>> = cg.graph.edges().iter().map(|(a, b)| vec![*a, *b]).collect();
+            let edges: Vec<Vec<usize>> =
+                cg.graph.edges().iter().map(|(a, b)| vec![*a, *b]).collect();
             let node_kinds: Vec<String> = cg
                 .graph
                 .nodes()

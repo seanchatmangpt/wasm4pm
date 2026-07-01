@@ -115,7 +115,6 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
                     AttributeValue::Date(format!("2024-01-01T{:02}:{:02}:00Z", case_idx, i)),
                 );
 
-
                 trace.events.push(Event { attributes: attrs });
             }
             log.traces.push(trace);
@@ -1315,12 +1314,10 @@ fn analyze_process_speedup_paper_grounded() {
         let timestamps: Vec<String> = trace
             .events
             .iter()
-            .filter_map(|e| {
-                match e.attributes.get("time:timestamp")? {
-                    wasm4pm::models::AttributeValue::String(ts) => Some(ts.clone()),
-                    wasm4pm::models::AttributeValue::Date(ts) => Some(ts.clone()),
-                    _ => None,
-                }
+            .filter_map(|e| match e.attributes.get("time:timestamp")? {
+                wasm4pm::models::AttributeValue::String(ts) => Some(ts.clone()),
+                wasm4pm::models::AttributeValue::Date(ts) => Some(ts.clone()),
+                _ => None,
             })
             .collect();
         for i in 0..timestamps.len().saturating_sub(1) {

@@ -236,7 +236,8 @@ pub fn choice_graph_v2_fall_through(
             }
         }
     }
-    let new_graph = ChoiceGraph::new(new_nodes, cut.graph.edges().to_vec()).map_err(|e| e.to_string())?;
+    let new_graph =
+        ChoiceGraph::new(new_nodes, cut.graph.edges().to_vec()).map_err(|e| e.to_string())?;
     Ok(arena.add_choice_graph(&new_graph))
 }
 

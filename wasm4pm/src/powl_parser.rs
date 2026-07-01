@@ -828,8 +828,6 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
         cg_nodes.push(cg_node);
     }
 
-
-
     // Parse edges
     let mut edges: Vec<(usize, usize)> = Vec::new();
     if !edges_list.trim().is_empty() {

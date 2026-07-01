@@ -104,7 +104,8 @@ pub fn apply(
                 cg.graph.edges().to_vec(),
                 cg.graph.start_idx(),
                 cg.graph.end_idx(),
-            ).unwrap();
+            )
+            .unwrap();
             dest_arena.add_choice_graph(&new_graph)
         }
     }
@@ -124,13 +125,7 @@ mod tests {
         let mut order = BinaryRelation::new(2);
         order.add_edge(0, 1);
 
-        let dg = arena.add_decision_graph(
-            vec![child0, child1],
-            order,
-            vec![0],
-            vec![1],
-            false,
-        );
+        let dg = arena.add_decision_graph(vec![child0, child1], order, vec![0], vec![1], false);
 
         let mut label_map = HashMap::new();
         label_map.insert("A".to_string(), "A_new".to_string());
@@ -145,7 +140,7 @@ mod tests {
             assert_eq!(new_dg.children.len(), 2);
             let c0 = dest_arena.get(new_dg.children[0]).unwrap();
             let c1 = dest_arena.get(new_dg.children[1]).unwrap();
-            
+
             if let PowlNode::Transition(t) = c0 {
                 assert_eq!(t.label, Some("A_new".to_string()));
             } else {

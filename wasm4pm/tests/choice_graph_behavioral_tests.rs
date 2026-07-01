@@ -4,11 +4,11 @@
 
 use wasm4pm::powl::conformance::token_replay::replay_trace;
 use wasm4pm::powl::conversion::to_petri_net;
+use wasm4pm::powl::extensive_playout::{extensive_playout, ExtensivePlayoutConfig};
+use wasm4pm::powl::footprints;
 use wasm4pm::powl_arena::PowlArena;
 use wasm4pm::powl_event_log::{Event, Trace};
 use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
-use wasm4pm::powl::extensive_playout::{extensive_playout, ExtensivePlayoutConfig};
-use wasm4pm::powl::footprints;
 
 fn trace_of(case: &str, acts: &[&str]) -> Trace {
     Trace {
@@ -35,11 +35,9 @@ fn get_models_trace_activities(trace: &wasm4pm::models::Trace) -> Vec<String> {
     trace
         .events
         .iter()
-        .map(|ev| {
-            match ev.attributes.get("concept:name").unwrap() {
-                wasm4pm::models::AttributeValue::String(s) => s.clone(),
-                _ => panic!("Expected string value"),
-            }
+        .map(|ev| match ev.attributes.get("concept:name").unwrap() {
+            wasm4pm::models::AttributeValue::String(s) => s.clone(),
+            _ => panic!("Expected string value"),
         })
         .collect()
 }
@@ -52,12 +50,7 @@ fn test_choice_graph_cyclic_loop_behavior() {
     use StandaloneChoiceGraphNode::*;
     // Start -> A <-> B -> End
     // Nodes: 0=Start, 1=A, 2=B, 3=End
-    let nodes = vec![
-        Start,
-        Activity("A".into()),
-        Activity("B".into()),
-        End,
-    ];
+    let nodes = vec![Start, Activity("A".into()), Activity("B".into()), End];
     let edges = vec![
         (0, 1), // Start -> A
         (1, 2), // A -> B
@@ -77,7 +70,10 @@ fn test_choice_graph_cyclic_loop_behavior() {
         max_traces: 20,
     };
     let playout_res = extensive_playout(&arena, root, &config);
-    assert!(!playout_res.traces.is_empty(), "Playout must generate traces");
+    assert!(
+        !playout_res.traces.is_empty(),
+        "Playout must generate traces"
+    );
 
     // Check that we get expected acyclic sequence
     let mut found_acyclic = false;
@@ -107,8 +103,16 @@ fn test_choice_graph_cyclic_loop_behavior() {
 
     // Due to remaining token at contested choice B (exit vs loop-back),
     // valid traces ending at B will have 1 remaining token at the end of replay.
-    assert!(f1 > 0.89 && f1 < 0.91, "t1 fitness should be ~0.90, got {}", f1);
-    assert!(f2 > 0.94 && f2 < 0.95, "t2 fitness should be ~0.94, got {}", f2);
+    assert!(
+        f1 > 0.89 && f1 < 0.91,
+        "t1 fitness should be ~0.90, got {}",
+        f1
+    );
+    assert!(
+        f2 > 0.94 && f2 < 0.95,
+        "t2 fitness should be ~0.94, got {}",
+        f2
+    );
     assert!(f_bad < 0.75, "t_bad fitness should be low, got {}", f_bad);
 }
 
@@ -118,12 +122,7 @@ fn test_choice_graph_cyclic_loop_behavior() {
 #[test]
 fn test_choice_graph_start_end_boundaries() {
     use StandaloneChoiceGraphNode::*;
-    let nodes = vec![
-        Start,
-        Activity("A".into()),
-        Activity("B".into()),
-        End,
-    ];
+    let nodes = vec![Start, Activity("A".into()), Activity("B".into()), End];
     let edges = vec![
         (0, 1), // Start -> A
         (0, 2), // Start -> B
@@ -149,7 +148,10 @@ fn test_choice_graph_start_end_boundaries() {
         .map(get_models_trace_activities)
         .collect();
     trace_acts.sort();
-    assert_eq!(trace_acts, vec![vec!["A".to_string()], vec!["B".to_string()]]);
+    assert_eq!(
+        trace_acts,
+        vec![vec!["A".to_string()], vec!["B".to_string()]]
+    );
 
     // 2. Footprints
     let fp = footprints::apply(&arena, root);
@@ -219,7 +221,10 @@ fn test_choice_graph_complex_routing_paths() {
     }
 
     assert!(found_simple, "Should play out ['Check', 'Approve']");
-    assert!(found_reject_exit, "Should play out ['Check', 'Reject', 'Review']");
+    assert!(
+        found_reject_exit,
+        "Should play out ['Check', 'Reject', 'Review']"
+    );
 
     // 2. Footprints
     let fp = footprints::apply(&arena, root);
@@ -240,7 +245,11 @@ fn test_choice_graph_complex_routing_paths() {
 
     assert!(f_simple >= 0.999);
     // Ends with Review which has contested choice check vs end -> fitness ~0.928
-    assert!(f_reject > 0.92 && f_reject < 0.93, "t_reject fitness should be ~0.928, got {}", f_reject);
+    assert!(
+        f_reject > 0.92 && f_reject < 0.93,
+        "t_reject fitness should be ~0.928, got {}",
+        f_reject
+    );
     // Ends with Approve which has no contested exits -> fitness 1.0
     assert!(f_loop >= 0.999);
     assert!(f_bad < 0.85);

@@ -355,8 +355,9 @@ mod tests {
                 (0, 1),
                 (1, 2),
                 (1, 1), // self loop / cycle
-            ]
-        ).unwrap();
+            ],
+        )
+        .unwrap();
 
         let result = check_choice_graph_soundness(&cg);
         // Under POWL 2.0, cyclic ChoiceGraphs are allowed to be sound.

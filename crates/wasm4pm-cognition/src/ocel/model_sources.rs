@@ -22,18 +22,12 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "autoinstinct_learning" => Some(include_str!(
             "../../ocel/models/l1/autoinstinct_learning.ocpn.json"
         )),
-        "htn_planning" => Some(include_str!(
-            "../../ocel/models/l1/htn_planning.ocpn.json"
-        )),
-        "ltl_monitor" => Some(include_str!(
-            "../../ocel/models/l1/ltl_monitor.ocpn.json"
-        )),
+        "htn_planning" => Some(include_str!("../../ocel/models/l1/htn_planning.ocpn.json")),
+        "ltl_monitor" => Some(include_str!("../../ocel/models/l1/ltl_monitor.ocpn.json")),
         "allen_temporal" => Some(include_str!(
             "../../ocel/models/l1/allen_temporal.ocpn.json"
         )),
-        "fuzzy_logic" => Some(include_str!(
-            "../../ocel/models/l1/fuzzy_logic.ocpn.json"
-        )),
+        "fuzzy_logic" => Some(include_str!("../../ocel/models/l1/fuzzy_logic.ocpn.json")),
         "bayesian_network" => Some(include_str!(
             "../../ocel/models/l1/bayesian_network.ocpn.json"
         )),
@@ -41,9 +35,7 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
             "../../ocel/models/l1/dempster_shafer.ocpn.json"
         )),
         "csp_ac3" => Some(include_str!("../../ocel/models/l1/csp_ac3.ocpn.json")),
-        "default_logic" => Some(include_str!(
-            "../../ocel/models/l1/default_logic.ocpn.json"
-        )),
+        "default_logic" => Some(include_str!("../../ocel/models/l1/default_logic.ocpn.json")),
         "frames_inheritance" => Some(include_str!(
             "../../ocel/models/l1/frames_inheritance.ocpn.json"
         )),
@@ -52,12 +44,8 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "description_logic" => Some(include_str!(
             "../../ocel/models/l1/description_logic.ocpn.json"
         )),
-        "abductive_lp" => Some(include_str!(
-            "../../ocel/models/l1/abductive_lp.ocpn.json"
-        )),
-        "abductive_ibe" => Some(include_str!(
-            "../../ocel/models/l1/abductive_ibe.ocpn.json"
-        )),
+        "abductive_lp" => Some(include_str!("../../ocel/models/l1/abductive_lp.ocpn.json")),
+        "abductive_ibe" => Some(include_str!("../../ocel/models/l1/abductive_ibe.ocpn.json")),
         "partial_order_plan" => Some(include_str!(
             "../../ocel/models/l1/partial_order_plan.ocpn.json"
         )),
@@ -65,18 +53,14 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
             "../../ocel/models/l1/event_calculus.ocpn.json"
         )),
         "mdp" => Some(include_str!("../../ocel/models/l1/mdp.ocpn.json")),
-        "version_space" => Some(include_str!(
-            "../../ocel/models/l1/version_space.ocpn.json"
-        )),
+        "version_space" => Some(include_str!("../../ocel/models/l1/version_space.ocpn.json")),
         "belief_merging" => Some(include_str!(
             "../../ocel/models/l1/belief_merging.ocpn.json"
         )),
         "qualitative_reason" => Some(include_str!(
             "../../ocel/models/l1/qualitative_reason.ocpn.json"
         )),
-        "script_sam" => Some(include_str!(
-            "../../ocel/models/l1/script_sam.ocpn.json"
-        )),
+        "script_sam" => Some(include_str!("../../ocel/models/l1/script_sam.ocpn.json")),
         "clp" => Some(include_str!("../../ocel/models/l1/clp.ocpn.json")),
         "situation_calculus" => Some(include_str!(
             "../../ocel/models/l1/situation_calculus.ocpn.json"
@@ -84,36 +68,22 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "circumscription" => Some(include_str!(
             "../../ocel/models/l1/circumscription.ocpn.json"
         )),
-        "analogy_sme" => Some(include_str!(
-            "../../ocel/models/l1/analogy_sme.ocpn.json"
-        )),
+        "analogy_sme" => Some(include_str!("../../ocel/models/l1/analogy_sme.ocpn.json")),
         "act_r" => Some(include_str!("../../ocel/models/l1/act_r.ocpn.json")),
         "problog" => Some(include_str!("../../ocel/models/l1/problog.ocpn.json")),
-        "sat_cdcl" => Some(include_str!(
-            "../../ocel/models/l1/sat_cdcl.ocpn.json"
-        )),
+        "sat_cdcl" => Some(include_str!("../../ocel/models/l1/sat_cdcl.ocpn.json")),
         "episodic_memory" => Some(include_str!(
             "../../ocel/models/l1/episodic_memory.ocpn.json"
         )),
-        "rl_symbolic" => Some(include_str!(
-            "../../ocel/models/l1/rl_symbolic.ocpn.json"
-        )),
-        "ctl_check" => Some(include_str!(
-            "../../ocel/models/l1/ctl_check.ocpn.json"
-        )),
+        "rl_symbolic" => Some(include_str!("../../ocel/models/l1/rl_symbolic.ocpn.json")),
+        "ctl_check" => Some(include_str!("../../ocel/models/l1/ctl_check.ocpn.json")),
         "ilp" => Some(include_str!("../../ocel/models/l1/ilp.ocpn.json")),
-        "naive_physics" => Some(include_str!(
-            "../../ocel/models/l1/naive_physics.ocpn.json"
-        )),
-        "tableaux" => Some(include_str!(
-            "../../ocel/models/l1/tableaux.ocpn.json"
-        )),
+        "naive_physics" => Some(include_str!("../../ocel/models/l1/naive_physics.ocpn.json")),
+        "tableaux" => Some(include_str!("../../ocel/models/l1/tableaux.ocpn.json")),
         "construction_grammar" => Some(include_str!(
             "../../ocel/models/l1/construction_grammar.ocpn.json"
         )),
-        "markov_logic" => Some(include_str!(
-            "../../ocel/models/l1/markov_logic.ocpn.json"
-        )),
+        "markov_logic" => Some(include_str!("../../ocel/models/l1/markov_logic.ocpn.json")),
         "pomdp" => Some(include_str!("../../ocel/models/l1/pomdp.ocpn.json")),
         "contingent_plan" => Some(include_str!(
             "../../ocel/models/l1/contingent_plan.ocpn.json"

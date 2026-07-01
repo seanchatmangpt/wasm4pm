@@ -35,7 +35,8 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                 cg.graph.edges().to_vec(),
                 cg.graph.start_idx(),
                 cg.graph.end_idx(),
-            ).unwrap();
+            )
+            .unwrap();
             // Replace the node in-place to keep the index stable.
             arena.nodes[idx as usize] =
                 PowlNode::ChoiceGraph(crate::powl_arena::ChoiceGraphPowlNode { graph: new_graph });
@@ -396,9 +397,7 @@ fn simplify_decision_graph(
 /// Transform `XOR(A, tau)` and `LOOP(A, tau)` into `FrequentTransition` nodes.
 pub fn simplify_using_frequent_transitions(arena: &mut PowlArena, idx: u32) -> u32 {
     match arena.nodes.get(idx as usize).cloned() {
-        None
-        | Some(PowlNode::Transition(_))
-        | Some(PowlNode::FrequentTransition(_)) => idx,
+        None | Some(PowlNode::Transition(_)) | Some(PowlNode::FrequentTransition(_)) => idx,
         Some(PowlNode::DecisionGraph(dg)) => {
             let children = dg.children.clone();
             let new_children: Vec<u32> = children
@@ -429,7 +428,8 @@ pub fn simplify_using_frequent_transitions(arena: &mut PowlArena, idx: u32) -> u
                 cg.graph.edges().to_vec(),
                 cg.graph.start_idx(),
                 cg.graph.end_idx(),
-            ).unwrap();
+            )
+            .unwrap();
             arena.add_choice_graph(&new_graph)
         }
         Some(PowlNode::StrictPartialOrder(spo)) => {

@@ -1171,8 +1171,7 @@ fn all_discovery_algorithms_handle_loop_log_without_panic() {
             .is_empty()
     );
     assert!(
-        !discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name")
-            .is_empty()
+        !discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name").is_empty()
     );
     let _hc = discover_hill_climbing_from_log(&log, "concept:name");
     assert!(
@@ -1210,8 +1209,7 @@ fn all_discovery_algorithms_handle_single_trace_log() {
             .is_empty()
     );
     assert!(
-        !discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name")
-            .is_empty()
+        !discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name").is_empty()
     );
     let _hc = discover_hill_climbing_from_log(&log, "concept:name");
     assert!(

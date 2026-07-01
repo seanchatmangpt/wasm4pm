@@ -210,7 +210,8 @@ fn xor_lowered_to_two_node_choice_graph_language_match() {
             StandaloneChoiceGraphNode::End,
         ],
         vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    ).unwrap();
+    )
+    .unwrap();
     let cg_root = arena_cg.add_choice_graph(&cg);
 
     // XOR model: Operator::Xor over [a, b].

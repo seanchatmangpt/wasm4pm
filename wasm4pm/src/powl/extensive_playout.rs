@@ -49,9 +49,7 @@ pub fn extensive_playout(
 
     // Sort and convert to Trace structs to ensure deterministic ordering
     let mut traces_vec: Vec<Vec<String>> = traces_set.into_iter().collect();
-    traces_vec.sort_by(|a, b| {
-        a.len().cmp(&b.len()).then_with(|| a.cmp(b))
-    });
+    traces_vec.sort_by(|a, b| a.len().cmp(&b.len()).then_with(|| a.cmp(b)));
 
     let mut traces = Vec::new();
     let mut count = 0;
@@ -131,89 +129,87 @@ fn playout_node(
                 limit_reached,
             );
         }
-        PowlNode::OperatorPowl(op) => {
-            match op.operator {
-                Operator::Xor => {
-                    for &child_id in &op.children {
-                        if *limit_reached {
-                            break;
-                        }
-                        let ct = playout_node(arena, child_id, config, limit_reached);
-                        result.extend(ct);
-                        if result.len() >= config.max_traces {
-                            *limit_reached = true;
-                            break;
-                        }
+        PowlNode::OperatorPowl(op) => match op.operator {
+            Operator::Xor => {
+                for &child_id in &op.children {
+                    if *limit_reached {
+                        break;
+                    }
+                    let ct = playout_node(arena, child_id, config, limit_reached);
+                    result.extend(ct);
+                    if result.len() >= config.max_traces {
+                        *limit_reached = true;
+                        break;
                     }
                 }
-                Operator::Loop => {
-                    if op.children.is_empty() {
-                        return result;
+            }
+            Operator::Loop => {
+                if op.children.is_empty() {
+                    return result;
+                }
+                let body_id = op.children[0];
+                let redo_id = op.children.get(1).copied();
+
+                let body_traces = playout_node(arena, body_id, config, limit_reached);
+                let redo_traces = if let Some(r_id) = redo_id {
+                    playout_node(arena, r_id, config, limit_reached)
+                } else {
+                    let mut hs = HashSet::new();
+                    hs.insert(Vec::new());
+                    hs
+                };
+
+                result.extend(body_traces.clone());
+                let mut current_loop_traces = body_traces.clone();
+
+                for _ in 0..config.max_loops {
+                    if *limit_reached {
+                        break;
                     }
-                    let body_id = op.children[0];
-                    let redo_id = op.children.get(1).copied();
-
-                    let body_traces = playout_node(arena, body_id, config, limit_reached);
-                    let redo_traces = if let Some(r_id) = redo_id {
-                        playout_node(arena, r_id, config, limit_reached)
-                    } else {
-                        let mut hs = HashSet::new();
-                        hs.insert(Vec::new());
-                        hs
-                    };
-
-                    result.extend(body_traces.clone());
-                    let mut current_loop_traces = body_traces.clone();
-
-                    for _ in 0..config.max_loops {
-                        if *limit_reached {
-                            break;
-                        }
-                        let mut next_loop_traces = HashSet::new();
-                        for t_b in &current_loop_traces {
-                            for t_r in &redo_traces {
-                                for t_body_first in &body_traces {
-                                    let mut new_trace = t_b.clone();
-                                    new_trace.extend(t_r.clone());
-                                    new_trace.extend(t_body_first.clone());
-                                    if new_trace.len() <= config.max_length {
-                                        next_loop_traces.insert(new_trace);
-                                    }
+                    let mut next_loop_traces = HashSet::new();
+                    for t_b in &current_loop_traces {
+                        for t_r in &redo_traces {
+                            for t_body_first in &body_traces {
+                                let mut new_trace = t_b.clone();
+                                new_trace.extend(t_r.clone());
+                                new_trace.extend(t_body_first.clone());
+                                if new_trace.len() <= config.max_length {
+                                    next_loop_traces.insert(new_trace);
                                 }
                             }
                         }
-                        if next_loop_traces.is_empty() {
-                            break;
-                        }
-                        result.extend(next_loop_traces.clone());
-                        current_loop_traces = next_loop_traces;
-                        if result.len() >= config.max_traces {
-                            *limit_reached = true;
-                            break;
-                        }
                     }
-                }
-                Operator::PartialOrder => {
-                    let mut children_traces = Vec::new();
-                    for &child_id in &op.children {
-                        let ct = playout_node(arena, child_id, config, limit_reached);
-                        children_traces.push(ct.into_iter().collect::<Vec<_>>());
+                    if next_loop_traces.is_empty() {
+                        break;
                     }
-
-                    let empty_order = crate::powl_arena::BinaryRelation::new(op.children.len());
-                    let mut current_pick = vec![0; op.children.len()];
-                    generate_shuffled_combinations(
-                        &children_traces,
-                        &empty_order,
-                        &mut current_pick,
-                        0,
-                        &mut result,
-                        config,
-                        limit_reached,
-                    );
+                    result.extend(next_loop_traces.clone());
+                    current_loop_traces = next_loop_traces;
+                    if result.len() >= config.max_traces {
+                        *limit_reached = true;
+                        break;
+                    }
                 }
             }
-        }
+            Operator::PartialOrder => {
+                let mut children_traces = Vec::new();
+                for &child_id in &op.children {
+                    let ct = playout_node(arena, child_id, config, limit_reached);
+                    children_traces.push(ct.into_iter().collect::<Vec<_>>());
+                }
+
+                let empty_order = crate::powl_arena::BinaryRelation::new(op.children.len());
+                let mut current_pick = vec![0; op.children.len()];
+                generate_shuffled_combinations(
+                    &children_traces,
+                    &empty_order,
+                    &mut current_pick,
+                    0,
+                    &mut result,
+                    config,
+                    limit_reached,
+                );
+            }
+        },
         PowlNode::DecisionGraph(dg) => {
             let n = dg.children.len();
             let start_idx = n;
@@ -250,7 +246,9 @@ fn playout_node(
                 }
                 let mut path_children = Vec::new();
                 for &idx in &path {
-                    if let wasm4pm_compat::powl::ChoiceGraphNode::SubModel(child_id) = &cg.graph.nodes()[idx] {
+                    if let wasm4pm_compat::powl::ChoiceGraphNode::SubModel(child_id) =
+                        &cg.graph.nodes()[idx]
+                    {
                         path_children.push(*child_id);
                     }
                 }
@@ -343,7 +341,15 @@ fn shuffle_sequences(
         current.push(val.clone());
         consumed[i] += 1;
 
-        shuffle_sequences(traces, order, consumed, current, results, config, limit_reached);
+        shuffle_sequences(
+            traces,
+            order,
+            consumed,
+            current,
+            results,
+            config,
+            limit_reached,
+        );
 
         consumed[i] -= 1;
         current.pop();
@@ -449,7 +455,14 @@ fn find_cg_paths(
         }
     }
 
-    dfs(graph, start_idx, end_idx, &mut current_path, &mut visited, &mut paths);
+    dfs(
+        graph,
+        start_idx,
+        end_idx,
+        &mut current_path,
+        &mut visited,
+        &mut paths,
+    );
     paths
 }
 
@@ -488,7 +501,14 @@ fn find_relation_paths(
         }
     }
 
-    dfs(order, start_idx, end_idx, &mut current_path, &mut visited, &mut paths);
+    dfs(
+        order,
+        start_idx,
+        end_idx,
+        &mut current_path,
+        &mut visited,
+        &mut paths,
+    );
     paths
 }
 
@@ -594,7 +614,8 @@ mod tests {
                 wasm4pm_compat::powl::StandaloneChoiceGraphNode::End,
             ],
             vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-        ).unwrap();
+        )
+        .unwrap();
 
         let root = arena.add_choice_graph(&cg);
 
@@ -610,17 +631,25 @@ mod tests {
         // Traces should be: ["A"] and ["B"]
         assert_eq!(result.traces.len(), 2);
 
-        let mut trace_strings: Vec<Vec<String>> = result.traces.iter().map(|tr| {
-            tr.events.iter().map(|ev| {
-                match &ev.attributes.get("concept:name").unwrap() {
-                    crate::models::AttributeValue::String(s) => s.clone(),
-                    _ => panic!("Expected string value"),
-                }
-            }).collect()
-        }).collect();
+        let mut trace_strings: Vec<Vec<String>> = result
+            .traces
+            .iter()
+            .map(|tr| {
+                tr.events
+                    .iter()
+                    .map(|ev| match &ev.attributes.get("concept:name").unwrap() {
+                        crate::models::AttributeValue::String(s) => s.clone(),
+                        _ => panic!("Expected string value"),
+                    })
+                    .collect()
+            })
+            .collect();
         trace_strings.sort();
 
-        assert_eq!(trace_strings, vec![vec!["A".to_string()], vec!["B".to_string()]]);
+        assert_eq!(
+            trace_strings,
+            vec![vec!["A".to_string()], vec!["B".to_string()]]
+        );
     }
 
     #[test]
@@ -645,20 +674,28 @@ mod tests {
         // Traces should be: ["A", "B"] and ["B", "A"]
         assert_eq!(result.traces.len(), 2);
 
-        let mut trace_strings: Vec<Vec<String>> = result.traces.iter().map(|tr| {
-            tr.events.iter().map(|ev| {
-                match &ev.attributes.get("concept:name").unwrap() {
-                    crate::models::AttributeValue::String(s) => s.clone(),
-                    _ => panic!("Expected string value"),
-                }
-            }).collect()
-        }).collect();
+        let mut trace_strings: Vec<Vec<String>> = result
+            .traces
+            .iter()
+            .map(|tr| {
+                tr.events
+                    .iter()
+                    .map(|ev| match &ev.attributes.get("concept:name").unwrap() {
+                        crate::models::AttributeValue::String(s) => s.clone(),
+                        _ => panic!("Expected string value"),
+                    })
+                    .collect()
+            })
+            .collect();
         trace_strings.sort();
 
-        assert_eq!(trace_strings, vec![
-            vec!["A".to_string(), "B".to_string()],
-            vec!["B".to_string(), "A".to_string()]
-        ]);
+        assert_eq!(
+            trace_strings,
+            vec![
+                vec!["A".to_string(), "B".to_string()],
+                vec!["B".to_string(), "A".to_string()]
+            ]
+        );
     }
 
     #[test]
@@ -685,18 +722,21 @@ mod tests {
         // Traces should be: only ["A", "B"]
         assert_eq!(result.traces.len(), 1);
 
-        let mut trace_strings: Vec<Vec<String>> = result.traces.iter().map(|tr| {
-            tr.events.iter().map(|ev| {
-                match &ev.attributes.get("concept:name").unwrap() {
-                    crate::models::AttributeValue::String(s) => s.clone(),
-                    _ => panic!("Expected string value"),
-                }
-            }).collect()
-        }).collect();
+        let mut trace_strings: Vec<Vec<String>> = result
+            .traces
+            .iter()
+            .map(|tr| {
+                tr.events
+                    .iter()
+                    .map(|ev| match &ev.attributes.get("concept:name").unwrap() {
+                        crate::models::AttributeValue::String(s) => s.clone(),
+                        _ => panic!("Expected string value"),
+                    })
+                    .collect()
+            })
+            .collect();
         trace_strings.sort();
 
-        assert_eq!(trace_strings, vec![
-            vec!["A".to_string(), "B".to_string()]
-        ]);
+        assert_eq!(trace_strings, vec![vec!["A".to_string(), "B".to_string()]]);
     }
 }

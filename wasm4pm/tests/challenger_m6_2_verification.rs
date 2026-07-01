@@ -1,8 +1,8 @@
+use std::collections::HashSet;
+use wasm4pm::powl::conversion::{from_petri_net::petri_net_to_powl, to_petri_net};
 use wasm4pm::powl::extensive_playout::{extensive_playout, ExtensivePlayoutConfig};
 use wasm4pm::powl_arena::{PowlArena, PowlNode};
 use wasm4pm::powl_parser::parse_powl_model_string;
-use wasm4pm::powl::conversion::{to_petri_net, from_petri_net::petri_net_to_powl};
-use std::collections::HashSet;
 
 #[test]
 fn test_strict_partial_order_interleaving_3_nodes() {
@@ -39,14 +39,19 @@ fn test_strict_partial_order_interleaving_3_nodes() {
 
     assert_eq!(result.traces.len(), 3);
 
-    let mut trace_strings: Vec<Vec<String>> = result.traces.iter().map(|tr| {
-        tr.events.iter().map(|ev| {
-            match &ev.attributes.get("concept:name").unwrap() {
-                wasm4pm::models::AttributeValue::String(s) => s.clone(),
-                _ => panic!("Expected string value"),
-            }
-        }).collect()
-    }).collect();
+    let mut trace_strings: Vec<Vec<String>> = result
+        .traces
+        .iter()
+        .map(|tr| {
+            tr.events
+                .iter()
+                .map(|ev| match &ev.attributes.get("concept:name").unwrap() {
+                    wasm4pm::models::AttributeValue::String(s) => s.clone(),
+                    _ => panic!("Expected string value"),
+                })
+                .collect()
+        })
+        .collect();
     trace_strings.sort();
 
     let expected = vec![
@@ -59,7 +64,7 @@ fn test_strict_partial_order_interleaving_3_nodes() {
 }
 
 #[test]
-fn test_removal_of_legacy_xor_fallback() {
+fn test_removal_of_old_xor_fallback() {
     // 1. Parse a simple model that represents a choice logic "X ( A, B )"
     let mut arena = PowlArena::new();
     let root = parse_powl_model_string("X ( A, B )", &mut arena).unwrap();
@@ -92,7 +97,12 @@ fn test_removal_of_legacy_xor_fallback() {
         }
     }
 
-    assert!(has_choice_graph, "Expected a ChoiceGraph node in the arena, but none was found");
-    assert!(!has_xor_operator, "Expected no OperatorPowl(Xor) in the arena, but one was found");
+    assert!(
+        has_choice_graph,
+        "Expected a ChoiceGraph node in the arena, but none was found"
+    );
+    assert!(
+        !has_xor_operator,
+        "Expected no OperatorPowl(Xor) in the arena, but one was found"
+    );
 }
-

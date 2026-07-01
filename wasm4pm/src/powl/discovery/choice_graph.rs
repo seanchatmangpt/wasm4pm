@@ -297,7 +297,8 @@ pub fn discover_choice_graph_v2(
         }
     }
 
-    let graph = ChoiceGraph::new(nodes, edges).map_err(|e| NoCutFound::InvalidGraph(e.to_string()))?;
+    let graph =
+        ChoiceGraph::new(nodes, edges).map_err(|e| NoCutFound::InvalidGraph(e.to_string()))?;
     Ok(ChoiceGraphCut {
         partition,
         graph,

@@ -565,7 +565,11 @@ pub fn compute(
                     }
                 }
             }
-            let min_trace_length = if dist[end_idx] == usize::MAX { 0 } else { dist[end_idx] };
+            let min_trace_length = if dist[end_idx] == usize::MAX {
+                0
+            } else {
+                dist[end_idx]
+            };
 
             let mut successors_vec = vec![Vec::new(); n];
             for u in 0..n {

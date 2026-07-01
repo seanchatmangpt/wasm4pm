@@ -1184,7 +1184,7 @@ fn translate_choice_graph(
     // Construct nodes list
     let mut nodes = Vec::new();
     nodes.push(StandaloneChoiceGraphNode::Start); // Index 0
-    nodes.push(StandaloneChoiceGraphNode::End);   // Index 1
+    nodes.push(StandaloneChoiceGraphNode::End); // Index 1
 
     for &child in &children {
         nodes.push(StandaloneChoiceGraphNode::SubModel(child));
@@ -1303,7 +1303,7 @@ mod tests {
         let pn_result = to_petri_net::apply(&arena, root);
         let pn_json = serde_json::to_string(&pn_result).unwrap();
         let (arena2, root2) = petri_net_to_powl(&pn_json).unwrap();
-        
+
         let repr = arena2.to_repr(root2);
         assert!(repr.contains("CG=(nodes={"));
     }
