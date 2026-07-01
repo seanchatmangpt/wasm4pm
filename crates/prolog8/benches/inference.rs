@@ -1,5 +1,4 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
 use prolog8::catalog::{Catalog, PredicateMeta, PredicateProofPolicy};
 use prolog8::hash::{hash_bytes, DOMAIN_PROLOG8_FACT};
 use prolog8::kernel::Kernel;
@@ -7,6 +6,7 @@ use prolog8::types::{
     Atom8, CatalogId, EpochId, FactBlock8, FactRow8, FeatureBit, PlanId, PredicateId, ProofMode,
     QueryAtom8, Rule8, RuleId, SourceId, TermId,
 };
+use std::time::Duration;
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -45,11 +45,21 @@ fn simple_rule(id: u32, head: Atom8, body: &[Atom8]) -> Rule8 {
 }
 
 fn bound_query(atom: Atom8) -> QueryAtom8 {
-    QueryAtom8 { atom, output_mask: 0, proof_mode: ProofMode::PositiveOnly, epoch: EPOCH }
+    QueryAtom8 {
+        atom,
+        output_mask: 0,
+        proof_mode: ProofMode::PositiveOnly,
+        epoch: EPOCH,
+    }
 }
 
 fn unbound_query(atom: Atom8, output_mask: u8) -> QueryAtom8 {
-    QueryAtom8 { atom, output_mask, proof_mode: ProofMode::PositiveOnly, epoch: EPOCH }
+    QueryAtom8 {
+        atom,
+        output_mask,
+        proof_mode: ProofMode::PositiveOnly,
+        epoch: EPOCH,
+    }
 }
 
 fn add_pred(cat: &mut Catalog, id: u32, label: &str, arity: u8) {
@@ -109,10 +119,19 @@ fn bench_fact_loading(c: &mut Criterion) {
                 add_pred(&mut cat, 1, "edge", 2);
                 let mut k = Kernel::new(cat);
                 let rows: Vec<FactRow8> = (0..n)
-                    .map(|i| FactRow8::new(PredicateId(1), 2,
-                        &[TermId::new(i as u32 + 1), TermId::new(i as u32 + 2)], SRC))
+                    .map(|i| {
+                        FactRow8::new(
+                            PredicateId(1),
+                            2,
+                            &[TermId::new(i as u32 + 1), TermId::new(i as u32 + 2)],
+                            SRC,
+                        )
+                    })
                     .collect();
-                std::hint::black_box(k.load_facts(FactBlock8::new(PredicateId(1), 2, rows)).unwrap())
+                std::hint::black_box(
+                    k.load_facts(FactBlock8::new(PredicateId(1), 2, rows))
+                        .unwrap(),
+                )
             })
         });
     }
@@ -134,10 +153,15 @@ fn bench_direct_fact(c: &mut Criterion) {
     let bob = cat.intern_term("bob");
     let carol = cat.intern_term("carol");
     let mut k = Kernel::new(cat);
-    k.load_facts(FactBlock8::new(PredicateId(1), 2, vec![
-        FactRow8::new(PredicateId(1), 2, &[alice, bob], SRC),
-        FactRow8::new(PredicateId(1), 2, &[bob, carol], SRC),
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        2,
+        vec![
+            FactRow8::new(PredicateId(1), 2, &[alice, bob], SRC),
+            FactRow8::new(PredicateId(1), 2, &[bob, carol], SRC),
+        ],
+    ))
+    .unwrap();
 
     group.bench_function("hit_bound", |b| {
         let mut a = Atom8::new(PredicateId(1), 2, &[alice, bob]);
@@ -178,12 +202,21 @@ fn bench_rule_one_step(c: &mut Criterion) {
     let bob = cat.intern_term("bob");
     let carol = cat.intern_term("carol");
     let mut k = Kernel::new(cat);
-    k.load_facts(FactBlock8::new(PredicateId(1), 2, vec![
-        FactRow8::new(PredicateId(1), 2, &[alice, bob], SRC),
-        FactRow8::new(PredicateId(1), 2, &[bob, carol], SRC),
-    ])).unwrap();
-    k.load_rule(simple_rule(1, Atom8::new(PredicateId(2), 2, &[v(0), v(1)]),
-        &[Atom8::new(PredicateId(1), 2, &[v(0), v(1)])])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        2,
+        vec![
+            FactRow8::new(PredicateId(1), 2, &[alice, bob], SRC),
+            FactRow8::new(PredicateId(1), 2, &[bob, carol], SRC),
+        ],
+    ))
+    .unwrap();
+    k.load_rule(simple_rule(
+        1,
+        Atom8::new(PredicateId(2), 2, &[v(0), v(1)]),
+        &[Atom8::new(PredicateId(1), 2, &[v(0), v(1)])],
+    ))
+    .unwrap();
 
     group.bench_function("hit_bound", |b| {
         let mut a = Atom8::new(PredicateId(2), 2, &[alice, bob]);
@@ -221,18 +254,27 @@ fn build_depth_n_kernel(depth: usize) -> (Kernel, Vec<TermId>, PredicateId, Pred
     let facts: Vec<FactRow8> = (0..depth)
         .map(|i| FactRow8::new(PredicateId(1), 2, &[nodes[i], nodes[i + 1]], SRC))
         .collect();
-    k.load_facts(FactBlock8::new(PredicateId(1), 2, facts)).unwrap();
+    k.load_facts(FactBlock8::new(PredicateId(1), 2, facts))
+        .unwrap();
 
     // Rule: ancestor(?0, ?1) :- parent(?0, ?1)              [base]
-    k.load_rule(simple_rule(1, Atom8::new(PredicateId(2), 2, &[v(0), v(1)]),
-        &[Atom8::new(PredicateId(1), 2, &[v(0), v(1)])])).unwrap();
+    k.load_rule(simple_rule(
+        1,
+        Atom8::new(PredicateId(2), 2, &[v(0), v(1)]),
+        &[Atom8::new(PredicateId(1), 2, &[v(0), v(1)])],
+    ))
+    .unwrap();
 
     // Rule: ancestor(?0, ?2) :- parent(?0, ?1), ancestor(?1, ?2)  [recursive — tests deep SLD]
-    k.load_rule(simple_rule(2, Atom8::new(PredicateId(2), 2, &[v(0), v(2)]),
+    k.load_rule(simple_rule(
+        2,
+        Atom8::new(PredicateId(2), 2, &[v(0), v(2)]),
         &[
             Atom8::new(PredicateId(1), 2, &[v(0), v(1)]),
             Atom8::new(PredicateId(2), 2, &[v(1), v(2)]),
-        ])).unwrap();
+        ],
+    ))
+    .unwrap();
 
     (k, nodes, PredicateId(1), PredicateId(2))
 }
@@ -246,16 +288,12 @@ fn bench_recursive_sld(c: &mut Criterion) {
         let first = nodes[0];
         let last = *nodes.last().unwrap();
 
-        group.bench_with_input(
-            BenchmarkId::new("depth", depth),
-            &depth,
-            |b, _| {
-                let mut a = Atom8::new(ancestor, 2, &[first, last]);
-                a.binding_mask = 0b11;
-                let q = bound_query(a);
-                b.iter(|| std::hint::black_box(k.query(&q)))
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("depth", depth), &depth, |b, _| {
+            let mut a = Atom8::new(ancestor, 2, &[first, last]);
+            a.binding_mask = 0b11;
+            let q = bound_query(a);
+            b.iter(|| std::hint::black_box(k.query(&q)))
+        });
     }
     group.finish();
 }
@@ -279,17 +317,23 @@ fn bench_pararule_conjuncts(c: &mut Criterion) {
         let mut k = Kernel::new(cat);
 
         for pid in 1u32..=(n_conjuncts as u32) {
-            k.load_facts(FactBlock8::new(PredicateId(pid), 1, vec![
-                FactRow8::new(PredicateId(pid), 1, &[x], SRC),
-                FactRow8::new(PredicateId(pid), 1, &[y], SRC),
-            ])).unwrap();
+            k.load_facts(FactBlock8::new(
+                PredicateId(pid),
+                1,
+                vec![
+                    FactRow8::new(PredicateId(pid), 1, &[x], SRC),
+                    FactRow8::new(PredicateId(pid), 1, &[y], SRC),
+                ],
+            ))
+            .unwrap();
         }
         // y is missing the last fact — denial path
         let concl_pid = PredicateId(n_conjuncts as u32 + 1);
         let body: Vec<Atom8> = (1u32..=(n_conjuncts as u32))
             .map(|i| Atom8::new(PredicateId(i), 1, &[v(0)]))
             .collect();
-        k.load_rule(simple_rule(1, Atom8::new(concl_pid, 1, &[v(0)]), &body)).unwrap();
+        k.load_rule(simple_rule(1, Atom8::new(concl_pid, 1, &[v(0)]), &body))
+            .unwrap();
 
         group.bench_with_input(
             BenchmarkId::new("conjuncts_hit", n_conjuncts),
@@ -330,18 +374,27 @@ fn bench_naf(c: &mut Criterion) {
     add_pred(&mut cat, 2, "rough", 1);
     add_pred(&mut cat, 3, "quiet", 1);
     let fiona = cat.intern_term("fiona"); // smart, NOT rough → quiet
-    let gary = cat.intern_term("gary");   // smart AND rough → NOT quiet
+    let gary = cat.intern_term("gary"); // smart AND rough → NOT quiet
     let mut k = Kernel::new(cat);
 
-    k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-        FactRow8::new(PredicateId(1), 1, &[fiona], SRC),
-        FactRow8::new(PredicateId(1), 1, &[gary], SRC),
-    ])).unwrap();
-    k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-        FactRow8::new(PredicateId(2), 1, &[gary], SRC),
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        1,
+        vec![
+            FactRow8::new(PredicateId(1), 1, &[fiona], SRC),
+            FactRow8::new(PredicateId(1), 1, &[gary], SRC),
+        ],
+    ))
+    .unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(2),
+        1,
+        vec![FactRow8::new(PredicateId(2), 1, &[gary], SRC)],
+    ))
+    .unwrap();
 
-    let mut naf_rule = simple_rule(1,
+    let mut naf_rule = simple_rule(
+        1,
         Atom8::new(PredicateId(3), 1, &[v(0)]),
         &[
             Atom8::new(PredicateId(1), 1, &[v(0)]),
@@ -380,8 +433,7 @@ fn bench_receipt(c: &mut Criterion) {
     group.throughput(Throughput::Elements(1));
 
     group.bench_function("hash_fact_row", |b| {
-        let row = FactRow8::new(PredicateId(1), 2,
-            &[TermId::new(10), TermId::new(11)], SRC);
+        let row = FactRow8::new(PredicateId(1), 2, &[TermId::new(10), TermId::new(11)], SRC);
         b.iter(|| std::hint::black_box(row.canonical_hash()))
     });
 
@@ -397,9 +449,12 @@ fn bench_receipt(c: &mut Criterion) {
         let a = cat.intern_term("a");
         let bb = cat.intern_term("b");
         let mut k = Kernel::new(cat);
-        k.load_facts(FactBlock8::new(PredicateId(1), 2, vec![
-            FactRow8::new(PredicateId(1), 2, &[a, bb], SRC),
-        ])).unwrap();
+        k.load_facts(FactBlock8::new(
+            PredicateId(1),
+            2,
+            vec![FactRow8::new(PredicateId(1), 2, &[a, bb], SRC)],
+        ))
+        .unwrap();
         let mut atom = Atom8::new(PredicateId(1), 2, &[a, bb]);
         atom.binding_mask = 0b11;
         let q = QueryAtom8 {

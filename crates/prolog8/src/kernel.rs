@@ -205,7 +205,11 @@ impl Kernel {
             let mut head_ok = true;
             for i in 0..rule.head.arity as usize {
                 let h_arg = rule.head.args[i];
-                let h_effective = if h_arg.is_sentinel() { var_term(i) } else { h_arg };
+                let h_effective = if h_arg.is_sentinel() {
+                    var_term(i)
+                } else {
+                    h_arg
+                };
                 if q.atom.is_bound(i as u8) {
                     if !unify_terms(h_effective, q.atom.args[i], &mut subst) {
                         head_ok = false;
@@ -360,7 +364,15 @@ impl Kernel {
             if !head_ok {
                 continue;
             }
-            self.derive_body_with_support(rule, head_subst, 0, epoch, depth, &mut Vec::new(), &mut out);
+            self.derive_body_with_support(
+                rule,
+                head_subst,
+                0,
+                epoch,
+                depth,
+                &mut Vec::new(),
+                &mut out,
+            );
         }
 
         out
@@ -428,7 +440,15 @@ impl Kernel {
                 if ok {
                     let pre_len = supporting.len();
                     supporting.extend_from_slice(&sol_facts);
-                    self.derive_body_with_support(rule, new_subst, bi + 1, epoch, depth, supporting, out);
+                    self.derive_body_with_support(
+                        rule,
+                        new_subst,
+                        bi + 1,
+                        epoch,
+                        depth,
+                        supporting,
+                        out,
+                    );
                     supporting.truncate(pre_len);
                 }
             }
@@ -1292,7 +1312,8 @@ mod tests {
             FactRow8::new(PredicateId(1), 2, &[b, end], SourceId(0)),
             FactRow8::new(PredicateId(1), 2, &[c, end], SourceId(0)),
         ];
-        k.load_facts(FactBlock8::new(PredicateId(1), 2, rows)).unwrap();
+        k.load_facts(FactBlock8::new(PredicateId(1), 2, rows))
+            .unwrap();
 
         // Rule: via(?0, ?1) :- link(a, ?0), link(?0, ?1)
         // ?0 = intermediate node (appears in head — distinct per path)
@@ -1302,8 +1323,8 @@ mod tests {
         let v1 = TermId(VAR_BASE + 1);
 
         let head = Atom8::new(PredicateId(2), 2, &[v0, v1]);
-        let body0 = Atom8::new(PredicateId(1), 2, &[a, v0]);   // link(a, ?0)
-        let body1 = Atom8::new(PredicateId(1), 2, &[v0, v1]);  // link(?0, ?1)
+        let body0 = Atom8::new(PredicateId(1), 2, &[a, v0]); // link(a, ?0)
+        let body1 = Atom8::new(PredicateId(1), 2, &[v0, v1]); // link(?0, ?1)
         let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
         body_arr[0] = body0;
         body_arr[1] = body1;
@@ -1337,14 +1358,23 @@ mod tests {
         match k.query(&q) {
             QueryResult::Answered(answers) => {
                 assert_eq!(
-                    answers.len(), 2,
+                    answers.len(),
+                    2,
                     "backtracking must find both intermediates (b and c); got {}",
                     answers.len()
                 );
-                let intermediates: Vec<TermId> =
-                    answers.iter().filter_map(|a| a.bindings.first().copied()).collect();
-                assert!(intermediates.contains(&b), "b must be found as intermediate");
-                assert!(intermediates.contains(&c), "c must be found as intermediate");
+                let intermediates: Vec<TermId> = answers
+                    .iter()
+                    .filter_map(|a| a.bindings.first().copied())
+                    .collect();
+                assert!(
+                    intermediates.contains(&b),
+                    "b must be found as intermediate"
+                );
+                assert!(
+                    intermediates.contains(&c),
+                    "c must be found as intermediate"
+                );
             }
             other => panic!("expected Answered, got {other:?}"),
         }

@@ -25,8 +25,8 @@
 use crate::catalog::{Catalog, PredicateMeta, PredicateProofPolicy};
 use crate::kernel::{Decision, Kernel, QueryResult};
 use crate::types::{
-    Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, FeatureBit, PlanId,
-    PredicateId, ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId,
+    Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, FeatureBit, PlanId, PredicateId,
+    ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId,
 };
 
 const EPOCH: EpochId = EpochId(0);
@@ -179,15 +179,15 @@ impl PeopleWorld {
             }};
         }
 
-        load_unary!(1, [charlie]);            // strong(charlie)
-        load_unary!(4, [bob]);                // thin(bob)
-        load_unary!(5, [bob]);                // small(bob)
-        load_unary!(6, [erin]);               // quiet(erin)
-        load_unary!(7, [erin]);               // smart(erin)
-        load_unary!(8, [erin]);               // kind(erin)
-        load_unary!(9, [anne]);               // bad(anne)
-        load_unary!(10, [anne]);              // sad(anne)
-        load_unary!(11, [anne]);              // rough(anne)
+        load_unary!(1, [charlie]); // strong(charlie)
+        load_unary!(4, [bob]); // thin(bob)
+        load_unary!(5, [bob]); // small(bob)
+        load_unary!(6, [erin]); // quiet(erin)
+        load_unary!(7, [erin]); // smart(erin)
+        load_unary!(8, [erin]); // kind(erin)
+        load_unary!(9, [anne]); // bad(anne)
+        load_unary!(10, [anne]); // sad(anne)
+        load_unary!(11, [anne]); // rough(anne)
 
         // Rules from NonNegationRule-D2-11112:
         //   strong(X) ∧ thin(X)  → short(X)
@@ -355,8 +355,7 @@ fn conjunction_requires_both_premises_bob_not_short() {
 fn conjunction_charlie_becomes_short_when_thin_added() {
     let mut w = PeopleWorld::build();
     let thin_fact = FactRow8::new(w.thin, 1, &[w.charlie], SRC);
-    w.k
-        .load_facts(FactBlock8::new(w.thin, 1, vec![thin_fact]))
+    w.k.load_facts(FactBlock8::new(w.thin, 1, vec![thin_fact]))
         .unwrap();
     let ans = answered(w.query_unary(w.short, w.charlie));
     assert_eq!(ans.len(), 1);
@@ -447,11 +446,9 @@ fn variable_output_binding_returns_multiple_entities() {
     // Give bob quiet and smart too
     let bob_quiet = FactRow8::new(w.quiet, 1, &[w.bob], SRC);
     let bob_smart = FactRow8::new(w.smart, 1, &[w.bob], SRC);
-    w.k
-        .load_facts(FactBlock8::new(w.quiet, 1, vec![bob_quiet]))
+    w.k.load_facts(FactBlock8::new(w.quiet, 1, vec![bob_quiet]))
         .unwrap();
-    w.k
-        .load_facts(FactBlock8::new(w.smart, 1, vec![bob_smart]))
+    w.k.load_facts(FactBlock8::new(w.smart, 1, vec![bob_smart]))
         .unwrap();
 
     let atom = Atom8::new(w.wealthy, 1, &[TermId::sentinel()]);
@@ -459,7 +456,10 @@ fn variable_output_binding_returns_multiple_entities() {
     let ans = answered(w.k.query(&q));
     assert_eq!(ans.len(), 2, "both erin and bob should be derived wealthy");
 
-    let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
+    let bindings: Vec<TermId> = ans
+        .iter()
+        .filter_map(|a| a.bindings.first().copied())
+        .collect();
     assert!(bindings.contains(&w.erin));
     assert!(bindings.contains(&w.bob));
 }
@@ -475,7 +475,15 @@ fn variable_output_binding_returns_multiple_entities() {
 //            quiet(carol)                ← only rule B applicable
 // ---------------------------------------------------------------------------
 
-fn build_multi_rule_world() -> (Kernel, TermId, TermId, TermId, PredicateId, PredicateId, PredicateId) {
+fn build_multi_rule_world() -> (
+    Kernel,
+    TermId,
+    TermId,
+    TermId,
+    PredicateId,
+    PredicateId,
+    PredicateId,
+) {
     let mut cat = Catalog::new(CatalogId(50));
     for (id, label) in [(1u32, "kind"), (2u32, "quiet"), (3u32, "smart")] {
         cat.add_predicate(PredicateMeta {
@@ -493,23 +501,49 @@ fn build_multi_rule_world() -> (Kernel, TermId, TermId, TermId, PredicateId, Pre
 
     let mut k = Kernel::new(cat);
 
-    k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-        FactRow8::new(PredicateId(1), 1, &[alice], SRC),
-        FactRow8::new(PredicateId(1), 1, &[bob], SRC),
-    ])).unwrap();
-    k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-        FactRow8::new(PredicateId(2), 1, &[alice], SRC),
-        FactRow8::new(PredicateId(2), 1, &[carol], SRC),
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        1,
+        vec![
+            FactRow8::new(PredicateId(1), 1, &[alice], SRC),
+            FactRow8::new(PredicateId(1), 1, &[bob], SRC),
+        ],
+    ))
+    .unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(2),
+        1,
+        vec![
+            FactRow8::new(PredicateId(2), 1, &[alice], SRC),
+            FactRow8::new(PredicateId(2), 1, &[carol], SRC),
+        ],
+    ))
+    .unwrap();
 
     // Rule A: smart(?0) :- kind(?0)
-    k.load_rule(simple_rule(10, Atom8::new(PredicateId(3), 1, &[v(0)]),
-        &[Atom8::new(PredicateId(1), 1, &[v(0)])])).unwrap();
+    k.load_rule(simple_rule(
+        10,
+        Atom8::new(PredicateId(3), 1, &[v(0)]),
+        &[Atom8::new(PredicateId(1), 1, &[v(0)])],
+    ))
+    .unwrap();
     // Rule B: smart(?0) :- quiet(?0)
-    k.load_rule(simple_rule(11, Atom8::new(PredicateId(3), 1, &[v(0)]),
-        &[Atom8::new(PredicateId(2), 1, &[v(0)])])).unwrap();
+    k.load_rule(simple_rule(
+        11,
+        Atom8::new(PredicateId(3), 1, &[v(0)]),
+        &[Atom8::new(PredicateId(2), 1, &[v(0)])],
+    ))
+    .unwrap();
 
-    (k, alice, bob, carol, PredicateId(1), PredicateId(2), PredicateId(3))
+    (
+        k,
+        alice,
+        bob,
+        carol,
+        PredicateId(1),
+        PredicateId(2),
+        PredicateId(3),
+    )
 }
 
 /// alice has both kind and quiet → smart(alice) is proven (distinct-conclusion semantics).
@@ -520,7 +554,11 @@ fn multi_rule_alice_is_smart() {
     let (k, alice, _bob, _carol, _kind, _quiet, smart) = build_multi_rule_world();
     let atom = bound(Atom8::new(smart, 1, &[alice]), 0b1);
     let ans = answered(k.query(&full_query(atom, 0)));
-    assert_eq!(ans.len(), 1, "one conclusion: alice is smart (two proofs deduped to one)");
+    assert_eq!(
+        ans.len(),
+        1,
+        "one conclusion: alice is smart (two proofs deduped to one)"
+    );
     assert_eq!(ans[0].kind, DecisionKind::Allow);
 }
 
@@ -531,7 +569,10 @@ fn multi_rule_unbound_finds_all_entities() {
     let (k, alice, bob, carol, _kind, _quiet, smart) = build_multi_rule_world();
     let atom = Atom8::new(smart, 1, &[TermId::sentinel()]);
     let ans = answered(k.query(&full_query(atom, 0b1)));
-    let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
+    let bindings: Vec<TermId> = ans
+        .iter()
+        .filter_map(|a| a.bindings.first().copied())
+        .collect();
     assert!(bindings.contains(&alice), "alice should be smart");
     assert!(bindings.contains(&bob), "bob should be smart via kind");
     assert!(bindings.contains(&carol), "carol should be smart via quiet");
@@ -566,7 +607,14 @@ fn multi_rule_carol_gets_one_derivation() {
 //    prolog8 NAF: \+P(X) succeeds iff derive_atom_with_support(P(X)) is empty.
 // ---------------------------------------------------------------------------
 
-fn naf_world() -> (Kernel, TermId, TermId, PredicateId, PredicateId, PredicateId) {
+fn naf_world() -> (
+    Kernel,
+    TermId,
+    TermId,
+    PredicateId,
+    PredicateId,
+    PredicateId,
+) {
     let mut cat = Catalog::new(CatalogId(60));
     for (id, label) in [(1u32, "smart"), (2u32, "rough"), (3u32, "quiet")] {
         cat.add_predicate(PredicateMeta {
@@ -584,13 +632,23 @@ fn naf_world() -> (Kernel, TermId, TermId, PredicateId, PredicateId, PredicateId
 
     // fiona: smart only (not rough) → quiet should be derived
     // gary:  smart AND rough        → quiet must NOT be derived
-    k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-        FactRow8::new(PredicateId(1), 1, &[fiona], SRC),
-        FactRow8::new(PredicateId(1), 1, &[gary], SRC),
-    ])).unwrap();
-    k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-        FactRow8::new(PredicateId(2), 1, &[gary], SRC), // only gary is rough
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        1,
+        vec![
+            FactRow8::new(PredicateId(1), 1, &[fiona], SRC),
+            FactRow8::new(PredicateId(1), 1, &[gary], SRC),
+        ],
+    ))
+    .unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(2),
+        1,
+        vec![
+            FactRow8::new(PredicateId(2), 1, &[gary], SRC), // only gary is rough
+        ],
+    ))
+    .unwrap();
 
     // Rule: quiet(?0) :- smart(?0), \+rough(?0)
     // negation_mask bit 1 = body[1] (rough) is negated
@@ -606,7 +664,14 @@ fn naf_world() -> (Kernel, TermId, TermId, PredicateId, PredicateId, PredicateId
     naf_rule.negation_mask = 0b10; // bit 1 set → body[1] is negated
     k.load_rule(naf_rule).unwrap();
 
-    (k, fiona, gary, PredicateId(1), PredicateId(2), PredicateId(3))
+    (
+        k,
+        fiona,
+        gary,
+        PredicateId(1),
+        PredicateId(2),
+        PredicateId(3),
+    )
 }
 
 /// fiona is smart and NOT rough → quiet(fiona) must be derived.
@@ -634,9 +699,15 @@ fn naf_unbound_quiet_returns_only_not_rough_entities() {
     let (k, fiona, gary, _smart, _rough, quiet) = naf_world();
     let atom = Atom8::new(quiet, 1, &[TermId::sentinel()]);
     let ans = answered(k.query(&full_query(atom, 0b1)));
-    let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
+    let bindings: Vec<TermId> = ans
+        .iter()
+        .filter_map(|a| a.bindings.first().copied())
+        .collect();
     assert!(bindings.contains(&fiona), "fiona must be quiet");
-    assert!(!bindings.contains(&gary), "gary must NOT be quiet (is rough)");
+    assert!(
+        !bindings.contains(&gary),
+        "gary must NOT be quiet (is rough)"
+    );
     assert_eq!(bindings.len(), 1);
 }
 
@@ -645,9 +716,12 @@ fn naf_unbound_quiet_returns_only_not_rough_entities() {
 #[test]
 fn naf_quiet_fiona_denied_after_rough_fact_added() {
     let (mut k, fiona, _gary, _smart, rough, quiet) = naf_world();
-    k.load_facts(FactBlock8::new(rough, 1, vec![
-        FactRow8::new(rough, 1, &[fiona], SRC),
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        rough,
+        1,
+        vec![FactRow8::new(rough, 1, &[fiona], SRC)],
+    ))
+    .unwrap();
     let atom = bound(Atom8::new(quiet, 1, &[fiona]), 0b1);
     let d = denied(k.query(&full_query(atom, 0)));
     assert_eq!(d.kind, DecisionKind::Deny);
@@ -671,19 +745,25 @@ fn naf_blocks_when_negated_atom_derived_by_rule() {
     let x = cat.intern_term("x");
     let mut k = Kernel::new(cat);
 
-    k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-        FactRow8::new(PredicateId(1), 1, &[x], SRC),
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        1,
+        vec![FactRow8::new(PredicateId(1), 1, &[x], SRC)],
+    ))
+    .unwrap();
 
     // Rule A: derived(?0) :- base(?0)
-    k.load_rule(simple_rule(1,
+    k.load_rule(simple_rule(
+        1,
         Atom8::new(PredicateId(2), 1, &[v(0)]),
         &[Atom8::new(PredicateId(1), 1, &[v(0)])],
-    )).unwrap();
+    ))
+    .unwrap();
 
     // Rule B: blocked(?0) :- base(?0), \+derived(?0)
     // Since derived(x) IS derivable, blocked(x) must be DENIED.
-    let mut naf_rule = simple_rule(2,
+    let mut naf_rule = simple_rule(
+        2,
         Atom8::new(PredicateId(3), 1, &[v(0)]),
         &[
             Atom8::new(PredicateId(1), 1, &[v(0)]),
@@ -696,8 +776,11 @@ fn naf_blocks_when_negated_atom_derived_by_rule() {
 
     let atom = bound(Atom8::new(PredicateId(3), 1, &[x]), 0b1);
     let d = denied(k.query(&full_query(atom, 0)));
-    assert_eq!(d.kind, DecisionKind::Deny,
-        "blocked(x) must fail because \\+derived(x) fails (derived(x) IS derivable)");
+    assert_eq!(
+        d.kind,
+        DecisionKind::Deny,
+        "blocked(x) must fail because \\+derived(x) fails (derived(x) IS derivable)"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -711,8 +794,7 @@ fn receipt_hash_is_deterministic_across_repeated_queries() {
     let ans1 = answered(w.query_unary(w.wealthy, w.erin));
     let ans2 = answered(w.query_unary(w.wealthy, w.erin));
     assert_eq!(
-        ans1[0].receipt.receipt_hash,
-        ans2[0].receipt.receipt_hash,
+        ans1[0].receipt.receipt_hash, ans2[0].receipt.receipt_hash,
         "receipt must be deterministic"
     );
 }
@@ -727,8 +809,7 @@ fn receipt_hash_differs_for_different_queries() {
     let r_deny = denied(w.query_unary(w.wealthy, w.charlie));
 
     assert_ne!(
-        r_allow[0].receipt.receipt_hash,
-        r_deny.receipt.receipt_hash,
+        r_allow[0].receipt.receipt_hash, r_deny.receipt.receipt_hash,
         "allow and deny receipts must differ"
     );
 }
@@ -740,8 +821,7 @@ fn receipt_hash_differs_for_different_predicates() {
     let r1 = answered(w.query_unary(w.quiet, w.erin));
     let r2 = answered(w.query_unary(w.smart, w.erin));
     assert_ne!(
-        r1[0].receipt.receipt_hash,
-        r2[0].receipt.receipt_hash,
+        r1[0].receipt.receipt_hash, r2[0].receipt.receipt_hash,
         "different queries must produce different receipts"
     );
 }
@@ -804,8 +884,14 @@ fn proof_dag_has_single_fact_node_for_direct_lookup() {
     let ans = answered(w.query_unary(w.quiet, w.erin));
     let proof = &ans[0].proof;
 
-    assert_eq!(proof.iter().filter(|n| n.kind == ProofKind::Fact).count(), 1);
-    assert_eq!(proof.iter().filter(|n| n.kind == ProofKind::Rule).count(), 0);
+    assert_eq!(
+        proof.iter().filter(|n| n.kind == ProofKind::Fact).count(),
+        1
+    );
+    assert_eq!(
+        proof.iter().filter(|n| n.kind == ProofKind::Rule).count(),
+        0
+    );
 }
 
 /// Deny answers have exactly one MissingFact node.
@@ -845,18 +931,26 @@ fn receipt_changes_when_rule_set_changes() {
     }
     let erin2 = cat2.intern_term("erin");
     let mut k2 = Kernel::new(cat2);
-    k2.load_facts(FactBlock8::new(PredicateId(6), 1, vec![
-        FactRow8::new(PredicateId(6), 1, &[erin2], SRC),
-    ])).unwrap();
-    k2.load_facts(FactBlock8::new(PredicateId(7), 1, vec![
-        FactRow8::new(PredicateId(7), 1, &[erin2], SRC),
-    ])).unwrap();
+    k2.load_facts(FactBlock8::new(
+        PredicateId(6),
+        1,
+        vec![FactRow8::new(PredicateId(6), 1, &[erin2], SRC)],
+    ))
+    .unwrap();
+    k2.load_facts(FactBlock8::new(
+        PredicateId(7),
+        1,
+        vec![FactRow8::new(PredicateId(7), 1, &[erin2], SRC)],
+    ))
+    .unwrap();
     // No wealthy rule loaded — deny path
-    let d = denied(k2.query(&full_query(bound(Atom8::new(PredicateId(13), 1, &[erin2]), 0b1), 0)));
+    let d = denied(k2.query(&full_query(
+        bound(Atom8::new(PredicateId(13), 1, &[erin2]), 0b1),
+        0,
+    )));
 
     assert_ne!(
-        hash_with_rule,
-        d.receipt.receipt_hash,
+        hash_with_rule, d.receipt.receipt_hash,
         "different rule sets must produce different receipts"
     );
 }
@@ -891,10 +985,18 @@ fn cyclic_rules_terminate_with_deny() {
     let mut k = Kernel::new(cat);
 
     // p(?0) :- q(?0) and q(?0) :- p(?0) — mutual recursion, no base facts
-    k.load_rule(simple_rule(1, Atom8::new(PredicateId(1), 1, &[v(0)]),
-        &[Atom8::new(PredicateId(2), 1, &[v(0)])])).unwrap();
-    k.load_rule(simple_rule(2, Atom8::new(PredicateId(2), 1, &[v(0)]),
-        &[Atom8::new(PredicateId(1), 1, &[v(0)])])).unwrap();
+    k.load_rule(simple_rule(
+        1,
+        Atom8::new(PredicateId(1), 1, &[v(0)]),
+        &[Atom8::new(PredicateId(2), 1, &[v(0)])],
+    ))
+    .unwrap();
+    k.load_rule(simple_rule(
+        2,
+        Atom8::new(PredicateId(2), 1, &[v(0)]),
+        &[Atom8::new(PredicateId(1), 1, &[v(0)])],
+    ))
+    .unwrap();
 
     // Must terminate (visited-set cap) and return Denied
     let atom = bound(Atom8::new(PredicateId(1), 1, &[x]), 0b1);
@@ -918,7 +1020,14 @@ fn cyclic_rules_terminate_with_deny() {
 #[test]
 fn depth5_five_conjunct_rule_all_facts_present() {
     let mut cat = Catalog::new(CatalogId(80));
-    for (id, label) in [(1u32, "a"), (2u32, "b"), (3u32, "c"), (4u32, "d"), (5u32, "e"), (6u32, "concl")] {
+    for (id, label) in [
+        (1u32, "a"),
+        (2u32, "b"),
+        (3u32, "c"),
+        (4u32, "d"),
+        (5u32, "e"),
+        (6u32, "concl"),
+    ] {
         cat.add_predicate(PredicateMeta {
             pred_id: PredicateId(id),
             label: label.into(),
@@ -938,7 +1047,8 @@ fn depth5_five_conjunct_rule_all_facts_present() {
         if pid < 5 {
             rows.push(FactRow8::new(PredicateId(pid), 1, &[y], SRC));
         }
-        k.load_facts(FactBlock8::new(PredicateId(pid), 1, rows)).unwrap();
+        k.load_facts(FactBlock8::new(PredicateId(pid), 1, rows))
+            .unwrap();
     }
 
     // Rule: concl(?0) :- a(?0), b(?0), c(?0), d(?0), e(?0)
@@ -952,17 +1062,28 @@ fn depth5_five_conjunct_rule_all_facts_present() {
             Atom8::new(PredicateId(4), 1, &[v(0)]),
             Atom8::new(PredicateId(5), 1, &[v(0)]),
         ],
-    )).unwrap();
+    ))
+    .unwrap();
 
     // x: all 5 premises → Answered
-    let ans = answered(k.query(&full_query(bound(Atom8::new(PredicateId(6), 1, &[x]), 0b1), 0)));
+    let ans = answered(k.query(&full_query(
+        bound(Atom8::new(PredicateId(6), 1, &[x]), 0b1),
+        0,
+    )));
     assert_eq!(ans.len(), 1);
     assert_eq!(ans[0].kind, DecisionKind::Allow);
-    let fact_nodes = ans[0].proof.iter().filter(|n| n.kind == ProofKind::Fact).count();
+    let fact_nodes = ans[0]
+        .proof
+        .iter()
+        .filter(|n| n.kind == ProofKind::Fact)
+        .count();
     assert_eq!(fact_nodes, 5, "5-body rule needs 5 fact nodes in proof");
 
     // y: missing e → Denied
-    let d = denied(k.query(&full_query(bound(Atom8::new(PredicateId(6), 1, &[y]), 0b1), 0)));
+    let d = denied(k.query(&full_query(
+        bound(Atom8::new(PredicateId(6), 1, &[y]), 0b1),
+        0,
+    )));
     assert_eq!(d.kind, DecisionKind::Deny);
 }
 
@@ -976,14 +1097,20 @@ fn depth5_five_conjunct_rule_all_facts_present() {
 fn fact_hash_encodes_predicate_id() {
     let r1 = FactRow8::new(PredicateId(1), 1, &[TermId(42)], SRC);
     let r2 = FactRow8::new(PredicateId(2), 1, &[TermId(42)], SRC);
-    assert_ne!(r1.fact_hash, r2.fact_hash, "predicate id must influence hash");
+    assert_ne!(
+        r1.fact_hash, r2.fact_hash,
+        "predicate id must influence hash"
+    );
 }
 
 #[test]
 fn fact_hash_encodes_argument_order() {
     let r1 = FactRow8::new(PredicateId(1), 2, &[TermId(10), TermId(20)], SRC);
     let r2 = FactRow8::new(PredicateId(1), 2, &[TermId(20), TermId(10)], SRC);
-    assert_ne!(r1.fact_hash, r2.fact_hash, "argument order must influence hash");
+    assert_ne!(
+        r1.fact_hash, r2.fact_hash,
+        "argument order must influence hash"
+    );
 }
 
 #[test]
@@ -1015,12 +1142,18 @@ fn animal_wolf_is_slow_via_dull_and_sleepy() {
     let mouse = cat.intern_term("mouse"); // smart, kind, round, small — NOT dull or sleepy
     let mut k = Kernel::new(cat);
 
-    k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-        FactRow8::new(PredicateId(1), 1, &[wolf], SRC),
-    ])).unwrap();
-    k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-        FactRow8::new(PredicateId(2), 1, &[wolf], SRC),
-    ])).unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(1),
+        1,
+        vec![FactRow8::new(PredicateId(1), 1, &[wolf], SRC)],
+    ))
+    .unwrap();
+    k.load_facts(FactBlock8::new(
+        PredicateId(2),
+        1,
+        vec![FactRow8::new(PredicateId(2), 1, &[wolf], SRC)],
+    ))
+    .unwrap();
 
     // Rule: slow(?0) :- dull(?0), sleepy(?0)
     k.load_rule(simple_rule(
@@ -1030,15 +1163,22 @@ fn animal_wolf_is_slow_via_dull_and_sleepy() {
             Atom8::new(PredicateId(1), 1, &[v(0)]),
             Atom8::new(PredicateId(2), 1, &[v(0)]),
         ],
-    )).unwrap();
+    ))
+    .unwrap();
 
     // wolf: dull∧sleepy → slow
-    let ans = answered(k.query(&full_query(bound(Atom8::new(PredicateId(3), 1, &[wolf]), 0b1), 0)));
+    let ans = answered(k.query(&full_query(
+        bound(Atom8::new(PredicateId(3), 1, &[wolf]), 0b1),
+        0,
+    )));
     assert_eq!(ans.len(), 1);
     assert_eq!(ans[0].kind, DecisionKind::Allow);
 
     // mouse: NOT dull, NOT sleepy → NOT slow (counterfactual)
-    let d = denied(k.query(&full_query(bound(Atom8::new(PredicateId(3), 1, &[mouse]), 0b1), 0)));
+    let d = denied(k.query(&full_query(
+        bound(Atom8::new(PredicateId(3), 1, &[mouse]), 0b1),
+        0,
+    )));
     assert_eq!(d.kind, DecisionKind::Deny);
 }
 
@@ -1068,20 +1208,41 @@ fn rule_ordering_does_not_affect_derivability() {
         let z = cat.intern_term("z"); // has only fact c(z) → matched by rule C
         let mut k = Kernel::new(cat);
 
-        k.load_facts(FactBlock8::new(PredicateId(1), 1, vec![
-            FactRow8::new(PredicateId(1), 1, &[x], SRC),
-        ])).unwrap();
-        k.load_facts(FactBlock8::new(PredicateId(2), 1, vec![
-            FactRow8::new(PredicateId(2), 1, &[y], SRC),
-        ])).unwrap();
-        k.load_facts(FactBlock8::new(PredicateId(3), 1, vec![
-            FactRow8::new(PredicateId(3), 1, &[z], SRC),
-        ])).unwrap();
+        k.load_facts(FactBlock8::new(
+            PredicateId(1),
+            1,
+            vec![FactRow8::new(PredicateId(1), 1, &[x], SRC)],
+        ))
+        .unwrap();
+        k.load_facts(FactBlock8::new(
+            PredicateId(2),
+            1,
+            vec![FactRow8::new(PredicateId(2), 1, &[y], SRC)],
+        ))
+        .unwrap();
+        k.load_facts(FactBlock8::new(
+            PredicateId(3),
+            1,
+            vec![FactRow8::new(PredicateId(3), 1, &[z], SRC)],
+        ))
+        .unwrap();
 
         let rules: Vec<Rule8> = vec![
-            simple_rule(1, Atom8::new(PredicateId(4), 1, &[v(0)]), &[Atom8::new(PredicateId(1), 1, &[v(0)])]),
-            simple_rule(2, Atom8::new(PredicateId(4), 1, &[v(0)]), &[Atom8::new(PredicateId(2), 1, &[v(0)])]),
-            simple_rule(3, Atom8::new(PredicateId(4), 1, &[v(0)]), &[Atom8::new(PredicateId(3), 1, &[v(0)])]),
+            simple_rule(
+                1,
+                Atom8::new(PredicateId(4), 1, &[v(0)]),
+                &[Atom8::new(PredicateId(1), 1, &[v(0)])],
+            ),
+            simple_rule(
+                2,
+                Atom8::new(PredicateId(4), 1, &[v(0)]),
+                &[Atom8::new(PredicateId(2), 1, &[v(0)])],
+            ),
+            simple_rule(
+                3,
+                Atom8::new(PredicateId(4), 1, &[v(0)]),
+                &[Atom8::new(PredicateId(3), 1, &[v(0)])],
+            ),
         ];
         let rule_map: std::collections::HashMap<u32, Rule8> =
             rules.into_iter().map(|r| (r.rule_id.0, r)).collect();
@@ -1105,10 +1266,26 @@ fn rule_ordering_does_not_affect_derivability() {
         // Unbound query: target(?) → should find x, y, z (three distinct entities)
         let atom = Atom8::new(target, 1, &[TermId::sentinel()]);
         let ans = answered(k.query(&full_query(atom, 0b1)));
-        let bindings: Vec<TermId> = ans.iter().filter_map(|a| a.bindings.first().copied()).collect();
-        assert!(bindings.contains(&x), "x must be target via rule A (order {order:?})");
-        assert!(bindings.contains(&y), "y must be target via rule B (order {order:?})");
-        assert!(bindings.contains(&z), "z must be target via rule C (order {order:?})");
-        assert_eq!(bindings.len(), 3, "exactly three distinct entities (order {order:?})");
+        let bindings: Vec<TermId> = ans
+            .iter()
+            .filter_map(|a| a.bindings.first().copied())
+            .collect();
+        assert!(
+            bindings.contains(&x),
+            "x must be target via rule A (order {order:?})"
+        );
+        assert!(
+            bindings.contains(&y),
+            "y must be target via rule B (order {order:?})"
+        );
+        assert!(
+            bindings.contains(&z),
+            "z must be target via rule C (order {order:?})"
+        );
+        assert_eq!(
+            bindings.len(),
+            3,
+            "exactly three distinct entities (order {order:?})"
+        );
     }
 }
