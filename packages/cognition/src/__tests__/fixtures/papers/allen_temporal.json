@@ -18,7 +18,7 @@
     ],
     "facts": [
       {"key": "relation", "value": "A meets B"},
-      {"key": "relation", "value": "B meets C"}
+      {"key": "relation", "value": "B during C"}
     ],
     "cases": [],
     "rules": [],
@@ -27,6 +27,7 @@
   },
   "expected": {
     "consistent": true,
-    "inferred": "A precedes C"
+    "inferred": "A precedes C",
+    "derived": { "relation:A:C": "o|d|s", "relation:C:A": "oi|di|si" }
   }
 }

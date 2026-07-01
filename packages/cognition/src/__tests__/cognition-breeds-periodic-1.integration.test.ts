@@ -91,15 +91,15 @@ describe('allen_temporal breed integration', () => {
     const result = (await fixtures.runBreed('allen_temporal', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     const acFact = (result.output.facts as Array<{ key: string; value: string }>).find(
-      (f) => f.key === 'derived:A,C'
+      (f) => f.key === 'relation:A:C'
     );
     expect(acFact).toBeDefined();
-    expect(acFact?.value).toBe(fixture.expected.derived['derived:A,C']);
+    expect(acFact?.value).toBe(fixture.expected.derived['relation:A:C']);
     const caFact = (result.output.facts as Array<{ key: string; value: string }>).find(
-      (f) => f.key === 'derived:C,A'
+      (f) => f.key === 'relation:C:A'
     );
     expect(caFact).toBeDefined();
-    expect(caFact?.value).toBe(fixture.expected.derived['derived:C,A']);
+    expect(caFact?.value).toBe(fixture.expected.derived['relation:C:A']);
   });
 
   it('Rank-3: two-query consistency — different relation pairs yield different derived facts', async () => {
@@ -217,10 +217,11 @@ describe('bayesian_network breed integration', () => {
     const fixture = loadPaperFixture('bayesian_network');
     const result = (await fixtures.runBreed('bayesian_network', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
-    // selected encodes "prob:B=0.NNNNN"
+    // selected encodes "prob:<FullNodeName>=0.NNNNN" (query resolves to the
+    // rules-derived node name, not a short alias)
     const selected = result.output.selected as string;
-    expect(selected).toMatch(/^prob:B=/);
-    const numStr = selected.replace('prob:B=', '');
+    expect(selected).toMatch(/^prob:Burglary=/);
+    const numStr = selected.replace('prob:Burglary=', '');
     const posterior = parseFloat(numStr);
     expect(Math.abs(posterior - fixture.expected.posterior)).toBeLessThan(1e-4);
   });
@@ -374,11 +375,16 @@ describe('clp breed integration', () => {
     const fixture = loadPaperFixture('clp');
     const result = (await fixtures.runBreed('clp', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
-    expect(result.output.selected).toBe(fixture.expected.solution);
-    const backtracks = (result.output.facts as Array<{ key: string; value: string }>).find(
-      (f) => f.key === 'clp:backtracks'
+    // selected is now a fixed "sat" literal; the solved bindings live in
+    // explanation, formatted as "SAT: x=6, y=3" (sorted key=value pairs).
+    expect(result.output.selected).toBe('sat');
+    expect(result.output.explanation).toContain(
+      (fixture.expected.solution as string).replace(/,/g, ', ')
     );
-    expect(backtracks?.value).toBe(fixture.expected.backtracks);
+    const backtrackCount = (result.output.inference_trace as Array<{ kind: string }>).filter(
+      (t) => t.kind === 'clp-backtrack'
+    ).length;
+    expect(String(backtrackCount)).toBe(fixture.expected.backtracks);
   });
 
   it('Rank-3: two-query consistency — different domains yield different solutions', async () => {
@@ -386,7 +392,10 @@ describe('clp breed integration', () => {
     const r2 = (await fixtures.runBreed('clp', fixtures.altClpInput())) as AnyResult;
     expect(r1.status).toBe('ok');
     expect(r2.status).toBe('ok');
-    expect(r1.output.selected).not.toBe(r2.output.selected);
+    // selected is a fixed "sat" literal for any satisfiable query; the actual
+    // variable bindings live in explanation (e.g. "SAT: x=6, y=3"), so that's
+    // what must differ between two distinct constraint domains.
+    expect(r1.output.explanation).not.toBe(r2.output.explanation);
   });
 
   it('Rank-4: determinism — same input produces identical selected', async () => {

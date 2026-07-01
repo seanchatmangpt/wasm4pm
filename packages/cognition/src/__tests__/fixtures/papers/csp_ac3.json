@@ -18,6 +18,7 @@
     "state": []
   },
   "expected": {
-    "satisfiable": true
+    "satisfiable": true,
+    "explanation": "SAT: V1=B, V2=G"
   }
 }

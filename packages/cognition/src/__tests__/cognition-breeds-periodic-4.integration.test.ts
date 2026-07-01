@@ -156,15 +156,15 @@ describe('script_sam breed integration', () => {
     expect(r1.output_hash).toBe(r2.output_hash);
   });
 
-  it('inference_trace contains select-script and infer-gap steps', async () => {
+  it('inference_trace contains script-selection and gap-inference steps', async () => {
     const result = (await fixtures.runBreed(
       'script_sam',
       fixtures.minimalScriptSamInput()
     )) as AnyResult;
     expect(result.status).toBe('ok');
     const traceKinds = (result.output.inference_trace as Array<{ kind: string }>).map(t => t.kind);
-    expect(traceKinds).toContain('select-script');
-    expect(traceKinds).toContain('infer-gap');
+    expect(traceKinds).toContain('script-selection');
+    expect(traceKinds).toContain('gap-inference');
   });
 });
 
@@ -182,9 +182,13 @@ describe('script_sam breed — paper fixture (Schank & Abelson 1977)', () => {
       expect(fact).toBeDefined();
       expect(fact?.value).toBe(val);
     }
-    // Inferred count
-    const countFact = facts.find(f => f.key === 'sam:inferred_count');
-    expect(countFact?.value).toBe(fixture.expected.inferred_count);
+    // Inferred count: derived from the number of 'sam:inferred:*' facts
+    // (no standalone 'sam:inferred_count' fact is emitted by the breed;
+    // see crates/wasm4pm-cognition/src/breeds/script_sam.rs run(), mirrored
+    // by the native ground-truth test script_sam_paper_grounded in
+    // crates/wasm4pm-cognition/tests/paper_grounded.rs).
+    const inferredCount = facts.filter(f => f.key.startsWith('sam:inferred:')).length;
+    expect(String(inferredCount)).toBe(fixture.expected.inferred_count);
     // Role binding
     for (const [key, val] of Object.entries(fixture.expected.role as Record<string, string>)) {
       const fact = facts.find(f => f.key === key);
@@ -293,17 +297,21 @@ describe('version_space breed integration', () => {
     )) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('VersionSpace');
-    // Rank-2: S4 boundary from Mitchell 1997 Table 2.5
-    expect(result.output.selected).toBe('Sunny,Warm,?,Strong,?,?');
     const facts = result.output.facts as Array<{ key: string; value: string }>;
-    const sFact = facts.find(f => f.key === 'vs:s');
+    // Rank-2: S4 boundary from Mitchell 1997 Table 2.5, emitted as fact 'vs:S'
+    const sFact = facts.find(f => f.key === 'vs:S');
     expect(sFact?.value).toBe('Sunny,Warm,?,Strong,?,?');
+    // No classify target in this fixture, so `selected` (the classify verdict)
+    // stays at its default of 'unknown'.
+    expect(result.output.selected).toBe('unknown');
     // Not fully converged (S ≠ G)
     const convergedFact = facts.find(f => f.key === 'vs:converged');
     expect(convergedFact?.value).toBe('false');
-    // G boundary must have exactly 2 members after example 4
-    const gFacts = facts.filter(f => f.key.startsWith('vs:g:'));
-    expect(gFacts.length).toBe(2);
+    // G boundary is emitted as a single ' | '-joined fact; must have exactly
+    // 2 members after example 4
+    const gFact = facts.find(f => f.key === 'vs:G');
+    const gMembers = (gFact?.value ?? '').split(' | ').filter(Boolean);
+    expect(gMembers.length).toBe(2);
   });
 
   it('two-query consistency: EnjoySport vs simple 2-attr instance differ in S boundary', async () => {
@@ -311,11 +319,20 @@ describe('version_space breed integration', () => {
       fixtures.runBreed('version_space', fixtures.minimalVersionSpaceEnjoySportInput()) as Promise<AnyResult>,
       fixtures.runBreed('version_space', fixtures.minimalVersionSpaceSimpleInput()) as Promise<AnyResult>,
     ]);
-    expect(fullResult.output.selected).not.toBe(simpleResult.output.selected);
+    // `selected` is the classify verdict (defaults to 'unknown' when no `classify`
+    // fact is supplied, as in these fixtures) — the S boundary lives in the
+    // `vs:S` fact, not in `selected`.
+    const fullS = (fullResult.output.facts as Array<{ key: string; value: string }>).find(
+      f => f.key === 'vs:S'
+    )?.value;
+    const simpleS = (simpleResult.output.facts as Array<{ key: string; value: string }>).find(
+      f => f.key === 'vs:S'
+    )?.value;
+    expect(fullS).not.toBe(simpleS);
     // EnjoySport S has 6 comma-separated attributes
-    expect((fullResult.output.selected as string).split(',').length).toBe(6);
+    expect((fullS as string).split(',').length).toBe(6);
     // Simple instance S has 2 attributes
-    expect((simpleResult.output.selected as string).split(',').length).toBe(2);
+    expect((simpleS as string).split(',').length).toBe(2);
   });
 
   it('inference_trace contains vs-init, vs-update steps', async () => {
@@ -346,12 +363,15 @@ describe('version_space breed — paper fixture (Mitchell 1982 / EnjoySport)', (
     const result = (await fixtures.runBreed('version_space', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('VersionSpace');
-    expect(result.output.selected).toBe(fixture.expected.s);
     const facts = result.output.facts as Array<{ key: string; value: string }>;
-    // G boundary members (order-independent set comparison)
-    const gFacts = facts.filter(f => f.key.startsWith('vs:g:')).map(f => f.value);
+    // S4 boundary (Mitchell 1997 Table 2.5)
+    const sFact = facts.find(f => f.key === 'vs:S');
+    expect(sFact?.value).toBe(fixture.expected.s);
+    // G4 boundary members (order-independent set comparison)
+    const gFact = facts.find(f => f.key === 'vs:G');
+    const gMembers = (gFact?.value ?? '').split(' | ').filter(Boolean);
     const expectedG = fixture.expected.g as string[];
-    expect(gFacts.sort()).toEqual(expectedG.sort());
+    expect(gMembers.sort()).toEqual(expectedG.sort());
     // converged flag
     const convergedFact = facts.find(f => f.key === 'vs:converged');
     expect(convergedFact?.value).toBe(fixture.expected.converged);

@@ -179,11 +179,22 @@ pub static SOAR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
 };
 
 /// ELIZA lifecycle: try-pattern* → match-pattern/bind-slot+
+/// Two run() paths: keyword engine (Weizenbaum 1966, when input.rules is
+/// non-empty) emits keyword-found/equivalence/decomp-match; the wildcard-frame
+/// fallback (when input.rules is empty) emits try-pattern/match-pattern/bind-slot.
+/// Both are legitimate breed behavior, so both kind sets satisfy phase 'match'.
 pub static ELIZA_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "eliza",
     phases: &[LifecyclePhase {
         name: "match",
-        kinds: &["keyword-found", "equivalence", "decomp-match"],
+        kinds: &[
+            "keyword-found",
+            "equivalence",
+            "decomp-match",
+            "try-pattern",
+            "match-pattern",
+            "bind-slot",
+        ],
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],

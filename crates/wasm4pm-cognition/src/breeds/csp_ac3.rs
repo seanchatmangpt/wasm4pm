@@ -195,7 +195,7 @@ impl CognitionBreed for CspAc3 {
             breed: self.id(),
             candidates: input.candidates.clone(),
             facts: input.facts.clone(),
-            selected: solution.as_ref().map(|_| "sat".to_string()),
+            selected: Some(if solution.is_some() { "sat" } else { "unsat" }.to_string()),
             explanation,
             inference_trace: trace,
             ocel_log: None,

@@ -564,14 +564,14 @@ export function minimalDescriptionLogicInput(): BreedInput {
       { id: 'x', score: 0.5, eliminated: false },
     ],
     facts: [
-      { key: 'dl:subclass:A', value: 'B' },
-      { key: 'dl:subclass:B', value: 'C' },
+      { key: 'subclass', value: 'A,B' },
+      { key: 'subclass', value: 'B,C' },
+      { key: 'class', value: 'x,A' },
+      { key: 'disjoint', value: 'C,D' },
     ],
     cases: [],
     rules: [],
-    goals: [
-      { id: 'g1', predicate: 'dl:subsumes', value: 'A:C' },
-    ],
+    goals: [],
     state: [],
   };
 }
@@ -635,15 +635,21 @@ export function minimalPartialOrderPlanInput(): BreedInput {
   return {
     intent: 'planning',
     candidates: [],
-    // Grammar per partial_order_plan.rs: operators are pop:op:<name>:{pre,add,del}
-    // facts; goals/state use bare propositional atoms.
-    facts: [
-      { key: 'pop:op:pickup:pre', value: 'at_depot' },
-      { key: 'pop:op:pickup:add', value: 'holding' },
-      { key: 'pop:op:pickup:del', value: 'at_depot' },
-    ],
+    facts: [],
     cases: [],
-    rules: [],
+    // Grammar per partial_order_plan.rs: `run()`/`preconditions()` require at
+    // least one action Rule in `input.rules` (the old pop:op:<name>:{pre,add,del}
+    // facts grammar is no longer read). Rules use the standard
+    // `id/premise/conclusion/certainty` shape; effects are `key=value` tokens
+    // joined by `;`, with a leading `!` marking a deletion.
+    rules: [
+      {
+        id: 'pickup',
+        premise: ['at_depot=true'],
+        conclusion: 'holding=true; !at_depot=true',
+        certainty: 1.0,
+      },
+    ],
     goals: [
       { id: 'g1', predicate: 'holding', value: 'true' },
     ],
@@ -1412,7 +1418,25 @@ export function airportScriptSamInput(): BreedInput {
       { key: 'sam:event:4', value: 'land:alice' },
     ],
     cases: [],
-    rules: [],
+    // script_sam only carries the restaurant script built in (see
+    // ScriptSam::builtin_restaurant_script); an empty rules list falls back to
+    // that restaurant script, which cannot align to airport-shaped observations
+    // and leaves output.selected == null. Supply an explicit airport script so
+    // checkin/security/board/land align and the "fly" gap scene is inferred.
+    rules: [
+      {
+        id: 'airport_script',
+        premise: [
+          'checkin($customer)',
+          'security($customer)',
+          'board($customer)',
+          'fly($customer)',
+          'land($customer)',
+        ],
+        conclusion: 'airport',
+        certainty: 1.0,
+      },
+    ],
     goals: [],
     state: [],
   };
