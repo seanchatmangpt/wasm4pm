@@ -2,8 +2,8 @@
   "receipt_type": "Wasm4pmExecutionReceipt",
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
-  "version": "26.6.25",
-  "commit": "09640d417d04f4717685f0447b9cb49108c66a7f",
+  "version": "26.7.1",
+  "commit": "47fdbb639fc0025252296a4ff7cc1d8ce7833b13",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34",
-      "duration_ms": 26.622,
+      "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e",
+      "duration_ms": 50.058,
       "expected_path": {
         "route_id": "wpm.example.prayer_pipeline.dfg.v1",
         "expected_ocel2": {
@@ -137,7 +137,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -155,7 +155,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34",
-                "duration_ms": 26.622
+                "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e",
+                "duration_ms": 50.058
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34"
+                "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34"
+                "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e"
               }
             },
             {
@@ -299,7 +299,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "1502236ce824ecbf1d7d54d70f578183c909b7694b60c4a8874edeb376e3c685"
+        "expected_ocel2_hash": "d18f9ba113919b3a8c0a3d5c3b618912b383a25dc7127d0252212da8e8c125f4"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_prayer_pipeline_dfg_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-25T22:12:17.808Z",
+              "time": "2026-07-02T04:37:06.882Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -412,7 +412,7 @@
             {
               "id": "evt_prayer_pipeline_dfg_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-25T22:12:17.804Z",
+              "time": "2026-07-02T04:37:07.553Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -426,10 +426,10 @@
             {
               "id": "evt_prayer_pipeline_dfg_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-25T22:12:20.569Z",
+              "time": "2026-07-02T04:37:05.728Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -440,14 +440,14 @@
             {
               "id": "evt_prayer_pipeline_dfg_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-25T22:12:21.525Z",
+              "time": "2026-07-02T04:37:08.085Z",
               "relationships": [
                 {
                   "objectId": "algorithm_dfg",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -463,7 +463,7 @@
             {
               "id": "evt_prayer_pipeline_dfg_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-25T22:12:19.088Z",
+              "time": "2026-07-02T04:37:05.836Z",
               "relationships": [
                 {
                   "objectId": "algorithm_dfg",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34",
-                "duration_ms": 26.622
+                "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e",
+                "duration_ms": 50.058
               }
             },
             {
               "id": "evt_prayer_pipeline_dfg_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-25T22:12:20.515Z",
+              "time": "2026-07-02T04:37:06.781Z",
               "relationships": [
                 {
                   "objectId": "result_dfg_prayer_pipeline",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34"
+                "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e"
               }
             },
             {
               "id": "evt_prayer_pipeline_dfg_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-25T22:12:20.976Z",
+              "time": "2026-07-02T04:37:09.293Z",
               "relationships": [
                 {
                   "objectId": "result_dfg_prayer_pipeline",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34"
+                "result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e"
               }
             },
             {
               "id": "evt_prayer_pipeline_dfg_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-25T22:12:18.692Z",
+              "time": "2026-07-02T04:37:07.368Z",
               "relationships": [
                 {
                   "objectId": "example_prayer_pipeline",
@@ -540,7 +540,7 @@
             {
               "id": "evt_prayer_pipeline_dfg_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-25T22:12:20.539Z",
+              "time": "2026-07-02T04:37:11.412Z",
               "relationships": [
                 {
                   "objectId": "result_dfg_prayer_pipeline",
@@ -558,7 +558,7 @@
             {
               "id": "evt_prayer_pipeline_dfg_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-25T22:12:24.222Z",
+              "time": "2026-07-02T04:37:08.999Z",
               "relationships": [
                 {
                   "objectId": "result_dfg_prayer_pipeline",
@@ -591,7 +591,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "9924b5272ef8e2989f6f28eec36260fb0e53ca4cc082065b6f3f34dc23ca7ea6",
-        "observed_result_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34"
+        "observed_ocel2_hash": "afff38720d9bd5e55a8be600036882647822a07c631012ef0afcde55deff0a46",
+        "observed_result_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,8 +623,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
-        "output_artifact_hash": "3fade8d8262aeec07805f782b583c9f6beed389475ff900f2ea82cafd5544c34",
-        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
+        "output_artifact_hash": "e59f857d90156cde4f5577afb2d8b78042a90cfedc75a9b78f86bdf48a6ad66e",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -632,8 +632,8 @@
       "id": "process_skeleton",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca",
-      "duration_ms": 22.066,
+      "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062",
+      "duration_ms": 26.136,
       "expected_path": {
         "route_id": "wpm.example.prayer_pipeline.process_skeleton.v1",
         "expected_ocel2": {
@@ -747,7 +747,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -765,7 +765,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca",
-                "duration_ms": 22.066
+                "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062",
+                "duration_ms": 26.136
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca"
+                "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca"
+                "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062"
               }
             },
             {
@@ -909,7 +909,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "8dc1500b92d0f31840e947b2c3ee5b497e6c07622e3674e01f975c5bae27fb3f"
+        "expected_ocel2_hash": "1f859f5396ec0d05b1fab8a65d7d3c9c7bf8e31512560092ab966a7621bf72c7"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-25T22:12:16.291Z",
+              "time": "2026-07-02T04:37:03.358Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-25T22:12:18.581Z",
+              "time": "2026-07-02T04:37:07.061Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -1036,10 +1036,10 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-25T22:12:17.039Z",
+              "time": "2026-07-02T04:37:04.793Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1050,14 +1050,14 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-25T22:12:19.898Z",
+              "time": "2026-07-02T04:37:07.796Z",
               "relationships": [
                 {
                   "objectId": "algorithm_process_skeleton",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-25T22:12:18.180Z",
+              "time": "2026-07-02T04:37:09.034Z",
               "relationships": [
                 {
                   "objectId": "algorithm_process_skeleton",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca",
-                "duration_ms": 22.066
+                "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062",
+                "duration_ms": 26.136
               }
             },
             {
               "id": "evt_prayer_pipeline_process_skeleton_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-25T22:12:18.388Z",
+              "time": "2026-07-02T04:37:06.467Z",
               "relationships": [
                 {
                   "objectId": "result_process_skeleton_prayer_pipeline",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca"
+                "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062"
               }
             },
             {
               "id": "evt_prayer_pipeline_process_skeleton_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-25T22:12:20.077Z",
+              "time": "2026-07-02T04:37:09.089Z",
               "relationships": [
                 {
                   "objectId": "result_process_skeleton_prayer_pipeline",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca"
+                "result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062"
               }
             },
             {
               "id": "evt_prayer_pipeline_process_skeleton_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-25T22:12:20.656Z",
+              "time": "2026-07-02T04:37:06.973Z",
               "relationships": [
                 {
                   "objectId": "example_prayer_pipeline",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-25T22:12:20.483Z",
+              "time": "2026-07-02T04:37:09.405Z",
               "relationships": [
                 {
                   "objectId": "result_process_skeleton_prayer_pipeline",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_prayer_pipeline_process_skeleton_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-25T22:12:21.040Z",
+              "time": "2026-07-02T04:37:08.733Z",
               "relationships": [
                 {
                   "objectId": "result_process_skeleton_prayer_pipeline",
@@ -1201,7 +1201,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "bc91df8f6c995e5212e95520a49b106845ffa8225507939925ce3bd56dcaee39",
-        "observed_result_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca"
+        "observed_ocel2_hash": "b25b9051617caadb930d70744d45307d7aff24503850cdc26837e6b36c2d435d",
+        "observed_result_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,8 +1233,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
-        "output_artifact_hash": "e428c6d89bf7a0c9caf7eb9103ac12188bee6c7c0de26b146810a9c4656412ca",
-        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
+        "output_artifact_hash": "08481ee298c46b58df2cf2d69b4edde6b9726352df54adfc26e950d67925d062",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -1242,8 +1242,8 @@
       "id": "alpha_plus_plus",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead",
-      "duration_ms": 41.223,
+      "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545",
+      "duration_ms": 37.756,
       "expected_path": {
         "route_id": "wpm.example.prayer_pipeline.alpha_plus_plus.v1",
         "expected_ocel2": {
@@ -1357,7 +1357,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1375,7 +1375,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead",
-                "duration_ms": 41.223
+                "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545",
+                "duration_ms": 37.756
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead"
+                "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead"
+                "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545"
               }
             },
             {
@@ -1519,7 +1519,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "9e6b639185b63777d8cb5bbf2f1b5e254a495af7bc42567d730c57317f910dc4"
+        "expected_ocel2_hash": "219a062b17acfe82ec6f8dec59566b131fb87958809a01cc30db00979779b3ff"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-25T22:12:15.244Z",
+              "time": "2026-07-02T04:37:05.571Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-25T22:12:19.563Z",
+              "time": "2026-07-02T04:37:07.474Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -1646,10 +1646,10 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-25T22:12:17.208Z",
+              "time": "2026-07-02T04:37:07.426Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1660,14 +1660,14 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-25T22:12:17.051Z",
+              "time": "2026-07-02T04:37:07.086Z",
               "relationships": [
                 {
                   "objectId": "algorithm_alpha_plus_plus",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-25T22:12:18.437Z",
+              "time": "2026-07-02T04:37:08.777Z",
               "relationships": [
                 {
                   "objectId": "algorithm_alpha_plus_plus",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead",
-                "duration_ms": 41.223
+                "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545",
+                "duration_ms": 37.756
               }
             },
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-25T22:12:18.511Z",
+              "time": "2026-07-02T04:37:08.038Z",
               "relationships": [
                 {
                   "objectId": "result_alpha_plus_plus_prayer_pipeline",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead"
+                "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545"
               }
             },
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-25T22:12:18.483Z",
+              "time": "2026-07-02T04:37:05.981Z",
               "relationships": [
                 {
                   "objectId": "result_alpha_plus_plus_prayer_pipeline",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead"
+                "result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545"
               }
             },
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-25T22:12:22.545Z",
+              "time": "2026-07-02T04:37:06.880Z",
               "relationships": [
                 {
                   "objectId": "example_prayer_pipeline",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-25T22:12:19.919Z",
+              "time": "2026-07-02T04:37:10.929Z",
               "relationships": [
                 {
                   "objectId": "result_alpha_plus_plus_prayer_pipeline",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_prayer_pipeline_alpha_plus_plus_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-25T22:12:23.149Z",
+              "time": "2026-07-02T04:37:10.086Z",
               "relationships": [
                 {
                   "objectId": "result_alpha_plus_plus_prayer_pipeline",
@@ -1811,7 +1811,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "b5603b29df35bb85f69c76f968b1e40d50ae176666b2367448e9d6f860ba107d",
-        "observed_result_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead"
+        "observed_ocel2_hash": "67e70c7c43589dc77e8f3f8b491ace55de69479d12a3746f1138e409b686d616",
+        "observed_result_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,8 +1843,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
-        "output_artifact_hash": "ebf29095a6a433b07130a394d1915f0d4140d4f4733e42587eace991dd7e8ead",
-        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
+        "output_artifact_hash": "7c4cac20286b9f1d1554772109fcb89f9367c032efaf08f7cbeb516833a93545",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -1852,8 +1852,8 @@
       "id": "heuristic_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464",
-      "duration_ms": 49.86,
+      "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7",
+      "duration_ms": 44.768,
       "expected_path": {
         "route_id": "wpm.example.prayer_pipeline.heuristic_miner.v1",
         "expected_ocel2": {
@@ -1967,7 +1967,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1985,7 +1985,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464",
-                "duration_ms": 49.86
+                "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7",
+                "duration_ms": 44.768
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464"
+                "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464"
+                "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7"
               }
             },
             {
@@ -2129,7 +2129,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "fe692f5d4ee03aab1e35dcbb9e9def7444e38db29d6bbee43b2f04edb153afe1"
+        "expected_ocel2_hash": "a733c96c14bdaeb9440440bfefb94847235d61f755db3327bd3cc8f5d094cd81"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-25T22:12:18.328Z",
+              "time": "2026-07-02T04:37:06.983Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-25T22:12:17.768Z",
+              "time": "2026-07-02T04:37:04.434Z",
               "relationships": [
                 {
                   "objectId": "log_prayer_pipeline",
@@ -2256,10 +2256,10 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-25T22:12:21.003Z",
+              "time": "2026-07-02T04:37:03.543Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -2270,14 +2270,14 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-25T22:12:16.765Z",
+              "time": "2026-07-02T04:37:04.408Z",
               "relationships": [
                 {
                   "objectId": "algorithm_heuristic_miner",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.25",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-25T22:12:20.503Z",
+              "time": "2026-07-02T04:37:07.593Z",
               "relationships": [
                 {
                   "objectId": "algorithm_heuristic_miner",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464",
-                "duration_ms": 49.86
+                "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7",
+                "duration_ms": 44.768
               }
             },
             {
               "id": "evt_prayer_pipeline_heuristic_miner_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-25T22:12:19.798Z",
+              "time": "2026-07-02T04:37:05.111Z",
               "relationships": [
                 {
                   "objectId": "result_heuristic_miner_prayer_pipeline",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464"
+                "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7"
               }
             },
             {
               "id": "evt_prayer_pipeline_heuristic_miner_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-25T22:12:20.440Z",
+              "time": "2026-07-02T04:37:08.406Z",
               "relationships": [
                 {
                   "objectId": "result_heuristic_miner_prayer_pipeline",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464"
+                "result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7"
               }
             },
             {
               "id": "evt_prayer_pipeline_heuristic_miner_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-25T22:12:21.419Z",
+              "time": "2026-07-02T04:37:07.583Z",
               "relationships": [
                 {
                   "objectId": "example_prayer_pipeline",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-25T22:12:19.739Z",
+              "time": "2026-07-02T04:37:11.020Z",
               "relationships": [
                 {
                   "objectId": "result_heuristic_miner_prayer_pipeline",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_prayer_pipeline_heuristic_miner_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-25T22:12:20.579Z",
+              "time": "2026-07-02T04:37:07.073Z",
               "relationships": [
                 {
                   "objectId": "result_heuristic_miner_prayer_pipeline",
@@ -2421,7 +2421,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.25",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "bed744459a67a191d8996fe8719491c2fa75200a7f556feafd91165198fe5669",
-        "observed_result_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464"
+        "observed_ocel2_hash": "690e91f17a67c1b342646e4ff246274ea744611991e026f1d5af15c12ab60156",
+        "observed_result_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
-        "output_artifact_hash": "3582f351d4cab08128a91febe3d44fba79d039a9ce519961fdaa764094c7c464",
-        "registry_hash": "7f5f03c0ac821083cf582e3af4f50aee867a02799b125bd1cc16012be8d73fdf",
+        "output_artifact_hash": "22501dfae871ded1e087983410bbbb40a51ee7357372a6599f0e2a0ac96af7f7",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-25T22:12:15.018Z",
+  "created_at": "2026-07-02T04:37:02.359Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "d7c48dd8430c57d8cc213aa808ced4f261e8c37842fb869fca45c28f75466cc3"
+  "receipt_hash": "8786178019a639fdc566089093c37c3044651ef97d2322ae4b56d2d7cb9bd827"
 }

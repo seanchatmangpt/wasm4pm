@@ -4,6 +4,64 @@ wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
 
+## [26.7.1] — 2026-07-01
+
+First-principles project refocus: repository hygiene, CI root-cause fixes, a
+correctness fix closing a native/WASM test-coverage gap, and a new native
+temporal/PDDL planning crate.
+
+### Added
+- `crates/wasm4pm-planner`: PDDL-subset temporal planner (parse/ground/schedule/
+  admission/receipt/capability_router) with prolog8 admission gating and its own
+  MCP server binary (`wasm4pm-planner-mcp`). Distinct from `packages/planner`
+  (TS execution-plan DAGs for process-mining configs) — see ADR note in
+  `crates/wasm4pm-planner/README.md`.
+- `crates/wasm4pm-cognition/tests/gated_dispatch_ocel_conformance.rs`: 26 native
+  tests routing representative breeds through the gated `run_breed()` conformance
+  path, closing a coverage hole where native tests exclusively used the
+  gate-skipping `dispatch_breed_test()`.
+- `@wasm4pm/agents` re-introduced (previously removed in 26.6.25) with honest
+  execute semantics: `_applyCorrection`/`_createSnapshot` report explicit
+  `not_implemented` instead of fabricating success telemetry.
+
+### Fixed
+- **CI**: `test.yml` passed empty `${{ matrix.rust }}` to the toolchain action
+  (matrix key is `rust-version`) — broke every POSIX CI leg. A tracked file
+  named `nul` (Windows-reserved) broke every Windows checkout.
+- **Cognition conformance** (39 failures → 0): native tests skip the OCEL
+  conformance gate entirely, so lifecycle-model gaps and stale TS test
+  contracts went undetected. Reconciled `ELIZA_MODEL`'s phase kinds with the
+  breed's documented fallback path; fixed `csp_ac3` to report `unsat` (was
+  `None`, violating its own postcondition); updated ~34 stale TS assertions/
+  fixtures across 13 breeds to match current output shapes (paper-provenance
+  value assertions kept, not weakened).
+- `models.rs`: streaming conformance checker now falls back to place marking
+  for initial tokens.
+- `validate.ts`: OCEL validation now accepts camelCase `eventTypes`/
+  `objectTypes` and object-shaped `object_types`.
+
+### Removed
+- `packages/autopm`, `packages/agent-context` — zero importers in the product
+  dependency graph.
+- `crates/wasm4pm-lsp` — already workspace-excluded (out-of-repo `lsp-max`
+  dependency, unbuildable in a clean checkout); revival path noted in
+  `Cargo.toml`.
+
+### Changed
+- Doc-truth reconciliation: breed count corrected to 55 everywhere (was
+  52/39/21 across CLAUDE.md/README/architecture doc) — `breeds/registry.json`
+  is the single source of truth.
+- `crates/prolog8`: continued NAF/SLD-resolution kernel work (backtracking
+  solver, PARARULE-Plus falsification suite, 10s benchmark wall clock).
+
+### Known issues (pre-existing, out of scope for this release)
+- `apps/wasm4pm` CLI test suite: ~206 pre-existing failures, none touching
+  files changed in this release. Root causes: local Node 25 made
+  `process.stdout` a getter-only property, breaking a mock pattern used by
+  many test files (CI pins Node 22/24, unaffected); a backlog of documented
+  input-validation gaps (test names prefixed `gap:`, e.g. `batch --workers`
+  validation).
+
 ## [26.6.25] — 2026-06-25
 
 ### Added
