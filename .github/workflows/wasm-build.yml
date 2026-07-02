@@ -42,48 +42,49 @@ jobs:
         run: npm install -g wasm-pack@0.13.1
         shell: bash
 
+      - uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: 'wasm4pm/package-lock.json'
+          cache: 'pnpm'
 
       - name: Install Node dependencies
-        run: npm ci
-        working-directory: wasm4pm
+        run: pnpm install --frozen-lockfile
+        working-directory: .
 
       - name: Build WASM (bundler target)
-        run: npm run build
+        run: pnpm run build
         working-directory: wasm4pm
 
       - name: Build WASM (Node.js target)
-        run: npm run build:nodejs
+        run: pnpm run build:nodejs
         working-directory: wasm4pm
 
       - name: Build WASM (web target)
-        run: npm run build:web
+        run: pnpm run build:web
         working-directory: wasm4pm
 
       - name: Check TypeScript
-        run: npm run type:check
+        run: pnpm run type:check
         working-directory: wasm4pm
 
       - name: Check code format
-        run: npm run format:check
+        run: pnpm run format:check
         working-directory: wasm4pm
 
       - name: Run unit tests
-        run: npm run test:unit
+        run: pnpm run test:unit
         working-directory: wasm4pm
 
       - name: Run integration tests
-        run: npm run test:integration
+        run: pnpm run test:integration
         working-directory: wasm4pm
         if: hashFiles('wasm4pm/__tests__/integration.test.js') != '' || hashFiles('wasm4pm/__tests__/integration.test.ts') != ''
 
       - name: Generate documentation
-        run: npm run docs
+        run: pnpm run docs
         working-directory: wasm4pm
         if: matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
 
