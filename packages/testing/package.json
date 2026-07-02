@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/testing",
-  "version": "26.6.25",
+  "version": "26.7.1",
   "publishConfig": {
     "access": "public"
   },

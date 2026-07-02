@@ -209,7 +209,7 @@ checksum = "99408a1bac0657713ecef7e9a723d3241feb5c603d8edefe663773cf903d9d0b"
 
 [[package]]
 name = "bench-tools"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "blake3",
  "chrono",
@@ -1368,7 +1368,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "base64 0.21.7",
  "bincode",
@@ -1511,7 +1511,7 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocpq"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "chrono",
  "criterion",
@@ -1680,7 +1680,7 @@ dependencies = [
 
 [[package]]
 name = "prolog8"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "blake3",
  "criterion",
@@ -2504,7 +2504,7 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 
 [[package]]
 name = "tps-metrics"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2840,7 +2840,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "bcinr",
  "blake3",
@@ -2889,7 +2889,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2911,7 +2911,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cognition"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "blake3",
  "criterion",
@@ -2953,7 +2953,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-planner"
-version = "26.6.25"
+version = "26.7.1"
 dependencies = [
  "blake3",
  "prolog8",

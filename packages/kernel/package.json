@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.6.25",
+  "version": "26.7.1",
   "description": "Core kernel and runtime utilities",
   "type": "module",
   "main": "./dist/index.js",
