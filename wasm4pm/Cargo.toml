@@ -46,7 +46,7 @@ itertools = { workspace = true }
 rustc-hash = { workspace = true }
 hashbrown = { workspace = true }
 smallvec = { workspace = true }
-roxmltree = "0.19"
+roxmltree = "0.21"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] }
 quick-xml = { version = "0.37", features = ["serialize"] }
 csv = "1.3"
