@@ -48,16 +48,16 @@
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",
     "@nuxt/test-utils": "^4.0.3",
-    "@playwright/test": "^1.60.0",
+    "@playwright/test": "^1.61.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/test-utils": "^2.4.11",
     "eslint": "^10.4.1",
-    "happy-dom": "^20.10.2",
+    "happy-dom": "^20.10.6",
     "typescript": "^6.0.3",
     "unplugin-auto-import": "^21.0.0",
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^4.1.8",
-    "vue-tsc": "^3.3.3"
+    "vue-tsc": "^3.3.6"
   },
   "packageManager": "pnpm@11.5.2"
 }
