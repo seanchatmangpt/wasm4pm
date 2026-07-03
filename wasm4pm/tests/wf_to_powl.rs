@@ -50,7 +50,7 @@ fn net(
     arcs: &[(&str, &str)],
     source: &str,
 ) -> PetriNet {
-    let mut initial = HashMap::new();
+    let mut initial = std::collections::BTreeMap::new();
     initial.insert(source.to_string(), 1usize);
     PetriNet {
         places: places.iter().map(|p| place(p)).collect(),

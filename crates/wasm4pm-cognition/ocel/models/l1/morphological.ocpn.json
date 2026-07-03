@@ -1,0 +1,36 @@
+{
+  "model_id": "morphological-l1-v1",
+  "model_level": "L1",
+  "breed_id": "morphological",
+  "object_types": ["parameter", "field", "configuration"],
+  "places": [
+    {"id": "p1", "name": "parameters_ready",       "object_type": "parameter"},
+    {"id": "p2", "name": "parameters_defined",     "object_type": "parameter"},
+    {"id": "p3", "name": "field_size_computed",    "object_type": "field"},
+    {"id": "p4", "name": "cca_assessed",           "object_type": "field"},
+    {"id": "p5", "name": "solution_space_synthesized", "object_type": "configuration"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "define-parameter",          "label": "define-parameter"},
+    {"id": "t2", "name": "compute-field-size",        "label": "compute-field-size"},
+    {"id": "t3", "name": "cca-assess",                "label": "cca-assess"},
+    {"id": "t4", "name": "synthesize-solution-space", "label": "synthesize-solution-space"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

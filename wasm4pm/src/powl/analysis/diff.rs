@@ -83,7 +83,7 @@ fn node_type_str(arena: &PowlArena, idx: u32) -> String {
 
 fn cg_submodel_children(cg: &crate::powl_arena::ChoiceGraphPowlNode) -> Vec<u32> {
     cg.graph
-        .nodes
+        .nodes()
         .iter()
         .filter_map(|n| match n {
             ChoiceGraphNode::SubModel(idx) => Some(*idx),

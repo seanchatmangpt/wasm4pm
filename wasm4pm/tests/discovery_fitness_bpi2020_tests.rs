@@ -20,7 +20,7 @@
 //!
 //! Oracle rank: Rank 2 (domain contract) — discovered models must achieve documented fitness thresholds.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::sync::Mutex;
 
@@ -90,7 +90,7 @@ fn parse_xes(content: &str) -> EventLog {
 
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -101,7 +101,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

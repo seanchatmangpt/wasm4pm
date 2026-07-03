@@ -9,7 +9,7 @@
 //! 3. Negative test: wrong phase order in OCEL produces inverted edges (proving discovery detects violations)
 
 use chrono::{Duration, Utc};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use wasm4pm::discovery::discover_ocel_dfg_pure;
 use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 
@@ -33,7 +33,7 @@ fn build_test_ocel(cycles: usize) -> OCEL {
         objects.push(OCELObject {
             id: obj_id.clone(),
             object_type: "cycle_run".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: Vec::new(),
             embedded_relations: Vec::new(),
         });
@@ -49,7 +49,7 @@ fn build_test_ocel(cycles: usize) -> OCEL {
                 id: event_id,
                 event_type: phase.to_string(),
                 timestamp,
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec![obj_id.clone()],
                 object_refs: vec![OCELEventObjectRef {
                     object_id: obj_id.clone(),
@@ -87,7 +87,7 @@ fn build_reversed_ocel(cycles: usize) -> OCEL {
         objects.push(OCELObject {
             id: obj_id.clone(),
             object_type: "cycle_run".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: Vec::new(),
             embedded_relations: Vec::new(),
         });
@@ -102,7 +102,7 @@ fn build_reversed_ocel(cycles: usize) -> OCEL {
                 id: event_id,
                 event_type: phase.to_string(),
                 timestamp,
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec![obj_id.clone()],
                 object_refs: vec![OCELEventObjectRef {
                     object_id: obj_id.clone(),
@@ -165,7 +165,7 @@ fn test_dfg_has_correct_directed_edges() {
     let ocel = build_test_ocel(5);
     let dfg = discover_ocel_dfg_pure(&ocel);
 
-    let edges_map: HashMap<(&str, &str), usize> = dfg
+    let edges_map: BTreeMap<(&str, &str), usize> = dfg
         .edges
         .iter()
         .map(|e| ((e.from.as_str(), e.to.as_str()), e.frequency))
@@ -292,7 +292,7 @@ fn test_dfg_reversed_ocel_reveals_phase_order_violation() {
     let reversed_ocel = build_reversed_ocel(5);
     let dfg = discover_ocel_dfg_pure(&reversed_ocel);
 
-    let edges_map: HashMap<(&str, &str), usize> = dfg
+    let edges_map: BTreeMap<(&str, &str), usize> = dfg
         .edges
         .iter()
         .map(|e| ((e.from.as_str(), e.to.as_str()), e.frequency))

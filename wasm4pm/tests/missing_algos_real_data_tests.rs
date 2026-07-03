@@ -15,7 +15,7 @@
 //! Oracle rank: Rank 2 (domain contract) — outputs must be non-degenerate
 //! and structurally sound on data that synthetic fixtures cannot replicate.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use wasm4pm::final_analytics::{
     analyze_process_speedup, analyze_variant_complexity, compute_activity_transition_matrix,
@@ -37,7 +37,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -48,7 +48,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -596,9 +596,9 @@ fn monte_carlo_simulation_roadtraffic_produces_timing_stats() {
     let config = MonteCarloConfig {
         num_cases: 50,
         random_seed: 42,
-        resource_capacity: HashMap::new(),
+        resource_capacity: BTreeMap::new(),
         inter_arrival_mean_ms: 1000.0,
-        activity_service_time_ms: HashMap::new(),
+        activity_service_time_ms: BTreeMap::new(),
         simulation_time_ms: 3_600_000,
     };
     let report =

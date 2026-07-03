@@ -17,6 +17,58 @@ use crate::types::{
 };
 use serde::{Deserialize, Serialize};
 
+// ---------------------------------------------------------------------------
+// Variable-encoding helpers (module-level so `solve_body` can use them)
+// ---------------------------------------------------------------------------
+
+/// Variables are encoded as TermIds with the high bit set: VAR_SENTINEL_BASE + N.
+/// This partitions the u32 space cleanly — normal term IDs never have the high bit set.
+const VAR_SENTINEL_BASE: u32 = 0x8000_0000;
+
+/// Maximum recursive rule-chaining depth in `derive_atom`. Prevents infinite
+/// loops on recursive rules while supporting PARARULE-Plus depth-5 chains.
+const MAX_DERIVE_DEPTH: u32 = 32;
+
+type Subst = [Option<TermId>; ARITY_CAP as usize];
+
+fn var_term(i: usize) -> TermId {
+    TermId(VAR_SENTINEL_BASE + i as u32)
+}
+
+fn var_index(t: TermId) -> Option<usize> {
+    if t.0 >= VAR_SENTINEL_BASE && t.0 < VAR_SENTINEL_BASE + ARITY_CAP as u32 {
+        Some((t.0 - VAR_SENTINEL_BASE) as usize)
+    } else {
+        None
+    }
+}
+
+fn resolve_var(t: TermId, subst: &Subst) -> TermId {
+    if let Some(vi) = var_index(t) {
+        subst[vi].unwrap_or(t)
+    } else {
+        t
+    }
+}
+
+/// Robinson unification for flat terms (no recursive structure, occurs-check trivially satisfied).
+fn unify_terms(a: TermId, b: TermId, subst: &mut Subst) -> bool {
+    let ra = resolve_var(a, subst);
+    let rb = resolve_var(b, subst);
+    if ra == rb {
+        return true;
+    }
+    if let Some(vi) = var_index(ra) {
+        subst[vi] = Some(rb);
+        return true;
+    }
+    if let Some(vi) = var_index(rb) {
+        subst[vi] = Some(ra);
+        return true;
+    }
+    false
+}
+
 /// One answer row: bindings for the output positions.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Decision {
@@ -131,186 +183,276 @@ impl Kernel {
         (0..row.arity as usize).all(|i| !query.is_bound(i as u8) || row.args[i] == query.args[i])
     }
 
-    /// SLD resolution step with flat-term Robinson unification over ?N positional variables.
+    /// Horn clause evaluation with backtracking: tries every matching fact per body
+    /// atom, backtracks on dead ends, and collects all successful derivations.
     ///
-    /// Substitution maps variable index (0..8) to a bound TermId, or None if unbound.
-    /// Flat terms (no recursive structure) guarantee occurs-check is trivially satisfied.
-    /// Visited set is capped at 256; on cap we return answers found so far (never panic).
+    /// Every rule whose head unifies with the query is tried independently. The
+    /// visited-set is NOT used here because `solve_body` never recurses back into
+    /// rule evaluation (it calls `scan_facts` only), so there is no rule-level
+    /// recursion to prevent. Blocking duplicate (pred_id, args) entries would
+    /// incorrectly suppress multiple rules that derive the same head.
     fn scan_rules(&self, q: &QueryAtom8) -> Vec<Decision> {
-        // Substitution: maps var index 0..8 → bound TermId, or None if unbound.
-        type Subst = [Option<TermId>; ARITY_CAP as usize];
-
-        /// Resolve a term through substitution: if the term is in the variable
-        /// sentinel range (TermId(VAR_SENTINEL_BASE + i)), return the bound value
-        /// or the sentinel itself if unbound.
-        fn resolve(t: TermId, subst: &Subst) -> TermId {
-            if let Some(var_idx) = var_index(t) {
-                subst[var_idx].unwrap_or(t)
-            } else {
-                t
-            }
-        }
-
-        /// Encode variable i as a sentinel TermId above the normal range.
-        const VAR_SENTINEL_BASE: u32 = 0x8000_0000;
-        fn var_term(i: usize) -> TermId {
-            TermId(VAR_SENTINEL_BASE + i as u32)
-        }
-
-        fn var_index(t: TermId) -> Option<usize> {
-            if t.0 >= VAR_SENTINEL_BASE && t.0 < VAR_SENTINEL_BASE + ARITY_CAP as u32 {
-                Some((t.0 - VAR_SENTINEL_BASE) as usize)
-            } else {
-                None
-            }
-        }
-
-        /// Unify two terms under the substitution. Returns false on conflict.
-        fn unify(a: TermId, b: TermId, subst: &mut Subst) -> bool {
-            let ra = resolve(a, subst);
-            let rb = resolve(b, subst);
-            if ra == rb {
-                return true;
-            }
-            if let Some(vi) = var_index(ra) {
-                subst[vi] = Some(rb);
-                return true;
-            }
-            if let Some(vi) = var_index(rb) {
-                subst[vi] = Some(ra);
-                return true;
-            }
-            // Both ground and unequal.
-            false
-        }
-
         let mut answers = Vec::new();
-
-        // Visited set: (pred_id, args_array) to prevent loops, capped at 256.
-        let mut visited: Vec<(u32, [u32; ARITY_CAP as usize])> = Vec::with_capacity(64);
 
         for rule in &self.rules {
             if rule.head.pred_id != q.atom.pred_id || rule.head.arity != q.atom.arity {
                 continue;
             }
 
-            // Build initial substitution from rule's var_count and var_live_mask.
-            // Variable slots in rule atoms are represented as TermId sentinel values.
-            // We encode each rule head arg: if it's sentinel and the rule says there
-            // are variables, treat arg i as variable i.
             let mut subst: Subst = [None; ARITY_CAP as usize];
 
-            // Unify head args with query args.
+            // Unify rule head args with query args.
             let mut head_ok = true;
             for i in 0..rule.head.arity as usize {
                 let h_arg = rule.head.args[i];
-                // A sentinel in the head position means it's a variable slot.
                 let h_effective = if h_arg.is_sentinel() {
                     var_term(i)
                 } else {
                     h_arg
                 };
                 if q.atom.is_bound(i as u8) {
-                    // Query position is bound: unify with head arg.
-                    if !unify(h_effective, q.atom.args[i], &mut subst) {
+                    if !unify_terms(h_effective, q.atom.args[i], &mut subst) {
                         head_ok = false;
                         break;
                     }
                 }
-                // Query position unbound: leave rule variable free to be determined by body.
             }
             if !head_ok {
                 continue;
             }
 
-            // Visited-set check.
-            {
-                let mut key = [0u32; ARITY_CAP as usize];
-                for i in 0..rule.head.arity as usize {
-                    key[i] = resolve(var_term(i), &subst).0;
-                }
-                let entry = (rule.head.pred_id.0, key);
-                if visited.contains(&entry) {
-                    continue;
-                }
-                if visited.len() >= 256 {
-                    // Andon trace: cap reached.
-                    break;
-                }
-                visited.push(entry);
+            // Depth-first backtracking search over body atoms.
+            self.solve_body(rule, subst, 0, &mut Vec::new(), &mut answers, q);
+        }
+
+        // Deduplicate by bindings: two proofs for the same conclusion are one answer.
+        // This matches standard Prolog semantics for ground queries (first proof wins)
+        // while preserving distinct binding solutions for unbound queries.
+        let mut seen: Vec<Vec<TermId>> = Vec::with_capacity(answers.len());
+        answers.retain(|d| {
+            if seen.contains(&d.bindings) {
+                false
+            } else {
+                seen.push(d.bindings.clone());
+                true
             }
+        });
 
-            // Body: for each body atom, substitute vars then find supporting facts.
-            // Shared variables (same var index) propagate bindings across atoms.
-            let mut all_supported = true;
-            let mut supporting_facts: Vec<FactRow8> = Vec::new();
+        answers
+    }
 
-            'body: for bi in 0..rule.body_len as usize {
-                let body_atom = rule.body[bi];
-                // Build a concrete query atom with all variable positions substituted.
-                let mut concrete_args = [TermId::sentinel(); ARITY_CAP as usize];
-                let mut concrete_binding = 0u8;
-                let mut has_unbound_var = false;
+    /// Recursive backtracking solver for a rule's body atoms.
+    ///
+    /// Each body atom is evaluated via `derive_atom_with_support`, which resolves
+    /// it against base facts AND recursively against other rules (full SLD resolution).
+    /// On each candidate, the substitution is extended and we recurse to the next
+    /// body atom, backtracking on failure. All leaf base facts are collected into
+    /// `supporting` for proof generation.
+    fn solve_body(
+        &self,
+        rule: &Rule8,
+        subst: Subst,
+        bi: usize,
+        supporting: &mut Vec<FactRow8>,
+        answers: &mut Vec<Decision>,
+        q: &QueryAtom8,
+    ) {
+        if bi == rule.body_len as usize {
+            let mut bindings_arr = [TermId::sentinel(); ARITY_CAP as usize];
+            for i in 0..rule.head.arity as usize {
+                let h = rule.head.args[i];
+                let effective = if h.is_sentinel() { var_term(i) } else { h };
+                bindings_arr[i] = resolve_var(effective, &subst);
+            }
+            answers.push(self.assemble_rule_answer(q, rule, &bindings_arr, supporting));
+            return;
+        }
+
+        let body_atom = rule.body[bi];
+
+        // Build a concrete query atom: resolve every already-bound variable.
+        let mut concrete_args = [TermId::sentinel(); ARITY_CAP as usize];
+        let mut concrete_binding = 0u8;
+        for ai in 0..body_atom.arity as usize {
+            let raw = body_atom.args[ai];
+            let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
+            let resolved = resolve_var(effective, &subst);
+            if var_index(resolved).is_none() {
+                concrete_args[ai] = resolved;
+                concrete_binding |= 1u8 << ai;
+            }
+        }
+        let mut concrete = Atom8::new(body_atom.pred_id, body_atom.arity, &concrete_args);
+        concrete.binding_mask = concrete_binding;
+
+        let negated = (rule.negation_mask >> bi) & 1 == 1;
+
+        if negated {
+            // NAF: body atom succeeds iff it has NO derivation.
+            // Negated atoms must not bind variables (stratification invariant);
+            // we evaluate with whatever is already ground in `subst`.
+            let solutions = self.derive_atom_with_support(&concrete, q.epoch, 0);
+            if solutions.is_empty() {
+                // NAF succeeds — no new bindings, continue to next body atom.
+                self.solve_body(rule, subst, bi + 1, supporting, answers, q);
+            }
+            // else: NAF fails — backtrack (no recursive call).
+        } else {
+            // Positive atom: evaluate and extend substitution for each solution.
+            for (sol_args, sol_facts) in self.derive_atom_with_support(&concrete, q.epoch, 0) {
+                let mut new_subst = subst;
+                let mut ok = true;
 
                 for ai in 0..body_atom.arity as usize {
                     let raw = body_atom.args[ai];
-                    // A sentinel in body means this is the variable at position ai
-                    // (same convention as head).
                     let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
-                    let resolved = resolve(effective, &subst);
-                    if var_index(resolved).is_some() {
-                        // Still unbound variable — leave unbound in query.
-                        concrete_args[ai] = TermId::sentinel();
-                        has_unbound_var = true;
-                    } else {
-                        concrete_args[ai] = resolved;
-                        concrete_binding |= 1u8 << ai;
+                    if !unify_terms(effective, sol_args[ai], &mut new_subst) {
+                        ok = false;
+                        break;
                     }
                 }
 
-                let mut concrete = Atom8::new(body_atom.pred_id, body_atom.arity, &concrete_args);
-                concrete.binding_mask = concrete_binding;
-
-                let supports = self.scan_facts(&concrete, q.epoch);
-                if supports.is_empty() {
-                    all_supported = false;
-                    break 'body;
+                if ok {
+                    let pre_len = supporting.len();
+                    supporting.extend_from_slice(&sol_facts);
+                    self.solve_body(rule, new_subst, bi + 1, supporting, answers, q);
+                    supporting.truncate(pre_len);
                 }
-
-                // If there were unbound variables, bind them from the first matching fact.
-                let fact_row = supports[0].0;
-                if has_unbound_var {
-                    for ai in 0..body_atom.arity as usize {
-                        let raw = body_atom.args[ai];
-                        let effective = if raw.is_sentinel() { var_term(ai) } else { raw };
-                        let resolved = resolve(effective, &subst);
-                        if let Some(vi) = var_index(resolved) {
-                            // Bind this variable to the fact value.
-                            if vi < ARITY_CAP as usize {
-                                subst[vi] = Some(fact_row.args[ai]);
-                            }
-                        }
-                    }
-                }
-                supporting_facts.push(fact_row);
-            }
-
-            if all_supported {
-                // Build head bindings from substitution.
-                let mut bindings_arr = [TermId::sentinel(); ARITY_CAP as usize];
-                for i in 0..rule.head.arity as usize {
-                    let h_arg = rule.head.args[i];
-                    let effective = if h_arg.is_sentinel() {
-                        var_term(i)
-                    } else {
-                        h_arg
-                    };
-                    bindings_arr[i] = resolve(effective, &subst);
-                }
-                answers.push(self.assemble_rule_answer(q, rule, &bindings_arr, &supporting_facts));
             }
         }
-        answers
+    }
+
+    /// Derive all solutions for `query`, returning `(concrete_args, leaf_facts)` pairs.
+    ///
+    /// Tries base facts first, then recursively fires rules whose head unifies with
+    /// the query. `depth` is incremented on each rule-recursive step and capped at
+    /// `MAX_DERIVE_DEPTH` to prevent infinite loops on recursive rules.
+    fn derive_atom_with_support(
+        &self,
+        query: &Atom8,
+        epoch: EpochId,
+        depth: u32,
+    ) -> Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)> {
+        if depth > MAX_DERIVE_DEPTH {
+            return Vec::new();
+        }
+
+        let mut out: Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)> = Vec::new();
+
+        // Base: matching facts.
+        for (row, _) in self.scan_facts(query, epoch) {
+            out.push((row.args, vec![row]));
+        }
+
+        // Inductive: matching rules.
+        for rule in &self.rules {
+            if rule.head.pred_id != query.pred_id || rule.head.arity != query.arity {
+                continue;
+            }
+            let mut head_subst: Subst = [None; ARITY_CAP as usize];
+            let mut head_ok = true;
+            for i in 0..rule.head.arity as usize {
+                let h = rule.head.args[i];
+                let he = if h.is_sentinel() { var_term(i) } else { h };
+                if query.is_bound(i as u8) {
+                    if !unify_terms(he, query.args[i], &mut head_subst) {
+                        head_ok = false;
+                        break;
+                    }
+                }
+            }
+            if !head_ok {
+                continue;
+            }
+            self.derive_body_with_support(
+                rule,
+                head_subst,
+                0,
+                epoch,
+                depth,
+                &mut Vec::new(),
+                &mut out,
+            );
+        }
+
+        out
+    }
+
+    /// Recursive body evaluator for `derive_atom_with_support`.
+    ///
+    /// When all body atoms are satisfied (`bi == body_len`), extracts the rule
+    /// head's concrete arg values and pushes them with the accumulated leaf facts.
+    fn derive_body_with_support(
+        &self,
+        rule: &Rule8,
+        subst: Subst,
+        bi: usize,
+        epoch: EpochId,
+        depth: u32,
+        supporting: &mut Vec<FactRow8>,
+        out: &mut Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)>,
+    ) {
+        if bi == rule.body_len as usize {
+            let mut args = [TermId::sentinel(); ARITY_CAP as usize];
+            for i in 0..rule.head.arity as usize {
+                let h = rule.head.args[i];
+                let he = if h.is_sentinel() { var_term(i) } else { h };
+                args[i] = resolve_var(he, &subst);
+            }
+            out.push((args, supporting.clone()));
+            return;
+        }
+
+        let body_atom = rule.body[bi];
+        let mut c_args = [TermId::sentinel(); ARITY_CAP as usize];
+        let mut c_mask = 0u8;
+        for ai in 0..body_atom.arity as usize {
+            let raw = body_atom.args[ai];
+            let eff = if raw.is_sentinel() { var_term(ai) } else { raw };
+            let res = resolve_var(eff, &subst);
+            if var_index(res).is_none() {
+                c_args[ai] = res;
+                c_mask |= 1u8 << ai;
+            }
+        }
+        let mut c_atom = Atom8::new(body_atom.pred_id, body_atom.arity, &c_args);
+        c_atom.binding_mask = c_mask;
+
+        let negated = (rule.negation_mask >> bi) & 1 == 1;
+
+        if negated {
+            let solutions = self.derive_atom_with_support(&c_atom, epoch, depth + 1);
+            if solutions.is_empty() {
+                self.derive_body_with_support(rule, subst, bi + 1, epoch, depth, supporting, out);
+            }
+        } else {
+            for (sol_args, sol_facts) in self.derive_atom_with_support(&c_atom, epoch, depth + 1) {
+                let mut new_subst = subst;
+                let mut ok = true;
+                for ai in 0..body_atom.arity as usize {
+                    let raw = body_atom.args[ai];
+                    let eff = if raw.is_sentinel() { var_term(ai) } else { raw };
+                    if !unify_terms(eff, sol_args[ai], &mut new_subst) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if ok {
+                    let pre_len = supporting.len();
+                    supporting.extend_from_slice(&sol_facts);
+                    self.derive_body_with_support(
+                        rule,
+                        new_subst,
+                        bi + 1,
+                        epoch,
+                        depth,
+                        supporting,
+                        out,
+                    );
+                    supporting.truncate(pre_len);
+                }
+            }
+        }
     }
 
     fn assemble_fact_answer(
@@ -1124,6 +1266,117 @@ mod tests {
                 );
             }
             other => unreachable!("expected Denied, got {other:?}"),
+        }
+    }
+
+    /// Backtracking test: solver must explore all intermediate nodes.
+    ///
+    /// Facts:  link(a,b), link(a,c), link(b,END), link(c,END)
+    /// Rule:   via(?0, ?1) :- link(a, ?0), link(?0, ?1)
+    /// Query:  via(?, END) — unbound on pos-0 (intermediate node)
+    ///
+    /// Backtracking must find BOTH b and c as valid intermediates.
+    /// Old greedy code found only b (first match); correct SLD finds both.
+    /// Using the intermediate as a head variable gives DISTINCT bindings per path,
+    /// proving exhaustive search without relying on proof-count semantics.
+    #[test]
+    fn test_backtracking_finds_all_answers() {
+        let mut cat = Catalog::new(CatalogId(99));
+        cat.add_predicate(PredicateMeta {
+            pred_id: PredicateId(1),
+            label: "link".into(),
+            arity: 2,
+            access_orders: vec![],
+            proof_policy: PredicateProofPolicy::OnRequest,
+            materialized: false,
+        });
+        cat.add_predicate(PredicateMeta {
+            pred_id: PredicateId(2),
+            label: "via".into(),
+            arity: 2,
+            access_orders: vec![],
+            proof_policy: PredicateProofPolicy::OnRequest,
+            materialized: false,
+        });
+
+        let a = cat.intern_term("a");
+        let b = cat.intern_term("b");
+        let c = cat.intern_term("c");
+        let end = cat.intern_term("END");
+
+        let mut k = Kernel::new(cat);
+
+        let rows = vec![
+            FactRow8::new(PredicateId(1), 2, &[a, b], SourceId(0)),
+            FactRow8::new(PredicateId(1), 2, &[a, c], SourceId(0)),
+            FactRow8::new(PredicateId(1), 2, &[b, end], SourceId(0)),
+            FactRow8::new(PredicateId(1), 2, &[c, end], SourceId(0)),
+        ];
+        k.load_facts(FactBlock8::new(PredicateId(1), 2, rows))
+            .unwrap();
+
+        // Rule: via(?0, ?1) :- link(a, ?0), link(?0, ?1)
+        // ?0 = intermediate node (appears in head — distinct per path)
+        // ?1 = destination (END for both paths)
+        const VAR_BASE: u32 = 0x8000_0000;
+        let v0 = TermId(VAR_BASE);
+        let v1 = TermId(VAR_BASE + 1);
+
+        let head = Atom8::new(PredicateId(2), 2, &[v0, v1]);
+        let body0 = Atom8::new(PredicateId(1), 2, &[a, v0]); // link(a, ?0)
+        let body1 = Atom8::new(PredicateId(1), 2, &[v0, v1]); // link(?0, ?1)
+        let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        body_arr[0] = body0;
+        body_arr[1] = body1;
+
+        let rule = Rule8 {
+            rule_id: RuleId(99),
+            head,
+            body: body_arr,
+            body_len: 2,
+            body_mask: 0b11,
+            negation_mask: 0,
+            builtin_mask: 0,
+            var_count: 2,
+            var_live_mask: 0b11,
+            feature_mask: FeatureBit::Facts.mask() | FeatureBit::HornRules.mask(),
+            proof_mask: 0,
+            plan_id: PlanId::default(),
+        };
+        k.load_rule(rule).unwrap();
+
+        // Query: via(?, END) — find all intermediates reachable from a to END
+        let mut q_atom = Atom8::new(PredicateId(2), 2, &[TermId::sentinel(), end]);
+        q_atom.binding_mask = 0b10; // pos-1 (END) bound, pos-0 (intermediate) unbound
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0b01, // output pos-0 (the intermediate node)
+            proof_mode: ProofMode::PositiveOnly,
+            epoch: EpochId(0),
+        };
+
+        match k.query(&q) {
+            QueryResult::Answered(answers) => {
+                assert_eq!(
+                    answers.len(),
+                    2,
+                    "backtracking must find both intermediates (b and c); got {}",
+                    answers.len()
+                );
+                let intermediates: Vec<TermId> = answers
+                    .iter()
+                    .filter_map(|a| a.bindings.first().copied())
+                    .collect();
+                assert!(
+                    intermediates.contains(&b),
+                    "b must be found as intermediate"
+                );
+                assert!(
+                    intermediates.contains(&c),
+                    "c must be found as intermediate"
+                );
+            }
+            other => panic!("expected Answered, got {other:?}"),
         }
     }
 }

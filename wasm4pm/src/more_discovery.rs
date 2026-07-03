@@ -37,7 +37,6 @@ fn convert_node_recursive(
                 "xor" => wasm4pm_compat::process_tree::ProcessTreeOperator::Xor,
                 "parallel" => wasm4pm_compat::process_tree::ProcessTreeOperator::Parallel,
                 "loop" => wasm4pm_compat::process_tree::ProcessTreeOperator::Loop,
-                "or" => wasm4pm_compat::process_tree::ProcessTreeOperator::Or,
                 _ => wasm4pm_compat::process_tree::ProcessTreeOperator::Silent,
             };
             let parent_id = wasm4pm_compat::process_tree::ProcessTreeNodeId(tree.nodes.len());
@@ -101,7 +100,30 @@ fn convert_powl_node_recursive(
                 for &child in &op.children {
                     child_ids.push(convert_powl_node_recursive(child, arena, powl));
                 }
-                wasm4pm_compat::powl::PowlNodeKind::Choice(child_ids)
+
+                let start_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                    start_id,
+                    wasm4pm_compat::powl::PowlNodeKind::Silent,
+                ));
+
+                let end_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                    end_id,
+                    wasm4pm_compat::powl::PowlNodeKind::Silent,
+                ));
+
+                let mut nodes = vec![start_id];
+                nodes.extend(&child_ids);
+                nodes.push(end_id);
+
+                let mut edges = Vec::new();
+                for &cid in &child_ids {
+                    edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(start_id, cid));
+                    edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(cid, end_id));
+                }
+
+                wasm4pm_compat::powl::PowlNodeKind::ChoiceGraph { nodes, edges }
             }
             ArenaOperator::Loop => {
                 let body = if !op.children.is_empty() {
@@ -115,11 +137,38 @@ fn convert_powl_node_recursive(
                     id
                 };
                 let redo = if op.children.len() >= 2 {
-                    Some(convert_powl_node_recursive(op.children[1], arena, powl))
+                    convert_powl_node_recursive(op.children[1], arena, powl)
                 } else {
-                    None
+                    let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                    powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                        id,
+                        wasm4pm_compat::powl::PowlNodeKind::Silent,
+                    ));
+                    id
                 };
-                wasm4pm_compat::powl::PowlNodeKind::Loop { body, redo }
+
+                let start_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                    start_id,
+                    wasm4pm_compat::powl::PowlNodeKind::Silent,
+                ));
+
+                let end_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                    end_id,
+                    wasm4pm_compat::powl::PowlNodeKind::Silent,
+                ));
+
+                let nodes = vec![start_id, body, redo, end_id];
+
+                let edges = vec![
+                    wasm4pm_compat::powl::ChoiceGraphEdge::new(start_id, body),
+                    wasm4pm_compat::powl::ChoiceGraphEdge::new(body, end_id),
+                    wasm4pm_compat::powl::ChoiceGraphEdge::new(body, redo),
+                    wasm4pm_compat::powl::ChoiceGraphEdge::new(redo, body),
+                ];
+
+                wasm4pm_compat::powl::PowlNodeKind::ChoiceGraph { nodes, edges }
             }
             ArenaOperator::PartialOrder => {
                 let mut child_ids = Vec::new();
@@ -203,7 +252,7 @@ fn convert_powl_node_recursive(
         }
         ArenaNode::ChoiceGraph(cg) => {
             let mut cg_node_ids = Vec::new();
-            for n in &cg.graph.nodes {
+            for n in cg.graph.nodes() {
                 match n {
                     ChoiceGraphNode::Start => {
                         let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
@@ -236,7 +285,7 @@ fn convert_powl_node_recursive(
                 }
             }
             let mut cg_edges = Vec::new();
-            for &(from_idx, to_idx) in &cg.graph.edges {
+            for &(from_idx, to_idx) in cg.graph.edges() {
                 cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
                     cg_node_ids[from_idx],
                     cg_node_ids[to_idx],

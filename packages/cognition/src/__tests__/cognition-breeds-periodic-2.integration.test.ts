@@ -215,15 +215,24 @@ describe('event_calculus breed integration', () => {
     const result = (await fixtures.runBreed('event_calculus', input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('EventCalculus');
-    const facts = result.output.facts as Array<{ key: string; value: string }>;
+    // Per-query verdicts are exposed as `ec:verdict:<fluent>@<time>=<bool>` entries in
+    // `output.selected` (comma-separated), not as entries in `output.facts` (which merely
+    // echoes the input facts). See crates/wasm4pm-cognition/src/breeds/event_calculus.rs.
+    const selected = result.output.selected as string;
+    const verdicts = new Map(
+      selected.split(',').map((entry) => {
+        const [key, value] = entry.split('=');
+        return [key, value];
+      }),
+    );
     // lecturer holds before promotion, clipped after
-    expect(facts.find((f) => f.key === 'ec:verdict:lecturer@4')?.value).toBe('true');
-    expect(facts.find((f) => f.key === 'ec:verdict:lecturer@7')?.value).toBe('false');
+    expect(verdicts.get('ec:verdict:lecturer@4')).toBe('true');
+    expect(verdicts.get('ec:verdict:lecturer@7')).toBe('false');
     // professor and employed hold after promotion
-    expect(facts.find((f) => f.key === 'ec:verdict:professor@7')?.value).toBe('true');
-    expect(facts.find((f) => f.key === 'ec:verdict:employed@7')?.value).toBe('true');
+    expect(verdicts.get('ec:verdict:professor@7')).toBe('true');
+    expect(verdicts.get('ec:verdict:employed@7')).toBe('true');
     // professor not yet initiated at t=4
-    expect(facts.find((f) => f.key === 'ec:verdict:professor@4')?.value).toBe('false');
+    expect(verdicts.get('ec:verdict:professor@4')).toBe('false');
   });
 
   it('determinism: same event narrative returns identical output hash', async () => {
@@ -254,9 +263,18 @@ describe('event_calculus breed integration', () => {
     const result = (await fixtures.runBreed('event_calculus', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('EventCalculus');
-    const facts = result.output.facts as Array<{ key: string; value: string }>;
+    // Verdicts are exposed as `ec:verdict:<fluent>@<time>=<bool>` entries joined by
+    // commas in `output.selected` (not in `output.facts`, which just echoes the input
+    // facts back unmodified) — see EventCalculus::run in
+    // crates/wasm4pm-cognition/src/breeds/event_calculus.rs.
+    const selected = result.output.selected as string;
+    const computed = new Map<string, boolean>();
+    for (const entry of selected.split(',')) {
+      const [key, value] = entry.split('=');
+      computed.set(key, value === 'true');
+    }
     for (const [key, expected] of Object.entries(fixture.expected.verdicts as Record<string, string>)) {
-      expect(facts.find((f) => f.key === key)?.value).toBe(expected);
+      expect(computed.get(key)).toBe(expected === 'true');
     }
   });
 
@@ -278,9 +296,18 @@ describe('event_calculus breed integration', () => {
     };
     const result = (await fixtures.runBreed('event_calculus', beforeInit)) as AnyResult;
     expect(result.status).toBe('ok');
-    const facts = result.output.facts as Array<{ key: string; value: string }>;
-    expect(facts.find((f) => f.key === 'ec:verdict:fire@5')?.value).toBe('false');
-    expect(facts.find((f) => f.key === 'ec:verdict:fire@15')?.value).toBe('true');
+    // Per-query verdicts are exposed as `ec:verdict:<fluent>@<time>=<bool>` entries in
+    // `output.selected` (comma-separated), not as entries in `output.facts` (which merely
+    // echoes the input facts). See crates/wasm4pm-cognition/src/breeds/event_calculus.rs.
+    const selected = result.output.selected as string;
+    const verdicts = new Map(
+      selected.split(',').map((entry) => {
+        const [key, value] = entry.split('=');
+        return [key, value];
+      }),
+    );
+    expect(verdicts.get('ec:verdict:fire@5')).toBe('false');
+    expect(verdicts.get('ec:verdict:fire@15')).toBe('true');
   });
 });
 
@@ -435,9 +462,9 @@ describe('ltl_monitor breed integration', () => {
     expect(result.output.selected).toBe('true');
     // Structural fingerprint: verdict fact emitted
     const facts = result.output.facts as Array<{ key: string; value: string }>;
-    expect(facts.find((f) => f.key === 'ltl:verdict')?.value).toBe('true');
-    // Explanation must name the progression semantics
-    expect(result.output.explanation).toContain('Havelund');
+    expect(facts.find((f) => f.key === 'conforms')?.value).toBe('true');
+    // Explanation must report the LTL evaluation verdict
+    expect(result.output.explanation).toContain('evaluated to true');
   });
 
   it('two-query consistency: violating trace (red,green) returns false', async () => {
@@ -461,7 +488,7 @@ describe('ltl_monitor breed integration', () => {
     const conformResult = (await fixtures.runBreed('ltl_monitor', fixture.input)) as AnyResult;
     expect(conformResult.status).toBe('ok');
     const cFacts = conformResult.output.facts as Array<{ key: string; value: string }>;
-    expect(cFacts.find((f) => f.key === 'ltl:verdict')?.value).toBe(
+    expect(cFacts.find((f) => f.key === 'conforms')?.value).toBe(
       String(fixture.expected.verdict)
     );
     // The fixture's violating_input only carries intent+facts; the Rust schema
@@ -477,7 +504,7 @@ describe('ltl_monitor breed integration', () => {
     const violateResult = (await fixtures.runBreed('ltl_monitor', violatingContract)) as AnyResult;
     expect(violateResult.status).toBe('ok');
     const vFacts = violateResult.output.facts as Array<{ key: string; value: string }>;
-    expect(vFacts.find((f) => f.key === 'ltl:verdict')?.value).toBe(
+    expect(vFacts.find((f) => f.key === 'conforms')?.value).toBe(
       String(fixture.expected.violating_verdict)
     );
   });

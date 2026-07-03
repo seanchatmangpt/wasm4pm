@@ -187,14 +187,23 @@ export class AgentOrchestrator {
       // LEARN: Update knowledge base
       const learn = this.learn(analyze, execute);
 
-      if (execute.failed_count > 0) {
+      // Cycle success = manufacturing may proceed: no violation blocked it and
+      // no correction hit a real error. Corrections recorded-but-unapplied
+      // (not_implemented backend) are honest skips, not failures — but they
+      // never mask a blocking violation.
+      const blocking = analyze.violations.some((v) => v.blocked_manufacturing);
+      const realFailures = execute.corrections.filter(
+        (c) => !c.correction_success && c.correction_details?.not_implemented !== true
+      ).length;
+
+      if (realFailures > 0) {
         spanStatus = 'ERROR';
-        spanErrMsg = `${execute.failed_count} correction(s) failed`;
+        spanErrMsg = `${realFailures} correction(s) failed`;
       }
 
       return {
         cycle_id: cycleId,
-        success: execute.failed_count === 0,
+        success: !blocking && realFailures === 0,
         monitor,
         analyze,
         plan,
@@ -1181,31 +1190,35 @@ export class AgentOrchestrator {
     };
   }
 
-  /** Create snapshot for undo support */
-  private _createSnapshot(target: string): Record<string, unknown> | null {
-    // In production, this would read the target file/state
-    return {
-      target,
-      timestamp: new Date().toISOString(),
-      snapshot_type: 'pre_correction',
-    };
+  /**
+   * Snapshot capture has no backend yet: returning null keeps `snapshot_data`
+   * honest in the audit trail (no fake "undo support" payload). Rollback is
+   * unavailable until a real state-capture backend exists.
+   */
+  private _createSnapshot(_target: string): Record<string, unknown> | null {
+    return null;
   }
 
-  /** Apply a corrective action */
+  /**
+   * No correction backend exists yet (the subprocess bridge is unimplemented),
+   * so this must NOT report success — a fabricated `correction_success: true`
+   * is exactly the evidence-theater this package exists to detect. The intended
+   * action is still recorded so the audit trail shows what WOULD have run.
+   */
   private async _applyCorrection(
     action: CorrectiveAction,
     context: AgentExecutionContext
   ): Promise<{ success: boolean; action: string; details: Record<string, unknown> }> {
-    // In production, this delegates to Python agents via subprocess bridge
-    // For now, record the intended correction
     return {
-      success: true,
-      action: `${action.type} applied to ${action.target}`,
+      success: false,
+      action: `${action.type} recorded for ${action.target} (not applied: no correction backend)`,
       details: {
         agent: action.agent,
         type: action.type,
         target: action.target,
         dry_run: context.dry_run,
+        not_implemented: true,
+        reason: 'correction backend (subprocess bridge) is not implemented',
       },
     };
   }

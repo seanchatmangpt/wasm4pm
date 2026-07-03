@@ -1,7 +1,7 @@
 // Algorithm contracts — generated from wasm4pm pi ontology. Regenerate with: ggen sync
 
-import type { AlgorithmId } from './algorithm-ids';
-import { ALGORITHM_IDS, ALGORITHM_CLI_ALIASES } from './algorithm-ids';
+import type { AlgorithmId } from './algorithm-ids.js';
+import { ALGORITHM_IDS, ALGORITHM_CLI_ALIASES } from './algorithm-ids.js';
 
 export { ALGORITHM_IDS };
 

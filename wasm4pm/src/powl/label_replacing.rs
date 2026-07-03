@@ -62,33 +62,27 @@ pub fn apply(
         }
 
         Some(PowlNode::DecisionGraph(dg)) => {
-            // Treat as StrictPartialOrder for label replacement purposes
             let old_order = dg.order.clone();
-            let n = dg.children.len();
             let new_children: Vec<u32> = dg
                 .children
                 .iter()
                 .map(|&c| apply(arena, c, label_map, dest_arena))
                 .collect();
 
-            let spo_idx = dest_arena.add_strict_partial_order(new_children);
-
-            for i in 0..n {
-                for j in 0..n {
-                    if old_order.is_edge(i, j) {
-                        dest_arena.add_order_edge(spo_idx, i, j).ok();
-                    }
-                }
-            }
-
-            spo_idx
+            dest_arena.add_decision_graph(
+                new_children,
+                old_order,
+                dg.start_nodes.clone(),
+                dg.end_nodes.clone(),
+                dg.empty_path,
+            )
         }
 
         Some(PowlNode::ChoiceGraph(cg)) => {
             // Recursively apply label replacement to every SubModel subtree;
             // preserve graph structure (Start/End/edges).
-            let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
-            for n in &cg.graph.nodes {
+            let mut new_nodes = Vec::with_capacity(cg.graph.nodes().len());
+            for n in cg.graph.nodes() {
                 match n {
                     ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
                     ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
@@ -105,13 +99,61 @@ pub fn apply(
                     }
                 }
             }
-            let new_graph = ChoiceGraph {
-                nodes: new_nodes,
-                edges: cg.graph.edges.clone(),
-                start_idx: cg.graph.start_idx,
-                end_idx: cg.graph.end_idx,
-            };
+            let new_graph = ChoiceGraph::new_raw(
+                new_nodes,
+                cg.graph.edges().to_vec(),
+                cg.graph.start_idx(),
+                cg.graph.end_idx(),
+            )
+            .unwrap();
             dest_arena.add_choice_graph(&new_graph)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::powl_arena::BinaryRelation;
+
+    #[test]
+    fn test_label_replacing_preserves_decision_graph() {
+        let mut arena = PowlArena::new();
+        let child0 = arena.add_transition(Some("A".to_string()));
+        let child1 = arena.add_transition(Some("B".to_string()));
+
+        let mut order = BinaryRelation::new(2);
+        order.add_edge(0, 1);
+
+        let dg = arena.add_decision_graph(vec![child0, child1], order, vec![0], vec![1], false);
+
+        let mut label_map = HashMap::new();
+        label_map.insert("A".to_string(), "A_new".to_string());
+
+        let mut dest_arena = PowlArena::new();
+        let new_root = apply(&arena, dg, &label_map, &mut dest_arena);
+
+        let new_node = dest_arena.get(new_root).unwrap();
+        assert!(matches!(new_node, PowlNode::DecisionGraph(_)));
+
+        if let PowlNode::DecisionGraph(new_dg) = new_node {
+            assert_eq!(new_dg.children.len(), 2);
+            let c0 = dest_arena.get(new_dg.children[0]).unwrap();
+            let c1 = dest_arena.get(new_dg.children[1]).unwrap();
+
+            if let PowlNode::Transition(t) = c0 {
+                assert_eq!(t.label, Some("A_new".to_string()));
+            } else {
+                panic!("Expected transition");
+            }
+
+            if let PowlNode::Transition(t) = c1 {
+                assert_eq!(t.label, Some("B".to_string()));
+            } else {
+                panic!("Expected transition");
+            }
+        } else {
+            panic!("Expected DecisionGraph");
         }
     }
 }

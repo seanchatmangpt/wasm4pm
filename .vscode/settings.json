@@ -26,6 +26,9 @@
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
+  "rust-analyzer.server.extraEnv": {
+    "RA_MEMORY_LIMIT_MB": "8192"
+  },
   "[toml]": {
     "editor.defaultFormatter": "esbenprettier-vscode"
   }

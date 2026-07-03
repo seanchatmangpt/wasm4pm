@@ -1,0 +1,31 @@
+{
+  "breed_id": "event_calculus",
+  "id": "ocel_event_calculus_v1",
+  "name": "Event Calculus Lifecycle Model",
+  "phases": [
+    {
+      "name": "load",
+      "kinds": [
+        "ec-load"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "infer",
+      "kinds": [
+        "ec-infer"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "model",
+      "kinds": [
+        "ec-model"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}

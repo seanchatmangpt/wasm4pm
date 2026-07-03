@@ -1337,7 +1337,13 @@ impl StreamingConformanceChecker {
                     let mut marking = vec![0; p_count];
                     let mut produced_tokens = 0;
                     for (i, p) in net.places.iter().enumerate() {
-                        if let Some(&tokens) = net.initial_marking.get(&p.id) {
+                        let tokens = net
+                            .initial_marking
+                            .get(&p.id)
+                            .cloned()
+                            .or(p.marking)
+                            .unwrap_or(0);
+                        if tokens > 0 {
                             marking[i] = tokens;
                             produced_tokens += tokens;
                         }

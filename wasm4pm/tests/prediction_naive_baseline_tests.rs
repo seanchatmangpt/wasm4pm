@@ -19,7 +19,7 @@
 //!
 //! Gap E: prediction system correctness against known oracles.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use wasm4pm::models::{AttributeValue, Event, EventLog, NGramPredictor, Trace};
 use wasm4pm::prediction_additions::{calculate_rework_score, extract_prefix_features};
 use wasm4pm::state::{get_or_init_state, StoredObject};
@@ -36,7 +36,7 @@ fn make_log(traces: &[(usize, &[&str])]) -> EventLog {
         for _ in 0..*repeat {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case{}", case_idx)),
@@ -46,7 +46,7 @@ fn make_log(traces: &[(usize, &[&str])]) -> EventLog {
                 events: Vec::new(),
             };
             for (i, &act) in activities.iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(act.to_string()),
@@ -70,7 +70,7 @@ fn make_timed_log(traces: &[(&str, &[(&str, u64)])]) -> EventLog {
     for (case_id, events) in traces {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(case_id.to_string()),
@@ -80,7 +80,7 @@ fn make_timed_log(traces: &[(&str, &[(&str, u64)])]) -> EventLog {
             events: Vec::new(),
         };
         for (act, hour) in *events {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),
@@ -106,7 +106,7 @@ fn store_log(log: EventLog) -> String {
 /// Build an NGramPredictor directly from a log (bypassing wasm_bindgen).
 fn build_ngram(log: &EventLog, activity_key: &str, n: usize) -> NGramPredictor {
     let n = n.max(2);
-    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
+    let mut counts: BTreeMap<Vec<String>, BTreeMap<String, usize>> = BTreeMap::new();
     for trace in &log.traces {
         let acts: Vec<String> = trace
             .events

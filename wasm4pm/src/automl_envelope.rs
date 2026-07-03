@@ -287,10 +287,7 @@ pub fn build_automl_envelope(log_handle: &str, activity_key: &str) -> Result<JsV
         .map_err(|e| {
             wasm_err(
                 codes::INTERNAL_ERROR,
-                format!(
-                    "auto_fit_classification failed: {}",
-                    e.as_string().unwrap_or_else(|| "automl error".to_string())
-                ),
+                format!("auto_fit_classification failed: {}", format!("{:?}", e)),
             )
         })?;
 

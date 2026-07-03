@@ -1,15 +1,13 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools"]
-# wasm4pm-lsp depends on an out-of-repo path crate `lsp-max` (../../../lsp-max) that is
-# not part of this repository and cannot be resolved in a clean checkout. Excluded so the
-# rest of the workspace builds reproducibly. Re-add to `members` once lsp-max is vendored
-# or published.
-exclude = ["crates/wasm4pm-lsp"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools", "crates/wasm4pm-planner"]
+# wasm4pm-lsp was removed in v26.7.1: it depended on an out-of-repo path crate
+# `lsp-max` and could not build in a clean checkout. Revival path: restore from
+# git history (crates/wasm4pm-lsp @ pre-26.7.1) once lsp-max is vendored or published.
 
 [workspace.package]
-version = "26.6.12"
+version = "26.7.1"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
@@ -28,14 +26,15 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
-wasm4pm = { version = "26.6.10", path = "wasm4pm", features = ["cloud"] }
-wasm4pm-cognition = { version = "26.6.10", path = "crates/wasm4pm-cognition" }
-prolog8 = { version = "26.6.10", path = "crates/prolog8" }
-miniml = { version = "26.6.10", path = "crates/miniml-core" }
-ocpq = { version = "26.6.10", path = "crates/ocpq" }
+wasm4pm-compat = { version = "26.6", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm = { version = "26.7.1", path = "wasm4pm", features = ["cloud"] }
+wasm4pm-cognition = { version = "26.7.1", path = "crates/wasm4pm-cognition" }
+prolog8 = { version = "26.7.1", path = "crates/prolog8" }
+miniml = { version = "26.7.1", path = "crates/miniml-core" }
+ocpq = { version = "26.7.1", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
+criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.8"
 
 [profile.release]
@@ -49,5 +48,4 @@ strip = "debuginfo"
 opt-level = 3
 lto = false
 
-[patch.crates-io]
-wasm4pm = { path = "wasm4pm" }
+

@@ -16,7 +16,7 @@
 //! - Non-empty edge/place/transition count (unless input is empty)
 //! - Activity vocabulary matches log
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::discovery::discover_dfg_from_log;
 use wasm4pm::genetic_discovery::discover_genetic_algorithm_from_log;
@@ -33,7 +33,7 @@ fn build_log_with_activities(traces: &[Vec<&str>]) -> EventLog {
     for (trace_idx, activities) in traces.iter().enumerate() {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = BTreeMap::new();
                 m.insert(
                     "case:concept:name".to_string(),
                     AttributeValue::String(format!("case-{}", trace_idx)),
@@ -43,7 +43,7 @@ fn build_log_with_activities(traces: &[Vec<&str>]) -> EventLog {
             events: Vec::new(),
         };
         for (event_idx, &activity) in activities.iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(activity.to_string()),
@@ -81,7 +81,7 @@ fn log_vocabulary(log: &EventLog) -> std::collections::HashSet<String> {
 fn test_dfg_empty_log() {
     let log = build_log_with_activities(&[]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
-    assert!(dfg.is_ok(), "Must not panic and return result");
+    assert!(dfg.nodes.is_empty(), "Must return empty DFG");
 }
 
 /// Test 2: Single-event trace (1 activity, 1 trace)

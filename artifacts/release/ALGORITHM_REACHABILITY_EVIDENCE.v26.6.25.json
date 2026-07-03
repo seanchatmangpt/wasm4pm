@@ -1,0 +1,549 @@
+{
+  "package": "wasm4pm",
+  "version": "26.6.25",
+  "generated_at": "2026-06-25T22:12:01.914Z",
+  "algorithm_count": 60,
+  "algorithms": [
+    {
+      "id": "dfg",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_dfg",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "process_skeleton",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_process_skeleton",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "alpha_plus_plus",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_alpha_plus_plus",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "heuristic_miner",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_heuristic_miner",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "inductive_miner",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_inductive_miner",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "genetic_algorithm",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_genetic_algorithm",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "pso",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_pso",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "a_star",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_a_star",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "hill_climbing",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_hill_climbing",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "aco",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_aco",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "simulated_annealing",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_simulated_annealing",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "declare",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_declare",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "optimized_dfg",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_dfg",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ilp",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_ilp_petri_net",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "simd_streaming_dfg",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_dfg_simd",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "hierarchical_dfg",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_hierarchical_dfg",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "streaming_log",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_dfg",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "smart_engine",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_smart_engine",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ml_classify",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "ml_classify",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ml_cluster",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "ml_cluster",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ml_forecast",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "ml_forecast",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ml_anomaly",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "ml_anomaly",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ml_regress",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "ml_regress",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ml_pca",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "ml_pca",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "transition_system",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_transition_system",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "log_to_trie",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_log_to_trie",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "causal_graph",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_causal_graph",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "performance_spectrum",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_performance_spectrum",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "batches",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "analyze_batches",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "correlation_miner",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_correlation_miner",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "generalization",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "generalization",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "etconformance_precision",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_align_etconformance_precision",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "alignments",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_alignments",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "complexity_metrics",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_complexity_metrics",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "pnml_import",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "from_pnml_wasm",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "bpmn_import",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "read_bpmn",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "powl_to_process_tree",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "convert_powl_to_process_tree",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "yawl_export",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "export_yawl",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "playout",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "petri_net_playout",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "monte_carlo_simulation",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "monte_carlo_simulation",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "handover_network",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_handover_network",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "working_together_network",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_working_together_network",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ocel_dfg",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_ocel_dfg",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ocel_dfg_per_type",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_ocel_dfg_per_type",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ocel_petri_net",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_ocel_petri_net",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ocel_encode",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "encode_ocel",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ocel_ocla",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_ocel_ocla",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "ocel_oc_declare",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "discover_ocel_oc_declare",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "predict_next_activity",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "predict_next_activity",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "predict_remaining_time",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "predict_case_duration",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "predict_outcome",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "predict_outcome",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "detect_drift",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "detect_drift",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "compute_ewma",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_ewma",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "analyze_variant_complexity",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "analyze_variant_complexity",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "compute_activity_transition_matrix",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_activity_transition_matrix",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "analyze_process_speedup",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "analyze_process_speedup",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "compute_trace_similarity_matrix",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "compute_trace_similarity_matrix",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "automl_classify",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "automl_classify",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "automl_forecast",
+      "reachable": false,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": true,
+      "wasm_export": "automl_forecast",
+      "wasm_export_present": false,
+      "structured_absence_reason": null
+    },
+    {
+      "id": "agentic_pipeline",
+      "reachable": true,
+      "dispatch_path": "packages/kernel/src/api.ts runRaw",
+      "wasm_required": false,
+      "wasm_export": "run_agentic_pipeline",
+      "wasm_export_present": false,
+      "structured_absence_reason": "requires feature-cloud WASM build"
+    }
+  ],
+  "reachability_hash": "f62870628b1ff25349d030768b15b657e9de56893b0f419cadb103c2b1d5fbcd"
+}

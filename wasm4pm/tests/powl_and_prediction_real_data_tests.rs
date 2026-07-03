@@ -10,7 +10,7 @@
 //!   - N-gram predictor trained on real data must return top-1 predictions for
 //!     common prefixes that match known next activities
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use wasm4pm::models::{AttributeValue, Event, EventLog, NGramPredictor, Trace};
 use wasm4pm::powl::discovery::{discover_powl, DiscoveryConfig, DiscoveryVariant};
@@ -28,7 +28,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -39,7 +39,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

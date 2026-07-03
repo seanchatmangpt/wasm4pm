@@ -2,6 +2,7 @@
 name = "bench-tools"
 version.workspace = true
 edition.workspace = true
+description = "Benchmark tools for the wasm4pm workspace"
 license.workspace = true
 authors.workspace = true
 repository.workspace = true

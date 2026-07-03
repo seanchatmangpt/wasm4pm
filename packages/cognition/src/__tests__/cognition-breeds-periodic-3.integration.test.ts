@@ -55,26 +55,36 @@ describe('mdp breed integration', () => {
     const result = (await fixtures.runBreed('mdp', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('Mdp');
-    // policy at s0 must be "go" (higher-value action)
-    const policyFacts = (result.output.facts as Array<{ key: string; value: string }>).filter(
-      f => f.key.startsWith('mdp:policy:')
-    );
-    const s0Policy = policyFacts.find(f => f.key === 'mdp:policy:s0');
-    expect(s0Policy?.value).toBe(fixture.expected.policy.s0);
+
+    type TraceStep = { kind: string; detail: string };
+    const trace = result.output.inference_trace as TraceStep[];
+
+    // policy at s0 must be "go" (higher-value action): recorded in the
+    // "mdp-policy" trace step's detail as "s0:go" (comma/space-separated
+    // "state:action" pairs), and mirrored in output.selected.
+    const policyStep = trace.find(t => t.kind === 'mdp-policy');
+    expect(policyStep).toBeDefined();
+    expect(policyStep!.detail).toContain(`s0:${fixture.expected.policy.s0}`);
+    expect(result.output.selected).toContain(`s0:${fixture.expected.policy.s0}`);
+
+    // value function is recorded in the last "mdp-iterate" trace step's
+    // detail, e.g. "Sweep N: delta=X, values=[v0, v1, v2]" for states
+    // [s0, s1, goal] in fixture declaration order.
+    const lastIterate = [...trace].reverse().find(t => t.kind === 'mdp-iterate');
+    expect(lastIterate).toBeDefined();
+    const valuesMatch = lastIterate!.detail.match(/values=\[([^\]]*)\]/);
+    expect(valuesMatch).toBeTruthy();
+    const values = valuesMatch![1].split(',').map(v => parseFloat(v.trim()));
+    const stateNames = ['s0', 's1', 'goal'];
+    const s1Value = values[stateNames.indexOf('s1')];
+    const goalValue = values[stateNames.indexOf('goal')];
+
     // value at s1 ≈ 2.0
-    const s1Value = (result.output.facts as Array<{ key: string; value: string }>).find(
-      f => f.key === 'mdp:value:s1'
-    );
-    expect(s1Value).toBeDefined();
-    expect(Math.abs(parseFloat(s1Value!.value) - fixture.expected.values.s1)).toBeLessThan(
+    expect(Math.abs(s1Value - fixture.expected.values.s1)).toBeLessThan(
       fixture.expected.tolerance
     );
     // value at goal ≈ 0.0
-    const goalValue = (result.output.facts as Array<{ key: string; value: string }>).find(
-      f => f.key === 'mdp:value:goal'
-    );
-    expect(goalValue).toBeDefined();
-    expect(Math.abs(parseFloat(goalValue!.value) - fixture.expected.values.goal)).toBeLessThan(
+    expect(Math.abs(goalValue - fixture.expected.values.goal)).toBeLessThan(
       fixture.expected.tolerance
     );
   });
@@ -95,11 +105,11 @@ describe('mdp breed integration', () => {
     const r1 = (await fixtures.runBreed('mdp', input)) as AnyResult;
     const r2 = (await fixtures.runBreed('mdp', input)) as AnyResult;
     expect(r1.output.selected).toBe(r2.output.selected);
-    // error contract: no facts at all → mdp.rs precondition rejects (missing mdp:gamma)
+    // error contract: no facts at all → mdp.rs precondition rejects (no state/action or mdp:trans: facts)
     const emptyInput = { ...input, facts: [] };
     const err = await fixtures.runBreedCaught('mdp', emptyInput);
     expect(err.status).not.toBe('ok');
-    expect(err.error).toContain('missing mdp:gamma');
+    expect(err.error).toContain('MDP requires state+action facts or mdp:trans: transitions');
   });
 });
 
@@ -197,10 +207,10 @@ describe('partial_order_plan breed integration', () => {
       fixture.input
     )) as AnyResult;
     expect(result.status).toBe('ok');
-    // partial_order_plan.rs traces threats as kind 'pop-resolve' with detail
-    // "step '…' deletes '…' threatening link …" — assert one was detected.
+    // partial_order_plan.rs traces threats as kind 'detect-threat' with detail
+    // "Threat detected: step … deletes '…' required by link …" — assert one was detected.
     const threats = (result.output.inference_trace as Array<{ kind: string; detail: string }>).filter(
-      t => t.kind === 'pop-resolve' && t.detail.includes('threatening link')
+      t => t.kind === 'detect-threat' && t.detail.includes('deletes')
     );
     expect(threats.length).toBeGreaterThan(0);
   });
@@ -309,11 +319,9 @@ describe('qualitative_reason breed integration', () => {
     )) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('QualitativeReason');
-    // selected must be "3 states"
-    expect(result.output.selected).toBe(fixture.expected.state_count + ' states');
-    // qr:state_count fact must equal 3
+    // state_count fact must equal 3 (breed no longer sets `selected` to a "<n> states" string)
     const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(
-      f => f.key === 'qr:state_count'
+      f => f.key === 'state_count'
     );
     expect(countFact?.value).toBe(fixture.expected.state_count);
   });
@@ -325,9 +333,9 @@ describe('qualitative_reason breed integration', () => {
       fixture.input
     )) as AnyResult;
     expect(result.status).toBe('ok');
-    // gather all qr:state:* facts and collect all q assignments
+    // gather all state_* facts and collect all q assignments
     const stateFacts = (result.output.facts as Array<{ key: string; value: string }>).filter(
-      f => f.key.startsWith('qr:state:') && f.key !== 'qr:state_count'
+      f => f.key.startsWith('state_') && f.key !== 'state_count'
     );
     // each state value is like "p:+,a:-,q:+" — collect the q values
     const qValues = stateFacts.map(f => {
@@ -375,7 +383,7 @@ describe('qualitative_reason breed integration', () => {
     expect(result.status).toBe('ok');
     // 1 state (forced)
     const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(
-      f => f.key === 'qr:state_count'
+      f => f.key === 'state_count'
     );
     expect(countFact?.value).toBe('1');
     // differ from the ambiguous result
@@ -384,13 +392,15 @@ describe('qualitative_reason breed integration', () => {
       'qualitative_reason',
       fixture.input
     )) as AnyResult;
-    expect(result.output.selected).not.toBe(ambiguous.output.selected);
+    const ambiguousCountFact = (
+      ambiguous.output.facts as Array<{ key: string; value: string }>
+    ).find(f => f.key === 'state_count');
+    expect(countFact?.value).not.toBe(ambiguousCountFact?.value);
     // determinism
     const r2 = (await fixtures.runBreed(
       'qualitative_reason',
       determinedInput
     )) as AnyResult;
-    expect(result.output.selected).toBe(r2.output.selected);
     expect(result.output_hash).toBe(r2.output_hash);
   });
 });

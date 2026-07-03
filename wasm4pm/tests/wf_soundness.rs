@@ -16,7 +16,7 @@
 //! - `non_free_choice_net`   — shared input place with differing pre-sets; not free-choice.
 //! - `fig2_non_separable_net`— paper Fig.2: free-choice & sound but NOT separable.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use wasm4pm::soundness::{analyze_petri_net, StructuralNet};
 
@@ -52,7 +52,7 @@ fn net(
     arcs: &[(&str, &str)],
     source: &str,
 ) -> PetriNet {
-    let mut initial = HashMap::new();
+    let mut initial = BTreeMap::new();
     initial.insert(source.to_string(), 1usize);
     PetriNet {
         places: places.iter().map(|p| place(p)).collect(),

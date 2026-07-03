@@ -1,0 +1,41 @@
+{
+  "model_id": "markov_logic-l1-v1",
+  "model_level": "L1",
+  "breed_id": "markov_logic",
+  "object_types": ["clause", "assignment", "map_state"],
+  "places": [
+    {"id": "p1", "name": "clauses_raw",       "object_type": "clause"},
+    {"id": "p2", "name": "clauses_grounded",  "object_type": "clause"},
+    {"id": "p3", "name": "evidence_clamped",  "object_type": "assignment"},
+    {"id": "p4", "name": "assignment_init",   "object_type": "assignment"},
+    {"id": "p5", "name": "search_active",     "object_type": "assignment"},
+    {"id": "p6", "name": "map_emitted",       "object_type": "map_state"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ground-clauses",  "label": "ground-clauses"},
+    {"id": "t2", "name": "clamp-evidence",  "label": "clamp-evidence"},
+    {"id": "t3", "name": "init-assignment", "label": "init-assignment"},
+    {"id": "t4", "name": "flip",            "label": "flip"},
+    {"id": "t5", "name": "restart",         "label": "restart"},
+    {"id": "t6", "name": "map-found",       "label": "map-found"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p4", "to": "t6", "type": "consume"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

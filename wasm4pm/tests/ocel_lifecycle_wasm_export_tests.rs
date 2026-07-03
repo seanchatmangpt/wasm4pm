@@ -27,7 +27,7 @@
 
 #[cfg(feature = "feature-ocel")]
 mod ocel_lifecycle_wasm_export_tests {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
     use wasm4pm::advanced::ocdfg::OCDFG;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
@@ -45,7 +45,7 @@ mod ocel_lifecycle_wasm_export_tests {
                     id: "e1".to_string(),
                     event_type: "A".to_string(),
                     timestamp: ts_first.to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec![obj_id.to_string()],
                     object_refs: vec![],
                 },
@@ -53,7 +53,7 @@ mod ocel_lifecycle_wasm_export_tests {
                     id: "e2".to_string(),
                     event_type: "B".to_string(),
                     timestamp: ts_second.to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec![obj_id.to_string()],
                     object_refs: vec![],
                 },
@@ -61,7 +61,7 @@ mod ocel_lifecycle_wasm_export_tests {
             objects: vec![OCELObject {
                 id: obj_id.to_string(),
                 object_type: obj_type.to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             }],

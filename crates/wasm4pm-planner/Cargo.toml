@@ -1,0 +1,30 @@
+[package]
+name = "wasm4pm-planner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "wasm4pm-native PDDL-subset temporal planner with prolog8 admission gating and an MCP server — a fresh design (not a port) drawing on lessons from bcinr-pddl's durative-action scheduler and capability-router pattern."
+
+[lib]
+name = "wasm4pm_planner"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wasm4pm-planner-mcp"
+path = "src/main.rs"
+
+[dependencies]
+prolog8 = { path = "../prolog8" }
+wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
+blake3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rmcp = { version = "2.0.0", features = ["server", "transport-io", "macros"] }
+schemars = "0.8"
+tokio = { version = "1", features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]

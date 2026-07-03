@@ -1,0 +1,38 @@
+{
+  "model_id": "belief_merging-l1-v1",
+  "model_level": "L1",
+  "breed_id": "belief_merging",
+  "object_types": ["world", "base", "merged_belief"],
+  "places": [
+    {"id": "p1", "name": "profile_loaded",  "object_type": "base"},
+    {"id": "p2", "name": "worlds_listed",   "object_type": "world"},
+    {"id": "p3", "name": "ic_worlds",       "object_type": "world"},
+    {"id": "p4", "name": "worlds_scored",   "object_type": "world"},
+    {"id": "p5", "name": "min_selected",    "object_type": "world"},
+    {"id": "p6", "name": "belief_merged",   "object_type": "merged_belief"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "enumerate_worlds", "label": "enumerate-worlds"},
+    {"id": "t2", "name": "filter_ic",        "label": "filter-ic"},
+    {"id": "t3", "name": "distance",         "label": "distance"},
+    {"id": "t4", "name": "aggregate",        "label": "aggregate"},
+    {"id": "t5", "name": "select_min",       "label": "select-min"},
+    {"id": "t6", "name": "merged_belief",    "label": "merged-belief"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

@@ -288,25 +288,27 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
             };
             // Reject `-->` ( PO arrow): must be `->` only.
             if edge_tok.as_bytes().get(arrow_pos + 2) == Some(&b'>') {
-                return Err(format!("CG edge '{edge_tok}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar"));
+                return Err(format!(
+                    "CG edge '{edge_tok}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar"
+                ));
             }
             let src_id = edge_tok[..arrow_pos].trim();
             let tgt_id = edge_tok[arrow_pos + 2..].trim();
             let src = id_to_idx
                 .iter()
                 .find(|(id, _)| id == src_id)
-                .map(|(_, i)| *i)
+                .map(|(_, i)| i)
                 .ok_or_else(|| format!("CG edge source '{src_id}' not found"))?;
             let tgt = id_to_idx
                 .iter()
                 .find(|(id, _)| id == tgt_id)
-                .map(|(_, i)| *i)
+                .map(|(_, i)| i)
                 .ok_or_else(|| format!("CG edge target '{tgt_id}' not found"))?;
-            edges.push((src, tgt));
+            edges.push((*src, *tgt));
         }
     }
 
-    let cg = ChoiceGraph::new(nodes, edges);
+    let cg = ChoiceGraph::new(nodes, edges).map_err(|e| format!("ChoiceGraph error: {e:?}"))?;
     Ok(arena.add_choice_graph(&cg))
 }
 
@@ -826,18 +828,6 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
         cg_nodes.push(cg_node);
     }
 
-    // Find start/end sentinel indices
-    let start_idx = id_to_cg_idx
-        .iter()
-        .find(|(id, _)| id == "Start" || id == &start_id)
-        .map(|(_, i)| *i)
-        .unwrap_or(0);
-    let end_idx = id_to_cg_idx
-        .iter()
-        .find(|(id, _)| id == "End" || id == &end_id)
-        .map(|(_, i)| *i)
-        .unwrap_or(cg_nodes.len().saturating_sub(1));
-
     // Parse edges
     let mut edges: Vec<(usize, usize)> = Vec::new();
     if !edges_list.trim().is_empty() {
@@ -852,23 +842,19 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
             let src = id_to_cg_idx
                 .iter()
                 .find(|(id, _)| id == src_id)
-                .map(|(_, i)| *i)
+                .map(|(_, i)| i)
                 .ok_or_else(|| Wasm4pmError::Parse(format!("CG src '{src_id}' not found")))?;
             let tgt = id_to_cg_idx
                 .iter()
                 .find(|(id, _)| id == tgt_id)
-                .map(|(_, i)| *i)
+                .map(|(_, i)| i)
                 .ok_or_else(|| Wasm4pmError::Parse(format!("CG tgt '{tgt_id}' not found")))?;
-            edges.push((src, tgt));
+            edges.push((*src, *tgt));
         }
     }
 
-    let cg = wasm4pm_compat::powl::ChoiceGraph {
-        nodes: cg_nodes,
-        edges,
-        start_idx,
-        end_idx,
-    };
+    let cg = wasm4pm_compat::powl::ChoiceGraph::new(cg_nodes, edges)
+        .map_err(|e| Wasm4pmError::Parse(format!("ChoiceGraph error: {e:?}")))?;
     Ok(arena.add_choice_graph(&cg))
 }
 

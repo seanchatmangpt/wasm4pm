@@ -367,8 +367,8 @@ mod discovery_otel_validation {
         println!("  [ ] temperature: f64");
         println!("  [ ] iterations: u64");
         println!("  [ ] population_size: u64");
+        assert!(true);
     }
-    assert!(true);
 }
 
 // ============================================================================

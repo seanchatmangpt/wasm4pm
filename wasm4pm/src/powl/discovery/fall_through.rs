@@ -215,8 +215,8 @@ pub fn choice_graph_v2_fall_through(
 
     // Replace each Activity-node in the cut graph with a SubModel sub-tree.
     // SubModel = XOR of partition activities (fallback base case for recursive PM×).
-    let mut new_nodes: Vec<ChoiceGraphNode> = Vec::with_capacity(cut.graph.nodes.len());
-    for (i, n) in cut.graph.nodes.iter().enumerate() {
+    let mut new_nodes: Vec<ChoiceGraphNode> = Vec::with_capacity(cut.graph.nodes().len());
+    for (i, n) in cut.graph.nodes().iter().enumerate() {
         match n {
             ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
             ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
@@ -236,7 +236,8 @@ pub fn choice_graph_v2_fall_through(
             }
         }
     }
-    let new_graph = ChoiceGraph::new(new_nodes, cut.graph.edges.clone());
+    let new_graph =
+        ChoiceGraph::new(new_nodes, cut.graph.edges().to_vec()).map_err(|e| e.to_string())?;
     Ok(arena.add_choice_graph(&new_graph))
 }
 

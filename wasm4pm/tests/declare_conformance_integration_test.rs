@@ -6,14 +6,14 @@
 //! Full DECLARE conformance checking via the WASM boundary is tested in the
 //! Node.js test suite in `packages/kernel/__tests__/`.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 fn make_trace(activities: Vec<&str>) -> Trace {
     let mut trace = Trace::default();
     for activity in activities {
         let mut event = Event::default();
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(activity.to_string()),
@@ -27,7 +27,7 @@ fn make_trace(activities: Vec<&str>) -> Trace {
 fn make_log(traces: Vec<Vec<&str>>) -> EventLog {
     EventLog {
         traces: traces.into_iter().map(make_trace).collect(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
     }
 }
 

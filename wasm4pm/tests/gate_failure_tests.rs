@@ -10,7 +10,7 @@
 //! Algorithm family: Conformance checking, DFG discovery
 //! Gap: D (gate failure / negative quality)
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
     AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
@@ -25,15 +25,15 @@ use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 /// Build an EventLog from slices of activity-name slices.
 fn make_log(traces: &[&[&str]]) -> EventLog {
     EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: traces
             .iter()
             .map(|activities| Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: activities
                     .iter()
                     .map(|&a| {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             AttributeValue::String(a.to_string()),
@@ -88,7 +88,7 @@ fn abc_net() -> PetriNet {
         arc("tC", "f"),
     ];
     net.initial_marking.insert("i".to_string(), 1);
-    let mut fm = HashMap::new();
+    let mut fm = BTreeMap::new();
     fm.insert("f".to_string(), 1usize);
     net.final_markings.push(fm);
     net
@@ -202,7 +202,7 @@ fn corrupted_xes_load_returns_error() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -213,7 +213,7 @@ fn corrupted_xes_load_returns_error() {
         }
         if trimmed.starts_with("<event>") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -245,7 +245,7 @@ fn corrupted_xes_load_returns_error() {
 fn empty_xes_produces_zero_activities() {
     // NEGATIVE TEST: Empty log must produce empty model, not crash.
     let empty_log = EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: vec![],
     };
 

@@ -15,7 +15,7 @@
 fn test_dfg_threshold_sweep_is_pure_rust_dfg_stub() {
     // Verifies that the DFG threshold sweep (formerly ensemble_discover) works
     // purely on event log data with no external ML model dependency.
-    use std::collections::{HashMap, HashSet};
+    use std::collections::{BTreeMap, HashSet};
     use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
     let mut log = EventLog::new();
@@ -25,12 +25,12 @@ fn test_dfg_threshold_sweep_is_pure_rust_dfg_stub() {
         vec!["A", "X", "C"],
     ] {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         for &act in activities.iter() {
             let mut event = Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             };
             event.attributes.insert(
                 "concept:name".to_string(),

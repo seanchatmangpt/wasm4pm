@@ -14,7 +14,7 @@
 //! These tests fail if any component panics, returns degenerate output, or
 //! violates the documented formal semantics — regardless of latency.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -37,7 +37,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -48,7 +48,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -140,7 +140,7 @@ fn rework_ratio(log: &EventLog) -> f64 {
         .traces
         .iter()
         .filter(|t| {
-            let mut seen: HashMap<&str, usize> = HashMap::new();
+            let mut seen: BTreeMap<&str, usize> = BTreeMap::new();
             for ev in &t.events {
                 if let Some(AttributeValue::String(a)) = ev.attributes.get(ACTIVITY_KEY) {
                     *seen.entry(a.as_str()).or_insert(0) += 1;

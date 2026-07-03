@@ -192,88 +192,90 @@ pub fn compare_cohort_durations(
 ) -> Result<JsValue, JsError> {
     let state = get_or_init_state();
 
-    get_or_init_state().with_event_log(log_handle, |log| {
-        let groups =
-            extract_durations_by_case_attribute_internal(log, cohort_attribute, timestamp_key);
+    get_or_init_state()
+        .with_event_log(log_handle, |log| {
+            let groups =
+                extract_durations_by_case_attribute_internal(log, cohort_attribute, timestamp_key);
 
-        if groups.len() < 2 {
-            let msg = json!({"error": "Need at least 2 cohorts"});
-            return Err(JsError::new(&msg.to_string()).into());
-        }
+            if groups.len() < 2 {
+                let msg = json!({"error": "Need at least 2 cohorts"});
+                return Err(JsError::new(&msg.to_string()).into());
+            }
 
-        // Deterministic: sort keys and take first two. Each group must have at
-        // least 2 observations for a t-test to be meaningful (df = n_a+n_b−2);
-        // single-observation groups would give Inf variance under miniml.
-        let mut sorted_keys: Vec<&String> = groups.keys().collect();
-        sorted_keys.sort_unstable();
-        let total_cohorts = sorted_keys.len();
+            // Deterministic: sort keys and take first two. Each group must have at
+            // least 2 observations for a t-test to be meaningful (df = n_a+n_b−2);
+            // single-observation groups would give Inf variance under miniml.
+            let mut sorted_keys: Vec<&String> = groups.keys().collect();
+            sorted_keys.sort_unstable();
+            let total_cohorts = sorted_keys.len();
 
-        // Pick the first two alphabetically-sorted cohorts whose size ≥ 2.
-        let mut chosen: Vec<&String> = Vec::with_capacity(2);
-        let mut skipped_too_small: Vec<String> = Vec::new();
-        for k in &sorted_keys {
-            if groups[*k].len() >= 2 {
-                chosen.push(*k);
-                if chosen.len() == 2 {
-                    break;
+            // Pick the first two alphabetically-sorted cohorts whose size ≥ 2.
+            let mut chosen: Vec<&String> = Vec::with_capacity(2);
+            let mut skipped_too_small: Vec<String> = Vec::new();
+            for k in &sorted_keys {
+                if groups[*k].len() >= 2 {
+                    chosen.push(*k);
+                    if chosen.len() == 2 {
+                        break;
+                    }
+                } else {
+                    skipped_too_small.push((*k).clone());
                 }
-            } else {
-                skipped_too_small.push((*k).clone());
             }
-        }
-        if chosen.len() < 2 {
-            let msg = json!({
-                "error": "Need at least 2 cohorts with >=2 observations each",
-                "cohorts_seen": total_cohorts,
-                "skipped_too_small": skipped_too_small,
+            if chosen.len() < 2 {
+                let msg = json!({
+                    "error": "Need at least 2 cohorts with >=2 observations each",
+                    "cohorts_seen": total_cohorts,
+                    "skipped_too_small": skipped_too_small,
+                });
+                return Err(JsError::new(&msg.to_string()).into());
+            }
+
+            let label_a = chosen[0].clone();
+            let label_b = chosen[1].clone();
+            let group_a = &groups[chosen[0]];
+            let group_b = &groups[chosen[1]];
+
+            // Report cohorts NOT included in the test so callers don't silently
+            // miss a 3-cohort situation (e.g. A/B/C) where only A vs B was tested.
+            let untested_cohorts: Vec<String> = sorted_keys
+                .iter()
+                .filter(|k| **k != &label_a && **k != &label_b)
+                .map(|k| (*k).clone())
+                .collect();
+
+            let t_result = miniml::t_test_two_sample_impl(group_a, group_b, alpha)
+                .map_err(|e| JsError::new(&e.message))?;
+
+            let mean_a = group_a.iter().sum::<f64>() / group_a.len() as f64;
+            let mean_b = group_b.iter().sum::<f64>() / group_b.len() as f64;
+            let significant = t_result.p_value() < alpha;
+
+            let result = json!({
+                "t_stat": t_result.statistic(),
+                "p_value": t_result.p_value(),
+                "significant": significant,
+                "cohort_a_label": label_a,
+                "cohort_a_mean_ms": mean_a,
+                "cohort_a_n": group_a.len(),
+                "cohort_b_label": label_b,
+                "cohort_b_mean_ms": mean_b,
+                "cohort_b_n": group_b.len(),
+                "mean_diff_ms": t_result.mean_diff(),
+                "ci_lower": t_result.ci_lower(),
+                "ci_upper": t_result.ci_upper(),
+                "total_cohorts_seen": total_cohorts,
+                "untested_cohorts": untested_cohorts,
+                "interpretation": if significant {
+                    "Groups differ significantly"
+                } else {
+                    "No significant difference"
+                }
             });
-            return Err(JsError::new(&msg.to_string()).into());
-        }
 
-        let label_a = chosen[0].clone();
-        let label_b = chosen[1].clone();
-        let group_a = &groups[chosen[0]];
-        let group_b = &groups[chosen[1]];
-
-        // Report cohorts NOT included in the test so callers don't silently
-        // miss a 3-cohort situation (e.g. A/B/C) where only A vs B was tested.
-        let untested_cohorts: Vec<String> = sorted_keys
-            .iter()
-            .filter(|k| **k != &label_a && **k != &label_b)
-            .map(|k| (*k).clone())
-            .collect();
-
-        let t_result = miniml::t_test_two_sample_impl(group_a, group_b, alpha)
-            .map_err(|e| JsError::new(&e.message))?;
-
-        let mean_a = group_a.iter().sum::<f64>() / group_a.len() as f64;
-        let mean_b = group_b.iter().sum::<f64>() / group_b.len() as f64;
-        let significant = t_result.p_value() < alpha;
-
-        let result = json!({
-            "t_stat": t_result.statistic(),
-            "p_value": t_result.p_value(),
-            "significant": significant,
-            "cohort_a_label": label_a,
-            "cohort_a_mean_ms": mean_a,
-            "cohort_a_n": group_a.len(),
-            "cohort_b_label": label_b,
-            "cohort_b_mean_ms": mean_b,
-            "cohort_b_n": group_b.len(),
-            "mean_diff_ms": t_result.mean_diff(),
-            "ci_lower": t_result.ci_lower(),
-            "ci_upper": t_result.ci_upper(),
-            "total_cohorts_seen": total_cohorts,
-            "untested_cohorts": untested_cohorts,
-            "interpretation": if significant {
-                "Groups differ significantly"
-            } else {
-                "No significant difference"
-            }
-        });
-
-        Ok(JsValue::from_str(&result.to_string()))
-    })
+            Ok(JsValue::from_str(&result.to_string()))
+        })
+        .map_err(|e| JsError::new(&e.as_string().unwrap_or_else(|| "error".to_string())))
 }
 
 /// Compare processing durations across resources using one-way ANOVA.
@@ -291,60 +293,62 @@ pub fn compare_resource_performance(
     let _ = activity_key; // reserved for future per-activity filtering
     let state = get_or_init_state();
 
-    get_or_init_state().with_event_log(log_handle, |log| {
-        let raw_groups =
-            extract_durations_by_event_attribute_internal(log, resource_key, timestamp_key);
+    get_or_init_state()
+        .with_event_log(log_handle, |log| {
+            let raw_groups =
+                extract_durations_by_event_attribute_internal(log, resource_key, timestamp_key);
 
-        // Filter groups with < 2 observations
-        let mut filtered: Vec<(String, Vec<f64>)> = raw_groups
-            .into_iter()
-            .filter(|(_, v)| v.len() >= 2)
-            .collect();
+            // Filter groups with < 2 observations
+            let mut filtered: Vec<(String, Vec<f64>)> = raw_groups
+                .into_iter()
+                .filter(|(_, v)| v.len() >= 2)
+                .collect();
 
-        if filtered.len() < 2 {
-            let msg =
-                json!({"error": "Need at least 2 resource groups with >=2 observations each"});
-            return Err(JsError::new(&msg.to_string()).into());
-        }
-
-        // Sort for determinism
-        filtered.sort_by_key(|x| x.0.clone());
-
-        // Build flat data + group_sizes for ANOVA
-        let mut flat_data: Vec<f64> = Vec::new();
-        let mut group_sizes: Vec<usize> = Vec::new();
-        let mut group_means: Vec<serde_json::Value> = Vec::new();
-
-        for (label, values) in &filtered {
-            let mean = values.iter().sum::<f64>() / values.len() as f64;
-            group_means.push(json!({
-                "resource": label,
-                "mean_duration_ms": mean,
-                "n": values.len()
-            }));
-            group_sizes.push(values.len());
-            flat_data.extend_from_slice(values);
-        }
-
-        let anova_result = miniml::one_way_anova_impl(&flat_data, &group_sizes)
-            .map_err(|e| JsError::new(&e.message))?;
-
-        let significant = anova_result.p_value() < alpha;
-
-        let result = json!({
-            "f_stat": anova_result.f_statistic(),
-            "p_value": anova_result.p_value(),
-            "significant": significant,
-            "group_means": group_means,
-            "interpretation": if significant {
-                "Resource performance differs significantly"
-            } else {
-                "No significant difference in resource performance"
+            if filtered.len() < 2 {
+                let msg =
+                    json!({"error": "Need at least 2 resource groups with >=2 observations each"});
+                return Err(JsError::new(&msg.to_string()).into());
             }
-        });
 
-        Ok(JsValue::from_str(&result.to_string()))
-    })
+            // Sort for determinism
+            filtered.sort_by_key(|x| x.0.clone());
+
+            // Build flat data + group_sizes for ANOVA
+            let mut flat_data: Vec<f64> = Vec::new();
+            let mut group_sizes: Vec<usize> = Vec::new();
+            let mut group_means: Vec<serde_json::Value> = Vec::new();
+
+            for (label, values) in &filtered {
+                let mean = values.iter().sum::<f64>() / values.len() as f64;
+                group_means.push(json!({
+                    "resource": label,
+                    "mean_duration_ms": mean,
+                    "n": values.len()
+                }));
+                group_sizes.push(values.len());
+                flat_data.extend_from_slice(values);
+            }
+
+            let anova_result = miniml::one_way_anova_impl(&flat_data, &group_sizes)
+                .map_err(|e| JsError::new(&e.message))?;
+
+            let significant = anova_result.p_value() < alpha;
+
+            let result = json!({
+                "f_stat": anova_result.f_statistic(),
+                "p_value": anova_result.p_value(),
+                "significant": significant,
+                "group_means": group_means,
+                "interpretation": if significant {
+                    "Resource performance differs significantly"
+                } else {
+                    "No significant difference in resource performance"
+                }
+            });
+
+            Ok(JsValue::from_str(&result.to_string()))
+        })
+        .map_err(|e| JsError::new(&e.as_string().unwrap_or_else(|| "error".to_string())))
 }
 
 /// Compute descriptive statistics for a numeric attribute across all traces or events.
@@ -403,7 +407,7 @@ pub fn describe_attribute(
         });
 
         Ok(JsValue::from_str(&result.to_string()))
-    })
+    }).map_err(|e| JsError::new(&e.as_string().unwrap_or_else(|| "error".to_string())))
 }
 
 // ---------------------------------------------------------------------------

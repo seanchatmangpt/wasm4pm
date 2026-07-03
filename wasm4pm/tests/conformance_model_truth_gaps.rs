@@ -33,7 +33,7 @@
 //! **Rank-1 Oracles:** All tests use mathematical theorems from van der Aalst 2016 +
 //! pm4py conformance proofs. No self-referential oracles (FM-5 clean).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
     AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
@@ -45,7 +45,7 @@ use wasm4pm::models::{
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn make_event(case_id: &str, activity: &str, timestamp: &str) -> Event {
-    let mut attrs = HashMap::new();
+    let mut attrs = BTreeMap::new();
     attrs.insert(
         "concept:name".to_string(),
         AttributeValue::String(activity.to_string()),
@@ -78,13 +78,13 @@ fn make_log_with_cases(cases: &[(&str, &[&str])]) -> EventLog {
     let traces: Vec<Trace> = traces_map
         .into_iter()
         .map(|(_, events)| Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events,
         })
         .collect();
 
     EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces,
     }
 }
@@ -149,12 +149,12 @@ fn simple_petri_net() -> PetriNet {
             },
         ],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -202,17 +202,17 @@ fn gap1_duplicate_case_ids_invalid() {
     // This is a log schema violation, not a conformance issue per se,
     // but conformance checking must reject it or log it as a critical gap.
     let log = EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: vec![
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("case1", "A", "2024-01-01T00:00:00Z"),
                     make_event("case1", "B", "2024-01-01T01:00:00Z"),
                 ],
             },
             Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: vec![
                     make_event("case1", "C", "2024-01-01T02:00:00Z"), // <- Duplicate case1
                     make_event("case1", "D", "2024-01-01T03:00:00Z"),
@@ -288,7 +288,7 @@ fn gap2_zero_denominator_guard() {
         places: vec![],
         transitions: vec![],
         arcs: vec![],
-        initial_marking: HashMap::new(),
+        initial_marking: BTreeMap::new(),
         final_markings: vec![],
     };
 
@@ -395,12 +395,12 @@ fn gap3_precision_without_generalization_proof() {
             },
         ],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -477,12 +477,12 @@ fn gap3_duplicate_edge_precision_undefined() {
             },
         ],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -612,12 +612,12 @@ fn gap4_quality_metric_interdependence() {
             },
         ],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],

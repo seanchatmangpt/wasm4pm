@@ -39,13 +39,13 @@ pub fn streaming_dfg_add_event(
     activity: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_streaming_dfg_mut(handle, |b| {
-            b.add_event(case_id, activity);
-            to_js_str(&json!({
-                "ok": true,
-                "event_count": b.event_count,
-                "open_traces": b.open_traces.len(),
-                "activities": b.interner.len(),
-            }))
+        b.add_event(case_id, activity);
+        to_js_str(&json!({
+            "ok": true,
+            "event_count": b.event_count,
+            "open_traces": b.open_traces.len(),
+            "activities": b.interner.len(),
+        }))
     })
 }
 
@@ -56,24 +56,24 @@ pub fn streaming_dfg_add_batch(handle: &str, events_json: &str) -> Result<JsValu
         .map_err(|e| crate::error::js_val(&format!("Invalid events JSON: {}", e)))?;
 
     get_or_init_state().with_streaming_dfg_mut(handle, |b| {
-            let mut added = 0usize;
-            for item in &batch {
-                let case_id = item["case_id"].as_str().ok_or_else(|| {
-                    crate::error::js_val("Each event must have a 'case_id' string field")
-                })?;
-                let activity = item["activity"].as_str().ok_or_else(|| {
-                    crate::error::js_val("Each event must have an 'activity' string field")
-                })?;
-                b.add_event(case_id, activity);
-                added += 1;
-            }
-            to_js_str(&json!({
-                "ok": true,
-                "added": added,
-                "event_count": b.event_count,
-                "open_traces": b.open_traces.len(),
-                "activities": b.interner.len(),
-            }))
+        let mut added = 0usize;
+        for item in &batch {
+            let case_id = item["case_id"].as_str().ok_or_else(|| {
+                crate::error::js_val("Each event must have a 'case_id' string field")
+            })?;
+            let activity = item["activity"].as_str().ok_or_else(|| {
+                crate::error::js_val("Each event must have an 'activity' string field")
+            })?;
+            b.add_event(case_id, activity);
+            added += 1;
+        }
+        to_js_str(&json!({
+            "ok": true,
+            "added": added,
+            "event_count": b.event_count,
+            "open_traces": b.open_traces.len(),
+            "activities": b.interner.len(),
+        }))
     })
 }
 
@@ -81,12 +81,12 @@ pub fn streaming_dfg_add_batch(handle: &str, events_json: &str) -> Result<JsValu
 #[wasm_bindgen]
 pub fn streaming_dfg_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_streaming_dfg_mut(handle, |b| {
-            let closed = b.close_trace(case_id);
-            to_js_str(&json!({
-                "ok": closed,
-                "trace_count": b.trace_count,
-                "open_traces": b.open_traces.len(),
-            }))
+        let closed = b.close_trace(case_id);
+        to_js_str(&json!({
+            "ok": closed,
+            "trace_count": b.trace_count,
+            "open_traces": b.open_traces.len(),
+        }))
     })
 }
 
@@ -94,16 +94,16 @@ pub fn streaming_dfg_close_trace(handle: &str, case_id: &str) -> Result<JsValue,
 #[wasm_bindgen]
 pub fn streaming_dfg_flush_open(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_streaming_dfg_mut(handle, |b| {
-            let case_ids: Vec<String> = b.open_traces.keys().cloned().collect();
-            let flushed = case_ids.len();
-            for id in case_ids {
-                b.close_trace(&id);
-            }
-            to_js_str(&json!({
-                "ok": true,
-                "flushed": flushed,
-                "trace_count": b.trace_count,
-            }))
+        let case_ids: Vec<String> = b.open_traces.keys().cloned().collect();
+        let flushed = case_ids.len();
+        for id in case_ids {
+            b.close_trace(&id);
+        }
+        to_js_str(&json!({
+            "ok": true,
+            "flushed": flushed,
+            "trace_count": b.trace_count,
+        }))
     })
 }
 
@@ -116,8 +116,8 @@ pub fn streaming_dfg_flush_open(handle: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn streaming_dfg_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_streaming_dfg(handle, |b| {
-            let dfg = b.snapshot();
-            to_js_str(&dfg)
+        let dfg = b.snapshot();
+        to_js_str(&dfg)
     })
 }
 
@@ -125,11 +125,11 @@ pub fn streaming_dfg_snapshot(handle: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn streaming_dfg_finalize(handle: &str) -> Result<JsValue, JsValue> {
     let dfg = get_or_init_state().with_streaming_dfg_mut(handle, |b| {
-            let case_ids: Vec<String> = b.open_traces.keys().cloned().collect();
-            for id in case_ids {
-                b.close_trace(&id);
-            }
-            Ok(b.snapshot())
+        let case_ids: Vec<String> = b.open_traces.keys().cloned().collect();
+        for id in case_ids {
+            b.close_trace(&id);
+        }
+        Ok(b.snapshot())
     })?;
 
     let n_nodes = dfg.nodes.len();
@@ -153,8 +153,8 @@ pub fn streaming_dfg_finalize(handle: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn streaming_dfg_stats(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_streaming_dfg(handle, |b| {
-            let stats = b.stats();
-            to_js_str(&stats)
+        let stats = b.stats();
+        to_js_str(&stats)
     })
 }
 

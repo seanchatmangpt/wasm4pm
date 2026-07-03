@@ -72,8 +72,12 @@ describe('AgentOrchestrator.execute — core contracts', () => {
     const result = await orchestrator.execute(plan, { artifact_id: 'test-artifact', dry_run: false });
 
     expect(result.corrections).toHaveLength(1);
-    expect(result.successful_count).toBe(1);
-    expect(result.failed_count).toBe(0);
+    // No correction backend exists: execute records the intended action but
+    // must NOT report it as applied (see README "Known limitation").
+    expect(result.successful_count).toBe(0);
+    expect(result.failed_count).toBe(1);
+    expect(result.corrections[0].correction_success).toBe(false);
+    expect(result.corrections[0].correction_details.not_implemented).toBe(true);
   });
 
   it('each correction entry has required audit fields', async () => {

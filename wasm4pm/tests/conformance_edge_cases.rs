@@ -11,7 +11,7 @@
 //! Formula: fitness = 0.5 * (1 - missing/consumed) + 0.5 * (1 - remaining/produced)
 //! With clamp(0.0, 1.0) and guard against division-by-zero via max(1, denominator)
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
     AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
@@ -21,15 +21,15 @@ use wasm4pm::models::{
 // Helpers
 fn make_log(traces: &[&[&str]]) -> EventLog {
     EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: traces
             .iter()
             .map(|activities| Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: activities
                     .iter()
                     .map(|&a| {
-                        let mut attrs = HashMap::new();
+                        let mut attrs = BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             AttributeValue::String(a.to_string()),
@@ -79,12 +79,12 @@ fn ec_empty_log_no_traces() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -125,12 +125,12 @@ fn ec_single_event_log() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -163,12 +163,12 @@ fn ec_single_activity_net() {
         transitions: vec![trans("A", "A")],
         arcs: vec![arc("i", "A"), arc("A", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -198,12 +198,12 @@ fn ec_all_unknown_activities() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -235,12 +235,12 @@ fn ec_empty_trace_in_log() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -273,12 +273,12 @@ fn ec_heavy_deviations_clamped() {
         transitions: vec![trans("A", "A")],
         arcs: vec![arc("i", "A"), arc("A", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -305,12 +305,12 @@ fn ec_mixed_traces_with_empty() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -348,12 +348,12 @@ fn ec_fitness_never_nan_or_inf() {
         transitions: vec![trans("A", "A")],
         arcs: vec![arc("i", "A"), arc("A", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -397,12 +397,12 @@ fn ec_fitness_1_0_only_for_perfect_traces() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],
@@ -441,12 +441,12 @@ fn ec_monotonic_fitness_with_added_events() {
         transitions: vec![trans("A", "A"), trans("B", "B")],
         arcs: vec![arc("i", "A"), arc("A", "p"), arc("p", "B"), arc("B", "f")],
         initial_marking: {
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("i".to_string(), 1);
             m
         },
         final_markings: vec![{
-            let mut m = HashMap::new();
+            let mut m = BTreeMap::new();
             m.insert("f".to_string(), 1);
             m
         }],

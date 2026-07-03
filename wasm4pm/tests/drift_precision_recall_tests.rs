@@ -21,7 +21,7 @@
 //!
 //! Gap E: drift detection correctness against ground-truth scenarios.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::prediction_drift::{jaccard_distance, DEFAULT_DRIFT_THRESHOLD};
 use wasm4pm::state::{get_or_init_state, StoredObject};
@@ -36,7 +36,7 @@ fn s(items: &[&str]) -> HashSet<String> {
 
 /// Build a single trace with the given activities.
 fn make_trace(case_id: &str, activities: &[&str]) -> Trace {
-    let mut attrs = HashMap::new();
+    let mut attrs = BTreeMap::new();
     attrs.insert(
         "concept:name".to_string(),
         AttributeValue::String(case_id.to_string()),
@@ -44,7 +44,7 @@ fn make_trace(case_id: &str, activities: &[&str]) -> Trace {
     let events: Vec<Event> = activities
         .iter()
         .map(|act| {
-            let mut eattrs = HashMap::new();
+            let mut eattrs = BTreeMap::new();
             eattrs.insert(
                 "concept:name".to_string(),
                 AttributeValue::String(act.to_string()),

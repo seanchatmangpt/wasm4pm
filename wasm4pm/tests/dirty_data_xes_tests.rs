@@ -3,7 +3,7 @@
 /// Each test loads one of the four fixtures from tests/fixtures/dirty_data/,
 /// verifies that parsing does not panic, and asserts that the detected issue
 /// is observable from the parsed EventLog structure.
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ fn parse_xes(content: &str) -> EventLog {
 
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -35,7 +35,7 @@ fn parse_xes(content: &str) -> EventLog {
 
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
 

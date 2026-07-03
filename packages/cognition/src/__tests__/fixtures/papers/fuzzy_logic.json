@@ -27,6 +27,8 @@
     "state": []
   },
   "expected": {
-    "defuzzified_ventilation": 50.0
+    "defuzzified_ventilation": 50.0,
+    "output_fact": "fuzzy:output:ventilation",
+    "centroid": 50.0
   }
 }

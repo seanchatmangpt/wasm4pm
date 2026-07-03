@@ -546,7 +546,7 @@ mod tests {
 
     #[test]
     fn test_spc_history_default() {
-        let history = SpcHistory::default();
+        let history = SpcHistory::new();
         assert_eq!(history.cycle_count, 0);
         assert_eq!(history.history.len(), 0);
     }

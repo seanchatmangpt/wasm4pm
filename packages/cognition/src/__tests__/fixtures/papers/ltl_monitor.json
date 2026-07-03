@@ -42,6 +42,32 @@
     "state": []
   },
   "expected": {
-    "satisfies": true
+    "value": "true",
+    "satisfies": true,
+    "verdict": true,
+    "violating_verdict": false
+  },
+  "violating_input": {
+    "intent": "G (req -> F res)",
+    "candidates": [],
+    "facts": [],
+    "cases": [
+      {
+        "id": "state0",
+        "intent": "",
+        "architecture": "",
+        "outcome_score": 1.0,
+        "facts": [
+          {"key": "req", "value": "true"}
+        ]
+      },
+      {
+        "id": "state1",
+        "intent": "",
+        "architecture": "",
+        "outcome_score": 1.0,
+        "facts": []
+      }
+    ]
   }
 }

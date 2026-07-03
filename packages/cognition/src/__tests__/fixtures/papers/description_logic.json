@@ -22,6 +22,15 @@
   },
   "expected": {
     "consistent": "true",
-    "member_xc": "true"
+    "member_xc": "true",
+    "verdicts": {
+      "consistent": "true",
+      "subsumes:B:A": "true",
+      "subsumes:C:A": "true",
+      "subsumes:C:B": "true",
+      "member:x:A": "true",
+      "member:x:B": "true",
+      "member:x:C": "true"
+    }
   }
 }

@@ -48,7 +48,26 @@
       }
     ],
     "cases": [],
-    "rules": [],
+    "rules": [
+      {
+        "id": "put_c_from_a_on_table",
+        "premise": ["clear_c=true", "on_c_a=true"],
+        "conclusion": "clear_a=true; ontable_c=true; !on_c_a=true",
+        "certainty": 1.0
+      },
+      {
+        "id": "put_a_on_b",
+        "premise": ["clear_a=true", "clear_b=true", "ontable_a=true"],
+        "conclusion": "on_a_b=true; !clear_b=true; !ontable_a=true",
+        "certainty": 1.0
+      },
+      {
+        "id": "put_b_on_c",
+        "premise": ["clear_b=true", "clear_c=true", "ontable_b=true"],
+        "conclusion": "on_b_c=true; !clear_c=true; !ontable_b=true",
+        "certainty": 1.0
+      }
+    ],
     "goals": [
       {
         "id": "g1",
@@ -85,11 +104,11 @@
     ]
   },
   "expected": {
+    "value": "put_c_from_a_on_table;put_b_on_c;put_a_on_b",
     "plan": "put_c_from_a_on_table;put_b_on_c;put_a_on_b",
     "required_trace_kinds": [
       "detect-threat"
     ],
-    "notes": "The interleaved solution order; threat detection and promotion/demotion steps must appear in the trace.",
-    "value": "put_c_from_a_on_table;put_b_on_c;put_a_on_b"
+    "notes": "The interleaved solution order; threat detection and promotion/demotion steps must appear in the trace."
   }
 }

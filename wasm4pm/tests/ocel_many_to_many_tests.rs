@@ -14,7 +14,7 @@
 
 #[cfg(feature = "feature-ocel")]
 mod ocel_m2m_tests {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
     use wasm4pm::discovery::discover_ocel_dfg_pure;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_flatten::measure_flattening_loss;
@@ -38,7 +38,7 @@ mod ocel_m2m_tests {
                 id: "e1".to_string(),
                 event_type: "Register".to_string(),
                 timestamp: "2024-01-01T10:00:00Z".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 // Use object_ids only — object_refs left empty to avoid double-counting
                 object_ids: vec![
                     "order1".to_string(),
@@ -51,21 +51,21 @@ mod ocel_m2m_tests {
                 OCELObject {
                     id: "order1".to_string(),
                     object_type: "order".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
                 OCELObject {
                     id: "item1".to_string(),
                     object_type: "item".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
                 OCELObject {
                     id: "item2".to_string(),
                     object_type: "item".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
@@ -88,7 +88,7 @@ mod ocel_m2m_tests {
                     id: "ev_pay".to_string(),
                     event_type: "Pay".to_string(),
                     timestamp: "2024-01-01T09:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only — do NOT duplicate in object_refs
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
@@ -97,7 +97,7 @@ mod ocel_m2m_tests {
                     id: "ev_ship".to_string(),
                     event_type: "Ship".to_string(),
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only — do NOT duplicate in object_refs
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
@@ -106,7 +106,7 @@ mod ocel_m2m_tests {
             objects: vec![OCELObject {
                 id: "order1".to_string(),
                 object_type: "order".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             }],
@@ -217,7 +217,7 @@ mod ocel_m2m_tests {
                     event_type: "start".to_string(),
                     // earlier timestamp
                     timestamp: "2024-01-01T09:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only to avoid double-counting in all_object_ids()
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
@@ -227,7 +227,7 @@ mod ocel_m2m_tests {
                     event_type: "complete".to_string(),
                     // later timestamp
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only to avoid double-counting in all_object_ids()
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
@@ -236,7 +236,7 @@ mod ocel_m2m_tests {
             objects: vec![OCELObject {
                 id: "order1".to_string(),
                 object_type: "order".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             }],
@@ -272,7 +272,7 @@ mod ocel_m2m_tests {
                     event_type: "start".to_string(),
                     // Invalid: start appears first in arrival order but has LATER timestamp
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only to avoid double-counting in all_object_ids()
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
@@ -282,7 +282,7 @@ mod ocel_m2m_tests {
                     event_type: "complete".to_string(),
                     // "complete" arrives second but has EARLIER timestamp — violation
                     timestamp: "2024-01-01T09:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only to avoid double-counting in all_object_ids()
                     object_ids: vec!["order1".to_string()],
                     object_refs: vec![],
@@ -291,7 +291,7 @@ mod ocel_m2m_tests {
             objects: vec![OCELObject {
                 id: "order1".to_string(),
                 object_type: "order".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             }],
@@ -326,7 +326,7 @@ mod ocel_m2m_tests {
                     id: "e_create".to_string(),
                     event_type: "Create".to_string(),
                     timestamp: "2024-03-01T08:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     // Use object_ids only to avoid double-counting in all_object_ids()
                     object_ids: vec!["case1".to_string()],
                     object_refs: vec![],
@@ -335,7 +335,7 @@ mod ocel_m2m_tests {
                     id: "e_process".to_string(),
                     event_type: "Process".to_string(),
                     timestamp: "2024-03-01T09:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["case1".to_string()],
                     object_refs: vec![],
                 },
@@ -343,7 +343,7 @@ mod ocel_m2m_tests {
                     id: "e_close".to_string(),
                     event_type: "Close".to_string(),
                     timestamp: "2024-03-01T10:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["case1".to_string()],
                     object_refs: vec![],
                 },
@@ -351,7 +351,7 @@ mod ocel_m2m_tests {
             objects: vec![OCELObject {
                 id: "case1".to_string(),
                 object_type: "case".to_string(),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 changes: vec![],
                 embedded_relations: vec![],
             }],
@@ -395,7 +395,7 @@ mod ocel_m2m_tests {
                     id: "p1_a".to_string(),
                     event_type: "A".to_string(),
                     timestamp: "2024-01-01T09:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["p1".to_string()],
                     object_refs: vec![],
                 },
@@ -403,7 +403,7 @@ mod ocel_m2m_tests {
                     id: "p1_b".to_string(),
                     event_type: "B".to_string(),
                     timestamp: "2024-01-01T10:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["p1".to_string()],
                     object_refs: vec![],
                 },
@@ -411,7 +411,7 @@ mod ocel_m2m_tests {
                     id: "p1_d".to_string(),
                     event_type: "D".to_string(),
                     timestamp: "2024-01-01T11:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["p1".to_string()],
                     object_refs: vec![],
                 },
@@ -420,7 +420,7 @@ mod ocel_m2m_tests {
                     id: "p2_a".to_string(),
                     event_type: "A".to_string(),
                     timestamp: "2024-01-02T09:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["p2".to_string()],
                     object_refs: vec![],
                 },
@@ -428,7 +428,7 @@ mod ocel_m2m_tests {
                     id: "p2_c".to_string(),
                     event_type: "C".to_string(),
                     timestamp: "2024-01-02T10:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["p2".to_string()],
                     object_refs: vec![],
                 },
@@ -436,7 +436,7 @@ mod ocel_m2m_tests {
                     id: "p2_d".to_string(),
                     event_type: "D".to_string(),
                     timestamp: "2024-01-02T11:00:00Z".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     object_ids: vec!["p2".to_string()],
                     object_refs: vec![],
                 },
@@ -445,14 +445,14 @@ mod ocel_m2m_tests {
                 OCELObject {
                     id: "p1".to_string(),
                     object_type: "process".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
                 OCELObject {
                     id: "p2".to_string(),
                     object_type: "process".to_string(),
-                    attributes: HashMap::new(),
+                    attributes: BTreeMap::new(),
                     changes: vec![],
                     embedded_relations: vec![],
                 },
@@ -463,8 +463,8 @@ mod ocel_m2m_tests {
         let dfg = discover_ocel_dfg_pure(&ocel);
 
         // Compute in-degree and out-degree per node from the edge set
-        let mut in_degree: HashMap<String, usize> = HashMap::new();
-        let mut out_degree: HashMap<String, usize> = HashMap::new();
+        let mut in_degree: BTreeMap<String, usize> = BTreeMap::new();
+        let mut out_degree: BTreeMap<String, usize> = BTreeMap::new();
 
         for edge in &dfg.edges {
             *out_degree.entry(edge.from.clone()).or_insert(0) += 1;

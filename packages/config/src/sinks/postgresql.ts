@@ -89,7 +89,6 @@ export class PostgresqlSink {
     if (!this.pool) {
       // Lazy-load pg only if needed (not imported at module level)
       try {
-        // @ts-expect-error optional peer dep — pg is not listed as a regular dependency
         const pg = await import('pg') as { Pool: new (opts: Record<string, unknown>) => PgPoolLike };
         const { Pool } = pg;
         this.pool = new Pool({

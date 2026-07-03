@@ -148,7 +148,12 @@ pub fn compute_ucb1_selection(
     }
 
     // Forced exploration: pick first arm with zero pulls
-    if let Some((i, arm)) = state.arms.iter().enumerate().find(|(_, a)| a.pull_count == 0) {
+    if let Some((i, arm)) = state
+        .arms
+        .iter()
+        .enumerate()
+        .find(|(_, a)| a.pull_count == 0)
+    {
         return Ok(SelectionResult {
             selected: arm.name.clone(),
             arm_index: i,

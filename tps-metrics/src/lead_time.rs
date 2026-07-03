@@ -264,7 +264,7 @@ mod tests {
     /// This is a mathematical theorem for any non-empty sorted sequence.
     #[test]
     fn test_p95_ge_median_for_sorted_sequence() {
-        let mut times = vec![0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0];
+        let mut times: Vec<f64> = vec![0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0];
         times.sort_unstable_by(|a, b| a.total_cmp(b));
 
         let median = times[times.len() / 2];

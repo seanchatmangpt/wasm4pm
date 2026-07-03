@@ -32,6 +32,10 @@ const DETERMINISTIC_SEED: u64 = 0xdead_beef;
 /// Offset for manual clock advancement (testing).
 static TIME_OFFSET_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Flag and base value for mock time (testing).
+static MOCK_TIME_ENABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static MOCK_TIME_BASE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 /// Global serialization mutex for tests that mutate the shared `TIME_OFFSET_MS`.
 ///
 /// libtest runs `#[test]` functions within the same binary on a thread-pool,
@@ -81,10 +85,14 @@ pub fn now_ms() -> u64 {
         }
         #[cfg(not(target_arch = "wasm32"))]
         {
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64
+            if MOCK_TIME_ENABLED.load(std::sync::atomic::Ordering::SeqCst) {
+                MOCK_TIME_BASE.load(std::sync::atomic::Ordering::SeqCst)
+            } else {
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis() as u64
+            }
         }
     };
     base + TIME_OFFSET_MS.load(std::sync::atomic::Ordering::SeqCst)
@@ -100,6 +108,11 @@ pub fn advance_clock(delta_ms: u64) {
 #[allow(dead_code)]
 pub fn reset_clock() {
     TIME_OFFSET_MS.store(0, std::sync::atomic::Ordering::SeqCst);
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        MOCK_TIME_ENABLED.store(true, std::sync::atomic::Ordering::SeqCst);
+        MOCK_TIME_BASE.store(1_000_000_000, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 // ---------------------------------------------------------------------------

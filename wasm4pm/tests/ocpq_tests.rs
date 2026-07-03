@@ -1,5 +1,5 @@
 #[cfg(feature = "ocel")]
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 #[cfg(feature = "ocel")]
 use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
 #[cfg(feature = "ocel")]
@@ -112,14 +112,14 @@ fn test_runtime_evaluation() {
     ocel.objects.push(OCELObject {
         id: "d1".to_string(),
         object_type: "diagnostic".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         changes: Vec::new(),
         embedded_relations: Vec::new(),
     });
     ocel.objects.push(OCELObject {
         id: "r1".to_string(),
         object_type: "route".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         changes: Vec::new(),
         embedded_relations: Vec::new(),
     });
@@ -128,7 +128,7 @@ fn test_runtime_evaluation() {
         id: "e1".to_string(),
         event_type: "DiagnosticStarted".to_string(),
         timestamp: "2026-05-30T00:00:00Z".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         object_ids: vec!["d1".to_string()],
         object_refs: Vec::new(),
     });
@@ -136,7 +136,7 @@ fn test_runtime_evaluation() {
         id: "e2".to_string(),
         event_type: "DiagnosticRaised".to_string(),
         timestamp: "2026-05-30T00:01:00Z".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         object_ids: vec!["d1".to_string()],
         object_refs: Vec::new(),
     });
@@ -144,7 +144,7 @@ fn test_runtime_evaluation() {
         id: "e3".to_string(),
         event_type: "RouteSelected".to_string(),
         timestamp: "2026-05-30T00:02:00Z".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         object_ids: vec!["d1".to_string(), "r1".to_string()],
         object_refs: Vec::new(),
     });
@@ -152,7 +152,7 @@ fn test_runtime_evaluation() {
         id: "e4".to_string(),
         event_type: "RouteExecuted".to_string(),
         timestamp: "2026-05-30T00:03:00Z".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         object_ids: vec!["r1".to_string()],
         object_refs: Vec::new(),
     });
@@ -217,7 +217,7 @@ fn test_ocpq_evaluator_compat() {
     ocel.objects.push(OCELObject {
         id: "d1".to_string(),
         object_type: "diagnostic".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         changes: Vec::new(),
         embedded_relations: Vec::new(),
     });
@@ -225,7 +225,7 @@ fn test_ocpq_evaluator_compat() {
         id: "e1".to_string(),
         event_type: "DiagnosticStarted".to_string(),
         timestamp: "2026-05-30T00:00:00Z".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         object_ids: vec!["d1".to_string()],
         object_refs: Vec::new(),
     });
@@ -233,7 +233,7 @@ fn test_ocpq_evaluator_compat() {
         id: "e2".to_string(),
         event_type: "DiagnosticRaised".to_string(),
         timestamp: "2026-05-30T00:01:00Z".to_string(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         object_ids: vec!["d1".to_string()],
         object_refs: Vec::new(),
     });

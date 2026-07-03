@@ -1166,7 +1166,11 @@ async function validateOcel(opts: {
 
   // Check 1: Required top-level OCEL 2.0 keys
   const requiredKeys = ['event_types', 'object_types', 'events', 'objects'];
-  const missingKeys = requiredKeys.filter((k) => !(k in ocelObj));
+  const missingKeys = requiredKeys.filter((k) => {
+    if (k === 'event_types') return !('event_types' in ocelObj || 'eventTypes' in ocelObj);
+    if (k === 'object_types') return !('object_types' in ocelObj || 'objectTypes' in ocelObj);
+    return !(k in ocelObj);
+  });
   if (missingKeys.length === 0) {
     checks.push({
       name: 'ocel_structure',
@@ -1185,8 +1189,13 @@ async function validateOcel(opts: {
   }
 
   // Check 2: Object type declarations
-  const objectTypes = Array.isArray(ocelObj['object_types'])
-    ? (ocelObj['object_types'] as string[])
+  const rawObjectTypes = ocelObj['object_types'] ?? ocelObj['objectTypes'];
+  const objectTypes = Array.isArray(rawObjectTypes)
+    ? (rawObjectTypes as any[]).map(ot => {
+        if (typeof ot === 'string') return ot;
+        if (ot && typeof ot === 'object' && 'name' in ot) return String(ot.name);
+        return '';
+      }).filter(Boolean)
     : [];
   const events = Array.isArray(ocelObj['events'])
     ? (ocelObj['events'] as Record<string, unknown>[])
@@ -1217,14 +1226,20 @@ async function validateOcel(opts: {
     eventCountPerType[ot] = 0;
   }
   for (const evt of events) {
-    const objectIds = Array.isArray(evt['object_ids']) ? (evt['object_ids'] as string[]) : [];
+    const objectIds = Array.isArray(evt['object_ids'])
+      ? (evt['object_ids'] as string[])
+      : Array.isArray(evt['objectIds'])
+        ? (evt['objectIds'] as string[])
+        : Array.isArray(evt['relationships'])
+          ? (evt['relationships'] as any[]).map(r => r.objectId).filter(Boolean)
+          : [];
     // Map object IDs to object types via the objects array
     for (const oid of objectIds) {
       const obj = objects.find((o) => o['id'] === oid);
-      if (obj && typeof obj['object_type'] === 'string') {
-        const ot = obj['object_type'] as string;
-        if (ot in eventCountPerType) {
-          eventCountPerType[ot]++;
+      if (obj) {
+        const rawType = obj['object_type'] ?? obj['objectType'] ?? obj['type'];
+        if (typeof rawType === 'string' && rawType in eventCountPerType) {
+          eventCountPerType[rawType]++;
         }
       }
     }

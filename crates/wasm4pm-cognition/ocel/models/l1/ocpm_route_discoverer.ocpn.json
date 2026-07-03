@@ -1,0 +1,27 @@
+{
+  "model_id": "ocpm_route_discoverer-l1-v1",
+  "model_level": "L1",
+  "breed_id": "ocpm_route_discoverer",
+  "object_types": ["object", "route"],
+  "places": [
+    {"id": "p1", "name": "events_ready",          "object_type": "object"},
+    {"id": "p2", "name": "events_processed",      "object_type": "object"},
+    {"id": "p3", "name": "routes_discovered",     "object_type": "route"},
+    {"id": "p4", "name": "no_routes",             "object_type": "route"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "process_event",         "label": "process-event"},
+    {"id": "t2", "name": "discover_route",        "label": "discover-route"},
+    {"id": "t3", "name": "discover_route_empty",  "label": "discover-route-empty"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p1", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p3": 1}, {"p4": 1}]
+}

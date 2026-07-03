@@ -70,7 +70,7 @@ fn get_children(arena: &PowlArena, idx: u32) -> Vec<u32> {
         Some(crate::powl_arena::PowlNode::DecisionGraph(dg)) => dg.children.clone(),
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => cg
             .graph
-            .nodes
+            .nodes()
             .iter()
             .filter_map(|n| match n {
                 ChoiceGraphNode::SubModel(idx) => Some(*idx),

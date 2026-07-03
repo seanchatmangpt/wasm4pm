@@ -10,14 +10,14 @@
 //! exactly match pm4py output.  Heuristic miner with same dependency threshold
 //! must keep the same edge set.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::discovery::discover_dfg_from_log;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 // ---------------------------------------------------------------------------
-// Inline XES parser (same pattern as real_data_algo_validation.rs)
+// Inline XES parser (authoritative approach for integration tests)
 // ---------------------------------------------------------------------------
 
 fn parse_xes(content: &str) -> EventLog {
@@ -30,7 +30,7 @@ fn parse_xes(content: &str) -> EventLog {
 
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -41,7 +41,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

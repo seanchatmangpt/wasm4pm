@@ -6,7 +6,7 @@
 //! **Test Coverage (6 total):** All 6 tests are active (no #[ignore] tags).
 //! Tests use `tempdir()` for safe file I/O.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use tempfile::tempdir;
 
 // Re-export from wasm4pm crate
@@ -18,10 +18,10 @@ fn test_save_load_roundtrip_with_real_q_table() {
     let checkpoint_path = temp_dir.path().join("checkpoint_1.json");
 
     // Build realistic Q-table with multiple states
-    let mut q_table: HashMap<u64, HashMap<u32, f32>> = HashMap::new();
+    let mut q_table: BTreeMap<u64, BTreeMap<u32, f32>> = BTreeMap::new();
 
     for state_bin in 0..100 {
-        let mut action_map = HashMap::new();
+        let mut action_map = BTreeMap::new();
         for action in 0..5 {
             action_map.insert(action, (state_bin as f32 + action as f32) * 0.1);
         }
@@ -77,7 +77,7 @@ fn test_hash_integrity_verification() {
 
     let checkpoint = PolicyCheckpoint::new(
         "SARSA".to_string(),
-        HashMap::new(),
+        BTreeMap::new(),
         vec![vec![0.2; 8]; 5],
         ConvergenceMetrics::default(),
         500,
@@ -109,7 +109,7 @@ fn test_corrupt_hash_detection() {
 
     let checkpoint = PolicyCheckpoint::new(
         "DoubleQLearning".to_string(),
-        HashMap::new(),
+        BTreeMap::new(),
         vec![vec![0.3; 8]; 5],
         ConvergenceMetrics::default(),
         250,
@@ -137,8 +137,8 @@ fn test_corrupt_hash_detection() {
 #[test]
 fn test_agent_state_injection() {
     // This test verifies the checkpoint structure can be used to restore agent state
-    let mut q_table: HashMap<u64, HashMap<u32, f32>> = HashMap::new();
-    let mut action_map = HashMap::new();
+    let mut q_table: BTreeMap<u64, BTreeMap<u32, f32>> = BTreeMap::new();
+    let mut action_map = BTreeMap::new();
     action_map.insert(0_u32, 1.5);
     action_map.insert(1_u32, 2.5);
     action_map.insert(2_u32, 3.5);
@@ -186,7 +186,7 @@ fn test_concurrent_writes_isolation() {
     // Write first checkpoint
     let checkpoint1 = PolicyCheckpoint::new(
         "REINFORCE".to_string(),
-        HashMap::new(),
+        BTreeMap::new(),
         vec![vec![0.1; 8]; 5],
         ConvergenceMetrics::default(),
         100,
@@ -196,7 +196,7 @@ fn test_concurrent_writes_isolation() {
     // Write second checkpoint (overwrites)
     let checkpoint2 = PolicyCheckpoint::new(
         "Agent2".to_string(),
-        HashMap::new(),
+        BTreeMap::new(),
         vec![vec![0.2; 8]; 5],
         ConvergenceMetrics::default(),
         200,

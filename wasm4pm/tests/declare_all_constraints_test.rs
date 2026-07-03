@@ -12,7 +12,7 @@
 //! 9. CoExistence: Both A and B occur in same trace
 //! 10. NotCoExistence: A and B do NOT both occur in same trace
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 fn attr(k: &str, v: &str) -> (String, AttributeValue) {
@@ -23,7 +23,7 @@ fn make_trace(events: Vec<&str>) -> Trace {
     let mut trace = Trace::default();
     for activity in events.iter() {
         let mut event = Event::default();
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(activity.to_string()),
@@ -37,7 +37,7 @@ fn make_trace(events: Vec<&str>) -> Trace {
 fn make_log(traces: Vec<Vec<&str>>) -> EventLog {
     EventLog {
         traces: traces.into_iter().map(make_trace).collect(),
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
     }
 }
 

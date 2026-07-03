@@ -59,11 +59,7 @@ clean:
 publish:
     pnpm run release:full
 
-scan:
-    cargo build -p wasm4pm-lsp
-    ./target/debug/wasm4pm-lsp --scan . --fail-on-error
-
-ci: polish test-full anticheat scan
+ci: polish test-full anticheat
 
 # ── ggen breed scaffold pipeline ────────────────────────────────────────────
 

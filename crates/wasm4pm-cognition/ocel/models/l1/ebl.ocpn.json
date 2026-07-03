@@ -1,0 +1,31 @@
+{
+  "model_id": "ebl-l1-v1",
+  "model_level": "L1",
+  "breed_id": "ebl",
+  "object_types": ["goal", "proof", "rule", "decision"],
+  "places": [
+    {"id": "p1", "name": "example_posed",   "object_type": "goal"},
+    {"id": "p2", "name": "explaining",      "object_type": "proof"},
+    {"id": "p3", "name": "generalizing",    "object_type": "proof"},
+    {"id": "p4", "name": "rule_emitted",    "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ebl-explain",        "label": "ebl-explain"},
+    {"id": "t2", "name": "ebl-generalize",     "label": "ebl-generalize"},
+    {"id": "t3", "name": "ebl-operationalize", "label": "ebl-operationalize"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}]
+}

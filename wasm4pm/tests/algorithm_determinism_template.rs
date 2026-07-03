@@ -93,9 +93,9 @@ fn make_simple_test_log() -> models::EventLog {
 
 /// Helper to create an event with given activity and timestamp.
 fn make_event(activity: &str, timestamp_sec: i64) -> models::Event {
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
-    let mut attrs = HashMap::new();
+    let mut attrs = BTreeMap::new();
     attrs.insert(
         "concept:name".to_string(),
         models::AttributeValue::String(activity.to_string()),

@@ -9,56 +9,56 @@
     <place id="admissible_mask">
       <name><text>admissible_mask</text></name>
       <capacity><value>1</value></capacity>
-      <initialMarking><value>1</value></initialMarking>
+      <initialMarking><text>1</text></initialMarking>
       <type><text>u64</text></type>
     </place>
 
     <place id="features_vector">
       <name><text>features_vector</text></name>
       <capacity><value>1</value></capacity>
-      <initialMarking><value>1</value></initialMarking>
+      <initialMarking><text>1</text></initialMarking>
       <type><text>struct</text></type>
     </place>
 
     <place id="guard_results">
       <name><text>guard_results</text></name>
       <capacity><value>3</value></capacity>
-      <initialMarking><value>0</value></initialMarking>
+      <initialMarking><text>0</text></initialMarking>
       <type><text>u32</text></type>
     </place>
 
     <place id="constraint_satisfied">
       <name><text>constraint_satisfied</text></name>
       <capacity><value>4</value></capacity>
-      <initialMarking><value>0</value></initialMarking>
+      <initialMarking><text>0</text></initialMarking>
       <type><text>u32</text></type>
     </place>
 
     <place id="spc_alerts">
       <name><text>spc_alerts</text></name>
       <capacity><value>3</value></capacity>
-      <initialMarking><value>0</value></initialMarking>
+      <initialMarking><text>0</text></initialMarking>
       <type><text>struct</text></type>
     </place>
 
     <place id="marking_current">
       <name><text>marking_current</text></name>
       <capacity><value>1</value></capacity>
-      <initialMarking><value>1</value></initialMarking>
+      <initialMarking><text>1</text></initialMarking>
       <type><text>Marking4</text></type>
     </place>
 
     <place id="transition_legal">
       <name><text>transition_legal</text></name>
       <capacity><value>1</value></capacity>
-      <initialMarking><value>0</value></initialMarking>
+      <initialMarking><text>0</text></initialMarking>
       <type><text>u32</text></type>
     </place>
 
     <place id="rl_q_state">
       <name><text>rl_q_state</text></name>
       <capacity><value>1</value></capacity>
-      <initialMarking><value>0</value></initialMarking>
+      <initialMarking><text>0</text></initialMarking>
       <type><text>f32</text></type>
     </place>
 
@@ -305,6 +305,19 @@
       </maxTokensPerPlace>
       <totalTokensBound>14</totalTokensBound>
     </soundness>
+
+    <!-- INITIAL MARKING -->
+    <initialMarking>
+      <place idref="admissible_mask">
+        <text>1</text>
+      </place>
+      <place idref="features_vector">
+        <text>1</text>
+      </place>
+      <place idref="marking_current">
+        <text>1</text>
+      </place>
+    </initialMarking>
 
   </net>
 </pnml>

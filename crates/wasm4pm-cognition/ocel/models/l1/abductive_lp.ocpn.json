@@ -1,0 +1,31 @@
+{
+  "breed_id": "abductive_lp",
+  "id": "ocel_abductive_lp_v1",
+  "name": "Abductive LP Lifecycle Model",
+  "phases": [
+    {
+      "name": "load",
+      "kinds": [
+        "alp-load"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "abduce",
+      "kinds": [
+        "alp-abduce"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "hypothesis",
+      "kinds": [
+        "alp-hypothesis"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    }
+  ]
+}

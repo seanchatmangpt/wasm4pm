@@ -124,13 +124,13 @@ fn test_trace_duration_not_string_length() {
 #[allow(dead_code)]
 fn create_test_log_with_timestamps() -> EventLog {
     EventLog {
-        attributes: std::collections::HashMap::new(),
+        attributes: std::collections::BTreeMap::new(),
         traces: vec![Trace {
-            attributes: std::collections::HashMap::new(),
+            attributes: std::collections::BTreeMap::new(),
             events: vec![
                 Event {
                     attributes: {
-                        let mut attrs = std::collections::HashMap::new();
+                        let mut attrs = std::collections::BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             AttributeValue::String("A".to_string()),
@@ -144,7 +144,7 @@ fn create_test_log_with_timestamps() -> EventLog {
                 },
                 Event {
                     attributes: {
-                        let mut attrs = std::collections::HashMap::new();
+                        let mut attrs = std::collections::BTreeMap::new();
                         attrs.insert(
                             "concept:name".to_string(),
                             AttributeValue::String("B".to_string()),

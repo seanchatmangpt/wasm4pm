@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm-monorepo",
-  "version": "26.6.10",
+  "version": "26.7.1",
   "description": "High-performance process mining monorepo with WASM acceleration",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
@@ -43,7 +43,7 @@
     "build:wasm": "npm run build:all --workspace @wasm4pm/core",
     "build:engine": "npm run build --workspace @wasm4pm/engine",
     "build:cli": "npm run build --workspace @wasm4pm/cli",
-    "build:all": "npm run build --workspace @wasm4pm/contracts && npm run build --workspace @wasm4pm/config && npm run build --workspace @wasm4pm/observability && npm run build --workspace @wasm4pm/ml && npm run build --workspace @wasm4pm/planner && npm run build:all --workspace @wasm4pm/core && npm run build --workspace @wasm4pm/testing && npm run build --workspace @wasm4pm/engine && npm run build --workspace @wasm4pm/agents && npm run build --workspace @wasm4pm/cognition && npm run build --workspace @wasm4pm/supabase && npm run build --workspace @wasm4pm/cli && npm run build --workspaces --if-present",
+    "build:all": "npm run build --workspace @wasm4pm/contracts && npm run build --workspace @wasm4pm/config && npm run build --workspace @wasm4pm/observability && npm run build --workspace @wasm4pm/ml && npm run build --workspace @wasm4pm/planner && npm run build:all --workspace @wasm4pm/core && npm run build --workspace @wasm4pm/testing && npm run build --workspace wasm4pm && npm run build --workspace @wasm4pm/engine && npm run build --workspace @wasm4pm/agents && npm run build --workspace @wasm4pm/cognition && npm run build --workspace @wasm4pm/supabase && npm run build --workspace @wasm4pm/cli && npm run build --workspaces --if-present",
     "dev": "npm run build:engine && npm run build:cli",
     "ci:test": "npm run tps:check && npm run lint && npm run test",
     "ci:build": "npm run build:all",

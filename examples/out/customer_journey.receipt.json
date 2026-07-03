@@ -2,8 +2,8 @@
   "receipt_type": "Wasm4pmExecutionReceipt",
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
-  "version": "26.6.10",
-  "commit": "18deadcc2697cad4903d72e063b84e1d3cf75dbb",
+  "version": "26.7.1",
+  "commit": "47fdbb639fc0025252296a4ff7cc1d8ce7833b13",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "compute_trace_similarity_matrix",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726",
-      "duration_ms": 26.223,
+      "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302",
+      "duration_ms": 27.995,
       "expected_path": {
         "route_id": "wpm.example.customer_journey.compute_trace_similarity_matrix.v1",
         "expected_ocel2": {
@@ -137,7 +137,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -155,7 +155,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726",
-                "duration_ms": 26.223
+                "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302",
+                "duration_ms": 27.995
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726"
+                "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726"
+                "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302"
               }
             },
             {
@@ -299,7 +299,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "f83f3c839936bd4d43af4c9e388f9bb2eb6c2629246b89244d086cb66b6d1c4f"
+        "expected_ocel2_hash": "80fa01d958a2b59e5a847511d04d0393c2384b9ab0a5e118988128ad9dad4278"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:33.792Z",
+              "time": "2026-07-02T04:37:05.322Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -412,7 +412,7 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:31.830Z",
+              "time": "2026-07-02T04:37:04.422Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -426,10 +426,10 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:34.506Z",
+              "time": "2026-07-02T04:37:08.161Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -440,14 +440,14 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:36.762Z",
+              "time": "2026-07-02T04:37:06.657Z",
               "relationships": [
                 {
                   "objectId": "algorithm_compute_trace_similarity_matrix",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -463,7 +463,7 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:33.699Z",
+              "time": "2026-07-02T04:37:05.026Z",
               "relationships": [
                 {
                   "objectId": "algorithm_compute_trace_similarity_matrix",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726",
-                "duration_ms": 26.223
+                "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302",
+                "duration_ms": 27.995
               }
             },
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:36.599Z",
+              "time": "2026-07-02T04:37:06.785Z",
               "relationships": [
                 {
                   "objectId": "result_compute_trace_similarity_matrix_customer_journey",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726"
+                "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302"
               }
             },
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:35.823Z",
+              "time": "2026-07-02T04:37:09.145Z",
               "relationships": [
                 {
                   "objectId": "result_compute_trace_similarity_matrix_customer_journey",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726"
+                "result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302"
               }
             },
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:34.516Z",
+              "time": "2026-07-02T04:37:10.885Z",
               "relationships": [
                 {
                   "objectId": "example_customer_journey",
@@ -540,7 +540,7 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:37.312Z",
+              "time": "2026-07-02T04:37:06.742Z",
               "relationships": [
                 {
                   "objectId": "result_compute_trace_similarity_matrix_customer_journey",
@@ -558,7 +558,7 @@
             {
               "id": "evt_customer_journey_compute_trace_similarity_matrix_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:36.577Z",
+              "time": "2026-07-02T04:37:09.633Z",
               "relationships": [
                 {
                   "objectId": "result_compute_trace_similarity_matrix_customer_journey",
@@ -591,7 +591,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "926ea0738ffdc88a3ef7d33dbe3c98700db1b0b92cb13fb2f3f6e637d02e6162",
-        "observed_result_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726"
+        "observed_ocel2_hash": "20967361d1ff67fddc33bbb1427367091feea05f4dc928c0634f2cc7b5330ef7",
+        "observed_result_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,8 +623,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
-        "output_artifact_hash": "e9ee05795834dd7f64767e5e0a76ca0125e0ff16301f5510184a7e2937bbf726",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "9b0b1d968d81a6409ec3e7872888fb7a28e0ed2d6479fff899deadd4805ff302",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -632,8 +632,8 @@
       "id": "automl_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24",
-      "duration_ms": 20.485,
+      "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94",
+      "duration_ms": 48.293,
       "expected_path": {
         "route_id": "wpm.example.customer_journey.automl_classify.v1",
         "expected_ocel2": {
@@ -747,7 +747,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -765,7 +765,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24",
-                "duration_ms": 20.485
+                "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94",
+                "duration_ms": 48.293
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24"
+                "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24"
+                "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94"
               }
             },
             {
@@ -909,7 +909,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "e51a4f88fb238de5bfcce89bb0170f935f70dabe4db04840154c5fa5e2b6e534"
+        "expected_ocel2_hash": "767f27fb71a5d24b7bd50caac3b0c7ce86095c34fb705c02be461df803083d8b"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_customer_journey_automl_classify_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:31.388Z",
+              "time": "2026-07-02T04:37:07.376Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_customer_journey_automl_classify_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:34.073Z",
+              "time": "2026-07-02T04:37:04.793Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -1036,10 +1036,10 @@
             {
               "id": "evt_customer_journey_automl_classify_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:33.470Z",
+              "time": "2026-07-02T04:37:07.619Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1050,14 +1050,14 @@
             {
               "id": "evt_customer_journey_automl_classify_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:36.374Z",
+              "time": "2026-07-02T04:37:06.523Z",
               "relationships": [
                 {
                   "objectId": "algorithm_automl_classify",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_customer_journey_automl_classify_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:36.714Z",
+              "time": "2026-07-02T04:37:07.206Z",
               "relationships": [
                 {
                   "objectId": "algorithm_automl_classify",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24",
-                "duration_ms": 20.485
+                "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94",
+                "duration_ms": 48.293
               }
             },
             {
               "id": "evt_customer_journey_automl_classify_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:35.720Z",
+              "time": "2026-07-02T04:37:06.877Z",
               "relationships": [
                 {
                   "objectId": "result_automl_classify_customer_journey",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24"
+                "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94"
               }
             },
             {
               "id": "evt_customer_journey_automl_classify_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:36.315Z",
+              "time": "2026-07-02T04:37:09.470Z",
               "relationships": [
                 {
                   "objectId": "result_automl_classify_customer_journey",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24"
+                "result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94"
               }
             },
             {
               "id": "evt_customer_journey_automl_classify_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:39.058Z",
+              "time": "2026-07-02T04:37:10.785Z",
               "relationships": [
                 {
                   "objectId": "example_customer_journey",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_customer_journey_automl_classify_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:35.627Z",
+              "time": "2026-07-02T04:37:08.444Z",
               "relationships": [
                 {
                   "objectId": "result_automl_classify_customer_journey",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_customer_journey_automl_classify_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:36.373Z",
+              "time": "2026-07-02T04:37:09.241Z",
               "relationships": [
                 {
                   "objectId": "result_automl_classify_customer_journey",
@@ -1201,7 +1201,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "e0af513dbc832e24ce685765a089d6bee22c5c71c4b7dc514ee818206fe780d7",
-        "observed_result_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24"
+        "observed_ocel2_hash": "ce1ad68ac7240e0a24108a2d96b119da90561332920db35d984e7f33dc08346c",
+        "observed_result_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,8 +1233,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
-        "output_artifact_hash": "d87c63ebe0367fe7ed4c7e46c0f5595e57679780c8a1d879d13c4185c96e3e24",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "5911e54c108df8f7826c8c761818ffd37085e0e3283f4f4d9ec02f354bc1db94",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -1242,8 +1242,8 @@
       "id": "automl_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1",
-      "duration_ms": 26.433,
+      "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d",
+      "duration_ms": 12.873,
       "expected_path": {
         "route_id": "wpm.example.customer_journey.automl_forecast.v1",
         "expected_ocel2": {
@@ -1357,7 +1357,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1375,7 +1375,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1",
-                "duration_ms": 26.433
+                "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d",
+                "duration_ms": 12.873
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1"
+                "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1"
+                "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d"
               }
             },
             {
@@ -1519,7 +1519,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "c5c34044cb9208b1f06ac23d7ee0befdc0a7f6bb9fa796d5c0aa80678df69b4f"
+        "expected_ocel2_hash": "2c104bd104e6ef5e7e960d951f2b752f90acdd6542b89f86d1d7378cf491ef5c"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_customer_journey_automl_forecast_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:33.173Z",
+              "time": "2026-07-02T04:37:05.634Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_customer_journey_automl_forecast_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:34.883Z",
+              "time": "2026-07-02T04:37:07.780Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -1646,10 +1646,10 @@
             {
               "id": "evt_customer_journey_automl_forecast_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:32.210Z",
+              "time": "2026-07-02T04:37:07.318Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1660,14 +1660,14 @@
             {
               "id": "evt_customer_journey_automl_forecast_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:35.327Z",
+              "time": "2026-07-02T04:37:05.305Z",
               "relationships": [
                 {
                   "objectId": "algorithm_automl_forecast",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_customer_journey_automl_forecast_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:36.877Z",
+              "time": "2026-07-02T04:37:07.258Z",
               "relationships": [
                 {
                   "objectId": "algorithm_automl_forecast",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1",
-                "duration_ms": 26.433
+                "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d",
+                "duration_ms": 12.873
               }
             },
             {
               "id": "evt_customer_journey_automl_forecast_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:37.425Z",
+              "time": "2026-07-02T04:37:09.161Z",
               "relationships": [
                 {
                   "objectId": "result_automl_forecast_customer_journey",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1"
+                "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d"
               }
             },
             {
               "id": "evt_customer_journey_automl_forecast_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:37.955Z",
+              "time": "2026-07-02T04:37:09.463Z",
               "relationships": [
                 {
                   "objectId": "result_automl_forecast_customer_journey",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1"
+                "result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d"
               }
             },
             {
               "id": "evt_customer_journey_automl_forecast_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:36.026Z",
+              "time": "2026-07-02T04:37:09.416Z",
               "relationships": [
                 {
                   "objectId": "example_customer_journey",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_customer_journey_automl_forecast_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:36.053Z",
+              "time": "2026-07-02T04:37:08.374Z",
               "relationships": [
                 {
                   "objectId": "result_automl_forecast_customer_journey",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_customer_journey_automl_forecast_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:37.979Z",
+              "time": "2026-07-02T04:37:09.699Z",
               "relationships": [
                 {
                   "objectId": "result_automl_forecast_customer_journey",
@@ -1811,7 +1811,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "b422c3b2e5565196e0d26316dbc6e68ee8b38d50fefeb6a521a016d3b675cd89",
-        "observed_result_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1"
+        "observed_ocel2_hash": "25c7c7180bde17b01ef5f1b3318f9bd134a22bef86cdf831b7c6576b25880fb7",
+        "observed_result_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,8 +1843,8 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
-        "output_artifact_hash": "16a809332b56a50a0f0be3eee0478552a38dfe08c2536f0589aa261702f2c7d1",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "c7916a8c4169a3e3192d526e5e47810f852af638956b0d3ab5d2ede7590a356d",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
@@ -1852,8 +1852,8 @@
       "id": "agentic_pipeline",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b",
-      "duration_ms": 27.439,
+      "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764",
+      "duration_ms": 56.56,
       "expected_path": {
         "route_id": "wpm.example.customer_journey.agentic_pipeline.v1",
         "expected_ocel2": {
@@ -1967,7 +1967,7 @@
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -1985,7 +1985,7 @@
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b",
-                "duration_ms": 27.439
+                "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764",
+                "duration_ms": 56.56
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b"
+                "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b"
+                "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764"
               }
             },
             {
@@ -2129,7 +2129,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "9015f849d49ebb124438d5c21497cacc5a127ebfe43c3af155e4eeb0caa69e94"
+        "expected_ocel2_hash": "220f1d0d6bbdc5780d1d6acb2a3ce6c91e0f225014d36f27e5fb2833a418ec7d"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T19:53:33.912Z",
+              "time": "2026-07-02T04:37:03.479Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T19:53:34.702Z",
+              "time": "2026-07-02T04:37:07.181Z",
               "relationships": [
                 {
                   "objectId": "log_customer_journey",
@@ -2256,10 +2256,10 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T19:53:35.217Z",
+              "time": "2026-07-02T04:37:06.965Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 }
               ],
@@ -2270,14 +2270,14 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T19:53:36.839Z",
+              "time": "2026-07-02T04:37:05.036Z",
               "relationships": [
                 {
                   "objectId": "algorithm_agentic_pipeline",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.6.10",
+                  "objectId": "registry_v26.7.1",
                   "qualifier": "registry"
                 },
                 {
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T19:53:36.878Z",
+              "time": "2026-07-02T04:37:04.807Z",
               "relationships": [
                 {
                   "objectId": "algorithm_agentic_pipeline",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b",
-                "duration_ms": 27.439
+                "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764",
+                "duration_ms": 56.56
               }
             },
             {
               "id": "evt_customer_journey_agentic_pipeline_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T19:53:33.948Z",
+              "time": "2026-07-02T04:37:06.410Z",
               "relationships": [
                 {
                   "objectId": "result_agentic_pipeline_customer_journey",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b"
+                "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764"
               }
             },
             {
               "id": "evt_customer_journey_agentic_pipeline_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T19:53:35.552Z",
+              "time": "2026-07-02T04:37:07.952Z",
               "relationships": [
                 {
                   "objectId": "result_agentic_pipeline_customer_journey",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b"
+                "result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764"
               }
             },
             {
               "id": "evt_customer_journey_agentic_pipeline_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T19:53:36.788Z",
+              "time": "2026-07-02T04:37:09.504Z",
               "relationships": [
                 {
                   "objectId": "example_customer_journey",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T19:53:34.863Z",
+              "time": "2026-07-02T04:37:09.962Z",
               "relationships": [
                 {
                   "objectId": "result_agentic_pipeline_customer_journey",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_customer_journey_agentic_pipeline_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T19:53:39.834Z",
+              "time": "2026-07-02T04:37:11.170Z",
               "relationships": [
                 {
                   "objectId": "result_agentic_pipeline_customer_journey",
@@ -2421,7 +2421,7 @@
               "attributes": {}
             },
             {
-              "id": "registry_v26.6.10",
+              "id": "registry_v26.7.1",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "59e0fbf25285d0796eda6142e3179a162966f3e97bd6385ac55238cd729c8fc2",
-        "observed_result_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b"
+        "observed_ocel2_hash": "5d55a74a9b9aab83d64accdb39e832aca9dff3726185b69465971535532e4c3f",
+        "observed_result_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
-        "output_artifact_hash": "45e27ef5edc839b16bdfeccb1aba97f85a8f99df1d2fb71f6e8303551ed33f2b",
-        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "output_artifact_hash": "80542ea5f36d31a8e17ca9f877f5977e9ef2924a3c28277002952497cf3ce764",
+        "registry_hash": "9ab9d270ff35a38b79c5bd9452420d7df249210b4b23a53061e0e84d3f0ee9da",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-11T19:53:30.652Z",
+  "created_at": "2026-07-02T04:37:02.522Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "836af463a45d26591f8915312a35d2e4df24ad585cb577d71735c2503432775a"
+  "receipt_hash": "ff8adfa9979f50c950b510fa7c3edef63247bbd9a3748d4b77adf49cff024a71"
 }

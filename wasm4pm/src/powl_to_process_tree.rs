@@ -187,7 +187,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> PowlProcessTree {
         Some(PowlNode::ChoiceGraph(cg)) => {
             let children: Vec<PowlProcessTree> = cg
                 .graph
-                .nodes
+                .nodes()
                 .iter()
                 .filter_map(|n| match n {
                     ChoiceGraphNode::SubModel(idx) => Some(apply_recursive(arena, *idx)),

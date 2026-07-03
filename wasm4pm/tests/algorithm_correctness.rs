@@ -16,7 +16,7 @@
 //! Tests use pure-Rust `_from_log` variants so they run on native without the wasm-bindgen
 //! runtime (which requires a wasm32 target to be fully functional).
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::algorithms::discover_dfg_filtered_from_log;
 use wasm4pm::algorithms::discover_footprints_from_log;
@@ -48,7 +48,7 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
         for _ in 0..*repeat {
             let mut trace = Trace {
                 attributes: {
-                    let mut m = HashMap::new();
+                    let mut m = BTreeMap::new();
                     m.insert(
                         "concept:name".to_string(),
                         AttributeValue::String(format!("case-{}", case_idx)),
@@ -58,7 +58,7 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
                 events: Vec::new(),
             };
             for (i, &act) in activities.iter().enumerate() {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(act.to_string()),

@@ -1,0 +1,31 @@
+{
+  "breed_id": "version_space",
+  "id": "ocel_version_space_v1",
+  "name": "Version Space Lifecycle Model",
+  "phases": [
+    {
+      "name": "init",
+      "kinds": [
+        "vs-init"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "update",
+      "kinds": [
+        "vs-update"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "verdict",
+      "kinds": [
+        "vs-verdict"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 //! Oracle rank: Rank 2 (domain contract) — outputs must be non-degenerate
 //! and structurally sound on data no synthetic fixture can replicate.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::discovery::discover_dfg_from_log;
@@ -41,7 +41,7 @@ fn parse_xes(content: &str) -> EventLog {
 
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -52,7 +52,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -509,7 +509,7 @@ fn social_network_bpi2020_does_not_panic() {
 fn temporal_profile_roadtraffic_durations_are_non_negative() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let profile = discover_temporal_profile_from_log(&log, "concept:name", "time:timestamp");
-    // Temporal profile is a HashMap<(String,String), (mean, std, count)>
+    // Temporal profile is a BTreeMap<(String,String), (mean, std, count)>
     for ((from, to), (mean, _std, count)) in &profile.pairs {
         assert!(
             *mean >= 0.0,

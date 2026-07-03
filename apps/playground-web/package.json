@@ -6,7 +6,6 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
     "dev:otel": "WASM4PM_OTEL_ENABLED=true WASM4PM_OTEL_ENDPOINT=http://localhost:4318 nuxt dev",

@@ -26,7 +26,7 @@ fn trace_of(case: &str, acts: &[&str]) -> Trace {
                 name: (*a).to_string(),
                 timestamp: None,
                 lifecycle: None,
-                attributes: HashMap::new(),
+                attributes: std::collections::BTreeMap::new(),
             })
             .collect(),
     }
@@ -82,7 +82,7 @@ fn paper_figure1_retail_order_acceptance() {
         (3, 5), // Schedule → End
         (4, 5), // Cancel → End
     ];
-    let cg = ChoiceGraph::new(nodes, edges);
+    let cg = ChoiceGraph::new(nodes, edges).unwrap();
 
     let mut arena = PowlArena::new();
     let root = arena.add_choice_graph(&cg);
@@ -141,7 +141,7 @@ fn paper_figure1_invalid_trace_yields_lower_fitness() {
         End,
     ];
     let edges = vec![(0, 1), (1, 2), (1, 3), (1, 4), (2, 5), (3, 5), (4, 5)];
-    let cg = ChoiceGraph::new(nodes, edges);
+    let cg = ChoiceGraph::new(nodes, edges).unwrap();
 
     let mut arena = PowlArena::new();
     let root = arena.add_choice_graph(&cg);
@@ -210,7 +210,8 @@ fn xor_lowered_to_two_node_choice_graph_language_match() {
             StandaloneChoiceGraphNode::End,
         ],
         vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    );
+    )
+    .unwrap();
     let cg_root = arena_cg.add_choice_graph(&cg);
 
     // XOR model: Operator::Xor over [a, b].

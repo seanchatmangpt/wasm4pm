@@ -14,7 +14,7 @@
 PATCH = day of month (1–31, never higher). Same-day: append `a`, `b`, `c`.
 
 ## Key paths
-`wasm4pm/` WASM core · `crates/wasm4pm-cognition/` cognition layer (52 PARTIAL_ALIVE breeds, v26.6.10) · `crates/prolog8/` · `apps/wasm4pm/` published CLI · `packages/` TS monorepo · `ocel/models/l1/` OCPN models · `ocel/reports/` fitness reports
+`wasm4pm/` WASM core · `crates/wasm4pm-cognition/` cognition layer (55 PARTIAL_ALIVE breeds — count derives from breeds/registry.json) · `crates/prolog8/` · `apps/wasm4pm/` published CLI · `packages/` TS monorepo · `ocel/models/l1/` OCPN models · `ocel/reports/` fitness reports
 
 **`wasm4pm-compat` is crates.io only — never add a path dep.**
 

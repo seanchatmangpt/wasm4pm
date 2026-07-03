@@ -1,0 +1,32 @@
+{
+  "model_id": "eliza-l1-v1",
+  "model_level": "L1",
+  "breed_id": "eliza",
+  "object_types": ["pattern", "script", "response"],
+  "places": [
+    {"id": "p1", "name": "pattern_matched",   "object_type": "pattern"},
+    {"id": "p2", "name": "script_selected",   "object_type": "script"},
+    {"id": "p3", "name": "template_applied",  "object_type": "response"},
+    {"id": "p4", "name": "response_emitted",  "object_type": "response"},
+    {"id": "p5", "name": "response_refused",  "object_type": "response"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "pattern_matched",  "label": "pattern_matched"},
+    {"id": "t2", "name": "script_selected",  "label": "script_selected"},
+    {"id": "t3", "name": "template_applied", "label": "template_applied"},
+    {"id": "t4", "name": "response_emitted", "label": "response_emitted"},
+    {"id": "t5", "name": "response_refused", "label": "response_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}, {"p5": 1}]
+}

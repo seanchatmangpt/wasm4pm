@@ -4,7 +4,7 @@
 
 extern crate wasm4pm;
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::state::get_or_init_state;
 use wasm4pm::wasm_utils::*;
@@ -12,17 +12,17 @@ use wasm4pm::wasm_utils::*;
 /// Create a minimal test event log with configurable activities and traces.
 fn create_test_eventlog() -> EventLog {
     let mut log = EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces: vec![],
     };
 
     // Trace 1: A -> B -> C
     let trace1 = Trace {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         events: vec![
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("A".to_string()),
@@ -36,7 +36,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("B".to_string()),
@@ -50,7 +50,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("C".to_string()),
@@ -67,11 +67,11 @@ fn create_test_eventlog() -> EventLog {
 
     // Trace 2: A -> C -> B -> C
     let trace2 = Trace {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         events: vec![
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("A".to_string()),
@@ -81,7 +81,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("C".to_string()),
@@ -91,7 +91,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("B".to_string()),
@@ -101,7 +101,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("C".to_string()),
@@ -114,11 +114,11 @@ fn create_test_eventlog() -> EventLog {
 
     // Trace 3: B -> B -> A
     let trace3 = Trace {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         events: vec![
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("B".to_string()),
@@ -128,7 +128,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("B".to_string()),
@@ -138,7 +138,7 @@ fn create_test_eventlog() -> EventLog {
             },
             Event {
                 attributes: {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     attrs.insert(
                         "concept:name".to_string(),
                         AttributeValue::String("A".to_string()),
