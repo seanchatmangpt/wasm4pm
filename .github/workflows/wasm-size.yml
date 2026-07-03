@@ -17,7 +17,7 @@ jobs:
   size-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check WASM binary size
         run: |
           BASELINE_FILE="wasm4pm/size-baseline.json"
