@@ -1,0 +1,85 @@
+
+> wasm4pm-monorepo@26.7.1 bench:real
+> node benchmarks/real_data_wasm_bench.js
+
+
+════════════════════════════════════════════════════════════════════════════════
+Dataset: sepsis  (5 cases, 37 events)
+────────────────────────────────────────────────────────────────────────────────
+
+[Discovery — DFG family]
+  declare/sepsis                                   median:    0.229 ms   p95:    0.396 ms
+  process_skeleton/sepsis                          median:    0.046 ms   p95:    0.066 ms
+  simd_streaming_dfg/sepsis                        median:    0.013 ms   p95:    0.019 ms
+  hierarchical_dfg/sepsis                          median:    0.049 ms   p95:    0.055 ms
+
+[Discovery — Causal graph]
+  causal_graph_alpha/sepsis                        median:    0.044 ms   p95:    0.065 ms
+  causal_graph_heuristic/sepsis                    median:    0.035 ms   p95:    0.047 ms
+
+[ML Analysis — 6 algorithms]
+  ml_classify/sepsis                               median:    0.008 ms   p95:    0.014 ms
+  ml_cluster/sepsis                                median:    0.014 ms   p95:    0.019 ms
+  ml_forecast/sepsis                               median:    0.012 ms   p95:    0.014 ms
+  ml_anomaly_discover/sepsis                       median:    0.057 ms   p95:    0.085 ms
+  ml_regress/sepsis                                median:    0.008 ms   p95:    0.014 ms
+  ml_pca/sepsis                                    median:    0.016 ms   p95:    0.025 ms
+
+[Analysis utilities]
+  performance_spectrum/sepsis                      median:    0.003 ms   p95:    0.007 ms
+  simd_token_replay/sepsis                         median:    0.073 ms   p95:    0.103 ms
+
+════════════════════════════════════════════════════════════════════════════════
+Dataset: bpi2020  (10500 cases, 56437 events)
+────────────────────────────────────────────────────────────────────────────────
+
+[Discovery — DFG family]
+  declare/bpi2020                                  median:   28.807 ms   p95:   30.685 ms
+  process_skeleton/bpi2020                         median:   28.531 ms   p95:   30.709 ms
+  simd_streaming_dfg/bpi2020                       median:    1.767 ms   p95:    1.831 ms
+  hierarchical_dfg/bpi2020                         median:   10.693 ms   p95:   11.049 ms
+
+[Discovery — Causal graph]
+  causal_graph_alpha/bpi2020                       median:   24.527 ms   p95:   25.971 ms
+  causal_graph_heuristic/bpi2020                   median:   24.129 ms   p95:   24.737 ms
+
+[ML Analysis — 6 algorithms]
+  ml_classify/bpi2020                              median:   19.543 ms   p95:   20.543 ms
+  ml_cluster/bpi2020                               median:  629.834 ms   p95:  638.311 ms
+  ml_forecast/bpi2020                              median:   12.042 ms   p95:   12.395 ms
+  ml_anomaly_discover/bpi2020                      median:   99.612 ms   p95:  104.448 ms
+  ml_regress/bpi2020                               median:    9.366 ms   p95:    9.989 ms
+  ml_pca/bpi2020                                   median:   11.320 ms   p95:   12.932 ms
+
+[Analysis utilities]
+  performance_spectrum/bpi2020                     median:    3.198 ms   p95:    4.532 ms
+  simd_token_replay/bpi2020                        median:   94.165 ms   p95:   94.683 ms
+
+════════════════════════════════════════════════════════════════════════════════
+Dataset: roadtraffic  (100 cases, 390 events)
+────────────────────────────────────────────────────────────────────────────────
+
+[Discovery — DFG family]
+  declare/roadtraffic                              median:    0.336 ms   p95:    0.348 ms
+  process_skeleton/roadtraffic                     median:    0.147 ms   p95:    0.156 ms
+  simd_streaming_dfg/roadtraffic                   median:    0.023 ms   p95:    0.027 ms
+  hierarchical_dfg/roadtraffic                     median:    0.098 ms   p95:    0.116 ms
+
+[Discovery — Causal graph]
+  causal_graph_alpha/roadtraffic                   median:    0.130 ms   p95:    0.140 ms
+  causal_graph_heuristic/roadtraffic               median:    0.132 ms   p95:    0.145 ms
+
+[ML Analysis — 6 algorithms]
+  ml_classify/roadtraffic                          median:    0.047 ms   p95:    0.047 ms
+  ml_cluster/roadtraffic                           median:    0.118 ms   p95:    0.120 ms
+  ml_forecast/roadtraffic                          median:    0.086 ms   p95:    0.088 ms
+  ml_anomaly_discover/roadtraffic                  median:    0.764 ms   p95:    0.781 ms
+  ml_regress/roadtraffic                           median:    0.075 ms   p95:    0.078 ms
+  ml_pca/roadtraffic                               median:    0.071 ms   p95:    0.074 ms
+
+[Analysis utilities]
+  performance_spectrum/roadtraffic                 median:    0.015 ms   p95:    0.015 ms
+  simd_token_replay/roadtraffic                    median:    0.657 ms   p95:    0.735 ms
+
+════════════════════════════════════════════════════════════════════════════════
+Done.
