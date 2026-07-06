@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { EXIT_CODES, type ExitCode } from '../../exit-codes.js';
+import { atomicWriteSync } from '../../receipts/_shared.js';
 
 // NOTE: `emitCognitionSpan` was removed in Plan E. Command-level OTEL is now
 // handled uniformly by `apps/wasm4pm/src/commands/_otel.ts:withSpan`. Cognition
@@ -58,7 +59,9 @@ export function saveReceipt(receipt: unknown, dirRel: string): string {
   }
   if (!id) id = randomUUID();
   const file = path.join(dir, `${id}.json`);
-  fs.writeFileSync(file, JSON.stringify(receipt, null, 2) + '\n');
+  const json = JSON.stringify(receipt, null, 2) + '\n';
+  fs.writeFileSync(file, json);
+  atomicWriteSync(path.join(dir, 'latest.json'), json);
   return file;
 }
 

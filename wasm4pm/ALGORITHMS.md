@@ -1,6 +1,11 @@
 # wasm4pm Algorithms Reference
 
-Complete catalog of all 20+ process discovery and analytics methods.
+Catalog of the core process discovery and analytics methods in this crate.
+
+> **Authoritative count:** the release validation ledger tracks **60 algorithms** (see
+> `../ALGORITHM_AND_BREED_STATUS.md` and `../artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.*.json`),
+> of which 29 are reachable via kernel dispatch. This document describes the main discovery and
+> analytics surface and is not an exhaustive enumeration of the ledger.
 
 ## Discovery Algorithms (14 Methods)
 
