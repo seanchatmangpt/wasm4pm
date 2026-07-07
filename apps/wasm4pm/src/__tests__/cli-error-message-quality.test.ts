@@ -17,7 +17,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
   describe('run command', () => {
     it('should provide clear error when input file does not exist', async () => {
-      const result = await runCli(['run', '/nonexistent/path/log.xes', '--algorithm', 'dfg']);
+      const result = await runCli(['model', 'discover', '/nonexistent/path/log.xes', '--algorithm', 'dfg']);
 
       // Should not be success (config error, source error, or execution error)
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
@@ -29,7 +29,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
     it('should suggest valid algorithms when unknown algorithm is provided', async () => {
       // Use a minimal run to test algorithm validation
-      const result = await runCli(['run', '--algorithm', 'unknown-algo', '--help']);
+      const result = await runCli(['model', 'discover', '--algorithm', 'unknown-algo', '--help']);
       const output = result.stdout + result.stderr;
 
       // Either help works or error suggests valid algorithms
@@ -40,7 +40,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
   describe('benchmark command', () => {
     it('should provide guidance on missing corpus or unavailable benchmarks', async () => {
-      const result = await runCli(['benchmark', 'replay']);
+      const result = await runCli(['lab', 'benchmark', 'replay']);
 
       // Either succeeds or gives clear error
       expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
@@ -55,7 +55,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
     });
 
     it('should validate corpus file exists', async () => {
-      const result = await runCli(['benchmark', 'replay', '--corpus', '/nonexistent.jsonl']);
+      const result = await runCli(['lab', 'benchmark', 'replay', '--corpus', '/nonexistent.jsonl']);
 
       // Should be an error
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
@@ -66,9 +66,14 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
   describe('predict command', () => {
     it('should validate task parameter with suggestions', async () => {
-      const result = await runCli(['predict', 'invalid-task', '-i', 'test_file.xes']);
+      const result = await runCli(['model', 'predict', 'invalid-task', '-i', 'test_file.xes']);
 
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      // `model predict` is a bridged verb (nouns/_bridge.ts): the legacy
+      // command's own config_error(1) classification is collapsed by the
+      // generic bridge's `classifyLegacyFailure` into the framework's
+      // INVALID_INPUT bucket, which wpm's errorCodeMap resolves to
+      // source_error (2), not the legacy config_error.
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
       const output = result.stdout + result.stderr;
 
       // Should list valid tasks
@@ -79,7 +84,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
     it('should handle prefix validation for case-level predictions', async () => {
       const result = await runCli([
-        'predict',
+        'model', 'predict',
         'next-activity',
         '-i', 'test_file.xes',
         '--prefix', 'NotAnActivity,Also-NotOne',
@@ -106,7 +111,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
   describe('config validation', () => {
     it('should provide guidance on invalid --format flag', async () => {
-      const result = await runCli(['run', '--format', 'xml', '--help']);
+      const result = await runCli(['model', 'discover', '--format', 'xml', '--help']);
 
       // If --format is rejected, should suggest valid formats
       const output = result.stdout + result.stderr;
@@ -118,7 +123,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
   describe('exit code contract', () => {
     it('should use proper exit codes for argument/config problems', async () => {
-      const result = await runCli(['predict', 'bad-task', '-i', 'x.xes']);
+      const result = await runCli(['model', 'predict', 'bad-task', '-i', 'x.xes']);
       // Should not be success
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
       // Should be a user error (config or execution), not system error
@@ -128,7 +133,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
     });
 
     it('should use proper exit codes for missing files', async () => {
-      const result = await runCli(['run', '/missing.xes']);
+      const result = await runCli(['model', 'discover', '/missing.xes']);
       // Should not be success
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
       // Should be a user error (config or source)

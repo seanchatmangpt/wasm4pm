@@ -31,6 +31,7 @@ pub fn discover_automl_forecast(
     to_js_val(&json!({
         "algorithm": "automl_forecast",
         "best_alpha": result.best_alpha,
+        "best_beta": result.best_beta,
         // back-compat field: avg_rmse == min_avg_rmse == cv_rmse for best alpha
         "avg_rmse": result.min_avg_rmse,
         // additive: explicit cross-validated test RMSE/MAE (k-fold aggregated)
@@ -47,6 +48,9 @@ pub fn discover_automl_forecast(
 pub struct AutomlForecastResult {
     /// The smoothing factor (α) that resulted in the lowest cross-validated error.
     pub best_alpha: f64,
+    /// The trend factor (β) that resulted in the lowest cross-validated error.
+    /// 0.0 means plain SES (no trend) was optimal.
+    pub best_beta: f64,
     /// The minimum average Root Mean Squared Error (RMSE) achieved during the sweep.
     pub min_avg_rmse: f64,
     /// The minimum average Mean Absolute Error (MAE) achieved during the sweep.
@@ -55,26 +59,39 @@ pub struct AutomlForecastResult {
     pub folds: usize,
 }
 
-/// One fold of k-fold CV for EWMA: fit on train, evaluate on holdout.
+/// One fold of k-fold CV for Holt smoothing: fit on train, evaluate on holdout.
 ///
-/// Train phase: roll EWMA `s_t = alpha*x_t + (1-alpha)*s_{t-1}` over the
-/// training complement (windows[0..test_start] then windows[test_end..end]),
-/// producing a fitted smoothed level `s_train`.
-/// Test phase: starting from `s_train`, continue EWMA over the test fold and
-/// accumulate squared/absolute errors on the held-out test values only.
-fn eval_fold(windows: &[f64], alpha: f64, test_start: usize, test_end: usize) -> (f64, f64, usize) {
-    // ---- Train on complement (prefix + suffix). Initial state = first train value. ----
-    let mut s_opt: Option<f64> = None;
+/// Train phase: roll Holt level/trend over the training complement
+/// (windows[0..test_start] then windows[test_end..end]). Level initializes
+/// to the first train value; the trend initializes to 0.0 so that `beta=0.0`
+/// keeps the trend at zero forever and the recursion reduces EXACTLY to the
+/// SES CV this replaced (`s_t = alpha*x_t + (1-alpha)*s_{t-1}`).
+/// Test phase: starting from the fitted (level, trend), one-step-ahead
+/// predict `level + trend`, accumulate errors on held-out values only, and
+/// propagate state using the observed test value.
+fn eval_fold(
+    windows: &[f64],
+    alpha: f64,
+    beta: f64,
+    test_start: usize,
+    test_end: usize,
+) -> (f64, f64, usize) {
+    // ---- Train on complement (prefix + suffix). ----
+    let mut state: Option<(f64, f64)> = None; // (level, trend)
     let prefix = &windows[..test_start];
     let suffix = &windows[test_end..];
     for &val in prefix.iter().chain(suffix.iter()) {
-        s_opt = Some(match s_opt {
-            None => val,
-            Some(prev_s) => alpha * val + (1.0 - alpha) * prev_s,
+        state = Some(match state {
+            None => (val, 0.0),
+            Some((prev_level, prev_trend)) => {
+                let level = alpha * val + (1.0 - alpha) * (prev_level + prev_trend);
+                let trend = beta * (level - prev_level) + (1.0 - beta) * prev_trend;
+                (level, trend)
+            }
         });
     }
     // If train complement is empty, we cannot CV — caller guards this case.
-    let mut s = match s_opt {
+    let (mut level, mut trend) = match state {
         Some(v) => v,
         None => return (0.0, 0.0, 0),
     };
@@ -83,22 +100,31 @@ fn eval_fold(windows: &[f64], alpha: f64, test_start: usize, test_end: usize) ->
     let mut sum_abs = 0.0;
     let mut n_err = 0usize;
     for &val in windows[test_start..test_end].iter() {
-        // Predict the next test point using the previously fitted level (one-step-ahead).
-        let pred = s;
+        let pred = level + trend;
         let err = val - pred;
         sum_sq += err * err;
         sum_abs += err.abs();
         n_err += 1;
-        // Update level using the observed test value (state propagates).
-        s = alpha * val + (1.0 - alpha) * pred;
+        // Update state using the observed test value (state propagates).
+        let prev_level = level;
+        level = alpha * val + (1.0 - alpha) * pred;
+        trend = beta * (level - prev_level) + (1.0 - beta) * trend;
     }
     (sum_sq, sum_abs, n_err)
 }
 
+/// Beta (trend) grid for the Holt sweep: 0.0 (= plain SES), then 0.05..0.95 step 0.1.
+const BETA_GRID: [f64; 11] = [
+    0.0, 0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95,
+];
+
 /// Automated hyperparameter search for forecasting parameters.
 ///
-/// Sweeps across alpha [0.05, 0.95] using k-fold cross-validation.
-/// Returns the optimal alpha and associated error metrics.
+/// Sweeps the (alpha, beta) Holt grid — alpha in [0.05, 0.95] step 0.05,
+/// beta in `BETA_GRID` — using k-fold cross-validation. beta=0.0 reproduces
+/// the previous SES-only sweep exactly. Selection is lowest CV RMSE; ties
+/// keep the earliest grid point (lowest alpha, then lowest beta) so the
+/// result is deterministic.
 pub fn discover_automl_forecast_internal(windows: &[f64]) -> AutomlForecastResult {
     const FOLDS: usize = 5;
     let n = windows.len();
@@ -106,6 +132,7 @@ pub fn discover_automl_forecast_internal(windows: &[f64]) -> AutomlForecastResul
     if n < FOLDS + 1 {
         return AutomlForecastResult {
             best_alpha: 0.3,
+            best_beta: 0.0,
             min_avg_rmse: f64::INFINITY,
             min_avg_mae: f64::INFINITY,
             folds: FOLDS,
@@ -114,43 +141,48 @@ pub fn discover_automl_forecast_internal(windows: &[f64]) -> AutomlForecastResul
     let fold_size = n / FOLDS;
 
     let mut best_alpha = 0.3;
+    let mut best_beta = 0.0;
     let mut min_avg_rmse = f64::MAX;
     let mut min_avg_mae = f64::MAX;
 
-    // Exhaustive sweep: 0.05 to 0.95 with 0.05 step.
+    // Exhaustive sweep: alpha 0.05..0.95 step 0.05 × beta grid.
     for i in 1..20 {
         let alpha = i as f64 * 0.05;
-        let mut total_sq = 0.0;
-        let mut total_abs = 0.0;
-        let mut total_n = 0usize;
+        for &beta in &BETA_GRID {
+            let mut total_sq = 0.0;
+            let mut total_abs = 0.0;
+            let mut total_n = 0usize;
 
-        for fold in 0..FOLDS {
-            let test_start = fold * fold_size;
-            let test_end = if fold == FOLDS - 1 {
-                n
-            } else {
-                (fold + 1) * fold_size
-            };
-            let (sq, ab, nn) = eval_fold(windows, alpha, test_start, test_end);
-            total_sq += sq;
-            total_abs += ab;
-            total_n += nn;
-        }
+            for fold in 0..FOLDS {
+                let test_start = fold * fold_size;
+                let test_end = if fold == FOLDS - 1 {
+                    n
+                } else {
+                    (fold + 1) * fold_size
+                };
+                let (sq, ab, nn) = eval_fold(windows, alpha, beta, test_start, test_end);
+                total_sq += sq;
+                total_abs += ab;
+                total_n += nn;
+            }
 
-        if total_n == 0 {
-            continue;
-        }
-        let cv_rmse = (total_sq / total_n as f64).sqrt();
-        let cv_mae = total_abs / total_n as f64;
-        if cv_rmse < min_avg_rmse {
-            min_avg_rmse = cv_rmse;
-            min_avg_mae = cv_mae;
-            best_alpha = alpha;
+            if total_n == 0 {
+                continue;
+            }
+            let cv_rmse = (total_sq / total_n as f64).sqrt();
+            let cv_mae = total_abs / total_n as f64;
+            if cv_rmse < min_avg_rmse {
+                min_avg_rmse = cv_rmse;
+                min_avg_mae = cv_mae;
+                best_alpha = alpha;
+                best_beta = beta;
+            }
         }
     }
 
     AutomlForecastResult {
         best_alpha,
+        best_beta,
         min_avg_rmse,
         min_avg_mae,
         folds: FOLDS,
@@ -203,15 +235,17 @@ pub struct AutomlClassifyResult {
 ///
 /// Sweeps across K [1, 15] using 5-fold cross-validation.
 /// Returns the optimal K and associated accuracy.
-pub fn discover_automl_classify_internal(
-    features: &[[f64; 2]],
+pub fn discover_automl_classify_internal<const D: usize>(
+    features: &[[f64; D]],
     labels: &[u8],
 ) -> AutomlClassifyResult {
     const FOLDS: usize = 5;
     const MAX_K: usize = 15;
 
+    // Mixed magnitudes (seconds vs counts) — min-max normalize before distances.
+    let normalized = crate::ml::classification::normalize_features(features, features);
     // Optimized Nanosecond Sweep: Multi-K CV in a single pass
-    let accuracies = knn_sweep_cv(features, labels, FOLDS, MAX_K);
+    let accuracies = knn_sweep_cv(&normalized, labels, FOLDS, MAX_K);
 
     let mut best_k = 1;
     let mut max_avg_accuracy = -1.0;
@@ -298,7 +332,7 @@ mod cv_semantics_tests {
 
         let alpha = 0.5;
         // Last fold of size 4 spans indices [16, 20).
-        let (sum_sq, sum_abs, n_err) = eval_fold(&windows, alpha, 16, 20);
+        let (sum_sq, sum_abs, n_err) = eval_fold(&windows, alpha, 0.0, 16, 20);
 
         // After training on 16 ones, s_train == 1.0 (geometric convergence to
         // the constant). First test prediction = 1.0, observed = 9.0,
@@ -331,7 +365,7 @@ mod cv_semantics_tests {
         // 20 windows: low-frequency oscillation so test slice ≠ complement-fit.
         let windows: Vec<f64> = (0..20).map(|i| (i as f64).sin() * 3.0 + 5.0).collect();
         let alpha = 0.3;
-        let (proper_sq, _, _) = eval_fold(&windows, alpha, 8, 12);
+        let (proper_sq, _, _) = eval_fold(&windows, alpha, 0.0, 8, 12);
         // "Chunked-eval" reproduction: run forecast_internal on the test slice
         // only (the previously broken behavior).
         let chunked_rmse = {
@@ -413,5 +447,71 @@ mod cv_semantics_tests {
             "n < folds+1 must yield infinity sentinel, got {}",
             result.min_avg_rmse
         );
+    }
+
+    /// Holt gate: eval_fold with beta=0.0 must reduce EXACTLY to the previous
+    /// SES-only CV (level recursion `s_t = alpha*x_t + (1-alpha)*s_{t-1}`,
+    /// initial trend 0). Reproduced inline as the oracle.
+    #[test]
+    fn eval_fold_beta_zero_reduces_exactly_to_ses() {
+        let windows: Vec<f64> = (0..20).map(|i| (i as f64 * 0.7).sin() * 4.0 + 10.0).collect();
+        for &alpha in &[0.1, 0.3, 0.5, 0.9] {
+            for (test_start, test_end) in [(0usize, 4usize), (8, 12), (16, 20)] {
+                let (holt_sq, holt_abs, holt_n) =
+                    eval_fold(&windows, alpha, 0.0, test_start, test_end);
+
+                // SES oracle (pre-Holt implementation).
+                let mut s_opt: Option<f64> = None;
+                for &val in windows[..test_start].iter().chain(windows[test_end..].iter()) {
+                    s_opt = Some(match s_opt {
+                        None => val,
+                        Some(prev) => alpha * val + (1.0 - alpha) * prev,
+                    });
+                }
+                let mut s = s_opt.unwrap();
+                let mut sum_sq = 0.0;
+                let mut sum_abs = 0.0;
+                let mut n_err = 0usize;
+                for &val in windows[test_start..test_end].iter() {
+                    let err = val - s;
+                    sum_sq += err * err;
+                    sum_abs += err.abs();
+                    n_err += 1;
+                    s = alpha * val + (1.0 - alpha) * s;
+                }
+
+                assert_eq!(holt_n, n_err);
+                assert_eq!(
+                    holt_sq, sum_sq,
+                    "beta=0 must be bit-identical to SES sum_sq (alpha={alpha})"
+                );
+                assert_eq!(holt_abs, sum_abs);
+            }
+        }
+    }
+
+    /// On the temporally-valid last fold (train = prefix only), Holt with
+    /// trend must strictly beat SES on a linear series: SES lags the ramp by
+    /// one slope unit per step, Holt tracks it exactly.
+    #[test]
+    fn holt_beats_ses_on_trending_last_fold() {
+        let windows: Vec<f64> = (0..30).map(|i| 1.0 + (i as f64) * 0.5).collect();
+        let (ses_sq, _, n_ses) = eval_fold(&windows, 0.5, 0.0, 24, 30);
+        let (holt_sq, _, n_holt) = eval_fold(&windows, 0.5, 0.5, 24, 30);
+        assert_eq!(n_ses, 6);
+        assert_eq!(n_holt, 6);
+        assert!(
+            holt_sq < ses_sq,
+            "Holt (beta=0.5) must beat SES on a linear ramp: holt_sq={holt_sq} ses_sq={ses_sq}"
+        );
+        // The sweep must report an on-grid (alpha, beta) pair and finite error.
+        let result = discover_automl_forecast_internal(&windows);
+        assert!(
+            BETA_GRID.contains(&result.best_beta),
+            "beta must be on the grid, got {}",
+            result.best_beta
+        );
+        assert!(result.best_alpha > 0.0 && result.best_alpha < 1.0);
+        assert!(result.min_avg_rmse.is_finite());
     }
 }

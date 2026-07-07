@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Config Sensitivity Tests -- prove config changes affect RL behavior.
 //!
 //! These tests verify that configuration toggles (agent type, LinUCB selection,

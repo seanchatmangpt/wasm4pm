@@ -17,6 +17,20 @@ use wasm_bindgen::prelude::*;
 
 // ─── Public types ──────────────────────────────────────────────────────────
 
+/// Cap on the per-segment occurrence timeline; segments with more occurrences
+/// keep the first `MAX_OCCURRENCES_PER_SEGMENT` (in log order) and set
+/// `truncated = true`. Aggregates are always computed over ALL occurrences.
+pub const MAX_OCCURRENCES_PER_SEGMENT: usize = 1000;
+
+/// A single observed occurrence of a directly-follows segment.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SegmentOccurrence {
+    /// Start timestamp of the segment in ms since epoch.
+    pub start_ts: i64,
+    /// Duration until the next activity, in milliseconds.
+    pub duration_ms: f64,
+}
+
 /// Aggregate performance measurements for one directly-follows pair.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ActivityPerformance {
@@ -34,6 +48,11 @@ pub struct ActivityPerformance {
     pub mean_duration_ms: f64,
     /// Median duration in milliseconds.
     pub median_duration_ms: f64,
+    /// Per-occurrence timeline (log order), capped at
+    /// [`MAX_OCCURRENCES_PER_SEGMENT`] entries.
+    pub occurrences: Vec<SegmentOccurrence>,
+    /// True when the occurrence timeline was capped.
+    pub truncated: bool,
 }
 
 /// Full performance spectrum result for a target activity.
@@ -61,8 +80,8 @@ pub fn discover_performance_spectrum(
     activity_key: &str,
     timestamp_key: &str,
 ) -> PerformanceSpectrumResult {
-    // Collect raw durations per (activity, next_activity) pair.
-    let mut buckets: FxHashMap<(String, String), Vec<f64>> = FxHashMap::default();
+    // Collect raw (start_ts, duration) samples per (activity, next_activity) pair.
+    let mut buckets: FxHashMap<(String, String), Vec<(i64, f64)>> = FxHashMap::default();
 
     for trace in &log.traces {
         let events = &trace.events;
@@ -111,7 +130,7 @@ pub fn discover_performance_spectrum(
                 (Some(start_ms), Some(end_ms), Some(next_act)) => {
                     let duration_ms = (end_ms - start_ms) as f64;
                     let key = (event_name.to_string(), next_act.to_string());
-                    buckets.entry(key).or_default().push(duration_ms);
+                    buckets.entry(key).or_default().push((start_ms, duration_ms));
                 }
                 _ => continue,
             }
@@ -121,7 +140,18 @@ pub fn discover_performance_spectrum(
     // Compute aggregate statistics per bucket.
     let mut measurements: Vec<ActivityPerformance> = buckets
         .into_iter()
-        .map(|((act, next_act), mut durations)| {
+        .map(|((act, next_act), samples)| {
+            let truncated = samples.len() > MAX_OCCURRENCES_PER_SEGMENT;
+            let occurrences: Vec<SegmentOccurrence> = samples
+                .iter()
+                .take(MAX_OCCURRENCES_PER_SEGMENT)
+                .map(|&(start_ts, duration_ms)| SegmentOccurrence {
+                    start_ts,
+                    duration_ms,
+                })
+                .collect();
+
+            let mut durations: Vec<f64> = samples.iter().map(|&(_, d)| d).collect();
             durations.sort_unstable_by(f64::total_cmp);
             let count = durations.len();
             let min_d = durations.first().copied().unwrap_or(0.0);
@@ -146,6 +176,8 @@ pub fn discover_performance_spectrum(
                 max_duration_ms: max_d,
                 mean_duration_ms: mean_d,
                 median_duration_ms: median_d,
+                occurrences,
+                truncated,
             }
         })
         .collect();
@@ -252,6 +284,42 @@ mod tests {
         assert_eq!(m.max_duration_ms, 3000.0);
         assert_eq!(m.mean_duration_ms, 2000.0);
         assert_eq!(m.median_duration_ms, 2000.0);
+    }
+
+    #[test]
+    fn test_occurrences_timeline_preserved() {
+        // Segment (a,b) occurs twice: durations 60000ms and 120000ms.
+        let log = make_log(vec![
+            Trace {
+                attributes: BTreeMap::new(),
+                events: vec![
+                    make_event("a", "2020-01-01T00:00:00Z"),
+                    make_event("b", "2020-01-01T00:01:00Z"), // 60000ms
+                ],
+            },
+            Trace {
+                attributes: BTreeMap::new(),
+                events: vec![
+                    make_event("a", "2020-01-02T00:00:00Z"),
+                    make_event("b", "2020-01-02T00:02:00Z"), // 120000ms
+                ],
+            },
+        ]);
+        let result = discover_performance_spectrum(&log, "a", "concept:name", "time:timestamp");
+        assert_eq!(result.measurements.len(), 1);
+        let m = &result.measurements[0];
+        assert_eq!(m.occurrences.len(), 2);
+        assert_eq!(m.occurrences[0].duration_ms, 60000.0);
+        assert_eq!(m.occurrences[1].duration_ms, 120000.0);
+        // start_ts must be the parsed ms-epoch of the segment's first event.
+        assert_eq!(
+            m.occurrences[0].start_ts,
+            crate::models::parse_timestamp_ms("2020-01-01T00:00:00Z").unwrap()
+        );
+        assert!(!m.truncated);
+        // Aggregates unchanged by the timeline addition.
+        assert_eq!(m.count, 2);
+        assert_eq!(m.mean_duration_ms, 90000.0);
     }
 
     #[test]

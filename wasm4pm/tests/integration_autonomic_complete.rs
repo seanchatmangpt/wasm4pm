@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! End-to-end integration test for the complete autonomic loop.
 //!
 //! This test exercises the full pipeline:

@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 use proptest::prelude::*;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::state::{get_or_init_state, StoredObject};

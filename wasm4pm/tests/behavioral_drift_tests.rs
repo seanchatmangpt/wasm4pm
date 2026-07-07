@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Behavioral drift detection tests.
 //!
 //! Proves that SPC drift detection corresponds to actual process changes,

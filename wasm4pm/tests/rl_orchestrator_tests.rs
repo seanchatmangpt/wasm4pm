@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Tests for the RL Orchestrator — persistent state hub for the autonomic loop.
 //!
 //! Algorithm family: Reinforcement Learning

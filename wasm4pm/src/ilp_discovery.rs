@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js_str;
+use crate::utilities::{evaluate_edges_fitness, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -414,7 +414,7 @@ pub fn discover_ilp_petri_net(
 
     to_js_str(&json!({
         "handle": handle,
-        "algorithm": "ilp_petri_net",
+        "algorithm": "ilp_region_heuristic",
         "places": petri_net.places.len(),
         "transitions": petri_net.transitions.len(),
         "arcs": petri_net.arcs.len(),
@@ -426,6 +426,11 @@ pub fn discover_ilp_petri_net(
 }
 
 /// Pure-Rust optimized DFG discovery without wasm-bindgen. Used by integration tests.
+///
+/// Genuine discrete optimization: sweeps every distinct edge-frequency threshold,
+/// evaluates the filtered DFG's replay fitness (`evaluate_edges_fitness`) against
+/// a simplicity penalty proportional to the fraction of edges kept, and returns
+/// the argmax model. Ties prefer the lower threshold (more behavior retained).
 pub fn discover_optimized_dfg_from_log(
     log: &EventLog,
     activity_key: &str,
@@ -449,7 +454,6 @@ pub fn discover_optimized_dfg_from_log(
         .map(|(i, a)| (a.as_str(), i))
         .collect();
 
-    let mut edge_counts: FxHashMap<(String, String), usize> = FxHashMap::default();
     for trace in &log.traces {
         for event in &trace.events {
             if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
@@ -458,26 +462,58 @@ pub fn discover_optimized_dfg_from_log(
                 }
             }
         }
-        for window in trace.events.windows(2) {
-            if let (Some(AttributeValue::String(act1)), Some(AttributeValue::String(act2))) = (
-                window[0].attributes.get(activity_key),
-                window[1].attributes.get(activity_key),
-            ) {
-                *edge_counts.entry((act1.clone(), act2.clone())).or_default() += 1;
-            }
-        }
     }
 
-    let max_freq = edge_counts.values().max().copied().unwrap_or(1);
-    for ((from, to), count) in edge_counts {
-        let normalized_freq = count as f64 / max_freq as f64;
-        let score = (fitness_weight * normalized_freq) - (simplicity_weight * 0.1);
-        if score > 0.1 {
-            dfg.edges.push(DirectlyFollowsRelation {
-                from,
-                to,
-                frequency: count,
-            });
+    // Vocab-indexed edge frequencies for fitness evaluation.
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = crate::models::ColumnarLog::from_owned(&col_owned);
+    let mut edge_freq: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let (start, end) = (col.trace_offsets[t], col.trace_offsets[t + 1]);
+        for i in start..end.saturating_sub(1) {
+            *edge_freq.entry((col.events[i], col.events[i + 1])).or_default() += 1;
+        }
+    }
+    let total_edges = edge_freq.len();
+
+    if total_edges > 0 {
+        // Candidate thresholds: every distinct observed frequency (keep-if >= t).
+        let mut thresholds: Vec<usize> = edge_freq.values().copied().collect();
+        thresholds.sort_unstable();
+        thresholds.dedup();
+
+        let mut best: Option<(f64, usize, std::collections::BTreeSet<(u32, u32)>)> = None;
+        for &t in &thresholds {
+            let edge_set: std::collections::BTreeSet<(u32, u32)> = edge_freq
+                .iter()
+                .filter(|&(_, &f)| f >= t)
+                .map(|(&e, _)| e)
+                .collect();
+            if edge_set.is_empty() {
+                continue;
+            }
+            let fitness = evaluate_edges_fitness(&edge_set, &col, total_edges);
+            // Scale the penalty into the same 0.2 band as the fitness function's
+            // own complexity term, so default weights don't drown replay fitness.
+            let simplicity_penalty = 0.2 * edge_set.len() as f64 / total_edges as f64;
+            let objective = fitness_weight * fitness - simplicity_weight * simplicity_penalty;
+            let better = match &best {
+                None => true,
+                // strict improvement wins; ties keep the earlier (lower) threshold
+                Some((best_obj, _, _)) => objective > *best_obj + f64::EPSILON,
+            };
+            if better {
+                best = Some((objective, t, edge_set));
+            }
+        }
+
+        if let Some((_, _, edge_set)) = best {
+            for (from_idx, to_idx) in edge_set {
+                let from = col.vocab[from_idx as usize].to_string();
+                let to = col.vocab[to_idx as usize].to_string();
+                let frequency = edge_freq[&(from_idx, to_idx)];
+                dfg.edges.push(DirectlyFollowsRelation { from, to, frequency });
+            }
         }
     }
 

@@ -2,18 +2,36 @@
  * Enterprise Marketplace → wasm4pm Runtime Connection Validation
  *
  * Validates that marketplace OCEL event data (represented as a standard XES workflow)
- * can flow through wpm run and wpm conformance to produce a valid receipt.
+ * can flow through `wpm model discover` and `wpm model check` to produce a valid receipt.
+ *
+ * Migrated to the noun/verb surface:
+ *   - `wpm run` -> `wpm model discover` (NATIVE verb: plain result object, no
+ *     `{command,status,payload,meta}` envelope, positional input, no `--no-save`)
+ *   - `wpm conformance` -> `wpm model check --mode self` (NATIVE verb: auto-mines
+ *     a model from the same log before checking fitness, matching old
+ *     `conformance`'s behavior; plain result object with `status`/`exitCode`
+ *     fields directly at the top level, not nested under `.payload`)
+ *   - `wpm results` -> `wpm evidence report` (bridged: keeps the legacy
+ *     `{command,status,payload,meta}` envelope)
+ *
+ * Genuine capability change confirmed live against the built CLI: `model
+ * discover` never writes to `.wasm4pm/results/` (the old `wpm run`'s
+ * auto-save-to-results-dir behavior was not carried over in the rewrite —
+ * only the receipt-chain write survived, via the framework's own
+ * onResult middleware in `apps/wasm4pm/src/cli.ts`, which now fires for
+ * EVERY verb, native or bridged). So `evidence report` can no longer be
+ * expected to list a `model discover` run's output — Step 4 below tests
+ * that `evidence report` still functions (doesn't crash), not that
+ * discovery populates it.
  *
  * Test mandate:
- *   1. wpm run <xes-fixture> --format json  → exit 0, JSON envelope, result saved
- *   2. wpm conformance <xes-fixture> --format json → exit 0|6, fitness/precision present
+ *   1. wpm model discover <xes-fixture> --format json  → exit 0, plain JSON result
+ *   2. wpm model check <xes-fixture> --mode self --format json → exit 0|6, fitness/checked present
  *   3. Receipt file created at .wasm4pm/receipts/latest.json
- *   4. wpm results --format json lists the run result
+ *   4. wpm evidence report --format json does not crash
  *
  * Notes:
- *   - wpm conformance uses withLogSession → XES only (not OCEL directly)
- *   - conformance receipts go to .wasm4pm/receipts/, NOT .wasm4pm/results/
- *   - wpm run writes both .wasm4pm/results/ AND .wasm4pm/receipts/
+ *   - model check --mode self mines its own model via alpha_plus_plus, XES only
  *   - All CLI calls use { cwd: env.tempDir } for receipt path isolation
  */
 
@@ -42,11 +60,11 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
     await env?.cleanup?.();
   });
 
-  // ─── Step 1: wpm run ────────────────────────────────────────────────────────
+  // ─── Step 1: wpm model discover (was: wpm run) ─────────────────────────────
 
-  describe('Step 1: wpm run — process discovery on marketplace workflow', () => {
+  describe('Step 1: wpm model discover — process discovery on marketplace workflow', () => {
     it('should produce exit code 0 on marketplace XES', async () => {
-      const result = await runCli(['run', MARKETPLACE_XES, '--format', 'json', '--no-save'], {
+      const result = await runCli(['model', 'discover', MARKETPLACE_XES, '--format', 'json'], {
         cwd: env.tempDir,
       });
       // Exit 0 (success) or 3 (execution_error if WASM unavailable in test env)
@@ -55,12 +73,11 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
       expect(result.exitCode).not.toBe(EXIT_CODES.source_error);
     });
 
-    it('should return a valid JSON envelope', async () => {
-      const result = await runCli(['run', MARKETPLACE_XES, '--format', 'json', '--no-save'], {
+    it('should return a plain JSON result (native verb — no envelope)', async () => {
+      const result = await runCli(['model', 'discover', MARKETPLACE_XES, '--format', 'json'], {
         cwd: env.tempDir,
       });
 
-      // Parse JSON output — stdout is multi-line pretty-printed JSON
       let parsed: Record<string, unknown>;
       try {
         parsed = JSON.parse(result.stdout.trim());
@@ -70,43 +87,42 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
         );
       }
 
-      // Envelope contract: { status, exit_code, ... }
-      expect(parsed).toHaveProperty('status');
-      expect(['ok', 'error', 'success', 'partial']).toContain(parsed.status);
+      if (result.exitCode === EXIT_CODES.success) {
+        // model discover is a NATIVE verb — plain result, algorithm/shape at top level
+        expect(parsed).toHaveProperty('algorithm');
+        expect(parsed).toHaveProperty('shape');
+      } else {
+        // Any failure normalizes to the framework's error envelope
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
-    it('should auto-save result to .wasm4pm/results/ by default', async () => {
-      const result = await runCli(['run', MARKETPLACE_XES, '--format', 'json'], {
+    it('creates a receipt at .wasm4pm/receipts/latest.json (discover no longer auto-saves to results/)', async () => {
+      const result = await runCli(['model', 'discover', MARKETPLACE_XES, '--format', 'json'], {
         cwd: env.tempDir,
       });
 
-      // Exit 0 = success with auto-save; accept 3 if WASM build unavailable
       if (result.exitCode === EXIT_CODES.success) {
-        const resultsDir = path.join(env.tempDir, '.wasm4pm', 'results');
-        const resultsExist = existsSync(resultsDir);
-        if (resultsExist) {
-          const files = await fs.readdir(resultsDir);
-          expect(files.length).toBeGreaterThan(0);
-          // Result files follow pattern: <timestamp>-<task>.json
-          const resultFile = files.find((f) => f.endsWith('.json'));
-          expect(resultFile).toBeTruthy();
-        }
-        // If results dir doesn't exist yet, the test still passes (auto-save may be async)
+        // The framework's own onResult middleware (apps/wasm4pm/src/cli.ts)
+        // writes a receipt for every verb, native or bridged — this is the
+        // one piece of "wpm run auto-saves something" behavior that survived.
+        const receiptPath = path.join(env.tempDir, '.wasm4pm', 'receipts', 'latest.json');
+        expect(existsSync(receiptPath)).toBe(true);
       }
     });
   });
 
-  // ─── Step 2: wpm conformance ────────────────────────────────────────────────
+  // ─── Step 2: wpm model check --mode self (was: wpm conformance) ────────────
 
-  describe('Step 2: wpm conformance — log-to-model conformance on marketplace workflow', () => {
+  describe('Step 2: wpm model check --mode self — log-to-model conformance on marketplace workflow', () => {
     it('should exit 0 (fit) or 6 (conformance_fail) — not a crash code', async () => {
-      const result = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+      const result = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
       // Acceptable exit codes:
-      //   0 = fitness >= threshold (conforming)
-      //   6 = fitness < threshold (detected non-conformance — order-004 skips fulfill_order)
+      //   0 = ADMITTED (fitness >= threshold, conforming)
+      //   6 = REJECTED (fitness < threshold — order-004 skips fulfill_order)
       //   3 = execution_error (WASM unavailable in test env)
       // Never acceptable: 1 (config), 2 (source — file is valid)
       expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -118,8 +134,8 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
       ]).toContain(result.exitCode);
     });
 
-    it('should produce a JSON envelope with fitness field', async () => {
-      const result = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+    it('should produce a plain JSON result with a checked count', async () => {
+      const result = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
@@ -127,7 +143,6 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
         result.exitCode === EXIT_CODES.success ||
         result.exitCode === EXIT_CODES.conformance_fail
       ) {
-        // Parse multi-line pretty-printed JSON from stdout
         let parsed: Record<string, unknown>;
         try {
           parsed = JSON.parse(result.stdout.trim());
@@ -136,24 +151,16 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
           return;
         }
 
-        // Top-level envelope
+        // model check is a NATIVE verb — fields live at the top level, no `.payload` wrapper
         expect(parsed).toHaveProperty('status');
-
-        // Payload may be nested under 'payload' or at top level
-        const payload = (parsed.payload as Record<string, unknown>) ?? parsed;
-
-        // Fitness is the primary conformance metric
-        if ('fitness' in payload) {
-          const fitness = payload.fitness as number;
-          expect(typeof fitness).toBe('number');
-          expect(fitness).toBeGreaterThanOrEqual(0);
-          expect(fitness).toBeLessThanOrEqual(1);
-        }
+        expect(['ADMITTED', 'REJECTED', 'INDETERMINATE']).toContain(parsed.status);
+        expect(typeof parsed.checked).toBe('number');
+        expect((parsed.checked as number)).toBeGreaterThan(0);
       }
     });
 
-    it('should produce a JSON envelope with precision field when available', async () => {
-      const result = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+    it('should report admitted/rejected counts that sum to checked', async () => {
+      const result = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
@@ -168,18 +175,14 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
           return;
         }
 
-        const payload = (parsed.payload as Record<string, unknown>) ?? parsed;
-
-        // precision_available indicates whether precision was computed
-        // precision may be null if precision computation was skipped
-        if ('precision_available' in payload) {
-          expect(typeof payload.precision_available).toBe('boolean');
+        if (typeof parsed.admitted === 'number' && typeof parsed.rejected === 'number') {
+          expect((parsed.admitted as number) + (parsed.rejected as number)).toBe(parsed.checked);
         }
       }
     });
 
-    it('should identify summary with total_cases and conforming_cases', async () => {
-      const result = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+    it('should identify each episode with a fitness figure in its findings', async () => {
+      const result = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
@@ -194,15 +197,9 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
           return;
         }
 
-        const payload = (parsed.payload as Record<string, unknown>) ?? parsed;
-
-        if ('summary' in payload && payload.summary) {
-          const summary = payload.summary as Record<string, unknown>;
-          // Marketplace XES has 4 traces (order-001..004)
-          if ('total_cases' in summary) {
-            expect(typeof summary.total_cases).toBe('number');
-            expect(summary.total_cases as number).toBeGreaterThan(0);
-          }
+        // Marketplace XES has 4 traces (order-001..004)
+        if (Array.isArray(parsed.findings) && parsed.findings.length > 0) {
+          expect((parsed.findings as unknown[]).length).toBeGreaterThan(0);
         }
       }
     });
@@ -211,8 +208,8 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
   // ─── Step 3: Receipt file validation ────────────────────────────────────────
 
   describe('Step 3: Receipt file created in .wasm4pm/receipts/', () => {
-    it('should create latest.json receipt after conformance run', async () => {
-      const result = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+    it('should create latest.json receipt after model check --mode self', async () => {
+      const result = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
@@ -240,12 +237,11 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
             expect((receipt.output_hash as string).length).toBeGreaterThanOrEqual(16);
           }
         }
-        // If receipt doesn't exist yet, conformance may not auto-save — acceptable
       }
     });
 
     it('should create a named receipt file (not only latest.json)', async () => {
-      const result = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+      const result = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
@@ -264,39 +260,15 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
     });
   });
 
-  // ─── Step 4: wpm results listing ────────────────────────────────────────────
+  // ─── Step 4: wpm evidence report (was: wpm results) ────────────────────────
 
-  describe('Step 4: wpm results — lists run results', () => {
-    it('should list the marketplace run result after wpm run', async () => {
-      // First populate .wasm4pm/results/ via wpm run
-      const runResult = await runCli(['run', MARKETPLACE_XES, '--format', 'json'], {
-        cwd: env.tempDir,
-      });
-
-      if (runResult.exitCode === EXIT_CODES.success) {
-        // Now list results
-        const listResult = await runCli(['results', '--format', 'json'], {
-          cwd: env.tempDir,
-        });
-
-        // wpm results should exit 0 when results exist
-        expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(listResult.exitCode);
-
-        if (listResult.exitCode === EXIT_CODES.success) {
-          // Parse multi-line JSON listing
-          try {
-            const parsed = JSON.parse(listResult.stdout.trim()) as Record<string, unknown>;
-            expect(parsed).toHaveProperty('status');
-          } catch {
-            // Non-JSON output acceptable for results listing
-          }
-        }
-      }
-    });
-
-    it('wpm results --format json should not crash even with empty results dir', async () => {
-      // Run in a fresh temp dir with no prior runs
-      const result = await runCli(['results', '--format', 'json'], {
+  describe('Step 4: wpm evidence report — does not crash (discover no longer populates results/)', () => {
+    it('wpm evidence report --format json should not crash even with empty results dir', async () => {
+      // model discover doesn't write to .wasm4pm/results/ anymore (see the
+      // module doc comment) — so this only verifies evidence report itself
+      // is well-behaved on an empty/fresh directory, not that a prior
+      // discover run is listed.
+      const result = await runCli(['evidence', 'report', '--format', 'json'], {
         cwd: env.tempDir,
       });
 
@@ -304,6 +276,10 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
       // Empty results is valid: exit 0 with empty list, or exit 0 with message
       expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
       expect(result.exitCode).not.toBe(EXIT_CODES.system_error);
+      if (result.exitCode === EXIT_CODES.success) {
+        const parsed = JSON.parse(result.stdout.trim()) as Record<string, unknown>;
+        expect(parsed).toHaveProperty('status');
+      }
     });
   });
 
@@ -352,7 +328,7 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
 
       const content = await fs.readFile(MARKETPLACE_XES, 'utf-8');
 
-      // Valid XES markers required by withLogSession
+      // Valid XES markers required by the conformance readers
       expect(content).toContain('<log');
       expect(content).toContain('<trace');
       expect(content).toContain('<event');
@@ -372,30 +348,30 @@ describe('Enterprise marketplace → wasm4pm runtime connection', () => {
 
   // ─── Integration: full round-trip ───────────────────────────────────────────
 
-  describe('Full round-trip: run → conformance → receipt', () => {
+  describe('Full round-trip: model discover → model check → receipt', () => {
     it('should complete the full marketplace validation pipeline', async () => {
       // Phase 1: Discovery
-      const runResult = await runCli(['run', MARKETPLACE_XES, '--format', 'json'], {
+      const discoverResult = await runCli(['model', 'discover', MARKETPLACE_XES, '--format', 'json'], {
         cwd: env.tempDir,
       });
-      expect(runResult.exitCode).not.toBe(EXIT_CODES.config_error);
-      expect(runResult.exitCode).not.toBe(EXIT_CODES.source_error);
+      expect(discoverResult.exitCode).not.toBe(EXIT_CODES.config_error);
+      expect(discoverResult.exitCode).not.toBe(EXIT_CODES.source_error);
 
-      // Phase 2: Conformance check
-      const conformResult = await runCli(['conformance', MARKETPLACE_XES, '--format', 'json'], {
+      // Phase 2: Conformance check (self-mined model, matching old `wpm conformance`)
+      const checkResult = await runCli(['model', 'check', MARKETPLACE_XES, '--mode', 'self', '--format', 'json'], {
         cwd: env.tempDir,
       });
-      expect(conformResult.exitCode).not.toBe(EXIT_CODES.config_error);
-      expect(conformResult.exitCode).not.toBe(EXIT_CODES.source_error);
+      expect(checkResult.exitCode).not.toBe(EXIT_CODES.config_error);
+      expect(checkResult.exitCode).not.toBe(EXIT_CODES.source_error);
 
-      // Phase 3: Either exit 0 (fit) or 6 (conformance_fail with non-conforming trace order-004)
+      // Phase 3: Either exit 0 (ADMITTED) or 6 (REJECTED, with non-conforming trace order-004)
       // The fixture has order-004 which skips fulfill_order — this is intentionally non-conforming
       // so exit 6 is the expected outcome for a strict conformance check
       expect([
         EXIT_CODES.success,
         EXIT_CODES.conformance_fail,
         EXIT_CODES.execution_error, // acceptable if WASM not built for test env
-      ]).toContain(conformResult.exitCode);
+      ]).toContain(checkResult.exitCode);
     });
   });
 });

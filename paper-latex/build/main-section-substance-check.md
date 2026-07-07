@@ -1,0 +1,1 @@
+PASS: 14/14 sections contain substantive argumentation, definitions, boundaries, and capability links.

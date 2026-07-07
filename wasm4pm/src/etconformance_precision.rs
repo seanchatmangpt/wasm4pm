@@ -1,25 +1,28 @@
-//! ETConformance precision metric.
+//! ETConformance precision metric (Muñoz-Gama & Carmona).
 //!
 //! Measures how precisely a Petri net model describes the behavior observed
-//! in the event log. Based on the escaping-edges approach: transitions that
-//! are enabled in the model at some replay step but never actually fired are
-//! "escaping edges." A model with many escaping edges is *underfitting* (too
-//! permissive), and the precision score drops accordingly.
+//! in the event log, using the observed prefix automaton: every observed log
+//! prefix is a state, weighted by how often it is visited. Each state is
+//! mapped to a model marking by replaying the prefix (with forced enabling
+//! for non-fitting traces). At each state:
 //!
-//! Formula (aggregated over all traces):
+//! * `enabled(s)`  = visible activity labels enabled in the model marking
+//! * `observed(s)` = activities actually following that prefix in the log
+//! * `escaping(s)` = `enabled(s) \ observed(s)`
 //!
 //! ```text
-//! precision = 1 - sum(escaping) / (sum(escaping) + sum(consumed))
+//! precision = 1 − Σ_s w(s)·|escaping(s)| / Σ_s w(s)·|enabled(s)|
 //! ```
 //!
-//! The result is clamped to [0.0, 1.0]. An empty log yields precision = 1.0.
-//!
-//! Adapted from pm4wasm `conformance::precision` to wasm4pm's `models::PetriNet`.
+//! A zero denominator (e.g. empty log) yields precision = 1.0. States are
+//! keyed by the activity-sequence prefix (not the marking alone) so that
+//! over-permissive models — where many prefixes collapse onto the same
+//! marking — are still penalized per the ETConformance paper.
 
 use crate::models::EventLog;
 use crate::models::PetriNet;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -38,12 +41,14 @@ pub type Marking = std::collections::BTreeMap<String, usize>;
 pub struct PrecisionResult {
     /// Overall precision score in [0.0, 1.0].
     pub precision: f64,
-    /// Total escaping tokens across all traces.
+    /// Visit-weighted sum of |escaping(s)| over all observed states.
     pub total_escaping: u32,
-    /// Total consumed tokens across all traces.
+    /// Visit-weighted sum of |enabled(s)| over all observed states.
     pub total_consumed: u32,
     /// Number of traces analyzed.
     pub total_traces: usize,
+    /// Number of distinct observed prefix-automaton states.
+    pub states_observed: usize,
 }
 
 // ---------------------------------------------------------------------------
@@ -151,92 +156,28 @@ fn event_activity(event: &crate::models::Event, activity_key: &str) -> Option<St
 }
 
 // ---------------------------------------------------------------------------
-// Per-trace computation
+// Observed prefix automaton
 // ---------------------------------------------------------------------------
 
-/// Compute escaping and consumed token counts for a single trace.
-///
-/// After each visible transition fires (and silent transitions are eagerly
-/// resolved), we count how many *other* transitions are currently enabled but
-/// will **not** be fired for the current event. Each such transition's preset
-/// size contributes to the "escaping" total.
-fn precision_for_trace(
-    net: &PetriNet,
-    initial_marking: &Marking,
-    final_marking: &Marking,
-    trace: &crate::models::Trace,
-    activity_key: &str,
-) -> (u32, u32) {
-    let mut marking: Marking = initial_marking.clone();
-    let mut consumed: u32 = 0;
-    let mut escaping: u32 = 0;
+/// Labels of visible transitions enabled in `marking`.
+fn enabled_visible_labels(net: &PetriNet, marking: &Marking) -> std::collections::BTreeSet<String> {
+    net.transitions
+        .iter()
+        .filter(|t| !is_invisible(net, &t.id) && !t.label.is_empty())
+        .filter(|t| is_enabled(marking, &preset(net, &t.id)))
+        .map(|t| t.label.clone())
+        .collect()
+}
 
-    // Fire any initially-enabled silent transitions
-    fire_silent_enabled(net, &mut marking);
-
-    for event in &trace.events {
-        let Some(activity) = event_activity(event, activity_key) else {
-            continue;
-        };
-
-        // Find visible transitions matching the activity label
-        let visible_candidates: Vec<String> = net
-            .transitions
-            .iter()
-            .filter(|t| transition_has_label(net, &t.id, &activity))
-            .map(|t| t.id.clone())
-            .collect();
-
-        if visible_candidates.is_empty() {
-            // Activity not in net -- skip (invisible to conformance)
-            continue;
-        }
-
-        // Pick the first enabled candidate; force-enable if none are ready
-        let chosen = if let Some(t) = visible_candidates.iter().find(|t| {
-            let pre = preset(net, t);
-            is_enabled(&marking, &pre)
-        }) {
-            t.clone()
-        } else {
-            // No enabled candidate -- inject missing tokens to force-enable
-            let first = &visible_candidates[0];
-            for p in &preset(net, first) {
-                let have = marking.get(p).copied().unwrap_or(0);
-                if have == 0 {
-                    *marking.entry(p.clone()).or_default() += 1;
-                }
-            }
-            first.clone()
-        };
-
-        let pre = preset(net, &chosen);
-        let post = postset(net, &chosen);
-        fire(&mut marking, &pre, &post);
-        consumed += pre.len() as u32;
-
-        // Fire any newly-enabled silent transitions
-        fire_silent_enabled(net, &mut marking);
-
-        // Count escaping edges: transitions enabled now that will NOT be fired
-        // for the current event. Each enabled transition's preset size counts
-        // as escaping tokens.
-        for trans in &net.transitions {
-            let trans_pre = preset(net, &trans.id);
-            if !trans_pre.is_empty() && is_enabled(&marking, &trans_pre) {
-                // This transition is enabled but won't be fired for this event
-                if !transition_has_label(net, &trans.id, &activity) {
-                    escaping += trans_pre.len() as u32;
-                }
-            }
-        }
-    }
-
-    // Account for final marking consumption
-    let final_consumed: u32 = final_marking.values().map(|&v| v as u32).sum();
-    consumed += final_consumed;
-
-    (escaping, consumed)
+/// One state of the observed prefix automaton.
+#[derive(Default)]
+struct StateInfo {
+    /// How many times this prefix was visited across all traces.
+    visits: u64,
+    /// Activities observed to follow this prefix in the log.
+    observed: std::collections::BTreeSet<String>,
+    /// Visible activity labels enabled in the model marking at this prefix.
+    enabled: std::collections::BTreeSet<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -252,34 +193,102 @@ fn precision_for_trace(
 pub fn compute_precision(
     net: &PetriNet,
     initial_marking: &Marking,
-    final_marking: &Marking,
+    _final_marking: &Marking,
     log: &EventLog,
     activity_key: &str,
 ) -> PrecisionResult {
-    let mut total_escaping: u32 = 0;
-    let mut total_consumed: u32 = 0;
     let total_traces = log.traces.len();
+    // Keyed by activity-sequence prefix; U+001F separates activity names so
+    // prefixes like ["ab"] and ["a","b"] cannot collide.
+    let mut states: BTreeMap<String, StateInfo> = BTreeMap::new();
 
     for trace in &log.traces {
-        let (escaping, consumed) =
-            precision_for_trace(net, initial_marking, final_marking, trace, activity_key);
-        total_escaping += escaping;
-        total_consumed += consumed;
+        let mut marking: Marking = initial_marking.clone();
+        fire_silent_enabled(net, &mut marking);
+        let mut prefix_key = String::new();
+
+        for event in &trace.events {
+            let Some(activity) = event_activity(event, activity_key) else {
+                continue;
+            };
+
+            // Find visible transitions matching the activity label
+            let visible_candidates: Vec<String> = net
+                .transitions
+                .iter()
+                .filter(|t| transition_has_label(net, &t.id, &activity))
+                .map(|t| t.id.clone())
+                .collect();
+
+            if visible_candidates.is_empty() {
+                // Activity not in net -- skip (invisible to conformance)
+                continue;
+            }
+
+            // Record the state *before* firing: this prefix was visited and
+            // `activity` was observed to follow it.
+            let enabled = enabled_visible_labels(net, &marking);
+            let entry = states.entry(prefix_key.clone()).or_default();
+            entry.visits += 1;
+            entry.observed.insert(activity.clone());
+            entry.enabled = enabled;
+
+            // Pick the first enabled candidate; force-enable if none are ready
+            let chosen = if let Some(t) = visible_candidates.iter().find(|t| {
+                let pre = preset(net, t);
+                is_enabled(&marking, &pre)
+            }) {
+                t.clone()
+            } else {
+                // No enabled candidate -- inject missing tokens to force-enable
+                let first = &visible_candidates[0];
+                for p in &preset(net, first) {
+                    let have = marking.get(p).copied().unwrap_or(0);
+                    if have == 0 {
+                        *marking.entry(p.clone()).or_default() += 1;
+                    }
+                }
+                first.clone()
+            };
+
+            let pre = preset(net, &chosen);
+            let post = postset(net, &chosen);
+            fire(&mut marking, &pre, &post);
+            fire_silent_enabled(net, &mut marking);
+
+            prefix_key.push('\u{1f}');
+            prefix_key.push_str(&activity);
+        }
+
+        // Terminal state: everything still enabled here escapes (nothing
+        // follows this prefix in the log).
+        let enabled = enabled_visible_labels(net, &marking);
+        let entry = states.entry(prefix_key).or_default();
+        entry.visits += 1;
+        entry.enabled = enabled;
     }
 
-    let precision = if total_consumed == 0 && total_escaping == 0 {
+    let states_observed = states.len();
+    let mut escaping_w: u64 = 0;
+    let mut enabled_w: u64 = 0;
+    for info in states.values() {
+        let escaping = info.enabled.difference(&info.observed).count() as u64;
+        escaping_w += info.visits * escaping;
+        enabled_w += info.visits * info.enabled.len() as u64;
+    }
+
+    let precision = if enabled_w == 0 {
         1.0
     } else {
-        let e = total_escaping as f64;
-        let c = total_consumed as f64;
-        (1.0 - e / (e + c)).clamp(0.0, 1.0)
+        (1.0 - escaping_w as f64 / enabled_w as f64).clamp(0.0, 1.0)
     };
 
     PrecisionResult {
         precision,
-        total_escaping,
-        total_consumed,
+        total_escaping: escaping_w as u32,
+        total_consumed: enabled_w as u32,
         total_traces,
+        states_observed,
     }
 }
 
@@ -479,6 +488,7 @@ mod tests {
             total_escaping: 10,
             total_consumed: 30,
             total_traces: 5,
+            states_observed: 7,
         };
         let json = serde_json::to_string(&result).unwrap();
         let parsed: PrecisionResult = serde_json::from_str(&json).unwrap();
@@ -486,6 +496,116 @@ mod tests {
         assert_eq!(parsed.total_escaping, 10);
         assert_eq!(parsed.total_consumed, 30);
         assert_eq!(parsed.total_traces, 5);
+        assert_eq!(parsed.states_observed, 7);
+    }
+
+    /// Build a flower-ish net: a single marked place `p` with self-loop
+    /// transitions for the given labels — every transition is always enabled.
+    fn flower_net(labels: &[&str]) -> (PetriNet, Marking, Marking) {
+        let mut net = PetriNet::new();
+        net.places.push(PetriNetPlace {
+            id: "p".into(),
+            label: "p".into(),
+            marking: Some(1),
+        });
+        for &l in labels {
+            let tid = format!("t_{}", l);
+            net.transitions.push(PetriNetTransition {
+                id: tid.clone(),
+                label: l.into(),
+                is_invisible: Some(false),
+            });
+            net.arcs.push(PetriNetArc {
+                from: "p".into(),
+                to: tid.clone(),
+                weight: Some(1),
+            });
+            net.arcs.push(PetriNetArc {
+                from: tid,
+                to: "p".into(),
+                weight: Some(1),
+            });
+        }
+        let mut initial = Marking::default();
+        initial.insert("p".into(), 1);
+        let mut final_m = Marking::default();
+        final_m.insert("p".into(), 1);
+        (net, initial, final_m)
+    }
+
+    /// Build a strictly sequential net for the given labels:
+    /// [p0] -> t_l0 -> [p1] -> t_l1 -> ... -> [pn]
+    fn sequential_net_for(labels: &[&str]) -> (PetriNet, Marking, Marking) {
+        let mut net = PetriNet::new();
+        for i in 0..=labels.len() {
+            net.places.push(PetriNetPlace {
+                id: format!("p{}", i),
+                label: format!("p{}", i),
+                marking: if i == 0 { Some(1) } else { None },
+            });
+        }
+        for (i, &l) in labels.iter().enumerate() {
+            let tid = format!("t_{}", l);
+            net.transitions.push(PetriNetTransition {
+                id: tid.clone(),
+                label: l.into(),
+                is_invisible: Some(false),
+            });
+            net.arcs.push(PetriNetArc {
+                from: format!("p{}", i),
+                to: tid.clone(),
+                weight: Some(1),
+            });
+            net.arcs.push(PetriNetArc {
+                from: tid,
+                to: format!("p{}", i + 1),
+                weight: Some(1),
+            });
+        }
+        let mut initial = Marking::default();
+        initial.insert("p0".into(), 1);
+        let mut final_m = Marking::default();
+        final_m.insert(format!("p{}", labels.len()), 1);
+        (net, initial, final_m)
+    }
+
+    #[test]
+    fn test_flower_model_less_precise_than_fitting_sequential_model() {
+        // Strictly sequential log: 5 × ⟨A, B, C⟩.
+        let log = make_log(
+            "concept:name",
+            &[
+                &["A", "B", "C"],
+                &["A", "B", "C"],
+                &["A", "B", "C"],
+                &["A", "B", "C"],
+                &["A", "B", "C"],
+            ],
+        );
+
+        let (seq, seq_i, seq_f) = sequential_net_for(&["A", "B", "C"]);
+        let seq_result = compute_precision(&seq, &seq_i, &seq_f, &log, "concept:name");
+        // Fitting sequential model: at every state, enabled == observed
+        // (terminal state enables nothing) → precision exactly 1.0.
+        assert!(
+            (seq_result.precision - 1.0).abs() < 1e-9,
+            "sequential precision = {}",
+            seq_result.precision
+        );
+
+        let (flower, fl_i, fl_f) = flower_net(&["A", "B", "C"]);
+        let fl_result = compute_precision(&flower, &fl_i, &fl_f, &log, "concept:name");
+        // Flower: states "", "A", "A B", "A B C" each enable {A,B,C};
+        // observed is a single activity (or none at terminal) →
+        // precision = 1 − (2+2+2+3)/(3+3+3+3) = 0.25.
+        assert!(
+            fl_result.precision < seq_result.precision,
+            "flower ({}) must be less precise than sequential ({})",
+            fl_result.precision,
+            seq_result.precision
+        );
+        assert!((fl_result.precision - 0.25).abs() < 1e-9);
+        assert_eq!(fl_result.states_observed, 4);
     }
 
     #[test]
@@ -494,8 +614,8 @@ mod tests {
         // Log with an activity not in the net
         let log = make_log("concept:name", &[&["X", "Y"]]);
         let result = compute_precision(&net, &initial, &final_m, &log, "concept:name");
-        // All activities are unknown, so nothing consumed and nothing escaping
-        // Final marking consumption still happens
+        // All events are skipped, but the terminal (empty-prefix) state is
+        // still recorded and enables t_A in the model.
         assert!(result.total_consumed > 0);
     }
 

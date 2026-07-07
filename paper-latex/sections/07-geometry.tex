@@ -1,0 +1,9 @@
+We discard decorative geometric claims of "higher-dimensional temporal manifolds" in favor of bounded, discrete geometry. The event space of \textit{wasm4pm} is modeled using trace metric spaces, process graph geometry, and constraint polytopes.
+
+Trace metric spaces define the geometry for \code{compute\_trace\_similarity\_matrix} and clustering algorithms. By defining a string edit distance or vector embedding, we can compute precise bounds on cluster radii. 
+
+\begin{proposition}
+The state-space geometry of the \code{transition\_system} algorithm is a directed finite graph where the reachability set is strictly bounded by $O(|V| + |E|)$.
+\end{proposition}
+
+For decision theory capabilities (\code{mdp}, \code{pomdp}), the geometry is the standard probability simplex. Operations map belief states from one point in the simplex to another, subject to discrete finite-horizon truncations to guarantee termination.

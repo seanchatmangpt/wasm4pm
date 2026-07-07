@@ -30,9 +30,12 @@ async function main() {
   const gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
   const cases = generateCaseRegistry();
   const registryIds = new Set(getRegistry().list().map((a) => a.id));
-  // wasm4pm.js is the CommonJS entry (module.exports.*); ESM `export function` names live in wasm4pm_bg.js
-  const wasmBg = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm_bg.js'), 'utf8');
-  const wasmExports = new Set([...wasmBg.matchAll(/export function (\w+)/g)].map((m) => m[1]));
+  // The nodejs wasm-pack target emits only the CommonJS entry (wasm4pm.js,
+  // module.exports.*); any wasm4pm_bg.js is a stale artifact of older builds.
+  const wasmJs = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm.js'), 'utf8');
+  const wasmExports = new Set(
+    [...wasmJs.matchAll(/module\.exports\.(\w+)\s*=\s*function/g)].map((m) => m[1])
+  );
   const apiSrc = fs.readFileSync(path.resolve(rootDir, 'packages/kernel/src/api.ts'), 'utf8');
   const apiCases = new Set([...apiSrc.matchAll(/case '([^']+)':/g)].map((m) => m[1]));
 

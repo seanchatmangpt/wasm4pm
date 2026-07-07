@@ -9,15 +9,15 @@
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
-  "wasm_export_present": false,
+  "wasm_export_present": true,
   "positive_cases": [
     {
       "case_id": "aco.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "77f3aace4ebf6fcba197ff317368a49f06edf5408b7c20babe3b9fefc9ca6e33",
-      "duration_ms": 7.607708000000002,
-      "receipt_hash": "097540a783485550fdf3305e79852d6b59bce19f99743addaa8c9a58c4a150ed"
+      "duration_ms": 8.19487499999991,
+      "receipt_hash": "df047e7decd1ca5df8cf8b9f20f2d575859ef44a3228274ad8f1b26a9a7af074"
     }
   ],
   "negative_cases": [
@@ -52,5 +52,5 @@
       "second_result_hash": "a6e2278763de629ca86d2cb9996960c1277d2c978465b5b583745c311bbf41f9"
     }
   ],
-  "algorithm_evidence_hash": "d5e31d4806387c86697e70d8a9461d4dd4257da8455259debc1875403b81dd9e"
+  "algorithm_evidence_hash": "a13538e549d8bdfa167011d8a729e9871ccc4a6376aa142c6fd26a9d56e0a1d7"
 }

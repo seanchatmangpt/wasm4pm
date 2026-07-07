@@ -1,18 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { EXIT_CODES, translateContractExitCode } from '../src/exit-codes.js';
+import { EXIT_CODES, translateContractExitCode, type ExitCode } from '../src/exit-codes.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Static contract — numeric values and ordering
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Exit codes', () => {
-  it('defines the correct numeric values for all 6 codes', () => {
+  it('defines the correct numeric values for all 7 codes', () => {
     expect(EXIT_CODES.success).toBe(0);
     expect(EXIT_CODES.config_error).toBe(1);
     expect(EXIT_CODES.source_error).toBe(2);
     expect(EXIT_CODES.execution_error).toBe(3);
     expect(EXIT_CODES.partial_failure).toBe(4);
     expect(EXIT_CODES.system_error).toBe(5);
+    expect(EXIT_CODES.conformance_fail).toBe(6);
   });
 
   it('codes are strictly increasing from config to system error and all non-negative', () => {
@@ -39,10 +40,10 @@ describe('Exit codes', () => {
     expect(unique.size).toBe(values.length);
   });
 
-  it('covers the contiguous range 0–5 with no gaps', () => {
+  it('covers the contiguous range 0–6 with no gaps', () => {
     const values = new Set(Object.values(EXIT_CODES));
-    for (let i = 0; i <= 5; i++) {
-      expect(values.has(i)).toBe(true);
+    for (let i = 0; i <= 6; i++) {
+      expect(values.has(i as ExitCode)).toBe(true);
     }
   });
 
@@ -54,6 +55,7 @@ describe('Exit codes', () => {
     expect(keys).toContain('execution_error');
     expect(keys).toContain('partial_failure');
     expect(keys).toContain('system_error');
+    expect(keys).toContain('conformance_fail');
   });
 });
 

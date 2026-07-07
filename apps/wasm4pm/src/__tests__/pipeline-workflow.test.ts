@@ -1,30 +1,64 @@
 /**
- * Tests for `wpm pipeline` command — workflow chaining.
+ * Tests for `wpm pipeline` — workflow chaining.
  *
- * Tests cover:
- *   1. wpm pipeline list — exits 0, built-in pipelines listed
- *   2. wpm pipeline run quick -i <fixture> — exits 0 with step results
- *   3. JSON output has required fields: pipeline_name, steps_completed, steps_failed, duration_ms
- *   4. wpm pipeline validate <valid-json> — exits 0
- *   5. wpm pipeline validate <invalid-json> — exits non-zero with error
- *   6. wpm pipeline create — creates a pipeline file
- *   7. wpm pipeline run with unknown preset — exits non-zero
+ * `pipeline` survived the noun-verb rebuild as a bare noun, but its old
+ * subcommands were restructured (nouns/_removed.ts):
+ *   `pipeline create` / `pipeline list` / `pipeline validate` -> `pipeline plan`
+ *   (all three collapsed into one verb that BUILDS a typed step DAG from a
+ *   `--preset`, a `--plan-file`, or `--auto` — it does not write files, list
+ *   built-ins, or validate independently of building).
+ *   `pipeline run` still exists but now takes `--preset <name>`/`--plan-file
+ *   <path>`/`--auto` (no more bare positional preset name or plan-file path)
+ *   and executes through `engines/orchestrator/execute.ts` in-process,
+ *   chaining a BLAKE3 receipt per step — see `nouns/pipeline/run.ts` and
+ *   `plan.ts`.
+ *
+ * Contract changes verified live and reflected below:
+ *   - Only 3 built-in presets now: full (5 steps: validate, stats, discover,
+ *     check, explain) | quick (2 steps: validate, discover) | compliance
+ *     (3 steps: validate, discover, check). The old 4th "discovery" preset
+ *     and the old full=6/quick=2 step counts no longer apply.
+ *   - There is no verb to enumerate built-in presets without picking one
+ *     and supplying `--input` (`buildPlan` requires `--input` for any
+ *     preset) — `pipeline plan`/`pipeline list --format json` no longer
+ *     exists as an "list all builtins" operation. Presets themselves are
+ *     directly named in `engines/orchestrator/plan.ts`'s `PRESET_NAMES`.
+ *   - `pipeline create` (write a `.pipeline.json` to disk) has no
+ *     replacement at all — `plan`/`run` only ever consume a plan file
+ *     (`--plan-file`), never produce one. This is a genuine feature
+ *     removal, not a renamed command.
+ *   - A verb result is the plain JSON payload directly — no `{payload:...}`
+ *     wrapper (these are native, non-bridged verbs, unlike e.g. `evidence
+ *     report`). `pipeline plan`'s result IS the `OrchestratorPlan` (+
+ *     `executionOrder`); `pipeline run`'s result IS the `ExecutionReport`
+ *     (`{planId, status, steps, chainHash}` — no more
+ *     `pipeline_name`/`steps_completed`/`steps_failed`/`step_results`).
+ *   - No `optional: true` step flag any more — `executePlan` is strictly
+ *     fail-fast: the first step error stops the run (a later step may
+ *     depend on the failed one's output) and the whole run reports
+ *     `status: 'failed'` (or `'partial'` if at least one earlier step
+ *     already succeeded before the failure).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
+import { runCli, EXIT_CODES } from '@wasm4pm/testing';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
 // ─── Fixture setup ────────────────────────────────────────────────────────────
 
-const FIXTURE_XES = '/Users/sac/wasm4pm/data/small-example.xes';
-const FIXTURE_XES_ALT = '/Users/sac/wasm4pm/test/fixtures/small.xes';
+// Prefer the packages/testing fixture: verified clean (`log validate` reports
+// `status: 'pass'`) — `data/small-example.xes` fails real schema validation
+// (missing concept:name/time:timestamp on some events), which is the correct,
+// intentional fail-closed behavior of `log validate` but not useful for
+// exercising a successful multi-step run.
 const FIXTURE_XES_TESTING = '/Users/sac/wasm4pm/packages/testing/__tests__/fixtures/sample.xes';
+const FIXTURE_XES_ALT = '/Users/sac/wasm4pm/test/fixtures/small.xes';
+const FIXTURE_XES = '/Users/sac/wasm4pm/data/small-example.xes';
 
 function findFixtureXes(): string | undefined {
-  for (const candidate of [FIXTURE_XES, FIXTURE_XES_ALT, FIXTURE_XES_TESTING]) {
+  for (const candidate of [FIXTURE_XES_TESTING, FIXTURE_XES_ALT, FIXTURE_XES]) {
     if (fs.existsSync(candidate)) return candidate;
   }
   return undefined;
@@ -44,7 +78,7 @@ afterEach(() => {
   } catch { /* ignore */ }
 });
 
-function writePipelineJson(name: string, content: object): string {
+function writePlanFile(name: string, content: object): string {
   const filePath = path.join(tmpDir, `${name}.json`);
   fs.writeFileSync(filePath, JSON.stringify(content, null, 2));
   return filePath;
@@ -52,362 +86,212 @@ function writePipelineJson(name: string, content: object): string {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('wpm pipeline list', () => {
-  it('exits 0', async () => {
-    const result = await runCli(['pipeline', 'list']);
+describe('wpm pipeline plan (was: wpm pipeline create/list/validate)', () => {
+  it('--preset quick builds a 2-step DAG (validate -> discover)', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) {
+      console.log('Skipping: no fixture XES file found');
+      return;
+    }
+    const result = await runCli(['pipeline', 'plan', '--preset', 'quick', '--input', fixture]);
     expect(result.exitCode).toBe(EXIT_CODES.success);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.presetName).toBe('quick');
+    expect(parsed.steps.length).toBe(2);
+    expect(parsed.executionOrder).toEqual(['validate', 'discover']);
   });
 
-  it('lists built-in pipelines in human output', async () => {
-    const result = await runCli(['pipeline', 'list']);
+  it('--preset full builds a 5-step DAG', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) return;
+    const result = await runCli(['pipeline', 'plan', '--preset', 'full', '--input', fixture]);
     expect(result.exitCode).toBe(EXIT_CODES.success);
-    const out = result.stdout + result.stderr;
-    // All four built-in presets should appear
-    expect(out).toMatch(/quick/i);
-    expect(out).toMatch(/full/i);
-    expect(out).toMatch(/compliance/i);
-    expect(out).toMatch(/discovery/i);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.steps.length).toBe(5);
   });
 
-  it('emits JSON with builtin array when --format json', async () => {
-    const result = await runCli(['pipeline', 'list', '--format', 'json']);
+  it('--preset compliance builds a 3-step DAG', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) return;
+    const result = await runCli(['pipeline', 'plan', '--preset', 'compliance', '--input', fixture]);
     expect(result.exitCode).toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as { payload?: { builtin?: unknown[] } };
-    expect(parsed.payload).toBeDefined();
-    expect(parsed.payload?.builtin).toBeInstanceOf(Array);
-    expect((parsed.payload?.builtin as unknown[]).length).toBeGreaterThanOrEqual(4);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.steps.length).toBe(3);
   });
 
-  it('lists pipeline step counts', async () => {
-    const result = await runCli(['pipeline', 'list', '--format', 'json']);
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as {
-      payload?: { builtin?: Array<{ id: string; steps: number }> };
-    };
-    const builtins = parsed.payload?.builtin ?? [];
-    const full = builtins.find((b) => b.id === 'full');
-    expect(full).toBeDefined();
-    expect(full?.steps).toBe(6); // full has 6 steps
-    const quick = builtins.find((b) => b.id === 'quick');
-    expect(quick?.steps).toBe(2); // quick has 2 steps
-  });
-});
-
-describe('wpm pipeline validate', () => {
-  it('exits 0 for a valid pipeline JSON', async () => {
-    const pipelineFile = writePipelineJson('valid-pipeline', {
-      name: 'test-pipeline',
-      description: 'A valid test pipeline',
-      steps: [
-        { step: 'validate', args: {} },
-        { step: 'run', args: { algorithm: 'dfg' } },
-        { step: 'quality', args: {} },
-      ],
-    });
-
-    const result = await runCli(['pipeline', 'validate', pipelineFile]);
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/VALID/i);
+  it('exits non-zero (source_error) for an unknown preset name', async () => {
+    const result = await runCli(['pipeline', 'plan', '--preset', 'nonexistent-preset-12345', '--input', 'x.xes']);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.error?.message).toMatch(/Unknown pipeline preset/i);
   });
 
-  it('exits non-zero for invalid JSON', async () => {
+  it('exits non-zero when a preset is given without --input', async () => {
+    const result = await runCli(['pipeline', 'plan', '--preset', 'quick']);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.error?.message).toMatch(/--input/i);
+  });
+
+  it('exits non-zero when neither preset, --plan-file, nor --auto is given', async () => {
+    const result = await runCli(['pipeline', 'plan']);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.error?.message).toMatch(/preset|plan-file|auto/i);
+  });
+
+  it('exits non-zero for a missing --plan-file', async () => {
+    const result = await runCli(['pipeline', 'plan', '--plan-file', '/nonexistent/pipeline.json']);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+  });
+
+  it('exits non-zero for invalid JSON in --plan-file', async () => {
     const badFile = path.join(tmpDir, 'bad.json');
     fs.writeFileSync(badFile, '{ not valid json ]');
 
-    const result = await runCli(['pipeline', 'validate', badFile]);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/INVALID|error|json/i);
+    const result = await runCli(['pipeline', 'plan', '--plan-file', badFile]);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.error?.message).toMatch(/not valid JSON/i);
   });
 
-  it('exits non-zero for missing file', async () => {
-    const result = await runCli(['pipeline', 'validate', '/nonexistent/pipeline.json']);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/not found|INVALID|error/i);
+  it('exits non-zero for a --plan-file with an empty steps array', async () => {
+    const planFile = writePlanFile('empty-steps', { steps: [] });
+    const result = await runCli(['pipeline', 'plan', '--plan-file', planFile]);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.error?.message).toMatch(/non-empty 'steps'/i);
   });
 
-  it('exits non-zero for pipeline with no steps', async () => {
-    const pipelineFile = writePipelineJson('empty-steps', {
-      name: 'empty',
-      steps: [],
-    });
-
-    const result = await runCli(['pipeline', 'validate', pipelineFile]);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/INVALID|no steps|error/i);
+  it('exits non-zero for a --plan-file step missing noun/verb', async () => {
+    const planFile = writePlanFile('bad-step', { steps: [{ args: {} }] });
+    const result = await runCli(['pipeline', 'plan', '--plan-file', planFile]);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.error?.message).toMatch(/noun.*verb/i);
   });
 
-  it('exits non-zero for pipeline missing name field', async () => {
-    const pipelineFile = writePipelineJson('no-name', {
-      steps: [{ step: 'validate' }],
-    });
-
-    const result = await runCli(['pipeline', 'validate', pipelineFile]);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
-  });
-
-  it('emits JSON payload with valid/errors fields when --format json', async () => {
-    const pipelineFile = writePipelineJson('valid-for-json', {
-      name: 'json-test',
-      steps: [{ step: 'validate' }, { step: 'run', args: { algorithm: 'dfg' } }],
-    });
-
-    const result = await runCli(['pipeline', 'validate', pipelineFile, '--format', 'json']);
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as {
-      payload?: { valid?: boolean; errors?: number; steps_count?: number };
-    };
-    expect(parsed.payload?.valid).toBe(true);
-    expect(parsed.payload?.errors).toBe(0);
-    expect(parsed.payload?.steps_count).toBe(2);
-  });
-
-  it('warns about slow steps but still exits 0', async () => {
-    const pipelineFile = writePipelineJson('slow-steps', {
-      name: 'slow-test',
+  it('builds a plan from a custom --plan-file (noun/verb steps)', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) return;
+    const planFile = writePlanFile('custom-test', {
       steps: [
-        { step: 'validate' },
-        { step: 'simulate' }, // simulate is known to be slow
+        { id: 'validate', noun: 'log', verb: 'validate', args: { input: fixture } },
+        { id: 'discover', noun: 'model', verb: 'discover', args: { input: fixture }, dependsOn: ['validate'] },
       ],
     });
 
-    const result = await runCli(['pipeline', 'validate', pipelineFile]);
-    // Should still be valid (warnings don't fail validation)
+    const result = await runCli(['pipeline', 'plan', '--plan-file', planFile]);
     expect(result.exitCode).toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/warning|VALID/i);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.source).toBe('file');
+    expect(parsed.steps.length).toBe(2);
+    expect(parsed.executionOrder).toEqual(['validate', 'discover']);
   });
 });
 
 describe('wpm pipeline run', () => {
-  it('exits non-zero for unknown preset name', async () => {
-    const result = await runCli(['pipeline', 'run', 'nonexistent-preset-12345']);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/not found|pipeline|error/i);
+  it('exits non-zero (source_error) for unknown preset name', async () => {
+    const result = await runCli(['pipeline', 'run', '--preset', 'nonexistent-preset-12345', '--input', 'x.xes']);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
   });
 
-  it('exits non-zero for missing pipeline file', async () => {
-    const result = await runCli(['pipeline', 'run', '/nonexistent/pipeline.json']);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
+  it('exits non-zero (source_error) for missing --plan-file', async () => {
+    const result = await runCli(['pipeline', 'run', '--plan-file', '/nonexistent/pipeline.json']);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
   });
 
-  it('runs quick preset and exits 0 with fixture log', async () => {
+  it('runs the quick preset end to end and exits 0 with a clean fixture log', async () => {
     const fixture = findFixtureXes();
     if (!fixture) {
       console.log('Skipping: no fixture XES file found');
       return;
     }
 
-    const result = await runCli(['pipeline', 'run', 'quick', '-i', fixture, '--no-save'], {
+    const result = await runCli(['pipeline', 'run', '--preset', 'quick', '--input', fixture], {
       timeout: 60_000,
     });
-    // quick runs validate + run dfg — both should succeed with a valid log
+    // quick runs log validate + model discover — both should succeed with a valid log
     expect(result.exitCode).toBe(EXIT_CODES.success);
-    const out = result.stdout + result.stderr;
-    expect(out).toMatch(/Pipeline|pipeline/i);
-  });
-
-  it('emits JSON with required fields when --format json', async () => {
-    const fixture = findFixtureXes();
-    if (!fixture) {
-      console.log('Skipping: no fixture XES file found');
-      return;
-    }
-
-    const result = await runCli(
-      ['pipeline', 'run', 'quick', '-i', fixture, '--format', 'json', '--no-save'],
-      { timeout: 60_000 }
-    );
-
-    // Even partial failure (4) or success (0) should produce JSON
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-
-    let parsed: {
-      payload?: {
-        pipeline_name?: string;
-        steps_completed?: number;
-        steps_failed?: number;
-        duration_ms?: number;
-        step_results?: unknown[];
-      };
-    };
-    try {
-      parsed = JSON.parse(result.stdout);
-    } catch {
-      // stdout may have mixed content; try to extract JSON
-      const jsonMatch = result.stdout.match(/\{[\s\S]*"pipeline_name"[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON output found in stdout');
-      parsed = JSON.parse(jsonMatch[0]);
-    }
-
-    expect(parsed.payload).toBeDefined();
-    expect(parsed.payload?.pipeline_name).toBe('quick');
-    expect(typeof parsed.payload?.steps_completed).toBe('number');
-    expect(typeof parsed.payload?.steps_failed).toBe('number');
-    expect(typeof parsed.payload?.duration_ms).toBe('number');
-    expect(parsed.payload?.duration_ms).toBeGreaterThan(0);
-    expect(parsed.payload?.step_results).toBeInstanceOf(Array);
-  });
-
-  it('runs a custom pipeline JSON file', async () => {
-    const fixture = findFixtureXes();
-    if (!fixture) {
-      console.log('Skipping: no fixture XES file found');
-      return;
-    }
-
-    const pipelineFile = writePipelineJson('custom-test', {
-      name: 'custom-test',
-      description: 'Custom test pipeline',
-      steps: [
-        { step: 'validate', args: {} },
-        { step: 'run', args: { algorithm: 'dfg' } },
-      ],
-    });
-
-    const result = await runCli(
-      ['pipeline', 'run', pipelineFile, '-i', fixture, '--no-save'],
-      { timeout: 60_000 }
-    );
-
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    expect(result.stdout + result.stderr).toMatch(/custom-test|pipeline/i);
-  });
-
-  it('continues past optional step failures', async () => {
-    const pipelineFile = writePipelineJson('optional-fail', {
-      name: 'optional-fail-test',
-      steps: [
-        { step: 'validate', args: {} },
-        // This step will fail (no valid model to compare), but is optional
-        { step: 'prolog8', optional: true, args: { subcommand: 'show' } },
-        { step: 'validate', args: {} }, // This succeeds
-      ],
-    });
-
-    const fixture = findFixtureXes();
-    if (!fixture) {
-      console.log('Skipping: no fixture XES file found');
-      return;
-    }
-
-    const result = await runCli(
-      ['pipeline', 'run', pipelineFile, '-i', fixture, '--format', 'json', '--no-save'],
-      { timeout: 60_000 }
-    );
-
-    // Should not be a total failure — optional steps don't cause failure
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-  });
-});
-
-describe('wpm pipeline create', () => {
-  it('creates a pipeline file', async () => {
-    const result = await runCli([
-      'pipeline',
-      'create',
-      '--name',
-      'test-created',
-      '--steps',
-      'validate,run,quality',
-      '--output',
-      tmpDir,
-    ]);
-
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    const expectedFile = path.join(tmpDir, 'test-created.pipeline.json');
-    expect(fs.existsSync(expectedFile)).toBe(true);
-
-    const content = JSON.parse(fs.readFileSync(expectedFile, 'utf-8')) as {
-      name: string;
-      steps: Array<{ step: string }>;
-    };
-    expect(content.name).toBe('test-created');
-    expect(content.steps.length).toBe(3);
-    expect(content.steps.map((s) => s.step)).toEqual(['validate', 'run', 'quality']);
-  });
-
-  it('emits JSON with output_file field when --format json', async () => {
-    const result = await runCli([
-      'pipeline',
-      'create',
-      '--name',
-      'json-created',
-      '--steps',
-      'validate,run',
-      '--output',
-      tmpDir,
-      '--format',
-      'json',
-    ]);
-
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as {
-      payload?: { name?: string; steps_count?: number; output_file?: string };
-    };
-    expect(parsed.payload?.name).toBe('json-created');
-    expect(parsed.payload?.steps_count).toBe(2);
-    expect(parsed.payload?.output_file).toContain('json-created.pipeline.json');
-  });
-
-  it('can run the created pipeline file', async () => {
-    const fixture = findFixtureXes();
-    if (!fixture) {
-      console.log('Skipping: no fixture XES file found');
-      return;
-    }
-
-    // Create pipeline
-    await runCli([
-      'pipeline',
-      'create',
-      '--name',
-      'runnable-created',
-      '--steps',
-      'validate,run',
-      '--output',
-      tmpDir,
-    ]);
-
-    const pipelineFile = path.join(tmpDir, 'runnable-created.pipeline.json');
-    expect(fs.existsSync(pipelineFile)).toBe(true);
-
-    // Run it
-    const result = await runCli(
-      ['pipeline', 'run', pipelineFile, '-i', fixture, '--no-save'],
-      { timeout: 60_000 }
-    );
-
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-  });
-});
-
-describe('wpm pipeline — output format contract', () => {
-  it('pipeline list --format json has status:ok', async () => {
-    const result = await runCli(['pipeline', 'list', '--format', 'json']);
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as { status?: string };
+    const parsed = JSON.parse(result.stdout);
     expect(parsed.status).toBe('ok');
   });
 
-  it('pipeline validate --format json has payload.valid for valid pipeline', async () => {
-    const pipelineFile = writePipelineJson('check-valid-field', {
-      name: 'check-valid',
-      steps: [{ step: 'validate' }],
-    });
+  it('emits an ExecutionReport with required fields (planId, status, steps, chainHash)', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) {
+      console.log('Skipping: no fixture XES file found');
+      return;
+    }
 
-    const result = await runCli(['pipeline', 'validate', pipelineFile, '--format', 'json']);
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as { payload?: { valid?: boolean } };
-    expect(parsed.payload?.valid).toBe(true);
+    const result = await runCli(['pipeline', 'run', '--preset', 'quick', '--input', fixture], { timeout: 60_000 });
+
+    // Even partial/full failure should still produce a well-formed report.
+    expect([EXIT_CODES.success, EXIT_CODES.partial_failure, EXIT_CODES.execution_error]).toContain(result.exitCode);
+
+    const parsed = JSON.parse(result.stdout);
+    expect(typeof parsed.planId).toBe('string');
+    expect(['ok', 'partial', 'failed']).toContain(parsed.status);
+    expect(Array.isArray(parsed.steps)).toBe(true);
+    expect(typeof parsed.chainHash).toBe('string');
+    for (const step of parsed.steps) {
+      expect(typeof step.stepId).toBe('string');
+      expect(['ok', 'error']).toContain(step.status);
+      expect(typeof step.durationMs).toBe('number');
+      expect(typeof step.outputHash).toBe('string');
+    }
   });
 
-  it('pipeline validate --format json has payload.valid=false for invalid', async () => {
-    const pipelineFile = writePipelineJson('check-invalid-field', {
-      steps: [], // no name, no steps
+  it('runs a custom plan file end to end', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) {
+      console.log('Skipping: no fixture XES file found');
+      return;
+    }
+
+    const planFile = writePlanFile('custom-run', {
+      steps: [
+        { id: 'validate', noun: 'log', verb: 'validate', args: { input: fixture } },
+        { id: 'discover', noun: 'model', verb: 'discover', args: { input: fixture }, dependsOn: ['validate'] },
+      ],
     });
 
-    const result = await runCli(['pipeline', 'validate', pipelineFile, '--format', 'json']);
-    expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    const parsed = JSON.parse(result.stdout) as { payload?: { valid?: boolean } };
-    expect(parsed.payload?.valid).toBe(false);
+    const result = await runCli(['pipeline', 'run', '--plan-file', planFile], { timeout: 60_000 });
+
+    expect(result.exitCode).toBe(EXIT_CODES.success);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.status).toBe('ok');
+    expect(parsed.steps.map((s: { stepId: string }) => s.stepId)).toEqual(['validate', 'discover']);
+  });
+
+  it('is fail-fast: a step error stops the run rather than skipping to later steps (no more "optional" steps)', async () => {
+    const planFile = writePlanFile('failing-step', {
+      steps: [
+        // `log validate` on a nonexistent file fails immediately.
+        { id: 'bad-validate', noun: 'log', verb: 'validate', args: { input: '/nonexistent/log.xes' } },
+        { id: 'discover', noun: 'model', verb: 'discover', args: { input: '/nonexistent/log.xes' }, dependsOn: ['bad-validate'] },
+      ],
+    });
+
+    const result = await runCli(['pipeline', 'run', '--plan-file', planFile], { timeout: 60_000 });
+
+    expect([EXIT_CODES.partial_failure, EXIT_CODES.execution_error]).toContain(result.exitCode);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.status).toBe('failed');
+    // Only the first (failing) step ran — the dependent step never executed.
+    expect(parsed.steps.length).toBe(1);
+    expect(parsed.steps[0].status).toBe('error');
+  });
+
+  it('--auto builds and runs a quick validate -> discover plan for --input', async () => {
+    const fixture = findFixtureXes();
+    if (!fixture) {
+      console.log('Skipping: no fixture XES file found');
+      return;
+    }
+    const result = await runCli(['pipeline', 'run', '--auto', '--input', fixture], { timeout: 60_000 });
+    expect(result.exitCode).toBe(EXIT_CODES.success);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed.steps.map((s: { stepId: string }) => s.stepId)).toEqual(['validate', 'discover']);
   });
 });

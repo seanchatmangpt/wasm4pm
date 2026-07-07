@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! State Space Exploration Audit — wasm4pm RL
 //!

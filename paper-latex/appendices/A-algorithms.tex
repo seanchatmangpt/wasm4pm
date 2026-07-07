@@ -1,0 +1,598 @@
+\subsection{a\_star}
+\paragraph{Implemented object.} \code{wasm4pm/src/fast\_discovery.rs}
+\paragraph{Mathematical model.} $f(n)=g(n)+h(n), \qquad n^\star=\arg\min_{n\in Open} f(n).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the selected path is not minimal under $f(n)=g(n)+h(n)$ for an admissible heuristic and bounded graph fixture.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{aco}
+\paragraph{Implemented object.} \code{wasm4pm/src/genetic\_discovery.rs}
+\paragraph{Mathematical model.} $P_{ij}^{(k)} = \frac{\tau_{ij}^{\alpha}\eta_{ij}^{\beta}}{\sum_{\ell\in N_i^k}\tau_{i\ell}^{\alpha}\eta_{i\ell}^{\beta}}, \qquad \tau_{ij}\leftarrow(1-\rho)\tau_{ij}+\Delta\tau_{ij}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{alpha\_plus\_plus}
+\paragraph{Implemented object.} \code{wasm4pm/src/algorithms.rs}
+\paragraph{Mathematical model.} $T_{alphaplusplus}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{declare}
+\paragraph{Implemented object.} \code{wasm4pm/src/discovery.rs}
+\paragraph{Mathematical model.} $T_{declare}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{dfg}
+\paragraph{Implemented object.} \code{wasm4pm/src/discovery.rs}
+\paragraph{Mathematical model.} $W(a,b)= \sum_{\sigma\in L} \sum_{t=1}^{|\sigma|-1} \mathbf{1}[\sigma_t=a\land\sigma_{t+1}=b].$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if directly-follows counts do not equal adjacent activity-pair counts over the same trace log.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{genetic\_algorithm}
+\paragraph{Implemented object.} \code{wasm4pm/src/genetic\_discovery.rs}
+\paragraph{Mathematical model.} $P(x_i\text{ selected}) = \frac{F(x_i)}{\sum_j F(x_j)}, \qquad x'=\operatorname{crossover}(x_a,x_b), \qquad x''=\operatorname{mutate}(x').$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{heuristic\_miner}
+\paragraph{Implemented object.} \code{wasm4pm/src/advanced\_algorithms.rs}
+\paragraph{Mathematical model.} $\mathcal{G}_{heuristicminer} = (V, E), \ E \subseteq V \times V \text{ bounded by event count}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the discovered structural graph fails to replay the exact log fixture under structural equivalence.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{hill\_climbing}
+\paragraph{Implemented object.} \code{wasm4pm/src/fast\_discovery.rs}
+\paragraph{Mathematical model.} $x_{t+1} = \arg\max_{x'\in N(x_t)} F(x').$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ilp}
+\paragraph{Implemented object.} \code{wasm4pm/src/ilp\_discovery.rs}
+\paragraph{Mathematical model.} $T_{ilp}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{inductive\_miner}
+\paragraph{Implemented object.} \code{wasm4pm/src/more\_discovery.rs}
+\paragraph{Mathematical model.} $\mathcal{G}_{inductiveminer} = (V, E), \ E \subseteq V \times V \text{ bounded by event count}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the discovered structural graph fails to replay the exact log fixture under structural equivalence.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{optimized\_dfg}
+\paragraph{Implemented object.} \code{wasm4pm/src/ilp\_discovery.rs}
+\paragraph{Mathematical model.} $T_{optimizeddfg}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{process\_skeleton}
+\paragraph{Implemented object.} \code{wasm4pm/src/more\_discovery.rs}
+\paragraph{Mathematical model.} $T_{processskeleton}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{pso}
+\paragraph{Implemented object.} \code{wasm4pm/src/genetic\_discovery.rs}
+\paragraph{Mathematical model.} $v_{t+1} = \omega v_t+c_1r_1(p_t-x_t)+c_2r_2(g_t-x_t), \qquad x_{t+1}=x_t+v_{t+1}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{simulated\_annealing}
+\paragraph{Implemented object.} \code{wasm4pm/src/more\_discovery.rs}
+\paragraph{Mathematical model.} $P(\operatorname{accept}) = \min\left(1,\exp\frac{F(x')-F(x)}{T}\right).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{hierarchical\_dfg}
+\paragraph{Implemented object.} \code{wasm4pm/src/hierarchical.rs}
+\paragraph{Mathematical model.} $T_{hierarchicaldfg}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{simd\_streaming\_dfg}
+\paragraph{Implemented object.} \code{wasm4pm/src/simd\_streaming\_dfg.rs}
+\paragraph{Mathematical model.} $\mathcal{S}_{simdstreamingdfg}(t) = F(e_t, \mathcal{S}(t-1)) \text{ under strict Markov bound}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the windowed aggregation deviates from the strictly mapped continuous sum over the bounded stream fixture.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{smart\_engine}
+\paragraph{Implemented object.} \code{wasm4pm/src/smart\_engine.rs}
+\paragraph{Mathematical model.} $T_{smartengine}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{streaming\_log}
+\paragraph{Implemented object.} \code{wasm4pm/src/streaming\_wasm.rs}
+\paragraph{Mathematical model.} $\mathcal{S}_{streaminglog}(t) = F(e_t, \mathcal{S}(t-1)) \text{ under strict Markov bound}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the windowed aggregation deviates from the strictly mapped continuous sum over the bounded stream fixture.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{analyze\_process\_speedup}
+\paragraph{Implemented object.} \code{wasm4pm/src/final\_analytics.rs}
+\paragraph{Mathematical model.} $T_{analyzeprocessspeedup}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{analyze\_variant\_complexity}
+\paragraph{Implemented object.} \code{wasm4pm/src/final\_analytics.rs}
+\paragraph{Mathematical model.} $T_{analyzevariantcomplexity}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{batches}
+\paragraph{Implemented object.} \code{wasm4pm/src/batches.rs}
+\paragraph{Mathematical model.} $T_{batches}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{causal\_graph}
+\paragraph{Implemented object.} \code{wasm4pm/src/causal\_graph.rs}
+\paragraph{Mathematical model.} $T_{causalgraph}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{compute\_activity\_transition\_matrix}
+\paragraph{Implemented object.} \code{wasm4pm/src/final\_analytics.rs}
+\paragraph{Mathematical model.} $P_{ab} = \frac{W(a,b)}{\sum_{c\in\Sigma}W(a,c)}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{compute\_trace\_similarity\_matrix}
+\paragraph{Implemented object.} \code{wasm4pm/src/final\_analytics.rs}
+\paragraph{Mathematical model.} $S_{ij} = 1-\frac{d(\sigma_i,\sigma_j)}{\max(|\sigma_i|,|\sigma_j|)}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{correlation\_miner}
+\paragraph{Implemented object.} \code{wasm4pm/src/correlation\_miner.rs}
+\paragraph{Mathematical model.} $\mathcal{G}_{correlationminer} = (V, E), \ E \subseteq V \times V \text{ bounded by event count}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the discovered structural graph fails to replay the exact log fixture under structural equivalence.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{log\_to\_trie}
+\paragraph{Implemented object.} \code{wasm4pm/src/log\_to\_trie.rs}
+\paragraph{Mathematical model.} $\operatorname{insert}(\sigma) = v_0\xrightarrow{\sigma_1}v_1 \xrightarrow{\sigma_2}\cdots \xrightarrow{\sigma_k}v_k.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{performance\_spectrum}
+\paragraph{Implemented object.} \code{wasm4pm/src/performance\_spectrum.rs}
+\paragraph{Mathematical model.} $T_{performancespectrum}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{transition\_system}
+\paragraph{Implemented object.} \code{wasm4pm/src/transition\_system.rs}
+\paragraph{Mathematical model.} $T_{transitionsystem}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{alignments}
+\paragraph{Implemented object.} \code{wasm4pm/src/alignments.rs}
+\paragraph{Mathematical model.} $T_{alignments}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{complexity\_metrics}
+\paragraph{Implemented object.} \code{wasm4pm/src/complexity\_metrics.rs}
+\paragraph{Mathematical model.} $T_{complexitymetrics}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{etconformance\_precision}
+\paragraph{Implemented object.} \code{wasm4pm/src/etconformance\_precision.rs}
+\paragraph{Mathematical model.} $T_{etconformanceprecision}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{generalization}
+\paragraph{Implemented object.} \code{wasm4pm/src/generalization.rs}
+\paragraph{Mathematical model.} $T_{generalization}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{monte\_carlo\_simulation}
+\paragraph{Implemented object.} \code{wasm4pm/src/montecarlo.rs}
+\paragraph{Mathematical model.} $T_{montecarlosimulation}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{playout}
+\paragraph{Implemented object.} \code{wasm4pm/src/petri\_net\_playout.rs}
+\paragraph{Mathematical model.} $T_{playout}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{bpmn\_import}
+\paragraph{Implemented object.} \code{wasm4pm/src/bpmn\_import.rs}
+\paragraph{Mathematical model.} $T_{bpmnimport}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{pnml\_import}
+\paragraph{Implemented object.} \code{wasm4pm/src/pnml\_io.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{pnmlimport} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{powl\_to\_process\_tree}
+\paragraph{Implemented object.} \code{wasm4pm/src/powl/conversion/to\_process\_tree.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{yawl\_export}
+\paragraph{Implemented object.} \code{wasm4pm/src/powl/conversion/to\_yawl.rs}
+\paragraph{Mathematical model.} $T_{yawlexport}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocel\_dfg}
+\paragraph{Implemented object.} \code{wasm4pm/src/discovery.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocel\_dfg\_per\_type}
+\paragraph{Implemented object.} \code{wasm4pm/src/discovery.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocel\_encode}
+\paragraph{Implemented object.} \code{wasm4pm/src/text\_encoding.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocel\_oc\_declare}
+\paragraph{Implemented object.} \code{wasm4pm/src/advanced/oc\_declare.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocel\_ocla}
+\paragraph{Implemented object.} \code{wasm4pm/src/advanced/ocla.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocel\_petri\_net}
+\paragraph{Implemented object.} \code{wasm4pm/src/oc\_petri\_net.rs}
+\paragraph{Mathematical model.} $\tau : \mathcal{L}_{\text{ext}} \to \mathcal{L}_{\text{kernel}} \text{ via deterministic AST traversal}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the parsed AST does not exhibit a bijective mapping to the valid internal structural schema.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{compute\_ewma}
+\paragraph{Implemented object.} \code{wasm4pm/src/prediction\_drift.rs}
+\paragraph{Mathematical model.} $z_t=\alpha x_t+(1-\alpha)z_{t-1}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if $z_t \neq \alpha x_t + (1-\alpha)z_{t-1}$ on the fixture sequence.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{detect\_drift}
+\paragraph{Implemented object.} \code{wasm4pm/src/prediction\_drift.rs}
+\paragraph{Mathematical model.} $D_t=\|\theta_t-\theta_{t-1}\|, \qquad \operatorname{drift}(t)=\mathbf{1}[D_t>\varepsilon].$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the windowed aggregation deviates from the strictly mapped continuous sum over the bounded stream fixture.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{predict\_next\_activity}
+\paragraph{Implemented object.} \code{wasm4pm/src/prediction.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{predictnextactivity} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{predict\_outcome}
+\paragraph{Implemented object.} \code{wasm4pm/src/prediction\_outcome.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{predictoutcome} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{predict\_remaining\_time}
+\paragraph{Implemented object.} \code{wasm4pm/src/prediction\_remaining\_time.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{predictremainingtime} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{automl\_classify}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/automl.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{automlclassify} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{automl\_forecast}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/automl.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{automlforecast} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ml\_anomaly}
+\paragraph{Implemented object.} \code{wasm4pm/src/anomaly.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{mlanomaly} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ml\_classify}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/classification.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{mlclassify} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ml\_cluster}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/clustering.rs}
+\paragraph{Mathematical model.} $\arg\min_{C_1,\ldots,C_k} \sum_{r=1}^{k}\sum_{x\in C_r}\|x-\mu_r\|^2.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ml\_forecast}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/forecasting.rs}
+\paragraph{Mathematical model.} $\mathcal{A}_{mlforecast} : \mathbb{R}^{n} \to \mathbb{R}^{m} \text{ mapped via bounded tensor projection}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ml\_pca}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/pca.rs}
+\paragraph{Mathematical model.} $X_c=X-\mathbf{1}\mu^\top, \qquad \Sigma_X=\frac{1}{n-1}X_c^\top X_c, \qquad \Sigma_X v_i=\lambda_i v_i.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ml\_regress}
+\paragraph{Implemented object.} \code{wasm4pm/src/ml/regression.rs}
+\paragraph{Mathematical model.} $\hat{\beta} = (X^\top X)^{-1}X^\top y.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the numeric projection violates the known bounds of the fixture covariance or distance matrix.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{handover\_network}
+\paragraph{Implemented object.} \code{wasm4pm/src/social\_network.rs}
+\paragraph{Mathematical model.} $T_{handovernetwork}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{working\_together\_network}
+\paragraph{Implemented object.} \code{wasm4pm/src/social\_network.rs}
+\paragraph{Mathematical model.} $T_{workingtogethernetwork}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{agentic\_pipeline}
+\paragraph{Implemented object.} \code{wasm4pm/src/lib.rs}
+\paragraph{Mathematical model.} $T_{agenticpipeline}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}

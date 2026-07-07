@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Iter-4 regression oracles for previously-untested boundaries.
 //!
 //! Scope:

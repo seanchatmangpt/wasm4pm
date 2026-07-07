@@ -127,7 +127,7 @@ describe('wpm predict CLI integration', () => {
   // ─── T1: Basic success case ──────────────────────────────────────────────
 
   it('T1: wpm predict next-activity exits with code 0 and returns JSON envelope', async () => {
-    const result = await runCli(['predict', 'next-activity', '-i', logPath, '--format', 'json']);
+    const result = await runCli(['model', 'predict', 'next-activity', '-i', logPath, '--format', 'json']);
 
     // Assertion 1: Exit code is success
     expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -147,6 +147,7 @@ describe('wpm predict CLI integration', () => {
 
   it('T2: predictions array contains activity objects with probability', async () => {
     const result = await runCli([
+      'model',
       'predict',
       'next-activity',
       '-i',
@@ -184,6 +185,7 @@ describe('wpm predict CLI integration', () => {
   it('T3: respects --top-k flag to limit prediction count', async () => {
     // Test with --top-k 1
     const result = await runCli([
+      'model',
       'predict',
       'next-activity',
       '-i',
@@ -205,6 +207,7 @@ describe('wpm predict CLI integration', () => {
 
   it('T3: respects --activity-key flag for activity attribute', async () => {
     const result = await runCli([
+      'model',
       'predict',
       'next-activity',
       '-i',
@@ -226,8 +229,24 @@ describe('wpm predict CLI integration', () => {
 
   // ─── T4: Error handling (missing file, bad input) ────────────────────────
 
+  // NOTE on the T4 rewrites below: a failing `model predict` invocation
+  // (bridged to `commands/predict.ts` via `nouns/_bridge.ts`) no longer
+  // returns the legacy `{command,status,exit_code,payload,meta}` envelope on
+  // stdout — bridged failures are re-thrown as a `NounVerbError` and
+  // serialized as ONLY `{error:{code,message}}` (see
+  // `packages/noun-verb/src/errors.ts`: "the ONLY shape a verb error ever
+  // serializes to on stdout"). The legacy `INVALID_TASK`/`INVALID_ARG`
+  // error codes are gone too — `classifyLegacyFailure` (`nouns/_bridge.ts`)
+  // collapses every legacy config_error(1)/source_error(2) onto the single
+  // framework code `INVALID_INPUT`, which wpm's error-code map resolves to
+  // process exit 2 (source_error) — the legacy 1 vs 2 distinction is lost
+  // (a documented, coarser-not-lossless mapping). The process exit code
+  // (`result.exitCode`) is the correct place to check outcome; the old
+  // `output.exit_code`/`output.status` fields don't exist on this shape.
+
   it('T4: exits with code 2 (SOURCE_ERROR) when input file does not exist', async () => {
     const result = await runCli([
+      'model',
       'predict',
       'next-activity',
       '-i',
@@ -236,14 +255,14 @@ describe('wpm predict CLI integration', () => {
       'json',
     ]);
 
-    // JSON envelope should contain SOURCE_ERROR code
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
     const output = extractJsonEnvelope(result.stdout);
-    expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(output.exit_code);
-    expect(output.status).toBe('error');
+    expect((output.error as Record<string, unknown>).code).toBe('INVALID_INPUT');
   });
 
-  it('T4: reports SOURCE_ERROR when task is invalid', async () => {
+  it('T4: reports INVALID_INPUT (exit 2) when task is invalid', async () => {
     const result = await runCli([
+      'model',
       'predict',
       'invalid-task',
       '-i',
@@ -252,16 +271,15 @@ describe('wpm predict CLI integration', () => {
       'json',
     ]);
 
-    // Check JSON envelope for error
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
     const output = extractJsonEnvelope(result.stdout);
-    expect(output.status).toBe('error');
-    expect((output.error as Record<string, unknown>).code).toBe('INVALID_TASK');
-    // Invalid task should give SOURCE_ERROR (2)
-    expect(output.exit_code).toBe(EXIT_CODES.source_error);
+    expect((output.error as Record<string, unknown>).code).toBe('INVALID_INPUT');
+    expect(String((output.error as Record<string, unknown>).message)).toMatch(/unknown task/i);
   });
 
-  it('T4: reports CONFIG_ERROR when --top-k is not a number', async () => {
+  it('T4: reports INVALID_INPUT (exit 2, not the legacy config_error 1) when --top-k is not a number', async () => {
     const result = await runCli([
+      'model',
       'predict',
       'next-activity',
       '-i',
@@ -272,11 +290,9 @@ describe('wpm predict CLI integration', () => {
       'not-a-number',
     ]);
 
-    // Check JSON envelope for error
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
     const output = extractJsonEnvelope(result.stdout);
-    expect(output.status).toBe('error');
-    expect((output.error as Record<string, unknown>).code).toBe('INVALID_ARG');
-    // Invalid argument should give CONFIG_ERROR (1)
-    expect(output.exit_code).toBe(EXIT_CODES.config_error);
+    expect((output.error as Record<string, unknown>).code).toBe('INVALID_INPUT');
+    expect(String((output.error as Record<string, unknown>).message)).toMatch(/top-k/i);
   });
 });

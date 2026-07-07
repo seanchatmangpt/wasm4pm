@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! State Invariant Audit — wasm4pm RL Autonomic System
 //!

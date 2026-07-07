@@ -184,6 +184,9 @@ importers:
       '@wasm4pm/ml':
         specifier: workspace:*
         version: link:../../packages/ml
+      '@wasm4pm/noun-verb':
+        specifier: workspace:*
+        version: link:../../packages/noun-verb
       '@wasm4pm/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -512,6 +515,22 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^1.6.0
         version: 1.6.1(vitest@1.6.1)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.1.0
+        version: 1.6.1(@types/node@20.19.43)(@vitest/browser@1.6.1)(happy-dom@20.10.2)(lightningcss@1.32.0)(terser@5.48.0)
+
+  packages/noun-verb:
+    dependencies:
+      citty:
+        specifier: ^0.1.6
+        version: 0.1.6
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.43
       typescript:
         specifier: ^5.3.3
         version: 5.9.3

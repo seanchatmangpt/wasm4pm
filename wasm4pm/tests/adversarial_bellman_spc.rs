@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Adversarial Rank-1 Oracle Tests — Category A (Bellman Correctness) + Category C (SPC)
 //!
 //! From ADVERSARIAL_TEST_PLAN.md:

@@ -1,8 +1,30 @@
 /**
- * CLI integration tests for `wpm powl` subcommands.
+ * Integration tests for `wpm powl` subcommands.
  *
- * Van der Aalst QA perspective:
- * - Tests target specific JSON fields emitted by the CLI, not just exit codes.
+ * `wpm powl <anything>` is now intercepted unconditionally by the hard-break
+ * table (nouns/_removed.ts): only two-token entries `powl replay` (->
+ * `model check --mode replay`) and `powl construct` (-> `model discover`)
+ * are listed there; every OTHER `powl <subcommand>` (parse, complexity,
+ * diff, conformance, discover) falls through to the one-token catch-all
+ * `{ old: 'powl', replacement: 'model discover' }` and is rejected before
+ * ever reaching `commands/powl.ts` — regardless of which subcommand was
+ * actually requested. `model discover`'s DFG/heuristic-miner-based
+ * discovery does not produce the same `root`/`node_count`/`repr`/`variant`
+ * POWL-structure fields this suite tests, and `parse`/`complexity`/`diff`/
+ * `conformance` (arbitrary two-POWL-model-string utilities) have no
+ * noun/verb equivalent at all — this is a genuine, intentional feature
+ * retirement from the CLI surface, not a rename.
+ *
+ * `commands/powl.ts` itself is untouched and still fully functional — it is
+ * simply unreachable from the `wpm` binary. Rather than deleting real
+ * regression coverage for code that still exists and still runs (real WASM
+ * calls included), these tests now invoke it in-process the same way the
+ * framework's own bridge does for still-wired legacy commands
+ * (`nouns/_bridge.ts`'s `invokeLegacyCommand`), instead of spawning the
+ * (now hard-broken for this path) `wpm` binary.
+ *
+ * Van der Aalst QA perspective (unchanged from the original suite):
+ * - Tests target specific JSON fields emitted by the command, not just exit codes.
  * - Fitness and precision must BOTH appear in conformance output — showing one
  *   without the other misleads the practitioner (flower-model trap).
  * - Three invariants are mandatory (van der Aalst fitness quality bar):
@@ -14,11 +36,12 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { Faker, en } from '@faker-js/faker';
+import { powl } from '../commands/powl.js';
+import { invokeLegacyCommand } from '../nouns/_bridge.js';
 
 // ─── Seeded faker ─────────────────────────────────────────────────────────────
 
@@ -96,9 +119,7 @@ ${traces.join('\n')}
 </log>`;
 }
 
-// ─── CLI runner ───────────────────────────────────────────────────────────────
-
-const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
+// ─── In-process legacy command runner ────────────────────────────────────────
 
 interface CliResult { exitCode: number; stdout: string; stderr: string }
 interface Envelope {
@@ -109,26 +130,9 @@ interface Envelope {
   error?: { code: string; message: string };
 }
 
-function runCli(args: string[], opts: { timeoutMs?: number } = {}): Promise<CliResult> {
-  const { timeoutMs = 45000 } = opts;
-  const cwd = path.resolve(__dirname, '../..');
-  return new Promise((resolve) => {
-    const child = execFile(
-      process.execPath,
-      [CLI_PATH, ...args],
-      { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, cwd },
-      (error, stdout, stderr) => {
-        const exitCode =
-          error && 'code' in error && typeof error.code === 'number'
-            ? error.code
-            : error ? 1 : 0;
-        resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '' });
-      }
-    );
-    child.on('error', () =>
-      resolve({ exitCode: 5, stdout: '', stderr: 'Process failed to start' })
-    );
-  });
+async function runPowl(args: string[]): Promise<CliResult> {
+  const { stdout, stderr, exitCode } = await invokeLegacyCommand(powl, args);
+  return { exitCode, stdout, stderr };
 }
 
 function parseEnvelope(result: CliResult): Envelope {
@@ -136,7 +140,7 @@ function parseEnvelope(result: CliResult): Envelope {
     return JSON.parse(result.stdout) as Envelope;
   } catch {
     throw new Error(
-      `Failed to parse CLI JSON output.\nstdout: ${result.stdout.slice(0, 500)}\nstderr: ${result.stderr.slice(0, 500)}`
+      `Failed to parse command JSON output.\nstdout: ${result.stdout.slice(0, 500)}\nstderr: ${result.stderr.slice(0, 500)}`
     );
   }
 }
@@ -170,9 +174,7 @@ afterAll(() => {
 describe('powl parse — node_count invariant', () => {
   it('parse of a valid linear POWL model returns node_count > 0', async () => {
     const model = LINEAR_POWL();
-    const result = await runCli([
-      'powl', 'parse', `--model=${model}`, '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['parse', `--model=${model}`, '--format=json', '--no-save']);
     expect(result.exitCode, `unexpected exit ${result.exitCode}: ${result.stderr}`).toBe(0);
     const env = parseEnvelope(result);
     expect(env.status).toBe('ok');
@@ -184,9 +186,7 @@ describe('powl parse — node_count invariant', () => {
   });
 
   it('parse node_count matches the number of nodes in a single-activity model', async () => {
-    const result = await runCli([
-      'powl', 'parse', `--model=${V.actA}`, '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['parse', `--model=${V.actA}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     // Single activity is 1 node
@@ -199,9 +199,7 @@ describe('powl parse — node_count invariant', () => {
 describe('powl complexity — non-zero score invariant', () => {
   it('complexity returns numeric cyclomatic, cfc, and cognitive scores for a 3-activity model', async () => {
     const model = LINEAR_POWL();
-    const result = await runCli([
-      'powl', 'complexity', `--model=${model}`, '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['complexity', `--model=${model}`, '--format=json', '--no-save']);
     expect(result.exitCode, `unexpected exit: ${result.stderr}`).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     expect(typeof payload.cyclomatic).toBe('number');
@@ -221,10 +219,14 @@ describe('powl complexity — non-zero score invariant', () => {
   it('complexity of a 4-node model is >= complexity of a 3-node model (monotone)', async () => {
     const small = LINEAR_POWL();
     const large = EXTENDED_POWL();
-    const [r1, r2] = await Promise.all([
-      runCli(['powl', 'complexity', `--model=${small}`, '--format=json', '--no-save']),
-      runCli(['powl', 'complexity', `--model=${large}`, '--format=json', '--no-save']),
-    ]);
+    // Sequential, not Promise.all: `invokeLegacyCommand` traps
+    // `process.exit`/stdout globally for the duration of one call — two
+    // concurrent in-process invocations race on that shared global state
+    // (each call's `finally` can restore the trap out from under the
+    // other), which the original two-separate-child-processes version of
+    // this test didn't have to worry about.
+    const r1 = await runPowl(['complexity', `--model=${small}`, '--format=json', '--no-save']);
+    const r2 = await runPowl(['complexity', `--model=${large}`, '--format=json', '--no-save']);
     expect(r1.exitCode).toBe(0);
     expect(r2.exitCode).toBe(0);
     const p1 = parseEnvelope(r1).payload as Record<string, unknown>;
@@ -241,12 +243,7 @@ describe('powl complexity — non-zero score invariant', () => {
 describe('powl diff — structured diff object invariant', () => {
   it('diff returns a payload with severity and behaviourally_equivalent fields', async () => {
     const model = LINEAR_POWL();
-    const result = await runCli([
-      'powl', 'diff',
-      `--model=${model}`,
-      `--model2=${model}`,
-      '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['diff', `--model=${model}`, `--model2=${model}`, '--format=json', '--no-save']);
     expect(result.exitCode, `unexpected exit: ${result.stderr}`).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     expect(payload).toHaveProperty('severity');
@@ -259,12 +256,7 @@ describe('powl diff — structured diff object invariant', () => {
   it('diff detects a new faker-generated activity added to the model', async () => {
     const original = LINEAR_POWL();
     const extended = EXTENDED_POWL();
-    const result = await runCli([
-      'powl', 'diff',
-      `--model=${original}`,
-      `--model2=${extended}`,
-      '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['diff', `--model=${original}`, `--model2=${extended}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     expect(payload.behaviourally_equivalent).toBe(false);
@@ -275,12 +267,7 @@ describe('powl diff — structured diff object invariant', () => {
   it('diff result contains all required Van der Aalst structural diff fields', async () => {
     const original = LINEAR_POWL();
     const extended = EXTENDED_POWL();
-    const result = await runCli([
-      'powl', 'diff',
-      `--model=${original}`,
-      `--model2=${extended}`,
-      '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['diff', `--model=${original}`, `--model2=${extended}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     // All structural diff fields must be present
@@ -301,12 +288,7 @@ describe('powl diff — structured diff object invariant', () => {
 describe('powl conformance — fitness and precision must both be present', () => {
   it('conformance payload contains percentage AND avg_trace_precision (not just fitness)', async () => {
     const model = LINEAR_POWL();
-    const result = await runCli([
-      'powl', 'conformance',
-      `--model=${model}`,
-      `--log=${logPath}`,
-      '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['conformance', `--model=${model}`, `--log=${logPath}`, '--format=json', '--no-save']);
     // Exit 0 means the check ran successfully
     expect(result.exitCode, `unexpected exit: ${result.stderr}`).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
@@ -321,12 +303,7 @@ describe('powl conformance — fitness and precision must both be present', () =
 
   it('conformance total_traces matches the number of cases in the XES fixture (3)', async () => {
     const model = LINEAR_POWL();
-    const result = await runCli([
-      'powl', 'conformance',
-      `--model=${model}`,
-      `--log=${logPath}`,
-      '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['conformance', `--model=${model}`, `--log=${logPath}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     expect(payload.total_traces).toBe(3);
@@ -334,11 +311,12 @@ describe('powl conformance — fitness and precision must both be present', () =
 
   it('conformance with malformed XES path exits with source_error (exit 2), not crash', async () => {
     const model = LINEAR_POWL();
-    const result = await runCli([
-      'powl', 'conformance',
+    const result = await runPowl([
+      'conformance',
       `--model=${model}`,
       '--log=/nonexistent/path/fake.xes',
-      '--format=json', '--no-save',
+      '--format=json',
+      '--no-save',
     ]);
     // source_error = exit 2
     expect(result.exitCode).toBe(2);
@@ -349,11 +327,7 @@ describe('powl conformance — fitness and precision must both be present', () =
 
 describe('powl discover — WASM wiring', () => {
   it('discover from XES log returns root, node_count, and repr fields', async () => {
-    const result = await runCli([
-      'powl', 'discover',
-      `--input=${logPath}`,
-      '--format=json', '--no-save',
-    ]);
+    const result = await runPowl(['discover', `--input=${logPath}`, '--format=json', '--no-save']);
     expect(result.exitCode, `unexpected exit: ${result.stderr}`).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     expect(typeof payload.root).toBe('number');
@@ -364,14 +338,37 @@ describe('powl discover — WASM wiring', () => {
   });
 
   it('discover variant field appears in the result', async () => {
-    const result = await runCli([
-      'powl', 'discover',
+    const result = await runPowl([
+      'discover',
       `--input=${logPath}`,
       '--variant=decision_graph_cyclic',
-      '--format=json', '--no-save',
+      '--format=json',
+      '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
     const payload = parseEnvelope(result).payload as Record<string, unknown>;
     expect(payload.variant).toBe('decision_graph_cyclic');
+  });
+});
+
+// ─── CLI surface: confirm the hard-break table intercepts wpm powl ──────────
+
+describe('wpm powl (top-level CLI) — retired, hard-broken (regression guard)', () => {
+  it('"wpm powl <subcommand>" is intercepted by the removed-commands table for every subcommand', async () => {
+    const { execFile } = await import('child_process');
+    const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
+    const run = (args: string[]) =>
+      new Promise<{ exitCode: number; stderr: string }>((resolve) => {
+        execFile(process.execPath, [CLI_PATH, ...args], { timeout: 15000 }, (error, _stdout, stderr) => {
+          const exitCode = error && 'code' in error && typeof error.code === 'number' ? error.code : error ? 1 : 0;
+          resolve({ exitCode, stderr: stderr ?? '' });
+        });
+      });
+
+    for (const sub of ['parse', 'complexity', 'diff', 'conformance', 'discover']) {
+      const r = await run(['powl', sub, '--model=x']);
+      expect(r.exitCode, `wpm powl ${sub} should be hard-broken`).toBe(1);
+      expect(r.stderr).toMatch(/removed.*use 'wpm model discover'/i);
+    }
   });
 });

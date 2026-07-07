@@ -1,0 +1,9 @@
+To prevent "receipt theater"—where cryptographic language is used to mask unchecked execution—we enforce a rigid evidence method. Every capability claim in this monograph is bound to an actual implementation file, a specific dispatch symbol, and an execution log or test fixture.
+
+The receipt status categorizes the strength of the evidence. A \code{VERIFIER\_LOG\_RECEIPTED} state implies that the execution was run through the automated verifier, producing a stdout log that captures the success or structural refusal of the test boundary. A \code{FIXTURE\_EVIDENCED} state indicates that a fixture exists and passes unit testing, though a full verifier pipeline log may be pending.
+
+\begin{definition}
+\textbf{Receipt Monoid.} The set of all valid receipts $\mathcal{R}$ forms a monoid under the composition operator $\circ$, where $R_1 \circ R_2$ represents the cryptographic chaining of execution states.
+\end{definition}
+
+This ensures that the entire trace of mechanical intelligence operations can be mathematically audited by a third party using only the binaries and the receipts.

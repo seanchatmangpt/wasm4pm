@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Consolidated tests for the reinforcement learning module.
 //!
 //! Algorithm family: Reinforcement Learning

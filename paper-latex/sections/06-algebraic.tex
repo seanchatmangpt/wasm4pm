@@ -1,0 +1,8 @@
+The \textit{wasm4pm} architecture maps algorithms to typed morphisms within specific algebraic structures. By modeling process graphs as idempotent semirings, we can formulate shortest-path algorithms ($A^*$) and reachability analysis using standard matrix multiplication over the semiring.
+
+For temporal logic and constraints, we employ relation algebras and constraint lattices. The \code{allen\_temporal} capability operates over a relation algebra where compositions of temporal intervals are evaluated via matrix intersections $R_{ik} \leftarrow R_{ik} \cap (R_{ij} \circ R_{jk})$.
+
+\paragraph{Capabilities as Typed Morphisms.}
+Every capability is a morphism mapping an input domain to a receipt codomain.
+\paragraph{Boundary.}
+These algebraic structures are explicitly bounded by the finite size of the trace window or model token limit. Infinite traces are structurally impossible in linear memory.

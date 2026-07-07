@@ -173,47 +173,78 @@ describe('first-run-ux', () => {
   });
 });
 
+// `wpm run` was hard-retired (apps/wasm4pm/src/nouns/_removed.ts): it now exits 1
+// with "error: 'wpm run' was removed — use 'wpm model discover'" for every
+// invocation, and its replacement, `model discover`, does not wire in
+// first-run-ux hints at all (see first-run-ux.ts usage — only commands/run.ts
+// calls formatFirstRunHints/isFirstRun). These tests previously appeared green
+// only because they guarded on `env.testLog`, a field that never existed on
+// `CliTestEnv` (a real bug, not a feature flag) so the guard was always truthy
+// and every body returned before any assertion ran. Skipped below rather than
+// asserting against dead functionality or reinstating a silent no-op guard;
+// re-enable once first-run hints are reimplemented against `model discover`.
 describe('wpm run — first-run UX integration', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
+  // `CliTestEnv` (packages/testing/src/harness/cli.ts) does not carry a test-log
+  // fixture or a `cwd` field — it exposes `tempDir`. Build a real XES fixture in
+  // `tempDir` per-test (mirrors run-cli.test.ts) so these integration tests are
+  // ready to exercise the CLI again once un-skipped.
+  let testLog: string;
 
   beforeEach(async () => {
     env = await createCliTestEnv();
+    const fixtureSource = path.resolve(process.cwd(), 'test/fixtures/small.xes');
+    testLog = path.join(env.tempDir, 'test.xes');
+    try {
+      await fs.copyFile(fixtureSource, testLog);
+    } catch {
+      const minimalXes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xmlns="http://www.xes-standard.org/">
+  <trace>
+    <string key="concept:name" value="case-1"/>
+    <event>
+      <string key="concept:name" value="Start"/>
+      <date key="time:timestamp" value="2026-04-16T10:00:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="End"/>
+      <date key="time:timestamp" value="2026-04-16T10:01:00Z"/>
+    </event>
+  </trace>
+</log>`;
+      await fs.writeFile(testLog, minimalXes, 'utf-8');
+    }
   });
 
   afterEach(() => {
     env?.cleanup?.();
   });
 
-  it('should show first-run hints on first discovery', async () => {
-    // Skip if no test log available
-    if (!env.testLog) {
-      return;
-    }
-
+  it.skip('should show first-run hints on first discovery', async () => {
     // Clear results directory to simulate first run
-    const resultsDir = path.join(env.cwd, '.wasm4pm/results');
+    const resultsDir = path.join(env.tempDir, '.wasm4pm/results');
     if ((await fs.stat(resultsDir).catch(() => null))?.isDirectory?.()) {
       await fs.rm(resultsDir, { recursive: true, force: true });
     }
 
-    const result = await runCli(['run', env.testLog, '--algorithm', 'dfg'], { env: env.env });
+    const result = await runCli(['run', testLog, '--algorithm', 'dfg'], {
+      cwd: env.tempDir,
+      env: env.env,
+    });
     expect(result.exitCode).toBe(EXIT_CODES.success);
     // First-run UX shows "Process Model Discovered" and next steps
     expect(result.stdout).toMatch(/Process Model|Next Steps|Review model|Validate/i);
   });
 
-  it('should include fitness interpretation in first-run hints', async () => {
-    if (!env.testLog) {
-      return;
-    }
-
+  it.skip('should include fitness interpretation in first-run hints', async () => {
     // Clear results to ensure first run
-    const resultsDir = path.join(env.cwd, '.wasm4pm/results');
+    const resultsDir = path.join(env.tempDir, '.wasm4pm/results');
     if ((await fs.stat(resultsDir).catch(() => null))?.isDirectory?.()) {
       await fs.rm(resultsDir, { recursive: true, force: true });
     }
 
-    const result = await runCli(['run', env.testLog, '--algorithm', 'dfg', '--with-quality'], {
+    const result = await runCli(['run', testLog, '--algorithm', 'dfg', '--with-quality'], {
+      cwd: env.tempDir,
       env: env.env,
     });
     expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -223,36 +254,32 @@ describe('wpm run — first-run UX integration', () => {
     }
   });
 
-  it('should not show first-run hints on subsequent runs', async () => {
-    if (!env.testLog) {
-      return;
-    }
-
+  it.skip('should not show first-run hints on subsequent runs', async () => {
     // Create results directory with 2+ files to simulate non-first run.
     // Use the actual filename format: <timestamp>-discover-<algo>.json
-    const resultsDir = path.join(env.cwd, '.wasm4pm/results');
+    const resultsDir = path.join(env.tempDir, '.wasm4pm/results');
     await fs.mkdir(resultsDir, { recursive: true });
     await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
     await fs.writeFile(path.join(resultsDir, '20260518T090100-discover-heuristic.json'), '{}');
 
-    const result = await runCli(['run', env.testLog, '--algorithm', 'dfg'], { env: env.env });
+    const result = await runCli(['run', testLog, '--algorithm', 'dfg'], {
+      cwd: env.tempDir,
+      env: env.env,
+    });
     expect(result.exitCode).toBe(EXIT_CODES.success);
     // Should NOT show "Process Model Discovered" on subsequent runs
     expect(result.stdout).not.toMatch(/🎯.*Process Model Discovered/);
   });
 
-  it('should hide first-run hints in JSON output format', async () => {
-    if (!env.testLog) {
-      return;
-    }
-
+  it.skip('should hide first-run hints in JSON output format', async () => {
     // Clear results to simulate first run
-    const resultsDir = path.join(env.cwd, '.wasm4pm/results');
+    const resultsDir = path.join(env.tempDir, '.wasm4pm/results');
     if ((await fs.stat(resultsDir).catch(() => null))?.isDirectory?.()) {
       await fs.rm(resultsDir, { recursive: true, force: true });
     }
 
-    const result = await runCli(['run', env.testLog, '--algorithm', 'dfg', '--format', 'json'], {
+    const result = await runCli(['run', testLog, '--algorithm', 'dfg', '--format', 'json'], {
+      cwd: env.tempDir,
       env: env.env,
     });
     expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -266,18 +293,17 @@ describe('wpm run — first-run UX integration', () => {
     }
   });
 
-  it('should recommend wpm algorithms command in first-run hints', async () => {
-    if (!env.testLog) {
-      return;
-    }
-
+  it.skip('should recommend wpm algorithms command in first-run hints', async () => {
     // Clear results to simulate first run
-    const resultsDir = path.join(env.cwd, '.wasm4pm/results');
+    const resultsDir = path.join(env.tempDir, '.wasm4pm/results');
     if ((await fs.stat(resultsDir).catch(() => null))?.isDirectory?.()) {
       await fs.rm(resultsDir, { recursive: true, force: true });
     }
 
-    const result = await runCli(['run', env.testLog, '--algorithm', 'dfg'], { env: env.env });
+    const result = await runCli(['run', testLog, '--algorithm', 'dfg'], {
+      cwd: env.tempDir,
+      env: env.env,
+    });
     expect(result.exitCode).toBe(EXIT_CODES.success);
     expect(result.stdout).toMatch(/wpm algorithms/i);
   });

@@ -69,6 +69,8 @@ log.discoverInductiveMiner();
 - Speed: Medium (100-500ms)
 - Use: Optimal Petri nets
 
+Note: the implementation is a region-heuristic with greedy set-cover approximation (reported as `ilp_region_heuristic`), not an actual LP/ILP solver.
+
 ```typescript
 log.discoverILPPetriNet();
 ```

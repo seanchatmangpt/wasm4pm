@@ -241,6 +241,12 @@ ${STANDARD_EXIT_CODE_DOCS}`,
           `wpm watch: invalid --interval value "${rawInterval}". Must be a positive integer (milliseconds).\n`
         );
         process.exit(1);
+        // `process.exit()` is trapped (not a real termination) when this command runs
+        // through the noun/verb bridge (`nouns/_bridge.ts`, `wpm pipeline watch`) —
+        // without this `return`, execution fell through into the rest of `run()` with
+        // an invalid `pollIntervalMs` and entered the infinite watch loop instead of
+        // exiting, hanging the process instead of failing fast with config_error (1).
+        return;
       }
       pollIntervalMs = parsed;
     }
@@ -327,6 +333,16 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     // Quality trend tracking: compare fitness/precision/variants across cycles
     let prevQualitySnapshot: QualitySnapshot | null = null;
 
+    // Keep-alive promise for the lifetime of the watch loop. Resolves via the
+    // SIGINT/SIGTERM `shutdown` handler (through `exitWithFlush`, which never
+    // returns) or rejects if the chokidar watcher reports a fatal error
+    // (e.g. EMFILE) so that error surfaces as a normal thrown error instead
+    // of an uncaught exception.
+    let rejectKeepAlive: (err: Error) => void = () => {};
+    const keepAlivePromise = new Promise<void>((_resolve, reject) => {
+      rejectKeepAlive = reject;
+    });
+
     // Step 2: Set up Watcher using chokidar for better cross-platform support
     const watchPath = path.resolve(configPath);
     const watcher = chokidar.watch(watchPath, {
@@ -362,6 +378,31 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     const rawIntervalStr = ctx.args.interval as string | undefined;
     const parsedInterval = rawIntervalStr !== undefined ? parseInt(rawIntervalStr, 10) : NaN;
     const DEBOUNCE_MS = !Number.isNaN(parsedInterval) && parsedInterval > 0 ? parsedInterval : 200;
+
+    // A chokidar watcher that never gets an 'error' listener turns any
+    // internal failure (most commonly EMFILE — "too many open files", which
+    // is very reachable when watching a large/no-target directory such as
+    // the process cwd) into an uncaught 'error' event, which Node re-throws
+    // as an uncaught exception: a raw stack trace on stderr and nothing on
+    // stdout, breaking the framework's "always JSON on stdout" contract even
+    // for experimental verbs. Route it through `rejectKeepAlive` instead so
+    // it becomes a normal thrown error the bridge/framework can render as
+    // the structured JSON error envelope.
+    watcher.on('error', (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      streaming.emitEvent('error', {
+        message: `watcher error: ${message}`,
+        code: /EMFILE/i.test(message) ? 'WATCH_EMFILE' : 'WATCH_WATCHER_ERROR',
+      });
+      try {
+        watcher.close();
+      } catch {
+        /* best-effort close on the way out */
+      }
+      rejectKeepAlive(
+        err instanceof Error ? err : new Error(`chokidar watcher error: ${message}`)
+      );
+    });
 
     // Handle file deletion gracefully: emit a warning event and continue watching.
     // The watcher keeps running so that if the file is recreated it will resume.
@@ -625,7 +666,9 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
 
-    // Keep alive
-    await new Promise(() => {});
+    // Keep alive until interrupted (SIGINT/SIGTERM) or the watcher itself
+    // reports a fatal error (see the `watcher.on('error', ...)` handler
+    // above, which calls `rejectKeepAlive`).
+    await keepAlivePromise;
   },
 });

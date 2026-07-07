@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getGlobalSpanSink } from '@wasm4pm/observability';
+import { getGlobalSpanSink } from '../otel/sink.js';
+import type { OtelSpan } from '@wasm4pm/cognition';
 
 /**
  * Gap-11: WASM Loader Graceful Degradation Tests
@@ -39,7 +40,7 @@ class MockWasmLoader {
     this.state.initAttempts++;
 
     // Emit OTEL span with 9 required attributes
-    const span = {
+    const span: OtelSpan = {
       trace_id: Math.random().toString(36).slice(2),
       span_id: Math.random().toString(36).slice(2),
       name: 'wasm_loader.load',

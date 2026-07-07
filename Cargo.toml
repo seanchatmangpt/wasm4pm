@@ -26,6 +26,7 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
+bcinr-powl = { version = "26.6.25", features = ["std"] }
 wasm4pm-compat = { version = "26.6", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.7.1", path = "wasm4pm", features = ["cloud"] }
 wasm4pm-cognition = { version = "26.7.1", path = "crates/wasm4pm-cognition" }

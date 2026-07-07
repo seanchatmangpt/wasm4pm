@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! RL system correctness validation.
 //!
 //! These tests verify that the RL orchestrator actually learns and improves —

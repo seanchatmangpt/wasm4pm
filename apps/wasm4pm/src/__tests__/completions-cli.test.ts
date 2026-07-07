@@ -62,13 +62,13 @@ function cliUnavailable(r: CliResult): boolean {
 
 describe('wpm completions --help', () => {
   it('exits 0', async () => {
-    const r = await runCli(['completions', '--help']);
+    const r = await runCli(['system', 'completions', '--help']);
     if (cliUnavailable(r)) return;
     expect(r.exitCode).toBe(0);
   }, 15_000);
 
   it('output mentions supported shells: bash, zsh, fish', async () => {
-    const r = await runCli(['completions', '--help']);
+    const r = await runCli(['system', 'completions', '--help']);
     if (cliUnavailable(r)) return;
     const out = r.stdout + r.stderr;
     expect(out).toMatch(/bash/i);
@@ -77,7 +77,7 @@ describe('wpm completions --help', () => {
   }, 15_000);
 
   it('output mentions "shell" positional argument', async () => {
-    const r = await runCli(['completions', '--help']);
+    const r = await runCli(['system', 'completions', '--help']);
     if (cliUnavailable(r)) return;
     const out = r.stdout + r.stderr;
     expect(out).toMatch(/shell/i);
@@ -90,55 +90,55 @@ describe('wpm completions --help', () => {
 
 describe('wpm completions bash', () => {
   it('exits 0', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r)) return;
     expect(r.exitCode).toBe(0);
   }, 15_000);
 
   it('stdout is non-empty', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout.trim().length).toBeGreaterThan(0);
   }, 15_000);
 
   it('stdout defines the _wpm completion function', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('_wpm');
   }, 15_000);
 
   it('stdout registers completion with "complete -F _wpm wpm"', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toMatch(/complete\s+-F\s+_wpm\s+wpm/);
   }, 15_000);
 
   it('stdout contains core command "run"', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('run');
   }, 15_000);
 
   it('stdout contains "autoprocess" command', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('autoprocess');
   }, 15_000);
 
   it('stdout contains "conformance" command', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('conformance');
   }, 15_000);
 
   it('stdout contains "predict" command', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('predict');
   }, 15_000);
 
   it('stdout contains "cognition" command group', async () => {
-    const r = await runCli(['completions', 'bash']);
+    const r = await runCli(['system', 'completions', 'bash']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('cognition');
   }, 15_000);
@@ -150,43 +150,47 @@ describe('wpm completions bash', () => {
 
 describe('wpm completions zsh', () => {
   it('exits 0', async () => {
-    const r = await runCli(['completions', 'zsh']);
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r)) return;
     expect(r.exitCode).toBe(0);
   }, 15_000);
 
   it('stdout is non-empty', async () => {
-    const r = await runCli(['completions', 'zsh']);
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout.trim().length).toBeGreaterThan(0);
   }, 15_000);
 
-  it('stdout starts with "#compdef wpm" (zsh compdef marker)', async () => {
-    const r = await runCli(['completions', 'zsh']);
+  it('the script payload starts with "#compdef wpm" (zsh compdef marker)', async () => {
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
-    expect(r.stdout.trimStart()).toMatch(/^#compdef wpm/);
+    // Migration note: stdout is now always JSON (`{shell, script, scriptBytes}`
+    // per `nouns/system/completions.ts`), not the raw script text — the
+    // compdef marker is the first line of the `script` field, not of stdout.
+    const json = JSON.parse(r.stdout);
+    expect((json.script as string).trimStart()).toMatch(/^#compdef wpm/);
   }, 15_000);
 
   it('stdout uses _arguments (zsh completion pattern)', async () => {
-    const r = await runCli(['completions', 'zsh']);
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('_arguments');
   }, 15_000);
 
   it('stdout contains "autoprocess" command', async () => {
-    const r = await runCli(['completions', 'zsh']);
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('autoprocess');
   }, 15_000);
 
   it('stdout contains "cognition" command group', async () => {
-    const r = await runCli(['completions', 'zsh']);
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('cognition');
   }, 15_000);
 
   it('stdout contains "conformance" command', async () => {
-    const r = await runCli(['completions', 'zsh']);
+    const r = await runCli(['system', 'completions', 'zsh']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('conformance');
   }, 15_000);
@@ -198,31 +202,31 @@ describe('wpm completions zsh', () => {
 
 describe('wpm completions fish', () => {
   it('exits 0', async () => {
-    const r = await runCli(['completions', 'fish']);
+    const r = await runCli(['system', 'completions', 'fish']);
     if (cliUnavailable(r)) return;
     expect(r.exitCode).toBe(0);
   }, 15_000);
 
   it('stdout is non-empty', async () => {
-    const r = await runCli(['completions', 'fish']);
+    const r = await runCli(['system', 'completions', 'fish']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout.trim().length).toBeGreaterThan(0);
   }, 15_000);
 
   it('stdout uses "complete -c wpm" pattern throughout', async () => {
-    const r = await runCli(['completions', 'fish']);
+    const r = await runCli(['system', 'completions', 'fish']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('complete -c wpm');
   }, 15_000);
 
   it('stdout contains "autoprocess" command', async () => {
-    const r = await runCli(['completions', 'fish']);
+    const r = await runCli(['system', 'completions', 'fish']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('autoprocess');
   }, 15_000);
 
   it('stdout contains "cognition" command group', async () => {
-    const r = await runCli(['completions', 'fish']);
+    const r = await runCli(['system', 'completions', 'fish']);
     if (cliUnavailable(r) || r.exitCode !== 0) return;
     expect(r.stdout).toContain('cognition');
   }, 15_000);
@@ -234,20 +238,20 @@ describe('wpm completions fish', () => {
 
 describe('wpm completions — error handling', () => {
   it('exits non-zero for unsupported shell "powershell"', async () => {
-    const r = await runCli(['completions', 'powershell']);
+    const r = await runCli(['system', 'completions', 'powershell']);
     if (cliUnavailable(r)) return;
     expect(r.exitCode).not.toBe(0);
   }, 15_000);
 
   it('exits 2 for unsupported shell (source_error contract from completions.ts)', async () => {
-    const r = await runCli(['completions', 'powershell']);
+    const r = await runCli(['system', 'completions', 'powershell']);
     if (cliUnavailable(r)) return;
     // completions.ts calls exitWithFlush(2) for unsupported shell
     expect(r.exitCode).toBe(2);
   }, 15_000);
 
   it('stderr mentions the unsupported shell name for "ksh"', async () => {
-    const r = await runCli(['completions', 'ksh']);
+    const r = await runCli(['system', 'completions', 'ksh']);
     if (cliUnavailable(r)) return;
     // Either stderr or stdout should mention the shell or "Unsupported"
     const out = r.stdout + r.stderr;
@@ -255,17 +259,20 @@ describe('wpm completions — error handling', () => {
   }, 15_000);
 
   it('exits non-zero for empty string shell argument', async () => {
-    const r = await runCli(['completions', '']);
+    const r = await runCli(['system', 'completions', '']);
     if (cliUnavailable(r)) return;
     expect(r.exitCode).not.toBe(0);
   }, 15_000);
 
-  it('stderr for powershell mentions supported shells (bash | zsh | fish)', async () => {
-    const r = await runCli(['completions', 'powershell']);
+  it('the error envelope for powershell mentions supported shells (bash | zsh | fish)', async () => {
+    const r = await runCli(['system', 'completions', 'powershell']);
     if (cliUnavailable(r)) return;
-    const err = r.stderr;
-    // completions.ts: "Try one of: bash | zsh | fish"
-    expect(err).toMatch(/bash|zsh|fish/);
+    // Migration note: verb errors are always the `{error:{code,message}}`
+    // envelope on STDOUT (per the framework's always-JSON-on-stdout
+    // contract) — stderr is empty for a plain error result unless `--human`
+    // is also passed. "Try one of: bash | zsh | fish" lives in the error
+    // message now, not stderr.
+    expect(r.stdout).toMatch(/bash|zsh|fish/);
   }, 15_000);
 });
 
@@ -276,8 +283,8 @@ describe('wpm completions — error handling', () => {
 describe('wpm completions — cross-shell distinctiveness', () => {
   it('bash and zsh outputs are distinct from each other', async () => {
     const [bash, zsh] = await Promise.all([
-      runCli(['completions', 'bash']),
-      runCli(['completions', 'zsh']),
+      runCli(['system', 'completions', 'bash']),
+      runCli(['system', 'completions', 'zsh']),
     ]);
     if (cliUnavailable(bash) || bash.exitCode !== 0) return;
     if (cliUnavailable(zsh) || zsh.exitCode !== 0) return;
@@ -286,8 +293,8 @@ describe('wpm completions — cross-shell distinctiveness', () => {
 
   it('bash and fish outputs are distinct from each other', async () => {
     const [bash, fish] = await Promise.all([
-      runCli(['completions', 'bash']),
-      runCli(['completions', 'fish']),
+      runCli(['system', 'completions', 'bash']),
+      runCli(['system', 'completions', 'fish']),
     ]);
     if (cliUnavailable(bash) || bash.exitCode !== 0) return;
     if (cliUnavailable(fish) || fish.exitCode !== 0) return;
@@ -296,9 +303,9 @@ describe('wpm completions — cross-shell distinctiveness', () => {
 
   it('all three shells produce non-empty output', async () => {
     const [bash, zsh, fish] = await Promise.all([
-      runCli(['completions', 'bash']),
-      runCli(['completions', 'zsh']),
-      runCli(['completions', 'fish']),
+      runCli(['system', 'completions', 'bash']),
+      runCli(['system', 'completions', 'zsh']),
+      runCli(['system', 'completions', 'fish']),
     ]);
     if (cliUnavailable(bash) || cliUnavailable(zsh) || cliUnavailable(fish)) return;
     if (bash.exitCode !== 0 || zsh.exitCode !== 0 || fish.exitCode !== 0) return;

@@ -12,6 +12,14 @@ export { buildFeatureMatrix, encodeLabels, selectTopFeatures, normalizeFeatures 
 // Feature extractors
 export { extractRemainingTimeFeatures } from './features-remaining-time.js';
 export { extractDriftFeatures, detectAnomalousDriftWindows } from './features-drift.js';
+export {
+  extractOutcomeFeatures,
+  normalizeOutcomeFeatures,
+  assessOutcomeFeatureQuality,
+  OutcomeFeaturesSchema,
+  type OutcomeFeatures,
+  type OutcomeFeatureQualityMetric,
+} from './features-outcome.js';
 
 // Classification & regression (includes runCrossValidation for advanced usage)
 export { classifyTraces, regressRemainingTime, runCrossValidation } from './classifiers.js';

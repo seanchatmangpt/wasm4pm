@@ -2,7 +2,11 @@
  * autoprocess-cycles-guard.test.ts
  *
  * Regression-suite for the --cycles flag validation guard added to
- * `wpm autoprocess`.
+ * `wpm autoprocess` (now `wpm lab autoprocess` — see nouns/_removed.ts:
+ * 'autoprocess' -> 'lab autoprocess'. The verb bridges unchanged to the
+ * legacy command via nouns/_bridge.ts, so the guard logic itself is
+ * identical; only the invocation prefix and the JSON/exit-code contract
+ * around it changed with the noun-verb rebuild — see the note below).
  *
  * Background (the bug):
  *   `parseInt('abc', 10)` returns NaN.
@@ -11,14 +15,32 @@
  *   Result: zero cycles run, exit 0 — silent success for an invalid input.
  *
  * The guard (fix):
- *   1. Number.isNaN(parsed) → exit 1, message "–-cycles must be a positive integer"
- *   2. parsed < 0          → exit 1, same message
- *   3. parsed > 10_000     → exit 1, message "–-cycles exceeds maximum (10000)"
+ *   1. Number.isNaN(parsed) → guard rejects, message "–-cycles must be a positive integer"
+ *   2. parsed < 0          → guard rejects, same message
+ *   3. parsed > 10_000     → guard rejects, message "–-cycles exceeds maximum (10000)"
  *   4. parsed === 0        → allowed (unlimited mode, runs until interrupted)
  *   5. parsed ≥ 1          → allowed (finite run)
  *
+ * Exit-code contract change (noun-verb rebuild):
+ *   Standalone legacy `wpm autoprocess` reported guard rejections as
+ *   `exit_code: 1` (config_error) directly in its own CommandResult envelope.
+ *   Through `wpm lab autoprocess`, a guard rejection is a thrown error inside
+ *   the legacy command, which `nouns/_bridge.ts`'s `invokeLegacyCommandAsJson`
+ *   catches and reclassifies via `classifyLegacyFailure()`: legacy exit codes
+ *   1 (config_error) AND 2 (source_error) both become `NounVerbError.invalidInput()`
+ *   (code `INVALID_INPUT`), which `apps/wasm4pm/src/cli.ts`'s `ERROR_CODE_MAP`
+ *   maps onto `EXIT_CODES.source_error` = 2 — never 1. The stdout contract also
+ *   changes: a thrown verb error serializes to the framework's
+ *   `{ error: { code, message } }` envelope (packages/noun-verb/src/errors.ts),
+ *   not the legacy `{ command, status, exit_code, payload, meta }` shape — the
+ *   `command`/`status`/top-level `exit_code` fields no longer exist on a guard
+ *   rejection's stdout. Every assertion below is updated for this: `.toBe(1)`
+ *   guard-rejection checks become `.toBe(2)`, and envelope-shape checks read
+ *   `parsed.error.code`/`parsed.error.message` instead of the retired
+ *   `status`/`exit_code`/`command` fields.
+ *
  * Oracle rank: Rank-2 (domain contract) — all assertions follow the documented
- *   exit-code contract and the makeResult/emitResult JSON envelope.
+ *   exit-code contract and the noun-verb framework's ErrorEnvelope JSON shape.
  *
  * FM-5 clean: tests call the real CLI binary, no init.js mocking.
  *
@@ -99,11 +121,18 @@ function tryJson(stdout: string): Record<string, unknown> | null {
   }
 }
 
-/** Extract the error.message string from a parsed JSON envelope. */
+/** Extract the error.message string from the new `{ error: { code, message } }` envelope. */
 function errorMsg(parsed: Record<string, unknown> | null): string {
   if (!parsed) return '';
   const err = parsed.error as Record<string, unknown> | undefined;
   return typeof err?.message === 'string' ? err.message : '';
+}
+
+/** Extract error.code from the new `{ error: { code, message } }` envelope. */
+function errorCode(parsed: Record<string, unknown> | null): string {
+  if (!parsed) return '';
+  const err = parsed.error as Record<string, unknown> | undefined;
+  return typeof err?.code === 'string' ? err.code : '';
 }
 
 // ─── Minimal inline XES fixture ───────────────────────────────────────────────
@@ -148,38 +177,41 @@ afterEach(async () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 1 — --cycles with non-integer string', () => {
-  it('--cycles abc exits config_error (1)', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', 'abc', '--format', 'json'], {
+  it('--cycles abc exits source_error (2) via the bridged INVALID_INPUT classification', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', 'abc', '--no-save'], {
       cwd: tempDir,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   });
 
-  it('--cycles abc produces structured JSON error envelope', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', 'abc', '--format', 'json'], {
+  it('--cycles abc produces the new { error: { code, message } } envelope', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', 'abc', '--no-save'], {
       cwd: tempDir,
     });
     const parsed = tryJson(r.stdout);
     expect(parsed).not.toBeNull();
-    expect(parsed!.status).toBe('error');
-    expect(typeof parsed!.exit_code).toBe('number');
-    expect(parsed!.exit_code).toBe(1);
+    expect(errorCode(parsed)).toBe('INVALID_INPUT');
+    expect(typeof errorMsg(parsed)).toBe('string');
+    expect(errorMsg(parsed).length).toBeGreaterThan(0);
   });
 
   it('--cycles abc error message mentions --cycles', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', 'abc', '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', 'abc', '--no-save'], {
       cwd: tempDir,
     });
     const msg = errorMsg(tryJson(r.stdout));
     expect(msg).toMatch(/--cycles/i);
   });
 
-  it('--cycles abc JSON envelope command field is "autoprocess"', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', 'abc', '--format', 'json'], {
+  // The legacy `{ command: 'autoprocess', ... }` envelope field no longer
+  // exists on a bridged verb's error path (see file header) — the closest
+  // equivalent identity signal is the ErrorCode itself.
+  it('--cycles abc error.code identifies the failure as INVALID_INPUT', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', 'abc', '--no-save'], {
       cwd: tempDir,
     });
     const parsed = tryJson(r.stdout);
-    expect(parsed!.command).toBe('autoprocess');
+    expect(errorCode(parsed)).toBe('INVALID_INPUT');
   });
 });
 
@@ -188,35 +220,34 @@ describe('Guard 1 — --cycles with non-integer string', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 2 — --cycles with negative value', () => {
-  it('--cycles -1 exits config_error (1)', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '-1', '--format', 'json'], {
+  it('--cycles -1 exits source_error (2)', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '-1', '--no-save'], {
       cwd: tempDir,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   });
 
-  it('--cycles -1 produces structured JSON error envelope', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '-1', '--format', 'json'], {
+  it('--cycles -1 produces the new error envelope', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '-1', '--no-save'], {
       cwd: tempDir,
     });
     const parsed = tryJson(r.stdout);
     expect(parsed).not.toBeNull();
-    expect(parsed!.status).toBe('error');
-    expect(parsed!.exit_code).toBe(1);
+    expect(errorCode(parsed)).toBe('INVALID_INPUT');
   });
 
   it('--cycles -1 error message mentions --cycles', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '-1', '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '-1', '--no-save'], {
       cwd: tempDir,
     });
     expect(errorMsg(tryJson(r.stdout))).toMatch(/--cycles/i);
   });
 
-  it('--cycles -100 also exits config_error (1)', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '-100', '--format', 'json'], {
+  it('--cycles -100 also exits source_error (2)', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '-100', '--no-save'], {
       cwd: tempDir,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   });
 });
 
@@ -225,16 +256,18 @@ describe('Guard 2 — --cycles with negative value', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 3 — --cycles 0 (unlimited mode)', () => {
-  it('--cycles 0 does NOT exit config_error (1) — 0 is the unlimited sentinel', async () => {
+  it('--cycles 0 does NOT exit source_error (2) — 0 is the unlimited sentinel', async () => {
     // Use a short timeout; the command runs indefinitely in unlimited mode.
-    // We just need to verify it does not exit 1 (config_error).
-    // It will exit via timeout (non-zero signal) or via WASM-missing (3).
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '0', '--format', 'json'], {
+    // We just need to verify the guard does not reject it (2). It will exit
+    // via timeout (execFile reports exitCode 1 for a signal-killed process —
+    // see runCli above — which is fine, that's not the guard's rejection
+    // code) or via WASM-missing (3).
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '0', '--no-save'], {
       cwd: tempDir,
       timeoutMs: 5_000,
     });
-    // config_error (1) must NOT fire for the unlimited sentinel value
-    expect(r.exitCode).not.toBe(1);
+    // source_error (2) must NOT fire for the unlimited sentinel value
+    expect(r.exitCode).not.toBe(2);
   }, 8_000);
 });
 
@@ -243,26 +276,26 @@ describe('Guard 3 — --cycles 0 (unlimited mode)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 4 — --cycles over maximum cap (10000)', () => {
-  it('--cycles 10001 exits config_error (1)', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '10001', '--format', 'json'], {
+  it('--cycles 10001 exits source_error (2)', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '10001', '--no-save'], {
       cwd: tempDir,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   });
 
   it('--cycles 10001 error message mentions maximum', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '10001', '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '10001', '--no-save'], {
       cwd: tempDir,
     });
     const msg = errorMsg(tryJson(r.stdout));
     expect(msg).toMatch(/maximum|10000/i);
   });
 
-  it('--cycles 99999 exits config_error (1)', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '99999', '--format', 'json'], {
+  it('--cycles 99999 exits source_error (2)', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '99999', '--no-save'], {
       cwd: tempDir,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   });
 });
 
@@ -271,31 +304,31 @@ describe('Guard 4 — --cycles over maximum cap (10000)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 5 — valid --cycles values pass the guard', () => {
-  it('--cycles 1 does not exit config_error (1)', async () => {
-    // Guard fires BEFORE WASM; if it returns 1 the guard is broken.
+  it('--cycles 1 does not exit source_error (2)', async () => {
+    // Guard fires BEFORE WASM; if it returns 2 the guard is broken.
     // WASM may not be available (returns 3); that is acceptable.
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '1', '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '1', '--no-save'], {
       cwd: tempDir,
       timeoutMs: 30_000,
     });
-    expect(r.exitCode).not.toBe(1);
+    expect(r.exitCode).not.toBe(2);
   }, 35_000);
 
-  it('--cycles 10000 does not exit config_error (1) — boundary is inclusive', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '10000', '--format', 'json'], {
+  it('--cycles 10000 does not exit source_error (2) — boundary is inclusive', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '10000', '--no-save'], {
       cwd: tempDir,
       timeoutMs: 30_000,
     });
     // 10000 is the maximum allowed; guard must pass it through
-    expect(r.exitCode).not.toBe(1);
+    expect(r.exitCode).not.toBe(2);
   }, 35_000);
 
-  it('--cycles 5 does not exit config_error (1)', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '5', '--format', 'json'], {
+  it('--cycles 5 does not exit source_error (2)', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '5', '--no-save'], {
       cwd: tempDir,
       timeoutMs: 30_000,
     });
-    expect(r.exitCode).not.toBe(1);
+    expect(r.exitCode).not.toBe(2);
   }, 35_000);
 });
 
@@ -304,19 +337,20 @@ describe('Guard 5 — valid --cycles values pass the guard', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 6 — --cycles with float value', () => {
-  it('--cycles 1.7 exits config_error (1) — float strings are rejected as ambiguous', async () => {
+  it('--cycles 1.7 exits source_error (2) — float strings are rejected as ambiguous', async () => {
     // Floats are rejected: a raw string containing '.' is not a whole integer.
     // parseInt('1.7', 10) silently truncates; the guard detects the '.' before
-    // parseInt is called and emits CONFIG_INVALID_CYCLES (exit 1).
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '1.7', '--format', 'json'], {
+    // parseInt is called and emits CONFIG_INVALID_CYCLES, bridged to INVALID_INPUT
+    // (exit 2).
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '1.7', '--no-save'], {
       cwd: tempDir,
       timeoutMs: 15_000,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   }, 20_000);
 
   it('--cycles 1.7 error message mentions whole integer', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '1.7', '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '1.7', '--no-save'], {
       cwd: tempDir,
       timeoutMs: 15_000,
     });
@@ -332,12 +366,12 @@ describe('Guard 6 — --cycles with float value', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 7 — --cycles with empty string', () => {
-  it('--cycles "" exits config_error (1)', async () => {
+  it('--cycles "" exits source_error (2)', async () => {
     // parseInt('', 10) === NaN — same path as "abc"
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '', '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '', '--no-save'], {
       cwd: tempDir,
     });
-    expect(r.exitCode).toBe(1);
+    expect(r.exitCode).toBe(2);
   });
 });
 
@@ -346,14 +380,14 @@ describe('Guard 7 — --cycles with empty string', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 8 — no --cycles flag uses default (1)', () => {
-  it('omitting --cycles does not exit config_error (1)', async () => {
+  it('omitting --cycles does not exit source_error (2)', async () => {
     // Default is "1" (single cycle). Guard must not fire on the default.
-    const r = await runCli(['autoprocess', xesPath, '--format', 'json'], {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--no-save'], {
       cwd: tempDir,
       timeoutMs: 30_000,
     });
-    // Must not be config_error — the default value is valid
-    expect(r.exitCode).not.toBe(1);
+    // Must not be source_error — the default value is valid
+    expect(r.exitCode).not.toBe(2);
   }, 35_000);
 });
 
@@ -362,30 +396,30 @@ describe('Guard 8 — no --cycles flag uses default (1)', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Guard 9 — error JSON envelope shape', () => {
-  it('all guard rejections produce { status, message } shaped error envelopes', async () => {
+  it('all guard rejections produce { error: { code, message } } shaped envelopes', async () => {
     const badCyclesValues = ['abc', '-1', '10001', ''];
     for (const val of badCyclesValues) {
-      const r = await runCli(['autoprocess', xesPath, '--cycles', val, '--format', 'json'], {
+      const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', val, '--no-save'], {
         cwd: tempDir,
       });
-      expect(r.exitCode).toBe(1);
+      expect(r.exitCode).toBe(2);
       const parsed = tryJson(r.stdout);
       expect(parsed, `parsed JSON must not be null for --cycles ${JSON.stringify(val)}`).not.toBeNull();
-      expect(parsed!.status).toBe('error');
       const err = parsed!.error as Record<string, unknown> | undefined;
       expect(err, `error field must be present for --cycles ${JSON.stringify(val)}`).toBeDefined();
+      expect(err!.code).toBe('INVALID_INPUT');
       expect(typeof err!.message).toBe('string');
       expect((err!.message as string).length).toBeGreaterThan(0);
     }
   });
 
-  it('exit_code field in JSON envelope matches process exit code (1) for guard rejections', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', 'abc', '--format', 'json'], {
+  it('process exit code matches the framework ErrorCode->exit-code mapping (2) for guard rejections', async () => {
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', 'abc', '--no-save'], {
       cwd: tempDir,
     });
     const parsed = tryJson(r.stdout);
     expect(parsed).not.toBeNull();
-    expect(parsed!.exit_code).toBe(r.exitCode);
-    expect(parsed!.exit_code).toBe(1);
+    expect(errorCode(parsed)).toBe('INVALID_INPUT');
+    expect(r.exitCode).toBe(2);
   });
 });

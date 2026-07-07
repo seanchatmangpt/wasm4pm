@@ -1,0 +1,1 @@
+PASS: Theorems downgraded to bounded claims

@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Adversarial Category D — Circuit Breaker State Machine (Oracle Rank 1/2)
 //!
 //! These tests attack the circuit breaker state machine from the

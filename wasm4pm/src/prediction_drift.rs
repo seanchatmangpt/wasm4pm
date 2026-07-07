@@ -53,7 +53,7 @@
 use crate::models::AttributeValue;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 /// Default Jaccard-distance threshold above which a window-pair is reported as
@@ -105,6 +105,66 @@ pub fn jaccard_distance(a: &HashSet<String>, b: &HashSet<String>) -> f64 {
     }
     let inter = a.intersection(b).count();
     1.0 - (inter as f64 / union as f64)
+}
+
+/// Compute the total-variation distance between two activity *frequency*
+/// distributions, given as raw occurrence counts per activity.
+///
+/// ```text
+/// TV(P, Q) = 0.5 · Σ_i |p_i − q_i|
+/// ```
+///
+/// where the sum ranges over the union of activities and `p_i` / `q_i` are
+/// within-window relative frequencies. Returns a value in `[0.0, 1.0]`; by
+/// convention `TV(∅, ∅) = 0.0` (no change).
+pub fn total_variation_distance(a: &BTreeMap<String, usize>, b: &BTreeMap<String, usize>) -> f64 {
+    let total_a: usize = a.values().sum();
+    let total_b: usize = b.values().sum();
+    if total_a == 0 && total_b == 0 {
+        return 0.0;
+    }
+    let keys: std::collections::BTreeSet<&String> = a.keys().chain(b.keys()).collect();
+    let mut sum = 0.0;
+    for k in keys {
+        let p = if total_a > 0 {
+            *a.get(k).unwrap_or(&0) as f64 / total_a as f64
+        } else {
+            0.0
+        };
+        let q = if total_b > 0 {
+            *b.get(k).unwrap_or(&0) as f64 / total_b as f64
+        } else {
+            0.0
+        };
+        sum += (p - q).abs();
+    }
+    0.5 * sum
+}
+
+/// Evaluate a consecutive window pair against `threshold` using both drift
+/// signals (Jaccard distance over vocabularies, TV distance over frequency
+/// distributions).
+///
+/// Returns `Some((jaccard, tv, method))` when either signal exceeds the
+/// threshold, where `method` is `"jaccard"`, `"tv"`, or `"both"`; otherwise
+/// `None`.
+pub fn evaluate_window_pair(
+    prev: &BTreeMap<String, usize>,
+    cur: &BTreeMap<String, usize>,
+    threshold: f64,
+) -> Option<(f64, f64, &'static str)> {
+    let prev_set: HashSet<String> = prev.keys().cloned().collect();
+    let cur_set: HashSet<String> = cur.keys().cloned().collect();
+    let jd = jaccard_distance(&cur_set, &prev_set);
+    let tv = total_variation_distance(prev, cur);
+    let j_fires = jd > threshold;
+    let t_fires = tv > threshold;
+    match (j_fires, t_fires) {
+        (true, true) => Some((jd, tv, "both")),
+        (true, false) => Some((jd, tv, "jaccard")),
+        (false, true) => Some((jd, tv, "tv")),
+        (false, false) => None,
+    }
 }
 
 /// Compute the exponentially weighted moving average of `values`.
@@ -229,31 +289,35 @@ pub fn detect_drift(
 
     get_or_init_state().with_event_log(log_handle, |log| {
             let mut drifts: Vec<serde_json::Value> = Vec::new();
-            let mut previous_activities: Option<HashSet<String>> = None;
+            let mut previous_freqs: Option<BTreeMap<String, usize>> = None;
 
             for (idx, window) in log.traces.windows(window_size).enumerate() {
-                let mut current_activities: HashSet<String> = HashSet::new();
+                let mut current_freqs: BTreeMap<String, usize> = BTreeMap::new();
                 for trace in window {
                     for event in &trace.events {
                         if let Some(AttributeValue::String(activity)) =
                             event.attributes.get(activity_key)
                         {
-                            current_activities.insert(activity.clone());
+                            *current_freqs.entry(activity.clone()).or_default() += 1;
                         }
                     }
                 }
 
-                if let Some(prev) = &previous_activities {
-                    let distance = jaccard_distance(&current_activities, prev);
-                    if distance > DEFAULT_DRIFT_THRESHOLD {
+                if let Some(prev) = &previous_freqs {
+                    if let Some((distance, tv, method)) =
+                        evaluate_window_pair(prev, &current_freqs, DEFAULT_DRIFT_THRESHOLD)
+                    {
+                        let current_activities: HashSet<String> =
+                            current_freqs.keys().cloned().collect();
+                        let prev_set: HashSet<String> = prev.keys().cloned().collect();
                         // Compute appeared (in current but not prev) and disappeared (in prev but not current)
-                        let appeared: std::collections::BTreeSet<&str> = current_activities
-                            .difference(prev)
-                            .map(String::as_str)
+                        let appeared: std::collections::BTreeSet<String> = current_activities
+                            .difference(&prev_set)
+                            .cloned()
                             .collect();
-                        let disappeared: std::collections::BTreeSet<&str> = prev
+                        let disappeared: std::collections::BTreeSet<String> = prev_set
                             .difference(&current_activities)
-                            .map(String::as_str)
+                            .cloned()
                             .collect();
                         let suggestion = if let Some(first) = disappeared.iter().next() {
                             format!(
@@ -271,6 +335,8 @@ pub fn detect_drift(
                         drifts.push(json!({
                             "position": idx * window_size,
                             "distance": distance,
+                            "tv_distance": tv,
+                            "method": method,
                             "type": "concept_drift",
                             "appeared": appeared,
                             "disappeared": disappeared,
@@ -278,14 +344,14 @@ pub fn detect_drift(
                         }));
                     }
                 }
-                previous_activities = Some(current_activities);
+                previous_freqs = Some(current_freqs);
             }
 
             let result = json!({
                 "drifts_detected": drifts.len(),
                 "drifts": drifts,
                 "window_size": window_size,
-                "method": "jaccard_window",
+                "method": "jaccard+tv_window",
                 "threshold": DEFAULT_DRIFT_THRESHOLD,
             });
             serde_json::to_string(&result)
@@ -392,6 +458,68 @@ mod tests {
         let a = set(&["A", "B", "C", "D"]);
         let b = set(&["C", "D", "E"]);
         assert!((jaccard_distance(&a, &b) - jaccard_distance(&b, &a)).abs() < 1e-12);
+    }
+
+    fn freqs(items: &[(&str, usize)]) -> BTreeMap<String, usize> {
+        items.iter().map(|(k, v)| (k.to_string(), *v)).collect()
+    }
+
+    #[test]
+    fn tv_identical_distributions_is_zero() {
+        let a = freqs(&[("a", 9), ("b", 1)]);
+        assert_eq!(total_variation_distance(&a, &a.clone()), 0.0);
+    }
+
+    #[test]
+    fn tv_both_empty_is_zero_by_convention() {
+        let e: BTreeMap<String, usize> = BTreeMap::new();
+        assert_eq!(total_variation_distance(&e, &e.clone()), 0.0);
+    }
+
+    #[test]
+    fn tv_disjoint_is_one() {
+        let a = freqs(&[("a", 5)]);
+        let b = freqs(&[("b", 3)]);
+        assert!((total_variation_distance(&a, &b) - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn tv_hand_computed_frequency_shift() {
+        // p = [0.9, 0.1], q = [0.1, 0.9] → TV = 0.5·(0.8 + 0.8) = 0.8
+        let a = freqs(&[("a", 9), ("b", 1)]);
+        let b = freqs(&[("a", 1), ("b", 9)]);
+        let tv = total_variation_distance(&a, &b);
+        assert!((tv - 0.8).abs() < 1e-12, "tv = {}", tv);
+    }
+
+    #[test]
+    fn frequency_shift_with_identical_vocab_fires_tv_only() {
+        // Identical vocabularies → Jaccard distance 0, but TV = 0.8 > 0.3.
+        let prev = freqs(&[("a", 9), ("b", 1)]);
+        let cur = freqs(&[("a", 1), ("b", 9)]);
+        let (jd, tv, method) = evaluate_window_pair(&prev, &cur, DEFAULT_DRIFT_THRESHOLD)
+            .expect("TV drift must be detected");
+        assert_eq!(jd, 0.0);
+        assert!((tv - 0.8).abs() < 1e-12);
+        assert_eq!(method, "tv");
+    }
+
+    #[test]
+    fn vocab_change_and_frequency_shift_fires_both() {
+        let prev = freqs(&[("a", 10)]);
+        let cur = freqs(&[("b", 10)]);
+        let (jd, tv, method) = evaluate_window_pair(&prev, &cur, DEFAULT_DRIFT_THRESHOLD)
+            .expect("drift must be detected");
+        assert_eq!(jd, 1.0);
+        assert!((tv - 1.0).abs() < 1e-12);
+        assert_eq!(method, "both");
+    }
+
+    #[test]
+    fn no_drift_below_threshold() {
+        let prev = freqs(&[("a", 10), ("b", 10)]);
+        let cur = freqs(&[("a", 11), ("b", 10)]);
+        assert!(evaluate_window_pair(&prev, &cur, DEFAULT_DRIFT_THRESHOLD).is_none());
     }
 
     #[test]

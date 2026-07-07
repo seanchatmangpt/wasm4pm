@@ -1,5 +1,15 @@
 /**
- * simulate-monte-carlo.test.ts — Enhanced `wpm simulate` feature tests
+ * `wpm simulate` was retired; the hard-break table (nouns/_removed.ts)
+ * forwards it to `wpm model simulate`, which bridges unmodified to this same
+ * `commands/simulate.ts` body (nouns/model/simulate.ts). Confirmed live: a
+ * successful call returns the legacy `{command,status,payload,meta}`
+ * envelope verbatim; a failing call is thrown as the framework's bare
+ * `{error:{code,message}}` envelope, and legacy exit codes 1 (config_error)
+ * and 2 (source_error) both collapse to source_error (2) under wpm's
+ * ERROR_CODE_MAP (see packages/noun-verb `_bridge.ts` classifyLegacyFailure)
+ * — every "exit 1 (config_error)" expectation below is now exit 2.
+ *
+ * simulate-monte-carlo.test.ts — Enhanced `wpm model simulate` (was: wpm simulate) feature tests
  *
  * Oracle rank: Rank-2 (domain contract) for JSON payload shape + flag behavior.
  *              Rank-3 (metamorphic) for seed determinism.
@@ -204,19 +214,19 @@ describe('wpm simulate — Task 1: basic success', () => {
   afterEach(async () => { await env.cleanup(); });
 
   it('exits 0 with a valid XES file', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     expect(result.exitCode).toBe(0);
   });
 
   it('envelope has command=simulate and status=ok', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     const j = parseEnvelope(result);
     expect(j.command).toBe('simulate');
     expect(j.status).toBe('ok');
   });
 
   it('exits 2 when no input is provided', async () => {
-    const result = await runCli(['simulate', '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '--format', 'json', '--no-save']);
     expect(result.exitCode).toBe(2);
   });
 });
@@ -231,7 +241,7 @@ describe('wpm simulate — Task 2: JSON payload fields', () => {
   afterEach(async () => { await env.cleanup(); });
 
   it('payload.simulation.casesCompleted is a positive number', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     const j = parseEnvelope(result);
     const sim = (j.payload!['simulation'] as Record<string, unknown>);
     expect(typeof sim['casesCompleted']).toBe('number');
@@ -239,7 +249,7 @@ describe('wpm simulate — Task 2: JSON payload fields', () => {
   });
 
   it('payload.statistics.avgTraceLength is a non-negative number', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     const j = parseEnvelope(result);
     const stats = j.payload!['statistics'] as Record<string, unknown>;
     expect(typeof stats['avgTraceLength']).toBe('number');
@@ -247,7 +257,7 @@ describe('wpm simulate — Task 2: JSON payload fields', () => {
   });
 
   it('payload.statistics.variantCount is present and a non-negative integer', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     const j = parseEnvelope(result);
     const stats = j.payload!['statistics'] as Record<string, unknown>;
     // variantCount is a new field — must be present
@@ -259,7 +269,7 @@ describe('wpm simulate — Task 2: JSON payload fields', () => {
   });
 
   it('payload.statistics has all sojourn time percentile fields', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     const j = parseEnvelope(result);
     const stats = j.payload!['statistics'] as Record<string, unknown>;
     expect('sojournTimeP5Ms' in stats).toBe(true);
@@ -268,7 +278,7 @@ describe('wpm simulate — Task 2: JSON payload fields', () => {
   });
 
   it('payload.statistics numeric fields are all finite', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     const j = parseEnvelope(result);
     const stats = j.payload!['statistics'] as Record<string, unknown>;
     const numericFields = ['avgTraceLength', 'avgSojournTimeMs', 'sojournTimeStdMs',
@@ -293,6 +303,7 @@ describe('wpm simulate — Task 3: --cases flag', () => {
 
   it('--cases 10 sets casesRequested=10', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '10', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -302,6 +313,7 @@ describe('wpm simulate — Task 3: --cases flag', () => {
 
   it('--cases 1 succeeds with exactly 1 case requested', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '1', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -312,6 +324,7 @@ describe('wpm simulate — Task 3: --cases flag', () => {
 
   it('--cases 50 sets casesRequested=50', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '50', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -319,18 +332,20 @@ describe('wpm simulate — Task 3: --cases flag', () => {
     expect(sim['casesRequested']).toBe(50);
   });
 
-  it('--cases 0 exits 1 (config_error)', async () => {
+  it('--cases 0 exits 2 (source_error), not the old config_error (1)', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '0', '--format', 'json', '--no-save',
     ]);
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
   });
 
-  it('--cases abc exits 1 (config_error)', async () => {
+  it('--cases abc exits 2 (source_error), not the old config_error (1)', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', 'abc', '--format', 'json', '--no-save',
     ]);
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
   });
 });
 
@@ -344,7 +359,7 @@ describe('wpm simulate — Task 4: --seed determinism', () => {
   afterEach(async () => { await env.cleanup(); });
 
   it('same --seed produces identical avgSojournTimeMs', async () => {
-    const args = ['simulate', '-i', env.xesPath, '--seed', '42', '--cases', '5',
+    const args = ['model', 'simulate', '-i', env.xesPath, '--seed', '42', '--cases', '5',
       '--format', 'json', '--no-save'];
     // Run sequentially to avoid parallel process contention
     const r1 = await runCli(args);
@@ -359,7 +374,7 @@ describe('wpm simulate — Task 4: --seed determinism', () => {
   });
 
   it('same --seed produces identical casesCompleted', async () => {
-    const args = ['simulate', '-i', env.xesPath, '--seed', '42', '--cases', '5',
+    const args = ['model', 'simulate', '-i', env.xesPath, '--seed', '42', '--cases', '5',
       '--format', 'json', '--no-save'];
     // Run sequentially to avoid parallel process contention causing timeouts
     const r1 = await runCli(args);
@@ -371,7 +386,7 @@ describe('wpm simulate — Task 4: --seed determinism', () => {
   });
 
   it('same --seed produces identical avgTraceLength', async () => {
-    const args = ['simulate', '-i', env.xesPath, '--seed', '99', '--cases', '5',
+    const args = ['model', 'simulate', '-i', env.xesPath, '--seed', '99', '--cases', '5',
       '--format', 'json', '--no-save'];
     const r1 = await runCli(args);
     const r2 = await runCli(args);
@@ -383,6 +398,7 @@ describe('wpm simulate — Task 4: --seed determinism', () => {
 
   it('seed value is echoed in the payload', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--seed', '12345', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -392,6 +408,7 @@ describe('wpm simulate — Task 4: --seed determinism', () => {
 
   it('seed 0 is accepted (boundary)', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--seed', '0', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -412,6 +429,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('exits 0 with --compare', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -419,6 +437,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('payload contains a comparison block when --compare is passed', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -427,6 +446,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('comparison block has activitiesPerCase with actual and simulated fields', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -440,6 +460,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('comparison block has uniqueVariants with actual and simulated', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -452,6 +473,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('comparison block has overallQuality field', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -462,6 +484,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('comparison block has traceFitness in [0,1]', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -474,6 +497,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('human output with --compare mentions simulated vs actual', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--compare', '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -488,6 +512,7 @@ describe('wpm simulate — Task 5: --compare flag', () => {
 
   it('without --compare payload has no comparison block', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--format', 'json', '--no-save',
     ]);
     const j = parseEnvelope(result);
@@ -507,6 +532,7 @@ describe('wpm simulate — Task 5b: --export flag', () => {
   it('exits 0 with --export', async () => {
     const exportPath = path.join(env.tempDir, 'simulated.xes');
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '5', '--seed', '42',
       '--export', exportPath, '--format', 'json', '--no-save',
     ]);
@@ -516,6 +542,7 @@ describe('wpm simulate — Task 5b: --export flag', () => {
   it('--export creates an XES file at the given path', async () => {
     const exportPath = path.join(env.tempDir, 'simulated.xes');
     await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '5', '--seed', '42',
       '--export', exportPath, '--format', 'json', '--no-save',
     ]);
@@ -526,6 +553,7 @@ describe('wpm simulate — Task 5b: --export flag', () => {
   it('exported XES contains <log> element and valid XML structure', async () => {
     const exportPath = path.join(env.tempDir, 'simulated.xes');
     await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '3', '--seed', '42',
       '--export', exportPath, '--format', 'json', '--no-save',
     ]);
@@ -539,6 +567,7 @@ describe('wpm simulate — Task 5b: --export flag', () => {
   it('exported XES contains SIM- case IDs when traces are available', async () => {
     const exportPath = path.join(env.tempDir, 'simulated.xes');
     await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '3', '--seed', '42',
       '--export', exportPath, '--format', 'json', '--no-save',
     ]);
@@ -551,6 +580,7 @@ describe('wpm simulate — Task 5b: --export flag', () => {
   it('exported XES is well-formed (has closing </log>)', async () => {
     const exportPath = path.join(env.tempDir, 'simulated.xes');
     await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--cases', '5', '--seed', '1',
       '--export', exportPath, '--format', 'json', '--no-save',
     ]);
@@ -588,6 +618,7 @@ describe('wpm simulate — --scenarios flag', () => {
 
   it('exits 0 with a valid --scenarios JSON', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       '--scenarios', JSON.stringify({ Approve_Request: 0.5 }),
       '--format', 'json', '--no-save',
@@ -597,6 +628,7 @@ describe('wpm simulate — --scenarios flag', () => {
 
   it('payload contains a scenario block with --scenarios', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       '--scenarios', JSON.stringify({ Approve_Request: 0.5 }),
       '--format', 'json', '--no-save',
@@ -607,6 +639,7 @@ describe('wpm simulate — --scenarios flag', () => {
 
   it('scenario block has baselineDurationMs and scenarioDurationMs', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       '--scenarios', JSON.stringify({ Ship_Order: 2.0 }),
       '--format', 'json', '--no-save',
@@ -621,6 +654,7 @@ describe('wpm simulate — --scenarios flag', () => {
 
   it('scenario block has activityImpacts array', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       '--scenarios', JSON.stringify({ Validate_Order: 0.5, Manual_Review: 2.0 }),
       '--format', 'json', '--no-save',
@@ -630,26 +664,29 @@ describe('wpm simulate — --scenarios flag', () => {
     expect(Array.isArray(sc['activityImpacts'])).toBe(true);
   });
 
-  it('exits 1 (config_error) for invalid --scenarios JSON', async () => {
+  it('exits 2 (source_error), not the old config_error (1), for invalid --scenarios JSON', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       '--scenarios', 'not-valid-json',
       '--format', 'json', '--no-save',
     ]);
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
   });
 
-  it('exits 1 for --scenarios with non-positive multiplier', async () => {
+  it('exits 2 (source_error), not the old config_error (1), for --scenarios with non-positive multiplier', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       '--scenarios', JSON.stringify({ Activity: -1 }),
       '--format', 'json', '--no-save',
     ]);
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
   });
 
   it('scenario.beneficial=true when multiplier < 1 (activity becomes faster)', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath,
       // Approve_Request 10x faster should help overall duration
       '--scenarios', JSON.stringify({ Approve_Request: 0.1 }),
@@ -674,6 +711,7 @@ describe('wpm simulate — --animate flag', () => {
 
   it('exits 0 with --animate in human format', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--animate', '--seed', '1', '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -681,6 +719,7 @@ describe('wpm simulate — --animate flag', () => {
 
   it('human output with --animate contains simulation-related output', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--animate', '--seed', '42', '--format', 'human', '--no-save',
     ]);
     const combined = result.stdout + result.stderr;
@@ -697,6 +736,7 @@ describe('wpm simulate — --animate flag', () => {
 
   it('--animate in JSON format still exits 0 (graceful fallback)', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--animate', '--format', 'json', '--no-save',
     ]);
     // JSON format doesn't print animation but must not crash
@@ -715,6 +755,7 @@ describe('wpm simulate — baseline admissibility', () => {
 
   it('default run (no new flags) still exits 0', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -722,6 +763,7 @@ describe('wpm simulate — baseline admissibility', () => {
 
   it('--time flag still accepted', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--time', '30000', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -729,6 +771,7 @@ describe('wpm simulate — baseline admissibility', () => {
 
   it('--verbose flag still accepted', async () => {
     const result = await runCli([
+      'model',
       'simulate', '-i', env.xesPath, '--verbose', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -736,6 +779,7 @@ describe('wpm simulate — baseline admissibility', () => {
 
   it('positional input still accepted', async () => {
     const result = await runCli([
+      'model',
       'simulate', env.xesPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);

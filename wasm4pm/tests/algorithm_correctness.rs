@@ -1039,3 +1039,207 @@ fn pso_iterations_improve_global_best() {
         f_high
     );
 }
+
+// ---------------------------------------------------------------------------
+// Inductive Miner cut detection — partition-general cuts (Leemans et al.)
+// Hand-computable expected trees; these logs defeat the old contiguous-split
+// search (which only tried alphabetical-prefix bipartitions).
+// ---------------------------------------------------------------------------
+
+/// Render a process-tree JSON node as a canonical string for exact assertions.
+fn tree_shape(node: &serde_json::Value) -> String {
+    let ty = node["node_type"].as_str().unwrap_or("?");
+    if ty == "leaf" {
+        return node["label"].as_str().unwrap_or("?").to_string();
+    }
+    let children: Vec<String> = node["children"]
+        .as_array()
+        .map(|cs| cs.iter().map(tree_shape).collect())
+        .unwrap_or_default();
+    format!("{}({})", ty, children.join(","))
+}
+
+/// {⟨a,b,c⟩, ⟨a,c,b⟩} → seq(a, and(b,c)).
+/// Old code produced parallel(a, loop(b,c)) — wrong semantics.
+#[test]
+fn inductive_miner_sequence_then_parallel_exact() {
+    let log = build_log(&[(5, &["a", "b", "c"]), (5, &["a", "c", "b"])]);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let json_str = discover_inductive_miner_from_log(&admitted, "concept:name");
+    let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    assert_eq!(
+        tree_shape(&v["root"]),
+        "sequence(a,parallel(b,c))",
+        "IM must find the sequence cut (a) → (b∥c)"
+    );
+}
+
+/// Non-contiguous XOR: {⟨a,d⟩, ⟨b,c⟩} → xor(seq(a,d), seq(b,c)).
+/// The required partition {a,d}|{b,c} is not an alphabetical prefix split.
+#[test]
+fn inductive_miner_non_contiguous_xor() {
+    let log = build_log(&[(5, &["a", "d"]), (5, &["b", "c"])]);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let json_str = discover_inductive_miner_from_log(&admitted, "concept:name");
+    let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    assert_eq!(
+        tree_shape(&v["root"]),
+        "xor(sequence(a,d),sequence(b,c))",
+        "IM must find the non-contiguous XOR partition"
+    );
+}
+
+/// {⟨a,b,a,b,a⟩} → loop(a, b): body a, redo b.
+#[test]
+fn inductive_miner_loop_cut_exact() {
+    let log = build_log(&[(5, &["a", "b", "a", "b", "a"])]);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let json_str = discover_inductive_miner_from_log(&admitted, "concept:name");
+    let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    assert_eq!(
+        tree_shape(&v["root"]),
+        "loop(a,b)",
+        "IM must find the loop cut with body=a, redo=b"
+    );
+}
+
+/// Sequence in non-alphabetical execution order: {⟨z,a,m⟩} → seq(z,a,m).
+#[test]
+fn inductive_miner_sequence_non_alphabetical() {
+    let log = build_log(&[(5, &["z", "a", "m"])]);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let json_str = discover_inductive_miner_from_log(&admitted, "concept:name");
+    let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+    assert_eq!(
+        tree_shape(&v["root"]),
+        "sequence(z,a,m)",
+        "IM sequence children must follow execution order, not alphabetical order"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Facade fixes — hand-computable assertions for predict_outcome,
+// optimized_dfg, process_skeleton, analyze_process_speedup
+// ---------------------------------------------------------------------------
+
+/// predict_outcome: 3× ⟨a,b,ok⟩ + 1× ⟨a,c,bad⟩. Prefix [a,b] hits the k=2
+/// context {ok:3}; Laplace over vocabulary {bad, ok} → P(ok)=(3+1)/(3+2)=0.8.
+#[test]
+fn predict_outcome_laplace_hand_computed() {
+    let log = build_log(&[(3, &["a", "b", "ok"]), (1, &["a", "c", "bad"])]);
+    let prefix = vec!["a".to_string(), "b".to_string()];
+    let v = wasm4pm::prediction_outcome::predict_outcome_from_log(&log, "concept:name", &prefix)
+        .expect("predict_outcome must succeed");
+    assert_eq!(v["outcome"], "ok");
+    assert_eq!(v["context_used"], "last_2");
+    let p = v["probability"].as_f64().unwrap();
+    assert!(
+        (p - 0.8).abs() < 1e-12,
+        "P(ok | a,b) must be (3+1)/(3+2)=0.8, got {p}"
+    );
+    // Unseen context backs off to the prior: P(ok)=(3+1)/(4+2)=2/3.
+    let v2 = wasm4pm::prediction_outcome::predict_outcome_from_log(
+        &log,
+        "concept:name",
+        &["zzz".to_string()],
+    )
+    .unwrap();
+    assert_eq!(v2["context_used"], "prior");
+    let p2 = v2["probability"].as_f64().unwrap();
+    assert!((p2 - 2.0 / 3.0).abs() < 1e-12, "prior P(ok) must be 2/3, got {p2}");
+}
+
+/// optimized_dfg: with fitness-only weights all edges survive; with a heavy
+/// simplicity penalty the optimizer must PRUNE relative to fitness-only, while
+/// always keeping ≥1 edge and remaining a subset of observed edges.
+#[test]
+fn optimized_dfg_threshold_search_prunes() {
+    let log = build_log(&[(20, &["a", "b", "z"]), (1, &["a", "c", "z"]), (1, &["a", "d", "z"])]);
+    let full = wasm4pm::ilp_discovery::discover_optimized_dfg_from_log(&log, "concept:name", 1.0, 0.0);
+    // 6 distinct observed edges: a→b, b→z, a→c, c→z, a→d, d→z
+    assert_eq!(full.edges.len(), 6, "fitness-only must keep all observed edges");
+    let pruned =
+        wasm4pm::ilp_discovery::discover_optimized_dfg_from_log(&log, "concept:name", 0.1, 10.0);
+    assert!(
+        !pruned.edges.is_empty() && pruned.edges.len() < full.edges.len(),
+        "heavy simplicity weight must prune edges (got {} of {})",
+        pruned.edges.len(),
+        full.edges.len()
+    );
+    // The dominant a→b edge (freq 20) must survive any threshold that keeps ≥1 edge.
+    assert!(
+        pruned.edges.iter().any(|e| e.from == "a" && e.to == "b"),
+        "dominant edge a→b must survive pruning"
+    );
+}
+
+/// process_skeleton: {⟨a,b,c⟩, ⟨a,c⟩} → a≡c (count profile 1/1 in both traces),
+/// a always-before b and c, c always-after a; never_together empty.
+#[test]
+fn process_skeleton_relations_hand_computed() {
+    let log = build_log(&[(1, &["a", "b", "c"]), (1, &["a", "c"])]);
+    let skel = wasm4pm::more_discovery::compute_log_skeleton(&log, "concept:name");
+    let pairs = |key: &str| -> Vec<(String, String)> {
+        skel[key]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|p| {
+                (
+                    p[0].as_str().unwrap().to_string(),
+                    p[1].as_str().unwrap().to_string(),
+                )
+            })
+            .collect()
+    };
+    assert_eq!(pairs("equivalence"), vec![("a".into(), "c".into())]);
+    let before = pairs("always_before");
+    assert!(before.contains(&("a".into(), "b".into())), "a always before b");
+    assert!(before.contains(&("a".into(), "c".into())), "a always before c");
+    assert!(!before.contains(&("b".into(), "c".into())), "b not always before c (trace 2 has c, no b)");
+    let after = pairs("always_after");
+    assert!(after.contains(&("a".into(), "c".into())), "c always after a");
+    assert!(!after.contains(&("a".into(), "b".into())), "b not always after a");
+    assert_eq!(pairs("never_together"), Vec::<(String, String)>::new());
+    // b occurs 0 times in trace 2 → min 0, max 1
+    let counts = skel["activity_counts"].as_array().unwrap();
+    let b = counts.iter().find(|c| c["activity"] == "b").unwrap();
+    assert_eq!((b["min"].as_u64(), b["max"].as_u64()), (Some(0), Some(1)));
+}
+
+/// analyze_process_speedup honors window_size and detects an accelerating
+/// process: early traces have 10-minute gaps, late traces 1-minute gaps.
+#[test]
+fn analyze_process_speedup_windowed_trend() {
+    use wasm4pm::models::{AttributeValue, EventLog, Trace};
+    use std::collections::BTreeMap;
+    let mut log = EventLog::new();
+    // 6 traces over consecutive days: gaps shrink 10min → 1min.
+    for t in 0..6usize {
+        let gap_min = [10, 10, 6, 6, 1, 1][t];
+        let mut events = Vec::new();
+        for i in 0..3usize {
+            let mut attrs = BTreeMap::new();
+            attrs.insert("concept:name".to_string(), AttributeValue::String(format!("act{i}")));
+            attrs.insert(
+                "time:timestamp".to_string(),
+                AttributeValue::String(format!(
+                    "2024-01-{:02}T00:{:02}:00Z",
+                    t + 1,
+                    i * gap_min
+                )),
+            );
+            events.push(wasm4pm::models::Event { attributes: attrs });
+        }
+        log.traces.push(Trace { attributes: BTreeMap::new(), events });
+    }
+    let v = wasm4pm::final_analytics::analyze_process_speedup_from_log(&log, "time:timestamp", 2);
+    assert_eq!(v["window_size"], 2);
+    assert_eq!(v["windows"].as_array().unwrap().len(), 3, "6 traces / window_size 2 = 3 windows");
+    let slope = v["trend_slope"].as_f64().unwrap();
+    assert!(slope < 0.0, "shrinking gaps must give negative slope, got {slope}");
+    assert_eq!(v["trend"], "speedup");
+    // Hand-check window means: 10min=600000ms, 6min=360000ms, 1min=60000ms (2 gaps each trace)
+    let w0 = v["windows"][0]["mean_gap"].as_f64().unwrap();
+    assert!((w0 - 600_000.0).abs() < 1.0, "window 0 mean gap must be 600000ms, got {w0}");
+}

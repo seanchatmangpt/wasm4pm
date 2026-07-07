@@ -1,16 +1,43 @@
 /**
  * diff-cli.test.ts — Comprehensive CLI integration tests for `wpm diff`.
  *
+ * Migrated from the retired top-level `wpm diff` command (removed — see
+ * `apps/wasm4pm/src/nouns/_removed.ts`: `diff` -> `model diff`) to
+ * `wpm model diff` (`apps/wasm4pm/src/nouns/model/diff.ts`).
+ *
+ * `model diff` is a legacy BRIDGE verb (`invokeLegacyCommandAsJson` in
+ * `apps/wasm4pm/src/nouns/_bridge.ts`): it reuses `commands/diff.ts`
+ * completely unmodified, forcing `--format json --quiet` under the hood.
+ *
+ * Two important behavior changes from bridging (read before editing):
+ *  1. SUCCESS still returns the OLD `{command,status,payload,meta}` envelope
+ *     verbatim — that legacy object literally IS the verb's JSON result for
+ *     a bridged verb. FAILURE, however, now takes the NEW
+ *     `{error:{code,message}}` shape (the bridge throws a `NounVerbError` on
+ *     any nonzero legacy exit code — see `_bridge.ts`'s
+ *     `classifyLegacyFailure`), so the old `j.status === 'error'` /
+ *     `j.command === 'diff'` assertions on error paths no longer apply and
+ *     are rewritten below to check `j.error.code`/`j.error.message`.
+ *  2. The bridge's forced `--format json` means a caller-supplied
+ *     `--format human` is silently overridden — stdout is ALWAYS JSON now,
+ *     even when the legacy `--format human` flag is passed. The old
+ *     command's rich human-formatted report (with "Structural similarity",
+ *     "Activities" section headers, etc.) is consequently unreachable
+ *     through the new CLI surface; the "human output" tests below are
+ *     rewritten to assert the new (intentional) always-JSON behavior
+ *     instead of hunting for text that can no longer appear.
+ *
  * Oracle rank: Rank 2 (Domain contract).
  *
  * Coverage areas:
  *   - Exit codes (success, source_error, execution_error)
- *   - JSON envelope shape (command, status, payload.diff)
+ *   - JSON envelope shape (command, status, payload.diff) on success;
+ *     {error:{code,message}} on failure
  *   - Jaccard similarity: self-diff=1.0, two-log diff in [0,1]
  *   - diff.activities sub-fields (added, removed, shared)
  *   - diff.edges sub-fields (added, removed, changed)
  *   - diff.variants sub-fields (totalLog1, totalLog2, shared)
- *   - Human output structural similarity line
+ *   - Always-JSON-on-stdout even with legacy --format human (changed)
  *   - Error cases: missing files, missing args
  *   - Flag behavior: --format, --activity-key, --no-save, --quiet, --verbose
  *   - Structural guarantees: jaccard monotonicity, summary string format
@@ -193,7 +220,7 @@ afterAll(() => {
 
 describe('wpm diff — help', () => {
   it('--help exits 0 and mentions compare or log', async () => {
-    const result = await runDiffCli(['diff', '--help']);
+    const result = await runDiffCli(['model', 'diff', '--help']);
     expect(result.exitCode).toBe(0);
     // Help may go to stdout or stderr depending on terminal mode
     const combined = result.stdout + result.stderr;
@@ -208,13 +235,13 @@ describe('wpm diff — help', () => {
 
 describe('wpm diff — error cases', () => {
   it('missing both log args exits non-zero', async () => {
-    const result = await runDiffCli(['diff', '--format', 'json']);
+    const result = await runDiffCli(['model', 'diff', '--format', 'json']);
     expect(result.exitCode).toBeGreaterThan(0);
   });
 
   it('nonexistent log1 exits source_error (2)', async () => {
     const result = await runDiffCli([
-      'diff',
+      'model', 'diff',
       '/nonexistent/logA.xes',
       logBPath,
       '--format',
@@ -223,13 +250,17 @@ describe('wpm diff — error cases', () => {
     ]);
     expect(result.exitCode).toBe(2);
 
+    // Bridged-verb failures use the new {error:{code,message}} shape, not
+    // the old {command,status,payload,meta} envelope (see file header).
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    expect(j.status).toBeUndefined();
+    expect(j.error).toBeDefined();
+    expect(j.error!.code).toBe('INVALID_INPUT');
   });
 
   it('nonexistent log2 exits source_error (2)', async () => {
     const result = await runDiffCli([
-      'diff',
+      'model', 'diff',
       logAPath,
       '/nonexistent/logB.xes',
       '--format',
@@ -239,12 +270,13 @@ describe('wpm diff — error cases', () => {
     expect(result.exitCode).toBe(2);
 
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    expect(j.error).toBeDefined();
+    expect(j.error!.code).toBe('INVALID_INPUT');
   });
 
   it('error envelope contains error.code and error.message strings', async () => {
     const result = await runDiffCli([
-      'diff',
+      'model', 'diff',
       '/nonexistent/logA.xes',
       logBPath,
       '--format',
@@ -252,9 +284,12 @@ describe('wpm diff — error cases', () => {
       '--no-save',
     ]);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
-    // error field may be a string or object — command field must always be 'diff'
-    expect(j.command).toBe('diff');
+    // was: expect(j.command).toBe('diff') — bridged failures no longer carry
+    // a `command` field at all; the new error envelope is {error:{code,message}}.
+    expect(j.error).toBeDefined();
+    expect(typeof j.error!.code).toBe('string');
+    expect(typeof j.error!.message).toBe('string');
+    expect(j.error!.message.length).toBeGreaterThan(0);
   });
 });
 
@@ -263,7 +298,7 @@ describe('wpm diff — error cases', () => {
 describe('wpm diff — JSON envelope shape', () => {
   it('envelope has command=diff and status=ok on success', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -274,7 +309,7 @@ describe('wpm diff — JSON envelope shape', () => {
 
   it('payload.log1 and payload.log2 paths are recorded', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -285,7 +320,7 @@ describe('wpm diff — JSON envelope shape', () => {
 
   it('payload.activityKey defaults to concept:name', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -295,7 +330,7 @@ describe('wpm diff — JSON envelope shape', () => {
 
   it('--activity-key flag is reflected in payload', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--activity-key', 'concept:name', '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--activity-key', 'concept:name', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -305,7 +340,7 @@ describe('wpm diff — JSON envelope shape', () => {
 
   it('payload.diff is present with all required sub-fields', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -325,7 +360,7 @@ describe('wpm diff — JSON envelope shape', () => {
 describe('wpm diff — Jaccard similarity', () => {
   it('self-diff jaccard equals 1.0 (identical DFGs)', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -335,7 +370,7 @@ describe('wpm diff — Jaccard similarity', () => {
 
   it('two-log jaccard is in [0, 1]', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -347,7 +382,7 @@ describe('wpm diff — Jaccard similarity', () => {
 
   it('two distinct-process logs have jaccard < 1 (not identical)', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -358,7 +393,7 @@ describe('wpm diff — Jaccard similarity', () => {
 
   it('self-diff jaccard = 1 also for log B', async () => {
     const result = await runDiffCli([
-      'diff', logBPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logBPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -368,7 +403,7 @@ describe('wpm diff — Jaccard similarity', () => {
 
   it('summary string is non-empty', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -378,7 +413,7 @@ describe('wpm diff — Jaccard similarity', () => {
 
   it('summary contains Jaccard value as a string', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -393,7 +428,7 @@ describe('wpm diff — Jaccard similarity', () => {
 describe('wpm diff — activities sub-fields', () => {
   it('activities.added, removed, shared are arrays', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -405,7 +440,7 @@ describe('wpm diff — activities sub-fields', () => {
 
   it('self-diff activities: added and removed are empty, shared is non-empty', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -417,7 +452,7 @@ describe('wpm diff — activities sub-fields', () => {
 
   it('two-log diff: onboard appears in added (only in log B)', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -428,7 +463,7 @@ describe('wpm diff — activities sub-fields', () => {
 
   it('two-log diff: register and close appear in shared', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -444,7 +479,7 @@ describe('wpm diff — activities sub-fields', () => {
 describe('wpm diff — edges sub-fields', () => {
   it('edges.added, removed, changed are arrays', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -456,7 +491,7 @@ describe('wpm diff — edges sub-fields', () => {
 
   it('self-diff edges: added, removed, changed are all empty', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -468,7 +503,7 @@ describe('wpm diff — edges sub-fields', () => {
 
   it('edge objects in added have from and to string fields', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -491,7 +526,7 @@ describe('wpm diff — edges sub-fields', () => {
 describe('wpm diff — variants sub-fields', () => {
   it('variants.totalLog1, totalLog2, shared are numbers', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -503,7 +538,7 @@ describe('wpm diff — variants sub-fields', () => {
 
   it('variants.totalLog1 and totalLog2 are non-negative', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -514,7 +549,7 @@ describe('wpm diff — variants sub-fields', () => {
 
   it('self-diff variants: totalLog1 = totalLog2 and shared = totalLog1', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -525,7 +560,7 @@ describe('wpm diff — variants sub-fields', () => {
 
   it('variants.uniqueLog1 and uniqueLog2 are non-negative', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
 
@@ -535,52 +570,57 @@ describe('wpm diff — variants sub-fields', () => {
   });
 });
 
-// ─── wpm diff — human output ──────────────────────────────────────────────────
+// ─── wpm diff — human output (was: legacy --format human text report — REMOVED, see file header) ──
 
-describe('wpm diff — human output', () => {
-  it('exits 0 in human mode', async () => {
+// The bridge forces `--format json` under the hood regardless of what the
+// caller passes, so `--format human`'s old rich text report (with its own
+// "Structural similarity"/"Activities" section headers) is no longer
+// reachable through `wpm model diff` — stdout is ALWAYS the JSON envelope
+// now. These tests assert that new, intentional behavior directly instead
+// of grepping for text that can no longer be produced.
+describe('wpm diff — human output (legacy --format human is now overridden to JSON)', () => {
+  it('exits 0 and stdout is JSON even with legacy --format human', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'human', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  it('human output contains structural similarity line', async () => {
+  it('the diff summary field still conveys near-identical structure (was: "Structural similarity" text line)', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'human', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/[Ss]tructural\s+similarity/i);
+    const j = parseEnvelope(result);
+    expect(j.payload!.diff.summary).toMatch(/structurally|identical/i);
   });
 
-  it('human output contains Activities section', async () => {
+  it('the JSON payload still exposes an activities section', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'human', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/activities/i);
+    expect(result.stdout).toMatch(/"activities"/i);
   });
 
-  it('human output contains Traces or variants section', async () => {
+  it('the JSON payload still exposes a variants section', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'human', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/traces?|variant/i);
+    expect(result.stdout).toMatch(/"variants"/i);
   });
 
-  it('human output for self-diff mentions identical or no changes', async () => {
+  it('self-diff summary mentions identical or the exact jaccard value', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'human', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
     // Self-diff jaccard=1 should trigger "identical" summary
-    const combined = result.stdout + result.stderr;
+    const j = parseEnvelope(result);
     // The summary says "Structurally nearly identical" for jaccard >= 0.9
-    expect(combined).toMatch(/identical|1\.000/i);
+    expect(j.payload!.diff.summary).toMatch(/identical|1\.000/i);
   });
 });
 
@@ -589,7 +629,7 @@ describe('wpm diff — human output', () => {
 describe('wpm diff — flag behavior', () => {
   it('--quiet suppresses non-error output in human mode', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'human', '--quiet', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'human', '--quiet', '--no-save',
     ]);
     // Quiet mode should still exit 0
     expect([0, 2, 3]).toContain(result.exitCode);
@@ -597,14 +637,14 @@ describe('wpm diff — flag behavior', () => {
 
   it('--verbose produces more verbose output', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'human', '--verbose', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'human', '--verbose', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
   });
 
   it('--no-save flag does not break diff execution', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
     const j = parseEnvelope(result);
@@ -617,11 +657,12 @@ describe('wpm diff — flag behavior', () => {
 describe('wpm diff — gap fixes (DX/QoL)', () => {
   it('Gap-D1: nonexistent log1 error code is LOG1_NOT_FOUND in JSON', async () => {
     const result = await runDiffCli([
-      'diff', '/nonexistent/log1.xes', logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', '/nonexistent/log1.xes', logBPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(2);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    // Bridged failure — new {error:{code,message}} shape, not {status:'error'}.
+    expect(j.error).toBeDefined();
     // error code should be specific to log1
     const errorBody = JSON.stringify(j);
     expect(errorBody).toMatch(/LOG1_NOT_FOUND|log1|not found/i);
@@ -629,11 +670,11 @@ describe('wpm diff — gap fixes (DX/QoL)', () => {
 
   it('Gap-D1: nonexistent log2 error code is LOG2_NOT_FOUND in JSON', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, '/nonexistent/log2.xes', '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, '/nonexistent/log2.xes', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(2);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    expect(j.error).toBeDefined();
     // error code should be specific to log2
     const errorBody = JSON.stringify(j);
     expect(errorBody).toMatch(/LOG2_NOT_FOUND|log2|not found/i);
@@ -641,7 +682,7 @@ describe('wpm diff — gap fixes (DX/QoL)', () => {
 
   it('Gap-D2: self-diff JSON payload includes same_file:true flag', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logAPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logAPath, '--format', 'json', '--no-save',
     ]);
     // If WASM is available, assert same_file:true and jaccard=1
     // If WASM fails (exit 3), still assert the command does not crash and produces valid JSON
@@ -655,13 +696,13 @@ describe('wpm diff — gap fixes (DX/QoL)', () => {
       // WASM not loaded — verify graceful error JSON (not a crash/raw text)
       expect([0, 3]).toContain(result.exitCode);
       const j = parseEnvelope(result);
-      expect(['ok', 'error']).toContain(j.status);
+      expect(j.status === 'ok' || j.error !== undefined).toBe(true);
     }
   });
 
   it('Gap-D2: two-log diff JSON payload does NOT include same_file flag (or it is false)', async () => {
     const result = await runDiffCli([
-      'diff', logAPath, logBPath, '--format', 'json', '--no-save',
+      'model', 'diff', logAPath, logBPath, '--format', 'json', '--no-save',
     ]);
     // If WASM is available, assert same_file is absent/false for distinct logs
     if (result.exitCode === 0) {
@@ -673,7 +714,7 @@ describe('wpm diff — gap fixes (DX/QoL)', () => {
       // WASM not loaded — verify graceful error JSON
       expect([0, 3]).toContain(result.exitCode);
       const j = parseEnvelope(result);
-      expect(['ok', 'error']).toContain(j.status);
+      expect(j.status === 'ok' || j.error !== undefined).toBe(true);
     }
   });
 });

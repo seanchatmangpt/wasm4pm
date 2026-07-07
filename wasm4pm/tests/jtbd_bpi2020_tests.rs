@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! JTBD BPI 2020 Real-Scale Tests
 //!

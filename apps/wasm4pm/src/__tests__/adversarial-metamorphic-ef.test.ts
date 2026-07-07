@@ -593,15 +593,16 @@ describe('Category F — Feature Normalization Invariants (Oracle Rank 1)', () =
     }
 
     // Test each dimension independently at its maximum, keeping others at 0
-    const cases = [
-      { label: 'health_level=4',     args: [4, 0, 0, 0, 0, 0, 0, 0] as const, dim: 'health_level',     max: 4 },
-      { label: 'event_rate_q=7',     args: [0, 7, 0, 0, 0, 0, 0, 0] as const, dim: 'event_rate_q',     max: 7 },
-      { label: 'activity_count_q=7', args: [0, 0, 7, 0, 0, 0, 0, 0] as const, dim: 'activity_count_q', max: 7 },
-      { label: 'spc_alert_level=3',  args: [0, 0, 0, 3, 0, 0, 0, 0] as const, dim: 'spc_alert_level',  max: 3 },
-      { label: 'drift_status=2',     args: [0, 0, 0, 0, 2, 0, 0, 0] as const, dim: 'drift_status',     max: 2 },
-      { label: 'rework_ratio_q=7',   args: [0, 0, 0, 0, 0, 7, 0, 0] as const, dim: 'rework_ratio_q',   max: 7 },
-      { label: 'circuit_state=2',    args: [0, 0, 0, 0, 0, 0, 2, 0] as const, dim: 'circuit_state',    max: 2 },
-      { label: 'cycle_phase=3',      args: [0, 0, 0, 0, 0, 0, 0, 3] as const, dim: 'cycle_phase',      max: 3 },
+    type RlStateArgs = readonly [number, number, number, number, number, number, number, number];
+    const cases: Array<{ label: string; args: RlStateArgs; dim: string; max: number }> = [
+      { label: 'health_level=4',     args: [4, 0, 0, 0, 0, 0, 0, 0], dim: 'health_level',     max: 4 },
+      { label: 'event_rate_q=7',     args: [0, 7, 0, 0, 0, 0, 0, 0], dim: 'event_rate_q',     max: 7 },
+      { label: 'activity_count_q=7', args: [0, 0, 7, 0, 0, 0, 0, 0], dim: 'activity_count_q', max: 7 },
+      { label: 'spc_alert_level=3',  args: [0, 0, 0, 3, 0, 0, 0, 0], dim: 'spc_alert_level',  max: 3 },
+      { label: 'drift_status=2',     args: [0, 0, 0, 0, 2, 0, 0, 0], dim: 'drift_status',     max: 2 },
+      { label: 'rework_ratio_q=7',   args: [0, 0, 0, 0, 0, 7, 0, 0], dim: 'rework_ratio_q',   max: 7 },
+      { label: 'circuit_state=2',    args: [0, 0, 0, 0, 0, 0, 2, 0], dim: 'circuit_state',    max: 2 },
+      { label: 'cycle_phase=3',      args: [0, 0, 0, 0, 0, 0, 0, 3], dim: 'cycle_phase',      max: 3 },
     ];
 
     for (const { label, args, dim, max } of cases) {

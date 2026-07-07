@@ -247,8 +247,13 @@ describe('cognition.run span — service.name and status wiring', () => {
     // Read the source file at test time so this assertion tracks actual code.
     const fs2 = await import('node:fs');
     const url = await import('node:url');
+    // NOTE: this reads the TS source, not a compiled '.js' sibling — vitest
+    // executes `src/**/*.ts` directly (no on-disk JS emitted next to it), so
+    // `run.js` never exists here even though it does under `dist/` after a
+    // `tsc` build. This bug predates the noun-verb migration and is
+    // unrelated to it — commands/cognition/run.ts itself is untouched.
     const src = fs2.readFileSync(
-      url.fileURLToPath(new URL('../commands/cognition/run.js', import.meta.url)),
+      url.fileURLToPath(new URL('../commands/cognition/run.ts', import.meta.url)),
       'utf8',
     );
     // Compiled JS must reference getGlobalSpanSink (import is preserved by esbuild/tsc).

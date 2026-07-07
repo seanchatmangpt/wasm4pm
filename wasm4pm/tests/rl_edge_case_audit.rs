@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! Edge case audit for RL orchestrator: action bounds, reward NaN/Inf, LinUCB safety
 

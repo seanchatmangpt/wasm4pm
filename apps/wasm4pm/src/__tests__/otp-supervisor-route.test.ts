@@ -56,10 +56,22 @@ function buildOtpOcel(variant: 'normal_exit' | 'restart_loop' = 'normal_exit') {
   // Register objects
   const supervisor = { id: 'Supervisor:my_sup:0', type: 'Supervisor', attributes: {} };
   const worker = { id: 'WorkerProcess:worker1:0', type: 'WorkerProcess', attributes: {} };
-  const receipts = baseActivities.map((_, i) => ({
+  // Receipt objects must satisfy schemas/receipts/audit-receipt.schema.json
+  // (required: verdict, gates, audit_timestamp) — the route's declared
+  // Receipt object_type schema — or the `receipt_coverage` conformance
+  // dimension fails schema validation even though count-coverage is 1.0,
+  // which was pulling the overall verdict down to AndonPull regardless of
+  // fitness/stage-coverage being 1. This is fixture completeness, not a
+  // weakened assertion: a receipt with no verdict/gates/timestamp isn't a
+  // real audit receipt.
+  const receipts = baseActivities.map((activity, i) => ({
     id: `Receipt:evt:${i}`,
     type: 'Receipt',
-    attributes: {},
+    attributes: {
+      verdict: 'Accepted',
+      audit_timestamp: now,
+      gates: [{ gate: activity, status: 'pass' }],
+    },
   }));
 
   const events = baseActivities.map((activity, i) => {
@@ -206,7 +218,7 @@ describe('OTP supervisor POWL route — conformance (normal_exit)', () => {
     powlModel = JSON.parse(raw) as Parameters<typeof checkPowl2Conformance>[1];
     // FM-5: JSON.parse never returns undefined; toBeDefined() would always pass.
     // Assert the actual contract: model must have type='powl2' (required by checkPowl2Conformance).
-    expect((powlModel as Record<string, unknown>)['type']).toBe('powl2');
+    expect((powlModel as unknown as Record<string, unknown>)['type']).toBe('powl2');
   });
 
   it('normal exit trace achieves fitness=1', () => {

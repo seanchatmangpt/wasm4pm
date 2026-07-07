@@ -11,10 +11,12 @@ import { describe, it, expect } from 'vitest';
 import { VALID_ML_TASKS, executeMlTask } from '../src/ml-runner.js';
 
 describe('VALID_ML_TASKS', () => {
-  it('contains exactly the 6 expected ML tasks as a readonly array', () => {
+  // 'drift' was added to the task registry since this test was written —
+  // ml-runner.ts now defines 7 tasks, not 6.
+  it('contains exactly the 7 expected ML tasks as a readonly array', () => {
     expect(Array.isArray(VALID_ML_TASKS)).toBe(true);
-    expect(VALID_ML_TASKS).toHaveLength(6);
-    for (const task of ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca']) {
+    expect(VALID_ML_TASKS).toHaveLength(7);
+    for (const task of ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca', 'drift']) {
       expect(VALID_ML_TASKS).toContain(task);
     }
   });

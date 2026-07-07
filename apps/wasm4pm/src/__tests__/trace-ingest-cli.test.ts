@@ -191,7 +191,7 @@ describe('wpm trace ingest — gap coverage', () => {
   describe('§1 stdin routing', () => {
     it('reads trace from stdin when -i is omitted and exits 0', async () => {
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '--format', 'json'],
         { cwd: tmpDir, stdin: TS_TRACE_3_FRAMES },
       );
 
@@ -203,7 +203,7 @@ describe('wpm trace ingest — gap coverage', () => {
 
     it('stdin trace produces non-empty events array', async () => {
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '--format', 'json'],
         { cwd: tmpDir, stdin: TS_TRACE_3_FRAMES },
       );
 
@@ -217,7 +217,7 @@ describe('wpm trace ingest — gap coverage', () => {
     it('trace:source is "stdin" when no -i flag is used', async () => {
       const outFile = path.join(tmpDir, 'from-stdin.json');
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-o', outFile],
         { cwd: tmpDir, stdin: TS_TRACE_3_FRAMES },
       );
 
@@ -236,7 +236,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -254,7 +254,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -268,7 +268,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--runId', 'fixed-123'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--runId', 'fixed-123'],
         { cwd: tmpDir },
       );
 
@@ -282,7 +282,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -301,7 +301,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -312,7 +312,7 @@ describe('wpm trace ingest — gap coverage', () => {
 
     it('trace:source is "stdin" for stdin-routed ingest', async () => {
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'rust', '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'rust', '--format', 'json'],
         { cwd: tmpDir, stdin: RUST_TRACE_3_FRAMES },
       );
 
@@ -333,7 +333,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -351,7 +351,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -377,7 +377,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -392,7 +392,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -411,35 +411,43 @@ describe('wpm trace ingest — gap coverage', () => {
 
   // ── §6. human format payload fields ────────────────────────────────────────
 
-  describe('§6 human format shows correct summary fields', () => {
-    it('human output includes the correct frame count for a 3-frame trace', async () => {
+  // `lab trace ingest` bridges the legacy command through `nouns/_bridge.ts`,
+  // which always forces `--quiet` internally — the human-readable summary
+  // ("Frames: 3", "Events: 3") this describe block used to grep for is never
+  // printed anymore (always-JSON-on-stdout contract). With `-o` given, the
+  // bridge instead returns the legacy command's JSON `CommandResult` envelope
+  // on stdout, whose `payload.frames`/`payload.events` carry the same counts.
+  describe('§6 JSON payload carries the correct frame/event counts (was: human summary fields)', () => {
+    it('payload.frames is the correct frame count for a 3-frame trace', async () => {
       const traceFile = path.join(tmpDir, 'ts.txt');
+      const outFile = path.join(tmpDir, 'graph.json');
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
       expect(result.exitCode).toBe(0);
-      const combined = result.stdout + result.stderr;
-      // Human output: "  Frames:    3"
-      expect(combined).toMatch(/Frames:\s+3/);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      expect(payload?.frames).toBe(3);
     });
 
-    it('human output includes the correct events count for a 3-frame trace', async () => {
+    it('payload.events is the correct events count for a 3-frame trace', async () => {
       const traceFile = path.join(tmpDir, 'ts.txt');
+      const outFile = path.join(tmpDir, 'graph.json');
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
       expect(result.exitCode).toBe(0);
-      const combined = result.stdout + result.stderr;
-      // Human output: "  Events:    3"
-      expect(combined).toMatch(/Events:\s+3/);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      expect(payload?.events).toBe(3);
     });
   });
 
@@ -455,7 +463,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -472,7 +480,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -487,21 +495,25 @@ describe('wpm trace ingest — gap coverage', () => {
 
   // ── §8. verbose flag ────────────────────────────────────────────────────────
 
+  // Verbose mode's human-readable "TraceGraph written to: <path>" line is
+  // suppressed by the bridge's forced `--quiet` (see §6's note above); the
+  // same information — the file that was written — is still present as
+  // `payload.out` on the JSON envelope.
   describe('§8 --verbose flag', () => {
-    it('--verbose (-v) with -o flag mentions file path in output', async () => {
+    it('--verbose (-v) with -o flag: payload.out reflects the written file path (was: "written to" text)', async () => {
       const traceFile = path.join(tmpDir, 'ts.txt');
       const outFile = path.join(tmpDir, 'graph.json');
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '-v'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '-v'],
         { cwd: tmpDir },
       );
 
       expect(result.exitCode).toBe(0);
-      const combined = result.stdout + result.stderr;
-      // Verbose mode emits: "  TraceGraph written to: <path>"
-      expect(combined).toMatch(/written to|graph\.json/i);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      expect(payload?.out).toBe(outFile);
     });
   });
 
@@ -514,7 +526,7 @@ describe('wpm trace ingest — gap coverage', () => {
       const graphFile = path.join(tmpDir, 'graph.json');
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
 
@@ -522,7 +534,7 @@ describe('wpm trace ingest — gap coverage', () => {
 
       // Now pipe that TraceGraph via stdin to trace ocel
       const result = await wpmAsync(
-        ['trace', 'ocel', '--format', 'json'],
+        ['lab', 'trace', 'ocel', '--format', 'json'],
         { cwd: tmpDir, stdin: graphJson },
       );
 
@@ -542,11 +554,11 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
       await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile, '-o', ocelFile],
+        ['lab', 'trace', 'ocel', '-i', graphFile, '-o', ocelFile],
         { cwd: tmpDir },
       );
 
@@ -569,11 +581,11 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
       await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile, '-o', ocelFile],
+        ['lab', 'trace', 'ocel', '-i', graphFile, '-o', ocelFile],
         { cwd: tmpDir },
       );
 
@@ -592,11 +604,11 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
       await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile, '-o', ocelFile],
+        ['lab', 'trace', 'ocel', '-i', graphFile, '-o', ocelFile],
         { cwd: tmpDir },
       );
 
@@ -614,7 +626,7 @@ describe('wpm trace ingest — gap coverage', () => {
     it('trace powl reads OCEL JSON from stdin when -i is omitted', async () => {
       const outFile = path.join(tmpDir, 'route.json');
       const result = await wpmAsync(
-        ['trace', 'powl', '-o', outFile],
+        ['lab', 'trace', 'powl', '-o', outFile],
         { cwd: tmpDir, stdin: MINIMAL_OCEL_JSON },
       );
 
@@ -639,7 +651,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(ocelFile, emptyOcel, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'powl', '-i', ocelFile, '-o', routeFile],
+        ['lab', 'trace', 'powl', '-i', ocelFile, '-o', routeFile],
         { cwd: tmpDir },
       );
 
@@ -661,7 +673,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(ocelFile, emptyOcel, 'utf8');
 
       await wpmAsync(
-        ['trace', 'powl', '-i', ocelFile, '-o', routeFile],
+        ['lab', 'trace', 'powl', '-i', ocelFile, '-o', routeFile],
         { cwd: tmpDir },
       );
 
@@ -681,11 +693,11 @@ describe('wpm trace ingest — gap coverage', () => {
 
       await Promise.all([
         wpmAsync(
-          ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', out1, '--runId', 'stable-run-id'],
+          ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', out1, '--runId', 'stable-run-id'],
           { cwd: tmpDir },
         ),
         wpmAsync(
-          ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', out2, '--runId', 'stable-run-id'],
+          ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', out2, '--runId', 'stable-run-id'],
           { cwd: tmpDir },
         ),
       ]);
@@ -712,7 +724,7 @@ describe('wpm trace ingest — gap coverage', () => {
         await fs.writeFile(traceFile, trace, 'utf8');
 
         const result = await wpmAsync(
-          ['trace', 'ingest', '--from', lang, '-i', traceFile, '-o', outFile],
+          ['lab', 'trace', 'ingest', '--from', lang, '-i', traceFile, '-o', outFile],
           { cwd: tmpDir },
         );
 
@@ -729,7 +741,7 @@ describe('wpm trace ingest — gap coverage', () => {
     it('whitespace-only stdin yields a valid zero-frame TraceGraph and exits 0', async () => {
       const outFile = path.join(tmpDir, 'empty-graph.json');
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-o', outFile],
         { cwd: tmpDir, stdin: '\n\n   \n' },
       );
 
@@ -743,7 +755,7 @@ describe('wpm trace ingest — gap coverage', () => {
 
     it('empty stdin produces no zero-frames warning (empty is different from garbage)', async () => {
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'rust', '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'rust', '--format', 'json'],
         { cwd: tmpDir, stdin: '\n\n' },
       );
 
@@ -761,7 +773,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(modelFile, CONFORM_MODEL_JSON, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-m', modelFile, '--format', 'json'],
+        ['lab', 'trace', 'conform', '-m', modelFile, '--format', 'json'],
         { cwd: tmpDir, stdin: MINIMAL_OCEL_JSON },
       );
 
@@ -786,12 +798,12 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
 
       const result = await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile],
+        ['lab', 'trace', 'ocel', '-i', graphFile],
         { cwd: tmpDir },
       );
 
@@ -811,7 +823,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -826,7 +838,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -841,7 +853,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -861,7 +873,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -879,7 +891,7 @@ describe('wpm trace ingest — gap coverage', () => {
       await fs.writeFile(traceFile, TS_TRACE_3_FRAMES, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 

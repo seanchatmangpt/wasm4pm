@@ -467,48 +467,150 @@ fn inductive_miner_recursive(
 
     // Build directly-follows on this subset
     let df = build_df_subset(log, activities, activity_key);
+    let edges = index_df_edges(activities, &df);
+    let (starts, ends) = start_end_activities(log, activities, activity_key);
 
-    // Try cuts in order: XOR → Sequence → Parallel → Loop
+    // Try cuts in order: XOR → Sequence → Parallel → Loop (Leemans et al.)
 
-    // 1. XOR cut: partition with no edges between sets
-    if let Some((left, right)) = find_xor_cut(activities, &df) {
-        let left_tree = inductive_miner_recursive(log, &left, activity_key, depth + 1)?;
-        let right_tree = inductive_miner_recursive(log, &right, activity_key, depth + 1)?;
-        return Ok(ProcessTreeNode::xor(vec![left_tree, right_tree]));
-    }
-
-    // 2. Sequence cut: A→B partition (all A edges → B, all B edges ← A)
-    if let Some((left, right)) = find_sequence_cut(activities, &df) {
-        let left_tree = inductive_miner_recursive(log, &left, activity_key, depth + 1)?;
-        let right_tree = inductive_miner_recursive(log, &right, activity_key, depth + 1)?;
-        return Ok(ProcessTreeNode::sequence(vec![left_tree, right_tree]));
-    }
-
-    // 3. Parallel cut: all pairs have bidirectional edges
-    if let Some(partitions) = find_parallel_cut(activities, &df) {
-        if partitions.len() > 1 {
-            let mut trees = Vec::new();
-            for partition in partitions {
-                trees.push(inductive_miner_recursive(
-                    log,
-                    &partition,
-                    activity_key,
-                    depth + 1,
-                )?);
-            }
-            return Ok(ProcessTreeNode::parallel(trees));
+    // 1. XOR cut: connected components of the undirected DFG
+    if let Some(groups) = find_xor_cut(activities.len(), &edges) {
+        let mut trees = Vec::new();
+        for group in materialize_groups(activities, groups) {
+            trees.push(inductive_miner_recursive(log, &group, activity_key, depth + 1)?);
         }
+        return Ok(ProcessTreeNode::xor(trees));
     }
 
-    // 4. Loop cut: partition where right has edges back to left
-    if let Some((left, right)) = find_loop_cut(activities, &df) {
-        let body = inductive_miner_recursive(log, &left, activity_key, depth + 1)?;
-        let redo = inductive_miner_recursive(log, &right, activity_key, depth + 1)?;
+    // 2. Sequence cut: SCC condensation ordered by reachability
+    if let Some(groups) = find_sequence_cut(activities.len(), &edges) {
+        let mut trees = Vec::new();
+        for group in materialize_groups(activities, groups) {
+            trees.push(inductive_miner_recursive(log, &group, activity_key, depth + 1)?);
+        }
+        return Ok(ProcessTreeNode::sequence(trees));
+    }
+
+    // 3. Parallel cut: components fully bidirectionally connected to each other,
+    //    each containing at least one start and one end activity
+    if let Some(groups) = find_parallel_cut(activities.len(), &edges, &starts, &ends) {
+        let mut trees = Vec::new();
+        for group in materialize_groups(activities, groups) {
+            trees.push(inductive_miner_recursive(log, &group, activity_key, depth + 1)?);
+        }
+        return Ok(ProcessTreeNode::parallel(trees));
+    }
+
+    // 4. Loop cut: body contains all starts/ends; redo parts re-enter via starts
+    //    and are entered only from ends
+    if let Some(groups) = find_loop_cut(activities.len(), &edges, &starts, &ends) {
+        let mut parts = materialize_groups(activities, groups);
+        let redo_groups = parts.split_off(1);
+        let body = inductive_miner_recursive(log, &parts[0], activity_key, depth + 1)?;
+        let redo = if redo_groups.len() == 1 {
+            inductive_miner_recursive(log, &redo_groups[0], activity_key, depth + 1)?
+        } else {
+            let mut redo_trees = Vec::new();
+            for group in &redo_groups {
+                redo_trees.push(inductive_miner_recursive(log, group, activity_key, depth + 1)?);
+            }
+            ProcessTreeNode::xor(redo_trees)
+        };
         return Ok(ProcessTreeNode::loop_node(body, redo));
     }
 
     // 5. Fallback: flower model (all activities in loop)
     Ok(ProcessTreeNode::flower())
+}
+
+/// Convert index groups back to activity-name groups. Group ORDER is preserved
+/// (the sequence cut's order is semantic); members are sorted for determinism.
+fn materialize_groups(activities: &[String], mut groups: Vec<Vec<usize>>) -> Vec<Vec<String>> {
+    for g in &mut groups {
+        g.sort_unstable();
+    }
+    groups
+        .into_iter()
+        .map(|g| g.into_iter().map(|i| activities[i].clone()).collect())
+        .collect()
+}
+
+/// Index the directly-follows edges over the (sorted) activity slice.
+fn index_df_edges(
+    activities: &[String],
+    df: &FxHashMap<(String, String), usize>,
+) -> rustc_hash::FxHashSet<(usize, usize)> {
+    let idx: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
+    df.keys()
+        .filter_map(|(from, to)| Some((*idx.get(from.as_str())?, *idx.get(to.as_str())?)))
+        .collect()
+}
+
+/// Projection start/end activities: for each trace, the first and last event
+/// whose activity lies in the subset.
+fn start_end_activities(
+    log: &EventLog,
+    activities: &[String],
+    activity_key: &str,
+) -> (rustc_hash::FxHashSet<usize>, rustc_hash::FxHashSet<usize>) {
+    let idx: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
+    let mut starts = rustc_hash::FxHashSet::default();
+    let mut ends = rustc_hash::FxHashSet::default();
+    for trace in &log.traces {
+        let mut first: Option<usize> = None;
+        let mut last: Option<usize> = None;
+        for event in &trace.events {
+            if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
+                if let Some(&i) = idx.get(act.as_str()) {
+                    if first.is_none() {
+                        first = Some(i);
+                    }
+                    last = Some(i);
+                }
+            }
+        }
+        if let Some(i) = first {
+            starts.insert(i);
+        }
+        if let Some(i) = last {
+            ends.insert(i);
+        }
+    }
+    (starts, ends)
+}
+
+fn uf_find(parent: &mut [usize], mut x: usize) -> usize {
+    while parent[x] != x {
+        parent[x] = parent[parent[x]]; // path compression (halving)
+        x = parent[x];
+    }
+    x
+}
+
+fn uf_union(parent: &mut [usize], a: usize, b: usize) {
+    let ra = uf_find(parent, a);
+    let rb = uf_find(parent, b);
+    if ra != rb {
+        parent[ra] = rb;
+    }
+}
+
+fn uf_groups(parent: &mut [usize], n: usize) -> Vec<Vec<usize>> {
+    let mut groups: FxHashMap<usize, Vec<usize>> = FxHashMap::default();
+    for i in 0..n {
+        let root = uf_find(parent, i);
+        groups.entry(root).or_default().push(i);
+    }
+    let mut result: Vec<Vec<usize>> = groups.into_values().collect();
+    result.sort_by_key(|g| g[0]);
+    result
 }
 
 fn build_df_subset(
@@ -549,177 +651,310 @@ fn build_df_subset(
         .collect()
 }
 
+/// XOR cut: connected components of the undirected directly-follows graph.
+/// Any partition into ≥2 components with no cross edges is an exclusive choice.
 fn find_xor_cut(
-    activities: &[String],
-    df: &FxHashMap<(String, String), usize>,
-) -> Option<(Vec<String>, Vec<String>)> {
-    // Build index map once: activity name → position in sorted slice.
-    // This converts the O(n) Vec::contains calls inside the loop to O(1) lookups.
-    let idx: FxHashMap<&str, usize> = activities
-        .iter()
-        .enumerate()
-        .map(|(i, s)| (s.as_str(), i))
-        .collect();
-
-    for split in 1..activities.len() {
-        // A node is "left" iff its index < split.
-        let has_cross_edge =
-            df.keys().any(
-                |(from, to)| match (idx.get(from.as_str()), idx.get(to.as_str())) {
-                    (Some(&fi), Some(&ti)) => (fi < split) != (ti < split),
-                    _ => false,
-                },
-            );
-
-        if !has_cross_edge {
-            return Some((activities[..split].to_vec(), activities[split..].to_vec()));
-        }
-    }
-
-    None
-}
-
-fn find_sequence_cut(
-    activities: &[String],
-    df: &FxHashMap<(String, String), usize>,
-) -> Option<(Vec<String>, Vec<String>)> {
-    // Build index map once for O(1) membership tests.
-    let idx: FxHashMap<&str, usize> = activities
-        .iter()
-        .enumerate()
-        .map(|(i, s)| (s.as_str(), i))
-        .collect();
-
-    for split in 1..activities.len() {
-        let mut valid = true;
-
-        for (from, to) in df.keys() {
-            let fi = idx.get(from.as_str()).copied();
-            let ti = idx.get(to.as_str()).copied();
-            // left  = index < split, right = index >= split
-            match (fi, ti) {
-                (Some(f), Some(t)) => {
-                    let f_left = f < split;
-                    let t_left = t < split;
-                    // Disallowed: left→left, right→right, right→left
-                    if f_left == t_left || (!f_left && t_left) {
-                        valid = false;
-                        break;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        if valid {
-            return Some((activities[..split].to_vec(), activities[split..].to_vec()));
-        }
-    }
-
-    None
-}
-
-fn find_parallel_cut(
-    activities: &[String],
-    df: &FxHashMap<(String, String), usize>,
-) -> Option<Vec<Vec<String>>> {
-    let n = activities.len();
+    n: usize,
+    edges: &rustc_hash::FxHashSet<(usize, usize)>,
+) -> Option<Vec<Vec<usize>>> {
     if n < 2 {
         return None;
     }
-
-    // Build an integer-indexed edge set to avoid String clones in the O(n²) loop
-    // below. The df map uses (String,String) keys; a single pass converts those
-    // keys to (usize,usize) index pairs so that inner-loop membership tests are
-    // O(1) integer comparisons with zero heap allocation.
-    let idx_map: FxHashMap<&str, usize> = activities
-        .iter()
-        .enumerate()
-        .map(|(i, s)| (s.as_str(), i))
-        .collect();
-    // Use a flat bitset-style approach: for n ≤ usize activities, store adjacency
-    // as a HashSet of (usize,usize) pairs.  This is built once and queried O(1).
-    use rustc_hash::FxHashSet;
-    let df_idx: FxHashSet<(usize, usize)> = df
-        .keys()
-        .filter_map(|(from, to)| Some((*idx_map.get(from.as_str())?, *idx_map.get(to.as_str())?)))
-        .collect();
-
-    // Union-Find: group activities connected by bidirectional df-edges.
     let mut parent: Vec<usize> = (0..n).collect();
+    for &(a, b) in edges {
+        uf_union(&mut parent, a, b);
+    }
+    let groups = uf_groups(&mut parent, n);
+    if groups.len() < 2 {
+        return None;
+    }
+    Some(groups)
+}
 
-    fn uf_find(parent: &mut [usize], mut x: usize) -> usize {
-        while parent[x] != x {
-            parent[x] = parent[parent[x]]; // path compression (halving)
-            x = parent[x];
-        }
-        x
+/// Sequence cut: condense the DFG into strongly connected components, merge
+/// mutually-unreachable SCCs into one class, and require the classes to be
+/// totally ordered by reachability. The topological order gives the children.
+fn find_sequence_cut(
+    n: usize,
+    edges: &rustc_hash::FxHashSet<(usize, usize)>,
+) -> Option<Vec<Vec<usize>>> {
+    if n < 2 {
+        return None;
+    }
+    let mut succ: Vec<Vec<usize>> = vec![Vec::new(); n];
+    for &(a, b) in edges {
+        succ[a].push(b);
     }
 
-    fn uf_union(parent: &mut [usize], a: usize, b: usize) {
-        let ra = uf_find(parent, a);
-        let rb = uf_find(parent, b);
-        if ra != rb {
-            parent[ra] = rb;
+    // Kosaraju: order nodes by DFS finish time, then DFS the transpose.
+    let mut order: Vec<usize> = Vec::with_capacity(n);
+    let mut visited = vec![false; n];
+    for start in 0..n {
+        if visited[start] {
+            continue;
+        }
+        // Iterative DFS with explicit post-order
+        let mut stack: Vec<(usize, usize)> = vec![(start, 0)];
+        visited[start] = true;
+        while let Some(&mut (node, ref mut child)) = stack.last_mut() {
+            if *child < succ[node].len() {
+                let next = succ[node][*child];
+                *child += 1;
+                if !visited[next] {
+                    visited[next] = true;
+                    stack.push((next, 0));
+                }
+            } else {
+                order.push(node);
+                stack.pop();
+            }
+        }
+    }
+    let mut pred: Vec<Vec<usize>> = vec![Vec::new(); n];
+    for &(a, b) in edges {
+        pred[b].push(a);
+    }
+    let mut scc_of = vec![usize::MAX; n];
+    let mut scc_count = 0;
+    for &node in order.iter().rev() {
+        if scc_of[node] != usize::MAX {
+            continue;
+        }
+        let mut stack = vec![node];
+        scc_of[node] = scc_count;
+        while let Some(v) = stack.pop() {
+            for &p in &pred[v] {
+                if scc_of[p] == usize::MAX {
+                    scc_of[p] = scc_count;
+                    stack.push(p);
+                }
+            }
+        }
+        scc_count += 1;
+    }
+    if scc_count < 2 {
+        return None;
+    }
+
+    // Pairwise reachability between SCCs (transitive closure over the condensation).
+    let mut scc_succ: Vec<rustc_hash::FxHashSet<usize>> =
+        vec![rustc_hash::FxHashSet::default(); scc_count];
+    for &(a, b) in edges {
+        if scc_of[a] != scc_of[b] {
+            scc_succ[scc_of[a]].insert(scc_of[b]);
+        }
+    }
+    let mut reach: Vec<Vec<bool>> = vec![vec![false; scc_count]; scc_count];
+    for s in 0..scc_count {
+        let mut stack: Vec<usize> = scc_succ[s].iter().copied().collect();
+        while let Some(t) = stack.pop() {
+            if !reach[s][t] {
+                reach[s][t] = true;
+                stack.extend(scc_succ[t].iter().copied());
+            }
         }
     }
 
+    // Merge mutually-unreachable SCCs into the same class.
+    let mut parent: Vec<usize> = (0..scc_count).collect();
+    for a in 0..scc_count {
+        for b in (a + 1)..scc_count {
+            if !reach[a][b] && !reach[b][a] {
+                uf_union(&mut parent, a, b);
+            }
+        }
+    }
+    let classes = uf_groups(&mut parent, scc_count);
+    if classes.len() < 2 {
+        return None;
+    }
+
+    // Classes must be totally ordered by reachability, consistently for all members.
+    // class_before[x][y] = true iff every member of x reaches every member of y.
+    let class_id: Vec<usize> = {
+        let mut id = vec![0; scc_count];
+        for (ci, class) in classes.iter().enumerate() {
+            for &s in class {
+                id[s] = ci;
+            }
+        }
+        id
+    };
+    let k = classes.len();
+    let mut before = vec![vec![false; k]; k];
+    for x in 0..k {
+        for y in 0..k {
+            if x == y {
+                continue;
+            }
+            let all = classes[x]
+                .iter()
+                .all(|&sx| classes[y].iter().all(|&sy| reach[sx][sy]));
+            let any = classes[x]
+                .iter()
+                .any(|&sx| classes[y].iter().any(|&sy| reach[sx][sy]));
+            if all != any {
+                return None; // inconsistent partial order — not a sequence cut
+            }
+            before[x][y] = all;
+        }
+    }
+    for x in 0..k {
+        for y in (x + 1)..k {
+            if before[x][y] == before[y][x] {
+                return None; // not totally ordered
+            }
+        }
+    }
+    let mut class_order: Vec<usize> = (0..k).collect();
+    class_order.sort_by(|&x, &y| {
+        if before[x][y] {
+            std::cmp::Ordering::Less
+        } else {
+            std::cmp::Ordering::Greater
+        }
+    });
+
+    let mut groups: Vec<Vec<usize>> = Vec::with_capacity(k);
+    for ci in class_order {
+        let mut members: Vec<usize> = (0..n).filter(|&v| class_id[scc_of[v]] == ci).collect();
+        members.sort_unstable();
+        groups.push(members);
+    }
+    Some(groups)
+}
+
+/// Parallel cut: partition where every pair of activities from *different*
+/// components is bidirectionally connected, and every component contains at
+/// least one start and one end activity.
+fn find_parallel_cut(
+    n: usize,
+    edges: &rustc_hash::FxHashSet<(usize, usize)>,
+    starts: &rustc_hash::FxHashSet<usize>,
+    ends: &rustc_hash::FxHashSet<usize>,
+) -> Option<Vec<Vec<usize>>> {
+    if n < 2 {
+        return None;
+    }
+    // Same component iff NOT (a→b AND b→a): union pairs missing a direction.
+    let mut parent: Vec<usize> = (0..n).collect();
     for i in 0..n {
         for j in (i + 1)..n {
-            // Integer-indexed lookup: zero String allocations per pair.
-            let ab = df_idx.contains(&(i, j));
-            let ba = df_idx.contains(&(j, i));
-            if ab && ba {
+            let ab = edges.contains(&(i, j));
+            let ba = edges.contains(&(j, i));
+            if !(ab && ba) {
                 uf_union(&mut parent, i, j);
             }
         }
     }
-
-    // Collect groups, sorting by root for deterministic output.
-    let mut groups: FxHashMap<usize, Vec<String>> = FxHashMap::default();
-    for (i, activity) in activities.iter().enumerate() {
-        let root = uf_find(&mut parent, i);
-        groups.entry(root).or_default().push(activity.clone());
-    }
-
+    let groups = uf_groups(&mut parent, n);
     if groups.len() < 2 {
         return None;
     }
-
-    let mut result: Vec<Vec<String>> = groups.into_values().collect();
-    result.sort_by_key(|x| x[0].clone()); // deterministic order
-    Some(result)
-}
-
-fn find_loop_cut(
-    activities: &[String],
-    df: &FxHashMap<(String, String), usize>,
-) -> Option<(Vec<String>, Vec<String>)> {
-    // Build index map once for O(1) membership tests instead of O(n) Vec::contains.
-    let idx: FxHashMap<&str, usize> = activities
-        .iter()
-        .enumerate()
-        .map(|(i, s)| (s.as_str(), i))
-        .collect();
-
-    // Body→Redo partition where Redo has edges back to Body.
-    // body  = activities[..split] (index < split)
-    // redo  = activities[split..] (index >= split)
-    for split in 1..activities.len() {
-        let has_redo_to_body =
-            df.keys().any(
-                |(from, to)| match (idx.get(from.as_str()), idx.get(to.as_str())) {
-                    (Some(&fi), Some(&ti)) => fi >= split && ti < split,
-                    _ => false,
-                },
-            );
-
-        if has_redo_to_body {
-            return Some((activities[..split].to_vec(), activities[split..].to_vec()));
+    // Every component must contain a start and an end activity.
+    for group in &groups {
+        if !group.iter().any(|i| starts.contains(i)) || !group.iter().any(|i| ends.contains(i)) {
+            return None;
         }
     }
+    Some(groups)
+}
 
-    None
+/// Loop cut: the body contains all start and end activities; each redo
+/// component connects to the body only via end→redo entries and redo→start
+/// exits, with completeness (a redo exit must reach *all* starts; a redo entry
+/// must be reachable from *all* ends). Returns [body, redo1, ...].
+fn find_loop_cut(
+    n: usize,
+    edges: &rustc_hash::FxHashSet<(usize, usize)>,
+    starts: &rustc_hash::FxHashSet<usize>,
+    ends: &rustc_hash::FxHashSet<usize>,
+) -> Option<Vec<Vec<usize>>> {
+    if n < 2 || starts.is_empty() || ends.is_empty() {
+        return None;
+    }
+    let mut in_body: Vec<bool> = (0..n).map(|i| starts.contains(&i) || ends.contains(&i)).collect();
+    if in_body.iter().all(|&b| b) {
+        return None; // no candidate redo activities
+    }
+
+    // Connected components (undirected) among non-body nodes.
+    let mut parent: Vec<usize> = (0..n).collect();
+    for &(a, b) in edges {
+        if !in_body[a] && !in_body[b] {
+            uf_union(&mut parent, a, b);
+        }
+    }
+    let mut components: Vec<Vec<usize>> = uf_groups(&mut parent, n)
+        .into_iter()
+        .filter(|g| g.iter().all(|&i| !in_body[i]))
+        .collect();
+
+    // Fold components violating the loop conditions into the body, to fixpoint.
+    loop {
+        let mut changed = false;
+        components.retain(|component| {
+            let comp: rustc_hash::FxHashSet<usize> = component.iter().copied().collect();
+            let mut valid = true;
+            for &(a, b) in edges.iter() {
+                let a_in = comp.contains(&a);
+                let b_in = comp.contains(&b);
+                if a_in == b_in {
+                    continue; // internal or external edge
+                }
+                if !a_in && b_in {
+                    // body → redo entry must come from an end activity
+                    if !ends.contains(&a) {
+                        valid = false;
+                        break;
+                    }
+                } else {
+                    // redo → body exit must land on a start activity
+                    if !starts.contains(&b) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+            if valid {
+                // Completeness: every redo exit reaches all starts; every redo
+                // entry is reachable from all ends.
+                for &c in &comp {
+                    let exits_to_start = starts.iter().any(|&s| edges.contains(&(c, s)));
+                    if exits_to_start && !starts.iter().all(|&s| edges.contains(&(c, s))) {
+                        valid = false;
+                        break;
+                    }
+                    let entered_from_end = ends.iter().any(|&e| edges.contains(&(e, c)));
+                    if entered_from_end && !ends.iter().all(|&e| edges.contains(&(e, c))) {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+            if !valid {
+                for &c in component {
+                    in_body[c] = true;
+                }
+                changed = true;
+            }
+            valid
+        });
+        if !changed {
+            break;
+        }
+        // Body grew: previously-valid components may now have body edges that
+        // violate the conditions; the retain loop above re-checks all of them.
+    }
+
+    if components.is_empty() {
+        return None;
+    }
+    let mut body: Vec<usize> = (0..n).filter(|&i| in_body[i]).collect();
+    body.sort_unstable();
+    let mut groups = vec![body];
+    groups.extend(components);
+    Some(groups)
 }
 
 /// Ant Colony Optimization - pheromone-based model discovery
@@ -1006,8 +1241,10 @@ pub fn extract_process_skeleton(
             }
         }
 
-        Ok(dfg)
+        let skeleton = compute_log_skeleton(log, activity_key);
+        Ok((dfg, skeleton))
     })?;
+    let (dfg, skeleton) = dfg;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DFG(dfg.clone()))
@@ -1019,7 +1256,129 @@ pub fn extract_process_skeleton(
         "nodes": dfg.nodes.len(),
         "edges": dfg.edges.len(),
         "min_frequency": min_frequency,
+        "skeleton": skeleton,
     }))
+}
+
+/// Log-skeleton relations (Verbeek & de Carvalho): equivalence, always-before,
+/// always-after, never-together, and per-activity occurrence bounds.
+pub fn compute_log_skeleton(log: &EventLog, activity_key: &str) -> serde_json::Value {
+    use std::collections::BTreeMap;
+
+    // Per-trace activity sequences.
+    let traces: Vec<Vec<String>> = log
+        .traces
+        .iter()
+        .map(|t| {
+            t.events
+                .iter()
+                .filter_map(|e| match e.attributes.get(activity_key) {
+                    Some(AttributeValue::String(a)) => Some(a.clone()),
+                    _ => None,
+                })
+                .collect()
+        })
+        .filter(|t: &Vec<String>| !t.is_empty())
+        .collect();
+
+    let mut vocab: BTreeSet<String> = BTreeSet::new();
+    for t in &traces {
+        vocab.extend(t.iter().cloned());
+    }
+    let acts: Vec<&String> = vocab.iter().collect();
+
+    // Per-trace occurrence counts (0 when absent).
+    let counts_per_trace: Vec<BTreeMap<&str, usize>> = traces
+        .iter()
+        .map(|t| {
+            let mut m: BTreeMap<&str, usize> = BTreeMap::new();
+            for a in t {
+                *m.entry(a.as_str()).or_default() += 1;
+            }
+            m
+        })
+        .collect();
+
+    // Occurrence bounds per activity across all traces (absent counts as 0).
+    let mut activity_counts: BTreeMap<&str, (usize, usize)> = BTreeMap::new();
+    for &a in &acts {
+        let mut min = usize::MAX;
+        let mut max = 0usize;
+        for m in &counts_per_trace {
+            let c = m.get(a.as_str()).copied().unwrap_or(0);
+            min = min.min(c);
+            max = max.max(c);
+        }
+        activity_counts.insert(a.as_str(), (min, max));
+    }
+
+    // Equivalence: identical count profiles across every trace.
+    let mut equivalence: Vec<(String, String)> = Vec::new();
+    for i in 0..acts.len() {
+        for j in (i + 1)..acts.len() {
+            let same = counts_per_trace.iter().all(|m| {
+                m.get(acts[i].as_str()).copied().unwrap_or(0)
+                    == m.get(acts[j].as_str()).copied().unwrap_or(0)
+            });
+            if same {
+                equivalence.push((acts[i].clone(), acts[j].clone()));
+            }
+        }
+    }
+
+    // always_before (a, b): in every trace containing b, a occurs before the
+    // first b. always_after (a, b): in every trace containing a, b occurs
+    // after the last a. never_together: no trace contains both.
+    let mut always_before: Vec<(String, String)> = Vec::new();
+    let mut always_after: Vec<(String, String)> = Vec::new();
+    let mut never_together: Vec<(String, String)> = Vec::new();
+    for &a in &acts {
+        for &b in &acts {
+            if a == b {
+                continue;
+            }
+            let mut ab_before = true; // in every trace with b, a precedes the first b
+            let mut ab_after = true; // in every trace with a, b follows the last a
+            let mut together = false; // some trace contains both
+            for t in &traces {
+                let first_b = t.iter().position(|x| x == b);
+                let last_a = t.iter().rposition(|x| x == a);
+                if first_b.is_some() && last_a.is_some() {
+                    together = true;
+                }
+                if let Some(fb) = first_b {
+                    if !t[..fb].iter().any(|x| x == a) {
+                        ab_before = false;
+                    }
+                }
+                if let Some(la) = last_a {
+                    if !t[la + 1..].iter().any(|x| x == b) {
+                        ab_after = false;
+                    }
+                }
+            }
+            if ab_before {
+                always_before.push((a.clone(), b.clone()));
+            }
+            if ab_after {
+                always_after.push((a.clone(), b.clone()));
+            }
+            if !together && a < b {
+                never_together.push((a.clone(), b.clone()));
+            }
+        }
+    }
+
+    json!({
+        "equivalence": equivalence,
+        "always_before": always_before,
+        "always_after": always_after,
+        "never_together": never_together,
+        "activity_counts": activity_counts
+            .iter()
+            .map(|(a, (min, max))| json!({"activity": a, "min": min, "max": max}))
+            .collect::<Vec<_>>(),
+    })
 }
 
 /// Activity Dependency Analysis - identify predecessor/successor relationships

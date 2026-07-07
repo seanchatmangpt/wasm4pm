@@ -1,0 +1,6 @@
+Runtime behavior is evaluated not by unbounded performance claims, but by discrete calculus and cost decomposition. The latency of any operation $T_{\mathrm{total}}$ is decomposed as:
+\[ T_{\mathrm{total}} = T_{\mathrm{admit}} + T_{\mu,\mathrm{bounded}} + T_{\mathrm{receipt}} + T_{\mathrm{emit}} \]
+
+Micro-benchmarks for all capabilities have been executed against hardware profiles (e.g., using \code{bench-tools} or node benchmarks). The results empirically validate the hypothesis that $T_{\mu,\mathrm{bounded}} \ll T_{\mathrm{batch}} - T_{\mu}$, which justifies the first-mile architecture.
+
+Continuous calculus is only used where computationally mapped to discrete differences, such as in \code{detect\_drift} where $D_t = \|\theta_t - \theta_{t-1}\|$. All integrals are replaced with finite summations over the bounded event window.

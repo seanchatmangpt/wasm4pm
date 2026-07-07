@@ -1,25 +1,86 @@
 /**
- * wpm repl interactive tests — focuses on --script mode and --help.
+ * wpm lab repl --script tests (was: wpm repl --script) — batch script
+ * execution, no interactive readline loop (untestable headless without a
+ * pty either way).
  *
- * The interactive readline loop is TTY-dependent and cannot be tested in a
- * headless subprocess without a pty. All tests here use either:
- *   - `wpm repl --help`  (pure flag, no stdin required)
- *   - `wpm repl --script <file>` (batch script execution, no stdin)
+ * MIGRATION NOTES (verified live against the built CLI):
+ *
+ *   - `repl` -> `lab repl`, bridged unmodified to `commands/repl.ts` (see
+ *     nouns/lab/repl.ts). `--help` content is covered in repl-cli.test.ts
+ *     (a bridged verb's --help is fully generic — see that file's doc
+ *     comment) and is not repeated here.
+ *
+ *   - Script-mode's plain-text progress output (the same `[Script mode]
+ *     Executing N commands...` / `✔` / `Script complete.` text as before)
+ *     is no longer raw stdout: the noun-verb framework requires stdout to
+ *     always be JSON, so the bridge wraps any non-JSON-parseable stdout as
+ *     `{ raw: "<the exact same text, ANSI codes and all>" }` (see
+ *     nouns/_bridge.ts's `{ raw: text }` fallback). Every substring
+ *     assertion below therefore checks `JSON.parse(stdout).raw` (or the
+ *     raw `stdout` string directly, since the text survives JSON-encoding
+ *     unchanged other than `\n`/control-char escaping) instead of bare
+ *     stdout as the original file did.
+ *
+ *   - Legacy `warn()`/`console.warn` output (e.g. "No log loaded" when
+ *     `run` is used before `load`) DOES still reach the real process
+ *     stderr: `nouns/_bridge.ts`'s `invokeLegacyCommandAsJson` re-emits
+ *     its internally-captured legacy stderr onto the real
+ *     `process.stderr` unconditionally (not just on the failure path),
+ *     specifically so this kind of on-success warning isn't silently lost.
+ *     Verified live. (An earlier build of this bridge during this same
+ *     migration did swallow it — fixed before this file was finalized.)
+ *
+ *   - Uses a minimal `{ PATH, HOME }` env for spawned invocations — see
+ *     repl-cli.test.ts's doc comment for why a fully-inherited env can
+ *     make `--help`-adjacent citty output vanish; the same minimal-env
+ *     convention is applied here for consistency, though script-mode
+ *     output (not routed through citty's `showUsage`) was not observed to
+ *     be affected either way.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { tmpdir } from 'os';
-import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
+import { execFile } from 'child_process';
 
-// Path to the simple XES fixture used across tests
-const SIMPLE_XES = path.resolve(
-  process.cwd(),
-  'lab/fixtures/sample-logs/simple.xes'
-);
+const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
+const SIMPLE_XES_CANDIDATES = [
+  path.resolve(process.cwd(), 'lab/fixtures/sample-logs/simple.xes'),
+  path.resolve(__dirname, '../../../../test/fixtures/small.xes'),
+];
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+interface CliResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+
+function runCli(args: string[], timeoutMs = 30_000): Promise<CliResult> {
+  const cwd = path.resolve(__dirname, '../..');
+  const env = { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '' };
+  return new Promise((resolve) => {
+    const child = execFile(
+      process.execPath,
+      [CLI_PATH, ...args],
+      { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, cwd, env },
+      (error, stdout, stderr) => {
+        const exitCode = error && 'code' in error && typeof error.code === 'number' ? error.code : error ? 1 : 0;
+        resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '' });
+      }
+    );
+    child.on('error', () => resolve({ exitCode: 5, stdout: '', stderr: 'Process failed to start' }));
+  });
+}
+
+function raw(r: CliResult): string {
+  try {
+    const parsed = JSON.parse(r.stdout) as { raw?: string };
+    return parsed.raw ?? r.stdout;
+  } catch {
+    return r.stdout;
+  }
+}
 
 async function writeTempScript(content: string): Promise<string> {
   const dir = await fs.mkdtemp(path.join(tmpdir(), 'wpm-repl-'));
@@ -31,72 +92,41 @@ async function writeTempScript(content: string): Promise<string> {
 async function cleanupScript(scriptPath: string): Promise<void> {
   try {
     await fs.rm(path.dirname(scriptPath), { recursive: true, force: true });
-  } catch { /* best effort */ }
+  } catch {
+    /* best effort */
+  }
 }
 
-// ─── help tests ───────────────────────────────────────────────────────────────
-
-describe('wpm repl --help', () => {
-  it('exits 0', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.exitCode).toBe(EXIT_CODES.success);
-  });
-
-  it('shows interactive / process mining in description', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/interactive|process mining/i);
-  });
-
-  it('documents --load / -i flag', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/--load|-i/);
-  });
-
-  it('documents --algorithm / -a flag', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/--algorithm|-a/);
-  });
-
-  it('documents --key flag', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/--key/);
-  });
-
-  it('documents --script / -s flag', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/--script|-s/);
-  });
-
-  it('mentions WASM single-load performance', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/wasm|millisecond|load.*once|once.*load/i);
-  });
-
-  it('mentions concept:name as default key', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/concept:name/i);
-  });
-
-  it('mentions heuristic as default algorithm', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/heuristic/i);
-  });
-
-  it('help output is substantial (> 100 chars)', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout.length).toBeGreaterThan(100);
-  });
-
-  it('shows USAGE and OPTIONS sections', async () => {
-    const result = await runCli(['repl', '--help']);
-    expect(result.stdout).toMatch(/usage/i);
-    expect(result.stdout).toMatch(/options/i);
-  });
-});
+async function resolveSimpleXes(): Promise<string> {
+  for (const c of SIMPLE_XES_CANDIDATES) {
+    try {
+      await fs.access(c);
+      return c;
+    } catch {
+      /* try next */
+    }
+  }
+  // Fall back to a minimal inline fixture written to a temp file.
+  const dir = await fs.mkdtemp(path.join(tmpdir(), 'wpm-repl-fixture-'));
+  const p = path.join(dir, 'simple.xes');
+  await fs.writeFile(
+    p,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xmlns="http://www.xes-standard.org/">
+  <trace>
+    <string key="concept:name" value="case-1"/>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2026-01-01T10:00:00Z"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2026-01-01T10:05:00Z"/></event>
+  </trace>
+</log>`,
+    'utf-8'
+  );
+  return p;
+}
 
 // ─── script mode — basic execution ────────────────────────────────────────────
 
-describe('wpm repl --script basic execution', () => {
+describe('wpm lab repl --script basic execution', () => {
   it('exits 0 for a script with only comments and blank lines', async () => {
     const scriptPath = await writeTempScript(`
 # This is a comment
@@ -104,95 +134,86 @@ describe('wpm repl --script basic execution', () => {
 
 `);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 15000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
-  it('prints [Script mode] header', async () => {
+  it('prints [Script mode] header inside the JSON-wrapped raw text', async () => {
     const scriptPath = await writeTempScript('# empty script\n');
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 15000 });
-      expect(result.stdout).toMatch(/\[Script mode\]/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(raw(result)).toMatch(/\[Script mode\]/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
-  it('exits 2 when script file does not exist', async () => {
-    const result = await runCli(['repl', '--script', '/nonexistent/path/test.repl'], { timeout: 10000 });
-    // Script file not found → source_error (2)
-    expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
+  it('exits 2 (INVALID_INPUT) when script file does not exist', async () => {
+    const result = await runCli(['lab', 'repl', '--script', '/nonexistent/path/test.repl']);
+    expect(result.exitCode).toBe(2);
+    const envelope = JSON.parse(result.stdout) as { error?: { code: string; message: string } };
+    expect(envelope.error?.code).toBe('INVALID_INPUT');
+    expect(envelope.error?.message).toMatch(/ENOENT/);
   });
 });
 
 // ─── script mode — load + run ─────────────────────────────────────────────────
 
-describe('wpm repl --script load + run', () => {
+describe('wpm lab repl --script load + run', () => {
   it('exits 0 after load + run dfg', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-`);
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nrun dfg\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
-  it('shows ✔ for load command in script output', async () => {
-    const scriptPath = await writeTempScript(`load ${SIMPLE_XES}\n`);
+  it('shows ✔ for load command in the raw script output', async () => {
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`load ${xes}\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.stdout).toMatch(/✔|Loaded|loaded/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(raw(result)).toMatch(/✔|Loaded|loaded/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
-  it('shows ✔ for run dfg in script output', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-`);
+  it('shows dfg discovery output for run dfg', async () => {
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nrun dfg\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.stdout).toMatch(/dfg|Discovery/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(raw(result)).toMatch(/dfg|Discovery/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
   it('runs load + run + results successfully', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-results
-`);
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nrun dfg\nresults\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
-      // Should show the script completion message
-      expect(result.stdout).toMatch(/Script complete|succeeded/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
+      expect(raw(result)).toMatch(/Script complete|succeeded/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
   it('runs multiple algorithms and compare in sequence', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-run heuristic_miner
-compare 2
-`);
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nrun dfg\nrun heuristic_miner\ncompare 2\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 45000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath], 45_000);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
     } finally {
       await cleanupScript(scriptPath);
     }
@@ -201,110 +222,67 @@ compare 2
 
 // ─── script mode — save ───────────────────────────────────────────────────────
 
-describe('wpm repl --script save command', () => {
+describe('wpm lab repl --script save command', () => {
   it('saves result to file and exits 0', async () => {
+    const xes = await resolveSimpleXes();
     const dir = await fs.mkdtemp(path.join(tmpdir(), 'wpm-repl-save-'));
     const scriptPath = path.join(dir, 'save.repl');
     const outPath = path.join(dir, 'output.json');
-
-    await fs.writeFile(scriptPath, `
-load ${SIMPLE_XES}
-run dfg
-save ${outPath}
-`, 'utf8');
+    await fs.writeFile(scriptPath, `\nload ${xes}\nrun dfg\nsave ${outPath}\n`, 'utf8');
 
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
 
-      // Verify the file was actually created and contains valid JSON
       const content = await fs.readFile(outPath, 'utf8').catch(() => null);
-      if (content !== null) {
-        const json = JSON.parse(content);
-        expect(json).toHaveProperty('algorithm');
-        expect(json.algorithm).toBe('dfg');
-      }
+      expect(content, 'save command must have written the output file').not.toBeNull();
+      const json = JSON.parse(content!);
+      expect(json).toHaveProperty('algorithm');
+      expect(json.algorithm).toBe('dfg');
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }
   });
 });
 
-// ─── script mode — unknown command ────────────────────────────────────────────
+// ─── script mode — unknown / no-log commands (GAP: warnings now swallowed) ────
 
-describe('wpm repl --script unknown commands', () => {
-  it('emits warning for unknown command but continues', async () => {
+describe('wpm lab repl --script unknown commands and no-log commands', () => {
+  it('emits no error for an unknown command — script still completes, exit 0', async () => {
     const scriptPath = await writeTempScript(`
 # Script with an unknown command mixed in
 this_is_not_a_valid_command
 `);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 10000 });
-      // Unknown commands produce a warning but do NOT cause non-zero exit on their own
-      // (they are caught in the default case and the loop continues)
-      expect(result.stdout).toMatch(/Script complete/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode).toBe(0);
+      expect(raw(result)).toMatch(/Script complete/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
-  it('exits 3 (execution_error) when a script has a failed run (no log loaded)', async () => {
-    // "run dfg" without loading a log first — context-aware error, but script continues
+  it('"run dfg" with no log loaded does not fail the script — exits 0, warn-and-continue', async () => {
     const scriptPath = await writeTempScript(`run dfg\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 15000 });
-      // No log → warning emitted, command skipped, script completes
-      // Script mode still exits 0 because warn-and-continue semantics
-      expect(result.stdout).toMatch(/Script complete/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode).toBe(0);
+      expect(raw(result)).toMatch(/Script complete/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
-});
 
-// ─── script mode — context-aware messages ─────────────────────────────────────
-
-describe('wpm repl --script context-aware error messages', () => {
-  it('shows "No log loaded" warning when run is called before load', async () => {
+  it('shows the "No log loaded" warning on real stderr (bridge re-emits captured legacy stderr)', async () => {
+    // nouns/_bridge.ts's `invokeLegacyCommandAsJson` re-emits the legacy
+    // command's captured stderr onto the real process.stderr on the
+    // success path (not just for failures) — verified live: this warning,
+    // which a bridged verb's internal stdio trap used to swallow
+    // entirely, is now visible again exactly like pre-migration.
     const scriptPath = await writeTempScript(`run dfg\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 15000 });
-      // Warning goes to stderr; script continues
-      const combined = result.stdout + result.stderr;
-      expect(combined).toMatch(/no log|load.*xes|No log/i);
-    } finally {
-      await cleanupScript(scriptPath);
-    }
-  });
-
-  it('shows context-aware warning when quality is called before any run', async () => {
-    // Build the script with an absolute path so the subprocess can find the file
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-quality
-`);
-    try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 20000 });
-      const combined = result.stdout + result.stderr;
-      // Either "No discovery result yet" (load succeeded) or "No log loaded" (if load path resolution failed)
-      expect(combined).toMatch(/no.*result|run.*algorithm|discovery result|no log|load.*xes/i);
-    } finally {
-      await cleanupScript(scriptPath);
-    }
-  });
-
-  it('shows "Only N result" warning when compare needs 2 but only 1 exists', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-compare 2
-`);
-    try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 25000 });
-      // compare 2 after only 1 run should produce a "Need at least 2" warning
-      const combined = result.stdout + result.stderr;
-      // Either it prints a comparison or a warning — both are acceptable outcomes
-      expect(combined).toMatch(/compare|result|dfg/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.stderr).toMatch(/no log loaded/i);
     } finally {
       await cleanupScript(scriptPath);
     }
@@ -313,68 +291,59 @@ compare 2
 
 // ─── script mode — quit command ───────────────────────────────────────────────
 
-describe('wpm repl --script quit command', () => {
-  it('quit in script causes early exit but still exits 0', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-quit
-run dfg
-`);
+describe('wpm lab repl --script quit command', () => {
+  it('quit in script causes early exit but still exits 0; later commands do not run', async () => {
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nquit\nrun dfg\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 20000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
-      // dfg should NOT have run (quit stopped execution)
-      // Just verify the script ran without error
-      expect(result.stdout).toMatch(/Script mode|Loaded|✔/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode).toBe(0);
+      const text = raw(result);
+      expect(text).toMatch(/Script mode|Loaded|✔/i);
+      // Only 1 of 3 lines counted as succeeded — quit stops before `run dfg`.
+      expect(text).toMatch(/1\/3/);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 });
 
-// ─── script mode — history and results ────────────────────────────────────────
+// ─── script mode — history and results commands ───────────────────────────────
 
-describe('wpm repl --script history and results commands', () => {
+describe('wpm lab repl --script history and results commands', () => {
   it('history command runs without error in script mode', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-history
-`);
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nrun dfg\nhistory\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
   it('results command lists discovery results in script output', async () => {
-    const scriptPath = await writeTempScript(`
-load ${SIMPLE_XES}
-run dfg
-results
-`);
+    const xes = await resolveSimpleXes();
+    const scriptPath = await writeTempScript(`\nload ${xes}\nrun dfg\nresults\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
-      // "results" output should mention dfg
-      expect(result.stdout).toMatch(/dfg|Session Results/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode).toBe(0);
+      expect(raw(result)).toMatch(/dfg|Session Results/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 });
 
-// ─── script mode — algorithms command ────────────────────────────────────────
+// ─── script mode — algorithms command ─────────────────────────────────────────
 
-describe('wpm repl --script algorithms command', () => {
+describe('wpm lab repl --script algorithms command', () => {
   it('algorithms lists available algorithms', async () => {
     const scriptPath = await writeTempScript(`algorithms\n`);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 15000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
-      expect(result.stdout).toMatch(/dfg|inductive|heuristic/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode).toBe(0);
+      expect(raw(result)).toMatch(/dfg|inductive|heuristic/i);
     } finally {
       await cleanupScript(scriptPath);
     }
@@ -383,51 +352,44 @@ describe('wpm repl --script algorithms command', () => {
 
 // ─── script mode — full workflow ──────────────────────────────────────────────
 
-describe('wpm repl --script full workflow', () => {
+describe('wpm lab repl --script full workflow', () => {
   it('complete discovery workflow exits 0 with all steps shown', async () => {
+    const xes = await resolveSimpleXes();
     const scriptPath = await writeTempScript(`
 # Full process mining workflow
-load ${SIMPLE_XES}
+load ${xes}
 info
 run dfg
 results
 `);
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 35000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
-
-      // Script mode header
-      expect(result.stdout).toMatch(/\[Script mode\]/i);
-
-      // Script completion summary
-      expect(result.stdout).toMatch(/Script complete.*succeeded|succeeded.*Script/i);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath], 35_000);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
+      const text = raw(result);
+      expect(text).toMatch(/\[Script mode\]/i);
+      expect(text).toMatch(/Script complete.*succeeded|succeeded.*Script/i);
     } finally {
       await cleanupScript(scriptPath);
     }
   });
 
-  it('produces JSON-parseable save output', async () => {
+  it('save command produces a JSON-parseable file with algorithm and elapsedMs', async () => {
+    const xes = await resolveSimpleXes();
     const dir = await fs.mkdtemp(path.join(tmpdir(), 'wpm-repl-full-'));
     const scriptPath = path.join(dir, 'full.repl');
     const outPath = path.join(dir, 'result.json');
-
-    await fs.writeFile(scriptPath, `
-load ${SIMPLE_XES}
-run dfg
-save ${outPath}
-`, 'utf8');
+    await fs.writeFile(scriptPath, `\nload ${xes}\nrun dfg\nsave ${outPath}\n`, 'utf8');
 
     try {
-      const result = await runCli(['repl', '--script', scriptPath], { timeout: 30000 });
-      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const result = await runCli(['lab', 'repl', '--script', scriptPath]);
+      expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
 
       const saved = await fs.readFile(outPath, 'utf8').catch(() => null);
-      if (saved !== null) {
-        const json = JSON.parse(saved);
-        expect(typeof json.algorithm).toBe('string');
-        expect(typeof json.elapsedMs).toBe('number');
-        expect(json).toHaveProperty('savedAt');
-      }
+      expect(saved).not.toBeNull();
+      const json = JSON.parse(saved!);
+      expect(typeof json.algorithm).toBe('string');
+      expect(typeof json.elapsedMs).toBe('number');
+      expect(json).toHaveProperty('savedAt');
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
     }

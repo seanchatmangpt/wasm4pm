@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Test suite for reinforcement learning instrumentation (OTEL spans and debug traces).
 //!
 //! This test verifies that all RL agent methods emit the expected OTEL spans

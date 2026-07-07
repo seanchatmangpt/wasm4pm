@@ -51,7 +51,7 @@
 | pnml_import | pass | structured fail | pass | pass | pass | pass | admitted |
 | powl_to_process_tree | pass | structured fail | pass | pass | pass | pass | admitted |
 | predict_next_activity | pass | structured fail | pass | pass | pass | pass | admitted |
-| predict_outcome | pass | structured fail | pass | pass | pass | pass | admitted |
+| predict_outcome | fail | structured fail | fail | pass | pass | pass | rejected |
 | predict_remaining_time | pass | structured fail | pass | pass | pass | pass | admitted |
 | process_skeleton | pass | structured fail | pass | pass | pass | pass | admitted |
 | pso | pass | structured fail | pass | pass | pass | pass | admitted |

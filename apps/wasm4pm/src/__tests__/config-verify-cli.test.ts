@@ -1,7 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
 
-describe('wpm config verify — strict configuration gate', () => {
+/**
+ * Migration note: `wpm config verify` is a retired invocation — see
+ * `nouns/_removed.ts`'s two-token entry `{ old: 'config verify',
+ * replacement: 'config check' }`. `bin/wpm.ts` intercepts it via
+ * `checkRemoved()` BEFORE any dispatch, printing the standard removal
+ * error to stderr and exiting 1, for every invocation regardless of flags
+ * (verified live: bare, `--format json`, and `--quiet` all produce the
+ * identical removal message/exit code — there is no gate-checking logic
+ * left to reach). The 4-gate model this file originally tested (schema
+ * valid / provenance complete / zero warnings / hash present) does not
+ * exist in any form post-migration; `config check`'s single warnings
+ * check (covered by `config-check-cli.test.ts`) is the closest surviving
+ * equivalent. This file now asserts the intentional hard-break contract
+ * itself, per `nouns/_removed.ts`'s doc comment ("Never surfaced in
+ * --help or generated docs — this is a migration aid").
+ */
+describe('wpm config verify — retired, hard-broken to `config check`', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
 
   beforeEach(async () => {
@@ -12,85 +28,37 @@ describe('wpm config verify — strict configuration gate', () => {
     env?.cleanup?.();
   });
 
-  describe('config verify (basic)', () => {
-    it('should pass or fail all gates', async () => {
-      const result = await runCli(['config', 'verify']);
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
-    });
-
-    it('should display gates in human output', async () => {
-      const result = await runCli(['config', 'verify']);
-      expect(result.stdout).toMatch(/schema valid|provenance complete|zero warnings|hash present/i);
-    });
-
-    it('should show ✓ for passing gates and ✗ for failing', async () => {
-      const result = await runCli(['config', 'verify']);
-      expect(result.stdout).toMatch(/✓|✗/);
-    });
+  it('exits 1 with a removal message pointing at `config check`', async () => {
+    const result = await runCli(['config', 'verify']);
+    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    expect(result.stderr).toMatch(/'wpm config verify' was removed/);
+    expect(result.stderr).toMatch(/wpm config check/);
   });
 
-  describe('config verify gates', () => {
-    it('should check 4 gates: schema, provenance, warnings, hash', async () => {
-      const result = await runCli(['config', 'verify', '--format', 'json']);
-      const json = JSON.parse(result.stdout);
-      const gates = json.payload.gates;
-      expect(gates.length).toBeGreaterThanOrEqual(4);
-      const gateNames = gates.map((g: any) => g.gate);
-      expect(gateNames).toContain('schema valid');
-      expect(gateNames).toContain('provenance complete');
-      expect(gateNames).toContain('zero warnings');
-      expect(gateNames).toContain('hash present');
-    });
-
-    it('all_pass should match exit code', async () => {
-      const result = await runCli(['config', 'verify', '--format', 'json']);
-      const json = JSON.parse(result.stdout);
-      const expectedAllPass = result.exitCode === EXIT_CODES.success;
-      expect(json.payload.all_pass).toBe(expectedAllPass);
-    });
+  it('hard-breaks the same way regardless of trailing flags (--format json)', async () => {
+    const result = await runCli(['config', 'verify', '--format', 'json']);
+    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    expect(result.stderr).toMatch(/'wpm config verify' was removed/);
   });
 
-  describe('config verify --format json', () => {
-    it('should output valid JSON with gates array', async () => {
-      const result = await runCli(['config', 'verify', '--format', 'json']);
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-      const json = JSON.parse(result.stdout);
-      expect(Array.isArray(json.payload.gates)).toBe(true);
-      expect(json.payload).toHaveProperty('all_pass');
-    });
-
-    it('gate objects should have gate, pass, and detail properties', async () => {
-      const result = await runCli(['config', 'verify', '--format', 'json']);
-      const json = JSON.parse(result.stdout);
-      const gates = json.payload.gates;
-      for (const gate of gates) {
-        expect(gate).toHaveProperty('gate');
-        expect(gate).toHaveProperty('pass');
-        expect(gate).toHaveProperty('detail');
-        expect(typeof gate.pass).toBe('boolean');
-      }
-    });
+  it('hard-breaks the same way regardless of trailing flags (--quiet)', async () => {
+    const result = await runCli(['config', 'verify', '--quiet']);
+    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    expect(result.stderr).toMatch(/'wpm config verify' was removed/);
   });
 
-  describe('config verify --quiet', () => {
-    it('should accept --quiet flag', async () => {
-      const result = await runCli(['config', 'verify', '--quiet']);
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
-    });
+  it('never prints anything on stdout for the retired invocation (removal message is stderr-only)', async () => {
+    const result = await runCli(['config', 'verify']);
+    expect(result.stdout).toBe('');
   });
 
-  describe('config verify exit codes', () => {
-    it('should exit successfully or with execution_error', async () => {
-      const result = await runCli(['config', 'verify']);
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
-    });
-  });
-
-  describe('config verify output', () => {
-    it('should report gate details in output', async () => {
-      const result = await runCli(['config', 'verify']);
-      // Output should contain at least some gate information
-      expect(result.stdout.length).toBeGreaterThan(0);
-    });
+  it('the replacement, `config check`, runs successfully in its place', async () => {
+    // Not a duplicate of config-check-cli.test.ts's own coverage — just a
+    // smoke check that the documented replacement command actually exists
+    // and is reachable, since this file no longer exercises `config
+    // verify`'s own (removed) behavior at all.
+    const result = await runCli(['config', 'check']);
+    expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 });

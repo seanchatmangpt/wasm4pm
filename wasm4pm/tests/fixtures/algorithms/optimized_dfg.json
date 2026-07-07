@@ -3,14 +3,14 @@
   "provenance": {
     "paper": "Process Mining: Data Science in Action",
     "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
-    "locus": "Chapter 4 — Directly-Follows Graph; optimized variant preserves same graph structure as standard DFG",
+    "locus": "Chapter 4 \u2014 Directly-Follows Graph; optimized variant preserves same graph structure as standard DFG",
     "extraction": "verbatim"
   },
   "input": {
     "log": "wasm4pm/tests/fixtures/running-example.xes"
   },
   "expected": {
-    "value": "activities=8,edges=10",
-    "description": "Optimized DFG on running-example has 8 activity nodes and 10 directly-follows edges after score-threshold filtering (fitness_weight=1.0, simplicity_weight=1.0, score>0.1 gate removes low-frequency edges)"
+    "value": "activities=8,edges=16",
+    "description": "Optimized DFG on the noise-free running-example keeps the full 16-edge directly-follows graph: the threshold sweep (fitness_weight=1.0, simplicity_weight=1.0) finds that any pruning breaks perfect trace replay, matching the cited claim that the optimized variant preserves the standard DFG structure (8 activity nodes, 16 edges)."
   }
 }

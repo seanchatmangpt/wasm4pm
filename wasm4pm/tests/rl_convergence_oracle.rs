@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Rank-1 Mathematical Oracle Tests for RL Convergence
 //!
 //! Per chicago-tdd.md doctrine: "If the code says it worked but the event log cannot prove

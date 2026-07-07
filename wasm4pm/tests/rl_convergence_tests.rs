@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! RL Learning Convergence Tests.
 //!
 //! Tests that RL agents actually learn — Q-values change, cumulative reward

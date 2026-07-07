@@ -84,11 +84,11 @@ interface WorkingTogetherNetwork {
 }
 
 function handoverNetwork(handle: string, resourceKey = 'org:resource'): HandoverNetwork {
-  return parse(wasm.discover_handover_network(handle, resourceKey)) as HandoverNetwork;
+  return parse(wasm.discover_handover_network(handle, resourceKey)) as unknown as HandoverNetwork;
 }
 
 function workingTogetherNetwork(handle: string, resourceKey = 'org:resource'): WorkingTogetherNetwork {
-  return parse(wasm.discover_working_together_network(handle, resourceKey)) as WorkingTogetherNetwork;
+  return parse(wasm.discover_working_together_network(handle, resourceKey)) as unknown as WorkingTogetherNetwork;
 }
 
 // Sort edges/nodes for deterministic comparison (WASM HashMap order is non-deterministic)
