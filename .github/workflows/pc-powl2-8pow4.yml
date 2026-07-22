@@ -31,7 +31,7 @@ jobs:
           components: rustfmt, clippy
       - name: Require committed formatting for owned Rust files
         run: >-
-          rustfmt --edition 2021 --check
+          rustfmt --edition 2021 --check --config skip_children=true
           wasm4pm/src/pc_powl2/dfcm.rs
           wasm4pm/src/pc_powl2/mod.rs
       - name: Manufacture, classify, and replay H(4,8)
