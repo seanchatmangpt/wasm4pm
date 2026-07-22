@@ -70,11 +70,10 @@ pub use broker::{replay_receipt, PcPowl2Broker};
 pub use checker::PcPowl2Checker;
 
 pub fn canonical_digest<T: Serialize>(value: &T) -> PcpResult<String> {
-    let bytes = serde_json::to_vec(value).map_err(|error| {
-        PcpRefusal::ReceiptSerializationFailed {
+    let bytes =
+        serde_json::to_vec(value).map_err(|error| PcpRefusal::ReceiptSerializationFailed {
             reason: error.to_string(),
-        }
-    })?;
+        })?;
     Ok(format!("blake3:{}", blake3::hash(&bytes).to_hex()))
 }
 
@@ -115,11 +114,7 @@ fn partial_edges(model: &Powl, children: &[PowlNodeId]) -> Vec<OrderEdge> {
         .collect()
 }
 
-fn is_topological_order(
-    model: &Powl,
-    children: &[PowlNodeId],
-    order: &[PowlNodeId],
-) -> bool {
+fn is_topological_order(model: &Powl, children: &[PowlNodeId], order: &[PowlNodeId]) -> bool {
     if order.len() != children.len() {
         return false;
     }

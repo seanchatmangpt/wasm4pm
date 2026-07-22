@@ -31,9 +31,7 @@ pub const DFCM_SCHEMA: &str = "urn:mfw:pc-powl2:dfcm:8pow4:v1";
 /// `Receipt` is terminal and idempotent. Applying any semantic operator after a
 /// receipt is a named refusal rather than an untracked mutation.
 #[repr(u8)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SemanticOperator {
     Atom = 0,
@@ -93,9 +91,7 @@ impl SemanticOperator {
 /// One proof obligation per semantic operator. This one-to-one mapping makes
 /// coverage mechanically inspectable rather than inferred from test names.
 #[repr(u8)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProofObligation {
     AtomicContract = 0,
@@ -154,9 +150,7 @@ impl ObligationSet {
 }
 
 /// Maximum standing reachable by a four-operator word.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StandingCeiling {
     ProofCarrying,
@@ -234,9 +228,7 @@ impl OperatorWord {
 
 /// The one manufacturing refusal in the closed 8^4 algebra: a proof artifact
 /// was semantically changed after it had already received execution standing.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WordRefusalKind {
     SemanticMutationAfterReceipt,
@@ -431,11 +423,11 @@ impl DfcmClosureReceipt {
         let verdicts: Vec<_> = words.iter().copied().map(classify_word).collect();
         let ordinals: BTreeSet<_> = words.iter().map(|word| word.ordinal()).collect();
 
-        let mut position_histogram =
-            [[0_usize; DFCM_OPERATOR_COUNT]; DFCM_COMPOSITION_DEPTH];
+        let mut position_histogram = [[0_usize; DFCM_OPERATOR_COUNT]; DFCM_COMPOSITION_DEPTH];
         let mut operator_histogram = [0_usize; DFCM_OPERATOR_COUNT];
-        let mut prefix_sets: Vec<BTreeSet<Vec<SemanticOperator>>> =
-            (0..DFCM_COMPOSITION_DEPTH).map(|_| BTreeSet::new()).collect();
+        let mut prefix_sets: Vec<BTreeSet<Vec<SemanticOperator>>> = (0..DFCM_COMPOSITION_DEPTH)
+            .map(|_| BTreeSet::new())
+            .collect();
         let mut shell_histogram = [0_usize; DFCM_COMPOSITION_DEPTH + 1];
 
         for word in &words {
@@ -532,8 +524,7 @@ impl DfcmClosureReceipt {
                     .all(|count| *count == DFCM_CORPUS_SIZE / DFCM_OPERATOR_COUNT)
             })
             && self.operator_histogram.iter().all(|count| {
-                *count
-                    == DFCM_COMPOSITION_DEPTH * DFCM_CORPUS_SIZE / DFCM_OPERATOR_COUNT
+                *count == DFCM_COMPOSITION_DEPTH * DFCM_CORPUS_SIZE / DFCM_OPERATOR_COUNT
             })
             && self.prefix_closure == DFCM_PREFIX_CLOSURE
             && self.shell_histogram == DFCM_SHELL_HISTOGRAM
@@ -543,7 +534,10 @@ impl DfcmClosureReceipt {
             && self.refused_interior_edges == DFCM_REFUSED_INTERIOR_EDGE_COUNT
             && self.decision_boundary_edges == DFCM_DECISION_BOUNDARY_EDGE_COUNT
             && self.standing_histogram.get(&StandingCeiling::ProofCarrying) == Some(&1_296)
-            && self.standing_histogram.get(&StandingCeiling::TotalCorrectness) == Some(&1_105)
+            && self
+                .standing_histogram
+                .get(&StandingCeiling::TotalCorrectness)
+                == Some(&1_105)
             && self
                 .standing_histogram
                 .get(&StandingCeiling::ReceiptedActuation)
@@ -643,7 +637,11 @@ mod tests {
             OperatorWord::from_ordinal(DFCM_CORPUS_SIZE - 1)
         );
         assert_eq!(
-            words.iter().map(|word| word.ordinal()).collect::<BTreeSet<_>>().len(),
+            words
+                .iter()
+                .map(|word| word.ordinal())
+                .collect::<BTreeSet<_>>()
+                .len(),
             DFCM_CORPUS_SIZE
         );
     }
@@ -744,9 +742,10 @@ mod tests {
         );
         let counterfactuals = index.counterfactuals(OperatorWord::ORIGIN);
         assert_eq!(counterfactuals.len(), 28);
-        assert!(counterfactuals
-            .iter()
-            .all(|counterfactual| counterfactual.source.hamming_distance(counterfactual.candidate) == 1));
+        assert!(counterfactuals.iter().all(|counterfactual| counterfactual
+            .source
+            .hamming_distance(counterfactual.candidate)
+            == 1));
     }
 
     #[test]
