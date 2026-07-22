@@ -85,6 +85,7 @@ pub struct VerificationReport {
 
 mod broker;
 mod checker;
+mod commutation;
 pub mod dfcm;
 
 pub use broker::{replay_receipt, replay_receipt_chain, PcPowl2Broker};
