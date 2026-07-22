@@ -38,7 +38,11 @@ pub trait FiniteStateDomain {
 /// The checker supplies the pure model's expected successor. Implementations
 /// must perform the real effect (or query an already-performed effect) and
 /// return the observed successor state. The checker refuses any divergence.
-pub trait PcPowl2Actuator<D: FiniteStateDomain> {
+/// Internal refinement adapter used only to falsify divergence between a pure
+/// transition and an adapter-returned successor. This is not public host
+/// actuation authority: the v1 receipt schema carries no independently
+/// verifiable external evidence or transactional commit witness.
+pub(crate) trait PcPowl2Actuator<D: FiniteStateDomain> {
     fn actuate(
         &mut self,
         action: &str,
@@ -49,7 +53,7 @@ pub trait PcPowl2Actuator<D: FiniteStateDomain> {
 
 /// Explicit pure-model executor. Receipts produced with this actuator prove
 /// model execution and replay, not external host actuation.
-pub struct ModelActuator;
+pub(crate) struct ModelActuator;
 
 impl<D: FiniteStateDomain> PcPowl2Actuator<D> for ModelActuator {
     fn actuate(
@@ -88,7 +92,9 @@ pub use checker::PcPowl2Checker;
 
 fn canonicalize_json(value: Value) -> Value {
     match value {
-        Value::Array(values) => Value::Array(values.into_iter().map(canonicalize_json).collect()),
+        Value::Array(values) => {
+            Value::Array(values.into_iter().map(canonicalize_json).collect())
+        }
         Value::Object(values) => {
             let mut entries: Vec<_> = values.into_iter().collect();
             entries.sort_by(|left, right| left.0.cmp(&right.0));
@@ -107,10 +113,11 @@ fn canonicalize_json(value: Value) -> Value {
 /// Plain `serde_json::to_vec` is not canonical for user-defined map-backed
 /// states. Sorting recursively prevents insertion order from changing standing.
 pub fn canonical_digest<T: Serialize>(value: &T) -> PcpResult<String> {
-    let value =
-        serde_json::to_value(value).map_err(|error| PcpRefusal::ReceiptSerializationFailed {
+    let value = serde_json::to_value(value).map_err(|error| {
+        PcpRefusal::ReceiptSerializationFailed {
             reason: error.to_string(),
-        })?;
+        }
+    })?;
     let bytes = serde_json::to_vec(&canonicalize_json(value)).map_err(|error| {
         PcpRefusal::ReceiptSerializationFailed {
             reason: error.to_string(),
@@ -262,12 +269,13 @@ fn cyclic_edges(edges: &[ChoiceGraphEdge]) -> Vec<ChoiceGraphEdge> {
         .collect()
 }
 
-fn choice_terminals(
-    model: &Powl,
-    graph_nodes: &[PowlNodeId],
-) -> PcpResult<(PowlNodeId, PowlNodeId)> {
-    let start = *graph_nodes.first().ok_or(PcpRefusal::MissingModelRoot)?;
-    let finish = *graph_nodes.last().ok_or(PcpRefusal::MissingModelRoot)?;
+fn choice_terminals(model: &Powl, graph_nodes: &[PowlNodeId]) -> PcpResult<(PowlNodeId, PowlNodeId)> {
+    let start = *graph_nodes
+        .first()
+        .ok_or(PcpRefusal::MissingModelRoot)?;
+    let finish = *graph_nodes
+        .last()
+        .ok_or(PcpRefusal::MissingModelRoot)?;
     if !matches!(&model_node(model, start)?.kind, PowlNodeKind::Start)
         || !matches!(&model_node(model, finish)?.kind, PowlNodeKind::End)
     {
