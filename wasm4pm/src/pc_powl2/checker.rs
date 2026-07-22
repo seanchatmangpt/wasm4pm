@@ -210,6 +210,36 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
                 if let Some((left, right)) = declared.difference(&expected).next().copied() {
                     return Err(PcpRefusal::InvalidCommutationWitness { left, right });
                 }
+                for (left, right) in &expected {
+                    let left_proof = child_map
+                        .get(left)
+                        .copied()
+                        .ok_or(PcpRefusal::UnknownNode { node: *left })?;
+                    let right_proof = child_map
+                        .get(right)
+                        .copied()
+                        .ok_or(PcpRefusal::UnknownNode { node: *right })?;
+                    let mut inhabited_context = false;
+                    for state in states {
+                        let left_then_right =
+                            self.compose_terms(certificate, left_proof, right_proof, state)?;
+                        let right_then_left =
+                            self.compose_terms(certificate, right_proof, left_proof, state)?;
+                        if left_then_right != right_then_left {
+                            return Err(PcpRefusal::IndependentActionsDoNotCommute {
+                                left: *left,
+                                right: *right,
+                            });
+                        }
+                        inhabited_context |= !left_then_right.is_empty();
+                    }
+                    if !inhabited_context {
+                        return Err(PcpRefusal::InvalidCommutationWitness {
+                            left: *left,
+                            right: *right,
+                        });
+                    }
+                }
 
                 let orders = self.topological_orders(
                     &certificate.model,
@@ -498,10 +528,9 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
                 });
             }
             for candidate in available {
-                let index = remaining
-                    .iter()
-                    .position(|node| *node == candidate)
-                    .expect("candidate originates from remaining");
+                let Some(index) = remaining.iter().position(|node| *node == candidate) else {
+                    return Err(PcpRefusal::CanonicalOrderInvalid { node: candidate });
+                };
                 remaining.remove(index);
                 prefix.push(candidate);
                 visit(remaining, prefix, edges, maximum, orders)?;
@@ -786,6 +815,17 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
         selection: &ExecutionSelection,
         initial: &D::State,
     ) -> PcpResult<(D::State, Vec<ObservedStep>)> {
+        let mut actuator = ModelActuator;
+        self.execute_selection_with(certificate, selection, initial, &mut actuator)
+    }
+
+    pub(super) fn execute_selection_with<A: PcPowl2Actuator<D>>(
+        &self,
+        certificate: &CertifiedPowl,
+        selection: &ExecutionSelection,
+        initial: &D::State,
+        actuator: &mut A,
+    ) -> PcpResult<(D::State, Vec<ObservedStep>)> {
         let nodes = self.validate_selection(certificate, selection)?;
         let states = self.admitted_states(certificate.bounds.max_states)?;
         let mut proofs = HashMap::new();
@@ -806,13 +846,25 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
                 return Err(PcpRefusal::InitialEvidenceMissing);
             }
             let before_digest = canonical_digest(&state)?;
-            let next =
+            let expected =
                 self.domain
                     .step(action, &state)
                     .map_err(|reason| PcpRefusal::ActionRefused {
                         node: node_id,
                         reason,
                     })?;
+            let next = actuator
+                .actuate(action, &state, &expected)
+                .map_err(|reason| PcpRefusal::ActionRefused {
+                    node: node_id,
+                    reason,
+                })?;
+            if next != expected {
+                return Err(PcpRefusal::ActionRefused {
+                    node: node_id,
+                    reason: "ActuatorRefinementMismatch".to_string(),
+                });
+            }
             if !states.contains(&next) || !self.domain.holds(post, &next)? {
                 return Err(PcpRefusal::FinalGoalNotObserved);
             }

@@ -11,6 +11,7 @@ pub struct PcPowl2Broker {
     next_authorization: u64,
     issued_authorizations: HashMap<String, AuthorizationEnvelope>,
     consumed_authorizations: HashSet<String>,
+    issued_receipts: HashSet<String>,
     previous_receipt_digest: Option<String>,
     previous_final_state_digest: Option<String>,
 }
@@ -32,6 +33,7 @@ impl PcPowl2Broker {
             next_authorization: 0,
             issued_authorizations: HashMap::new(),
             consumed_authorizations: HashSet::new(),
+            issued_receipts: HashSet::new(),
             previous_receipt_digest: None,
             previous_final_state_digest: None,
         }
@@ -102,6 +104,8 @@ impl PcPowl2Broker {
         Ok(envelope)
     }
 
+    /// Execute the verified pure transition model. The resulting receipt proves
+    /// model execution and replay, not external host actuation.
     pub fn execute<D: FiniteStateDomain>(
         &mut self,
         checker: &PcPowl2Checker<'_, D>,
@@ -111,6 +115,34 @@ impl PcPowl2Broker {
         initial_state: D::State,
         now_unix_ms: u64,
     ) -> PcpResult<ExecutionReceiptShape> {
+        let mut actuator = ModelActuator;
+        self.execute_with(
+            checker,
+            certificate,
+            authorization,
+            selection,
+            initial_state,
+            now_unix_ms,
+            &mut actuator,
+        )
+    }
+
+    /// Execute through an external actuator and require its observed successor
+    /// to refine the verified pure transition at every atomic step.
+    pub fn execute_with<D, A>(
+        &mut self,
+        checker: &PcPowl2Checker<'_, D>,
+        certificate: &CertifiedPowl,
+        authorization: &AuthorizationEnvelope,
+        selection: ExecutionSelection,
+        initial_state: D::State,
+        now_unix_ms: u64,
+        actuator: &mut A,
+    ) -> PcpResult<ExecutionReceiptShape>
+    where
+        D: FiniteStateDomain,
+        A: PcPowl2Actuator<D>,
+    {
         checker.verify(certificate)?;
         self.validate_authorization(certificate, authorization, &selection, checker, now_unix_ms)?;
 
@@ -119,7 +151,7 @@ impl PcPowl2Broker {
             return Err(PcpRefusal::InitialEvidenceMissing);
         }
         let (final_state, observed_steps) =
-            checker.execute_selection(certificate, &selection, &initial_state)?;
+            checker.execute_selection_with(certificate, &selection, &initial_state, actuator)?;
         if !checker.domain.holds(post, &final_state)? {
             return Err(PcpRefusal::FinalGoalNotObserved);
         }
@@ -156,7 +188,7 @@ impl PcPowl2Broker {
             initial_state: initial_value,
             final_state: final_value,
             initial_state_digest,
-            final_state_digest,
+            final_state_digest: final_state_digest.clone(),
             observed_steps,
             observed_trace_digest,
             receipt_digest: String::new(),
@@ -169,9 +201,48 @@ impl PcPowl2Broker {
             self.consumed_authorizations
                 .insert(authorization.authorization_id.clone());
         }
+        self.issued_receipts.insert(digest.clone());
         self.previous_receipt_digest = Some(digest);
         self.previous_final_state_digest = Some(final_state_digest);
         Ok(receipt)
+    }
+
+    /// Verify that a receipt was issued by this broker instance, then replay it.
+    pub fn verify_issued_receipt<D: FiniteStateDomain>(
+        &self,
+        checker: &PcPowl2Checker<'_, D>,
+        certificate: &CertifiedPowl,
+        receipt: &ExecutionReceiptShape,
+    ) -> PcpResult<()> {
+        if !self.issued_receipts.contains(&receipt.receipt_digest) {
+            return Err(PcpRefusal::ReceiptDigestMismatch);
+        }
+        let authorization = self
+            .issued_authorizations
+            .get(&receipt.authorization_id)
+            .ok_or(PcpRefusal::AuthorizationMissing)?;
+        if authorization.subject != receipt.subject
+            || authorization.domain_digest != receipt.domain_digest
+            || authorization.model_digest != receipt.model_digest
+            || authorization.proof_digest != receipt.proof_digest
+            || authorization.challenge_nonce != receipt.challenge_nonce
+        {
+            return Err(PcpRefusal::AuthorizationDigestMismatch);
+        }
+        replay_receipt(checker, certificate, receipt)
+    }
+
+    pub fn verify_issued_receipt_chain<D: FiniteStateDomain>(
+        &self,
+        checker: &PcPowl2Checker<'_, D>,
+        certificate: &CertifiedPowl,
+        receipts: &[ExecutionReceiptShape],
+    ) -> PcpResult<()> {
+        replay_receipt_chain(checker, certificate, receipts)?;
+        for receipt in receipts {
+            self.verify_issued_receipt(checker, certificate, receipt)?;
+        }
+        Ok(())
     }
 
     fn validate_authorization<D: FiniteStateDomain>(
@@ -227,6 +298,10 @@ impl PcPowl2Broker {
     }
 }
 
+/// Verify deterministic semantic conformance and digest integrity.
+///
+/// This function does not establish that a broker issued the receipt. Use
+/// `PcPowl2Broker::verify_issued_receipt` when authority provenance matters.
 pub fn replay_receipt<D: FiniteStateDomain>(
     checker: &PcPowl2Checker<'_, D>,
     certificate: &CertifiedPowl,

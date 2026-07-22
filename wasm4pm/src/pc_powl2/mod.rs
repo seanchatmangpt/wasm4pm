@@ -33,6 +33,35 @@ pub trait FiniteStateDomain {
     fn variant(&self, variant: &VariantRef, state: &Self::State) -> PcpResult<u64>;
 }
 
+/// External actuation and observation boundary for one verified atomic step.
+///
+/// The checker supplies the pure model's expected successor. Implementations
+/// must perform the real effect (or query an already-performed effect) and
+/// return the observed successor state. The checker refuses any divergence.
+pub trait PcPowl2Actuator<D: FiniteStateDomain> {
+    fn actuate(
+        &mut self,
+        action: &str,
+        before: &D::State,
+        expected_after: &D::State,
+    ) -> Result<D::State, String>;
+}
+
+/// Explicit pure-model executor. Receipts produced with this actuator prove
+/// model execution and replay, not external host actuation.
+pub struct ModelActuator;
+
+impl<D: FiniteStateDomain> PcPowl2Actuator<D> for ModelActuator {
+    fn actuate(
+        &mut self,
+        _action: &str,
+        _before: &D::State,
+        expected_after: &D::State,
+    ) -> Result<D::State, String> {
+        Ok(expected_after.clone())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum VerificationStanding {

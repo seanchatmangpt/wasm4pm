@@ -465,7 +465,7 @@ pub enum CaseOutcome {
     Verified {
         standing: VerificationStanding,
     },
-    Receipted {
+    ModelReceipted {
         receipt_digests: Vec<String>,
     },
     Refused {
@@ -547,7 +547,7 @@ pub fn run_case(coordinate: CaseCoordinate) -> CaseRecord {
         return match broker.execute(&checker, &certificate, &forged, selection, initial, 5) {
             Ok(receipt) => CaseRecord {
                 coordinate,
-                outcome: CaseOutcome::Receipted {
+                outcome: CaseOutcome::ModelReceipted {
                     receipt_digests: vec![receipt.receipt_digest],
                 },
             },
@@ -591,7 +591,7 @@ pub fn run_case(coordinate: CaseCoordinate) -> CaseRecord {
         ) {
             Ok(receipt) => CaseRecord {
                 coordinate,
-                outcome: CaseOutcome::Receipted {
+                outcome: CaseOutcome::ModelReceipted {
                     receipt_digests: vec![first.receipt_digest, receipt.receipt_digest],
                 },
             },
@@ -633,10 +633,10 @@ pub fn run_case(coordinate: CaseCoordinate) -> CaseRecord {
             Err(refusal) => return refused(coordinate, FailurePhase::Execute, refusal),
         };
         let chain = vec![first, second];
-        return match replay_receipt_chain(&checker, &certificate, &chain) {
+        return match broker.verify_issued_receipt_chain(&checker, &certificate, &chain) {
             Ok(()) => CaseRecord {
                 coordinate,
-                outcome: CaseOutcome::Receipted {
+                outcome: CaseOutcome::ModelReceipted {
                     receipt_digests: chain
                         .iter()
                         .map(|receipt| receipt.receipt_digest.clone())
@@ -647,10 +647,10 @@ pub fn run_case(coordinate: CaseCoordinate) -> CaseRecord {
         };
     }
 
-    match replay_receipt(&checker, &certificate, &first) {
+    match broker.verify_issued_receipt(&checker, &certificate, &first) {
         Ok(()) => CaseRecord {
             coordinate,
-            outcome: CaseOutcome::Receipted {
+            outcome: CaseOutcome::ModelReceipted {
                 receipt_digests: vec![first.receipt_digest],
             },
         },
@@ -661,7 +661,7 @@ pub fn run_case(coordinate: CaseCoordinate) -> CaseRecord {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct OutcomeSummary {
     pub verified: usize,
-    pub receipted: usize,
+    pub model_receipted: usize,
     pub refused: usize,
     pub refused_by_phase: [usize; 6],
 }
@@ -680,13 +680,15 @@ pub struct DfcmConformanceReceipt {
 
 impl DfcmConformanceReceipt {
     pub fn manufacture() -> PcpResult<Self> {
-        let records: Vec<_> = (0..DFCM_CASES)
-            .map(|ordinal| {
-                let coordinate = CaseCoordinate::from_ordinal(ordinal)
-                    .expect("ordinal is within the exact 8^4 coordinate space");
-                run_case(coordinate)
-            })
-            .collect();
+        let mut records = Vec::with_capacity(DFCM_CASES);
+        for ordinal in 0..DFCM_CASES {
+            let coordinate = CaseCoordinate::from_ordinal(ordinal).ok_or_else(|| {
+                PcpRefusal::ReceiptSerializationFailed {
+                    reason: format!("missing DfCM coordinate {ordinal}"),
+                }
+            })?;
+            records.push(run_case(coordinate));
+        }
         let coordinates: Vec<_> = records.iter().map(|record| record.coordinate).collect();
         let unique: BTreeSet<_> = coordinates.iter().copied().collect();
         let mut dimension_histograms = [[0usize; DFCM_LEVELS]; DFCM_DIMENSIONS];
@@ -698,7 +700,7 @@ impl DfcmConformanceReceipt {
             dimension_histograms[3][record.coordinate.initial.index()] += 1;
             match &record.outcome {
                 CaseOutcome::Verified { .. } => summary.verified += 1,
-                CaseOutcome::Receipted { .. } => summary.receipted += 1,
+                CaseOutcome::ModelReceipted { .. } => summary.model_receipted += 1,
                 CaseOutcome::Refused { phase, .. } => {
                     summary.refused += 1;
                     summary.refused_by_phase[*phase as usize] += 1;
@@ -728,7 +730,8 @@ impl DfcmConformanceReceipt {
                     .iter()
                     .all(|count| *count == DFCM_CASES / DFCM_LEVELS)
             })
-            && self.summary.verified + self.summary.receipted + self.summary.refused == DFCM_CASES
+            && self.summary.verified + self.summary.model_receipted + self.summary.refused
+                == DFCM_CASES
     }
 
     pub fn replay(&self) -> PcpResult<bool> {
@@ -899,7 +902,7 @@ mod tests {
         let receipt = DfcmConformanceReceipt::manufacture().unwrap();
         assert!(receipt.is_complete());
         assert!(receipt.summary.verified > 0);
-        assert!(receipt.summary.receipted > 0);
+        assert!(receipt.summary.model_receipted > 0);
         assert!(receipt.summary.refused > 0);
         assert!(receipt.replay().unwrap());
     }

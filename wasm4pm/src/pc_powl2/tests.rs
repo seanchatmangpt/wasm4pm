@@ -192,8 +192,9 @@ fn every_linearization_is_checked_not_only_the_canonical_one() {
     checker.bind_certificate(&mut noncommuting).unwrap();
     assert_eq!(
         checker.verify(&noncommuting),
-        Err(PcpRefusal::CanonicalContractFailed {
-            node: PowlNodeId(2)
+        Err(PcpRefusal::IndependentActionsDoNotCommute {
+            left: PowlNodeId(0),
+            right: PowlNodeId(1),
         })
     );
 }
@@ -274,7 +275,9 @@ fn broker_mints_single_use_authority_and_receipt_replays() {
             5,
         )
         .unwrap();
-    replay_receipt(&checker, &certificate, &receipt).unwrap();
+    broker
+        .verify_issued_receipt(&checker, &certificate, &receipt)
+        .unwrap();
     assert_eq!(
         broker.execute(
             &checker,
@@ -384,7 +387,9 @@ fn receipt_chain_requires_state_continuity() {
         )
         .unwrap();
 
-    replay_receipt_chain(&checker, &certificate, &[first.clone(), second.clone()]).unwrap();
+    broker
+        .verify_issued_receipt_chain(&checker, &certificate, &[first.clone(), second.clone()])
+        .unwrap();
 
     let mut broken = second;
     broken.initial_state = serde_json::to_value(ToyState { x: 0, y: 0 }).unwrap();
@@ -397,5 +402,91 @@ fn receipt_chain_requires_state_continuity() {
     assert_eq!(
         replay_receipt_chain(&checker, &certificate, &[first, broken]),
         Err(PcpRefusal::ReplayStateMismatch)
+    );
+}
+
+#[derive(Default)]
+struct DivergentActuator;
+
+impl PcPowl2Actuator<ToyDomain> for DivergentActuator {
+    fn actuate(
+        &mut self,
+        _action: &str,
+        before: &ToyState,
+        _expected_after: &ToyState,
+    ) -> Result<ToyState, String> {
+        Ok(*before)
+    }
+}
+
+#[test]
+fn external_actuator_must_refine_the_verified_model() {
+    let domain = ToyDomain;
+    let checker = PcPowl2Checker::new(&domain);
+    let mut certificate = atom_certificate("set_x_one", "true", "x_one");
+    checker.bind_certificate(&mut certificate).unwrap();
+    let mut broker = PcPowl2Broker::new();
+    let authorization = broker
+        .authorize(
+            &checker,
+            &certificate,
+            vec![PowlNodeId(0)],
+            "actuator",
+            1,
+            10,
+            true,
+        )
+        .unwrap();
+    let mut actuator = DivergentActuator;
+    assert_eq!(
+        broker.execute_with(
+            &checker,
+            &certificate,
+            &authorization,
+            atom_selection(),
+            ToyState { x: 0, y: 0 },
+            5,
+            &mut actuator,
+        ),
+        Err(PcpRefusal::ActionRefused {
+            node: PowlNodeId(0),
+            reason: "ActuatorRefinementMismatch".to_string(),
+        })
+    );
+}
+
+#[test]
+fn standalone_replay_does_not_launder_broker_provenance() {
+    let domain = ToyDomain;
+    let checker = PcPowl2Checker::new(&domain);
+    let mut certificate = atom_certificate("set_x_one", "true", "x_one");
+    checker.bind_certificate(&mut certificate).unwrap();
+    let mut issuing_broker = PcPowl2Broker::with_authority("issuer");
+    let authorization = issuing_broker
+        .authorize(
+            &checker,
+            &certificate,
+            vec![PowlNodeId(0)],
+            "nonce",
+            1,
+            10,
+            true,
+        )
+        .unwrap();
+    let receipt = issuing_broker
+        .execute(
+            &checker,
+            &certificate,
+            &authorization,
+            atom_selection(),
+            ToyState { x: 0, y: 0 },
+            5,
+        )
+        .unwrap();
+    replay_receipt(&checker, &certificate, &receipt).unwrap();
+    let unrelated_broker = PcPowl2Broker::with_authority("other");
+    assert_eq!(
+        unrelated_broker.verify_issued_receipt(&checker, &certificate, &receipt),
+        Err(PcpRefusal::ReceiptDigestMismatch)
     );
 }
