@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: pc-powl2-8pow4-${{ github.ref }}
@@ -23,30 +23,14 @@ jobs:
     name: Exact 4096-cell closure and replay
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.HEAD_BRANCH }}
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
-      - name: Normalize Rust sources
-        run: cargo fmt --all
-      - name: Commit exact formatter output
-        run: |
-          if git diff --quiet -- wasm4pm/src/pc_powl2/dfcm.rs wasm4pm/src/pc_powl2/mod.rs; then
-            exit 0
-          fi
-          git config user.name "pc-powl2-dfcm-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add wasm4pm/src/pc_powl2/dfcm.rs wasm4pm/src/pc_powl2/mod.rs
-          git commit -m "Format exact PC-POWL2 8^4 closure"
-          git push origin "HEAD:${HEAD_BRANCH}"
       - name: Require committed formatting
-        run: git diff --exit-code -- wasm4pm/src/pc_powl2/dfcm.rs wasm4pm/src/pc_powl2/mod.rs
+        run: cargo fmt --all -- --check
       - name: Manufacture, classify, and replay H(4,8)
         run: cargo test -p wasm4pm pc_powl2::dfcm
       - name: Refuse warnings and weak formulations
