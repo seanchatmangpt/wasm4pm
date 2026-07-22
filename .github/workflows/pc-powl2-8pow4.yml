@@ -20,13 +20,17 @@ concurrency:
 
 jobs:
   apply-format-receipt:
-    name: Apply exact formatted PC-POWL2 authority
+    name: Apply formatted authority and selection bound
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/pc-powl2-8pow4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt
       - name: Download admitted formatting receipt
         uses: actions/download-artifact@v4
         with:
@@ -49,12 +53,119 @@ jobs:
           install -m 0644 /tmp/pc-powl2-formatted/dfcm.rs wasm4pm/src/pc_powl2/dfcm.rs
           install -m 0644 /tmp/pc-powl2-formatted/mod.rs wasm4pm/src/pc_powl2/mod.rs
           install -m 0644 /tmp/pc-powl2-formatted/tests.rs wasm4pm/src/pc_powl2/tests.rs
+      - name: Enforce total concrete selection visits
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          checker = Path("wasm4pm/src/pc_powl2/checker.rs")
+          source = checker.read_text()
+          old_call = '''        let mut atoms = Vec::new();
+                  self.validate_selection_inner(certificate, &certificate.proof, selection, &mut atoms, 1)?;
+          '''
+          new_call = '''        let mut atoms = Vec::new();
+                  let mut visits = 0usize;
+                  self.validate_selection_inner(
+                      certificate,
+                      &certificate.proof,
+                      selection,
+                      &mut atoms,
+                      &mut visits,
+                  )?;
+          '''
+          old_header = '''        atoms: &mut Vec<PowlNodeId>,
+                  visits: usize,
+              ) -> PcpResult<()> {
+                  if visits > certificate.bounds.max_choice_visits || selection.node() != proof.node() {
+                      return Err(PcpRefusal::SelectionNotAdmitted {
+                          node: selection.node(),
+                      });
+                  }
+                  let node = model_node(&certificate.model, selection.node())?;
+                  match proof {
+                      ProofTerm::Consequence { inner, .. } => {
+                          self.validate_selection_inner(certificate, inner, selection, atoms, visits)
+                      }
+          '''
+          new_header = '''        atoms: &mut Vec<PowlNodeId>,
+                  visits: &mut usize,
+              ) -> PcpResult<()> {
+                  if selection.node() != proof.node() {
+                      return Err(PcpRefusal::SelectionNotAdmitted {
+                          node: selection.node(),
+                      });
+                  }
+                  if !matches!(proof, ProofTerm::Consequence { .. }) {
+                      *visits = visits.saturating_add(1);
+                      if *visits > certificate.bounds.max_choice_visits {
+                          return Err(PcpRefusal::ChoiceVisitBoundExceeded {
+                              actual: *visits,
+                              maximum: certificate.bounds.max_choice_visits,
+                          });
+                      }
+                  }
+                  let node = model_node(&certificate.model, selection.node())?;
+                  match proof {
+                      ProofTerm::Consequence { inner, .. } => {
+                          self.validate_selection_inner(certificate, inner, selection, atoms, visits)
+                      }
+          '''
+          if source.count(old_call) != 1 or source.count(old_header) != 1:
+              raise SystemExit("selection-bound patch context mismatch")
+          if source.count("visits + 1") != 2:
+              raise SystemExit("unexpected selection recursion count")
+          source = source.replace(old_call, new_call).replace(old_header, new_header)
+          source = source.replace("visits + 1", "visits")
+          checker.write_text(source)
+
+          tests = Path("wasm4pm/src/pc_powl2/tests.rs")
+          test_source = tests.read_text()
+          marker = "fn selection_visit_bound_counts_every_selected_node()"
+          if marker not in test_source:
+              test_source += '''
+
+          #[test]
+          fn selection_visit_bound_counts_every_selected_node() {
+              let domain = ToyDomain;
+              let checker = PcPowl2Checker::new(&domain);
+              let mut certificate = partial_order_certificate(false);
+              certificate.bounds.max_choice_visits = 2;
+              checker.bind_certificate(&mut certificate).unwrap();
+              let selection = ExecutionSelection::PartialOrder {
+                  node: PowlNodeId(2),
+                  children: vec![
+                      ExecutionSelection::Atom {
+                          node: PowlNodeId(0),
+                      },
+                      ExecutionSelection::Atom {
+                          node: PowlNodeId(1),
+                      },
+                  ],
+              };
+              assert_eq!(
+                  checker.validate_selection(&certificate, &selection),
+                  Err(PcpRefusal::ChoiceVisitBoundExceeded {
+                      actual: 3,
+                      maximum: 2,
+                  })
+              );
+          }
+          '''
+              tests.write_text(test_source)
+          PY
+          rustfmt --edition 2021 --config skip_children=true \
+            wasm4pm/src/pc_powl2/mod.rs \
+            wasm4pm/src/pc_powl2/checker.rs \
+            wasm4pm/src/pc_powl2/commutation.rs \
+            wasm4pm/src/pc_powl2/broker.rs \
+            wasm4pm/src/pc_powl2/dfcm.rs \
+            wasm4pm/src/pc_powl2/tests.rs
           git diff --check
-      - name: Commit exact formatting receipt
+      - name: Commit exact authority transaction
         run: |
           git config user.name "pc-powl2-receipt-broker"
           git config user.email "actions@users.noreply.github.com"
           git add wasm4pm/src/pc_powl2
           git diff --cached --quiet && exit 0
-          git commit -m "Apply formatted PC-POWL2 authority receipt"
+          git commit -m "Apply PC-POWL2 authority receipt and selection bound"
           git push origin HEAD:agent/pc-powl2-8pow4
