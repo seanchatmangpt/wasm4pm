@@ -29,9 +29,19 @@ jobs:
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
-      - name: Format
-        run: cargo fmt --all -- --check
+      - name: Normalize Rust sources
+        run: cargo fmt --all
+      - name: Upload normalized PC-POWL2 sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc-powl2-8pow4-formatted
+          path: |
+            wasm4pm/src/pc_powl2/dfcm.rs
+            wasm4pm/src/pc_powl2/mod.rs
+          if-no-files-found: error
       - name: Manufacture, classify, and replay H(4,8)
         run: cargo test -p wasm4pm pc_powl2::dfcm
       - name: Refuse warnings and weak formulations
         run: cargo clippy -p wasm4pm --tests -- -D warnings
+      - name: Require committed formatting
+        run: git diff --exit-code -- wasm4pm/src/pc_powl2/dfcm.rs wasm4pm/src/pc_powl2/mod.rs
