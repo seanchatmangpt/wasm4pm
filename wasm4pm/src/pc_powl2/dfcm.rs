@@ -827,7 +827,10 @@ mod tests {
             invalid.outcome,
             CaseOutcome::Refused {
                 phase: FailurePhase::Verify,
-                refusal: PcpRefusal::CanonicalContractFailed { .. },
+                refusal: PcpRefusal::IndependentActionsDoNotCommute {
+                    left: PowlNodeId(0),
+                    right: PowlNodeId(1),
+                },
             }
         ));
     }

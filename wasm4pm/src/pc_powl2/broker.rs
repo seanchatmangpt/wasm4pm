@@ -129,7 +129,7 @@ impl PcPowl2Broker {
 
     /// Execute through an external actuator and require its observed successor
     /// to refine the verified pure transition at every atomic step.
-    pub fn execute_with<D, A>(
+    pub(crate) fn execute_with<D, A>(
         &mut self,
         checker: &PcPowl2Checker<'_, D>,
         certificate: &CertifiedPowl,
