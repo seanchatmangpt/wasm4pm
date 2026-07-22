@@ -30,21 +30,11 @@ jobs:
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt
-      - name: Assemble and verify payload
+      - name: Verify and decode exact payload
         run: |
-          cat .agents/pc-powl2-hardening/part*.b64 > /tmp/pc-powl2-hardening.b64
-          test "$(sha256sum /tmp/pc-powl2-hardening.b64 | cut -d' ' -f1)" = "30e4bd0aa52de7fb37566fd51cbb5c21a04a80ec28fb5c2d770f4b36f92eae57"
-          base64 --decode /tmp/pc-powl2-hardening.b64 > /tmp/pc-powl2-hardening.tar.gz
+          test "$(sha256sum .agents/pc-powl2-hardening/payload.b64 | cut -d' ' -f1)" = "30e4bd0aa52de7fb37566fd51cbb5c21a04a80ec28fb5c2d770f4b36f92eae57"
+          base64 --decode .agents/pc-powl2-hardening/payload.b64 > /tmp/pc-powl2-hardening.tar.gz
           test "$(sha256sum /tmp/pc-powl2-hardening.tar.gz | cut -d' ' -f1)" = "f901c52bcc4af2f009de3a87503e5d74796340dd713baa7b1b4f84459287c674"
-      - name: Upload exact payload receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc-powl2-hardening-payload
-          path: |
-            /tmp/pc-powl2-hardening.b64
-            /tmp/pc-powl2-hardening.tar.gz
-          if-no-files-found: warn
       - name: Extract audited source archive
         run: |
           mkdir -p /tmp/pc-powl2-hardening
