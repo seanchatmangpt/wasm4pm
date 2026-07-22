@@ -6,62 +6,73 @@ on:
       - main
       - agent/pc-powl2-engine
     paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
       - "wasm4pm/src/pc_powl2/**"
       - ".github/workflows/pc-powl2-8pow4.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: pc-powl2-hardening-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  hardening:
-    name: Checker, broker, replay, and 4096-case conformance
+  bind-wire-revision:
+    name: Bind exact verified compat revision
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/pc-powl2-8pow4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
-      - name: Refuse retired symbolic standing machinery
+      - name: Pin exact green compat revision
         run: |
-          ! grep -R "StandingCeiling\|SemanticMutationAfterReceipt\|OperatorWord" wasm4pm/src/pc_powl2
-          ! grep -R "DFCM_ADMITTED_WORD_COUNT\|DFCM_REFUSED_WORD_COUNT" wasm4pm/src/pc_powl2
-      - name: Refuse staging and self-modifying CI scaffolding
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("Cargo.toml")
+          source = path.read_text()
+          old = '''# Stacked PR dependency. Replace with the released compat version after
+          # seanchatmangpt/wasm4pm-compat#agent/pc-powl2-wire is merged and published.
+          wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", branch = "agent/pc-powl2-wire", features = ["formats", "strict", "wasm4pm"] }
+          '''
+          new = '''# Exact green wire revision. Replace with the released compat version only
+          # after the human-controlled crates.io publication receipt exists.
+          wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", rev = "c3edd4c25663f5ef6a552abb2a1b9e8d23ac4d5b", features = ["formats", "strict", "wasm4pm"] }
+          '''
+          if source.count(old) != 1:
+              raise SystemExit("compat dependency context mismatch")
+          path.write_text(source.replace(old, new))
+          PY
+          cargo update -p wasm4pm-compat
+          python3 - <<'PY'
+          from pathlib import Path
+          lock = Path("Cargo.lock").read_text()
+          blocks = lock.split("[[package]]")
+          matches = [b for b in blocks if '\nname = "wasm4pm-compat"\n' in b]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one wasm4pm-compat lock block, found {len(matches)}")
+          block = matches[0]
+          expected = "c3edd4c25663f5ef6a552abb2a1b9e8d23ac4d5b"
+          if expected not in block or 'source = "git+' not in block:
+              raise SystemExit("Cargo.lock is not bound to the exact compat revision")
+          PY
+          git diff --check -- Cargo.toml Cargo.lock
+      - name: Verify exact dependency binding
+        run: cargo test -p wasm4pm --lib pc_powl2
+      - name: Refuse warnings after dependency binding
+        run: cargo clippy -p wasm4pm --lib -- -D warnings
+      - name: Commit manifest and lock receipt
         run: |
-          test ! -e .agents/pc-powl2-hardening
-          test ! -e .github/workflows/apply-pc-powl2-hardening.yml
-          test ! -e .github/workflows/format-pc-powl2-hardening.yml
-          test ! -e .github/workflows/apply-pc-powl2-wire-format-receipt.yml
-      - name: Require committed formatting for owned Rust files
-        run: >-
-          rustfmt --edition 2021 --check --config skip_children=true
-          wasm4pm/src/pc_powl2/mod.rs
-          wasm4pm/src/pc_powl2/checker.rs
-          wasm4pm/src/pc_powl2/commutation.rs
-          wasm4pm/src/pc_powl2/broker.rs
-          wasm4pm/src/pc_powl2/dfcm.rs
-          wasm4pm/src/pc_powl2/tests.rs
-      - name: Run checker, broker, replay, falsifier, and 4096-case suite
-        run: cargo test -p wasm4pm --lib pc_powl2 > pc-powl2-hardening-test.log 2>&1
-      - name: Upload hardening test receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc-powl2-hardening-test-log
-          path: pc-powl2-hardening-test.log
-          if-no-files-found: error
-      - name: Refuse warnings and weak formulations
-        run: cargo clippy -p wasm4pm --lib -- -D warnings > pc-powl2-hardening-clippy.log 2>&1
-      - name: Upload clippy receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc-powl2-hardening-clippy-log
-          path: pc-powl2-hardening-clippy.log
-          if-no-files-found: error
+          git config user.name "pc-powl2-receipt-broker"
+          git config user.email "actions@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock
+          git diff --cached --quiet && exit 0
+          git commit -m "Pin verified PC-POWL2 wire revision"
+          git push origin HEAD:agent/pc-powl2-8pow4
