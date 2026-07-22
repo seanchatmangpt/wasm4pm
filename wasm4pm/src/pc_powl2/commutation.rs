@@ -16,9 +16,7 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
     ) -> PcpResult<HashSet<D::State>> {
         let mut visits = 0usize;
         let mut outputs = HashSet::new();
-        for intermediate in
-            self.commutation_outputs(certificate, first, state, &mut visits)?
-        {
+        for intermediate in self.commutation_outputs(certificate, first, state, &mut visits)? {
             outputs.extend(self.commutation_outputs(
                 certificate,
                 second,

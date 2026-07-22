@@ -377,12 +377,7 @@ mod choice_shape_falsifiers {
 
     #[test]
     fn unreachable_or_dead_end_graph_nodes_are_refused() {
-        let graph_nodes = vec![
-            PowlNodeId(0),
-            PowlNodeId(1),
-            PowlNodeId(4),
-            PowlNodeId(2),
-        ];
+        let graph_nodes = vec![PowlNodeId(0), PowlNodeId(1), PowlNodeId(4), PowlNodeId(2)];
         let model = graph_model(
             graph_nodes.clone(),
             vec![
