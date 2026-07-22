@@ -42,6 +42,7 @@ jobs:
           rustfmt --edition 2021 --check --config skip_children=true
           wasm4pm/src/pc_powl2/mod.rs
           wasm4pm/src/pc_powl2/checker.rs
+          wasm4pm/src/pc_powl2/commutation.rs
           wasm4pm/src/pc_powl2/broker.rs
           wasm4pm/src/pc_powl2/dfcm.rs
           wasm4pm/src/pc_powl2/tests.rs
