@@ -1,0 +1,37 @@
+name: PC-POWL2 8^4 DfCM
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/pc-powl2-engine
+    paths:
+      - "wasm4pm/src/pc_powl2/dfcm.rs"
+      - "wasm4pm/src/pc_powl2/mod.rs"
+      - ".github/workflows/pc-powl2-8pow4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc-powl2-8pow4-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  closure:
+    name: Exact 4096-cell closure and replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt, clippy
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Manufacture, classify, and replay H(4,8)
+        run: cargo test -p wasm4pm pc_powl2::dfcm
+      - name: Refuse warnings and weak formulations
+        run: cargo clippy -p wasm4pm --tests -- -D warnings
