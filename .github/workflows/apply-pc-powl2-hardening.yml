@@ -5,7 +5,7 @@ on:
     branches:
       - agent/pc-powl2-engine
     paths:
-      - ".agents/pc-powl2-hardening/**"
+      - ".agents/pc-powl2-hardening/v4/**"
       - ".github/workflows/apply-pc-powl2-hardening.yml"
   workflow_dispatch:
 
@@ -30,12 +30,14 @@ jobs:
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt
-      - name: Decode repository payload
+      - name: Assemble exact chunk manifest
         run: |
-          tr -d '\r\n\t ' < .agents/pc-powl2-hardening/payload.b64 > /tmp/pc-powl2-hardening.b64
+          cat .agents/pc-powl2-hardening/v4/part0* > /tmp/pc-powl2-hardening.b64
+          test "$(wc -c < /tmp/pc-powl2-hardening.b64)" -eq 26832
+          test "$(sha256sum /tmp/pc-powl2-hardening.b64 | cut -d' ' -f1)" = "30e4bd0aa52de7fb37566fd51cbb5c21a04a80ec28fb5c2d770f4b36f92eae57"
           base64 --decode /tmp/pc-powl2-hardening.b64 > /tmp/pc-powl2-hardening.tar.gz
           gzip --test /tmp/pc-powl2-hardening.tar.gz
-          sha256sum /tmp/pc-powl2-hardening.tar.gz | tee /tmp/pc-powl2-hardening.sha256
+          test "$(sha256sum /tmp/pc-powl2-hardening.tar.gz | cut -d' ' -f1)" = "f901c52bcc4af2f009de3a87503e5d74796340dd713baa7b1b4f84459287c674"
       - name: Extract audited source archive
         run: |
           mkdir -p /tmp/pc-powl2-hardening
