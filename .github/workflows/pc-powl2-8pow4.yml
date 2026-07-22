@@ -35,6 +35,34 @@ jobs:
           wasm4pm/src/pc_powl2/dfcm.rs
           wasm4pm/src/pc_powl2/mod.rs
       - name: Manufacture, classify, and replay H(4,8)
-        run: cargo test -p wasm4pm pc_powl2::dfcm
+        id: closure_test
+        continue-on-error: true
+        run: cargo test -p wasm4pm pc_powl2::dfcm > pc-powl2-8pow4-test.log 2>&1
+      - name: Upload closure test receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc-powl2-8pow4-test-log
+          path: pc-powl2-8pow4-test.log
+          if-no-files-found: error
+      - name: Surface closure test refusal
+        if: steps.closure_test.outcome != 'success'
+        run: |
+          tail -n 120 pc-powl2-8pow4-test.log
+          exit 1
       - name: Refuse warnings and weak formulations
-        run: cargo clippy -p wasm4pm --tests -- -D warnings
+        id: closure_clippy
+        continue-on-error: true
+        run: cargo clippy -p wasm4pm --tests -- -D warnings > pc-powl2-8pow4-clippy.log 2>&1
+      - name: Upload clippy receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc-powl2-8pow4-clippy-log
+          path: pc-powl2-8pow4-clippy.log
+          if-no-files-found: error
+      - name: Surface clippy refusal
+        if: steps.closure_clippy.outcome != 'success'
+        run: |
+          tail -n 120 pc-powl2-8pow4-clippy.log
+          exit 1
