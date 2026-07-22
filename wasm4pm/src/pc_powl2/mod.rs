@@ -270,14 +270,138 @@ fn choice_terminals(
     model: &Powl,
     graph_nodes: &[PowlNodeId],
 ) -> PcpResult<(PowlNodeId, PowlNodeId)> {
-    let start = *graph_nodes.first().ok_or(PcpRefusal::MissingModelRoot)?;
-    let finish = *graph_nodes.last().ok_or(PcpRefusal::MissingModelRoot)?;
-    if !matches!(&model_node(model, start)?.kind, PowlNodeKind::Start)
-        || !matches!(&model_node(model, finish)?.kind, PowlNodeKind::End)
-    {
-        return Err(PcpRefusal::GraphContractCoverageMismatch { node: start });
+    let fallback = graph_nodes
+        .first()
+        .copied()
+        .ok_or(PcpRefusal::MissingModelRoot)?;
+    let graph_set: HashSet<_> = graph_nodes.iter().copied().collect();
+    if graph_set.len() != graph_nodes.len() {
+        return Err(PcpRefusal::GraphContractCoverageMismatch { node: fallback });
     }
+
+    let mut starts = Vec::new();
+    let mut finishes = Vec::new();
+    for node_id in graph_nodes {
+        match &model_node(model, *node_id)?.kind {
+            PowlNodeKind::Start => starts.push(*node_id),
+            PowlNodeKind::End => finishes.push(*node_id),
+            _ => {}
+        }
+    }
+    if starts.len() != 1 || finishes.len() != 1 {
+        return Err(PcpRefusal::GraphContractCoverageMismatch { node: fallback });
+    }
+    let start = starts[0];
+    let finish = finishes[0];
+
+    let mut matching_graphs = model.nodes.iter().filter_map(|node| match &node.kind {
+        PowlNodeKind::ChoiceGraph { nodes, edges } if nodes.as_slice() == graph_nodes => {
+            Some(edges.as_slice())
+        }
+        _ => None,
+    });
+    let graph_edges = matching_graphs
+        .next()
+        .ok_or(PcpRefusal::GraphContractCoverageMismatch { node: fallback })?;
+    if matching_graphs.next().is_some() {
+        return Err(PcpRefusal::GraphContractCoverageMismatch { node: fallback });
+    }
+
+    for edge in graph_edges {
+        if !graph_set.contains(&edge.from) || !graph_set.contains(&edge.to) {
+            return Err(PcpRefusal::GraphContractCoverageMismatch { node: edge.from });
+        }
+        if edge.to == start || edge.from == finish {
+            return Err(PcpRefusal::GraphContractCoverageMismatch {
+                node: if edge.to == start { start } else { finish },
+            });
+        }
+    }
+    for node_id in graph_nodes {
+        if !reachable_choice(start, *node_id, graph_edges)
+            || !reachable_choice(*node_id, finish, graph_edges)
+        {
+            return Err(PcpRefusal::GraphContractCoverageMismatch { node: *node_id });
+        }
+    }
+
     Ok((start, finish))
+}
+
+#[cfg(test)]
+mod choice_shape_falsifiers {
+    use super::*;
+
+    fn graph_model(graph_nodes: Vec<PowlNodeId>, edges: Vec<ChoiceGraphEdge>) -> Powl {
+        Powl {
+            nodes: vec![
+                PowlNode::new(PowlNodeId(0), PowlNodeKind::Start),
+                PowlNode::new(PowlNodeId(1), PowlNodeKind::Atom("step".to_string())),
+                PowlNode::new(PowlNodeId(2), PowlNodeKind::End),
+                PowlNode::new(
+                    PowlNodeId(3),
+                    PowlNodeKind::ChoiceGraph {
+                        nodes: graph_nodes,
+                        edges,
+                    },
+                ),
+                PowlNode::new(PowlNodeId(4), PowlNodeKind::Atom("dead".to_string())),
+            ],
+            edges: vec![],
+            root: Some(PowlNodeId(3)),
+        }
+    }
+
+    #[test]
+    fn terminals_are_derived_from_node_kind_not_vector_position() {
+        let graph_nodes = vec![PowlNodeId(1), PowlNodeId(2), PowlNodeId(0)];
+        let model = graph_model(
+            graph_nodes.clone(),
+            vec![
+                ChoiceGraphEdge {
+                    from: PowlNodeId(0),
+                    to: PowlNodeId(1),
+                },
+                ChoiceGraphEdge {
+                    from: PowlNodeId(1),
+                    to: PowlNodeId(2),
+                },
+            ],
+        );
+        assert_eq!(
+            choice_terminals(&model, &graph_nodes),
+            Ok((PowlNodeId(0), PowlNodeId(2)))
+        );
+    }
+
+    #[test]
+    fn unreachable_or_dead_end_graph_nodes_are_refused() {
+        let graph_nodes = vec![
+            PowlNodeId(0),
+            PowlNodeId(1),
+            PowlNodeId(4),
+            PowlNodeId(2),
+        ];
+        let model = graph_model(
+            graph_nodes.clone(),
+            vec![
+                ChoiceGraphEdge {
+                    from: PowlNodeId(0),
+                    to: PowlNodeId(1),
+                },
+                ChoiceGraphEdge {
+                    from: PowlNodeId(1),
+                    to: PowlNodeId(2),
+                },
+            ],
+        );
+        assert_eq!(
+            choice_terminals(&model, &graph_nodes),
+            Err(PcpRefusal::GraphContractCoverageMismatch {
+                node: PowlNodeId(4)
+            })
+        );
+    }
 }
 
 #[cfg(test)]
