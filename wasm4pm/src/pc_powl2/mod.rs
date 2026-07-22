@@ -1,20 +1,11 @@
-//! Executable PC-POWL2 checker, broker, receipt, and replay bridge.
+//! Executable PC-POWL2 checker, broker, receipt, replay, and conformance bridge.
 //!
-//! The Lean `mfw/pc-powl2` library remains the theorem authority. This module
-//! implements the bounded finite-state checker whose obligations mirror the
-//! Lean constructors:
-//!
-//! - atoms: exhaustive Hoare validity;
-//! - partial orders: one canonical topological execution plus exhaustive
-//!   relational commutation for every incomparable pair;
-//! - choice graphs: node-local contracts plus edge bridges for every finite
-//!   start-to-finish walk;
-//! - cycles: finite-prefix invariants and, for total correctness, a strictly
-//!   decreasing natural variant;
-//! - actuation: broker-only, authorization-bound, observed, receipted, and
-//!   replayable.
+//! The Lean `mfw/pc-powl2` library remains the theorem authority. Rust checks a
+//! bounded finite observation space directly. No source shape, claimed witness,
+//! or locally generated digest receives standing without semantic verification.
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::hash::Hash;
 use wasm4pm_compat::powl::{ChoiceGraphEdge, OrderEdge, Powl, PowlNode, PowlNodeId, PowlNodeKind};
@@ -26,23 +17,19 @@ use wasm4pm_compat::prelude::{
 
 pub type PcpResult<T> = Result<T, PcpRefusal>;
 
-/// A complete finite state space admitted as O* for exhaustive checking.
+/// A finite state domain admitted as O* for exhaustive checking.
+///
+/// `domain_digest` must identify the implementation of the state, assertion,
+/// action, and variant interpreters. The checker additionally binds the digest
+/// to the complete enumerated state space, so changing only the enumeration is
+/// detected mechanically.
 pub trait FiniteStateDomain {
     type State: Clone + Eq + Hash + Serialize + DeserializeOwned;
 
-    /// Digest of the admitted domain, including state and assertion/action vocabulary.
     fn domain_digest(&self) -> String;
-
-    /// Complete finite state space. Returning a sample is an invalid implementation.
     fn states(&self) -> Vec<Self::State>;
-
-    /// Interpret a named assertion over one admitted state.
     fn holds(&self, assertion: &AssertionRef, state: &Self::State) -> PcpResult<bool>;
-
-    /// Execute one named atomic action.
     fn step(&self, action: &str, state: &Self::State) -> Result<Self::State, String>;
-
-    /// Interpret a named natural-number ranking function.
     fn variant(&self, variant: &VariantRef, state: &Self::State) -> PcpResult<u64>;
 }
 
@@ -58,6 +45,7 @@ pub struct VerificationReport {
     pub admitted: bool,
     pub standing: VerificationStanding,
     pub checked_states: usize,
+    pub domain_digest: String,
     pub model_digest: String,
     pub proof_digest: String,
 }
@@ -66,14 +54,40 @@ mod broker;
 mod checker;
 pub mod dfcm;
 
-pub use broker::{replay_receipt, PcPowl2Broker};
+pub use broker::{replay_receipt, replay_receipt_chain, PcPowl2Broker};
 pub use checker::PcPowl2Checker;
 
+fn canonicalize_json(value: Value) -> Value {
+    match value {
+        Value::Array(values) => Value::Array(values.into_iter().map(canonicalize_json).collect()),
+        Value::Object(values) => {
+            let mut entries: Vec<_> = values.into_iter().collect();
+            entries.sort_by(|left, right| left.0.cmp(&right.0));
+            let mut canonical = serde_json::Map::new();
+            for (key, value) in entries {
+                canonical.insert(key, canonicalize_json(value));
+            }
+            Value::Object(canonical)
+        }
+        scalar => scalar,
+    }
+}
+
+/// BLAKE3 over recursively key-sorted JSON.
+///
+/// Plain `serde_json::to_vec` is not canonical for user-defined map-backed
+/// states. Sorting recursively prevents insertion order from changing standing.
 pub fn canonical_digest<T: Serialize>(value: &T) -> PcpResult<String> {
-    let bytes =
-        serde_json::to_vec(value).map_err(|error| PcpRefusal::ReceiptSerializationFailed {
+    let value = serde_json::to_value(value).map_err(|error| {
+        PcpRefusal::ReceiptSerializationFailed {
             reason: error.to_string(),
-        })?;
+        }
+    })?;
+    let bytes = serde_json::to_vec(&canonicalize_json(value)).map_err(|error| {
+        PcpRefusal::ReceiptSerializationFailed {
+            reason: error.to_string(),
+        }
+    })?;
     Ok(format!("blake3:{}", blake3::hash(&bytes).to_hex()))
 }
 
@@ -94,6 +108,24 @@ fn model_node(model: &Powl, id: PowlNodeId) -> PcpResult<&PowlNode> {
 
 fn proof_map(proofs: &[ProofTerm]) -> HashMap<PowlNodeId, &ProofTerm> {
     proofs.iter().map(|proof| (proof.node(), proof)).collect()
+}
+
+fn collect_proofs<'a>(proof: &'a ProofTerm, proofs: &mut HashMap<PowlNodeId, &'a ProofTerm>) {
+    proofs.entry(proof.node()).or_insert(proof);
+    match proof {
+        ProofTerm::Boundary { .. } | ProofTerm::Atom { .. } => {}
+        ProofTerm::Consequence { inner, .. } => collect_proofs(inner, proofs),
+        ProofTerm::PartialOrder { children, .. } => {
+            for child in children {
+                collect_proofs(child, proofs);
+            }
+        }
+        ProofTerm::ChoiceGraph { nodes, .. } => {
+            for node in nodes {
+                collect_proofs(&node.proof, proofs);
+            }
+        }
+    }
 }
 
 fn ordered_pair(left: PowlNodeId, right: PowlNodeId) -> (PowlNodeId, PowlNodeId) {
@@ -161,7 +193,7 @@ fn incomparable_pairs(model: &Powl, children: &[PowlNodeId]) -> Vec<(PowlNodeId,
     for (index, left) in children.iter().copied().enumerate() {
         for right in children.iter().copied().skip(index + 1) {
             if !reachable_order(left, right, &edges) && !reachable_order(right, left, &edges) {
-                pairs.push((left, right));
+                pairs.push(ordered_pair(left, right));
             }
         }
     }
@@ -194,12 +226,23 @@ fn reachable_choice(start: PowlNodeId, target: PowlNodeId, edges: &[ChoiceGraphE
     false
 }
 
-fn cyclic_edges(_nodes: &[PowlNodeId], edges: &[ChoiceGraphEdge]) -> Vec<ChoiceGraphEdge> {
+fn cyclic_edges(edges: &[ChoiceGraphEdge]) -> Vec<ChoiceGraphEdge> {
     edges
         .iter()
         .copied()
         .filter(|edge| reachable_choice(edge.to, edge.from, edges))
         .collect()
+}
+
+fn choice_terminals(model: &Powl, graph_nodes: &[PowlNodeId]) -> PcpResult<(PowlNodeId, PowlNodeId)> {
+    let start = *graph_nodes.first().ok_or(PcpRefusal::MissingModelRoot)?;
+    let finish = *graph_nodes.last().ok_or(PcpRefusal::MissingModelRoot)?;
+    if !matches!(&model_node(model, start)?.kind, PowlNodeKind::Start)
+        || !matches!(&model_node(model, finish)?.kind, PowlNodeKind::End)
+    {
+        return Err(PcpRefusal::GraphContractCoverageMismatch { node: start });
+    }
+    Ok((start, finish))
 }
 
 #[cfg(test)]
