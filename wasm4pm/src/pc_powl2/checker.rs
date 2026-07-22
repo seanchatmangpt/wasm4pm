@@ -688,7 +688,14 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
             });
         }
         let mut atoms = Vec::new();
-        self.validate_selection_inner(certificate, &certificate.proof, selection, &mut atoms, 1)?;
+        let mut visits = 0usize;
+        self.validate_selection_inner(
+            certificate,
+            &certificate.proof,
+            selection,
+            &mut atoms,
+            &mut visits,
+        )?;
         if atoms.len() > certificate.bounds.max_trace_steps {
             return Err(PcpRefusal::TraceStepBoundExceeded {
                 actual: atoms.len(),
@@ -704,12 +711,21 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
         proof: &ProofTerm,
         selection: &ExecutionSelection,
         atoms: &mut Vec<PowlNodeId>,
-        visits: usize,
+        visits: &mut usize,
     ) -> PcpResult<()> {
-        if visits > certificate.bounds.max_choice_visits || selection.node() != proof.node() {
+        if selection.node() != proof.node() {
             return Err(PcpRefusal::SelectionNotAdmitted {
                 node: selection.node(),
             });
+        }
+        if !matches!(proof, ProofTerm::Consequence { .. }) {
+            *visits = visits.saturating_add(1);
+            if *visits > certificate.bounds.max_choice_visits {
+                return Err(PcpRefusal::ChoiceVisitBoundExceeded {
+                    actual: *visits,
+                    maximum: certificate.bounds.max_choice_visits,
+                });
+            }
         }
         let node = model_node(&certificate.model, selection.node())?;
         match proof {
@@ -753,13 +769,7 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
                         .get(&child.node())
                         .copied()
                         .ok_or(PcpRefusal::SelectionNotAdmitted { node: child.node() })?;
-                    self.validate_selection_inner(
-                        certificate,
-                        child_proof,
-                        child,
-                        atoms,
-                        visits + 1,
-                    )?;
+                    self.validate_selection_inner(certificate, child_proof, child, atoms, visits)?;
                 }
                 Ok(())
             }
@@ -796,13 +806,7 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
                         .get(&child.node())
                         .copied()
                         .ok_or(PcpRefusal::SelectionNotAdmitted { node: child.node() })?;
-                    self.validate_selection_inner(
-                        certificate,
-                        child_proof,
-                        child,
-                        atoms,
-                        visits + 1,
-                    )?;
+                    self.validate_selection_inner(certificate, child_proof, child, atoms, visits)?;
                 }
                 Ok(())
             }

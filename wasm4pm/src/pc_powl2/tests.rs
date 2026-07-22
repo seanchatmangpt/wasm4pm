@@ -490,3 +490,30 @@ fn standalone_replay_does_not_launder_broker_provenance() {
         Err(PcpRefusal::ReceiptDigestMismatch)
     );
 }
+
+#[test]
+fn selection_visit_bound_counts_every_selected_node() {
+    let domain = ToyDomain;
+    let checker = PcPowl2Checker::new(&domain);
+    let mut certificate = partial_order_certificate(false);
+    certificate.bounds.max_choice_visits = 2;
+    checker.bind_certificate(&mut certificate).unwrap();
+    let selection = ExecutionSelection::PartialOrder {
+        node: PowlNodeId(2),
+        children: vec![
+            ExecutionSelection::Atom {
+                node: PowlNodeId(0),
+            },
+            ExecutionSelection::Atom {
+                node: PowlNodeId(1),
+            },
+        ],
+    };
+    assert_eq!(
+        checker.validate_selection(&certificate, &selection),
+        Err(PcpRefusal::ChoiceVisitBoundExceeded {
+            actual: 3,
+            maximum: 2,
+        })
+    );
+}
