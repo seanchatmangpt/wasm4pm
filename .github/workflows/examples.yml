@@ -7,11 +7,13 @@ on:
       - 'examples/**'
       - 'packages/**'
       - 'wasm4pm/**'
+      - '.github/workflows/examples.yml'
   pull_request:
     paths:
       - 'examples/**'
       - 'packages/**'
       - 'wasm4pm/**'
+      - '.github/workflows/examples.yml'
 
 jobs:
   validate:
@@ -27,6 +29,9 @@ jobs:
 
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
+
+      - name: Install matching wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.100 --locked
 
       - uses: pnpm/action-setup@v4
 
