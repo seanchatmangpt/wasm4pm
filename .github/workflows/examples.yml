@@ -15,6 +15,10 @@ on:
       - 'wasm4pm/**'
       - '.github/workflows/examples.yml'
 
+concurrency:
+  group: examples-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate examples
