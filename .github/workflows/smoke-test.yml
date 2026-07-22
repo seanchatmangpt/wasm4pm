@@ -10,6 +10,10 @@ on:
       - '.github/workflows/smoke-test.yml'
   workflow_dispatch:
 
+concurrency:
+  group: npm-install-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-C target-feature=+simd128"
@@ -78,16 +82,13 @@ jobs:
             const pm = require('wasm4pm');
             console.log('--- Smoke Test: require() ---');
 
-            // 1. Module loads
             console.log('OK require(\"wasm4pm\")');
 
-            // 2. Classes exported
             if (!pm.WasmEventLog)  throw new Error('WasmEventLog not exported');
             if (!pm.WasmOCEL)      throw new Error('WasmOCEL not exported');
             if (!pm.OperationResult) throw new Error('OperationResult not exported');
             console.log('OK classes: WasmEventLog, WasmOCEL, OperationResult');
 
-            // 3. Discovery functions exported
             const discoveryFns = [
               'discover_dfg',
               'discover_alpha_plus_plus',
@@ -100,7 +101,6 @@ jobs:
             }
             console.log('OK discovery functions:', discoveryFns.join(', '));
 
-            // 4. Analysis functions exported
             const analysisFns = [
               'analyze_trace_variants',
               'analyze_case_duration',
@@ -111,7 +111,6 @@ jobs:
             }
             console.log('OK analysis functions:', analysisFns.join(', '));
 
-            // 5. I/O functions exported
             const ioFns = [
               'load_eventlog_from_json',
               'load_eventlog_from_xes',
@@ -122,16 +121,13 @@ jobs:
             }
             console.log('OK I/O functions:', ioFns.join(', '));
 
-            // 6. Utility exports
             if (typeof pm.get_version !== 'function') throw new Error('get_version not exported');
             if (typeof pm.clear_all_objects !== 'function') throw new Error('clear_all_objects not exported');
             console.log('OK utility functions: get_version, clear_all_objects');
 
-            // 7. Actually call a function to verify WASM loads and executes
             const version = pm.get_version();
             console.log('OK get_version() returned:', version);
 
-            // 8. Load an event log and run discovery
             const sv = (s) => ({ tag: 'String', value: s });
             const sampleLog = JSON.stringify({
               attributes: {},
