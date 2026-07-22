@@ -29,8 +29,11 @@ jobs:
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
-      - name: Require committed formatting
-        run: cargo fmt --all -- --check
+      - name: Require committed formatting for owned Rust files
+        run: >-
+          rustfmt --edition 2021 --check
+          wasm4pm/src/pc_powl2/dfcm.rs
+          wasm4pm/src/pc_powl2/mod.rs
       - name: Manufacture, classify, and replay H(4,8)
         run: cargo test -p wasm4pm pc_powl2::dfcm
       - name: Refuse warnings and weak formulations
