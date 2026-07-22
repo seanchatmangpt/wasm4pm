@@ -48,8 +48,6 @@ jobs:
           wasm4pm/src/pc_powl2/dfcm.rs
           wasm4pm/src/pc_powl2/tests.rs
       - name: Run checker, broker, replay, falsifier, and 4096-case suite
-        id: hardening_test
-        continue-on-error: true
         run: cargo test -p wasm4pm --lib pc_powl2 > pc-powl2-hardening-test.log 2>&1
       - name: Upload hardening test receipt
         if: always()
@@ -58,14 +56,7 @@ jobs:
           name: pc-powl2-hardening-test-log
           path: pc-powl2-hardening-test.log
           if-no-files-found: error
-      - name: Surface hardening refusal
-        if: steps.hardening_test.outcome != 'success'
-        run: |
-          tail -n 160 pc-powl2-hardening-test.log
-          exit 1
       - name: Refuse warnings and weak formulations
-        id: hardening_clippy
-        continue-on-error: true
         run: cargo clippy -p wasm4pm --lib -- -D warnings > pc-powl2-hardening-clippy.log 2>&1
       - name: Upload clippy receipt
         if: always()
@@ -74,8 +65,3 @@ jobs:
           name: pc-powl2-hardening-clippy-log
           path: pc-powl2-hardening-clippy.log
           if-no-files-found: error
-      - name: Surface clippy refusal
-        if: steps.hardening_clippy.outcome != 'success'
-        run: |
-          tail -n 160 pc-powl2-hardening-clippy.log
-          exit 1
