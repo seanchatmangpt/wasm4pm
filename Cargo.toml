@@ -26,9 +26,9 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-# Stacked PR dependency. Replace with the released compat version after
-# seanchatmangpt/wasm4pm-compat#agent/pc-powl2-wire is merged and published.
-wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", branch = "agent/pc-powl2-wire", features = ["formats", "strict", "wasm4pm"] }
+# Exact green wire revision. Replace with the released compat version only
+# after the human-controlled crates.io publication receipt exists.
+wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", rev = "c3edd4c25663f5ef6a552abb2a1b9e8d23ac4d5b", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.7.1", path = "wasm4pm", features = ["cloud"] }
 wasm4pm-cognition = { version = "26.7.1", path = "crates/wasm4pm-cognition" }
 prolog8 = { version = "26.7.1", path = "crates/prolog8" }
