@@ -32,6 +32,11 @@ jobs:
         run: |
           ! grep -R "StandingCeiling\|SemanticMutationAfterReceipt\|OperatorWord" wasm4pm/src/pc_powl2
           ! grep -R "DFCM_ADMITTED_WORD_COUNT\|DFCM_REFUSED_WORD_COUNT" wasm4pm/src/pc_powl2
+      - name: Refuse staging and self-modifying CI scaffolding
+        run: |
+          test ! -e .agents/pc-powl2-hardening
+          test ! -e .github/workflows/apply-pc-powl2-hardening.yml
+          test ! -e .github/workflows/format-pc-powl2-hardening.yml
       - name: Require committed formatting for owned Rust files
         run: >-
           rustfmt --edition 2021 --check --config skip_children=true
