@@ -64,6 +64,7 @@ pub struct VerificationReport {
 
 mod broker;
 mod checker;
+pub mod dfcm;
 
 pub use broker::{replay_receipt, PcPowl2Broker};
 pub use checker::PcPowl2Checker;
