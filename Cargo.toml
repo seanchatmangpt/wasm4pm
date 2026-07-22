@@ -26,7 +26,9 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-wasm4pm-compat = { version = "26.6", features = ["formats", "strict", "wasm4pm"] }
+# Stacked PR dependency. Replace with the released compat version after
+# seanchatmangpt/wasm4pm-compat#agent/pc-powl2-wire is merged and published.
+wasm4pm-compat = { git = "https://github.com/seanchatmangpt/wasm4pm-compat", branch = "agent/pc-powl2-wire", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.7.1", path = "wasm4pm", features = ["cloud"] }
 wasm4pm-cognition = { version = "26.7.1", path = "crates/wasm4pm-cognition" }
 prolog8 = { version = "26.7.1", path = "crates/prolog8" }
@@ -47,5 +49,3 @@ strip = "debuginfo"
 [profile.bench]
 opt-level = 3
 lto = false
-
-
