@@ -1,4 +1,4 @@
-name: PC-POWL2 8^4 DfCM
+name: PC-POWL2 Hardening and 8^4 Conformance
 
 on:
   pull_request:
@@ -6,8 +6,7 @@ on:
       - main
       - agent/pc-powl2-engine
     paths:
-      - "wasm4pm/src/pc_powl2/dfcm.rs"
-      - "wasm4pm/src/pc_powl2/mod.rs"
+      - "wasm4pm/src/pc_powl2/**"
       - ".github/workflows/pc-powl2-8pow4.yml"
   workflow_dispatch:
 
@@ -15,54 +14,61 @@ permissions:
   contents: read
 
 concurrency:
-  group: pc-powl2-8pow4-${{ github.ref }}
+  group: pc-powl2-hardening-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  closure:
-    name: Exact 4096-cell closure and replay
+  hardening:
+    name: Checker, broker, replay, and 4096-case conformance
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
+      - name: Refuse retired symbolic standing machinery
+        run: |
+          ! grep -R "StandingCeiling\|SemanticMutationAfterReceipt\|OperatorWord" wasm4pm/src/pc_powl2
+          ! grep -R "DFCM_ADMITTED_WORD_COUNT\|DFCM_REFUSED_WORD_COUNT" wasm4pm/src/pc_powl2
       - name: Require committed formatting for owned Rust files
         run: >-
           rustfmt --edition 2021 --check --config skip_children=true
-          wasm4pm/src/pc_powl2/dfcm.rs
           wasm4pm/src/pc_powl2/mod.rs
-      - name: Manufacture, classify, and replay H(4,8)
-        id: closure_test
+          wasm4pm/src/pc_powl2/checker.rs
+          wasm4pm/src/pc_powl2/broker.rs
+          wasm4pm/src/pc_powl2/dfcm.rs
+          wasm4pm/src/pc_powl2/tests.rs
+      - name: Run checker, broker, replay, falsifier, and 4096-case suite
+        id: hardening_test
         continue-on-error: true
-        run: cargo test -p wasm4pm --lib pc_powl2::dfcm > pc-powl2-8pow4-test.log 2>&1
-      - name: Upload closure test receipt
+        run: cargo test -p wasm4pm --lib pc_powl2 > pc-powl2-hardening-test.log 2>&1
+      - name: Upload hardening test receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc-powl2-8pow4-test-log
-          path: pc-powl2-8pow4-test.log
+          name: pc-powl2-hardening-test-log
+          path: pc-powl2-hardening-test.log
           if-no-files-found: error
-      - name: Surface closure test refusal
-        if: steps.closure_test.outcome != 'success'
+      - name: Surface hardening refusal
+        if: steps.hardening_test.outcome != 'success'
         run: |
-          tail -n 120 pc-powl2-8pow4-test.log
+          tail -n 160 pc-powl2-hardening-test.log
           exit 1
       - name: Refuse warnings and weak formulations
-        id: closure_clippy
+        id: hardening_clippy
         continue-on-error: true
-        run: cargo clippy -p wasm4pm --lib -- -D warnings > pc-powl2-8pow4-clippy.log 2>&1
+        run: cargo clippy -p wasm4pm --lib -- -D warnings > pc-powl2-hardening-clippy.log 2>&1
       - name: Upload clippy receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pc-powl2-8pow4-clippy-log
-          path: pc-powl2-8pow4-clippy.log
+          name: pc-powl2-hardening-clippy-log
+          path: pc-powl2-hardening-clippy.log
           if-no-files-found: error
       - name: Surface clippy refusal
-        if: steps.closure_clippy.outcome != 'success'
+        if: steps.hardening_clippy.outcome != 'success'
         run: |
-          tail -n 120 pc-powl2-8pow4-clippy.log
+          tail -n 160 pc-powl2-hardening-clippy.log
           exit 1
