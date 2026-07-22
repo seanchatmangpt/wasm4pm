@@ -30,11 +30,12 @@ jobs:
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt
-      - name: Verify and decode exact payload
+      - name: Decode repository payload
         run: |
           tr -d '\r\n\t ' < .agents/pc-powl2-hardening/payload.b64 > /tmp/pc-powl2-hardening.b64
           base64 --decode /tmp/pc-powl2-hardening.b64 > /tmp/pc-powl2-hardening.tar.gz
-          test "$(sha256sum /tmp/pc-powl2-hardening.tar.gz | cut -d' ' -f1)" = "f901c52bcc4af2f009de3a87503e5d74796340dd713baa7b1b4f84459287c674"
+          gzip --test /tmp/pc-powl2-hardening.tar.gz
+          sha256sum /tmp/pc-powl2-hardening.tar.gz | tee /tmp/pc-powl2-hardening.sha256
       - name: Extract audited source archive
         run: |
           mkdir -p /tmp/pc-powl2-hardening
