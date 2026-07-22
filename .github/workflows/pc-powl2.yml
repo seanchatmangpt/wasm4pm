@@ -1,0 +1,34 @@
+name: PC-POWL2 Engine
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "wasm4pm/src/graduation.rs"
+      - "wasm4pm/src/pc_powl2/**"
+      - ".github/workflows/pc-powl2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pc-powl2-engine-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly-2026-04-15
+        with:
+          components: rustfmt, clippy
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Compile and run PC-POWL2 verifier fixtures
+        run: cargo test -p wasm4pm pc_powl2
+      - name: Clippy PC-POWL2 engine
+        run: cargo clippy -p wasm4pm --tests -- -D warnings
