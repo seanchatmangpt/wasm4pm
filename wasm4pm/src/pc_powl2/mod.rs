@@ -92,9 +92,7 @@ pub use checker::PcPowl2Checker;
 
 fn canonicalize_json(value: Value) -> Value {
     match value {
-        Value::Array(values) => {
-            Value::Array(values.into_iter().map(canonicalize_json).collect())
-        }
+        Value::Array(values) => Value::Array(values.into_iter().map(canonicalize_json).collect()),
         Value::Object(values) => {
             let mut entries: Vec<_> = values.into_iter().collect();
             entries.sort_by(|left, right| left.0.cmp(&right.0));
@@ -113,11 +111,10 @@ fn canonicalize_json(value: Value) -> Value {
 /// Plain `serde_json::to_vec` is not canonical for user-defined map-backed
 /// states. Sorting recursively prevents insertion order from changing standing.
 pub fn canonical_digest<T: Serialize>(value: &T) -> PcpResult<String> {
-    let value = serde_json::to_value(value).map_err(|error| {
-        PcpRefusal::ReceiptSerializationFailed {
+    let value =
+        serde_json::to_value(value).map_err(|error| PcpRefusal::ReceiptSerializationFailed {
             reason: error.to_string(),
-        }
-    })?;
+        })?;
     let bytes = serde_json::to_vec(&canonicalize_json(value)).map_err(|error| {
         PcpRefusal::ReceiptSerializationFailed {
             reason: error.to_string(),
@@ -269,13 +266,12 @@ fn cyclic_edges(edges: &[ChoiceGraphEdge]) -> Vec<ChoiceGraphEdge> {
         .collect()
 }
 
-fn choice_terminals(model: &Powl, graph_nodes: &[PowlNodeId]) -> PcpResult<(PowlNodeId, PowlNodeId)> {
-    let start = *graph_nodes
-        .first()
-        .ok_or(PcpRefusal::MissingModelRoot)?;
-    let finish = *graph_nodes
-        .last()
-        .ok_or(PcpRefusal::MissingModelRoot)?;
+fn choice_terminals(
+    model: &Powl,
+    graph_nodes: &[PowlNodeId],
+) -> PcpResult<(PowlNodeId, PowlNodeId)> {
+    let start = *graph_nodes.first().ok_or(PcpRefusal::MissingModelRoot)?;
+    let finish = *graph_nodes.last().ok_or(PcpRefusal::MissingModelRoot)?;
     if !matches!(&model_node(model, start)?.kind, PowlNodeKind::Start)
         || !matches!(&model_node(model, finish)?.kind, PowlNodeKind::End)
     {
