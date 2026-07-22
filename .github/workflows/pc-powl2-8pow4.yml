@@ -37,15 +37,28 @@ jobs:
           test ! -e .agents/pc-powl2-hardening
           test ! -e .github/workflows/apply-pc-powl2-hardening.yml
           test ! -e .github/workflows/format-pc-powl2-hardening.yml
-      - name: Require committed formatting for owned Rust files
-        run: >-
-          rustfmt --edition 2021 --check --config skip_children=true
-          wasm4pm/src/pc_powl2/mod.rs
-          wasm4pm/src/pc_powl2/checker.rs
-          wasm4pm/src/pc_powl2/commutation.rs
-          wasm4pm/src/pc_powl2/broker.rs
-          wasm4pm/src/pc_powl2/dfcm.rs
-          wasm4pm/src/pc_powl2/tests.rs
+      - name: Manufacture formatted authority candidate
+        id: formatting
+        continue-on-error: true
+        run: |
+          rustfmt --edition 2021 --config skip_children=true \
+            wasm4pm/src/pc_powl2/mod.rs \
+            wasm4pm/src/pc_powl2/checker.rs \
+            wasm4pm/src/pc_powl2/commutation.rs \
+            wasm4pm/src/pc_powl2/broker.rs \
+            wasm4pm/src/pc_powl2/dfcm.rs \
+            wasm4pm/src/pc_powl2/tests.rs
+          git diff --exit-code -- wasm4pm/src/pc_powl2
+      - name: Upload formatted authority receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pc-powl2-formatted-authority
+          path: wasm4pm/src/pc_powl2
+          if-no-files-found: error
+      - name: Refuse uncommitted formatting
+        if: steps.formatting.outcome != 'success'
+        run: exit 1
       - name: Run checker, broker, replay, falsifier, and 4096-case suite
         id: hardening_test
         continue-on-error: true
