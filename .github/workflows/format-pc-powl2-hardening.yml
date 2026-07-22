@@ -1,0 +1,50 @@
+name: Format PC-POWL2 Hardening
+
+on:
+  pull_request:
+    branches:
+      - agent/pc-powl2-engine
+    paths:
+      - "wasm4pm/src/pc_powl2/**"
+      - ".github/workflows/format-pc-powl2-hardening.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: format-pc-powl2-hardening-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HEAD_BRANCH }}
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt
+      - name: Format owned source files
+        run: >-
+          rustfmt --edition 2021 --config skip_children=true
+          wasm4pm/src/pc_powl2/mod.rs
+          wasm4pm/src/pc_powl2/checker.rs
+          wasm4pm/src/pc_powl2/broker.rs
+          wasm4pm/src/pc_powl2/dfcm.rs
+          wasm4pm/src/pc_powl2/tests.rs
+      - name: Commit normalized sources
+        run: |
+          git config user.name "pc-powl2-format-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add wasm4pm/src/pc_powl2
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Format hardened PC-POWL2 authority files"
+          git push origin "HEAD:${HEAD_BRANCH}"
