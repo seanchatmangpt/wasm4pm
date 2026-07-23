@@ -7,6 +7,8 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - '**/package.json'
+      - 'crates/wasm4pm-cognition/**'
+      - 'scripts/bootstrap-cognition-wasm.sh'
       - '.github/workflows/pnpm-install.yml'
   push:
     branches:
@@ -16,6 +18,8 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - '**/package.json'
+      - 'crates/wasm4pm-cognition/**'
+      - 'scripts/bootstrap-cognition-wasm.sh'
       - '.github/workflows/pnpm-install.yml'
   workflow_dispatch:
 
@@ -47,6 +51,9 @@ jobs:
 
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
+
+      - name: Bootstrap cognition WASM packages
+        run: bash scripts/bootstrap-cognition-wasm.sh
 
       - name: Install workspace dependencies
         shell: bash
