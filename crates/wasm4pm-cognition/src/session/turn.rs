@@ -82,7 +82,7 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
     });
 
     if let Some(observation) = &input.observation {
-        if observation.text.as_bytes().len() > input.domain_pack.bounds.max_observation_bytes {
+        if observation.text.len() > input.domain_pack.bounds.max_observation_bytes {
             return Err(SessionError::ObservationTooLarge);
         }
         if let Some(existing) = state.observations.iter().find(|o| o.id == observation.id) {
@@ -221,8 +221,11 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
     } else {
         None
     };
-    let (phase, phase_label, complete) =
-        current_phase(&input.domain_pack, &state.committed_track, &covered);
+    let (phase, phase_label, complete) = current_phase(
+        &input.domain_pack,
+        state.committed_track.as_deref(),
+        &covered,
+    );
 
     trace.push(TraceStep {
         step: trace.len(),
