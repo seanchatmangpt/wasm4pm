@@ -1,46 +1,43 @@
 //! Browser entrypoint for `@wasm4pm/cognition`.
 //!
-//! Node consumers import from the package root and the default
-//! `wasm4pm-cognition` (`--target nodejs`) build is used. Browser/bundler
-//! consumers (Vite, Next, Webpack, esbuild) should import from
-//! `@wasm4pm/cognition/browser` and call `initCognitionBrowser({ wasmUrl })`
-//! once before any wrapper (`cognitionRun`, `cognitionVerify`, …).
-//!
-//! This points the singleton `WasmLoader` at the `--target web`
-//! (`wasm4pm-cognition-web`) build, whose default export is an async `init()`
-//! that fetches + instantiates the `_bg.wasm`. `WasmLoader.doInit` already
-//! recognizes that shape (default export is a function) and awaits it.
+//! Browser applications should initialize the singleton once before invoking any
+//! wrapper. A literal `moduleLoader` callback is preferred because bundlers can
+//! then discover and include the generated web-target JavaScript module.
 
-import { WasmLoader, type WasmLoaderConfig } from './init.js';
+import {
+  WasmLoader,
+  type CognitionWasmModule,
+  type WasmLoaderConfig,
+} from './init.js';
 
-/** Module specifier for the `--target web` (fetch-based, ESM) cognition build. */
+/** Module specifier used when no bundle-visible loader is supplied. */
 export const BROWSER_MODULE_PATH = 'wasm4pm-cognition-web';
 
 export interface BrowserInitOptions {
-  /**
-   * URL of the `wasm4pm_cognition_bg.wasm` asset. Under most bundlers, resolve
-   * it from the package so the bundler emits/serves the asset, e.g.:
-   *
-   *   import wasmUrl from 'wasm4pm-cognition-web/wasm4pm_cognition_bg.wasm?url';
-   *
-   * Omit to let the web build resolve the wasm relative to its own module URL
-   * (works under bundlers that rewrite `new URL(..., import.meta.url)`).
-   */
+  /** URL of the generated `wasm4pm_cognition_bg.wasm` asset. */
   wasmUrl?: string | URL;
-  /** Override the web build specifier (defaults to {@link BROWSER_MODULE_PATH}). */
+  /** Override the fallback web-module specifier. */
   modulePath?: string;
+  /**
+   * Bundle-visible generated-module factory, for example:
+   * `() => import('./pkg-web/wasm4pm_cognition.js')`.
+   */
+  moduleLoader?: () => Promise<unknown>;
 }
 
 /**
- * Initialize the cognition WASM kernel for the browser. Idempotent: the
- * underlying `WasmLoader` is a singleton, so repeated calls resolve the same
- * instantiation. Call `WasmLoader.reset()` first if you need to re-point it.
+ * Initialize the cognition WASM kernel for the browser.
+ *
+ * The returned loader is the same singleton consumed by all package wrappers.
+ * Calling this before a wrapper also ensures its browser configuration wins over
+ * the default Node module path.
  */
 export async function initCognitionBrowser(
   options: BrowserInitOptions = {},
 ): Promise<WasmLoader> {
   const config: WasmLoaderConfig = {
     modulePath: options.modulePath ?? BROWSER_MODULE_PATH,
+    moduleLoader: options.moduleLoader,
     wasmUrl: options.wasmUrl,
   };
   const loader = WasmLoader.getInstance(config);
@@ -49,4 +46,4 @@ export async function initCognitionBrowser(
 }
 
 export { WasmLoader } from './init.js';
-export type { WasmLoaderConfig } from './init.js';
+export type { CognitionWasmModule, WasmLoaderConfig } from './init.js';
