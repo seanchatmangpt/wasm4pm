@@ -11,7 +11,6 @@ export * from './contract/show.js';
 export * from './contract/verify.js';
 export * from './contract/guard.js';
 export * from './session/index.js';
-export * from './receipt/chain.js';
 export * from './receipt/replay.js';
 export * from './adversarial/catalogue.js';
 export * from './bvc.js';

@@ -31,7 +31,9 @@ export default defineConfig({
     timezoneId: 'America/Los_Angeles',
     viewport: { width: 1600, height: 1000 },
     deviceScaleFactor: 1,
-    reducedMotion: 'reduce',
+    contextOptions: {
+      reducedMotion: 'reduce',
+    },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

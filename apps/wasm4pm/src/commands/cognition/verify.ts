@@ -10,7 +10,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { ReceiptChain } from '@wasm4pm/cognition';
+import { ReceiptChain } from '@wasm4pm/cognition/receipt';
 import { loadReceipt, mapWasmError } from './_shared.js';
 import { exitWithFlush } from '../../otel/exit.js';
 import { withSpanRaw } from '../_otel.js';

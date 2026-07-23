@@ -50,7 +50,7 @@ function visibleClock(): string {
 }
 
 export default function InterviewWorkspace() {
-  const [state, setState] = useState<SessionState>();
+  const [state, setState] = useState<SessionState | undefined>(undefined);
   const [code, setCode] = useState<CodeProjection | null>(null);
   const [transcript, setTranscript] = useState('');
   const [bootStatus, setBootStatus] = useState<BootStatus>('loading');
@@ -58,7 +58,7 @@ export default function InterviewWorkspace() {
   const [error, setError] = useState('');
   const [turnReceipt, setTurnReceipt] = useState('');
   const [codeReceipt, setCodeReceipt] = useState('');
-  const stateRef = useRef<SessionState>();
+  const stateRef = useRef<SessionState | undefined>(undefined);
   const turnLocked = useRef(false);
 
   const commitVisibleState = useCallback(

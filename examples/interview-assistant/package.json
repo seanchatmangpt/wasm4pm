@@ -22,7 +22,7 @@
     "wasm4pm-cognition-web": "file:../../packages/cognition/pkg-web"
   },
   "devDependencies": {
-    "@playwright/test": "1.58.2",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^20.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
