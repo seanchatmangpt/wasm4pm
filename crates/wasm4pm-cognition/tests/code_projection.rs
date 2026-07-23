@@ -1,5 +1,6 @@
 use wasm4pm_cognition::session::{
-    project_python_code, run_session_turn, Confirmation, DomainPack, Observation, SessionTurnInput,
+    project_python_code, run_session_turn, Confirmation, DomainPack, Observation, SessionError,
+    SessionTurnInput,
 };
 
 fn pack() -> DomainPack {
@@ -91,4 +92,21 @@ fn code_projection_refuses_derived_state_forgery() {
     let error = project_python_code(&domain, &turn.state)
         .expect_err("projection must verify state before selecting code");
     assert!(error.to_string().contains("hash mismatch") || error.to_string().contains("invalid"));
+}
+
+#[test]
+fn canonical_track_ids_cannot_impersonate_the_artifact_domain() {
+    let mut alternate = pack();
+    alternate.id = "attacker-controlled-domain".to_string();
+    let turn = run_session_turn(&SessionTurnInput {
+        domain_pack: alternate.clone(),
+        previous_state: None,
+        observation: Some(coordinate_observation()),
+        confirmation: None,
+    })
+    .expect("alternate domain remains a valid cognition domain");
+
+    let error = project_python_code(&alternate, &turn.state)
+        .expect_err("canonical Python must be bound to the exact admitted domain");
+    assert!(matches!(error, SessionError::InvalidDomain { .. }));
 }
