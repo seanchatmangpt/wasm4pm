@@ -1,10 +1,31 @@
 //! Hearsay-style fusion, MYCIN-style rules, and phase selection.
 
-use super::matcher::{active_propositions, concept_confidence};
+use super::matcher::active_propositions;
 use super::model::*;
 use crate::breeds::hearsay::noisy_or;
 use crate::breeds::TraceStep;
 use std::collections::{BTreeMap, BTreeSet};
+
+type ConceptScores = BTreeMap<String, BTreeMap<String, f32>>;
+
+fn update_concept_score(
+    scores: &mut ConceptScores,
+    track_id: &str,
+    concept: &str,
+    weight: f32,
+) {
+    let concepts = scores.entry(track_id.to_string()).or_default();
+    let previous = concepts.get(concept).copied().unwrap_or(0.0);
+    concepts.insert(concept.to_string(), noisy_or(previous, weight));
+}
+
+fn concept_score(scores: &ConceptScores, track_id: &str, concept: &str) -> f32 {
+    scores
+        .get(track_id)
+        .and_then(|concepts| concepts.get(concept))
+        .copied()
+        .unwrap_or(0.0)
+}
 
 pub(super) struct Analysis {
     pub(super) hypotheses: Vec<TrackHypothesis>,
@@ -31,9 +52,8 @@ pub(super) fn analyze(
         .iter()
         .map(|track| (track.id.clone(), BTreeSet::new()))
         .collect();
-
-    let mut concept_support: BTreeMap<String, f32> = BTreeMap::new();
-    let mut concept_contradiction: BTreeMap<String, f32> = BTreeMap::new();
+    let mut concept_support: ConceptScores = BTreeMap::new();
+    let mut concept_contradiction: ConceptScores = BTreeMap::new();
 
     for item in evidence.iter().filter(|e| e.active) {
         for (track_id, declared_weight) in &item.track_weights {
@@ -44,26 +64,27 @@ pub(super) fn analyze(
             if signed > 0.0 {
                 let previous = support.get(track_id).copied().unwrap_or(0.0);
                 support.insert(track_id.clone(), noisy_or(previous, signed));
+                if let Some(concept) = &item.concept {
+                    update_concept_score(&mut concept_support, track_id, concept, signed);
+                }
             } else if signed < 0.0 {
+                let magnitude = signed.abs();
                 let previous = contradiction.get(track_id).copied().unwrap_or(0.0);
-                contradiction.insert(track_id.clone(), noisy_or(previous, signed.abs()));
+                contradiction.insert(track_id.clone(), noisy_or(previous, magnitude));
+                if let Some(concept) = &item.concept {
+                    update_concept_score(
+                        &mut concept_contradiction,
+                        track_id,
+                        concept,
+                        magnitude,
+                    );
+                }
             }
-            evidence_ids
-                .entry(track_id.clone())
-                .or_default()
-                .insert(item.id.clone());
-        }
-        if let Some(concept) = &item.concept {
-            let confidence = concept_confidence(item);
-            match item.polarity {
-                EvidencePolarity::Positive => {
-                    let previous = concept_support.get(concept).copied().unwrap_or(0.0);
-                    concept_support.insert(concept.clone(), noisy_or(previous, confidence));
-                }
-                EvidencePolarity::Negative => {
-                    let previous = concept_contradiction.get(concept).copied().unwrap_or(0.0);
-                    concept_contradiction.insert(concept.clone(), noisy_or(previous, confidence));
-                }
+            if signed.abs() > f32::EPSILON {
+                evidence_ids
+                    .entry(track_id.clone())
+                    .or_default()
+                    .insert(item.id.clone());
             }
         }
     }
@@ -85,8 +106,12 @@ pub(super) fn analyze(
             .or_default()
             .push(rule.id.clone());
         if let Some(concept) = &rule.concept {
-            let previous = concept_support.get(concept).copied().unwrap_or(0.0);
-            concept_support.insert(concept.clone(), noisy_or(previous, rule.certainty));
+            update_concept_score(
+                &mut concept_support,
+                &rule.track_id,
+                concept,
+                rule.certainty,
+            );
         }
         trace.push(TraceStep {
             step: trace.len(),
@@ -162,9 +187,9 @@ pub(super) fn analyze(
         let mut covered = Vec::new();
         let mut missing = Vec::new();
         for concept in &track.concepts {
-            let positive = concept_support.get(concept).copied().unwrap_or(0.0);
-            let negative = concept_contradiction.get(concept).copied().unwrap_or(0.0);
-            if positive > 0.2 && positive > negative {
+            let positive = concept_score(&concept_support, &track.id, concept);
+            let negative = concept_score(&concept_contradiction, &track.id, concept);
+            if positive >= pack.thresholds.concept_coverage && positive > negative {
                 covered.push(concept.clone());
             } else {
                 missing.push(concept.clone());
@@ -207,12 +232,21 @@ pub(super) fn current_phase(
     covered: &[String],
 ) -> (String, String, bool) {
     let covered: BTreeSet<&str> = covered.iter().map(String::as_str).collect();
+    let applicable_concepts: Option<BTreeSet<&str>> = committed_track.and_then(|track_id| {
+        pack.tracks
+            .iter()
+            .find(|track| track.id == track_id)
+            .map(|track| track.concepts.iter().map(String::as_str).collect())
+    });
+
     for phase in &pack.phases {
         let commit_ok = !phase.requires_committed_track || committed_track.is_some();
-        let concepts_ok = phase
-            .required_concepts
-            .iter()
-            .all(|concept| covered.contains(concept.as_str()));
+        let concepts_ok = phase.required_concepts.iter().all(|concept| {
+            let applies = applicable_concepts
+                .as_ref()
+                .is_none_or(|concepts| concepts.contains(concept.as_str()));
+            !applies || covered.contains(concept.as_str())
+        });
         if !(commit_ok && concepts_ok) {
             return (phase.id.clone(), phase.label.clone(), false);
         }
