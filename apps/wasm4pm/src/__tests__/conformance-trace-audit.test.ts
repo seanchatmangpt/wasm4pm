@@ -1,30 +1,45 @@
 /**
  * conformance-trace-audit.test.ts — §8 Trace Classification Audit
  *
+ * Migrated from the retired `wpm conformance` top-level command to
+ * `wpm model check --mode self` (`apps/wasm4pm/src/nouns/model/check.ts`),
+ * per `apps/wasm4pm/src/nouns/_removed.ts`.
+ *
  * **Purpose:** Verify that conformance output provides complete trace-level
- * coverage: all traces classified (conforming/deviating), fitness computed
- * per trace, all deviations recorded, metrics aggregate correctly.
+ * coverage: every episode/case is classified, per-case fitness/token counts
+ * are present, and deviation records are typed and complete (not truncated).
  *
- * **Coverage Gaps Addressed (CF-1 to CF-5):**
- * - CF-1: Not all traces classified (only first 20 deviating shown)
- * - CF-2: No root-cause classification for deviation types (NEW)
- * - CF-3: Incomplete metrics (no event-level deviation details)
- * - CF-4: Metrics don't account for all observed behavior (missing final marking analysis)
- * - CF-5: No coverage validation (unclassified traces silently dropped)
- *
- * **Rank:** Rank 2 (Domain contract — conformance metrics are complete per Van der Aalst)
+ * IMPORTANT — output-shape change from the old suite (read before editing):
+ * The old `conformance` command emitted a bespoke report shape
+ * (`schema`, `summary.{total_cases,conforming_cases,deviating_cases,
+ * conformance_rate}`, `diagnostics.{traced,remaining,missing}`,
+ * `deviating_traces[]` with a NEW root-cause `primary_deviation_class` /
+ * `deviation_summary` classification that was never actually computed by any
+ * shipped engine). The new `ConformanceVerdict` contract
+ * (`apps/wasm4pm/src/engines/conformance/verdict.ts`) is intentionally
+ * simpler and does NOT include that report shape or the root-cause
+ * classification — there is no `missing_activity`/`extra_activity`/
+ * `late_activity`/`reordered_activities` bucketing anywhere in the new
+ * engine. This file asserts against the real fields the new engine
+ * produces instead: top-level `{mode,status,checked,admitted,rejected,
+ * findings}` and, per finding, `details.case_fitness[]` (each with
+ * `case_id`, `is_conforming`, `trace_fitness`, `tokens_missing`,
+ * `tokens_remaining`, `deviations[]`) plus `details.avg_fitness` /
+ * `details.total_cases` / `details.conforming_cases` — the real aggregate
+ * numbers `check_token_based_replay` returns, not invented ones.
  */
 
 import { describe, it, expect } from 'vitest';
-import { runCli, EXIT_CODES } from '@wasm4pm/testing';
 import * as fs from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { runCli, tryParseJson, CLI_PATH } from './cli-contracts/_helpers.js';
+import * as nodeFs from 'node:fs';
 
 // ─── Helper: Create minimal XES for testing ───────────────────────────────
 
 async function createTestXes(traceCount: number, variant: 'conforming' | 'mixed'): Promise<string> {
-  const tmpPath = join(tmpdir(), `test-${Date.now()}.xes`);
+  const tmpPath = join(tmpdir(), `test-${Date.now()}-${Math.random().toString(36).slice(2)}.xes`);
 
   let traces = '';
   if (variant === 'conforming') {
@@ -72,207 +87,110 @@ async function createTestXes(traceCount: number, variant: 'conforming' | 'mixed'
   return tmpPath;
 }
 
+interface CaseFitness {
+  case_id: string;
+  is_conforming: boolean;
+  trace_fitness: number;
+  tokens_missing: number;
+  tokens_remaining: number;
+  deviations: Array<{ event_index: number; activity: string; deviation_type: string }>;
+}
+interface CheckDetails {
+  case_fitness: CaseFitness[];
+  avg_fitness: number;
+  conforming_cases: number;
+  total_cases: number;
+}
+interface CheckVerdict {
+  mode?: string;
+  status?: string;
+  checked?: number;
+  admitted?: number;
+  rejected?: number;
+  exitCode?: number;
+  findings?: Array<{ episodeId: string; conforms: boolean; reason?: string; details?: CheckDetails }>;
+}
+
+/** Run `model check --mode self` (self-discovers a model from the log — no --model needed). */
+async function checkSelf(xesPath: string, fitnessThreshold?: number) {
+  const args = ['model', 'check', xesPath, '--mode', 'self'];
+  if (fitnessThreshold !== undefined) args.push('--fitness-threshold', String(fitnessThreshold));
+  return runCli(args);
+}
+
 // ─── Test Suite ───────────────────────────────────────────────────────────
 
-describe('§8 Conformance Trace Audit — Coverage & Classification', () => {
+describe('§8 Conformance Trace Audit — Coverage & Classification (was: wpm conformance)', () => {
+  it('sanity: built CLI exists', () => {
+    expect(nodeFs.existsSync(CLI_PATH)).toBe(true);
+  });
 
-  describe('CF-1: Trace Classification Coverage', () => {
-    it('should classify ALL traces (not just first 20 deviating)', async () => {
-      // Create log with 50 traces (to exceed default 20-trace limit)
+  describe('CF-1: Trace/episode classification coverage', () => {
+    it('checked equals the number of traces in the log, even when > 20', async () => {
       const xesPath = await createTestXes(50, 'mixed');
       try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
+        const result = await checkSelf(xesPath, 1.0); // default threshold, forces REJECTED for mixed log
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        expect(payload, `stdout must be JSON: ${result.stdout.slice(0, 300)}`).toBeDefined();
 
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          // Might fail due to missing model, but JSON should be parseable
-          return;
-        }
+        // ASSERTION CF-1 (adapted): every one of the 50 traces is checked —
+        // no silent 20-trace cap like the old report's `deviating_traces`.
+        expect(payload!.checked).toBe(50);
 
-        const payload = JSON.parse(result.stdout);
+        // ASSERTION CF-5 (coverage invariant): admitted + rejected == checked, always.
+        expect((payload!.admitted ?? 0) + (payload!.rejected ?? 0)).toBe(payload!.checked);
 
-        // ASSERTION CF-1: For every trace in the log, the output must contain
-        // a classification (conforming or deviating). With 50 traces and ~33%
-        // deviating (16 deviating + 34 conforming), deviating_traces shows ≤20.
-        const showingDeviating = payload.deviating_traces?.length ?? 0;
-        const reportedDeviating = payload.summary?.deviating_cases ?? 0;
-
-        // The output MUST report how many total deviating exist, even if only
-        // showing first 20 in detail.
-        expect(reportedDeviating).toBeGreaterThan(0);
-        expect(showingDeviating).toBeLessThanOrEqual(20); // First 20 shown
-
-        // NEW (CF-5): Coverage validation: sum of conforming + deviating must equal total
-        const conforming = payload.summary?.conforming_cases ?? 0;
-        const total = payload.summary?.total_cases ?? 0;
-        expect(conforming + reportedDeviating).toBe(total);
+        // The finding details carry the real per-case aggregate: total_cases
+        // must also equal 50 (no truncation at the case_fitness level either).
+        const details = payload!.findings?.[0]?.details;
+        expect(details?.total_cases).toBe(50);
       } finally {
         await fs.unlink(xesPath).catch(() => {});
       }
     });
 
-    it('should track conformance_rate correctly (conforming / total)', async () => {
+    it('conforming_cases + non-conforming cases == total_cases (no case left unclassified)', async () => {
       const xesPath = await createTestXes(30, 'mixed');
       try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
+        const result = await checkSelf(xesPath, 1.0);
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        const details = payload!.findings?.[0]?.details;
+        expect(details).toBeDefined();
 
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-        const { conforming_cases, deviating_cases, conformance_rate, total_cases } = payload.summary ?? {};
-
-        // ASSERTION: conformance_rate = conforming_cases / total_cases
-        const computed = (conforming_cases ?? 0) / (total_cases ?? 1);
-        expect(Math.abs((conformance_rate ?? 0) - computed)).toBeLessThan(0.001);
-
-        // ASSERTION: all three sum correctly
-        expect(conforming_cases + deviating_cases).toBe(total_cases);
+        const nonConforming = details!.case_fitness.filter((c) => !c.is_conforming).length;
+        expect(details!.conforming_cases + nonConforming).toBe(details!.total_cases);
+        expect(details!.case_fitness.length).toBe(30);
       } finally {
         await fs.unlink(xesPath).catch(() => {});
       }
     });
   });
 
-  describe('CF-2: Root-Cause Deviation Classification (NEW)', () => {
-    it('should classify each deviation into root-cause categories', async () => {
+  describe('CF-2: Deviation typing (was: NEW root-cause classification — REMOVED, see file header)', () => {
+    // The old suite asserted a `primary_deviation_class` /
+    // `deviation_summary` root-cause bucketing that no shipped engine ever
+    // computed. The new engine emits a real, narrower `deviation_type` per
+    // deviation event instead (from the token-based-replay WASM primitive) —
+    // assert against that real value set, not the removed invented one.
+    it('every deviation on a non-conforming case has a real deviation_type, event_index, and activity', async () => {
       const xesPath = await createTestXes(10, 'mixed');
       try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
+        const result = await checkSelf(xesPath, 1.0);
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        const details = payload!.findings?.[0]?.details;
+        expect(details).toBeDefined();
 
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
+        const nonConforming = details!.case_fitness.filter((c) => !c.is_conforming);
+        expect(nonConforming.length).toBeGreaterThan(0); // the 'mixed' fixture always has deviating cases
 
-        const payload = JSON.parse(result.stdout);
-        const deviatingTraces = payload.deviating_traces ?? [];
-
-        for (const trace of deviatingTraces) {
-          // NEW FIELD (CF-2): primary_deviation_class should exist and be one of:
-          // missing_activity | extra_activity | late_activity | reordered_activities | other
-          expect(trace.primary_deviation_class).toBeDefined();
-          expect(['missing_activity', 'extra_activity', 'late_activity', 'reordered_activities', 'other', 'no_deviations'])
-            .toContain(trace.primary_deviation_class);
-
-          // NEW FIELD (CF-2): deviation_summary should provide counts per category
-          expect(trace.deviation_summary).toBeDefined();
-          expect(typeof trace.deviation_summary.missing_activities).toBe('number');
-          expect(typeof trace.deviation_summary.extra_activities).toBe('number');
-          expect(typeof trace.deviation_summary.late_activities).toBe('number');
-          expect(typeof trace.deviation_summary.reordered_activities).toBe('number');
-
-          // Sum of all categories should equal deviation count (or close to it)
-          const sumCategories =
-            (trace.deviation_summary.missing_activities ?? 0) +
-            (trace.deviation_summary.extra_activities ?? 0) +
-            (trace.deviation_summary.late_activities ?? 0) +
-            (trace.deviation_summary.reordered_activities ?? 0);
-          expect(sumCategories).toBeGreaterThanOrEqual(0);
-        }
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
-      }
-    });
-
-    it('should provide actionable deviation detail in human output', async () => {
-      const xesPath = await createTestXes(5, 'mixed');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'human',
-        ]);
-
-        if (result.exitCode === EXIT_CODES.success) {
-          // All conforming, no deviating output expected
-          return;
-        }
-
-        // Human output should explain what each deviation type means
-        const output = result.stdout;
-        expect(output).toMatch(/log move|model move|deviation/i);
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
-      }
-    });
-  });
-
-  describe('CF-3: Complete Deviation Metrics', () => {
-    it('should report all deviation types (not just first 5)', async () => {
-      const xesPath = await createTestXes(20, 'mixed');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-        const deviatingTraces = payload.deviating_traces ?? [];
-
-        // For each trace, verify all deviations are included (not truncated)
-        for (const trace of deviatingTraces) {
-          const deviations = trace.deviations ?? [];
-
-          // Each deviation must have:
-          // - event_index (position in trace)
-          // - activity (the activity name)
-          // - deviation_type (missing_tokens, missing_activity, etc.)
-          for (const dev of deviations) {
+        for (const c of nonConforming) {
+          expect(c.deviations.length).toBeGreaterThan(0);
+          for (const dev of c.deviations) {
             expect(typeof dev.event_index).toBe('number');
             expect(typeof dev.activity).toBe('string');
             expect(typeof dev.deviation_type).toBe('string');
+            expect(dev.deviation_type.length).toBeGreaterThan(0);
           }
-
-          // ASSERTION CF-3: All deviations present (not truncated)
-          expect(deviations.length).toBeGreaterThan(0);
-        }
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
-      }
-    });
-
-    it('should include per-trace fitness score for all traces', async () => {
-      const xesPath = await createTestXes(15, 'mixed');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-        const deviatingTraces = payload.deviating_traces ?? [];
-
-        // ASSERTION CF-3: Every deviating trace must have a trace_fitness score
-        for (const trace of deviatingTraces) {
-          expect(typeof trace.trace_fitness).toBe('number');
-          expect(trace.trace_fitness).toBeGreaterThanOrEqual(0);
-          expect(trace.trace_fitness).toBeLessThanOrEqual(1);
-
-          // Each trace should also report token counts
-          expect(typeof trace.tokens_missing).toBe('number');
-          expect(typeof trace.tokens_remaining).toBe('number');
         }
       } finally {
         await fs.unlink(xesPath).catch(() => {});
@@ -280,85 +198,75 @@ describe('§8 Conformance Trace Audit — Coverage & Classification', () => {
     });
   });
 
-  describe('CF-4: Metrics Account for All Observed Behavior', () => {
-    it('should include final marking analysis in diagnostics', async () => {
+  describe('CF-3: Complete per-case deviation metrics (not truncated)', () => {
+    it('reports full case_fitness detail for every case, not just the first few', async () => {
+      const xesPath = await createTestXes(20, 'mixed');
+      try {
+        const result = await checkSelf(xesPath, 1.0);
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        const details = payload!.findings?.[0]?.details;
+        expect(details!.case_fitness.length).toBe(20); // ASSERTION CF-3: all 20 cases present, none dropped
+
+        for (const c of details!.case_fitness) {
+          expect(typeof c.trace_fitness).toBe('number');
+          expect(c.trace_fitness).toBeGreaterThanOrEqual(0);
+          expect(c.trace_fitness).toBeLessThanOrEqual(1);
+          expect(typeof c.tokens_missing).toBe('number');
+          expect(typeof c.tokens_remaining).toBe('number');
+        }
+      } finally {
+        await fs.unlink(xesPath).catch(() => {});
+      }
+    });
+  });
+
+  describe('CF-4: Aggregate metrics account for all observed behavior', () => {
+    it('avg_fitness is bounded [0,1] and reflects the per-case fitness values', async () => {
       const xesPath = await createTestXes(10, 'mixed');
       try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
+        const result = await checkSelf(xesPath, 1.0);
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        const details = payload!.findings?.[0]?.details;
+        expect(details!.avg_fitness).toBeGreaterThanOrEqual(0);
+        expect(details!.avg_fitness).toBeLessThanOrEqual(1);
 
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-
-        // ASSERTION CF-4: diagnostics must include aggregate token counts
-        expect(payload.diagnostics).toBeDefined();
-        expect(typeof payload.diagnostics.traced).toBe('number');
-        expect(typeof payload.diagnostics.remaining).toBe('number');
-        expect(typeof payload.diagnostics.missing).toBe('number');
+        const computedAvg =
+          details!.case_fitness.reduce((sum, c) => sum + c.trace_fitness, 0) / details!.case_fitness.length;
+        expect(Math.abs(details!.avg_fitness - computedAvg)).toBeLessThan(0.01);
       } finally {
         await fs.unlink(xesPath).catch(() => {});
       }
     });
 
-    it('should compute average fitness from all traces', async () => {
+    it('a fully-conforming log at --fitness-threshold 0 is ADMITTED with rejected=0', async () => {
+      // Real fitness values are computed by the WASM token-replay engine and
+      // are not guaranteed to be exactly 1.0 for a self-discovered model, so
+      // this uses threshold 0 (any nonnegative fitness admits) to
+      // deterministically exercise the ADMITTED path rather than asserting
+      // an exact fitness number the discovery algorithm doesn't promise.
       const xesPath = await createTestXes(10, 'conforming');
       try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success) {
-          return; // Expected for conforming case
-        }
-
-        const payload = JSON.parse(result.stdout);
-
-        // ASSERTION CF-4: fitness at top level should be the average of per-trace fitness
-        const deviatingTraces = payload.deviating_traces ?? [];
-        const allTraces: any[] = payload.all_traces ?? deviatingTraces; // May or may not have all_traces
-
-        if (allTraces.length > 0) {
-          const computedAvg = allTraces.reduce((sum, t) => sum + (t.trace_fitness ?? 1.0), 0) / allTraces.length;
-          expect(Math.abs((payload.fitness ?? 1.0) - computedAvg)).toBeLessThan(0.01);
-        }
+        const result = await checkSelf(xesPath, 0);
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        expect(payload?.status).toBe('ADMITTED');
+        expect(payload?.rejected).toBe(0);
+        expect(payload?.admitted).toBe(payload?.checked);
+        expect(payload?.findings).toEqual([]); // ADMITTED verdicts carry no findings, by design (verdict.ts)
       } finally {
         await fs.unlink(xesPath).catch(() => {});
       }
     });
 
-    it('should validate that conforming traces have 0 deviations', async () => {
+    it('a conforming case reports zero deviations', async () => {
       const xesPath = await createTestXes(20, 'conforming');
       try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-
-        // For conforming log, deviating_traces should be empty or 0
-        const deviatingTraces = payload.deviating_traces ?? [];
-        const deviatingCount = payload.summary?.deviating_cases ?? 0;
-
-        // Conforming case should have near-perfect fitness
-        expect(payload.fitness).toBeGreaterThanOrEqual(0.95);
-
-        // If any deviating traces shown, they must have deviations
-        for (const trace of deviatingTraces) {
-          expect((trace.deviations ?? []).length).toBeGreaterThan(0);
+        const result = await checkSelf(xesPath, 1.0);
+        const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+        const details = payload!.findings?.[0]?.details;
+        const conformingCases = details!.case_fitness.filter((c) => c.is_conforming);
+        expect(conformingCases.length).toBeGreaterThan(0);
+        for (const c of conformingCases) {
+          expect(c.deviations).toEqual([]);
         }
       } finally {
         await fs.unlink(xesPath).catch(() => {});
@@ -366,161 +274,48 @@ describe('§8 Conformance Trace Audit — Coverage & Classification', () => {
     });
   });
 
-  describe('CF-5: Coverage Validation (NEW)', () => {
-    it('should emit coverage metrics for each dimension', async () => {
-      const xesPath = await createTestXes(10, 'mixed');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
+  describe('CF-5: Coverage invariant holds across log sizes', () => {
+    it('checked === admitted + rejected for several log sizes', async () => {
+      for (const size of [5, 8, 10]) {
+        const xesPath = await createTestXes(size, 'mixed');
+        try {
+          const result = await checkSelf(xesPath, 1.0);
+          const payload = tryParseJson(result.stdout) as CheckVerdict | undefined;
+          expect(payload?.checked).toBe(size);
+          expect((payload?.admitted ?? 0) + (payload?.rejected ?? 0)).toBe(size);
+        } finally {
+          await fs.unlink(xesPath).catch(() => {});
         }
-
-        const payload = JSON.parse(result.stdout);
-
-        // NEW (CF-5): Coverage summary in addition to summary metrics
-        const { total_cases, conforming_cases, deviating_cases, conformance_rate } = payload.summary ?? {};
-
-        // Validation checks:
-        // 1. No unclassified traces (coverage = 1.0)
-        expect(conforming_cases + deviating_cases).toBe(total_cases);
-
-        // 2. Conformance rate is correct
-        const expectedRate = total_cases > 0 ? conforming_cases / total_cases : 1.0;
-        expect(Math.abs((conformance_rate ?? 0) - expectedRate)).toBeLessThan(0.001);
-
-        // 3. Total cases is non-zero (log was processed)
-        expect(total_cases).toBeGreaterThan(0);
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
-      }
-    });
-
-    it('should fail fast if trace classification is incomplete', async () => {
-      const xesPath = await createTestXes(5, 'mixed');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-        const { total_cases, conforming_cases, deviating_cases } = payload.summary ?? {};
-
-        // CRITICAL (CF-5): sum check must hold, or conformance command should exit non-zero
-        const unclassified = (total_cases ?? 0) - ((conforming_cases ?? 0) + (deviating_cases ?? 0));
-
-        if (unclassified > 0) {
-          // If there are unclassified traces, the command should have exited with error
-          expect([EXIT_CODES.execution_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-        }
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
       }
     });
   });
-
-  describe('Metrics Aggregation Correctness', () => {
-    it('should aggregate token counts from all traces', async () => {
-      const xesPath = await createTestXes(8, 'mixed');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-        const deviatingTraces = payload.deviating_traces ?? [];
-        const { missing, remaining } = payload.diagnostics ?? {};
-
-        // Sum of per-trace token counts should match aggregates
-        const sumMissing = deviatingTraces.reduce((sum, t) => sum + (t.tokens_missing ?? 0), 0);
-        const sumRemaining = deviatingTraces.reduce((sum, t) => sum + (t.tokens_remaining ?? 0), 0);
-
-        // Note: only deviating traces are shown, so aggregates may be >= sums
-        expect(missing ?? 0).toBeGreaterThanOrEqual(sumMissing);
-        expect(remaining ?? 0).toBeGreaterThanOrEqual(sumRemaining);
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
-      }
-    });
-
-    it('should compute fitness as 1 - (missing + consumed) / (produced + remaining)', async () => {
-      const xesPath = await createTestXes(5, 'conforming');
-      try {
-        const result = await runCli([
-          'conformance',
-          xesPath,
-          '--format', 'json',
-        ]);
-
-        if (result.exitCode !== EXIT_CODES.success) {
-          return;
-        }
-
-        const payload = JSON.parse(result.stdout);
-
-        // For conforming case, fitness should be very high (ideally 1.0)
-        expect(payload.fitness).toBeGreaterThanOrEqual(0.9);
-      } finally {
-        await fs.unlink(xesPath).catch(() => {});
-      }
-    });
-  });
-
 });
 
-describe('Conformance Output Schema Validation', () => {
-  it('should include all required fields in conformance payload', async () => {
+describe('Conformance output schema (was: {schema,summary,diagnostics,deviating_traces} — now the plain ConformanceVerdict fields)', () => {
+  it('includes the real ConformanceVerdict fields, not the old report shape, and no {command,status,payload} wrapper', async () => {
     const xesPath = await createTestXes(5, 'mixed');
     try {
-      const result = await runCli([
-        'conformance',
-        xesPath,
-        '--format', 'json',
-      ]);
+      const result = await checkSelf(xesPath, 1.0);
+      const payload = tryParseJson(result.stdout) as Record<string, unknown> | undefined;
+      expect(payload).toBeDefined();
 
-      if (result.exitCode !== EXIT_CODES.success && result.exitCode !== EXIT_CODES.conformance_fail) {
-        return;
-      }
+      // Old fields are gone — assert their absence so a regression back to
+      // the old shape (or a half-migrated hybrid) would fail this test.
+      expect(payload).not.toHaveProperty('schema');
+      expect(payload).not.toHaveProperty('summary');
+      expect(payload).not.toHaveProperty('deviating_traces');
+      expect(payload).not.toHaveProperty('command');
+      expect(payload).not.toHaveProperty('payload');
 
-      const payload = JSON.parse(result.stdout);
-
-      // Required top-level fields
-      expect(payload.schema).toBeDefined();
-      expect(payload.status).toBeDefined();
-      expect(payload.fitness).toBeDefined();
-      expect(payload.summary).toBeDefined();
-      expect(payload.diagnostics).toBeDefined();
-      expect(payload.deviating_traces).toBeDefined();
-      expect(Array.isArray(payload.deviating_traces)).toBe(true);
-
-      // Summary structure
-      const { summary } = payload;
-      expect(summary.total_cases).toBeDefined();
-      expect(summary.conforming_cases).toBeDefined();
-      expect(summary.deviating_cases).toBeDefined();
-      expect(summary.conformance_rate).toBeDefined();
-
-      // Diagnostics structure
-      const { diagnostics } = payload;
-      expect(typeof diagnostics.traced).toBe('number');
-      expect(typeof diagnostics.remaining).toBe('number');
-      expect(typeof diagnostics.missing).toBe('number');
+      // Real fields present.
+      expect(payload).toHaveProperty('mode', 'self');
+      expect(payload).toHaveProperty('status');
+      expect(payload).toHaveProperty('checked');
+      expect(payload).toHaveProperty('admitted');
+      expect(payload).toHaveProperty('rejected');
+      expect(payload).toHaveProperty('exitCode');
+      expect(payload).toHaveProperty('findings');
+      expect(Array.isArray((payload as { findings: unknown }).findings)).toBe(true);
     } finally {
       await fs.unlink(xesPath).catch(() => {});
     }

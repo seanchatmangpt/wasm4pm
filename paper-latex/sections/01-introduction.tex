@@ -1,0 +1,9 @@
+The current paradigm of process mining and machine cognition relies heavily on batch-transport architectures. Data is observed at the edge, serialized, transported over network boundaries, and subsequently analyzed in a centralized data warehouse. This creates a structural delay known as "delayed cognition." The \textit{wasm4pm} architecture rejects this paradigm by relocating reasoning and process discovery operators directly to the point of observation via WebAssembly. 
+
+By executing within a sovereign WASM sandbox, \textit{wasm4pm} enforces a strict execution boundary. Intelligence is no longer an unbounded pipeline of script execution, but a mathematically bounded, capability-specific transformation. The system compiles down to deterministic binaries that execute first-mile cognition without relying on external system calls or unverified host states.
+
+This monograph presents the formal verification of the \textit{wasm4pm} 115-capability surface (60 algorithms, 55 cognitive breeds). We explicitly downgrade any universal overclaims about AGI or perfectly predictable latency. Instead, we present a testable, falsifiable architecture: bounded inputs yield deterministic, verifiable receipts.
+
+\begin{definition}
+\textbf{First-Mile Execution.} The evaluation of an algorithmic or cognitive capability $f: \mathcal{I} \to \mathcal{O}$ within $O(1)$ network hops from the event source, bounded by memory sandboxing and measured by deterministic computational receipts.
+\end{definition}

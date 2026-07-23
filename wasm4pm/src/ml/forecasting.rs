@@ -72,6 +72,65 @@ pub fn forecast_internal(data: &[f64], alpha: f64) -> ForecastResult {
     }
 }
 
+/// Holt double exponential smoothing (level + trend).
+///
+/// `l_t = alpha*x_t + (1-alpha)(l_{t-1}+b_{t-1})`,
+/// `b_t = beta*(l_t - l_{t-1}) + (1-beta)*b_{t-1}`.
+/// Init: `l_0 = x_0`, `b_0 = x_1 - x_0` (0.0 when the series has < 2 points).
+/// Error metrics are one-step-ahead, identical in construction to SES.
+pub fn holt_internal(series: &[f64], alpha: f64, beta: f64) -> ForecastResult {
+    let n = series.len();
+    if n == 0 {
+        return ForecastResult {
+            rmse: 0.0,
+            mae: 0.0,
+            mape: 0.0,
+            next_window: 0.0,
+        };
+    }
+
+    let mut level = series[0];
+    let mut trend = if n >= 2 { series[1] - series[0] } else { 0.0 };
+    let mut sum_sq_err = 0.0;
+    let mut sum_abs_err = 0.0;
+    let mut sum_abs_pct_err = 0.0;
+    let mut mape_count = 0usize;
+
+    for &val in series.iter().skip(1) {
+        let pred = level + trend;
+        let err = val - pred;
+        sum_sq_err += err * err;
+        sum_abs_err += err.abs();
+        if val.abs() > f64::EPSILON {
+            sum_abs_pct_err += (err / val).abs();
+            mape_count += 1;
+        }
+        let prev_level = level;
+        level = alpha * val + (1.0 - alpha) * (prev_level + trend);
+        trend = beta * (level - prev_level) + (1.0 - beta) * trend;
+    }
+
+    let denom = (n - 1).max(1) as f64;
+    let rmse = if n > 1 {
+        (sum_sq_err / denom).sqrt()
+    } else {
+        0.0
+    };
+    let mae = if n > 1 { sum_abs_err / denom } else { 0.0 };
+    let mape = if mape_count > 0 {
+        sum_abs_pct_err / mape_count as f64
+    } else {
+        0.0
+    };
+
+    ForecastResult {
+        rmse,
+        mae,
+        mape,
+        next_window: level + trend,
+    }
+}
+
 pub(crate) fn get_windows(eventlog_handle: &str) -> Result<([f64; NUM_WINDOWS], usize), JsValue> {
     let state = get_or_init_state();
 
@@ -155,4 +214,53 @@ fn to_js_val(value: &serde_json::Value) -> Result<JsValue, JsValue> {
     serde_json::to_string(value)
         .map(|s| crate::error::js_val(&s))
         .map_err(|e| crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string()))
+}
+
+#[cfg(test)]
+mod holt_tests {
+    use super::*;
+
+    /// Hand-computable: perfect linear trend with alpha=beta=1.0.
+    /// Level tracks x exactly, trend stays 1, every one-step forecast is exact,
+    /// next forecast = 5 + 1 = 6.
+    #[test]
+    fn holt_linear_series_alpha_beta_one_is_exact() {
+        let series = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let res = holt_internal(&series, 1.0, 1.0);
+        assert_eq!(res.next_window, 6.0, "forecast must be exactly 6.0");
+        assert_eq!(
+            res.rmse, 0.0,
+            "linear trend must be forecast with zero error"
+        );
+        assert_eq!(res.mae, 0.0);
+        assert_eq!(res.mape, 0.0);
+    }
+
+    #[test]
+    fn holt_empty_and_singleton_do_not_panic() {
+        let res = holt_internal(&[], 0.5, 0.5);
+        assert_eq!(res.next_window, 0.0);
+        // len<2: b_0 = 0, forecast = x_0.
+        let res = holt_internal(&[7.0], 0.5, 0.5);
+        assert_eq!(res.next_window, 7.0);
+        assert_eq!(res.rmse, 0.0);
+    }
+
+    /// With beta=0 and b_0=0 (singleton init not triggered here, so force via
+    /// a series whose first two points are equal), Holt's level recursion
+    /// reduces to SES: l_t = alpha*x_t + (1-alpha)*l_{t-1}.
+    #[test]
+    fn holt_zero_trend_start_and_beta_zero_reduces_to_ses() {
+        let series = [3.0, 3.0, 5.0, 4.0, 6.0, 2.0];
+        let holt = holt_internal(&series, 0.3, 0.0);
+        let ses = forecast_internal(&series, 0.3);
+        assert!(
+            (holt.next_window - ses.next_window).abs() < 1e-12,
+            "beta=0 with zero initial trend must equal SES: holt={} ses={}",
+            holt.next_window,
+            ses.next_window
+        );
+        assert!((holt.rmse - ses.rmse).abs() < 1e-12);
+        assert!((holt.mae - ses.mae).abs() < 1e-12);
+    }
 }

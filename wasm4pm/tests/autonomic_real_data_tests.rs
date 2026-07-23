@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! Autonomic Instincts — Real-Data Algorithm Acceptance Tests (AAT).
 //!

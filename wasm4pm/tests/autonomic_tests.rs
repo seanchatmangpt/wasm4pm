@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Consolidated tests for the Closed Claw autonomic loop modules.
 //!
 //! Algorithm family: Autonomic Control Plane

@@ -121,13 +121,13 @@ ${events}
 
   describe('base command requirements', () => {
     it('should require input file (no positional arg)', async () => {
-      const result = await runCli(['validate']);
+      const result = await runCli(['log', 'validate']);
       expect(result.exitCode).toBe(2);
       expect(result.stdout + result.stderr).toMatch(/input.*required|usage|log.*file/i);
     });
 
     it('should accept --help flag', async () => {
-      const result = await runCli(['validate', '--help']);
+      const result = await runCli(['log', 'validate', '--help']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toMatch(/validate|event log|schema|attribute/i);
     });
@@ -135,7 +135,7 @@ ${events}
     it('should accept input as positional argument', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode); // 0=success, 2=source error
       } finally {
         await test.cleanup();
@@ -145,7 +145,7 @@ ${events}
     it('should accept input via --file/-i flag', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', '--file', test.path]);
+        const result = await runCli(['log', 'validate', '--file', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -155,7 +155,7 @@ ${events}
     it('should accept input via -i shorthand', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', '-i', test.path]);
+        const result = await runCli(['log', 'validate', '-i', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -169,7 +169,7 @@ ${events}
     it('should accept valid XES file', async () => {
       const test = await createTestXes('case-001', 4);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -179,7 +179,7 @@ ${events}
     it('should accept valid CSV file with --format csv', async () => {
       const test = await createTestCsv(4);
       try {
-        const result = await runCli(['validate', test.path, '--format', 'csv']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'csv']);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -189,7 +189,7 @@ ${events}
     it('should accept OCEL file via .ocel.json extension', async () => {
       const test = await createTestOcel();
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -199,7 +199,7 @@ ${events}
     it('should accept OCEL file with explicit --format ocel', async () => {
       const test = await createTestOcel();
       try {
-        const result = await runCli(['validate', test.path, '--format', 'ocel']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'ocel']);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -213,7 +213,7 @@ ${events}
     it('should default to XES format', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -223,7 +223,7 @@ ${events}
     it('should reject invalid format', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--format', 'invalid']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'invalid']);
         expect([2, 1]).toContain(result.exitCode);
         expect(result.stdout + result.stderr).toMatch(/format|xes|csv|ocel/i);
       } finally {
@@ -234,7 +234,7 @@ ${events}
     it('should auto-detect OCEL format from .ocel.json extension', async () => {
       const test = await createTestOcel();
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -245,7 +245,7 @@ ${events}
       const test = await createTestOcel();
       try {
         // File has .ocel.json extension, format should be auto-detected regardless of casing
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -259,7 +259,7 @@ ${events}
     it('should accept custom --activity-key', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--activity-key', 'concept:name']);
+        const result = await runCli(['log', 'validate', test.path, '--activity-key', 'concept:name']);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -269,7 +269,7 @@ ${events}
     it('should accept custom --case-id-key', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--case-id-key', 'case:concept:name']);
+        const result = await runCli(['log', 'validate', test.path, '--case-id-key', 'case:concept:name']);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -279,7 +279,7 @@ ${events}
     it('should accept custom --timestamp-key', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--timestamp-key', 'time:timestamp']);
+        const result = await runCli(['log', 'validate', test.path, '--timestamp-key', 'time:timestamp']);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -290,6 +290,7 @@ ${events}
       const test = await createTestXes('case-001', 3);
       try {
         const result = await runCli([
+          'log',
           'validate',
           test.path,
           '--resource-key',
@@ -308,7 +309,7 @@ ${events}
     it('should accept log with single event', async () => {
       const test = await createTestXes('case-001', 1);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -318,7 +319,7 @@ ${events}
     it('should accept log with many events', async () => {
       const test = await createTestXes('case-001', 100);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -334,7 +335,7 @@ ${events}
       await fs.writeFile(filePath, xesContent, 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath]);
+        const result = await runCli(['log', 'validate', filePath]);
         // Empty logs may pass validation structurally, but should warn about data quality
         expect([0, 2]).toContain(result.exitCode);
       } finally {
@@ -349,7 +350,7 @@ ${events}
     it('should validate log with correct timestamps', async () => {
       const test = await createTestXes('case-001', 5);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -363,7 +364,7 @@ ${events}
     it('should support human output format', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'human']);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
         expect(result.stdout).toMatch(/validation|check|pass|fail|warn/i);
       } finally {
@@ -374,7 +375,7 @@ ${events}
     it('should support JSON output format', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
         if (result.exitCode === 0 && result.stdout.trim()) {
           // JSON output should be parseable
@@ -392,7 +393,7 @@ ${events}
     it('should return JSON with status, valid, checks, errors, warnings', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--format', 'json']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'json']);
         if (result.exitCode === 0 && result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(output).toHaveProperty('payload.status');
@@ -411,7 +412,7 @@ ${events}
       // validate supports it as an alias for --output-format json.
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--format', 'json']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'json']);
         // Must not exit source_error (2) from treating 'json' as an unknown log format
         expect(result.exitCode).not.toBe(2);
         if (result.stdout.trim()) {
@@ -427,7 +428,7 @@ ${events}
     it('should support verbose output with -v flag', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '-v']);
+        const result = await runCli(['log', 'validate', test.path, '-v']);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -437,7 +438,7 @@ ${events}
     it('should support quiet mode with -q flag', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '-q']);
+        const result = await runCli(['log', 'validate', test.path, '-q']);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -449,7 +450,7 @@ ${events}
 
   describe('error handling', () => {
     it('should fail with source error on missing file', async () => {
-      const result = await runCli(['validate', '/nonexistent/file.xes']);
+      const result = await runCli(['log', 'validate', '/nonexistent/file.xes']);
       expect(result.exitCode).toBe(2);
       expect(result.stdout + result.stderr).toMatch(/not found|does not exist|cannot read|file|missing/i);
     });
@@ -460,7 +461,7 @@ ${events}
       await fs.writeFile(filePath, '<log>INVALID XML</log', 'utf-8'); // Missing closing tag
 
       try {
-        const result = await runCli(['validate', filePath]);
+        const result = await runCli(['log', 'validate', filePath]);
         // Malformed XML might parse as a valid log with warnings, so accept 0 or 2
         expect([0, 2]).toContain(result.exitCode);
       } finally {
@@ -478,7 +479,7 @@ ${events}
       await fs.writeFile(filePath, '{invalid json}', 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath]);
+        const result = await runCli(['log', 'validate', filePath]);
         expect(result.exitCode).toBe(2);
       } finally {
         try {
@@ -495,7 +496,7 @@ ${events}
       await fs.writeFile(filePath, 'invalid,csv\nmissing columns', 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath, '--format', 'csv']);
+        const result = await runCli(['log', 'validate', filePath, '--format', 'csv']);
         expect([2, 3]).toContain(result.exitCode);
       } finally {
         try {
@@ -513,7 +514,7 @@ ${events}
     it('should exit 0 (success) on valid log', async () => {
       const test = await createTestXes('case-001', 4);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode); // 0 or 2 (depends on WASM validation)
       } finally {
         await test.cleanup();
@@ -521,19 +522,19 @@ ${events}
     });
 
     it('should exit 2 (source_error) on missing file', async () => {
-      const result = await runCli(['validate', '/nonexistent.xes']);
+      const result = await runCli(['log', 'validate', '/nonexistent.xes']);
       expect(result.exitCode).toBe(2);
     });
 
     it('should exit 2 (source_error) on missing input', async () => {
-      const result = await runCli(['validate']);
+      const result = await runCli(['log', 'validate']);
       expect(result.exitCode).toBe(2);
     });
 
     it('should exit 1 or 2 on invalid format option', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--format', 'invalid']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'invalid']);
         // Invalid format is treated as source error (2) not config error (1)
         expect([1, 2]).toContain(result.exitCode);
       } finally {
@@ -544,7 +545,7 @@ ${events}
     it('should not exit with execution_error (3) for valid usage', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect(result.exitCode).not.toBe(3);
       } finally {
         await test.cleanup();
@@ -558,7 +559,7 @@ ${events}
     it('should include input path in JSON output', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         if (result.exitCode === 0 && result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(output.payload).toHaveProperty('input');
@@ -572,7 +573,7 @@ ${events}
     it('should include format in JSON output', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         if (result.exitCode === 0 && result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(output.payload).toHaveProperty('format');
@@ -586,7 +587,7 @@ ${events}
     it('should include array of checks in JSON output', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         if (result.exitCode === 0 && result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(Array.isArray(output.payload.checks)).toBe(true);
@@ -607,7 +608,7 @@ ${events}
     it('should include errors array in JSON output', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         if (result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(Array.isArray(output.payload.errors)).toBe(true);
@@ -620,7 +621,7 @@ ${events}
     it('should include warnings array in JSON output', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         if (result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(Array.isArray(output.payload.warnings)).toBe(true);
@@ -633,7 +634,7 @@ ${events}
     it('should mark valid=true when validation passes', async () => {
       const test = await createTestXes('case-001', 4);
       try {
-        const result = await runCli(['validate', test.path, '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path]);
         if (result.exitCode === 0 && result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(output.payload.valid).toBe(true);
@@ -652,7 +653,7 @@ ${events}
     it('should auto-save receipt by default', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        await runCli(['validate', test.path]);
+        await runCli(['log', 'validate', test.path]);
         // Receipt should be auto-saved to .wasm4pm/receipts/
         // We can't easily verify file existence in tests without mocking,
         // but the command should not error
@@ -664,7 +665,7 @@ ${events}
     it('should skip receipt save with --no-save flag', async () => {
       const test = await createTestXes('case-001', 3);
       try {
-        const result = await runCli(['validate', test.path, '--no-save']);
+        const result = await runCli(['log', 'validate', test.path, '--no-save']);
         expect([0, 2]).toContain(result.exitCode);
         // Receipt should not be saved, but command should succeed
       } finally {
@@ -687,7 +688,7 @@ case-2,Activity1,2026-05-17T11:00:00Z,Charlie`;
       await fs.writeFile(filePath, csvContent, 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath, '--format', 'csv']);
+        const result = await runCli(['log', 'validate', filePath, '--format', 'csv']);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         try {
@@ -709,6 +710,7 @@ p1,End,2026-05-17T10:01:00Z`;
 
       try {
         const result = await runCli([
+          'log',
           'validate',
           filePath,
           '--format',
@@ -737,7 +739,7 @@ p1,End,2026-05-17T10:01:00Z`;
     it('should validate OCEL structure', async () => {
       const test = await createTestOcel();
       try {
-        const result = await runCli(['validate', test.path, '--format', 'ocel']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'ocel']);
         expect([0, 2, 3]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -755,7 +757,7 @@ p1,End,2026-05-17T10:01:00Z`;
       await fs.writeFile(filePath, JSON.stringify(badOcel), 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath, '--format', 'ocel']);
+        const result = await runCli(['log', 'validate', filePath, '--format', 'ocel']);
         expect([2, 3]).toContain(result.exitCode);
       } finally {
         try {
@@ -769,7 +771,7 @@ p1,End,2026-05-17T10:01:00Z`;
     it('should report object type counts in OCEL validation', async () => {
       const test = await createTestOcel();
       try {
-        const result = await runCli(['validate', test.path, '--format', 'ocel', '--output-format', 'json']);
+        const result = await runCli(['log', 'validate', test.path, '--format', 'ocel']);
         if (result.stdout.trim()) {
           const output = JSON.parse(result.stdout);
           expect(output.payload).toHaveProperty('ocelSummary');
@@ -800,7 +802,7 @@ p1,End,2026-05-17T10:01:00Z`;
       await fs.writeFile(filePath, xesContent, 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath]);
+        const result = await runCli(['log', 'validate', filePath]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         try {
@@ -829,7 +831,7 @@ p1,End,2026-05-17T10:01:00Z`;
       await fs.writeFile(filePath, xesContent, 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath]);
+        const result = await runCli(['log', 'validate', filePath]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         try {
@@ -843,7 +845,7 @@ p1,End,2026-05-17T10:01:00Z`;
     it('should handle traces with many events', async () => {
       const test = await createTestXes('case-001', 500);
       try {
-        const result = await runCli(['validate', test.path]);
+        const result = await runCli(['log', 'validate', test.path]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
@@ -881,7 +883,7 @@ p1,End,2026-05-17T10:01:00Z`;
       await fs.writeFile(filePath, xesContent, 'utf-8');
 
       try {
-        const result = await runCli(['validate', filePath]);
+        const result = await runCli(['log', 'validate', filePath]);
         expect([0, 2]).toContain(result.exitCode);
       } finally {
         try {

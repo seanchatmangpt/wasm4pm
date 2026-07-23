@@ -1,0 +1,7 @@
+The core problem in contemporary process intelligence is the "ETL (Extract, Transform, Load) gap." Organizations observe events at high frequencies, but the algorithmic extraction of insights (such as drift detection, conformance checking, or bottleneck analysis) occurs only after the data has been batched and persisted. This architecture structurally prohibits real-time intervention and autonomic self-healing.
+
+Furthermore, cloud-based intelligence often runs in unbounded runtime environments where memory leaks, infinite loops, and unhandled exceptions are common. A generic Python or Node.js reasoning pipeline cannot mathematically guarantee completion or bound its memory usage without massive external monitoring infrastructure. This lack of bounding makes current intelligent agents unsafe for mission-critical first-mile execution.
+
+\textit{wasm4pm} solves this by enforcing a capability capability lattice. An operator cannot execute outside its mathematical bounds. The WASM boundary ensures that any attempt to expand state space beyond the allocated heap results in a safe panic, which is caught and transformed into a structural refusal receipt.
+
+\paragraph{Limitation.} This approach strictly forbids algorithms that require unbounded data streaming or arbitrary network access. Any cognition requiring global context must be approximated or rejected.

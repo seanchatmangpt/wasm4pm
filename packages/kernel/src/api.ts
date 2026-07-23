@@ -213,7 +213,12 @@ export interface KernelWasmModule extends Omit<WasmModule,
   discover_ml_anomaly?(eventlog_handle: string, activity_key: string): any;
   discover_ml_regress?(eventlog_handle: string, activity_key: string): any;
   discover_ml_pca?(eventlog_handle: string, activity_key: string): any;
-  discover_optimized_dfg?(eventlog_handle: string, activity_key: string): string;
+  discover_optimized_dfg?(
+    eventlog_handle: string,
+    activity_key: string,
+    fitness_weight: number,
+    simplicity_weight: number
+  ): string;
 
   discover_dfg(eventlog_handle: string, activity_key: string): string;
   discover_ocel_dfg?(ocel_handle: string): string;
@@ -1273,8 +1278,12 @@ export class Kernel {
       }
 
       case 'optimized_dfg': {
-        const fn = this.wasm.discover_optimized_dfg || this.wasm.discover_dfg;
-        const raw = fn.call(this.wasm, eventLogHandle, activityKey);
+        const raw = this.wasm.discover_optimized_dfg!(
+          eventLogHandle,
+          activityKey,
+          (params.fitness_weight as number) ?? 1.0,
+          (params.simplicity_weight as number) ?? 0.3
+        );
         return parseWasmHandle(raw);
       }
 
@@ -1557,7 +1566,8 @@ export class Kernel {
       case 'ocel_petri_net': {
         const fn = this.wasm.discover_oc_petri_net;
         if (!fn) throw new KernelError('discover_oc_petri_net is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
-        const algorithm = (params.algorithm as string) ?? 'inductive';
+        // Rust accepts "alpha++" | "alpha-plus-plus" | "heuristic" only.
+        const algorithm = (params.algorithm as string) ?? 'alpha++';
         fn.call(this.wasm, eventLogHandle, algorithm);
         return { handle: `ocel_petri_net_${Date.now()}` };
       }
@@ -1779,17 +1789,15 @@ export class Kernel {
 
       case 'predict_outcome': {
         const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
-        const build = wasmAny.build_ngram_predictor;
-        const predict = wasmAny.predict_next_k;
-        if (!build || !predict) {
+        const predictOutcome = wasmAny.predict_outcome_wasm;
+        if (!predictOutcome) {
           throw new KernelError(
             `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
             'ALGORITHM_NOT_FOUND' as any
           );
         }
-        const predictorHandle = build.call(this.wasm, eventLogHandle, activityKey, 2);
         const prefix = (params.prefix_json as string) ?? '[]';
-        const raw = predict.call(this.wasm, predictorHandle, prefix, 1);
+        const raw = predictOutcome.call(this.wasm, eventLogHandle, activityKey, prefix);
         return {
           handle: `predict_outcome_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
           metadata: { result: parseWasmOutput(raw) },

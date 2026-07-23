@@ -2,6 +2,16 @@
  * diff-deep.test.ts — Tests for enhanced `wpm diff` with --deep flag,
  * improved default output, --same-file-check, and overall_verdict.
  *
+ * Migrated from the retired top-level `wpm diff` command (removed — see
+ * `apps/wasm4pm/src/nouns/_removed.ts`: `diff` -> `model diff`) to
+ * `wpm model diff` (`apps/wasm4pm/src/nouns/model/diff.ts`), a legacy BRIDGE
+ * verb (`invokeLegacyCommandAsJson`) that reuses `commands/diff.ts`
+ * unmodified. SUCCESS still returns the old `{command,status,payload,meta}`
+ * envelope verbatim (all `--deep`/`--same-file-check` behavior below is
+ * unchanged); the bridge's forced `--format json` means legacy
+ * `--format human` no longer produces a text report (see the "default
+ * output summary" describe block for the rewritten assertions).
+ *
  * Oracle rank: Rank 2 (Domain contract).
  *
  * Coverage:
@@ -167,7 +177,7 @@ afterAll(() => {
 describe('wpm diff — same-file detection', () => {
   it('same-file diff exits 0 with jaccard = 1', async () => {
     const result = await runCli([
-      'diff', baselinePath, baselinePath, '--format', 'json', '--no-save',
+      'model', 'diff', baselinePath, baselinePath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
     const j = parseJson(result);
@@ -177,7 +187,7 @@ describe('wpm diff — same-file detection', () => {
 
   it('same-file diff payload includes same_file flag', async () => {
     const result = await runCli([
-      'diff', baselinePath, baselinePath, '--format', 'json', '--no-save',
+      'model', 'diff', baselinePath, baselinePath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
     const j = parseJson(result);
@@ -186,7 +196,7 @@ describe('wpm diff — same-file detection', () => {
 
   it('--same-file-check short-circuits on identical paths, exits 0', async () => {
     const result = await runCli([
-      'diff', baselinePath, baselinePath,
+      'model', 'diff', baselinePath, baselinePath,
       '--same-file-check', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -198,7 +208,7 @@ describe('wpm diff — same-file detection', () => {
 
   it('--same-file-check with --deep produces IDENTICAL verdict', async () => {
     const result = await runCli([
-      'diff', baselinePath, baselinePath,
+      'model', 'diff', baselinePath, baselinePath,
       '--same-file-check', '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -208,7 +218,7 @@ describe('wpm diff — same-file detection', () => {
 
   it('two distinct logs do NOT get same_file flag', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath, '--format', 'json', '--no-save',
+      'model', 'diff', baselinePath, currentPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
     const j = parseJson(result);
@@ -221,7 +231,7 @@ describe('wpm diff — same-file detection', () => {
 describe('wpm diff --deep — JSON structure', () => {
   it('--deep flag exits 0', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -229,7 +239,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep produces payload.deep object', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -239,7 +249,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep produces control_flow with required fields', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -253,7 +263,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep control_flow.similarity is in [0, 1]', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -264,7 +274,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep produces performance with required fields', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -277,7 +287,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep performance shows faster current process (duration_delta_pct < 0)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -289,7 +299,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep produces variants with required fields', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -304,7 +314,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep variants counts are non-negative', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -317,7 +327,7 @@ describe('wpm diff --deep — JSON structure', () => {
 
   it('--deep without --deep flag does NOT produce payload.deep', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -331,7 +341,7 @@ describe('wpm diff --deep — JSON structure', () => {
 describe('wpm diff --deep — overall_verdict', () => {
   it('overall_verdict is one of IMPROVED/DEGRADED/CHANGED/IDENTICAL', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -341,7 +351,7 @@ describe('wpm diff --deep — overall_verdict', () => {
 
   it('faster + similar structure → IMPROVED verdict', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -357,7 +367,7 @@ describe('wpm diff --deep — overall_verdict', () => {
 
   it('self-diff with --deep → IDENTICAL verdict', async () => {
     const result = await runCli([
-      'diff', baselinePath, baselinePath,
+      'model', 'diff', baselinePath, baselinePath,
       '--same-file-check', '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -371,14 +381,14 @@ describe('wpm diff --deep — overall_verdict', () => {
 describe('wpm diff — exit codes', () => {
   it('exits 0 for two valid distinct logs (default mode)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath, '--format', 'json', '--no-save',
+      'model', 'diff', baselinePath, currentPath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
   });
 
   it('exits 0 for two valid distinct logs (--deep mode)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -386,87 +396,98 @@ describe('wpm diff — exit codes', () => {
 
   it('exits 0 for same-file (default mode)', async () => {
     const result = await runCli([
-      'diff', baselinePath, baselinePath, '--format', 'json', '--no-save',
+      'model', 'diff', baselinePath, baselinePath, '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
   });
 
   it('exits 2 (source_error) for missing file', async () => {
     const result = await runCli([
-      'diff', '/nonexistent/log1.xes', currentPath,
+      'model', 'diff', '/nonexistent/log1.xes', currentPath,
       '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(2);
   });
 });
 
-// ─── Test 5: Default human output quick summary ───────────────────────────────
+// ─── Test 5: Default output quick summary (was: human-formatted text — REMOVED, see file header) ──
+//
+// The `model diff` bridge forces `--format json` under the hood regardless
+// of what the caller passes (see `_bridge.ts`'s `stripLegacyOutputFlags` /
+// `invokeLegacyCommandAsJson`), so the legacy command's rich `--format human`
+// quick-summary text ("Similarity: ...", "Activities: 3→3", "Verdict:",
+// "Performance"/"Control Flow" section headers, the "--deep" hint) is no
+// longer reachable through `wpm model diff` — stdout is ALWAYS the JSON
+// envelope now. These are rewritten to assert the equivalent real JSON
+// fields instead of grepping for text that can no longer be produced.
 
-describe('wpm diff — default human output summary', () => {
-  it('human output contains Similarity in the quick summary', async () => {
+describe('wpm diff — default output summary (legacy --format human is now overridden to JSON)', () => {
+  it('JSON payload conveys similarity via diff.jaccard / diff.summary (was: human "Similarity" line)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
+      'model', 'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/[Ss]imilarity/);
+    const j = parseJson(result);
+    expect(typeof j.payload.diff.jaccard).toBe('number');
+    expect(j.payload.diff.summary).toMatch(/similar|different|identical/i);
   });
 
-  it('human output contains Activities count range (e.g. 3→3)', async () => {
+  it('JSON payload exposes an activities section (was: human "Activities:" count range)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
+      'model', 'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/Activities:/i);
+    const j = parseJson(result);
+    expect(j.payload.diff.activities).toBeDefined();
+    expect(Array.isArray(j.payload.diff.activities.shared)).toBe(true);
   });
 
-  it('human output contains Variants count range', async () => {
+  it('JSON payload exposes a variants section (was: human "Variants:" count range)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
+      'model', 'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/Variants:/i);
+    const j = parseJson(result);
+    expect(j.payload.diff.variants).toBeDefined();
   });
 
-  it('human output without --deep hints to run --deep', async () => {
+  it('without --deep, payload has no deep section at all (was: human hint text to run --deep)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
+      'model', 'diff', baselinePath, currentPath, '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/--deep/);
+    const j = parseJson(result);
+    expect(j.payload.deep).toBeUndefined();
   });
 
-  it('human output with --deep shows Verdict', async () => {
+  it('with --deep, JSON payload.deep.overall_verdict is present (was: human "Verdict" line)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/Verdict/i);
+    const j = parseJson(result);
+    expect(['IMPROVED', 'DEGRADED', 'CHANGED', 'IDENTICAL']).toContain(j.payload.deep.overall_verdict);
   });
 
-  it('human output with --deep shows Performance section', async () => {
+  it('with --deep, JSON payload.deep.performance is present (was: human "Performance" section)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/Performance/i);
+    const j = parseJson(result);
+    expect(j.payload.deep.performance).toBeDefined();
   });
 
-  it('human output with --deep shows Control Flow section', async () => {
+  it('with --deep, JSON payload.deep.control_flow is present (was: human "Control Flow" section)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'human', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/Control Flow/i);
+    const j = parseJson(result);
+    expect(j.payload.deep.control_flow).toBeDefined();
   });
 });
 
@@ -475,7 +496,7 @@ describe('wpm diff — default human output summary', () => {
 describe('wpm diff --deep — control_flow activities', () => {
   it('AI_Approve appears in added_activities (only in current)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);
@@ -486,7 +507,7 @@ describe('wpm diff --deep — control_flow activities', () => {
 
   it('Manual_Review appears in removed_activities (only in baseline)', async () => {
     const result = await runCli([
-      'diff', baselinePath, currentPath,
+      'model', 'diff', baselinePath, currentPath,
       '--deep', '--format', 'json', '--no-save',
     ]);
     expect(result.exitCode).toBe(0);

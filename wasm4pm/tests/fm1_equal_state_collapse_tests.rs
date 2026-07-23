@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! FM-1 Regression — Equal-State Collapse (Rank-1 Bellman Oracle)
 //!
 //! Agent A10 (ML/AI review) regression guard for the FM-1 fix in

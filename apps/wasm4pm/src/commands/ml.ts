@@ -240,7 +240,14 @@ export const ml = defineCommand({
               EXIT_CODES.config_error,
               'INVALID_FORMAT'
             );
-            emitResult(result, { format: 'human', verbose, quiet });
+            // `format` itself holds the invalid value here, so it can't be
+            // passed through verbatim to `emitResult` (unrecognized switch
+            // case). Fall back to 'human' for a real interactive terminal,
+            // but 'json' when `--quiet` is set — `emitResult` unconditionally
+            // suppresses non-json/sarif output under `--quiet`, and quiet
+            // callers (e.g. the noun-verb bridge, which always appends
+            // `--quiet`) need this diagnostic on stdout as JSON, not silence.
+            emitResult(result, { format: quiet ? 'json' : 'human', verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
 

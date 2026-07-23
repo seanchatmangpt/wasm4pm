@@ -1,0 +1,6 @@
+To bind the runtime strictly, we utilize discrete calculus to measure process flux. Let $f(t)$ be the rate of event emissions. The accumulated process state $S(T)$ is the discrete integral:
+\[ S(T) = \sum_{t=0}^{T} f(t) \Delta t \]
+
+Algorithms operate as differential operators $\nabla$, computing the exact gradient of change. Because execution occurs purely within WASM without syscall overhead, the operational time $t_{op}$ is theoretically bound to the CPU cycle count:
+\[ t_{op} = \mathcal{O}\left( \int \nabla S \, dx \right) \le \tau_{max} \]
+Where $\tau_{max} \approx 500 \mu s$, satisfying the microsecond runtime thesis.

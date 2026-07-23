@@ -243,6 +243,126 @@ pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<
     })
 }
 
+/// Context key for the last-k activities of a prefix (unit separator joined).
+fn context_key(prefix: &[String], k: usize) -> String {
+    let start = prefix.len().saturating_sub(k);
+    prefix[start..].join("\u{1f}")
+}
+
+/// Train P(outcome | prefix context) from completed traces and predict the
+/// outcome (final activity) of a running prefix. Pure core — used by the
+/// `predict_outcome_wasm` export and by native tests.
+///
+/// Contexts are the last k activities (k = 2, backoff to k = 1, then to the
+/// global outcome prior); counts are Laplace-smoothed over the outcome
+/// vocabulary. Deterministic: BTreeMap counting, name-ordered tie-break.
+pub fn predict_outcome_from_log(
+    log: &crate::models::EventLog,
+    activity_key: &str,
+    prefix: &[String],
+) -> Result<serde_json::Value, String> {
+    use std::collections::BTreeMap;
+
+    {
+        let mut prior: BTreeMap<String, usize> = BTreeMap::new();
+        let mut by_context: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
+        let mut trained_traces = 0usize;
+
+        for trace in &log.traces {
+            let acts: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)
+                })
+                .collect();
+            let Some(outcome) = acts.last().cloned() else {
+                continue;
+            };
+            trained_traces += 1;
+            *prior.entry(outcome.clone()).or_default() += 1;
+            // Every proper prefix of the trace is a training context.
+            for i in 1..acts.len() {
+                let seen = &acts[..i];
+                for k in 1..=2usize.min(seen.len()) {
+                    let key = format!("{k}\u{1e}{}", context_key(seen, k));
+                    *by_context
+                        .entry(key)
+                        .or_default()
+                        .entry(outcome.clone())
+                        .or_default() += 1;
+                }
+            }
+        }
+
+        if trained_traces == 0 {
+            return Err("No traces with activities to train on".to_string());
+        }
+
+        // Backoff: k=2 context → k=1 context → global prior.
+        let mut context_used = "prior";
+        let mut counts: &BTreeMap<String, usize> = &prior;
+        for k in [2usize, 1] {
+            if !prefix.is_empty() && k <= prefix.len() {
+                let key = format!("{k}\u{1e}{}", context_key(prefix, k));
+                if let Some(c) = by_context.get(&key) {
+                    counts = c;
+                    context_used = if k == 2 { "last_2" } else { "last_1" };
+                    break;
+                }
+            }
+        }
+
+        // Laplace smoothing over the outcome vocabulary.
+        let total: usize = counts.values().sum();
+        let denom = (total + prior.len()) as f64;
+        let mut distribution: Vec<(String, f64)> = prior
+            .keys()
+            .map(|o| {
+                let c = counts.get(o).copied().unwrap_or(0);
+                (o.clone(), (c + 1) as f64 / denom)
+            })
+            .collect();
+        distribution.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+
+        let (outcome, probability) = distribution[0].clone();
+        Ok(json!({
+            "algorithm": "predict_outcome",
+            "outcome": outcome,
+            "probability": probability,
+            "context_used": context_used,
+            "distribution": distribution
+                .iter()
+                .map(|(o, p)| json!({"outcome": o, "p": p}))
+                .collect::<Vec<_>>(),
+            "trained_traces": trained_traces,
+        }))
+    }
+}
+
+/// WASM export: train on the referenced event log and predict the outcome of
+/// the given prefix. See [`predict_outcome_from_log`].
+#[wasm_bindgen]
+pub fn predict_outcome_wasm(
+    eventlog_handle: &str,
+    activity_key: &str,
+    prefix_json: &str,
+) -> Result<JsValue, JsValue> {
+    let prefix: Vec<String> = serde_json::from_str(prefix_json)
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
+
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
+        let result = predict_outcome_from_log(log, activity_key, &prefix)
+            .map_err(|e| crate::error::js_val(&e))?;
+        Ok(crate::error::js_val(
+            &serde_json::to_string(&result).map_err(|e| crate::error::js_val(&e.to_string()))?,
+        ))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -107,7 +107,7 @@ describe('Security Audit: Input Validation Coverage', () => {
    * Task 1.4: Numeric Parameter Validation
    */
   it('should validate numeric parameters (reject negative, overflow)', async () => {
-    const invalidNumericParams = [
+    const invalidNumericParams: Array<{ timeout: number } | { maxMemory: number }> = [
       { timeout: -1000 },
       { timeout: Number.MAX_SAFE_INTEGER + 1 },
       { timeout: Infinity },

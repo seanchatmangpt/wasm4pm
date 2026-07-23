@@ -1,0 +1,12 @@
+The fundamental mechanism of \code{wasm4pm} is the \textit{Sovereign WASM Boundary}. 
+
+\begin{figure}[h]
+\centering
+\begin{tikzcd}
+    \text{Host (Untrusted)} \arrow[r, "{H_{in}, S}"] & \text{Linear Memory Sanctuary} \arrow[d, "\text{Pure Function } f"] \\
+    \text{Ledger (Auditable)} & \text{Receipt Hash } H_{receipt} \arrow[l, "\text{Binds}"]
+\end{tikzcd}
+\caption{The Sovereign Execution Authority Boundary}
+\end{figure}
+
+The host environment cannot inject non-determinism. Syscalls are trapped or explicitly routed through cryptographic logging, enforcing isolation.

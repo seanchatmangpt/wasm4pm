@@ -1,8 +1,9 @@
 //! Nanosecond Classification Family — branchless k-NN for process mining.
 
-use crate::models::EventLog;
+use crate::models::{parse_timestamp_ms, AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::*;
 
 const MIN_SAMPLES: usize = 10;
@@ -10,11 +11,56 @@ const TRAIN_SPLIT_RATIO: f64 = 0.8;
 const K_NEIGHBORS: usize = 3;
 const SHORT_THRESHOLD: f64 = 10.0;
 const MEDIUM_THRESHOLD: f64 = 30.0;
+const TIME_KEY: &str = "time:timestamp";
+
+/// Number of per-trace features produced by [`extract_features`].
+pub const N_FEATURES: usize = 5;
+/// Per-trace feature vector:
+/// `[event_count, unique_activities, duration_secs, mean_gap_secs, max_activity_repetition]`.
+pub type FeatureVec = [f64; N_FEATURES];
 
 #[derive(Copy, Clone, Debug)]
 struct Neighbor {
     dist: f64,
     label: u8,
+}
+
+#[inline(always)]
+fn sq_dist<const D: usize>(a: &[f64; D], b: &[f64; D]) -> f64 {
+    let mut acc = 0.0;
+    for d in 0..D {
+        let diff = a[d] - b[d];
+        acc += diff * diff;
+    }
+    acc
+}
+
+/// Per-dimension min-max normalization. Fits min/range on `fit_on` (train data)
+/// and applies to `data`. Constant dimensions (range == 0) map to 0.0 so that
+/// uninformative features carry zero distance weight. Deterministic.
+pub fn normalize_features<const D: usize>(fit_on: &[[f64; D]], data: &[[f64; D]]) -> Vec<[f64; D]> {
+    let mut min = [f64::INFINITY; D];
+    let mut max = [f64::NEG_INFINITY; D];
+    for f in fit_on {
+        for d in 0..D {
+            min[d] = min[d].min(f[d]);
+            max[d] = max[d].max(f[d]);
+        }
+    }
+    data.iter()
+        .map(|f| {
+            let mut out = [0.0f64; D];
+            for d in 0..D {
+                let range = max[d] - min[d];
+                out[d] = if range > 0.0 && range.is_finite() {
+                    (f[d] - min[d]) / range
+                } else {
+                    0.0
+                };
+            }
+            out
+        })
+        .collect()
 }
 
 #[wasm_bindgen]
@@ -35,9 +81,11 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
     }
 
     let train_size = (features.len() as f64 * TRAIN_SPLIT_RATIO) as usize;
-    let train_features = &features[..train_size];
+    // Mixed magnitudes (seconds vs counts) — min-max normalize, fit on train only.
+    let normalized = normalize_features(&features[..train_size], &features);
+    let train_features = &normalized[..train_size];
     let train_labels = &labels[..train_size];
-    let test_features = &features[train_size..];
+    let test_features = &normalized[train_size..];
     let test_labels = &labels[train_size..];
 
     // Compute full classification metrics, not just accuracy. A single accuracy
@@ -63,38 +111,47 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
 }
 
 /// Feature extraction from event log — separated for AutoML use.
-pub fn extract_features(log: &EventLog, activity_key: &str) -> (Vec<[f64; 2]>, Vec<u8>) {
-    let col = log.to_columnar(activity_key);
+///
+/// Walks `log.traces` directly (columnar form drops timestamps) and emits one
+/// [`FeatureVec`] plus a trace-length class label per trace.
+pub fn extract_features(log: &EventLog, activity_key: &str) -> (Vec<FeatureVec>, Vec<u8>) {
+    let mut features = Vec::with_capacity(log.traces.len());
+    let mut labels = Vec::with_capacity(log.traces.len());
 
-    let num_traces = col.trace_offsets.len().saturating_sub(1);
-    let mut features = Vec::with_capacity(num_traces);
-    let mut labels = Vec::with_capacity(num_traces);
+    for trace in &log.traces {
+        let len = trace.events.len() as f64;
 
-    let vocab_size = col.vocab.len();
-    let mut seen = vec![false; vocab_size];
-    let mut seen_list = Vec::with_capacity(vocab_size);
-
-    for i in 0..num_traces {
-        let start = col.trace_offsets[i];
-        let end = col.trace_offsets[i + 1];
-        let len = (end - start) as f64;
-
-        let mut unique = 0;
-        for &ev in &col.events[start..end] {
-            let ev_idx = ev as usize;
-            if ev_idx < vocab_size && !seen[ev_idx] {
-                seen[ev_idx] = true;
-                seen_list.push(ev_idx);
-                unique += 1;
+        let mut activity_counts: BTreeMap<&str, u64> = BTreeMap::new();
+        let mut timestamps: Vec<i64> = Vec::new();
+        for event in &trace.events {
+            if let Some(AttributeValue::String(s)) = event.attributes.get(activity_key) {
+                *activity_counts.entry(s.as_str()).or_insert(0) += 1;
+            }
+            if let Some(val) = event.attributes.get(TIME_KEY) {
+                let ms = match val {
+                    AttributeValue::Date(d) => parse_timestamp_ms(d),
+                    AttributeValue::String(s) => parse_timestamp_ms(s),
+                    _ => None,
+                };
+                if let Some(ms) = ms {
+                    timestamps.push(ms);
+                }
             }
         }
 
-        // Reset seen for next trace
-        for idx in seen_list.drain(..) {
-            seen[idx] = false;
-        }
+        let unique = activity_counts.len() as f64;
+        let max_repetition = activity_counts.values().max().copied().unwrap_or(0) as f64;
 
-        features.push([len, unique as f64]);
+        let (duration_secs, mean_gap_secs) = if timestamps.len() >= 2 {
+            let first = timestamps[0];
+            let last = timestamps[timestamps.len() - 1];
+            let dur = ((last - first) as f64 / 1000.0).max(0.0);
+            (dur, dur / (timestamps.len() - 1) as f64)
+        } else {
+            (0.0, 0.0)
+        };
+
+        features.push([len, unique, duration_secs, mean_gap_secs, max_repetition]);
         let label = if len < SHORT_THRESHOLD {
             0
         } else if len <= MEDIUM_THRESHOLD {
@@ -109,7 +166,12 @@ pub fn extract_features(log: &EventLog, activity_key: &str) -> (Vec<[f64; 2]>, V
 
 /// Nanosecond Sweep: Multi-K Cross-Validation in a single pass over distances.
 #[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
-pub fn knn_sweep_cv(features: &[[f64; 2]], labels: &[u8], folds: usize, max_k: usize) -> Vec<f64> {
+pub fn knn_sweep_cv<const D: usize>(
+    features: &[[f64; D]],
+    labels: &[u8],
+    folds: usize,
+    max_k: usize,
+) -> Vec<f64> {
     let n = features.len();
     if n == 0 {
         return vec![0.0; max_k + 1];
@@ -137,9 +199,7 @@ pub fn knn_sweep_cv(features: &[[f64; 2]], labels: &[u8], folds: usize, max_k: u
             let train_ranges = [0..test_start, test_end..n];
             for range in train_ranges {
                 for j in range {
-                    let dx = test_f[0] - features[j][0];
-                    let dy = test_f[1] - features[j][1];
-                    let dist = dx * dx + dy * dy;
+                    let dist = sq_dist(test_f, &features[j]);
 
                     if dist < current_max_dist {
                         let mut d = dist;
@@ -198,10 +258,10 @@ pub struct KnnMetrics {
 /// from a single pass of k-NN prediction. Mirrors the prediction logic of
 /// [`knn_internal`] so the `accuracy` field is identical.
 #[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
-pub fn knn_internal_metrics(
-    train_x: &[[f64; 2]],
+pub fn knn_internal_metrics<const D: usize>(
+    train_x: &[[f64; D]],
     train_y: &[u8],
-    test_x: &[[f64; 2]],
+    test_x: &[[f64; D]],
     test_y: &[u8],
     k: usize,
 ) -> KnnMetrics {
@@ -215,12 +275,8 @@ pub fn knn_internal_metrics(
             label: 0,
         }; 32];
         let mut max_dist = f64::MAX;
-        let tx = test_f[0];
-        let ty = test_f[1];
         for (train_f, &label) in train_x.iter().zip(train_y.iter()) {
-            let dx = tx - train_f[0];
-            let dy = ty - train_f[1];
-            let dist = dx * dx + dy * dy;
+            let dist = sq_dist(test_f, train_f);
             if dist < max_dist {
                 let mut d = dist;
                 let mut l = label;
@@ -302,15 +358,15 @@ pub fn knn_internal_metrics(
 
 /// Core k-NN implementation optimized for Nanosecond Architecture.
 ///
-/// - Squared Euclidean distance to avoid costly `sqrt`.
+/// - Squared Euclidean distance over all `D` dimensions to avoid costly `sqrt`.
 /// - Fixed-size stack array for neighbor list to avoid heap allocation.
 /// - Branchless insertion logic for pipeline efficiency.
 /// - Zero-copy sweep support for AutoML.
 #[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
-pub fn knn_internal(
-    train_x: &[[f64; 2]],
+pub fn knn_internal<const D: usize>(
+    train_x: &[[f64; D]],
     train_y: &[u8],
-    test_x: &[[f64; 2]],
+    test_x: &[[f64; D]],
     test_y: &[u8],
     k: usize,
 ) -> f64 {
@@ -324,64 +380,8 @@ pub fn knn_internal(
         }; 32];
         let mut max_dist = f64::MAX;
 
-        let tx = test_f[0];
-        let ty = test_f[1];
-
-        let train_chunks = train_x.chunks_exact(4);
-        let train_y_chunks = train_y.chunks_exact(4);
-        let rem_x = train_chunks.remainder();
-        let rem_y = train_y_chunks.remainder();
-
-        for (tc, tyc) in train_chunks.zip(train_y_chunks) {
-            // Unrolled distance calculation to saturate pipeline and allow auto-vectorization
-            let d0 = {
-                let dx = tx - tc[0][0];
-                let dy = ty - tc[0][1];
-                dx * dx + dy * dy
-            };
-            let d1 = {
-                let dx = tx - tc[1][0];
-                let dy = ty - tc[1][1];
-                dx * dx + dy * dy
-            };
-            let d2 = {
-                let dx = tx - tc[2][0];
-                let dy = ty - tc[2][1];
-                dx * dx + dy * dy
-            };
-            let d3 = {
-                let dx = tx - tc[3][0];
-                let dy = ty - tc[3][1];
-                dx * dx + dy * dy
-            };
-
-            // We only enter the branchless insertion loop if at least one candidate is better
-            // This preserves branchless throughput for the common case (far neighbors)
-            if d0 < max_dist || d1 < max_dist || d2 < max_dist || d3 < max_dist {
-                for (dist, label) in [(d0, tyc[0]), (d1, tyc[1]), (d2, tyc[2]), (d3, tyc[3])] {
-                    if dist < max_dist {
-                        let mut d = dist;
-                        let mut l = label;
-                        for n in 0..k_eff {
-                            let current = &mut top_k[n];
-                            let smaller = d < current.dist;
-                            let old_d = current.dist;
-                            let old_l = current.label;
-                            current.dist = if smaller { d } else { old_d };
-                            current.label = if smaller { l } else { old_l };
-                            d = if smaller { old_d } else { d };
-                            l = if smaller { old_l } else { l };
-                        }
-                        max_dist = top_k[k_eff - 1].dist;
-                    }
-                }
-            }
-        }
-
-        for (train_f, &label) in rem_x.iter().zip(rem_y.iter()) {
-            let dx = tx - train_f[0];
-            let dy = ty - train_f[1];
-            let dist = dx * dx + dy * dy;
+        for (train_f, &label) in train_x.iter().zip(train_y.iter()) {
+            let dist = sq_dist(test_f, train_f);
 
             if dist < max_dist {
                 let mut d = dist;
@@ -431,4 +431,61 @@ fn to_js_val(value: &serde_json::Value) -> Result<JsValue, JsValue> {
     serde_json::to_string(value)
         .map(|s| crate::error::js_val(&s))
         .map_err(|e| crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string()))
+}
+
+#[cfg(test)]
+mod feature_tests {
+    use super::*;
+    use crate::models::{Event, Trace};
+
+    fn trace_with(activities: &[&str], timestamps: &[&str]) -> Trace {
+        let mut trace = Trace::new();
+        for (i, &a) in activities.iter().enumerate() {
+            let mut ev = Event::new();
+            ev.attributes
+                .insert("concept:name".into(), AttributeValue::String(a.into()));
+            if let Some(&ts) = timestamps.get(i) {
+                ev.attributes
+                    .insert(TIME_KEY.into(), AttributeValue::String(ts.into()));
+            }
+            trace.events.push(ev);
+        }
+        trace
+    }
+
+    #[test]
+    fn extract_features_five_dims_hand_computed() {
+        let mut log = EventLog::default();
+        // 3 events, activities A,B,A → unique=2, max_rep=2.
+        // Timestamps span 60s over 3 events → duration=60, mean gap=30.
+        log.traces.push(trace_with(
+            &["A", "B", "A"],
+            &[
+                "2024-01-01T00:00:00Z",
+                "2024-01-01T00:00:30Z",
+                "2024-01-01T00:01:00Z",
+            ],
+        ));
+        let (features, labels) = extract_features(&log, "concept:name");
+        assert_eq!(features.len(), 1);
+        assert_eq!(features[0], [3.0, 2.0, 60.0, 30.0, 2.0]);
+        assert_eq!(labels, vec![0]);
+    }
+
+    #[test]
+    fn extract_features_no_timestamps_yields_zero_time_features() {
+        let mut log = EventLog::default();
+        log.traces.push(trace_with(&["A", "A", "A", "B"], &[]));
+        let (features, _) = extract_features(&log, "concept:name");
+        assert_eq!(features[0], [4.0, 2.0, 0.0, 0.0, 3.0]);
+    }
+
+    #[test]
+    fn normalize_features_maps_train_extremes_to_unit_range() {
+        let train = vec![[0.0, 10.0, 5.0, 1.0, 2.0], [10.0, 20.0, 5.0, 3.0, 4.0]];
+        let normalized = normalize_features(&train, &train);
+        assert_eq!(normalized[0], [0.0, 0.0, 0.0, 0.0, 0.0]);
+        // Constant dimension (index 2) must map to 0.0, not NaN.
+        assert_eq!(normalized[1], [1.0, 1.0, 0.0, 1.0, 1.0]);
+    }
 }

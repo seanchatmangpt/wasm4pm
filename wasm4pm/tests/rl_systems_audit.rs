@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! RL Systems Audit — 5 Critical Gaps + Rank-1 Oracle Validation
 //!

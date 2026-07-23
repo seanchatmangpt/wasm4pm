@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Convergence signal and state coverage tests (Gaps 4-5 — Rank-1 and Rank-3 oracles).
 //!
 //! These tests verify OTEL instrumentation for:

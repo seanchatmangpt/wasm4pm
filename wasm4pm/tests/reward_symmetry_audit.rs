@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Reward Function Symmetry Audit — RL Agent Convergence Analysis
 //!
 //! Audits the reward asymmetry [-5.5, +1.6] across 5 RL agents.

@@ -136,14 +136,36 @@ pub fn compute_activity_transition_matrix(
     })
 }
 
-/// Identify where process accelerates/decelerates over time.
+/// Identify where the process accelerates/decelerates over time.
+///
+/// Orders traces by their first timestamp, groups them into consecutive
+/// windows of `window_size` traces, computes each window's mean inter-event
+/// gap, and fits an OLS trend of mean gap over window index. A negative slope
+/// means gaps are shrinking over time (speedup); positive means slowdown.
 #[wasm_bindgen]
 pub fn analyze_process_speedup(
     eventlog_handle: &str,
     timestamp_key: &str,
-    _window_size: usize,
+    window_size: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
+        to_js_str(&analyze_process_speedup_from_log(
+            log,
+            timestamp_key,
+            window_size,
+        ))
+    })
+}
+
+/// Pure core of [`analyze_process_speedup`], usable from native tests.
+pub fn analyze_process_speedup_from_log(
+    log: &crate::models::EventLog,
+    timestamp_key: &str,
+    window_size: usize,
+) -> serde_json::Value {
+    {
+        // Per-trace: (first timestamp string for ordering, gaps within trace)
+        let mut per_trace: Vec<(String, Vec<f64>)> = Vec::new();
         let mut time_gaps: Vec<f64> = Vec::new();
 
         for trace in &log.traces {
@@ -152,38 +174,91 @@ pub fn analyze_process_speedup(
                 .iter()
                 .filter_map(|e| e.attributes.get(timestamp_key)?.as_string())
                 .collect();
-
-            // Calculate gaps using real ISO-8601 timestamp parsing
+            if timestamps.is_empty() {
+                continue;
+            }
+            let mut gaps = Vec::with_capacity(timestamps.len().saturating_sub(1));
             for pair in timestamps.windows(2) {
                 let gap = crate::parse_iso8601_duration(&pair[0], &pair[1]).abs();
+                gaps.push(gap);
                 time_gaps.push(gap);
             }
+            // ISO-8601 strings order lexicographically within a uniform offset.
+            per_trace.push((timestamps[0].to_string(), gaps));
         }
 
         if time_gaps.is_empty() {
-            return to_js_str(&json!({
+            return json!({
                 "message": "No timestamps found",
-                "gaps": []
+                "gaps": [],
+                "windows": [],
+            });
+        }
+
+        // Windowed trend over traces ordered by start time.
+        per_trace.sort_by(|a, b| a.0.cmp(&b.0));
+        let w = window_size.max(1);
+        let mut windows: Vec<serde_json::Value> = Vec::new();
+        let mut window_means: Vec<f64> = Vec::new();
+        for (wi, chunk) in per_trace.chunks(w).enumerate() {
+            let gaps: Vec<f64> = chunk.iter().flat_map(|(_, g)| g.iter().copied()).collect();
+            if gaps.is_empty() {
+                continue;
+            }
+            let mean_gap = gaps.iter().sum::<f64>() / gaps.len() as f64;
+            window_means.push(mean_gap);
+            windows.push(json!({
+                "window": wi,
+                "traces": chunk.len(),
+                "events_gaps": gaps.len(),
+                "mean_gap": mean_gap,
+                "start": chunk[0].0,
             }));
         }
 
+        // OLS slope of mean gap over window index (normal equations).
+        let k = window_means.len() as f64;
+        let (slope, trend) = if window_means.len() >= 2 {
+            let mean_x = (k - 1.0) / 2.0;
+            let mean_y = window_means.iter().sum::<f64>() / k;
+            let mut sxy = 0.0;
+            let mut sxx = 0.0;
+            for (i, &y) in window_means.iter().enumerate() {
+                let dx = i as f64 - mean_x;
+                sxy += dx * (y - mean_y);
+                sxx += dx * dx;
+            }
+            let slope = if sxx > 0.0 { sxy / sxx } else { 0.0 };
+            // Classify relative to the overall mean gap magnitude.
+            let scale = mean_y.abs().max(f64::EPSILON);
+            let trend = if slope < -0.01 * scale {
+                "speedup"
+            } else if slope > 0.01 * scale {
+                "slowdown"
+            } else {
+                "stable"
+            };
+            (slope, trend)
+        } else {
+            (0.0, "insufficient_windows")
+        };
+
         time_gaps.sort_unstable_by(f64::total_cmp);
-
         let mean: f64 = time_gaps.iter().sum::<f64>() / time_gaps.len() as f64;
-
-        // Calculate percentiles using index-based approach
         let p25_idx = ((time_gaps.len() as f64 - 1.0) * 0.25).round() as usize;
         let p75_idx = ((time_gaps.len() as f64 - 1.0) * 0.75).round() as usize;
-        let percentile_25 = time_gaps[p25_idx];
-        let percentile_75 = time_gaps[p75_idx];
 
-        to_js_str(&json!({
+        json!({
             "avg_gap": mean,
-            "p25": percentile_25,
-            "p75": percentile_75,
-            "speedup_range": percentile_75 - percentile_25,
-        }))
-    })
+            "p25": time_gaps[p25_idx],
+            "p75": time_gaps[p75_idx],
+            "speedup_range": time_gaps[p75_idx] - time_gaps[p25_idx],
+            "window_size": w,
+            "windows": windows,
+            "trend_slope": slope,
+            "trend": trend,
+        })
+    }
 }
 
 /// Compute pairwise trace similarity matrix.

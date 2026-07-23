@@ -7,11 +7,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { doctor } from '../src/cli.js';
 import {
+  doctor,
   ENV_CHECKS,
   TPS_CHECKS,
   CLAUDE_CODE_CHECKS,
+  ALGO_HEALTH_CHECKS,
+  DATA_QUALITY_CHECKS,
+  OUTPUT_CONTRACT_CHECKS,
+  OBSERVABILITY_CHECKS,
+  CONFIG_SYSTEM_CHECKS,
   ALL_CHECKS,
   type Diagnosis,
   type Pathology,
@@ -70,7 +75,8 @@ describe('doctor command — shape', () => {
   });
 
   it('doctor description mentions check count or subcommands', () => {
-    const desc = doctor.meta?.description ?? '';
+    const meta = doctor.meta as any;
+    const desc = meta?.description ?? '';
     expect(desc).toMatch(/check|subcommand|env|tps|perf/i);
   });
 });
@@ -105,18 +111,33 @@ describe('doctor check arrays — structure', () => {
     }
   });
 
-  it('ALL_CHECKS is the union of ENV_CHECKS + TPS_CHECKS + CLAUDE_CODE_CHECKS', () => {
+  // ALL_CHECKS now unions 8 category arrays (checks-arrays.ts), not just the
+  // original 3 — ALGO_HEALTH/DATA_QUALITY/OUTPUT_CONTRACT/OBSERVABILITY/
+  // CONFIG_SYSTEM checks were added since. Assert the full composition.
+  it('ALL_CHECKS is the union of all check category arrays', () => {
     expect(ALL_CHECKS.length).toBe(
-      ENV_CHECKS.length + TPS_CHECKS.length + CLAUDE_CODE_CHECKS.length
+      ENV_CHECKS.length +
+        TPS_CHECKS.length +
+        CLAUDE_CODE_CHECKS.length +
+        ALGO_HEALTH_CHECKS.length +
+        DATA_QUALITY_CHECKS.length +
+        OUTPUT_CONTRACT_CHECKS.length +
+        OBSERVABILITY_CHECKS.length +
+        CONFIG_SYSTEM_CHECKS.length
     );
-    for (const check of ENV_CHECKS) {
-      expect(ALL_CHECKS).toContain(check);
-    }
-    for (const check of TPS_CHECKS) {
-      expect(ALL_CHECKS).toContain(check);
-    }
-    for (const check of CLAUDE_CODE_CHECKS) {
-      expect(ALL_CHECKS).toContain(check);
+    for (const arr of [
+      ENV_CHECKS,
+      TPS_CHECKS,
+      CLAUDE_CODE_CHECKS,
+      ALGO_HEALTH_CHECKS,
+      DATA_QUALITY_CHECKS,
+      OUTPUT_CONTRACT_CHECKS,
+      OBSERVABILITY_CHECKS,
+      CONFIG_SYSTEM_CHECKS,
+    ]) {
+      for (const check of arr) {
+        expect(ALL_CHECKS).toContain(check);
+      }
     }
   });
 

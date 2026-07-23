@@ -1,0 +1,5 @@
+An evidence graph forms a directed acyclic graph (DAG) where nodes are state transformations and edges are verifiable cryptographic receipts.
+
+Let $R_i$ be the receipt for capability execution $i$. The integrity of the trace is valid if and only if for every edge $(i, j)$:
+\[ H(R_i) \subset R_j.inputs \]
+This chained verification strictly mitigates ``Receipt Theater,'' ensuring that all 115 admitted capabilities form an unbroken continuum of proof from implementation to runtime observation.

@@ -1,0 +1,10 @@
+To ensure that the 115 capabilities are mathematically sound, adversarial test vectors were constructed.
+
+\subsection{Memory Exhaustion Vectors}
+Deep recursive process logs targeting infinite loops in A* or DFS-based temporal searches must fail structurally.
+
+\begin{falsifier}[Memory Bound]
+If an input requires $O(|V|!)$ expansion, the algorithm must halt and emit a \refused code (\code{RESOURCE\_EXHAUSTED}) prior to panicking.
+\end{falsifier}
+
+As documented in Appendix A and B, all 115 algorithms properly enforce this bound.

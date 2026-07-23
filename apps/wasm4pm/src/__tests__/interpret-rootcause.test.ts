@@ -1,16 +1,28 @@
 /**
  * interpret-rootcause.test.ts
  *
- * Tests for the dramatically improved `wpm interpret` command and root cause analysis.
+ * Tests for the dramatically improved `wpm interpret` command (now: `wpm
+ * model explain`) and root cause analysis.
+ *
+ * `wpm interpret` had no dedicated slot in the noun/verb rebuild — it was
+ * absorbed into `wpm model explain` (see nouns/model/explain.ts): the
+ * bridged verb inspects the first positional token and forwards to
+ * `commands/interpret.ts`'s logic when it's a known metric name (fitness,
+ * precision, ...) or `report`; `compare` is ambiguous (both `explain` and
+ * `interpret` have their own `compare` subcommand) and is disambiguated by
+ * the token that follows it. Unit tests below (interpretMetric/
+ * compareMetrics/analyzeRootCauses, imported directly from
+ * commands/interpret.ts) are UNCHANGED — they never touch the CLI routing
+ * at all. Only the CLI-integration section changed invocations/exit codes.
  *
  * Covers:
- *   1. `wpm interpret <metric> <value>` — single metric interpretation
- *   2. `wpm interpret compare <metric> <v1> <v2>` — comparison output
- *   3. `wpm interpret report -i <fixture>` — full quality report
+ *   1. `wpm model explain <metric> <value>` — single metric interpretation
+ *   2. `wpm model explain compare <metric> <v1> <v2>` — comparison output
+ *   3. `wpm model explain report -i <fixture>` — full quality report
  *   4. Level threshold contracts (good/ok/low/poor)
  *   5. Root cause analysis for sub-threshold dimensions
  *   6. All 7 supported metrics
- *   7. Error handling (unknown metric, out-of-range value)
+ *   7. Error handling (unreachable-vs-reachable "unknown metric" case, out-of-range value)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -266,11 +278,11 @@ describe('analyzeRootCauses', () => {
 
 // ─── CLI integration tests ────────────────────────────────────────────────────
 
-describe('wpm interpret <metric> <value> — CLI integration', () => {
+describe('wpm model explain <metric> <value> — CLI integration (was: wpm interpret)', () => {
   it('exits 0 for valid fitness value', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'fitness', '0.73'], { env: env.env });
+      const r = await runCli(['model', 'explain', 'fitness', '0.73'], { env: env.env });
       expect(r.exitCode).toBe(EXIT_CODES.success);
     } finally { env.cleanup?.(); }
   });
@@ -278,7 +290,10 @@ describe('wpm interpret <metric> <value> — CLI integration', () => {
   it('JSON output contains metric, value, level, causes, actions', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'fitness', '0.73', '--format', 'json'], { env: env.env });
+      // model explain is bridged — the bridge always forces JSON regardless
+      // of the caller's own --format, so --format json here is redundant
+      // but harmless (kept for clarity of intent).
+      const r = await runCli(['model', 'explain', 'fitness', '0.73', '--format', 'json'], { env: env.env });
       expect(r.exitCode).toBe(EXIT_CODES.success);
       const body = JSON.parse(r.stdout);
       // payload may be nested under .payload or at root depending on makeResult
@@ -291,30 +306,49 @@ describe('wpm interpret <metric> <value> — CLI integration', () => {
     } finally { env.cleanup?.(); }
   });
 
-  it('exits 1 for unknown metric', async () => {
+  it('a metric-shaped-but-unrecognized first token falls through to explain\'s own lenient "unknown algorithm" path (exits 0, not an error)', async () => {
+    // `nouns/model/explain.ts` only routes to `commands/interpret.ts` when
+    // the first positional IS one of interpret's known metric names —
+    // there is no way to reach interpret's OWN "Unknown metric: ..."
+    // rejection through the merged `model explain` surface, because a
+    // token unrecognized as a metric is by definition treated as an
+    // algorithm name for `explain`, which never errors for an unknown
+    // algorithm (see jtbd-error-states.test.ts's "explain: ... graceful
+    // unknown-algo fallback" group). Confirmed live against the built CLI —
+    // this is a structural consequence of the merge, not a bug in this
+    // test. `payload.subject` echoes the token back either way.
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'invalid_metric', '0.73'], { env: env.env });
-      expect(r.exitCode).toBe(EXIT_CODES.config_error);
-    } finally { env.cleanup?.(); }
-  });
-
-  it('exits 1 for value out of range', async () => {
-    const env = await createCliTestEnv();
-    try {
-      const r = await runCli(['interpret', 'fitness', '1.5'], { env: env.env });
-      expect(r.exitCode).toBe(EXIT_CODES.config_error);
-    } finally { env.cleanup?.(); }
-  });
-
-  it('human output contains level marker', async () => {
-    const env = await createCliTestEnv();
-    try {
-      const r = await runCli(['interpret', 'fitness', '0.87'], { env: env.env });
+      const r = await runCli(['model', 'explain', 'invalid_metric', '0.73', '--format', 'json'], { env: env.env });
       expect(r.exitCode).toBe(EXIT_CODES.success);
-      // Should contain GOOD in the output (stripping ANSI codes)
-      const plain = r.stdout.replace(/\x1b\[[0-9;]*m/g, '');
-      expect(plain).toMatch(/GOOD/);
+      const body = JSON.parse(r.stdout);
+      const payload = body.payload ?? body;
+      expect(payload.subject).toBe('invalid_metric');
+    } finally { env.cleanup?.(); }
+  });
+
+  it('exits 2 (was: 1) for a value out of range on a REAL metric name (reaches interpret\'s own validation)', async () => {
+    // Unlike an unrecognized metric name, "fitness" IS routed to
+    // commands/interpret.ts, so its own `Value must be between 0 and 1`
+    // validation fires. `model explain` is bridged: NounVerbError.invalidInput()
+    // maps to EXIT_CODES.source_error (2) via cli.ts's ERROR_CODE_MAP,
+    // collapsing the old config_error(1)/source_error(2) distinction.
+    const env = await createCliTestEnv();
+    try {
+      const r = await runCli(['model', 'explain', 'fitness', '1.5'], { env: env.env });
+      expect(r.exitCode).toBe(EXIT_CODES.source_error);
+    } finally { env.cleanup?.(); }
+  });
+
+  it('human-readable level marker (GOOD/OK/LOW/POOR) is present in the JSON text even though stdout is always JSON now', async () => {
+    const env = await createCliTestEnv();
+    try {
+      const r = await runCli(['model', 'explain', 'fitness', '0.87'], { env: env.env });
+      expect(r.exitCode).toBe(EXIT_CODES.success);
+      // The bridge always forces JSON, so there's no separate ANSI human
+      // render to strip — but the level label/message fields still spell
+      // out "GOOD" as plain text inside the JSON payload.
+      expect(r.stdout).toMatch(/GOOD/);
     } finally { env.cleanup?.(); }
   });
 
@@ -323,18 +357,18 @@ describe('wpm interpret <metric> <value> — CLI integration', () => {
     try {
       const metrics = ['fitness', 'precision', 'generalization', 'simplicity', 'silhouette', 'drift_score', 'anomaly_rate'];
       for (const m of metrics) {
-        const r = await runCli(['interpret', m, '0.50'], { env: env.env });
+        const r = await runCli(['model', 'explain', m, '0.50'], { env: env.env });
         expect(r.exitCode).toBe(EXIT_CODES.success);
       }
     } finally { env.cleanup?.(); }
   });
 });
 
-describe('wpm interpret compare — CLI integration', () => {
+describe('wpm model explain compare — CLI integration (was: wpm interpret compare)', () => {
   it('exits 0 for valid compare', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'compare', 'fitness', '0.71', '0.87'], { env: env.env });
+      const r = await runCli(['model', 'explain', 'compare', 'fitness', '0.71', '0.87'], { env: env.env });
       expect(r.exitCode).toBe(EXIT_CODES.success);
     } finally { env.cleanup?.(); }
   });
@@ -342,7 +376,7 @@ describe('wpm interpret compare — CLI integration', () => {
   it('JSON output contains difference and significance', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'compare', 'fitness', '0.71', '0.87', '--format', 'json'], { env: env.env });
+      const r = await runCli(['model', 'explain', 'compare', 'fitness', '0.71', '0.87', '--format', 'json'], { env: env.env });
       expect(r.exitCode).toBe(EXIT_CODES.success);
       const body = JSON.parse(r.stdout);
       const payload = body.payload ?? body;
@@ -355,38 +389,44 @@ describe('wpm interpret compare — CLI integration', () => {
     } finally { env.cleanup?.(); }
   });
 
-  it('exits 1 for unknown metric in compare', async () => {
+  it('exits 2 (was: 1) for an unrecognized metric in compare (routes to explain\'s OWN compare, not interpret\'s)', async () => {
+    // `compare` is ambiguous between explain's algorithm-vs-algorithm
+    // compare and interpret's metric-vs-metric compare — the router
+    // disambiguates on the token AFTER "compare" (see nouns/model/explain.ts's
+    // module doc comment). "bad_metric" isn't a known metric name, so this
+    // routes to explain's compare, which fails on an unknown algorithm name
+    // (a DIFFERENT error message than interpret's, but still INVALID_INPUT / exit 2).
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'compare', 'bad_metric', '0.71', '0.87'], { env: env.env });
-      expect(r.exitCode).toBe(EXIT_CODES.config_error);
+      const r = await runCli(['model', 'explain', 'compare', 'bad_metric', '0.71', '0.87'], { env: env.env });
+      expect(r.exitCode).toBe(EXIT_CODES.source_error);
     } finally { env.cleanup?.(); }
   });
 
-  it('exits 1 for out-of-range values in compare', async () => {
+  it('exits 2 (was: 1) for out-of-range values in compare on a real metric (reaches interpret\'s compare)', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'compare', 'fitness', '0.71', '1.5'], { env: env.env });
-      expect(r.exitCode).toBe(EXIT_CODES.config_error);
+      const r = await runCli(['model', 'explain', 'compare', 'fitness', '0.71', '1.5'], { env: env.env });
+      expect(r.exitCode).toBe(EXIT_CODES.source_error);
     } finally { env.cleanup?.(); }
   });
 });
 
-describe('wpm interpret report — CLI integration', () => {
+describe('wpm model explain report — CLI integration (was: wpm interpret report)', () => {
   // The report subcommand requires a valid XES file and WASM
   // We test with the running-example fixture if available, else skip gracefully
-  it('exits 1 when no -i flag provided', async () => {
+  it('exits 2 (was: 1) when no -i flag provided', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'report'], { env: env.env });
-      expect(r.exitCode).toBe(EXIT_CODES.config_error);
+      const r = await runCli(['model', 'explain', 'report'], { env: env.env });
+      expect(r.exitCode).toBe(EXIT_CODES.source_error);
     } finally { env.cleanup?.(); }
   });
 
-  it('exits 1 for non-existent file', async () => {
+  it('exits 2 for non-existent file', async () => {
     const env = await createCliTestEnv();
     try {
-      const r = await runCli(['interpret', 'report', '-i', '/nonexistent/log.xes'], { env: env.env });
+      const r = await runCli(['model', 'explain', 'report', '-i', '/nonexistent/log.xes'], { env: env.env });
       expect([EXIT_CODES.source_error, EXIT_CODES.system_error]).toContain(r.exitCode);
     } finally { env.cleanup?.(); }
   });
@@ -396,7 +436,7 @@ describe('wpm interpret report — CLI integration', () => {
     try {
       // Use a small bundled fixture if the main fixture is unavailable
       const xesPath = FIXTURE_XES;
-      const r = await runCli(['interpret', 'report', '-i', xesPath, '--format', 'json'], { env: env.env });
+      const r = await runCli(['model', 'explain', 'report', '-i', xesPath, '--format', 'json'], { env: env.env });
       // If the file doesn't exist, it will exit 2 — skip cleanly
       if (r.exitCode === EXIT_CODES.source_error) {
         // File not found — acceptable in CI without fixture data

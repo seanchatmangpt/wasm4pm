@@ -1,39 +1,36 @@
 /**
  * drift-watch-cli.test.ts
  *
- * JSON contract tests for `wpm drift-watch`.
+ * Migrated from the retired top-level `wpm drift-watch` command (removed —
+ * see `apps/wasm4pm/src/nouns/_removed.ts`: `drift-watch` -> `model check
+ * --mode drift`).
  *
- * Coverage matrix:
- *   T01  missing input exits source_error (2)
- *   T02  missing input with --json exits source_error (2)
- *   T03  missing input with --format json exits source_error (2)
- *   T04  --format badformat exits config_error (1)
- *   T05  --format BADFORMAT (uppercase) exits config_error (1)
- *   T06  --format xml exits config_error (1)
- *   T07  --format human (valid) passes format validation — fails on missing file (2)
- *   T08  --format json (valid) passes format validation — fails on missing file (2)
- *   T09  --window 0 exits config_error (1)
- *   T10  --window -5 exits config_error (1)
- *   T11  --window abc exits config_error (1)
- *   T12  --window 1 (valid) passes — fails on missing file (2)
- *   T13  JSON tick includes drift_detected boolean
- *   T14  JSON tick drift_detected is exactly true or false (never null/number)
- *   T15  JSON tick includes ewma_value as a number
- *   T16  ewma_value is finite (not NaN, not Infinity)
- *   T17  JSON tick includes window_size as a number
- *   T18  window_size reflects the --window parameter
- *   T19  JSON tick includes metric as a string
- *   T20  metric reflects the --activity-key parameter
- *   T21  JSON tick includes threshold as a number
- *   T22  threshold reflects the --threshold parameter
- *   T23  JSON tick includes total_events (number or null — never undefined)
- *   T24  human output contains "drift" keyword
- *   T25  --format json produces JSON tick on stdout
- *   T26  JSON tick timestamp is ISO-8601 string
- *   T27  --threshold badvalue exits config_error (1)
- *   T28  --alpha 2 exits config_error (1) — above range
- *   T29  --interval 0 exits config_error (1)
- *   T30  JSON tick includes threshold_crossed boolean
+ * IMPORTANT — this is a full contract replacement, not a rename (read
+ * before editing further). The old `drift-watch` was a CONTINUOUS streaming
+ * daemon: it ran forever on `--interval`, emitted one EWMA-based JSON "tick"
+ * per interval (`drift_detected`, `ewma_value`, `window_size`, `metric`,
+ * `threshold`, `threshold_crossed`, `timestamp`, `total_events`), and had to
+ * be stopped with SIGINT. The new `wpm model check --mode drift`
+ * (`apps/wasm4pm/src/nouns/model/check.ts`) is a ONE-SHOT check: it runs
+ * once, analyzes the whole log with a jaccard-window concept-drift
+ * detector, and returns a single JSON result — there is no streaming loop,
+ * no `--interval`/`--alpha`/`--json`/`--format` flag, and no EWMA anywhere.
+ * Verified directly against `engines/algorithms.js`'s `detect_drift` output
+ * (grep confirms: this exact continuous/EWMA implementation
+ * (`commands/drift-watch.ts`) is not wired into ANY noun/verb — the old
+ * behavior is fully retired, not relocated to `lab`).
+ *
+ * The new result shape (`{mode,format,windowSize,drift:{drifts_detected,
+ * drifts,window_size,method,threshold}}`) has no dedicated CLI-level
+ * validation for `--window-size` (unlike the old `--window`): a bad value
+ * (`0`, non-numeric) is silently coerced (`Number(...)`, possibly `NaN`)
+ * and passed straight to the WASM detector rather than rejected with
+ * `config_error` — this is a genuine, verified behavior removal, not an
+ * oversight in this migration.
+ *
+ * This file is rewritten end-to-end against the real one-shot contract;
+ * the old streaming-tick machinery (`runDriftWatchOneTick`, SIGINT
+ * handling, `--interval`) is removed as inapplicable.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -61,7 +58,7 @@ interface CliResult {
   stderr: string;
 }
 
-/** Run the CLI and wait for process exit (suitable for validation / error tests). */
+/** Run the built CLI once and wait for process exit. */
 function runOnce(args: string[], timeoutMs = TIMEOUT_MS): Promise<CliResult> {
   return new Promise((resolve) => {
     execFile(
@@ -81,109 +78,36 @@ function runOnce(args: string[], timeoutMs = TIMEOUT_MS): Promise<CliResult> {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Streaming runner — captures the first JSON tick and then SIGINTs.
-// Uses a very large --interval so only one tick fires.
-// ---------------------------------------------------------------------------
-
-interface StreamResult {
-  firstLine: Record<string, unknown> | null;
-  allLines: Record<string, unknown>[];
-  exitCode: number;
-  rawStdout: string;
-  stderr: string;
-  parseError: string | null;
+function tryParseJson(s: string): unknown | undefined {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return undefined;
+  }
 }
 
-function runDriftWatchOneTick(
-  args: string[],
-  timeoutMs: number = TIMEOUT_MS
-): Promise<StreamResult> {
-  return new Promise((resolve) => {
-    let stdoutBuf = '';
-    let stderrBuf = '';
-    let settled = false;
-
-    const settle = (result: StreamResult) => {
-      if (!settled) {
-        settled = true;
-        resolve(result);
-      }
-    };
-
-    const child = execFile(
-      process.execPath,
-      // Pass a very large --interval so only one tick fires before we SIGINT.
-      [CLI_PATH, 'drift-watch', ...args, '--interval', '99999', '--no-save'],
-      { cwd: CLEAN_CWD, timeout: timeoutMs, maxBuffer: 4 * 1024 * 1024 },
-      (error, outBuf, errBuf) => {
-        stdoutBuf += outBuf ?? '';
-        stderrBuf += errBuf ?? '';
-        const code =
-          error && 'code' in error && typeof error.code === 'number'
-            ? error.code
-            : error
-              ? 1
-              : 0;
-        const jsonLines = stdoutBuf
-          .split('\n')
-          .map((l) => l.trim())
-          .filter((l) => l.startsWith('{'));
-        const allLines: Record<string, unknown>[] = [];
-        let parseError: string | null = null;
-        for (const line of jsonLines) {
-          try {
-            allLines.push(JSON.parse(line) as Record<string, unknown>);
-          } catch (e) {
-            parseError = String(e);
-          }
-        }
-        settle({
-          firstLine: allLines[0] ?? null,
-          allLines,
-          exitCode: code,
-          rawStdout: stdoutBuf,
-          stderr: stderrBuf,
-          parseError,
-        });
-      }
-    );
-
-    child.stdout?.on('data', (chunk: Buffer | string) => {
-      stdoutBuf += chunk.toString();
-      const lines = stdoutBuf
-        .split('\n')
-        .map((l) => l.trim())
-        .filter((l) => l.startsWith('{'));
-      if (lines.length > 0) {
-        // First tick arrived — give it 300 ms then SIGINT for a clean shutdown.
-        setTimeout(() => {
-          try { child.kill('SIGINT'); } catch { /* already exited */ }
-          const allLines: Record<string, unknown>[] = [];
-          let parseError: string | null = null;
-          for (const line of lines) {
-            try {
-              allLines.push(JSON.parse(line) as Record<string, unknown>);
-            } catch (e) {
-              parseError = String(e);
-            }
-          }
-          settle({
-            firstLine: allLines[0] ?? null,
-            allLines,
-            exitCode: 0,
-            rawStdout: stdoutBuf,
-            stderr: stderrBuf,
-            parseError,
-          });
-        }, 300);
-      }
-    });
-
-    child.stderr?.on('data', (chunk: Buffer | string) => {
-      stderrBuf += chunk.toString();
-    });
-  });
+interface DriftPoint {
+  position: number;
+  distance: number;
+  type: string;
+  appeared: string[];
+  disappeared: string[];
+  suggestion?: string;
+}
+interface DriftResult {
+  mode?: string;
+  format?: string;
+  windowSize?: number | null;
+  drift?: {
+    drifts_detected: number;
+    drifts: DriftPoint[];
+    window_size: number;
+    method: string;
+    threshold: number;
+  };
+}
+interface ErrorEnvelope {
+  error?: { code?: string; message?: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -247,340 +171,189 @@ afterAll(() => {
 });
 
 // ===========================================================================
-// T01–T03: Missing input → source_error (2)
+// Missing input → source_error (2) (was: T01-T03, three flag variants of the
+// same check — the new verb has no -i/--json/--format flags to vary, so this
+// collapses to the single real invocation shape)
 // ===========================================================================
 
-describe('T01–T03: missing input file exits source_error (2)', () => {
-  it('T01: missing input exits 2 (source_error)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT]);
+describe('missing input file exits source_error (2)', () => {
+  it('model check --mode drift on a missing file exits 2 (source_error) with INVALID_INPUT', async () => {
+    const r = await runOnce(['model', 'check', MISSING_INPUT, '--mode', 'drift']);
     expect(r.exitCode).toBe(2);
+    const j = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+    expect(j?.error?.code).toBe('INVALID_INPUT');
+  });
+});
+
+// ===========================================================================
+// --format / --alpha / --interval / --json validation (was: T04-T08, T27-T29)
+// (was: real config_error validation on the streaming daemon's flags —
+// GENUINELY REMOVED: the one-shot verb has none of these flags at all; see
+// file header. Rewritten to confirm they no longer exist rather than
+// asserting validation that isn't there.)
+// ===========================================================================
+
+describe('legacy streaming-only flags no longer exist on the one-shot verb', () => {
+  it('--format/--alpha/--interval/--json are absent from --help (were streaming-daemon-only)', async () => {
+    const r = await runOnce(['model', 'check', '--help']);
+    const help = r.stdout + r.stderr;
+    expect(help).not.toMatch(/--alpha\b/);
+    expect(help).not.toMatch(/--interval\b/);
+    expect(help).not.toMatch(/--json\b/);
   });
 
-  it('T02: missing input with --json exits 2 (source_error)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--json']);
+  it('passing them anyway is silently ignored, not rejected (no config_error path left)', async () => {
+    const r = await runOnce([
+      'model', 'check', smallLogPath, '--mode', 'drift',
+      '--format', 'badformat', '--alpha', '2', '--interval', '0', '--json',
+    ]);
+    // Ignored flags don't error — the verb still runs normally.
+    expect(r.exitCode).toBe(0);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.mode).toBe('drift');
+  });
+});
+
+// ===========================================================================
+// --window-size (was: --window, T09-T12 — validation GENUINELY REMOVED)
+// ===========================================================================
+
+describe('--window-size (was: --window; numeric validation removed, see file header)', () => {
+  it('--window-size 0 does not error — coerced and passed straight to the WASM detector', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', '0']);
+    expect(r.exitCode).toBe(0);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.windowSize).toBe(0);
+    expect(j?.drift).toBeDefined();
+  });
+
+  it('--window-size abc does not error — becomes null (NaN is not JSON-serializable), not a config_error', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', 'abc']);
+    expect(r.exitCode).toBe(0);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.windowSize).toBeNull();
+    expect(j?.drift).toBeDefined();
+  });
+
+  it('--window-size 7 (valid) is reflected verbatim in the result', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', '7']);
+    expect(r.exitCode).toBe(0);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.windowSize).toBe(7);
+  });
+
+  it('default --window-size is 50 when omitted', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift']);
+    expect(r.exitCode).toBe(0);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.windowSize).toBe(50);
+  });
+});
+
+// ===========================================================================
+// drift result field contract (was: T13-T26, T30 — old EWMA tick fields
+// drift_detected/ewma_value/metric/threshold_crossed/timestamp are GONE;
+// real fields verified directly against `model check --mode drift` output)
+// ===========================================================================
+
+describe('drift result field contract (was: JSON tick fields — see file header for the full field-shape change)', () => {
+  it('result has mode="drift" and format reflecting the detected log dialect', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.mode).toBe('drift');
+    expect(j?.format).toBe('xes');
+  });
+
+  it('drift.drifts_detected is a non-negative integer (was: drift_detected boolean)', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', '1']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(typeof j?.drift?.drifts_detected).toBe('number');
+    expect(j!.drift!.drifts_detected).toBeGreaterThanOrEqual(0);
+    expect(Number.isInteger(j!.drift!.drifts_detected)).toBe(true);
+  });
+
+  it('drift.drifts is an array whose length equals drifts_detected (was: no equivalent — new richer per-point detail)', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', '1']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(Array.isArray(j?.drift?.drifts)).toBe(true);
+    expect(j!.drift!.drifts.length).toBe(j!.drift!.drifts_detected);
+  });
+
+  it('each drift point has position, distance, type, appeared, disappeared', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', '1']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j!.drift!.drifts.length).toBeGreaterThan(0); // window_size=1 on this 3-trace fixture reliably surfaces drift
+    for (const point of j!.drift!.drifts) {
+      expect(typeof point.position).toBe('number');
+      expect(typeof point.distance).toBe('number');
+      expect(point.distance).toBeGreaterThanOrEqual(0);
+      expect(point.distance).toBeLessThanOrEqual(1);
+      expect(typeof point.type).toBe('string');
+      expect(Array.isArray(point.appeared)).toBe(true);
+      expect(Array.isArray(point.disappeared)).toBe(true);
+    }
+  });
+
+  it('drift.method is a non-empty string (was: no equivalent — "jaccard_window")', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(typeof j?.drift?.method).toBe('string');
+    expect(j!.drift!.method.length).toBeGreaterThan(0);
+  });
+
+  it('drift.threshold is a finite number in (0, 1] (was: threshold field on the tick — same concept, new location)', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(typeof j?.drift?.threshold).toBe('number');
+    expect(Number.isFinite(j!.drift!.threshold)).toBe(true);
+    expect(j!.drift!.threshold).toBeGreaterThan(0);
+    expect(j!.drift!.threshold).toBeLessThanOrEqual(1);
+  });
+
+  it('drift.window_size (the effective value used internally) is a positive integer', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--window-size', '7']);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(typeof j?.drift?.window_size).toBe('number');
+    expect(j!.drift!.window_size).toBeGreaterThan(0);
+  });
+
+  it('a successful result is the plain payload, not the old {command,status,payload,meta} wrapper', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift']);
+    const j = tryParseJson(r.stdout) as Record<string, unknown> | undefined;
+    expect(j).not.toHaveProperty('command');
+    expect(j).not.toHaveProperty('payload');
+    expect(j).toHaveProperty('mode', 'drift');
+  });
+});
+
+// ===========================================================================
+// --activity-key (was: --activity-key affecting the "metric" tick field —
+// that field no longer exists; the flag still exists and is accepted)
+// ===========================================================================
+
+describe('--activity-key (was: reflected in the tick\'s "metric" field — that field is gone, see file header)', () => {
+  it('accepts a custom --activity-key without erroring', async () => {
+    const r = await runOnce(['model', 'check', smallLogPath, '--mode', 'drift', '--activity-key', 'org:resource']);
+    expect(r.exitCode).toBe(0);
+    const j = tryParseJson(r.stdout) as DriftResult | undefined;
+    expect(j?.mode).toBe('drift');
+  });
+});
+
+// ===========================================================================
+// Format guard: --mode drift requires XES/CSV, not OCEL (was: not covered by
+// the old suite at all — the old command only ever read XES/CSV; this is a
+// real, new, worth-covering guard on the one-shot verb)
+// ===========================================================================
+
+describe('--mode drift log-format guard', () => {
+  it('rejects an OCEL log with INVALID_INPUT (drift requires XES/CSV)', async () => {
+    const ocelPath = path.join(tempDir, 'sample.ocel.json');
+    fs.writeFileSync(ocelPath, JSON.stringify({ eventTypes: [], objectTypes: [], events: [], objects: [] }));
+    const r = await runOnce(['model', 'check', ocelPath, '--mode', 'drift']);
     expect(r.exitCode).toBe(2);
+    const j = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+    expect(j?.error?.code).toBe('INVALID_INPUT');
+    expect(j?.error?.message).toMatch(/drift requires an XES or CSV/i);
   });
-
-  it('T03: missing input with --format json exits 2 (source_error)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--format', 'json']);
-    expect(r.exitCode).toBe(2);
-  });
-});
-
-// ===========================================================================
-// T04–T08: --format validation
-// ===========================================================================
-
-describe('T04–T08: --format flag validation', () => {
-  it('T04: --format badformat exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--format', 'badformat']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--format|format/i);
-  });
-
-  it('T05: --format BADFORMAT (uppercase) exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--format', 'BADFORMAT']);
-    expect(r.exitCode).toBe(1);
-  });
-
-  it('T06: --format xml exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--format', 'xml']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--format|format/i);
-  });
-
-  it('T07: --format human passes validation — fails on missing file (exit 2)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--format', 'human']);
-    expect(r.exitCode).toBe(2);
-    expect(r.stderr).not.toMatch(/Invalid --format/i);
-  });
-
-  it('T08: --format json passes validation — fails on missing file (exit 2)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--format', 'json']);
-    expect(r.exitCode).toBe(2);
-    expect(r.stderr).not.toMatch(/Invalid --format/i);
-  });
-});
-
-// ===========================================================================
-// T09–T12: --window validation
-// ===========================================================================
-
-describe('T09–T12: --window validation', () => {
-  it('T09: --window 0 exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--window', '0']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--window|window/i);
-  });
-
-  it('T10: --window -5 exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--window', '-5']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--window|window/i);
-  });
-
-  it('T11: --window abc exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--window', 'abc']);
-    expect(r.exitCode).toBe(1);
-  });
-
-  it('T12: --window 1 (valid) passes — fails on missing file (exit 2)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--window', '1']);
-    expect(r.exitCode).not.toBe(1);
-    expect(r.stderr).not.toMatch(/positive/i);
-  });
-});
-
-// ===========================================================================
-// T13–T30: JSON tick field contract (requires WASM binary)
-// Tests gracefully skip if WASM is unavailable (exitCode !== 0 and no firstLine).
-// ===========================================================================
-
-describe('T13–T16: drift_detected and ewma_value fields', () => {
-  it('T13: JSON tick includes drift_detected boolean', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--window', '2'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      // WASM unavailable — validate that it wasn't a config error
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'drift_detected')).toBe(true);
-    expect(typeof result.firstLine.drift_detected).toBe('boolean');
-  }, TIMEOUT_MS);
-
-  it('T14: drift_detected is exactly true or false — never null/number/string', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--window', '2'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    const dd = result.firstLine.drift_detected;
-    expect(dd === true || dd === false).toBe(true);
-    expect(typeof dd).toBe('boolean');
-  }, TIMEOUT_MS);
-
-  it('T15: JSON tick includes ewma_value as a number', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--window', '2'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'ewma_value')).toBe(true);
-    expect(typeof result.firstLine.ewma_value).toBe('number');
-  }, TIMEOUT_MS);
-
-  it('T16: ewma_value is a finite number (not NaN, not Infinity)', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--window', '2'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    const ev = result.firstLine.ewma_value as number;
-    expect(Number.isFinite(ev)).toBe(true);
-    expect(Number.isNaN(ev)).toBe(false);
-  }, TIMEOUT_MS);
-});
-
-describe('T17–T18: window_size field', () => {
-  it('T17: JSON tick includes window_size as a number', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'window_size')).toBe(true);
-    expect(typeof result.firstLine.window_size).toBe('number');
-  }, TIMEOUT_MS);
-
-  it('T18: window_size reflects the --window parameter', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--window', '7'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(result.firstLine.window_size).toBe(7);
-  }, TIMEOUT_MS);
-});
-
-describe('T19–T20: metric field', () => {
-  it('T19: JSON tick includes metric as a string', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'metric')).toBe(true);
-    expect(typeof result.firstLine.metric).toBe('string');
-    expect((result.firstLine.metric as string).length).toBeGreaterThan(0);
-  }, TIMEOUT_MS);
-
-  it('T20: metric reflects the --activity-key parameter', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--activity-key', 'org:resource'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(result.firstLine.metric).toBe('org:resource');
-  }, TIMEOUT_MS);
-});
-
-describe('T21–T22: threshold field', () => {
-  it('T21: JSON tick includes threshold as a number', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'threshold')).toBe(true);
-    expect(typeof result.firstLine.threshold).toBe('number');
-  }, TIMEOUT_MS);
-
-  it('T22: threshold reflects the --threshold parameter', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json', '--threshold', '0.5'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(result.firstLine.threshold).toBe(0.5);
-  }, TIMEOUT_MS);
-});
-
-describe('T23: total_events field', () => {
-  it('T23: JSON tick includes total_events (number or null — never undefined)', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    // total_events must exist and be either a finite number or null
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'total_events')).toBe(true);
-    const te = result.firstLine.total_events;
-    expect(te === null || (typeof te === 'number' && Number.isFinite(te))).toBe(true);
-  }, TIMEOUT_MS);
-});
-
-describe('T24–T26: human output and --format json path', () => {
-  it('T24: human output (default) — drift-watch command starts and produces drift-related output', async () => {
-    // In human mode the streaming loop writes to consola (stderr) not JSON to stdout.
-    // We use runDriftWatchOneTick with --json here but just verify the command starts
-    // and processes the log without a config_error.  The "human contains drift" check
-    // is instead done by verifying the process does NOT exit 1 (config) and the stderr
-    // OR stdout mentions drift-related content (the startup banner is on stderr).
-    // NOTE: We send --json so the tick arrives on stdout enabling SIGINT, then check
-    // that a valid tick was produced — this implicitly proves human mode also works
-    // since both paths load the same log.
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    // Must not be a config_error regardless of WASM availability
-    expect(result.exitCode).not.toBe(1);
-    // If WASM loaded and a tick was emitted, verify it has drift-related fields
-    if (result.firstLine !== null) {
-      const combined = (result.rawStdout + result.stderr).toLowerCase();
-      // drift-watch should output the word "drift" somewhere in the combined output
-      // (either in the JSON tick or in stderr startup messages)
-      const hasDrift = combined.includes('drift') || Object.prototype.hasOwnProperty.call(result.firstLine, 'drift_detected');
-      expect(hasDrift).toBe(true);
-    }
-  }, TIMEOUT_MS);
-
-  it('T25: --format json produces JSON tick on stdout (same as --json)', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--format', 'json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      // Either WASM unavailable or format validation failed — ensure not config_error
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    // A JSON tick was produced — must have the canonical drift fields
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'drift_detected')).toBe(true);
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'ewma_value')).toBe(true);
-  }, TIMEOUT_MS);
-
-  it('T26: JSON tick timestamp is a valid ISO-8601 string', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(typeof result.firstLine.timestamp).toBe('string');
-    const parsed = Date.parse(result.firstLine.timestamp as string);
-    expect(Number.isFinite(parsed)).toBe(true);
-  }, TIMEOUT_MS);
-});
-
-describe('T27–T29: additional validation guards', () => {
-  it('T27: --threshold badvalue exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--threshold', 'badvalue']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--threshold|threshold/i);
-  });
-
-  it('T28: --alpha 2 exits config_error (1) — above valid range [0.001, 1]', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--alpha', '2']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--alpha|alpha/i);
-  });
-
-  it('T29: --interval 0 exits config_error (1)', async () => {
-    const r = await runOnce(['drift-watch', '-i', MISSING_INPUT, '--interval', '0']);
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toMatch(/--interval|interval/i);
-  });
-});
-
-describe('T30: threshold_crossed field', () => {
-  it('T30: JSON tick includes threshold_crossed as a strict boolean', async () => {
-    const result = await runDriftWatchOneTick(
-      ['-i', smallLogPath, '--json'],
-      TIMEOUT_MS
-    );
-    if (result.firstLine === null) {
-      expect(result.exitCode).not.toBe(1);
-      return;
-    }
-    expect(Object.prototype.hasOwnProperty.call(result.firstLine, 'threshold_crossed')).toBe(true);
-    const tc = result.firstLine.threshold_crossed;
-    expect(tc === true || tc === false).toBe(true);
-    expect(typeof tc).toBe('boolean');
-  }, TIMEOUT_MS);
 });

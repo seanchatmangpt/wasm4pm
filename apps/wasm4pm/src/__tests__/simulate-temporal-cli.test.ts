@@ -1,5 +1,13 @@
 /**
- * simulate-temporal-cli.test.ts — CLI integration tests for `wpm simulate` and `wpm temporal`
+ * `wpm simulate` and `wpm temporal` were both retired; the hard-break table
+ * (nouns/_removed.ts) forwards them to `wpm model simulate` and
+ * `wpm lab temporal` respectively — both bridges to their unmodified legacy
+ * `commands/*.ts` bodies. Confirmed live against the built CLI: a successful
+ * call returns the legacy `{command,status,payload,meta}` envelope verbatim;
+ * a failing call is thrown as the framework's bare `{error:{code,message}}`
+ * envelope instead (no top-level `command`/`status` field survives).
+ *
+ * simulate-temporal-cli.test.ts — CLI integration tests for `wpm model simulate` and `wpm lab temporal`
  *
  * Oracle rank: Rank 2 (Domain contract — exit codes, JSON envelope shape, and flag behavior).
  *
@@ -135,11 +143,14 @@ function runCli(args: string[], timeoutMs = 30_000): Promise<CliResult> {
   });
 }
 
+// `command`/`status` only exist on the bridge's success-path passthrough of
+// the legacy envelope; a bridged failure is thrown and reaches stdout as the
+// bare `{error:{code,message}}` shape with neither field (see file header).
 interface Envelope {
-  command: string;
-  status: 'ok' | 'error';
+  command?: string;
+  status?: 'ok' | 'error';
   payload?: Record<string, unknown>;
-  error?: string;
+  error?: { code?: string; message?: string };
 }
 
 function parseEnvelope(result: CliResult): Envelope {
@@ -194,7 +205,7 @@ describe('wpm simulate — CLI integration', () => {
   });
 
   it('exits 0 and returns valid JSON envelope with simulation payload', async () => {
-    const result = await runCli(['simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['model', 'simulate', '-i', env.xesPath, '--format', 'json', '--no-save']);
     expect(result.exitCode).toBe(0);
 
     const j = parseEnvelope(result);
@@ -226,6 +237,7 @@ describe('wpm simulate — CLI integration', () => {
 
   it('--cases flag sets casesRequested in the response', async () => {
     const result = await runCli([
+      'model',
       'simulate',
       '-i',
       env.xesPath,
@@ -245,6 +257,7 @@ describe('wpm simulate — CLI integration', () => {
 
   it('--seed flag is accepted without crashing and seed value is echoed in response', async () => {
     const result = await runCli([
+      'model',
       'simulate',
       '-i',
       env.xesPath,
@@ -264,6 +277,7 @@ describe('wpm simulate — CLI integration', () => {
 
   it('--format human does not crash and exits 0', async () => {
     const result = await runCli([
+      'model',
       'simulate',
       '-i',
       env.xesPath,
@@ -277,18 +291,19 @@ describe('wpm simulate — CLI integration', () => {
     expect(combined.length).toBeGreaterThan(0);
   });
 
-  it('missing input exits 2 (source_error) and returns error envelope', async () => {
-    const result = await runCli(['simulate', '--format', 'json']);
+  it('missing input exits 2 (source_error) and returns the bare {error} envelope', async () => {
+    const result = await runCli(['model', 'simulate', '--format', 'json']);
     expect(result.exitCode).toBe(2);
 
     const j = parseEnvelope(result);
-    expect(j.command).toBe('simulate');
-    expect(j.status).toBe('error');
+    expect(j.command).toBeUndefined();
+    expect(j.status).toBeUndefined();
     expect(j.error).toBeDefined();
   });
 
-  it('nonexistent file exits 2 or 3 and returns structured error', async () => {
+  it('nonexistent file exits 2 or 3 and returns structured {error}', async () => {
     const result = await runCli([
+      'model',
       'simulate',
       '-i',
       '/nonexistent/path/log.xes',
@@ -300,8 +315,8 @@ describe('wpm simulate — CLI integration', () => {
     expect([2, 3]).toContain(result.exitCode);
 
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
-    expect(j.command).toBe('simulate');
+    expect(j.error).toBeDefined();
+    expect(j.command).toBeUndefined();
   });
 });
 
@@ -319,7 +334,7 @@ describe('wpm temporal — CLI integration', () => {
   });
 
   it('exits 0 and returns valid JSON envelope with dfg and violations payload', async () => {
-    const result = await runCli(['temporal', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['lab', 'temporal', '-i', env.xesPath, '--format', 'json', '--no-save']);
     expect(result.exitCode).toBe(0);
 
     const j = parseEnvelope(result);
@@ -349,7 +364,7 @@ describe('wpm temporal — CLI integration', () => {
   });
 
   it('DFG nodes in temporal output match activities present in the XES', async () => {
-    const result = await runCli(['temporal', '-i', env.xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['lab', 'temporal', '-i', env.xesPath, '--format', 'json', '--no-save']);
     expect(result.exitCode).toBe(0);
 
     const j = parseEnvelope(result);
@@ -374,6 +389,7 @@ describe('wpm temporal — CLI integration', () => {
 
   it('--threshold flag is reflected in the JSON response', async () => {
     const result = await runCli([
+      'lab',
       'temporal',
       '-i',
       env.xesPath,
@@ -393,6 +409,7 @@ describe('wpm temporal — CLI integration', () => {
 
   it('--format human does not crash and exits 0', async () => {
     const result = await runCli([
+      'lab',
       'temporal',
       '-i',
       env.xesPath,
@@ -405,18 +422,19 @@ describe('wpm temporal — CLI integration', () => {
     expect(combined.length).toBeGreaterThan(0);
   });
 
-  it('missing input exits 2 (source_error) and returns error envelope', async () => {
-    const result = await runCli(['temporal', '--format', 'json']);
+  it('missing input exits 2 (source_error) and returns the bare {error} envelope', async () => {
+    const result = await runCli(['lab', 'temporal', '--format', 'json']);
     expect(result.exitCode).toBe(2);
 
     const j = parseEnvelope(result);
-    expect(j.command).toBe('temporal');
-    expect(j.status).toBe('error');
+    expect(j.command).toBeUndefined();
+    expect(j.status).toBeUndefined();
     expect(j.error).toBeDefined();
   });
 
-  it('nonexistent file exits 2 or 3 and returns structured error', async () => {
+  it('nonexistent file exits 2 or 3 and returns structured {error}', async () => {
     const result = await runCli([
+      'lab',
       'temporal',
       '-i',
       '/nonexistent/path/log.xes',
@@ -427,7 +445,7 @@ describe('wpm temporal — CLI integration', () => {
     expect([2, 3]).toContain(result.exitCode);
 
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
-    expect(j.command).toBe('temporal');
+    expect(j.error).toBeDefined();
+    expect(j.command).toBeUndefined();
   });
 });

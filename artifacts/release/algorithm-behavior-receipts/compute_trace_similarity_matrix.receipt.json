@@ -9,15 +9,15 @@
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
-  "wasm_export_present": false,
+  "wasm_export_present": true,
   "positive_cases": [
     {
       "case_id": "compute_trace_similarity_matrix.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "2f1e0cb62f93dc186df1d1db77b455825ea8d31a70acff8b77c5286cb81d8196",
-      "duration_ms": 0.26358299999992596,
-      "receipt_hash": "86420fa7309e5adc4d17b937b46134d1a896b737c96b924cbe210ba2d81a4bea"
+      "duration_ms": 0.31195800000023155,
+      "receipt_hash": "42c112f574aa0ffd5fc4fa94ea93cecf427e68a3eb5025d19a93fefb243f8713"
     }
   ],
   "negative_cases": [
@@ -49,5 +49,5 @@
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "7a55d4c941c59d706e38918308ba4b050c6b3bff7ffe81be3861baa9c669262a"
+  "algorithm_evidence_hash": "4cde3dca5dad3fb5955345298d9cf012831af77591e4093fa084aa83552b86c8"
 }

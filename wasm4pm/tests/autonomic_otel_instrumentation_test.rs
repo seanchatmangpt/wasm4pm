@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Autonomic System OTEL Instrumentation Audit
 //!
 //! Tests validate that critical autonomic loops emit complete OTEL spans with proper

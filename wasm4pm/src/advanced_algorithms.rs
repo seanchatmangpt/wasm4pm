@@ -71,6 +71,106 @@ pub fn discover_heuristic_miner_from_log(
     dfg
 }
 
+/// Default AND-measure threshold for split/join classification, per the
+/// Heuristics Miner AND/XOR measure (Weijters et al.).
+pub const DEFAULT_AND_THRESHOLD: f64 = 0.65;
+
+/// Classify AND/XOR splits and joins in the dependency graph mined by the
+/// Heuristic Miner.
+///
+/// For an activity `a` with dependency-graph successors `b`, `c`:
+///
+/// ```text
+/// a ⇒ (b ∧ c)  =  (|b>c| + |c>b|) / (|a>b| + |a>c| + 1)
+/// ```
+///
+/// The split is `"AND"` when the measure is ≥ `and_threshold` for every
+/// successor pair, else `"XOR"`. Joins use the mirrored measure over
+/// predecessors. Only activities with ≥ 2 successors (resp. predecessors)
+/// are reported. Output is sorted by activity name (deterministic).
+pub fn classify_heuristic_splits_joins(
+    log: &EventLog,
+    activity_key: &str,
+    dependency_threshold: f64,
+    and_threshold: f64,
+) -> (Vec<serde_json::Value>, Vec<serde_json::Value>) {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        for i in start..end.saturating_sub(1) {
+            *follows
+                .entry((col.events[i], col.events[i + 1]))
+                .or_default() += 1;
+        }
+    }
+    let f = |a: u32, b: u32| -> f64 { follows.get(&(a, b)).copied().unwrap_or(0) as f64 };
+
+    // Dependency-filtered graph (same edge criterion as the mined DFG).
+    let mut successors: BTreeMap<u32, BTreeSet<u32>> = BTreeMap::new();
+    let mut predecessors: BTreeMap<u32, BTreeSet<u32>> = BTreeMap::new();
+    for &(a, b) in follows.keys() {
+        let (ab, ba) = (f(a, b), f(b, a));
+        if (ab - ba) / (ab + ba + 1.0) >= dependency_threshold {
+            successors.entry(a).or_default().insert(b);
+            predecessors.entry(b).or_default().insert(a);
+        }
+    }
+
+    // AND iff the measure holds for every unordered target pair.
+    let classify = |targets: &BTreeSet<u32>, measure: &dyn Fn(u32, u32) -> f64| -> &'static str {
+        let ts: Vec<u32> = targets.iter().copied().collect();
+        for i in 0..ts.len() {
+            for j in (i + 1)..ts.len() {
+                if measure(ts[i], ts[j]) < and_threshold {
+                    return "XOR";
+                }
+            }
+        }
+        "AND"
+    };
+
+    let to_entries = |graph: &BTreeMap<u32, BTreeSet<u32>>,
+                      measure_for: &dyn Fn(u32, u32, u32) -> f64|
+     -> Vec<serde_json::Value> {
+        let mut entries: Vec<(String, serde_json::Value)> = graph
+            .iter()
+            .filter(|(_, targets)| targets.len() >= 2)
+            .map(|(&node, targets)| {
+                let m = |b: u32, c: u32| measure_for(node, b, c);
+                let split_type = classify(targets, &m);
+                let mut names: Vec<&str> = targets.iter().map(|&t| col.vocab[t as usize]).collect();
+                names.sort_unstable();
+                let node_name = col.vocab[node as usize].to_owned();
+                (
+                    node_name.clone(),
+                    json!({
+                        "activity": node_name,
+                        "type": split_type,
+                        "targets": names,
+                    }),
+                )
+            })
+            .collect();
+        entries.sort_unstable_by(|x, y| x.0.cmp(&y.0));
+        entries.into_iter().map(|(_, v)| v).collect()
+    };
+
+    let splits = to_entries(&successors, &|a, b, c| {
+        (f(b, c) + f(c, b)) / (f(a, b) + f(a, c) + 1.0)
+    });
+    let joins = to_entries(&predecessors, &|d, b, c| {
+        (f(b, c) + f(c, b)) / (f(b, d) + f(c, d) + 1.0)
+    });
+
+    (splits, joins)
+}
+
 /// Discover a process model using the Heuristic Miner algorithm.
 ///
 /// More robust than Alpha++ for noisy, real-world logs. Filters low-frequency
@@ -119,6 +219,15 @@ pub fn discover_heuristic_miner(
         Ok((dfg, log_size))
     })?;
 
+    let (splits, joins) = get_or_init_state().with_event_log(eventlog_handle, |log| {
+        Ok(classify_heuristic_splits_joins(
+            log,
+            activity_key,
+            dependency_threshold,
+            DEFAULT_AND_THRESHOLD,
+        ))
+    })?;
+
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
 
@@ -142,6 +251,8 @@ pub fn discover_heuristic_miner(
         "edges": n_edges,
         "algorithm": "heuristic_miner",
         "dependency_threshold": dependency_threshold,
+        "splits": splits,
+        "joins": joins,
     }))
 }
 
@@ -414,6 +525,81 @@ pub fn compute_model_metrics(
             "complexity_score": (activities.len() as f64 * variants.len() as f64).sqrt(),
         }))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    fn make_log(variants: &[(&[&str], usize)]) -> EventLog {
+        let mut log = EventLog::new();
+        for &(acts, count) in variants {
+            for _ in 0..count {
+                let trace = Trace {
+                    attributes: BTreeMap::new(),
+                    events: acts
+                        .iter()
+                        .map(|&a| {
+                            let mut attrs = BTreeMap::new();
+                            attrs.insert(
+                                "concept:name".to_string(),
+                                AttributeValue::String(a.to_string()),
+                            );
+                            Event { attributes: attrs }
+                        })
+                        .collect(),
+                };
+                log.traces.push(trace);
+            }
+        }
+        log
+    }
+
+    #[test]
+    fn heuristic_and_split_join_detected_on_parallel_log() {
+        // 10×⟨a,b,c,d⟩ + 10×⟨a,c,b,d⟩:
+        // |b>c| = |c>b| = 10, |a>b| = |a>c| = 10
+        // AND measure at a = (10+10)/(10+10+1) = 20/21 ≥ 0.65 ⇒ AND
+        let log = make_log(&[(&["a", "b", "c", "d"], 10), (&["a", "c", "b", "d"], 10)]);
+        let (splits, joins) =
+            classify_heuristic_splits_joins(&log, "concept:name", 0.5, DEFAULT_AND_THRESHOLD);
+
+        assert_eq!(splits.len(), 1, "only 'a' has ≥2 successors: {:?}", splits);
+        assert_eq!(splits[0]["activity"], "a");
+        assert_eq!(splits[0]["type"], "AND");
+        assert_eq!(splits[0]["targets"], serde_json::json!(["b", "c"]));
+
+        assert_eq!(joins.len(), 1, "only 'd' has ≥2 predecessors: {:?}", joins);
+        assert_eq!(joins[0]["activity"], "d");
+        assert_eq!(joins[0]["type"], "AND");
+        assert_eq!(joins[0]["targets"], serde_json::json!(["b", "c"]));
+    }
+
+    #[test]
+    fn heuristic_xor_split_join_detected_on_exclusive_log() {
+        // 10×⟨a,b,d⟩ + 10×⟨a,c,d⟩: |b>c| = |c>b| = 0 → measure 0/21 ⇒ XOR
+        let log = make_log(&[(&["a", "b", "d"], 10), (&["a", "c", "d"], 10)]);
+        let (splits, joins) =
+            classify_heuristic_splits_joins(&log, "concept:name", 0.5, DEFAULT_AND_THRESHOLD);
+
+        assert_eq!(splits.len(), 1);
+        assert_eq!(splits[0]["activity"], "a");
+        assert_eq!(splits[0]["type"], "XOR");
+
+        assert_eq!(joins.len(), 1);
+        assert_eq!(joins[0]["activity"], "d");
+        assert_eq!(joins[0]["type"], "XOR");
+    }
+
+    #[test]
+    fn heuristic_no_splits_on_sequential_log() {
+        let log = make_log(&[(&["a", "b", "c"], 10)]);
+        let (splits, joins) =
+            classify_heuristic_splits_joins(&log, "concept:name", 0.5, DEFAULT_AND_THRESHOLD);
+        assert!(splits.is_empty());
+        assert!(joins.is_empty());
+    }
 }
 
 #[wasm_bindgen]

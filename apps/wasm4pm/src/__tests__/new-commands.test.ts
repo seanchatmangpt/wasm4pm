@@ -1,12 +1,20 @@
 /**
- * E2E integration tests for new CLI commands
- * Tests: conformance --format json output verification and error handling
+ * E2E integration tests, migrated from the old top-level `wpm conformance`
+ * command onto `wpm model check` (nouns/_removed.ts:
+ * `{ old: 'conformance', replacement: 'model check --mode replay' }`).
  *
- * Van der Aalst QA perspective:
- * - JSON output must be parseable and schema-compliant
- * - Error handling must produce consistent error codes
- *
- * Note: Tests skip if commands are not fully implemented yet.
+ * The old `conformance` command reported a continuous fitness/precision
+ * score (with `--method token-replay|alignment`); `model check`'s
+ * conformance engine is intentionally fail-closed instead (see
+ * `engines/conformance/verdict.ts`): a check produces a discrete
+ * `status: ADMITTED | REJECTED | INDETERMINATE` verdict over grouped
+ * episodes, not a top-level continuous `fitness`/`precision` score, and
+ * has no `--method` selector (--mode selects the whole checking strategy).
+ * Per-episode continuous fitness numbers still exist, nested under
+ * `findings[].details.case_fitness[].trace_fitness` (verified live below)
+ * — this test asserts the new top-level verdict contract plus that nested
+ * numeric detail, rather than a `fitness`/`precision` pair that no longer
+ * exists.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -56,41 +64,48 @@ function runCli(args: string[], timeoutMs = 30000): Promise<CliResult> {
   });
 }
 
-describe('New Commands: conformance JSON output and error handling', () => {
+describe('model check (was: wpm conformance) — fail-closed verdict output and error handling', () => {
   let env: TestEnv;
   beforeEach(async () => { env = await createTestEnv(); });
   afterEach(async () => { await env.cleanup(); });
 
-  it('conformance --format json returns valid JSON with fitness in [0,1] and honors --method parameter', async () => {
-    const result = await runCli(['conformance', env.xesPath, '--format', 'json']);
-    if (result.exitCode !== 0) return;
+  it('model check --mode self returns a fail-closed verdict with per-episode fitness detail in [0,1]', async () => {
+    const result = await runCli(['model', 'check', env.xesPath, '--mode', 'self', '--fitness-threshold', '0.5']);
+    expect(result.exitCode === 0 || result.exitCode === 6).toBe(true);
 
     let parsed: Record<string, unknown> = {};
     expect(() => { parsed = JSON.parse(result.stdout); }).not.toThrow();
-    for (const field of ['status', 'fitness', 'precision', 'diagnostics']) {
+    for (const field of ['status', 'mode', 'checked', 'admitted', 'rejected', 'findings']) {
       expect(parsed).toHaveProperty(field);
     }
-    expect(parsed.fitness as number).toBeGreaterThanOrEqual(0.0);
-    expect(parsed.fitness as number).toBeLessThanOrEqual(1.0);
-    expect(parsed.precision as number).toBeGreaterThanOrEqual(0.0);
-    expect(parsed.precision as number).toBeLessThanOrEqual(1.0);
+    expect(['ADMITTED', 'REJECTED', 'INDETERMINATE']).toContain(parsed.status);
+    expect(parsed.checked as number).toBeGreaterThanOrEqual(0);
 
-    const methodResult = await runCli(['conformance', env.xesPath, '--method', 'token-replay', '--format', 'json']);
-    if (methodResult.exitCode === 0) {
-      const methodJson = JSON.parse(methodResult.stdout);
-      expect(methodJson.method).toBe('token-replay');
+    // Per-trace fitness is still a continuous [0,1] number, just nested
+    // under each rejected episode's finding rather than top-level.
+    const findings = parsed.findings as Array<{ details?: { case_fitness?: Array<{ trace_fitness: number }> } }>;
+    for (const finding of findings) {
+      for (const cf of finding.details?.case_fitness ?? []) {
+        expect(cf.trace_fitness).toBeGreaterThanOrEqual(0.0);
+        expect(cf.trace_fitness).toBeLessThanOrEqual(1.0);
+      }
     }
   });
 
-  it('returns exit code 2 for missing file, invalid model JSON, and malformed XES', async () => {
-    expect((await runCli(['conformance', 'nonexistent.xes'])).exitCode).toBe(2);
+  it('returns source_error (2) for a missing log file or an unparseable model file', async () => {
+    const missing = await runCli(['model', 'check', 'nonexistent.xes', '--mode', 'self']);
+    expect(missing.exitCode).toBe(2);
 
     const invalidModel = path.join(env.tempDir, 'invalid.json');
     await fs.writeFile(invalidModel, '{ invalid json }', 'utf-8');
-    expect((await runCli(['conformance', env.xesPath, '--model', invalidModel])).exitCode).toBe(2);
+    const badModel = await runCli(['model', 'check', env.xesPath, '--mode', 'replay', '--model', invalidModel]);
+    expect(badModel.exitCode).toBe(2);
+  });
 
+  it('returns a nonzero exit code for a malformed (non-XES/OCEL/CSV) log', async () => {
     const malformed = path.join(env.tempDir, 'malformed.xes');
     await fs.writeFile(malformed, 'not valid xes', 'utf-8');
-    expect((await runCli(['conformance', malformed])).exitCode).not.toBe(0);
+    const result = await runCli(['model', 'check', malformed, '--mode', 'self']);
+    expect(result.exitCode).not.toBe(0);
   });
 });

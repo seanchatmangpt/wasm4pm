@@ -1,251 +1,77 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
-import * as fs from 'fs';
-import * as path from 'path';
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+/**
+ * CAPABILITY GAP — read before editing further.
+ *
+ * This file used to test `wpm proof collect|verify|show|audit|promote` —
+ * the "proof pack" Andon gate (run tests, collect BLAKE3-hashed evidence
+ * into a pack, independently re-verify it, check producer approval)
+ * implemented in `apps/wasm4pm/src/commands/proof.ts`.
+ *
+ * `apps/wasm4pm/src/commands/proof.ts` is DEAD CODE: `grep -rl
+ * "commands/proof" src/nouns/` returns nothing — it is not imported by
+ * `cli.ts`'s `ALL_NOUNS` and not bridged by any verb. Per
+ * `apps/wasm4pm/src/nouns/_removed.ts`, the bare noun `proof` maps to
+ * `evidence report` — but `evidence report` bridges to a COMPLETELY
+ * DIFFERENT legacy command, `commands/results.ts` ("view saved discovery/
+ * prediction results"), which has no collect/verify/show/audit/promote
+ * subcommands and no BLAKE3 proof-pack semantics at all. Verified live:
+ *
+ *   $ wpm proof collect
+ *   error: 'wpm proof' was removed — use 'wpm evidence report'
+ *   (exit 1)
+ *
+ * This is the same class of gap documented in
+ * `apps/wasm4pm/src/__tests__/powl-freq-analysis.test.ts` (see that file's
+ * header for the fuller pattern write-up): a substantial, well-specified
+ * legacy command left completely unbridged, with a `_removed.ts` entry
+ * that names an unrelated noun/verb rather than a functional equivalent.
+ * Recommendation for the plan owner: wire `commands/proof.ts` behind a new
+ * bridging verb (e.g. `lab proof` or `evidence proof`, matching the
+ * established pattern for `prolog8`/`trace`/`predict`/`models`), or
+ * explicitly ratify dropping the proof-pack gate and `trash`
+ * `commands/proof.ts` (the parent plan's item 6 cannot delete it as-is:
+ * its logic is not "fully migrated").
+ *
+ * PRE-EXISTING BUG (unrelated to the noun-verb rebuild, found while
+ * migrating this file): every test below called the shared `runCli` test
+ * helper (`@wasm4pm/testing`, signature `runCli(args: string[], options?)`)
+ * as `runCli('proof', ['collect', ...])` — a STRING as the first argument,
+ * not an array. Spreading a string in JS iterates its characters, so the
+ * actual child process was invoked as `wpm p r o o f collect ...`, which is
+ * nonsense — the assertions never exercised real `proof` behavior even
+ * before this migration; they only passed because the exit-code tolerance
+ * was `[0,1,2,3,4,5]` (i.e. "any code"). This is fixed below as part of
+ * making the file test what it says it tests.
+ *
+ * Per the migration plan's guidance for genuinely-removed behavior, this
+ * file is reduced to asserting the CLI's actual current (hard-break)
+ * behavior for every subcommand it used to exercise.
+ */
 
-describe('proof — Proof pack gate: collect, verify, audit, show, promote', () => {
-  let tempDir: string;
+import { describe, it, expect } from 'vitest';
+import { runCli, createCliTestEnv } from '@wasm4pm/testing';
 
-  beforeEach(async () => {
-    await createCliTestEnv();
-    tempDir = path.join(process.cwd(), 'test-proof-packs-' + Date.now());
-    mkdirSync(tempDir, { recursive: true });
-  });
-
-  afterEach(() => {
-    if (tempDir && fs.existsSync(tempDir)) {
-      rmSync(tempDir, { recursive: true, force: true });
+describe('wpm proof — hard-break contract (capability gap, see file header)', () => {
+  it.each(['collect', 'verify', 'show', 'audit', 'promote'] as const)(
+    'proof %s hard-breaks with exit 1 and points at the (functionally unrelated) replacement',
+    async (sub) => {
+      await createCliTestEnv();
+      const result = await runCli(['proof', sub]);
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toMatch(/'wpm proof' was removed — use 'wpm evidence report'/);
     }
+  );
+
+  it('the hard-break fires before any argument validation (flags are irrelevant)', async () => {
+    const result = await runCli(['proof', 'verify', '/nonexistent-pack', '--format', 'json']);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/was removed/);
   });
 
-  describe('proof collect', () => {
-    it('should run collect and report output', async () => {
-      const result = await runCli('proof', ['collect']);
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-      expect(result.stdout.length).toBeGreaterThan(0);
-    });
-
-    it('should support custom run ID', async () => {
-      const customRunId = 'test-run-' + Date.now();
-      const result = await runCli('proof', ['collect', '--runId', customRunId]);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-      if (result.exitCode === 0) {
-        expect(result.stdout).toContain(customRunId);
-      }
-    });
-
-    it('should support output directory', async () => {
-      const outDir = path.join(tempDir, 'custom-pack');
-      const result = await runCli('proof', ['collect', '--out', outDir]);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-
-    it('should support JSON format', async () => {
-      const result = await runCli('proof', ['collect', '--format', 'json']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-      if (result.exitCode === 0) {
-        expect(() => JSON.parse(result.stdout)).not.toThrow();
-      }
-    });
-
-    it('should support quiet flag', async () => {
-      const result = await runCli('proof', ['collect', '--quiet']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-
-    it('should support verbose flag', async () => {
-      const result = await runCli('proof', ['collect', '--verbose']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-  });
-
-  describe('proof verify', () => {
-    it('should fail on nonexistent pack', async () => {
-      const packDir = path.join(tempDir, 'nonexistent');
-      const result = await runCli('proof', ['verify', packDir]);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should validate MANIFEST.json exists', async () => {
-      const packDir = path.join(tempDir, 'no-manifest');
-      mkdirSync(packDir, { recursive: true });
-      const result = await runCli('proof', ['verify', packDir]);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should validate verdict.json exists', async () => {
-      const packDir = path.join(tempDir, 'no-verdict');
-      mkdirSync(packDir, { recursive: true });
-      writeFileSync(path.join(packDir, 'MANIFEST.json'), JSON.stringify({ files: [] }));
-      const result = await runCli('proof', ['verify', packDir]);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should validate producer is approved', async () => {
-      const packDir = path.join(tempDir, 'bad-producer');
-      mkdirSync(packDir, { recursive: true });
-      mkdirSync(path.join(packDir, 'FINAL'), { recursive: true });
-      writeFileSync(path.join(packDir, 'MANIFEST.json'), JSON.stringify({ files: [] }));
-      writeFileSync(path.join(packDir, 'FINAL', 'verdict.json'), JSON.stringify({ verdict: 'Accepted' }));
-      writeFileSync(path.join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json'), JSON.stringify({ producer: 'bad-producer' }));
-      const result = await runCli('proof', ['verify', packDir]);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should support JSON output', async () => {
-      const packDir = path.join(tempDir, 'json-verify');
-      mkdirSync(packDir, { recursive: true });
-      writeFileSync(path.join(packDir, 'MANIFEST.json'), JSON.stringify({ files: [] }));
-      const result = await runCli('proof', ['verify', packDir, '--format', 'json']);
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    });
-
-    it('should support quiet flag', async () => {
-      const result = await runCli('proof', ['verify', '/nonexistent', '--quiet']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-  });
-
-  describe('proof show', () => {
-    it('should reject nonexistent pack', async () => {
-      const result = await runCli('proof', ['show', '/nonexistent-pack']);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should display verdict if file exists', async () => {
-      const packDir = path.join(tempDir, 'show-pack');
-      mkdirSync(packDir, { recursive: true });
-      mkdirSync(path.join(packDir, 'FINAL'), { recursive: true });
-      writeFileSync(path.join(packDir, 'FINAL', 'verdict.json'), JSON.stringify({ verdict: 'Accepted' }));
-      const result = await runCli('proof', ['show', packDir]);
-      expect(result.stdout).toMatch(/Accepted|verdict/i);
-    });
-
-    it('should exit with error on AndonPull', async () => {
-      const packDir = path.join(tempDir, 'andon-show');
-      mkdirSync(packDir, { recursive: true });
-      mkdirSync(path.join(packDir, 'FINAL'), { recursive: true });
-      writeFileSync(path.join(packDir, 'FINAL', 'verdict.json'), JSON.stringify({ verdict: 'AndonPull' }));
-      const result = await runCli('proof', ['show', packDir]);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should support JSON output', async () => {
-      const packDir = path.join(tempDir, 'json-show');
-      mkdirSync(packDir, { recursive: true });
-      mkdirSync(path.join(packDir, 'FINAL'), { recursive: true });
-      writeFileSync(path.join(packDir, 'FINAL', 'verdict.json'), JSON.stringify({ verdict: 'Accepted' }));
-      const result = await runCli('proof', ['show', packDir, '--format', 'json']);
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    });
-
-    it('should support quiet flag', async () => {
-      const result = await runCli('proof', ['show', '/nonexistent', '--quiet']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-
-    it('should support verbose flag', async () => {
-      const packDir = path.join(tempDir, 'verb-show');
-      mkdirSync(packDir, { recursive: true });
-      mkdirSync(path.join(packDir, 'FINAL'), { recursive: true });
-      writeFileSync(path.join(packDir, 'FINAL', 'verdict.json'), JSON.stringify({ verdict: 'Accepted' }));
-      const result = await runCli('proof', ['show', packDir, '--verbose']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-  });
-
-  describe('proof audit', () => {
-    it('should generate audit output', async () => {
-      const result = await runCli('proof', ['audit']);
-      expect(result.stdout.length).toBeGreaterThan(0);
-    });
-
-    it('should support output path', async () => {
-      const outPath = path.join(tempDir, 'audit.json');
-      const result = await runCli('proof', ['audit', '--out', outPath]);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-
-    it('should output JSON format', async () => {
-      const result = await runCli('proof', ['audit', '--format', 'json']);
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    });
-
-    it('should support quiet flag', async () => {
-      const result = await runCli('proof', ['audit', '--quiet']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-
-    it('should support verbose flag', async () => {
-      const result = await runCli('proof', ['audit', '--verbose']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-  });
-
-  describe('proof promote', () => {
-    it('should reject nonexistent pack', async () => {
-      const result = await runCli('proof', ['promote', '--pack', '/nonexistent']);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should output JSON format', async () => {
-      const result = await runCli('proof', ['promote', '--format', 'json']);
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    });
-
-    it('should support quiet flag', async () => {
-      const result = await runCli('proof', ['promote', '--quiet']);
-      expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
-    });
-  });
-
-  describe('proof (root command)', () => {
-    it('should show help', async () => {
-      const result = await runCli('proof', ['--help']);
-      expect(result.stdout.length).toBeGreaterThan(0);
-    });
-
-    it('should support collect subcommand', async () => {
-      const result = await runCli('proof', ['collect', '--help']);
-      expect([0, 1, 2]).toContain(result.exitCode);
-    });
-
-    it('should support verify subcommand', async () => {
-      const result = await runCli('proof', ['verify', '--help']);
-      expect([0, 1, 2]).toContain(result.exitCode);
-    });
-
-    it('should support show subcommand', async () => {
-      const result = await runCli('proof', ['show', '--help']);
-      expect([0, 1, 2]).toContain(result.exitCode);
-    });
-
-    it('should support audit subcommand', async () => {
-      const result = await runCli('proof', ['audit', '--help']);
-      expect([0, 1, 2]).toContain(result.exitCode);
-    });
-
-    it('should support promote subcommand', async () => {
-      const result = await runCli('proof', ['promote', '--help']);
-      expect([0, 1, 2]).toContain(result.exitCode);
-    });
-  });
-
-  describe('proof — manifest handling', () => {
-    it('should require manifest for verify', async () => {
-      const packDir = path.join(tempDir, 'manifest-test');
-      mkdirSync(packDir, { recursive: true });
-      const result = await runCli('proof', ['verify', packDir]);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-  });
-
-  describe('proof — exit code contracts', () => {
-    it('should have valid exit codes', async () => {
-      const validCodes = [EXIT_CODES.success, EXIT_CODES.config_error, EXIT_CODES.source_error, EXIT_CODES.execution_error];
-      const result = await runCli('proof', ['verify', '/nonexistent']);
-      expect(validCodes.some(code => code === result.exitCode || typeof code === 'number')).toBe(true);
-    });
+  it('the underlying rich implementation still exists on disk as dead code (commands/proof.ts) — see file header', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const proofCommandPath = path.resolve(__dirname, '../commands/proof.ts');
+    expect(fs.existsSync(proofCommandPath)).toBe(true);
   });
 });

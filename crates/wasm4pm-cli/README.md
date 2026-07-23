@@ -37,6 +37,9 @@ The Rust binary exposes a narrower, lower-level command set built directly on th
 | `agent list\|status\|switch\|reset` | Manage the 5 RL agents (QLearning, SARSA, DoubleQLearning, ExpectedSARSA, REINFORCE) via `RL_ORCHESTRATOR` thread-local |
 | `spc status\|history` | Read the SPC ring buffer from `SPC_HISTORY` thread-local — Western Electric rule violations, cycle metrics |
 | `audit` | SIMD-accelerated token replay (`simd_token_replay`) with Vision 2030 verdicts (TRUTHFUL/VARIANCE/DECEPTIVE) |
+| `receipt` | Forensics toolkit for receipt verification and adversarial audits (`ReceiptDoctor`) |
+| `lean` | Lean value-stream audit of `.wasm4pm/` artifacts (overproduction/waste checks) |
+| `oracle check\|watch` | Andon oracle for online prefix conformance and impossible-prefix detection against an OCEL tape |
 | `man` | Generate Markdown documentation for all commands |
 
 ---
@@ -47,12 +50,12 @@ The Rust binary exposes a narrower, lower-level command set built directly on th
 |-----------|-----------------------------------|----------------------------------|
 | Binary name | `wpm` | `wpm` |
 | Published | No | Yes (`@wasm4pm/cli` on npm) |
-| Command count | 10 commands / subcommands | 35+ commands |
+| Command count | 13 commands / subcommands | 35+ commands |
 | WASM bridge | None — calls Rust crate directly | Yes — via `@wasm4pm/kernel` |
 | Unique commands | `telco`, `spc`, `agent`, `wizard`, `audit` | `predict`, `drift-watch`, `powl`, `conformance`, `quality`, `simulate`, `temporal`, `social`, `swarm`, `repl`, `prolog8`, `membrane`, `trace`, and many more |
 | Overlapping commands | `doctor`, `autoprocess`, `mining discover/conformance`, `config` | Same functional coverage, more complete |
 | OTEL instrumentation | None | Full 3-layer (CLI/JSONL/OTEL spans) |
-| Receipt chain | None | BLAKE3 receipts auto-saved to `.wasm4pm/results/` |
+| Receipt chain | None | BLAKE3 receipts auto-saved to `.wasm4pm/receipts/` |
 | Test harness | `assert_cmd` + `predicates` (5 tests in `tests/cli_tests.rs`) | `vitest` + `@wasm4pm/testing` harnesses |
 
 ---

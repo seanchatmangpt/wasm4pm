@@ -1771,8 +1771,12 @@ fn autoinstinct_semantics_paper_grounded() {
 #[test]
 fn ltl_monitor_paper_grounded() {
     let path = "tests/fixtures/papers/ltl_monitor.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut cases = Vec::new();
             if let Some(arr) = inp.get("cases").and_then(|v| v.as_array()) {
@@ -1837,8 +1841,12 @@ fn ltl_monitor_paper_grounded() {
 #[test]
 fn allen_temporal_paper_grounded() {
     let path = "tests/fixtures/papers/allen_temporal.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -1889,8 +1897,12 @@ fn allen_temporal_paper_grounded() {
 #[test]
 fn fuzzy_logic_paper_grounded() {
     let path = "tests/fixtures/papers/fuzzy_logic.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -2026,8 +2038,12 @@ fn bayesian_network_paper_grounded() {
 #[test]
 fn csp_ac3_paper_grounded() {
     let path = "tests/fixtures/papers/csp_ac3.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -2118,8 +2134,12 @@ fn default_logic_paper_grounded() {
 #[test]
 fn htn_planning_paper_grounded() {
     let path = "tests/fixtures/papers/htn_planning.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut state = Vec::new();
             if let Some(arr) = inp.get("state").and_then(|v| v.as_array()) {
@@ -2207,8 +2227,12 @@ fn htn_planning_paper_grounded() {
 #[test]
 fn dempster_shafer_paper_grounded() {
     let path = "tests/fixtures/papers/dempster_shafer.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut rules = Vec::new();
             if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
@@ -2261,8 +2285,12 @@ fn dempster_shafer_paper_grounded() {
 #[test]
 fn frames_inheritance_paper_grounded() {
     let path = "tests/fixtures/papers/frames_inheritance.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -2299,8 +2327,12 @@ fn frames_inheritance_paper_grounded() {
 #[test]
 fn ebl_paper_grounded() {
     let path = "tests/fixtures/papers/ebl.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -2361,8 +2393,12 @@ fn ebl_paper_grounded() {
 #[test]
 fn asp_paper_grounded() {
     let path = "tests/fixtures/papers/asp.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut rules = Vec::new();
             if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
@@ -2421,8 +2457,12 @@ fn asp_paper_grounded() {
 #[test]
 fn description_logic_paper_grounded() {
     let path = "tests/fixtures/papers/description_logic.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -2473,8 +2513,12 @@ fn description_logic_paper_grounded() {
 #[test]
 fn abductive_lp_paper_grounded() {
     let path = "tests/fixtures/papers/abductive_lp.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
@@ -2556,8 +2600,12 @@ fn abductive_lp_paper_grounded() {
 #[test]
 fn abductive_ibe_paper_grounded() {
     let path = "tests/fixtures/papers/abductive_ibe.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    {
+        let content = fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("MISSING FIXTURE (test must not skip): {path}: {e}"));
+        {
+            let json = serde_json::from_str::<serde_json::Value>(&content)
+                .unwrap_or_else(|e| panic!("INVALID FIXTURE JSON: {path}: {e}"));
             let inp = &json["input"];
             let mut facts = Vec::new();
             if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {

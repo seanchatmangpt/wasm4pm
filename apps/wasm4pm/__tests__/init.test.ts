@@ -31,8 +31,12 @@ describe('Init Command (filesystem oracle)', () => {
     }
   });
 
+  // 'wpm init' was retired -> 'wpm config init' (see nouns/_removed.ts).
+  // 'config init' bridges to the legacy `init` command body unmodified
+  // (nouns/config/init.ts), so filesystem side effects are unchanged.
+
   it('creates wasm4pm.toml with [execution] block in cwd', async () => {
-    const result = await runCli(['init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
+    const result = await runCli(['config', 'init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
 
     expect(result.exitCode).toBe(EXIT_CODES.success);
 
@@ -43,7 +47,7 @@ describe('Init Command (filesystem oracle)', () => {
   });
 
   it('creates wasm4pm.json with valid execution.profile when configFormat=json', async () => {
-    const result = await runCli(['init', '--config-format', 'json', '--quiet'], { cwd: tmpDir });
+    const result = await runCli(['config', 'init', '--config-format', 'json', '--quiet'], { cwd: tmpDir });
     expect(result.exitCode).toBe(EXIT_CODES.success);
 
     const jsonPath = path.join(tmpDir, 'wasm4pm.json');
@@ -52,9 +56,11 @@ describe('Init Command (filesystem oracle)', () => {
     expect(typeof config.execution?.profile).toBe('string');
   });
 
-  it('rejects invalid configFormat with CONFIG_ERROR (1) and writes no config file', async () => {
-    const result = await runCli(['init', '--config-format', 'yaml', '--quiet'], { cwd: tmpDir });
-    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+  it('rejects invalid configFormat with INVALID_INPUT (source_error, 2) and writes no config file', async () => {
+    const result = await runCli(['config', 'init', '--config-format', 'yaml', '--quiet'], { cwd: tmpDir });
+    // Framework error code INVALID_INPUT maps to EXIT_CODES.source_error (2)
+    // per apps/wasm4pm/src/cli.ts's ERROR_CODE_MAP, not config_error (1).
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
 
     // No wasm4pm.toml or wasm4pm.json should have been written.
     expect(fs.existsSync(path.join(tmpDir, 'wasm4pm.toml'))).toBe(false);
@@ -65,7 +71,7 @@ describe('Init Command (filesystem oracle)', () => {
     const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
     fs.writeFileSync(tomlPath, 'sentinel-content');
 
-    await runCli(['init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
+    await runCli(['config', 'init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
 
     const after = await fsp.readFile(tomlPath, 'utf-8');
     expect(after).toBe('sentinel-content');

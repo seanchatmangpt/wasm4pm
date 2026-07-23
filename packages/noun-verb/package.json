@@ -1,0 +1,54 @@
+{
+  "name": "@wasm4pm/noun-verb",
+  "version": "26.7.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Declarative noun-verb CLI framework on citty — JSON-by-default, structured errors, agent-ready output. TS port of clap-noun-verb.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "citty": "^0.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "cli",
+    "noun-verb",
+    "citty",
+    "framework",
+    "agent-ready"
+  ],
+  "author": "Sean Chatman",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "directory": "packages/noun-verb"
+  },
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm#readme",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+  }
+}

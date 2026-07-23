@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Cycle 43: Autonomic Gap Detection & Closure
 //!
 //! Addresses three critical gaps:

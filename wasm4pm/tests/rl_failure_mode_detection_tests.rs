@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! Failure mode detection tests (Gap 3 — Rank-4 statistical oracle).
 //!

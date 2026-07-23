@@ -20,4 +20,4 @@ pub use ground::{
 };
 pub use parse::{domain_from_pddl, problem_from_pddl, Domain, PlannerError, Problem};
 pub use receipt::{manufacture_world, ManufactureReceipt, PlanStepView};
-pub use schedule::max_parallelism;
+pub use schedule::{max_parallelism, plan_to_powl_v2};

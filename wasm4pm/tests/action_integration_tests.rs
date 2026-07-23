@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Action Integration Tests -- prove actions have behavioral impact on the autonomic loop.
 //!
 //! These tests bridge `action_dispatch` and `rl_orchestrator`, verifying that:

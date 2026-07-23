@@ -24,11 +24,13 @@ function readApiCases(): Set<string> {
 }
 
 function readWasmExports(): Set<string> {
-  const bgPath = path.resolve(process.cwd(), 'wasm4pm/pkg/wasm4pm_bg.js');
-  if (!fs.existsSync(bgPath)) return new Set();
-  const src = readFileSync(bgPath, 'utf8');
+  // The nodejs wasm-pack target emits only the CommonJS entry (wasm4pm.js,
+  // module.exports.*); any wasm4pm_bg.js is a stale artifact of older builds.
+  const jsPath = path.resolve(process.cwd(), 'wasm4pm/pkg/wasm4pm.js');
+  if (!fs.existsSync(jsPath)) return new Set();
+  const src = readFileSync(jsPath, 'utf8');
   const exports = new Set<string>();
-  for (const m of src.matchAll(/export function (\w+)/g)) {
+  for (const m of src.matchAll(/module\.exports\.(\w+)\s*=\s*function/g)) {
     exports.add(m[1]);
   }
   return exports;
@@ -53,7 +55,7 @@ async function main() {
     generated_at: new Date().toISOString(),
     algorithm_count: algorithms.length,
     algorithms: algorithms.map((algo) => {
-      const wasmFn = WASM_FUNCTION_NAMES[algo.id];
+      const wasmFn = (WASM_FUNCTION_NAMES as Record<string, string>)[algo.id];
       const hasApiCase = apiCases.has(algo.id);
       const hasWasmExport = wasmFn ? wasmExports.has(wasmFn) : false;
       const absence = STRUCTURED_ABSENCE[algo.id];
@@ -61,7 +63,7 @@ async function main() {
 
       return {
         id: algo.id,
-        category: algo.category,
+        category: (algo as { category?: string }).category ?? null,
         reachable,
         dispatch_path: hasApiCase ? 'packages/kernel/src/api.ts runRaw' : null,
         wasm_required: !absence,

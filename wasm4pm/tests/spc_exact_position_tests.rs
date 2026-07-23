@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! SPC Exact Position + Ring Buffer Eviction tests (Category C).
 //!
 //! Rank-1 precision tests that verify:

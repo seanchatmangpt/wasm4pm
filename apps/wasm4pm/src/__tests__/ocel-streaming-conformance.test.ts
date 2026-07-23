@@ -4,16 +4,33 @@
  * Tests object-centric event log (OCEL) processing and streaming algorithms
  * to ensure correctness, determinism, and conformance with quality metrics.
  *
- * Coverage targets:
- * - OCEL format parsing and model discovery
- * - Streaming algorithm correctness (simd_streaming_dfg, streaming_log)
- * - Conformance checking with OCEL models
- * - Fitness computation for OCEL-based logs
- * - Feature flag: feature-ocel should enable OCEL algorithms
+ * Migrated from the old top-level `wpm run` / `wpm conformance` onto
+ * `wpm model discover` / `wpm model check` (nouns/_removed.ts:
+ * `{ old: 'run', replacement: 'model discover' }`,
+ * `{ old: 'conformance', replacement: 'model check --mode replay' }`).
+ *
+ * Contract changes verified live and reflected below:
+ *  - `model discover` has no `--format` flag (framework always emits JSON
+ *    on stdout); its result has no `.payload` wrapper — nodes/edges for a
+ *    DFG-shaped discovery live at `.shape.raw.nodes`/`.shape.raw.edges`
+ *    (`.shape.nodes`/`.shape.edges` are just counts).
+ *  - `model check` has no `--model-from`/`--precision-mode` args and no
+ *    continuous top-level `fitness`/`precision`/generalization score; it
+ *    is fail-closed (`status: ADMITTED|REJECTED|INDETERMINATE` over
+ *    grouped episodes — see `engines/conformance/verdict.ts`). Continuous
+ *    per-trace fitness numbers still exist, nested under
+ *    `findings[].details.case_fitness[].trace_fitness`.
+ *  - OCEL input must match the new engine's content-sniffed dialects
+ *    (`{eventTypes, objectTypes, events, objects}` for v2, or
+ *    `ocel:events`/`ocel:objects`/`ocel:global-log` for v1) — the old
+ *    ad hoc `{ocel:"2.0", events:[{"ocel:eid":...}]}` shape used by this
+ *    suite's fixtures is recognized by neither dialect and is rejected
+ *    with a source_error (2), which is still one of the "acceptable
+ *    outcome" exit codes these tests were already tolerant of.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { runCli, createCliTestEnv, EXIT_CODES, tokenReplayConformance, createTestEventLog } from '@wasm4pm/testing';
+import { runCli, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
@@ -32,36 +49,20 @@ describe('OCEL and Streaming Conformance', () => {
     it('should accept OCEL JSON format as input', async () => {
       const ocelPath = path.join(env.tempDir, 'test.ocel.json');
 
-      // Create minimal OCEL structure
+      // Proper OCEL 2.0 shape per engines/conformance/readers/detect.ts:
+      // top-level `eventTypes`/`objectTypes`/`events`/`objects` arrays,
+      // events carrying `relationships[]`.
       const minimalOCEL = {
-        ocel: '2.0',
-        'global-event': {
-          properties: [],
-        },
-        'global-object': {
-          properties: [],
-        },
-        events: [
-          {
-            'ocel:eid': 'e1',
-            'ocel:type': 'Create',
-            'ocel:timestamp': '2024-01-01T10:00:00Z',
-            'ocel:omap': ['o1'],
-          },
-        ],
-        objects: [
-          {
-            'ocel:oid': 'o1',
-            'ocel:type': 'Order',
-            'ocel:ovmap': {},
-          },
-        ],
+        eventTypes: [{ name: 'Create', attributes: [] }],
+        objectTypes: [{ name: 'Order', attributes: [] }],
+        events: [{ id: 'e1', type: 'Create', time: '2024-01-01T10:00:00Z', relationships: [{ objectId: 'o1' }] }],
+        objects: [{ id: 'o1', type: 'Order', attributes: [] }],
       };
 
       await fs.writeFile(ocelPath, JSON.stringify(minimalOCEL));
 
-      const result = await runCli(['run', ocelPath, '--algorithm', 'dfg'], { env: env.env });
-      // OCEL may be supported or rejected depending on feature flag; accept any valid exit code
+      const result = await runCli(['model', 'discover', ocelPath, '--algorithm', 'ocel_dfg_per_type'], { env: env.env });
+      // OCEL may be supported or rejected depending on the WASM build's feature-ocel flag; accept any valid exit code.
       const validCodes = [0, 1, 2, 3, 4, 5, 6];
       expect(validCodes.includes(result.exitCode)).toBe(true);
     });
@@ -71,24 +72,10 @@ describe('OCEL and Streaming Conformance', () => {
       const modelPath = path.join(env.tempDir, 'model.pnml');
 
       const minimalOCEL = {
-        ocel: '2.0',
-        'global-event': { properties: [] },
-        'global-object': { properties: [] },
-        events: [
-          {
-            'ocel:eid': 'e1',
-            'ocel:type': 'Create',
-            'ocel:timestamp': '2024-01-01T10:00:00Z',
-            'ocel:omap': ['o1'],
-          },
-        ],
-        objects: [
-          {
-            'ocel:oid': 'o1',
-            'ocel:type': 'Order',
-            'ocel:ovmap': {},
-          },
-        ],
+        eventTypes: [{ name: 'Create', attributes: [] }],
+        objectTypes: [{ name: 'Order', attributes: [] }],
+        events: [{ id: 'e1', type: 'Create', time: '2024-01-01T10:00:00Z', relationships: [{ objectId: 'o1' }] }],
+        objects: [{ id: 'o1', type: 'Order', attributes: [] }],
       };
 
       const minimalPNML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -102,59 +89,51 @@ describe('OCEL and Streaming Conformance', () => {
       await fs.writeFile(ocelPath, JSON.stringify(minimalOCEL));
       await fs.writeFile(modelPath, minimalPNML);
 
-      const result = await runCli(['conformance', ocelPath, '--model', modelPath], { env: env.env });
-      // Conformance checking may or may not support OCEL
-      expect(
-        [EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error, EXIT_CODES.conformance_fail].includes(
-          result.exitCode
-        )
-      ).toBe(true);
+      const result = await runCli(['model', 'check', ocelPath, '--mode', 'oracle', '--model', modelPath], { env: env.env });
+      // Conformance checking may or may not support this OCEL shape/model combination.
+      const acceptableExitCodes: number[] = [
+        EXIT_CODES.success,
+        EXIT_CODES.source_error,
+        EXIT_CODES.execution_error,
+        EXIT_CODES.conformance_fail,
+      ];
+      expect(acceptableExitCodes.includes(result.exitCode)).toBe(true);
     });
 
     it('should preserve object-centric semantics during discovery', async () => {
       const ocelPath = path.join(env.tempDir, 'multi-object.ocel.json');
 
       const multiObjectOCEL = {
-        ocel: '2.0',
-        'global-event': { properties: [] },
-        'global-object': { properties: [] },
+        eventTypes: [{ name: 'OrderCreated', attributes: [] }, { name: 'ItemShipped', attributes: [] }],
+        objectTypes: [{ name: 'Order', attributes: [] }, { name: 'Item', attributes: [] }],
         events: [
           {
-            'ocel:eid': 'e1',
-            'ocel:type': 'OrderCreated',
-            'ocel:timestamp': '2024-01-01T10:00:00Z',
-            'ocel:omap': ['o1', 'i1'],
+            id: 'e1',
+            type: 'OrderCreated',
+            time: '2024-01-01T10:00:00Z',
+            relationships: [{ objectId: 'o1' }, { objectId: 'i1' }],
           },
           {
-            'ocel:eid': 'e2',
-            'ocel:type': 'ItemShipped',
-            'ocel:timestamp': '2024-01-01T11:00:00Z',
-            'ocel:omap': ['i1'],
+            id: 'e2',
+            type: 'ItemShipped',
+            time: '2024-01-01T11:00:00Z',
+            relationships: [{ objectId: 'i1' }],
           },
         ],
         objects: [
-          {
-            'ocel:oid': 'o1',
-            'ocel:type': 'Order',
-            'ocel:ovmap': {},
-          },
-          {
-            'ocel:oid': 'i1',
-            'ocel:type': 'Item',
-            'ocel:ovmap': {},
-          },
+          { id: 'o1', type: 'Order', attributes: [] },
+          { id: 'i1', type: 'Item', attributes: [] },
         ],
       };
 
       await fs.writeFile(ocelPath, JSON.stringify(multiObjectOCEL));
 
-      const result = await runCli(['run', ocelPath, '--algorithm', 'dfg', '--format', 'json'], { env: env.env });
+      const result = await runCli(['model', 'discover', ocelPath, '--algorithm', 'ocel_dfg_per_type'], { env: env.env });
 
-      // If OCEL is supported, should succeed
+      // If OCEL is supported, should succeed and return a well-formed result (or a structured error).
       if (result.exitCode === 0) {
         try {
           const output = JSON.parse(result.stdout);
-          // Should contain process model or error
           expect(output).toBeDefined();
         } catch {
           // JSON parse OK to fail
@@ -175,7 +154,7 @@ describe('OCEL and Streaming Conformance', () => {
         return;
       }
 
-      const result = await runCli(['run', xesPath, '--algorithm', 'simd_streaming_dfg', '--format', 'json'], {
+      const result = await runCli(['model', 'discover', xesPath, '--algorithm', 'simd_streaming_dfg'], {
         env: env.env,
       });
 
@@ -184,7 +163,7 @@ describe('OCEL and Streaming Conformance', () => {
       if (result.exitCode === 0) {
         try {
           const output = JSON.parse(result.stdout);
-          expect(output.payload?.edges).toBeDefined();
+          expect(output.shape?.raw?.edges).toBeDefined();
         } catch {
           // OK
         }
@@ -207,7 +186,7 @@ describe('OCEL and Streaming Conformance', () => {
 
       await fs.writeFile(xesPath, xesContent);
 
-      const result = await runCli(['run', xesPath, '--algorithm', 'simd_streaming_dfg'], { env: env.env });
+      const result = await runCli(['model', 'discover', xesPath, '--algorithm', 'simd_streaming_dfg'], { env: env.env });
       expect([EXIT_CODES.success, EXIT_CODES.execution_error, EXIT_CODES.config_error]).toContain(result.exitCode);
     });
 
@@ -221,10 +200,10 @@ describe('OCEL and Streaming Conformance', () => {
         return;
       }
 
-      const run1 = await runCli(['run', xesPath, '--algorithm', 'simd_streaming_dfg', '--format', 'json'], {
+      const run1 = await runCli(['model', 'discover', xesPath, '--algorithm', 'simd_streaming_dfg'], {
         env: env.env,
       });
-      const run2 = await runCli(['run', xesPath, '--algorithm', 'simd_streaming_dfg', '--format', 'json'], {
+      const run2 = await runCli(['model', 'discover', xesPath, '--algorithm', 'simd_streaming_dfg'], {
         env: env.env,
       });
 
@@ -236,8 +215,8 @@ describe('OCEL and Streaming Conformance', () => {
           const out2 = JSON.parse(run2.stdout);
 
           // Edge count should be identical
-          const edges1 = out1.payload?.edges || [];
-          const edges2 = out2.payload?.edges || [];
+          const edges1 = out1.shape?.raw?.edges || [];
+          const edges2 = out2.shape?.raw?.edges || [];
           expect(edges1.length).toBe(edges2.length);
         } catch {
           // OK
@@ -247,7 +226,7 @@ describe('OCEL and Streaming Conformance', () => {
   });
 
   describe('Conformance Quality Metrics', () => {
-    it('should compute fitness >= 0 and <= 1', async () => {
+    it('should compute per-trace fitness >= 0 and <= 1', async () => {
       const xesPath = path.join(env.tempDir, 'test.xes');
       const fixtureSource = path.resolve(process.cwd(), 'data/small-example.xes');
 
@@ -257,18 +236,23 @@ describe('OCEL and Streaming Conformance', () => {
         return;
       }
 
-      const result = await runCli(['conformance', xesPath, '--model-from', 'dfg', '--format', 'json'], {
+      // No more `--model-from dfg`: `--mode self` discovers its own model
+      // from the log (the closest current equivalent), and per-trace
+      // fitness now lives nested in `findings[].details.case_fitness[]`.
+      const result = await runCli(['model', 'check', xesPath, '--mode', 'self', '--fitness-threshold', '0.5'], {
         env: env.env,
       });
 
-      if (result.exitCode === 0) {
+      if (result.exitCode === 0 || result.exitCode === EXIT_CODES.conformance_fail) {
         try {
           const output = JSON.parse(result.stdout);
-          const fitness = output.payload?.fitness;
-
-          if (fitness !== undefined && fitness !== null) {
-            expect(fitness).toBeGreaterThanOrEqual(0);
-            expect(fitness).toBeLessThanOrEqual(1);
+          expect(['ADMITTED', 'REJECTED', 'INDETERMINATE']).toContain(output.status);
+          const findings = output.findings ?? [];
+          for (const finding of findings) {
+            for (const cf of finding.details?.case_fitness ?? []) {
+              expect(cf.trace_fitness).toBeGreaterThanOrEqual(0);
+              expect(cf.trace_fitness).toBeLessThanOrEqual(1);
+            }
           }
         } catch {
           // OK
@@ -276,7 +260,7 @@ describe('OCEL and Streaming Conformance', () => {
       }
     });
 
-    it('should report precision metric when available', async () => {
+    it('should report a verdict payload when checked (no separate --precision-mode any more)', async () => {
       const xesPath = path.join(env.tempDir, 'test.xes');
       const fixtureSource = path.resolve(process.cwd(), 'data/small-example.xes');
 
@@ -286,24 +270,21 @@ describe('OCEL and Streaming Conformance', () => {
         return;
       }
 
-      const result = await runCli(
-        ['conformance', xesPath, '--model-from', 'dfg', '--precision-mode', 'full', '--format', 'json'],
-        { env: env.env }
-      );
+      const result = await runCli(['model', 'check', xesPath, '--mode', 'self'], { env: env.env });
 
-      if (result.exitCode === 0 || result.exitCode === 6) {
-        // Exit code 6 is conformance_fail, still returns metrics
+      if (result.exitCode === 0 || result.exitCode === EXIT_CODES.conformance_fail) {
         try {
           const output = JSON.parse(result.stdout);
-          // Precision may be null if not computed, but should be present in schema
-          expect(output.payload).toBeDefined();
+          // The verdict itself is the payload — no separate `.payload` wrapper.
+          expect(output.status).toBeDefined();
+          expect(output.checked).toBeGreaterThanOrEqual(0);
         } catch {
           // OK
         }
       }
     });
 
-    it('should compute generalization when available', async () => {
+    it('should compute a verdict with ungroupedEventCount tracked (generalization-adjacent diagnostic)', async () => {
       const xesPath = path.join(env.tempDir, 'test.xes');
       const fixtureSource = path.resolve(process.cwd(), 'data/small-example.xes');
 
@@ -313,15 +294,12 @@ describe('OCEL and Streaming Conformance', () => {
         return;
       }
 
-      const result = await runCli(['conformance', xesPath, '--model-from', 'dfg', '--format', 'json'], {
-        env: env.env,
-      });
+      const result = await runCli(['model', 'check', xesPath, '--mode', 'self'], { env: env.env });
 
-      if (result.exitCode === 0) {
+      if (result.exitCode === 0 || result.exitCode === EXIT_CODES.conformance_fail) {
         try {
           const output = JSON.parse(result.stdout);
-          // Generalization is an optional metric
-          expect(output.payload).toBeDefined();
+          expect(output.ungroupedEventCount).toBeGreaterThanOrEqual(0);
         } catch {
           // OK
         }
@@ -340,8 +318,8 @@ describe('OCEL and Streaming Conformance', () => {
         return;
       }
 
-      const dfsResult = await runCli(['run', xesPath, '--algorithm', 'dfg', '--format', 'json'], { env: env.env });
-      const streamResult = await runCli(['run', xesPath, '--algorithm', 'simd_streaming_dfg', '--format', 'json'], {
+      const dfsResult = await runCli(['model', 'discover', xesPath, '--algorithm', 'dfg'], { env: env.env });
+      const streamResult = await runCli(['model', 'discover', xesPath, '--algorithm', 'simd_streaming_dfg'], {
         env: env.env,
       });
 
@@ -350,9 +328,8 @@ describe('OCEL and Streaming Conformance', () => {
           const dfg = JSON.parse(dfsResult.stdout);
           const stream = JSON.parse(streamResult.stdout);
 
-          // Both should have nodes (activities)
-          const dfgNodes = dfg.payload?.nodes || [];
-          const streamNodes = stream.payload?.nodes || [];
+          const dfgNodes = dfg.shape?.raw?.nodes || [];
+          const streamNodes = stream.shape?.raw?.nodes || [];
 
           // Node count should be similar (may differ slightly due to algorithm differences)
           if (dfgNodes.length > 0 && streamNodes.length > 0) {
@@ -375,7 +352,7 @@ describe('OCEL and Streaming Conformance', () => {
       }
 
       const startStream = Date.now();
-      const streamResult = await runCli(['run', xesPath, '--algorithm', 'simd_streaming_dfg'], { env: env.env });
+      const streamResult = await runCli(['model', 'discover', xesPath, '--algorithm', 'simd_streaming_dfg'], { env: env.env });
       const streamTime = Date.now() - startStream;
 
       // Both should succeed
@@ -391,37 +368,28 @@ describe('OCEL and Streaming Conformance', () => {
       const ocelPath = path.join(env.tempDir, 'test.ocel.json');
 
       const minimalOCEL = {
-        ocel: '2.0',
-        'global-event': { properties: [] },
-        'global-object': { properties: [] },
-        events: [
-          {
-            'ocel:eid': 'e1',
-            'ocel:type': 'Create',
-            'ocel:timestamp': '2024-01-01T10:00:00Z',
-            'ocel:omap': ['o1'],
-          },
-        ],
-        objects: [
-          {
-            'ocel:oid': 'o1',
-            'ocel:type': 'Order',
-            'ocel:ovmap': {},
-          },
-        ],
+        eventTypes: [{ name: 'Create', attributes: [] }],
+        objectTypes: [{ name: 'Order', attributes: [] }],
+        events: [{ id: 'e1', type: 'Create', time: '2024-01-01T10:00:00Z', relationships: [{ objectId: 'o1' }] }],
+        objects: [{ id: 'o1', type: 'Order', attributes: [] }],
       };
 
       await fs.writeFile(ocelPath, JSON.stringify(minimalOCEL));
 
-      // Try to run OCEL-specific algorithm (may not exist without feature flag)
-      const result = await runCli(['run', ocelPath, '--algorithm', 'discover_oc_dfg_per_type'], { env: env.env });
+      // `ocel_dfg_per_type` is the actual registered OC algorithm id (see
+      // `wpm help algorithms`); the old fixture's `discover_oc_dfg_per_type`
+      // name was never a real algorithm id and would always 404 regardless
+      // of any feature flag.
+      const result = await runCli(['model', 'discover', ocelPath, '--algorithm', 'ocel_dfg_per_type'], { env: env.env });
 
       // Acceptable outcomes: success (feature enabled) or config/execution error (feature disabled)
-      expect(
-        [EXIT_CODES.success, EXIT_CODES.config_error, EXIT_CODES.execution_error, EXIT_CODES.source_error].includes(
-          result.exitCode
-        )
-      ).toBe(true);
+      const acceptableExitCodes: number[] = [
+        EXIT_CODES.success,
+        EXIT_CODES.config_error,
+        EXIT_CODES.execution_error,
+        EXIT_CODES.source_error,
+      ];
+      expect(acceptableExitCodes.includes(result.exitCode)).toBe(true);
     });
   });
 });

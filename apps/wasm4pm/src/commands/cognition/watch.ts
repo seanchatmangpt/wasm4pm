@@ -277,6 +277,24 @@ export const watch = defineCommand({
       // Do NOT exit — keep watching
     });
 
+    // Keep-alive promise for the lifetime of the watch loop, resolved by the
+    // SIGINT handler below. A real (non-bridged, top-level) invocation of
+    // this command never actually reaches the `resolveKeepAlive()` call in
+    // practice — `exitWithFlush()` calls `process.exit()`, which terminates
+    // the process synchronously first. But when this command runs through
+    // `nouns/_bridge.ts` (`wpm lab cognition watch`), `process.exit()` is
+    // trapped and returns WITHOUT throwing or terminating anything (see
+    // that file's doc comment), so a promise that only ever "resolves via
+    // exitWithFlush" would never actually settle — `run()` would hang
+    // forever and the bridge would never get a chance to return the
+    // buffered stdout/stderr/exit code back to the caller. Resolving this
+    // promise explicitly, independent of whether `process.exit()` itself
+    // does anything, fixes that without changing real top-level behavior.
+    let resolveKeepAlive: () => void = () => {};
+    const keepAlive = new Promise<void>((resolve) => {
+      resolveKeepAlive = resolve;
+    });
+
     // ── SIGINT handling ───────────────────────────────────────────────────────
     process.on('SIGINT', () => {
       if (debounceTimer) {
@@ -286,18 +304,18 @@ export const watch = defineCommand({
         .close()
         .then(async () => {
           process.stderr.write('stopped\n');
+          resolveKeepAlive();
           return await exitWithFlush(EXIT_CODES.success);
         })
         .catch(async () => {
           process.stderr.write('stopped\n');
+          resolveKeepAlive();
           return await exitWithFlush(EXIT_CODES.success);
         });
     });
 
-    // Keep the process alive until SIGINT
-    await new Promise<never>(() => {
-      /* intentionally never resolves — lifecycle managed by SIGINT handler */
-    });
+    // Keep the process alive until SIGINT (see `keepAlive` comment above).
+    await keepAlive;
       },
     );
   },

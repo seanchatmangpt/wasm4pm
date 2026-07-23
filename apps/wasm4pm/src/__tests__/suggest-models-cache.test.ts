@@ -1,15 +1,23 @@
 /**
  * suggest-models-cache.test.ts
  *
+ * MIGRATED from the retired top-level `wpm suggest` / `wpm models` /
+ * `wpm cache` invocations (see `nouns/_removed.ts`: `suggest` -> `pipeline
+ * suggest`, `models` -> `system models`, `cache` -> `system cache`). All
+ * three bridge unchanged to their `commands/*.ts` bodies via
+ * `invokeLegacyCommandAsJson` (`nouns/_bridge.ts`) — the legacy
+ * `CommandResult` envelope is returned as-is as the verb's plain JSON
+ * result. `--format` is always forced to `json` by the bridge.
+ *
  * Integration tests for dramatically improved wpm suggest, wpm models, and wpm cache commands.
  *
  * Covers:
- * 1. wpm suggest — rich recommendation engine output with analysisRecommendations
- * 2. wpm suggest --goal "..." — freeform goal routing (bottlenecks, compliance, prediction)
- * 3. wpm suggest --explain — detailed reasoning breakdown
- * 4. wpm models list — works even when models dir is empty
- * 5. wpm cache stats — shows meaningful statistics for all cache layers
- * 6. wpm cache clear --all — exits 0
+ * 1. wpm pipeline suggest — rich recommendation engine output with analysisRecommendations
+ * 2. wpm pipeline suggest --goal "..." — freeform goal routing (bottlenecks, compliance, prediction)
+ * 3. wpm pipeline suggest --explain — detailed reasoning breakdown
+ * 4. wpm system models list — works even when models dir is empty
+ * 5. wpm system cache stats — shows meaningful statistics for all cache layers
+ * 6. wpm system cache clear --all — exits 0
  */
 
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
@@ -25,6 +33,12 @@ const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const ROAD_TRAFFIC = path.join(REPO_ROOT, 'bench_data/roadtraffic100traces.xes');
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+
+interface SuggestionRecommendation {
+  algorithm: string;
+  score: number;
+  reason: string;
+}
 
 function extractJson(stdout: string): Record<string, unknown> {
   const start = stdout.indexOf('{');
@@ -47,10 +61,10 @@ function extractJson(stdout: string): Record<string, unknown> {
 
 // ─── wpm suggest ─────────────────────────────────────────────────────────────
 
-describe('wpm suggest — rich recommendation engine', () => {
+describe('wpm pipeline suggest — rich recommendation engine', () => {
 
   it('exits 0 and returns recommendations array with ≥ 2 items', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC, '--format', 'json']);
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json']);
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -61,27 +75,29 @@ describe('wpm suggest — rich recommendation engine', () => {
   });
 
   it('each recommendation has algorithm, score, and reasoning fields', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC, '--format', 'json']);
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json']);
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
     const payload = body.payload as Record<string, unknown>;
-    const recs = payload.recommendations as Array<Record<string, unknown>>;
+    const recs = payload.recommendations as unknown[];
 
-    for (const rec of recs) {
-      expect(typeof rec.algorithm).toBe('string');
+    for (const rawRec of recs) {
+      expect(typeof (rawRec as Record<string, unknown>).algorithm).toBe('string');
+      expect(typeof (rawRec as Record<string, unknown>).score).toBe('number');
+      expect(typeof (rawRec as Record<string, unknown>).reason).toBe('string');
+
+      const rec = rawRec as SuggestionRecommendation;
       expect(rec.algorithm.length).toBeGreaterThan(0);
       // score comes from the suggestions engine
-      expect(typeof rec.score).toBe('number');
       expect(rec.score).toBeGreaterThanOrEqual(0);
       // reason is the reasoning string
-      expect(typeof rec.reason).toBe('string');
       expect(rec.reason.length).toBeGreaterThan(0);
     }
   });
 
   it('payload contains logStats with traceCount, eventCount, activityCount', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC, '--format', 'json']);
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json']);
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -97,7 +113,7 @@ describe('wpm suggest — rich recommendation engine', () => {
   });
 
   it('payload contains analysisRecommendations array', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC, '--format', 'json']);
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json']);
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -108,7 +124,7 @@ describe('wpm suggest — rich recommendation engine', () => {
 
   it('--goal "find bottlenecks" routes to temporal/social analysis recommendations', async () => {
     const result = await runCli([
-      'suggest', ROAD_TRAFFIC, '--format', 'json', '--goal', 'find bottlenecks',
+      'pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json', '--goal', 'find bottlenecks',
     ]);
     assertExitCode(result, 0);
 
@@ -124,7 +140,7 @@ describe('wpm suggest — rich recommendation engine', () => {
 
   it('--goal "check compliance" routes to conformance-oriented algorithm recommendations', async () => {
     const result = await runCli([
-      'suggest', ROAD_TRAFFIC, '--format', 'json', '--goal', 'check compliance',
+      'pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json', '--goal', 'check compliance',
     ]);
     assertExitCode(result, 0);
 
@@ -143,7 +159,7 @@ describe('wpm suggest — rich recommendation engine', () => {
 
   it('--goal "predict outcomes" returns recommendation for prediction pipeline', async () => {
     const result = await runCli([
-      'suggest', ROAD_TRAFFIC, '--format', 'json', '--goal', 'predict outcomes',
+      'pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json', '--goal', 'predict outcomes',
     ]);
     assertExitCode(result, 0);
 
@@ -157,7 +173,7 @@ describe('wpm suggest — rich recommendation engine', () => {
 
   it('--explain populates explainLines on recommendations', async () => {
     const result = await runCli([
-      'suggest', ROAD_TRAFFIC, '--format', 'json', '--explain',
+      'pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json', '--explain',
     ]);
     assertExitCode(result, 0);
 
@@ -172,20 +188,34 @@ describe('wpm suggest — rich recommendation engine', () => {
     expect(withExplain.length).toBeGreaterThan(0);
   });
 
-  it('human output contains ALGORITHM RECOMMENDATIONS section', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC]);
+  // The original two scenarios asserted human-readable section headers
+  // ("ALGORITHM RECOMMENDATIONS" / "QUICK START") appear on stdout when
+  // `--format` is omitted. The bridge (nouns/_bridge.ts) always overrides
+  // to `--format json` regardless of what's passed, so that human-rendered
+  // text is no longer reachable through `pipeline suggest` — verified live.
+  // Rewritten to assert the equivalent JSON data those sections rendered
+  // (recommendations + topPick/runCommand), per the always-JSON-on-stdout
+  // contract.
+  it('recommendations are present (human ALGORITHM RECOMMENDATIONS section no longer reachable via the bridge)', async () => {
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC]);
     assertExitCode(result, 0);
-    expect(result.stdout).toContain('ALGORITHM RECOMMENDATIONS');
+    const body = extractJson(result.stdout);
+    const payload = body.payload as Record<string, unknown>;
+    expect(Array.isArray(payload.recommendations)).toBe(true);
+    expect((payload.recommendations as unknown[]).length).toBeGreaterThan(0);
   });
 
-  it('human output contains QUICK START section', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC]);
+  it('topPick and runCommand are present (human QUICK START section no longer reachable via the bridge)', async () => {
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC]);
     assertExitCode(result, 0);
-    expect(result.stdout).toContain('QUICK START');
+    const body = extractJson(result.stdout);
+    const payload = body.payload as Record<string, unknown>;
+    expect(typeof payload.topPick).toBe('string');
+    expect(typeof payload.runCommand).toBe('string');
   });
 
   it('payload has topPick and runCommand', async () => {
-    const result = await runCli(['suggest', ROAD_TRAFFIC, '--format', 'json']);
+    const result = await runCli(['pipeline', 'suggest', ROAD_TRAFFIC, '--format', 'json']);
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -198,7 +228,7 @@ describe('wpm suggest — rich recommendation engine', () => {
 
 // ─── wpm models list ─────────────────────────────────────────────────────────
 
-describe('wpm models — model repository manager', () => {
+describe('wpm system models — model repository manager', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
   let tmpDir: string;
 
@@ -214,7 +244,7 @@ describe('wpm models — model repository manager', () => {
   });
 
   it('wpm models list exits 0 even when models directory is empty', async () => {
-    const result = await runCli(['models', 'list', '--format', 'json'], {
+    const result = await runCli(['system', 'models', 'list', '--format', 'json'], {
       env: { ...env.env, WASM4PM_RESULTS_DIR: tmpDir },
       cwd: tmpDir,
     });
@@ -223,7 +253,7 @@ describe('wpm models — model repository manager', () => {
   });
 
   it('wpm models list --format json has total and models array', async () => {
-    const result = await runCli(['models', 'list', '--format', 'json'], {
+    const result = await runCli(['system', 'models', 'list', '--format', 'json'], {
       cwd: tmpDir,
     });
     assertExitCode(result, 0);
@@ -237,7 +267,7 @@ describe('wpm models — model repository manager', () => {
 
   it('wpm models save then list shows the saved model', async () => {
     const saveResult = await runCli([
-      'models', 'save',
+      'system', 'models', 'save',
       '-i', ROAD_TRAFFIC,
       '--name', 'test-road-traffic',
       '--algorithm', 'dfg',
@@ -252,7 +282,7 @@ describe('wpm models — model repository manager', () => {
     expect(savePayload.algorithm).toBe('dfg');
 
     // Now list should show the model
-    const listResult = await runCli(['models', 'list', '--format', 'json'], {
+    const listResult = await runCli(['system', 'models', 'list', '--format', 'json'], {
       cwd: tmpDir,
     });
     assertExitCode(listResult, 0);
@@ -265,24 +295,29 @@ describe('wpm models — model repository manager', () => {
     expect(found?.algorithm).toBe('dfg');
   });
 
-  it('wpm models save exits 1 when --name is missing', async () => {
+  // The legacy command itself reports EXIT_CODES.config_error (1) for a
+  // missing --name, but the bridge's ErrorCode vocabulary is coarser: both
+  // legacy config_error(1) and source_error(2) map to INVALID_INPUT
+  // (nouns/_bridge.ts classifyLegacyFailure), which wpm's ERROR_CODE_MAP
+  // (cli.ts) then resolves to source_error(2). Verified live.
+  it('wpm system models save exits 2 (source_error, via bridge INVALID_INPUT mapping) when --name is missing', async () => {
     const result = await runCli([
-      'models', 'save', '-i', ROAD_TRAFFIC, '--format', 'json',
+      'system', 'models', 'save', '-i', ROAD_TRAFFIC, '--format', 'json',
     ], { cwd: tmpDir });
-    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
   });
 
   it('wpm models load returns model metadata', async () => {
     // First save one
     await runCli([
-      'models', 'save',
+      'system', 'models', 'save',
       '-i', ROAD_TRAFFIC,
       '--name', 'rt-load-test',
       '--algorithm', 'heuristic_miner',
       '--format', 'json',
     ], { cwd: tmpDir });
 
-    const result = await runCli(['models', 'load', '--name', 'rt-load-test', '--format', 'json'], {
+    const result = await runCli(['system', 'models', 'load', '--name', 'rt-load-test', '--format', 'json'], {
       cwd: tmpDir,
     });
     assertExitCode(result, 0);
@@ -294,7 +329,7 @@ describe('wpm models — model repository manager', () => {
   });
 
   it('wpm models load exits 2 when model not found', async () => {
-    const result = await runCli(['models', 'load', '--name', 'nonexistent-model', '--format', 'json'], {
+    const result = await runCli(['system', 'models', 'load', '--name', 'nonexistent-model', '--format', 'json'], {
       cwd: tmpDir,
     });
     expect(result.exitCode).toBe(EXIT_CODES.source_error);
@@ -303,16 +338,16 @@ describe('wpm models — model repository manager', () => {
   it('wpm models compare returns delta between two models', async () => {
     // Save two models
     await runCli([
-      'models', 'save', '-i', ROAD_TRAFFIC, '--name', 'cmp-a',
+      'system', 'models', 'save', '-i', ROAD_TRAFFIC, '--name', 'cmp-a',
       '--algorithm', 'dfg', '--fitness', '0.70', '--format', 'json',
     ], { cwd: tmpDir });
     await runCli([
-      'models', 'save', '-i', ROAD_TRAFFIC, '--name', 'cmp-b',
+      'system', 'models', 'save', '-i', ROAD_TRAFFIC, '--name', 'cmp-b',
       '--algorithm', 'inductive_miner', '--fitness', '0.87', '--format', 'json',
     ], { cwd: tmpDir });
 
     const result = await runCli([
-      'models', 'compare', '--name1', 'cmp-a', '--name2', 'cmp-b', '--format', 'json',
+      'system', 'models', 'compare', '--name1', 'cmp-a', '--name2', 'cmp-b', '--format', 'json',
     ], { cwd: tmpDir });
     assertExitCode(result, 0);
 
@@ -328,18 +363,18 @@ describe('wpm models — model repository manager', () => {
 
   it('wpm models delete removes the model', async () => {
     await runCli([
-      'models', 'save', '-i', ROAD_TRAFFIC, '--name', 'delete-me',
+      'system', 'models', 'save', '-i', ROAD_TRAFFIC, '--name', 'delete-me',
       '--algorithm', 'dfg', '--format', 'json',
     ], { cwd: tmpDir });
 
     const delResult = await runCli([
-      'models', 'delete', '--name', 'delete-me', '--format', 'json',
+      'system', 'models', 'delete', '--name', 'delete-me', '--format', 'json',
     ], { cwd: tmpDir });
     assertExitCode(delResult, 0);
 
     // Now load should fail
     const loadResult = await runCli([
-      'models', 'load', '--name', 'delete-me', '--format', 'json',
+      'system', 'models', 'load', '--name', 'delete-me', '--format', 'json',
     ], { cwd: tmpDir });
     expect(loadResult.exitCode).toBe(EXIT_CODES.source_error);
   });
@@ -347,7 +382,7 @@ describe('wpm models — model repository manager', () => {
 
 // ─── wpm cache stats / clear ─────────────────────────────────────────────────
 
-describe('wpm cache — meaningful statistics and clear', () => {
+describe('wpm system cache — meaningful statistics and clear', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
 
   beforeAll(async () => {
@@ -359,12 +394,12 @@ describe('wpm cache — meaningful statistics and clear', () => {
   });
 
   it('wpm cache stats exits 0', async () => {
-    const result = await runCli(['cache', 'stats', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'stats', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
   });
 
   it('wpm cache stats --format json has all three cache layers', async () => {
-    const result = await runCli(['cache', 'stats', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'stats', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -378,7 +413,7 @@ describe('wpm cache — meaningful statistics and clear', () => {
   });
 
   it('wpm cache stats totals has total_entries and total_size_human', async () => {
-    const result = await runCli(['cache', 'stats', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'stats', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -390,14 +425,20 @@ describe('wpm cache — meaningful statistics and clear', () => {
     expect(typeof totals.total_size_human).toBe('string');
   });
 
-  it('wpm cache stats human output contains Cache Statistics header', async () => {
-    const result = await runCli(['cache', 'stats'], { env: env.env });
+  // The original scenario asserted a human-readable "Cache Statistics"
+  // header on stdout when `--format` is omitted. The bridge always
+  // overrides to `--format json` (verified live), so that heading is no
+  // longer reachable through `system cache`. Rewritten to assert the JSON
+  // envelope's command name instead, per the always-JSON-on-stdout contract.
+  it('cache stats command identifies itself (human "Cache Statistics" header no longer reachable via the bridge)', async () => {
+    const result = await runCli(['system', 'cache', 'stats'], { env: env.env });
     assertExitCode(result, 0);
-    expect(result.stdout).toContain('Cache Statistics');
+    const body = extractJson(result.stdout);
+    expect(body.command).toBe('cache.stats');
   });
 
   it('wpm cache clear --all exits 0', async () => {
-    const result = await runCli(['cache', 'clear', '--all', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'clear', '--all', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -405,7 +446,7 @@ describe('wpm cache — meaningful statistics and clear', () => {
   });
 
   it('wpm cache clear --type results exits 0', async () => {
-    const result = await runCli(['cache', 'clear', '--type', 'results', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'clear', '--type', 'results', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);
@@ -414,17 +455,17 @@ describe('wpm cache — meaningful statistics and clear', () => {
   });
 
   it('wpm cache clear --type models exits 0', async () => {
-    const result = await runCli(['cache', 'clear', '--type', 'models', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'clear', '--type', 'models', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
   });
 
   it('wpm cache clear --type conformance exits 0', async () => {
-    const result = await runCli(['cache', 'clear', '--type', 'conformance', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'clear', '--type', 'conformance', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
   });
 
   it('wpm cache purge exits 0', async () => {
-    const result = await runCli(['cache', 'purge', '--format', 'json'], { env: env.env });
+    const result = await runCli(['system', 'cache', 'purge', '--format', 'json'], { env: env.env });
     assertExitCode(result, 0);
 
     const body = extractJson(result.stdout);

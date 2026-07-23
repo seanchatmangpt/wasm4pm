@@ -1,0 +1,63 @@
+\documentclass[11pt,a4paper,twoside]{article}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{mathtools}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={wasm4pm: Autonomic Process Mining System},
+}
+\usepackage{cleveref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{microtype}
+\usepackage{tocbibind}
+\usepackage{tikz}
+\usepackage{tikz-cd}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Custom Theorem Environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\let\boundary\relax
+\newtheorem{boundary}[definition]{Boundary}
+\newtheorem{invariant}[definition]{Invariant}
+\newtheorem{receipt}[definition]{Receipt}
+\newtheorem{falsifier}[definition]{Falsifier}
+
+% Commands for highlighting
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\valid}{\textcolor{green!60!black}{\textbf{VALID}}}
+\let\refused\relax
+\newcommand{\refused}{\textcolor{red!80!black}{\textbf{REFUSED}}}
+
+\lstdefinestyle{ruststyle}{
+    language=C,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{green!60!black},
+    commentstyle=\color{gray}\itshape,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{black!5}
+}
+\lstset{style=ruststyle}
+
+\title{\textbf{wasm4pm: First-Mile Mechanical Intelligence} \\ \Large A Rigorous Foundation for Autonomic Process Mining via Sovereign WASM Execution}
+\author{wasm4pm Engineering Team}
+\date{\today}

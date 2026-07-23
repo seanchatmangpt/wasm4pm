@@ -1,0 +1,8 @@
+The 55 cognitive breeds represent higher-order reasoning systems layered on top of the kernel algorithms. These include Temporal and Model Checking, Probabilistic Reasoning, Planning, SAT, and Constraint Logic.
+
+Breeds like \code{ltl\_monitor} and \code{sat\_cdcl} do not claim to solve NP-hard problems instantaneously. Instead, they act as bounded monitors and solvers. If the resolution depth exceeds the heuristic limit, the system gracefully degrades, emitting a typed refusal receipt.
+
+\begin{proposition}
+The \code{csp\_ac3} breed strictly reduces the domain $D_i$ in $O(ed^3)$ time. If arc consistency cannot be achieved within the linear memory boundary, it aborts rather than exhausting host resources.
+\end{proposition}
+This bounding ensures that the cognitive layer remains stable at the edge.

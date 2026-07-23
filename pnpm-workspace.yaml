@@ -17,6 +17,7 @@ allowBuilds:
   esbuild: true
   maplibre-gl: true
   protobufjs: true
+  sharp: true
   ssh2: true
   unrs-resolver: true
   vue-demi: true
@@ -27,4 +28,5 @@ onlyBuiltDependencies:
   - cpu-features
   - esbuild
   - protobufjs
+  - sharp
   - ssh2

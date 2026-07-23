@@ -1,22 +1,40 @@
 /**
  * social-network-analysis.test.ts
  *
- * Tests for the enhanced `wpm social` command:
+ * MIGRATED from the retired top-level `wpm social` invocation to
+ * `wpm lab social` (see `nouns/_removed.ts`). `lab social` bridges to the
+ * unchanged `commands/social.ts` body via `invokeLegacyCommandAsJson`
+ * (`nouns/_bridge.ts`) — same WASM calls, same behavior — but with two
+ * contract changes from the bridge itself:
+ *   1. `--format`/`--quiet` supplied by the caller are stripped and always
+ *      overridden to `json`/quiet, so a successful call's stdout is always
+ *      the legacy `CommandResult` envelope (`{command,status,payload,...}`)
+ *      as plain JSON — never the human-readable renderer output. Tests
+ *      that asserted human-format text (SNA-5, SNA-7, SNA-9 originally)
+ *      are rewritten below to assert the equivalent JSON field instead.
+ *   2. `--export {dot,csv}` bypasses the envelope and writes raw non-JSON
+ *      text straight to stdout in the legacy command; the bridge preserves
+ *      that (rather than losing it) as `payload.raw` (SNA-13, SNA-14
+ *      updated accordingly). `--export json` already produces valid JSON
+ *      on its own and is returned unwrapped, as before.
+ *
+ * Tests for the enhanced `wpm lab social` command:
  *   SNA-1:  Basic run exits 0, JSON output has handover_network shape
  *   SNA-2:  JSON payload contains network.nodes and network.edges
  *   SNA-3:  network.edges have from, to, weight fields
  *   SNA-4:  working-together metric accepted and returns network
- *   SNA-5:  --matrix flag produces matrix in human output
+ *   SNA-5:  --matrix flag adds adjacency_matrix to JSON payload (stdout is always JSON)
  *   SNA-6:  --matrix flag adds adjacency_matrix to JSON payload
- *   SNA-7:  --roles flag produces role section in human output
+ *   SNA-7:  --roles flag adds roles array to JSON payload (stdout is always JSON)
  *   SNA-8:  --roles flag adds roles array to JSON payload
- *   SNA-9:  --centrality flag produces centrality table in human output
+ *   SNA-9:  --centrality flag adds centrality_scores to JSON payload (stdout is always JSON)
  *   SNA-10: --centrality flag adds centrality_scores to JSON payload
  *   SNA-11: --centrality_scores has degree, betweenness, closeness, eigenvector
  *   SNA-12: --export json produces valid JSON adjacency list (no envelope)
- *   SNA-13: --export csv produces from,to,weight CSV header
- *   SNA-14: --export dot produces digraph DOT syntax
- *   SNA-15: --export with invalid format exits 1 (config_error)
+ *   SNA-13: --export csv produces from,to,weight CSV (wrapped as payload.raw)
+ *   SNA-14: --export dot produces digraph DOT syntax (wrapped as payload.raw)
+ *   SNA-15: --export with invalid format exits 2 (source_error — bridge's
+ *           coarser INVALID_INPUT mapping; see nouns/_bridge.ts classifyLegacyFailure)
  *   SNA-16: --matrix + --roles + --centrality flags compose cleanly
  */
 
@@ -154,10 +172,10 @@ afterAll(() => {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('wpm social — enhanced social network analysis', () => {
+describe('wpm lab social — enhanced social network analysis', () => {
   // SNA-1: Basic run exits 0 with JSON output
   it('SNA-1: exits 0 with --format json', async () => {
-    const result = await runCli(['social', xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['lab', 'social', xesPath, '--format', 'json', '--no-save']);
     expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     if (result.exitCode === EXIT_CODES.success) {
       const envelope = parseEnvelope(result.stdout);
@@ -168,7 +186,7 @@ describe('wpm social — enhanced social network analysis', () => {
 
   // SNA-2: JSON payload has network.nodes and network.edges
   it('SNA-2: JSON payload has network.nodes and network.edges when WASM succeeds', async () => {
-    const result = await runCli(['social', xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['lab', 'social', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.success) return; // WASM not available
     const envelope = parseEnvelope(result.stdout);
     expect(envelope.payload).not.toBeNull();
@@ -179,7 +197,7 @@ describe('wpm social — enhanced social network analysis', () => {
 
   // SNA-3: network.edges have from, to, weight fields
   it('SNA-3: network edges have from, to, weight fields', async () => {
-    const result = await runCli(['social', xesPath, '--format', 'json', '--no-save']);
+    const result = await runCli(['lab', 'social', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.success) return;
     const envelope = parseEnvelope(result.stdout);
     const edges = envelope.payload?.network?.edges ?? [];
@@ -197,7 +215,7 @@ describe('wpm social — enhanced social network analysis', () => {
   // SNA-4: working-together metric accepted and returns network
   it('SNA-4: --metric working-together is accepted and returns a network', async () => {
     const result = await runCli([
-      'social', xesPath,
+      'lab', 'social', xesPath,
       '--metric', 'working-together',
       '--format', 'json',
       '--no-save',
@@ -210,18 +228,21 @@ describe('wpm social — enhanced social network analysis', () => {
     }
   }, TIMEOUT);
 
-  // SNA-5: --matrix flag produces matrix section in human output
-  it('SNA-5: --matrix flag produces adjacency matrix in human output', async () => {
-    const result = await runCli(['social', xesPath, '--matrix', '--no-save']);
+  // SNA-5: --matrix flag adds adjacency_matrix to JSON payload. The bridge
+  // (nouns/_bridge.ts) always forces `--format json`, so the original
+  // "human output" text assertion is unreachable — rewritten to check the
+  // JSON field, per the always-JSON-on-stdout contract.
+  it('SNA-5: --matrix flag adds adjacency_matrix to JSON payload (stdout is always JSON)', async () => {
+    const result = await runCli(['lab', 'social', xesPath, '--matrix', '--no-save']);
     if (result.exitCode !== EXIT_CODES.success) return;
-    // The matrix section heading should appear
-    expect(result.stdout).toMatch(/Adjacency Matrix|matrix view/i);
+    const envelope = parseEnvelope(result.stdout);
+    expect(envelope.payload?.adjacency_matrix).toBeDefined();
   }, TIMEOUT);
 
   // SNA-6: --matrix flag adds adjacency_matrix to JSON payload
   it('SNA-6: --matrix flag adds adjacency_matrix to JSON payload', async () => {
     const result = await runCli([
-      'social', xesPath, '--matrix', '--format', 'json', '--no-save',
+      'lab', 'social', xesPath, '--matrix', '--format', 'json', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
     const envelope = parseEnvelope(result.stdout);
@@ -238,17 +259,19 @@ describe('wpm social — enhanced social network analysis', () => {
     }
   }, TIMEOUT);
 
-  // SNA-7: --roles flag produces role section in human output
-  it('SNA-7: --roles flag produces role discovery section in human output', async () => {
-    const result = await runCli(['social', xesPath, '--roles', '--no-save']);
+  // SNA-7: --roles flag adds roles array to JSON payload. Same rewrite
+  // rationale as SNA-5 — the bridge forces JSON, so human-text is unreachable.
+  it('SNA-7: --roles flag adds roles array to JSON payload (stdout is always JSON)', async () => {
+    const result = await runCli(['lab', 'social', xesPath, '--roles', '--no-save']);
     if (result.exitCode !== EXIT_CODES.success) return;
-    expect(result.stdout).toMatch(/Role Discovery|Process Starters|Process Finishers|Core Processors/i);
+    const envelope = parseEnvelope(result.stdout);
+    expect(envelope.payload?.roles).toBeDefined();
   }, TIMEOUT);
 
   // SNA-8: --roles flag adds roles array to JSON payload
   it('SNA-8: --roles flag adds roles array to JSON payload', async () => {
     const result = await runCli([
-      'social', xesPath, '--roles', '--format', 'json', '--no-save',
+      'lab', 'social', xesPath, '--roles', '--format', 'json', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
     const envelope = parseEnvelope(result.stdout);
@@ -266,17 +289,19 @@ describe('wpm social — enhanced social network analysis', () => {
     }
   }, TIMEOUT);
 
-  // SNA-9: --centrality flag produces centrality table in human output
-  it('SNA-9: --centrality flag produces centrality table in human output', async () => {
-    const result = await runCli(['social', xesPath, '--centrality', '--no-save']);
+  // SNA-9: --centrality flag adds centrality_scores to JSON payload. Same
+  // rewrite rationale as SNA-5/SNA-7.
+  it('SNA-9: --centrality flag adds centrality_scores to JSON payload (stdout is always JSON)', async () => {
+    const result = await runCli(['lab', 'social', xesPath, '--centrality', '--no-save']);
     if (result.exitCode !== EXIT_CODES.success) return;
-    expect(result.stdout).toMatch(/Centrality|Degree|Betwn|betweenness/i);
+    const envelope = parseEnvelope(result.stdout);
+    expect(envelope.payload?.centrality_scores).toBeDefined();
   }, TIMEOUT);
 
   // SNA-10: --centrality flag adds centrality_scores to JSON payload
   it('SNA-10: --centrality flag adds centrality_scores to JSON payload', async () => {
     const result = await runCli([
-      'social', xesPath, '--centrality', '--format', 'json', '--no-save',
+      'lab', 'social', xesPath, '--centrality', '--format', 'json', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
     const envelope = parseEnvelope(result.stdout);
@@ -286,7 +311,7 @@ describe('wpm social — enhanced social network analysis', () => {
   // SNA-11: centrality_scores has degree, betweenness, closeness, eigenvector
   it('SNA-11: centrality_scores has degree, betweenness, closeness, eigenvector', async () => {
     const result = await runCli([
-      'social', xesPath, '--centrality', '--format', 'json', '--no-save',
+      'lab', 'social', xesPath, '--centrality', '--format', 'json', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
     const envelope = parseEnvelope(result.stdout);
@@ -311,7 +336,7 @@ describe('wpm social — enhanced social network analysis', () => {
   // SNA-12: --export json produces valid JSON adjacency list (no outer envelope)
   it('SNA-12: --export json produces raw JSON adjacency list', async () => {
     const result = await runCli([
-      'social', xesPath, '--export', 'json', '--no-save',
+      'lab', 'social', xesPath, '--export', 'json', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
     // Output should be raw JSON, not the command envelope
@@ -326,38 +351,52 @@ describe('wpm social — enhanced social network analysis', () => {
     }
   }, TIMEOUT);
 
-  // SNA-13: --export csv produces from,to,weight CSV
-  it('SNA-13: --export csv produces from,to,weight CSV header', async () => {
+  // SNA-13: --export csv produces from,to,weight CSV. The legacy command's
+  // `--export` path bypasses the CommandResult envelope and writes raw text
+  // straight to stdout; the bridge preserves that as `payload.raw` instead
+  // of losing it (nouns/_bridge.ts) — stdout itself is still always JSON.
+  it('SNA-13: --export csv produces from,to,weight CSV (wrapped as payload.raw)', async () => {
     const result = await runCli([
-      'social', xesPath, '--export', 'csv', '--no-save',
+      'lab', 'social', xesPath, '--export', 'csv', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
-    expect(result.stdout).toMatch(/^from,to,weight/);
+    const parsed = JSON.parse(result.stdout) as { raw?: string };
+    expect(typeof parsed.raw).toBe('string');
+    expect(parsed.raw).toMatch(/^from,to,weight/);
   }, TIMEOUT);
 
-  // SNA-14: --export dot produces digraph DOT syntax
-  it('SNA-14: --export dot produces digraph DOT syntax', async () => {
+  // SNA-14: --export dot produces digraph DOT syntax (same payload.raw wrapping)
+  it('SNA-14: --export dot produces digraph DOT syntax (wrapped as payload.raw)', async () => {
     const result = await runCli([
-      'social', xesPath, '--export', 'dot', '--no-save',
+      'lab', 'social', xesPath, '--export', 'dot', '--no-save',
     ]);
     if (result.exitCode !== EXIT_CODES.success) return;
-    expect(result.stdout).toMatch(/digraph|graph/);
-    expect(result.stdout).toMatch(/rankdir/);
+    const parsed = JSON.parse(result.stdout) as { raw?: string };
+    expect(typeof parsed.raw).toBe('string');
+    expect(parsed.raw).toMatch(/digraph|graph/);
+    expect(parsed.raw).toMatch(/rankdir/);
   }, TIMEOUT);
 
-  // SNA-15: --export with invalid format exits 1 (config_error)
-  it('SNA-15: --export with invalid format exits 1 (config_error)', async () => {
+  // SNA-15: --export with invalid format exits 2 (source_error). The
+  // legacy command itself reports EXIT_CODES.config_error (1), but the
+  // bridge's ErrorCode vocabulary is coarser than wpm's 7-value legacy
+  // exit-code contract: classifyLegacyFailure() (nouns/_bridge.ts) maps
+  // BOTH legacy config_error(1) and source_error(2) to INVALID_INPUT,
+  // which wpm's ERROR_CODE_MAP (cli.ts) then resolves to source_error(2).
+  // Verified live: `wpm lab social <f> --export graphml` exits 2.
+  it('SNA-15: --export with invalid format exits 2 (source_error, via bridge INVALID_INPUT mapping)', async () => {
     const result = await runCli([
-      'social', xesPath, '--export', 'graphml', '--no-save',
+      'lab', 'social', xesPath, '--export', 'graphml', '--no-save',
     ]);
-    // Invalid export format is a config error (1), not source (2) or execution (3)
-    expect([EXIT_CODES.config_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    const parsed = JSON.parse(result.stdout) as { error?: { code?: string; message?: string } };
+    expect(parsed.error?.message).toContain('Invalid --export format');
   }, TIMEOUT);
 
   // SNA-16: --matrix + --roles + --centrality compose cleanly
   it('SNA-16: --matrix + --roles + --centrality compose cleanly', async () => {
     const result = await runCli([
-      'social', xesPath,
+      'lab', 'social', xesPath,
       '--matrix', '--roles', '--centrality',
       '--format', 'json', '--no-save',
     ]);

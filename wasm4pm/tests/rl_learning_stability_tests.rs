@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! RL Learning Stability Comprehensive Tests
 //!

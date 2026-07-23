@@ -91,8 +91,78 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
         result.insert(obj_type.clone(), annotated_net);
     }
 
+    // OCPN essence annotations: shared transitions + variable arcs.
+    let (shared_transitions, variable_arcs) = compute_ocpn_annotations(&ocel);
+    result.insert("shared_transitions".to_string(), json!(shared_transitions));
+    result.insert("variable_arcs".to_string(), json!(variable_arcs));
+
     // Return as JSON
     to_js(&result)
+}
+
+/// Compute the OCPN essence annotations from an OCEL:
+///
+/// * `shared_transitions` — activities that appear in ≥ 2 object types' nets
+///   (i.e. their events touch objects of ≥ 2 types), with the sorted list of
+///   those object types.
+/// * `variable_arcs` — `(activity, object_type)` pairs where at least one
+///   event of that activity touches more than one object of that type.
+///
+/// Pure (no wasm-bindgen) so it is unit-testable on native targets.
+pub fn compute_ocpn_annotations(ocel: &OCEL) -> (Vec<serde_json::Value>, Vec<serde_json::Value>) {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let obj_to_type: BTreeMap<&str, &str> = ocel
+        .objects
+        .iter()
+        .map(|o| (o.id.as_str(), o.object_type.as_str()))
+        .collect();
+
+    // activity → set of object types its events touch
+    let mut activity_types: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+    // (activity, object_type) pairs with a >1-objects-of-that-type event
+    let mut variable_pairs: BTreeSet<(&str, &str)> = BTreeSet::new();
+
+    for event in &ocel.events {
+        let mut per_type_count: BTreeMap<&str, usize> = BTreeMap::new();
+        for obj_id in event.all_object_ids() {
+            if let Some(&ot) = obj_to_type.get(obj_id) {
+                *per_type_count.entry(ot).or_default() += 1;
+                activity_types
+                    .entry(event.event_type.as_str())
+                    .or_default()
+                    .insert(ot);
+            }
+        }
+        for (ot, count) in per_type_count {
+            if count > 1 {
+                variable_pairs.insert((event.event_type.as_str(), ot));
+            }
+        }
+    }
+
+    let shared_transitions: Vec<serde_json::Value> = activity_types
+        .iter()
+        .filter(|(_, types)| types.len() >= 2)
+        .map(|(activity, types)| {
+            json!({
+                "activity": activity,
+                "object_types": types.iter().collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+
+    let variable_arcs: Vec<serde_json::Value> = variable_pairs
+        .iter()
+        .map(|(activity, object_type)| {
+            json!({
+                "activity": activity,
+                "object_type": object_type,
+            })
+        })
+        .collect();
+
+    (shared_transitions, variable_arcs)
 }
 
 /// Flatten OCEL to EventLog for a specific object type.
@@ -249,6 +319,75 @@ mod tests {
             }],
             object_relations: vec![],
         }
+    }
+
+    fn make_obj(id: &str, object_type: &str) -> OCELObject {
+        OCELObject {
+            id: id.to_string(),
+            object_type: object_type.to_string(),
+            attributes: std::collections::BTreeMap::new(),
+            changes: vec![],
+            embedded_relations: vec![],
+        }
+    }
+
+    fn make_ev(id: &str, event_type: &str, ts: &str, obj_ids: &[&str]) -> OCELEvent {
+        OCELEvent {
+            id: id.to_string(),
+            event_type: event_type.to_string(),
+            timestamp: ts.to_string(),
+            attributes: std::collections::BTreeMap::new(),
+            object_ids: obj_ids.iter().map(|s| s.to_string()).collect(),
+            object_refs: vec![],
+        }
+    }
+
+    #[test]
+    fn test_shared_transitions_and_variable_arcs() {
+        // "ship" touches an order and two items in one event; "pack" touches
+        // only one item.
+        let ocel = OCEL {
+            event_types: vec!["pack".to_string(), "ship".to_string()],
+            object_types: vec!["item".to_string(), "order".to_string()],
+            events: vec![
+                make_ev("e1", "pack", "2024-01-01T09:00:00Z", &["item1"]),
+                make_ev(
+                    "e2",
+                    "ship",
+                    "2024-01-01T10:00:00Z",
+                    &["order1", "item1", "item2"],
+                ),
+            ],
+            objects: vec![
+                make_obj("order1", "order"),
+                make_obj("item1", "item"),
+                make_obj("item2", "item"),
+            ],
+            object_relations: vec![],
+        };
+
+        let (shared, variable) = compute_ocpn_annotations(&ocel);
+
+        // ship appears in both "order" and "item" nets → shared, sorted types.
+        assert_eq!(shared.len(), 1);
+        assert_eq!(shared[0]["activity"], "ship");
+        assert_eq!(
+            shared[0]["object_types"],
+            serde_json::json!(["item", "order"])
+        );
+
+        // ship touches 2 items in one event → variable arc (ship, item) only.
+        assert_eq!(variable.len(), 1);
+        assert_eq!(variable[0]["activity"], "ship");
+        assert_eq!(variable[0]["object_type"], "item");
+    }
+
+    #[test]
+    fn test_no_shared_or_variable_for_single_type_single_object() {
+        let ocel = create_test_ocel();
+        let (shared, variable) = compute_ocpn_annotations(&ocel);
+        assert!(shared.is_empty());
+        assert!(variable.is_empty());
     }
 
     #[test]
