@@ -4,6 +4,10 @@ use crate::breeds::TraceStep;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+fn default_concept_coverage() -> f32 {
+    0.25
+}
+
 /// Declarative bounded domain consumed by the session kernel.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -12,6 +16,8 @@ pub struct DomainPack {
     pub version: String,
     /// Stable domain identifier.
     pub id: String,
+    /// Human guidance for every concept referenced by a track.
+    pub concepts: BTreeMap<String, ConceptSpec>,
     /// Candidate tracks available in this domain.
     pub tracks: Vec<TrackSpec>,
     /// Deterministic all-match observation patterns.
@@ -27,6 +33,16 @@ pub struct DomainPack {
     pub thresholds: ThresholdSpec,
     /// Resource caps enforced by the kernel.
     pub bounds: SessionBounds,
+}
+
+/// Human-readable ontology guidance for one concept.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ConceptSpec {
+    /// Human-readable concept label.
+    pub label: String,
+    /// Ontology-level prompt describing what a complete answer should cover.
+    pub prompt: String,
 }
 
 /// A candidate interview or diagnostic track.
@@ -102,6 +118,9 @@ pub struct ThresholdSpec {
     pub margin: f32,
     /// Minimum number of covered concepts.
     pub minimum_coverage: usize,
+    /// Per-track concept support required for coverage.
+    #[serde(default = "default_concept_coverage")]
+    pub concept_coverage: f32,
     /// Whether a human confirmation is required before commitment.
     pub confirmation_required: bool,
     /// Maximum tolerated contradiction before commitment.
@@ -188,6 +207,8 @@ pub struct EvidenceRecord {
     pub observation_id: String,
     /// Matcher that produced the evidence.
     pub pattern_id: String,
+    /// Canonical phrase that matched the observation.
+    pub matched_phrase: String,
     /// Posted proposition.
     pub proposition: String,
     /// Signed track weights declared by the matcher.
@@ -332,6 +353,9 @@ pub enum SessionError {
     /// No observation or confirmation was supplied.
     #[error("a session turn requires an observation or confirmation")]
     EmptyTurn,
+    /// An observation had no text and no evidence retractions.
+    #[error("an observation requires text or evidence retractions")]
+    EmptyObservation,
     /// Domain pack violates a declared invariant.
     #[error("invalid domain pack: {reason}")]
     InvalidDomain {
@@ -341,6 +365,12 @@ pub enum SessionError {
     /// The prior state hash does not recompute.
     #[error("prior state hash mismatch")]
     StateHashMismatch,
+    /// The prior state is internally inconsistent with its observations or domain.
+    #[error("invalid prior state: {reason}")]
+    InvalidState {
+        /// Invariant violation.
+        reason: String,
+    },
     /// The prior state belongs to another domain pack.
     #[error("prior state domain-pack hash mismatch")]
     DomainPackMismatch,
@@ -369,6 +399,12 @@ pub enum SessionError {
     #[error("unknown confirmation track: {id}")]
     UnknownTrack {
         /// Missing track identifier.
+        id: String,
+    },
+    /// A confirmation or rejection did not target the pending or committed track.
+    #[error("track is not pending or committed for confirmation: {id}")]
+    ConfirmationNotPending {
+        /// Track identifier that could not lawfully be confirmed or rejected.
         id: String,
     },
     /// A positive confirmation did not match the eligible pending track.
