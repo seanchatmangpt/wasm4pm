@@ -1,6 +1,10 @@
 name: Apply GPU Feature Closure
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/agent-apply-gpu-feature-closure.yml'
   push:
     branches:
       - agent/fix-pnpm11-build-allowlist
