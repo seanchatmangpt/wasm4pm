@@ -11,23 +11,34 @@ import {
   type SessionState,
 } from './schemas.js';
 
-const AttestationSchema = z
-  .object({
-    kind: z.enum(['ed25519-self-signed', 'blake3-only']),
-    signature: z.string().nullable(),
-    public_key: z.string().nullable(),
-  })
-  .strict();
+const HashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const ReplayPointerSchema = z.string().regex(/^[0-9a-f]{16}$/);
+const AttestationSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('ed25519-self-signed'),
+      signature: z.string().regex(/^[0-9a-f]{128}$/),
+      public_key: z.string().regex(/^[0-9a-f]{64}$/),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('blake3-only'),
+      signature: z.null(),
+      public_key: z.null(),
+    })
+    .strict(),
+]);
 
 const VerifiedSchema = z
   .object({
     status: z.literal('verified'),
-    run_id: z.string().min(1),
-    input_hash: z.string().length(64),
-    state_hash: z.string().length(64),
-    domain_pack_hash: z.string().length(64),
-    attested_hash: z.string().length(64),
-    replay_pointer: z.string().min(1),
+    run_id: HashSchema,
+    input_hash: HashSchema,
+    state_hash: HashSchema,
+    domain_pack_hash: HashSchema,
+    attested_hash: HashSchema,
+    replay_pointer: ReplayPointerSchema,
     attestation: AttestationSchema,
   })
   .strict();
@@ -35,11 +46,11 @@ const VerifiedSchema = z
 const RefusedSchema = z
   .object({
     status: z.literal('refused'),
-    run_id: z.string().min(1),
-    input_hash: z.string().length(64),
-    refusal_hash: z.string().length(64),
-    attested_hash: z.string().length(64),
-    replay_pointer: z.string().min(1),
+    run_id: HashSchema,
+    input_hash: HashSchema,
+    refusal_hash: HashSchema,
+    attested_hash: HashSchema,
+    replay_pointer: ReplayPointerSchema,
     refusal: z
       .object({
         code: SessionRefusalCodeSchema,
