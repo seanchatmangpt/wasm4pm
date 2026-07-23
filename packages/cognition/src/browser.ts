@@ -4,11 +4,7 @@
 //! wrapper. A literal `moduleLoader` callback is preferred because bundlers can
 //! then discover and include the generated web-target JavaScript module.
 
-import {
-  WasmLoader,
-  type CognitionWasmModule,
-  type WasmLoaderConfig,
-} from './init.js';
+import { WasmLoader, type WasmLoaderConfig } from './init.js';
 
 /** Module specifier used when no bundle-visible loader is supplied. */
 export const BROWSER_MODULE_PATH = 'wasm4pm-cognition-web';
