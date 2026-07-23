@@ -1,7 +1,10 @@
 {
-  "name": "wasm4pm",
+  "name": "@wasm4pm/agents",
   "version": "26.7.23",
-  "description": "Core kernel and runtime utilities",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Van der Aalst process mining agents — autonomous adversarial validation",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,6 +12,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./mcp": {
+      "import": "./dist/mcp/server.js",
+      "types": "./dist/mcp/server.d.ts"
     }
   },
   "files": [
@@ -25,22 +32,12 @@
   },
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/core": "workspace:*",
-    "@wasm4pm/ml": "workspace:*",
-    "@wasm4pm/planner": "workspace:*",
-    "zod": "^3.22.0"
+    "wasm4pm": "workspace:*",
+    "@wasm4pm/engine": "workspace:*",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
-  },
-  "keywords": [
-    "kernel",
-    "runtime",
-    "utilities"
-  ],
-  "author": "Sean Chatman",
-  "license": "SEE LICENSE IN LICENSE"
+    "vitest": "^1.6.0"
+  }
 }

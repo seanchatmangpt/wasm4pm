@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm-monorepo",
-  "version": "26.7.6",
+  "version": "26.7.23",
   "description": "High-performance process mining monorepo with WASM acceleration",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
