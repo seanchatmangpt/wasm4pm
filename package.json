@@ -37,6 +37,7 @@
     "interview:bootstrap": "pnpm run interview:wasm && pnpm install",
     "interview:dev": "pnpm run interview:bootstrap && pnpm dlx vite@6.1.0 examples/interview-assistant",
     "interview:build": "pnpm run interview:bootstrap && pnpm dlx vite@6.1.0 build examples/interview-assistant",
+    "interview:test:text": "cargo test -p wasm4pm-cognition --test full_interview_text_screen -- --nocapture",
     "cli:parity": "tsx scripts/release/verify-cli-parity.ts",
     "prepublish:pack-smoke": "bash scripts/release/verify-pack-smoke.sh",
     "release:certificate": "tsx scripts/release/verify-release-certificate.ts",
