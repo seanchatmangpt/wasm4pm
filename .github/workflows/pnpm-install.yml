@@ -53,7 +53,10 @@ jobs:
         run: npm install -g wasm-pack@0.13.1
 
       - name: Bootstrap cognition WASM packages
-        run: bash scripts/bootstrap-cognition-wasm.sh
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/bootstrap-cognition-wasm.sh 2>&1 | tee cognition-bootstrap.log
 
       - name: Install workspace dependencies
         shell: bash
@@ -66,6 +69,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pnpm-install-receipt
-          path: pnpm-install.log
+          path: |
+            cognition-bootstrap.log
+            pnpm-install.log
           if-no-files-found: error
           retention-days: 7
