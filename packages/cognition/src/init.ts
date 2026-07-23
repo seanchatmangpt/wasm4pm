@@ -11,6 +11,7 @@ export interface CognitionWasmModule {
   cognition_run: (input_json: string) => unknown;
   cognition_session_turn: (input_json: string) => unknown;
   cognition_session_verify: (input_json: string) => unknown;
+  cognition_session_code: (input_json: string) => unknown;
   cognition_verify: (result_json: string) => unknown;
   cognition_replay: (run_id: string) => unknown;
   system_build: (intent_json: string) => unknown;
@@ -21,10 +22,7 @@ export interface CognitionWasmModule {
 export interface WasmLoaderConfig {
   /** Module specifier to import. Defaults to the Node build `wasm4pm-cognition`. */
   modulePath?: string;
-  /**
-   * Bundle-visible module factory. Browser applications should prefer a literal
-   * callback such as `() => import('./pkg-web/wasm4pm_cognition.js')`.
-   */
+  /** Bundle-visible module factory for browser applications. */
   moduleLoader?: () => Promise<unknown>;
   /** URL of the `_bg.wasm` passed to a web-target module's default `init()`. */
   wasmUrl?: string | URL;
@@ -35,6 +33,7 @@ const REQUIRED_EXPORTS = [
   'cognition_run',
   'cognition_session_turn',
   'cognition_session_verify',
+  'cognition_session_code',
   'cognition_verify',
   'cognition_replay',
   'system_build',
