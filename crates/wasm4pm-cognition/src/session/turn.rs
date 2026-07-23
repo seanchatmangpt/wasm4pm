@@ -43,29 +43,42 @@ fn invalid_state(reason: impl Into<String>) -> SessionError {
     }
 }
 
-fn should_reopen_commitment(
+fn track_satisfies_commitment(
     pack: &DomainPack,
     analysis: &Analysis,
-    committed_track: &str,
+    track_id: &str,
 ) -> bool {
-    let Some(committed) = analysis
+    let Some(track) = analysis
         .hypotheses
         .iter()
-        .find(|hypothesis| hypothesis.id == committed_track)
+        .find(|hypothesis| hypothesis.id == track_id)
     else {
-        return true;
+        return false;
     };
-    if committed.eliminated
-        || committed.score < pack.thresholds.confidence
-        || committed.contradiction > pack.thresholds.maximum_contradiction
+    if track.eliminated
+        || track.score < pack.thresholds.confidence
+        || track.contradiction > pack.thresholds.maximum_contradiction
     {
-        return true;
+        return false;
     }
-    analysis.hypotheses.first().is_some_and(|top| {
-        top.id != committed_track
-            && top.score >= pack.thresholds.confidence
-            && top.score - committed.score >= pack.thresholds.margin
-    })
+
+    let coverage = analysis
+        .covered_by_track
+        .get(track_id)
+        .map(Vec::len)
+        .unwrap_or_default();
+    if coverage < pack.thresholds.minimum_coverage {
+        return false;
+    }
+
+    let best_competitor = analysis
+        .hypotheses
+        .iter()
+        .filter(|hypothesis| hypothesis.id != track_id && !hypothesis.eliminated)
+        .map(|hypothesis| hypothesis.score)
+        .max_by(f32::total_cmp)
+        .unwrap_or(0.0);
+    track.score - best_competitor >= pack.thresholds.margin
 }
 
 fn apply_observation(
@@ -85,50 +98,47 @@ fn apply_observation(
     if observation.text.len() > pack.bounds.max_observation_bytes {
         return Err(SessionError::ObservationTooLarge);
     }
-
-    if let Some(existing) = state
+    if state
         .observations
         .iter()
-        .find(|item| item.id == observation.id)
+        .any(|existing| existing.id == observation.id)
     {
-        if existing != observation {
-            return Err(SessionError::ObservationIdConflict {
-                id: observation.id.clone(),
-            });
-        }
-        trace.push(TraceStep {
-            step: trace.len(),
-            kind: "duplicate-observation".to_string(),
-            detail: format!("observation={} already admitted", observation.id),
-            depth: 0,
-            objects: vec![("observation".to_string(), observation.id.clone())],
+        return Err(SessionError::ObservationIdConflict {
+            id: observation.id.clone(),
         });
-        return Ok(());
     }
-
     if state.observations.len() >= pack.bounds.max_observations {
         return Err(SessionError::ResourceCap {
             resource: "observations".to_string(),
         });
     }
 
+    let mut retractions = BTreeSet::new();
     for evidence_id in &observation.retract_evidence_ids {
-        let Some(item) = state
-            .evidence
-            .iter_mut()
-            .find(|item| item.id == *evidence_id)
-        else {
+        if !retractions.insert(evidence_id.clone()) {
+            return Err(SessionError::MalformedInput {
+                reason: format!("duplicate evidence retraction: {evidence_id}"),
+            });
+        }
+        if !state.evidence.iter().any(|item| item.id == *evidence_id) {
             return Err(SessionError::UnknownEvidence {
                 id: evidence_id.clone(),
             });
-        };
+        }
+    }
+    for evidence_id in retractions {
+        let item = state
+            .evidence
+            .iter_mut()
+            .find(|item| item.id == evidence_id)
+            .expect("retractions were prevalidated");
         item.active = false;
         trace.push(TraceStep {
             step: trace.len(),
             kind: "retract-evidence".to_string(),
             detail: format!("evidence={evidence_id}"),
             depth: 0,
-            objects: vec![("evidence".to_string(), evidence_id.clone())],
+            objects: vec![("evidence".to_string(), evidence_id)],
         });
     }
 
@@ -161,7 +171,9 @@ fn apply_confirmation(
     }
 
     if confirmation.accepted {
-        if analysis.eligible_track.as_deref() != Some(confirmation.track_id.as_str()) {
+        if state.committed_track.is_some()
+            || analysis.eligible_track.as_deref() != Some(confirmation.track_id.as_str())
+        {
             return Err(SessionError::ConfirmationNotEligible {
                 id: confirmation.track_id.clone(),
             });
@@ -245,7 +257,7 @@ fn apply_turn_record(
 
     if record.observation.is_some() {
         if let Some(committed) = state.committed_track.clone() {
-            if should_reopen_commitment(pack, &analysis, &committed) {
+            if !track_satisfies_commitment(pack, &analysis, &committed) {
                 state.committed_track = None;
                 trace.push(TraceStep {
                     step: trace.len(),
@@ -393,7 +405,9 @@ fn verify_previous_state(
         ));
     }
     if state.turn == 1 && state.previous_state_hash.is_some() {
-        return Err(invalid_state("genesis state must not name a previous state"));
+        return Err(invalid_state(
+            "first persisted turn must not have a previous-state hash",
+        ));
     }
     if state.turn > 1
         && !state
