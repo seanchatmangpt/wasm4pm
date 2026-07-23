@@ -17,6 +17,7 @@
 //! - [`breeds::prolog`] — Horn-clause backward chaining with Robinson unification
 //! - [`breeds::strips`] — STRIPS-style means-ends planner (Fikes & Nilsson 1971)
 //! - [`breeds::hearsay`] — Hearsay-II blackboard architecture (Erman & Lesser 1980)
+//! - [`session`] — receipted, state-carrying compound cognition sessions
 //! - [`autosystems::cost_law`] — traditional + replacement cost-law evaluators
 //! - [`autosystems::dominance`] — Pareto dominance over scored candidates
 //! - [`autosystems::receipt`] — BLAKE3-linked receipt chain with replay
@@ -26,8 +27,8 @@
 //! ## Exposure to JavaScript / TypeScript
 //!
 //! Build with `--features wasm` and `wasm-pack build` to emit `.js` +
-//! `.d.ts` bindings. The `wasm` module re-exports a curated, stable
-//! surface; everything else is intentionally not in the JS namespace.
+//! `.d.ts` bindings. The `wasm` and `session_wasm` modules re-export curated,
+//! stable surfaces; everything else is intentionally not in the JS namespace.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
@@ -42,6 +43,9 @@ pub mod log_adapter;
 pub mod observability;
 pub mod ocel;
 pub mod registry;
+pub mod session;
 
+#[cfg(feature = "wasm")]
+pub mod session_wasm;
 #[cfg(feature = "wasm")]
 pub mod wasm;
