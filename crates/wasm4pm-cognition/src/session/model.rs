@@ -131,6 +131,8 @@ pub struct ThresholdSpec {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct SessionBounds {
+    /// Maximum retained turns, including confirmation-only turns.
+    pub max_turns: usize,
     /// Maximum retained observations.
     pub max_observations: usize,
     /// Maximum retained evidence records.
@@ -168,6 +170,18 @@ pub struct Confirmation {
     pub track_id: String,
     /// `true` confirms; `false` rejects.
     pub accepted: bool,
+}
+
+/// Canonical input actions admitted together as one ordered turn.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SessionTurnRecord {
+    /// Observation applied before the confirmation, when present.
+    #[serde(default)]
+    pub observation: Option<Observation>,
+    /// Human decision applied after observation inference, when present.
+    #[serde(default)]
+    pub confirmation: Option<Confirmation>,
 }
 
 /// Input to one pure cognition-session turn.
@@ -257,11 +271,13 @@ pub struct SessionState {
     /// Hash of the previous state, if any.
     #[serde(default)]
     pub previous_state_hash: Option<String>,
-    /// Admitted observations in order.
+    /// Canonical ordered ledger from which the full state is replayed.
+    pub turns: Vec<SessionTurnRecord>,
+    /// Admitted observations in order, derived from the turn ledger.
     pub observations: Vec<Observation>,
     /// Immutable evidence records with explicit active flags.
     pub evidence: Vec<EvidenceRecord>,
-    /// Explicitly rejected tracks.
+    /// Explicitly rejected tracks, derived from confirmation turns.
     pub rejected_tracks: BTreeSet<String>,
     /// Current ranked hypotheses.
     pub hypotheses: Vec<TrackHypothesis>,
@@ -329,9 +345,9 @@ pub struct SessionTurnOutput {
     pub state: SessionState,
     /// UI-facing deterministic projection.
     pub projection: SessionProjection,
-    /// Append-only inference trace.
+    /// Inference trace for the newly admitted turn.
     pub inference_trace: Vec<TraceStep>,
-    /// OCEL 2.0 log derived from the inference trace.
+    /// OCEL 2.0 log derived from the new turn's inference trace.
     pub ocel_log: serde_json::Value,
     /// Tamper-evident turn receipt.
     pub receipt: SessionReceipt,
@@ -365,7 +381,7 @@ pub enum SessionError {
     /// The prior state hash does not recompute.
     #[error("prior state hash mismatch")]
     StateHashMismatch,
-    /// The prior state is internally inconsistent with its observations or domain.
+    /// The prior state is internally inconsistent with its canonical turn ledger.
     #[error("invalid prior state: {reason}")]
     InvalidState {
         /// Invariant violation.
