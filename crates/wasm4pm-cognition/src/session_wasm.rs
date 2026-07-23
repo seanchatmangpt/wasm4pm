@@ -4,8 +4,8 @@
 
 use crate::registry::{CognitionReceipt, REGISTRY};
 use crate::session::{
-    run_session_turn, verify_session_state, DomainPack, SessionError, SessionState,
-    SessionTurnInput, SessionTurnOutput,
+    project_python_code, run_session_turn, verify_session_state, CodeProjection, DomainPack,
+    SessionError, SessionState, SessionTurnInput, SessionTurnOutput,
 };
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -40,6 +40,17 @@ struct VerificationBoundary<'a> {
     domain_pack_hash: &'a str,
     attested_hash: &'a str,
     replay_pointer: &'a str,
+    attestation: &'a AttestationBoundary,
+}
+
+#[derive(Serialize)]
+struct CodeBoundary<'a> {
+    status: &'static str,
+    run_id: &'a str,
+    input_hash: &'a str,
+    attested_hash: &'a str,
+    replay_pointer: &'a str,
+    code: &'a Option<CodeProjection>,
     attestation: &'a AttestationBoundary,
 }
 
@@ -149,6 +160,23 @@ fn refused(input_hash: String, refusal: SessionError) -> Result<JsValue, JsValue
     })
 }
 
+fn parse_verified_input(input_json: &str) -> Result<(String, VerificationInput), JsValue> {
+    let input_hash = raw_hash(input_json);
+    if input_json.len() > MAX_SESSION_INPUT_LEN {
+        return Err(refused(input_hash, SessionError::InputTooLarge)?);
+    }
+    let input = serde_json::from_str(input_json).map_err(|error| {
+        refused(
+            input_hash.clone(),
+            SessionError::MalformedInput {
+                reason: error.to_string(),
+            },
+        )
+        .unwrap_or_else(|failure| failure)
+    })?;
+    Ok((input_hash, input))
+}
+
 /// Verify a persisted session state without admitting a new turn.
 #[wasm_bindgen]
 pub fn cognition_session_verify(input_json: &str) -> Result<JsValue, JsValue> {
@@ -189,12 +217,50 @@ pub fn cognition_session_verify(input_json: &str) -> Result<JsValue, JsValue> {
     })
 }
 
+/// Replay-verify state and return the canonical Python artifact selected by cognition.
+#[wasm_bindgen]
+pub fn cognition_session_code(input_json: &str) -> Result<JsValue, JsValue> {
+    let input_hash = raw_hash(input_json);
+    if input_json.len() > MAX_SESSION_INPUT_LEN {
+        return refused(input_hash, SessionError::InputTooLarge);
+    }
+    let input: VerificationInput = match serde_json::from_str(input_json) {
+        Ok(input) => input,
+        Err(error) => {
+            return refused(
+                input_hash,
+                SessionError::MalformedInput {
+                    reason: error.to_string(),
+                },
+            )
+        }
+    };
+    let code = match project_python_code(&input.domain_pack, &input.state) {
+        Ok(code) => code,
+        Err(error) => return refused(input_hash, error),
+    };
+    let encoded = serde_json::to_vec(&(input.state.state_hash.as_str(), &code)).map_err(|error| {
+        JsValue::from_str(&format!("code projection serialization failed: {error}"))
+    })?;
+    let mut hasher = blake3::Hasher::new_derive_key("wasm4pm.cognition.code-boundary.v1");
+    hasher.update(&encoded);
+    let digest = hasher.finalize().to_hex().to_string();
+    let id = run_id("code", &digest);
+    let replay_pointer = digest[..16].to_string();
+    let attestation = attest(&id, &input_hash, &digest);
+    register_receipt(&id, &digest, &replay_pointer);
+    to_js(&CodeBoundary {
+        status: "ok",
+        run_id: &id,
+        input_hash: &input_hash,
+        attested_hash: &digest,
+        replay_pointer: &replay_pointer,
+        code: &code,
+        attestation: &attestation,
+    })
+}
+
 /// Execute one session turn through the sovereign WASM boundary.
-///
-/// The function always returns a JSON string. Lawful refusals use
-/// `status="refused"` and carry a receipted refusal hash rather than throwing.
-/// With `actor-ed25519`, the boundary adds an explicitly local self-signature;
-/// without that feature, the BLAKE3 receipt remains the complete attestation.
 #[wasm_bindgen]
 pub fn cognition_session_turn(input_json: &str) -> Result<JsValue, JsValue> {
     let raw_input_hash = raw_hash(input_json);
