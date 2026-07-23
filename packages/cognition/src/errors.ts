@@ -14,6 +14,8 @@ export type CognitionErrorCode =
   | 'REPLAY_NOT_FOUND'
   | 'SYSTEM_BUILD_FAILED'
   | 'SYSTEM_VERIFY_FAILED'
+  | 'SESSION_INPUT_INVALID'
+  | 'SESSION_EXECUTION_FAILED'
   | 'SESSION_REFUSED';
 
 export interface CognitionErrorOptions {
