@@ -24,6 +24,8 @@ export async function runSessionTurn(
   let status: 'OK' | 'ERROR' = 'OK';
   let runId: string | undefined;
   let errorMessage: string | undefined;
+  let domainId = 'unknown';
+  let turnNumber = 1;
 
   try {
     const admitted = SessionTurnInputSchema.safeParse(input);
@@ -33,6 +35,8 @@ export async function runSessionTurn(
         details: { issues: admitted.error.issues },
       });
     }
+    domainId = admitted.data.domain_pack.id;
+    turnNumber = (admitted.data.previous_state?.turn ?? 0) + 1;
 
     const loader = WasmLoader.getInstance();
     await loader.init();
@@ -103,8 +107,8 @@ export async function runSessionTurn(
         attributes: {
           'service.name': 'wasm4pm',
           'cognition.operation': 'session_turn',
-          'cognition.domain_pack': input.domain_pack?.id ?? 'unknown',
-          'cognition.turn': (input.previous_state?.turn ?? 0) + 1,
+          'cognition.domain_pack': domainId,
+          'cognition.turn': turnNumber,
           ...(runId ? { 'cognition.run_id': runId } : {}),
         },
       });
