@@ -6,14 +6,16 @@ The shared upper monitor remains the interview workspace. The laptop screen disp
 
 ## Run
 
-Install the repository dependencies and `wasm-pack`, then run the canonical command from the repository root:
+Install `wasm-pack`, make `pnpm` available through Corepack, then run the canonical command from the repository root:
 
 ```bash
-pnpm install
+corepack enable
 pnpm run interview:dev
 ```
 
-`interview:dev` builds the cognition crate as browser WebAssembly and starts Vite with this directory as the application root. A production bundle can be manufactured with:
+A clean checkout does not contain `packages/cognition/pkg` or `packages/cognition/pkg-web`. The command therefore manufactures both WASM package projections before `pnpm install` resolves the cognition package's local `file:` dependencies. It then starts Vite with this directory as the application root.
+
+A production bundle can be manufactured with:
 
 ```bash
 pnpm run interview:build
