@@ -3,3 +3,4 @@
 export * from './schemas.js';
 export * from './turn.js';
 export * from './verify.js';
+export * from './code.js';
