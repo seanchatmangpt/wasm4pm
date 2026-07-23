@@ -454,7 +454,9 @@ mod cv_semantics_tests {
     /// initial trend 0). Reproduced inline as the oracle.
     #[test]
     fn eval_fold_beta_zero_reduces_exactly_to_ses() {
-        let windows: Vec<f64> = (0..20).map(|i| (i as f64 * 0.7).sin() * 4.0 + 10.0).collect();
+        let windows: Vec<f64> = (0..20)
+            .map(|i| (i as f64 * 0.7).sin() * 4.0 + 10.0)
+            .collect();
         for &alpha in &[0.1, 0.3, 0.5, 0.9] {
             for (test_start, test_end) in [(0usize, 4usize), (8, 12), (16, 20)] {
                 let (holt_sq, holt_abs, holt_n) =
@@ -462,7 +464,10 @@ mod cv_semantics_tests {
 
                 // SES oracle (pre-Holt implementation).
                 let mut s_opt: Option<f64> = None;
-                for &val in windows[..test_start].iter().chain(windows[test_end..].iter()) {
+                for &val in windows[..test_start]
+                    .iter()
+                    .chain(windows[test_end..].iter())
+                {
                     s_opt = Some(match s_opt {
                         None => val,
                         Some(prev) => alpha * val + (1.0 - alpha) * prev,

@@ -109,9 +109,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
 ///   event of that activity touches more than one object of that type.
 ///
 /// Pure (no wasm-bindgen) so it is unit-testable on native targets.
-pub fn compute_ocpn_annotations(
-    ocel: &OCEL,
-) -> (Vec<serde_json::Value>, Vec<serde_json::Value>) {
+pub fn compute_ocpn_annotations(ocel: &OCEL) -> (Vec<serde_json::Value>, Vec<serde_json::Value>) {
     use std::collections::{BTreeMap, BTreeSet};
 
     let obj_to_type: BTreeMap<&str, &str> = ocel

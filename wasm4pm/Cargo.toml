@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "26.7.1"
+version = "26.7.6"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman"]

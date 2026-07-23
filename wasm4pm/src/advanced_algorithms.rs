@@ -104,7 +104,9 @@ pub fn classify_heuristic_splits_joins(
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
         for i in start..end.saturating_sub(1) {
-            *follows.entry((col.events[i], col.events[i + 1])).or_default() += 1;
+            *follows
+                .entry((col.events[i], col.events[i + 1]))
+                .or_default() += 1;
         }
     }
     let f = |a: u32, b: u32| -> f64 { follows.get(&(a, b)).copied().unwrap_or(0) as f64 };
@@ -142,8 +144,7 @@ pub fn classify_heuristic_splits_joins(
             .map(|(&node, targets)| {
                 let m = |b: u32, c: u32| measure_for(node, b, c);
                 let split_type = classify(targets, &m);
-                let mut names: Vec<&str> =
-                    targets.iter().map(|&t| col.vocab[t as usize]).collect();
+                let mut names: Vec<&str> = targets.iter().map(|&t| col.vocab[t as usize]).collect();
                 names.sort_unstable();
                 let node_name = col.vocab[node as usize].to_owned();
                 (

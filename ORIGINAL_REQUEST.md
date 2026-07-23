@@ -510,5 +510,40 @@ Unknown rows: 0
 ```
 
 
+## Follow-up — 2026-07-06T22:11:15-07:00
 
+Implement and verify that all native CLI commands in wasm4pm (version 26.7.6) emit OCEL (Object-Centric Event Log) data to disk and that each command successfully performs work that changes the system state. Every single command must be tested individually using the `citty-test-utils` npm package.
 
+Working directory: /Users/sac/wasm4pm
+Integrity mode: development
+
+## Requirements
+
+### R1. Version and Command Targets
+- Bump the package version in `package.json` (and all workspace configurations/packages) to `26.7.6`.
+- The target commands are all native citty-based noun-verb CLI commands registered under `apps/wasm4pm/src/nouns/`.
+
+### R2. Global OCEL Event Logging
+- Modify the CLI lifecycle hooks/middleware (e.g., in `apps/wasm4pm/src/cli.ts` or `packages/noun-verb/`) so that every execution of a native CLI verb appends a structured event to a global Object-Centric Event Log (OCEL 2.0 format) file at `.wasm4pm/telemetry.ocel.json`.
+- The appended events must trace the invocation details: `trace_id`, `noun`, `verb`, `args`, `durationMs`, and exit status/error context.
+
+### R3. Verification of System State Modification
+- Ensure each command execution performs work that changes system state.
+- Validate that a corresponding BLAKE3 command receipt is successfully written to `.wasm4pm/receipts/` on every successful verb invocation.
+- Ensure that any relevant caches or configuration modifications are persisted.
+
+### R4. Command Testing with citty-test-utils
+- Add the `citty-test-utils` dependency to the project.
+- Write unit/integration tests for each noun/verb command individually using `citty-test-utils` to run and assert correct behavior, rather than mock simulation.
+
+## Acceptance Criteria
+
+### Version and Setup
+- [ ] Version is updated to `26.7.6` across `package.json` and workspaces.
+- [ ] Project compiles and passes static lint checks (`pnpm run build` and `pnpm run lint`).
+
+### Testing and Validation
+- [ ] `citty-test-utils` is installed and used to test each native CLI command individually.
+- [ ] Each command has a test checking that executing the command writes a valid BLAKE3 command receipt to `.wasm4pm/receipts/` (or updates `latest.json`).
+- [ ] Each command has a test checking that executing the command appends a valid OCEL 2.0 log entry to `.wasm4pm/telemetry.ocel.json`.
+- [ ] All tests in `apps/wasm4pm` run and pass.

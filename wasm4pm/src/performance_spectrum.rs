@@ -130,7 +130,10 @@ pub fn discover_performance_spectrum(
                 (Some(start_ms), Some(end_ms), Some(next_act)) => {
                     let duration_ms = (end_ms - start_ms) as f64;
                     let key = (event_name.to_string(), next_act.to_string());
-                    buckets.entry(key).or_default().push((start_ms, duration_ms));
+                    buckets
+                        .entry(key)
+                        .or_default()
+                        .push((start_ms, duration_ms));
                 }
                 _ => continue,
             }

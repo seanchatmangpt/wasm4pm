@@ -315,9 +315,11 @@ mod tests {
             },
         );
         assert!(
-            !rules.iter().any(|r| r.template == OCDeclareTemplate::Succession
-                && r.activity_a == "a"
-                && r.activity_b.as_deref() == Some("b")),
+            !rules
+                .iter()
+                .any(|r| r.template == OCDeclareTemplate::Succession
+                    && r.activity_a == "a"
+                    && r.activity_b.as_deref() == Some("b")),
             "succession(a,b) must not be emitted when neither direction holds"
         );
     }
@@ -342,8 +344,10 @@ mod tests {
             .expect("Absence(x) must be emitted for type T");
         assert_eq!(absence_x_for_t.confidence, 1.0);
         // And no Absence(a) for T — "a" occurs for T.
-        assert!(!rules.iter().any(|r| r.template == OCDeclareTemplate::Absence
-            && r.object_type == "T"
-            && r.activity_a == "a"));
+        assert!(!rules
+            .iter()
+            .any(|r| r.template == OCDeclareTemplate::Absence
+                && r.object_type == "T"
+                && r.activity_a == "a"));
     }
 }

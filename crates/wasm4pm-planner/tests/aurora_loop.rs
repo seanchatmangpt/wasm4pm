@@ -47,11 +47,19 @@ fn trace(case: usize, day: usize, gap_min: usize, activities: &[&str]) -> Trace 
             let total_min = i * gap_min;
             event(
                 a,
-                &format!("2026-02-{:02}T{:02}:{:02}:00Z", day, 8 + total_min / 60, total_min % 60),
+                &format!(
+                    "2026-02-{:02}T{:02}:{:02}:00Z",
+                    day,
+                    8 + total_min / 60,
+                    total_min % 60
+                ),
             )
         })
         .collect();
-    Trace { attributes: attrs, events }
+    Trace {
+        attributes: attrs,
+        events,
+    }
 }
 
 /// Planted phenomena:
@@ -64,16 +72,50 @@ fn trace(case: usize, day: usize, gap_min: usize, activities: &[&str]) -> Trace 
 fn aurora_log() -> EventLog {
     let mut log = EventLog::new();
     let mut case = 0usize;
-    let a1: &[&str] = &["register", "triage", "sterile_prep", "lab_order", "vitals_check", "lab_collect", "lab_analyze", "treat", "discharge"];
-    let a2: &[&str] = &["register", "triage", "sterile_prep", "lab_order", "lab_collect", "vitals_check", "lab_analyze", "treat", "discharge"];
+    let a1: &[&str] = &[
+        "register",
+        "triage",
+        "sterile_prep",
+        "lab_order",
+        "vitals_check",
+        "lab_collect",
+        "lab_analyze",
+        "treat",
+        "discharge",
+    ];
+    let a2: &[&str] = &[
+        "register",
+        "triage",
+        "sterile_prep",
+        "lab_order",
+        "lab_collect",
+        "vitals_check",
+        "lab_analyze",
+        "treat",
+        "discharge",
+    ];
     let b: &[&str] = &["register", "triage", "assess", "treat", "discharge"];
-    let c: &[&str] = &["register", "triage", "sepsis_alert", "antibiotics", "icu_transfer"];
-    let b_contam: &[&str] = &["register", "triage", "assess", "contaminated_flag", "treat", "discharge"];
+    let c: &[&str] = &[
+        "register",
+        "triage",
+        "sepsis_alert",
+        "antibiotics",
+        "icu_transfer",
+    ];
+    let b_contam: &[&str] = &[
+        "register",
+        "triage",
+        "assess",
+        "contaminated_flag",
+        "treat",
+        "discharge",
+    ];
     let d_late: &[&str] = &["register", "triage", "rapid_test", "treat", "discharge"];
 
     // Early period (days 1-14): lab-era variants with 12-minute gaps.
     for day in 1..=14usize {
-        log.traces.push(trace(case, day, 12, if day % 2 == 0 { a1 } else { a2 }));
+        log.traces
+            .push(trace(case, day, 12, if day % 2 == 0 { a1 } else { a2 }));
         case += 1;
         log.traces.push(trace(case, day, 12, b));
         case += 1;
@@ -156,24 +198,21 @@ fn aurora_closed_autonomic_loop() {
     );
 
     // 1d. Windowed speedup: discharge is accelerating (12-min → 4-min gaps).
-    let speedup = wasm4pm::final_analytics::analyze_process_speedup_from_log(
-        &log,
-        "time:timestamp",
-        10,
-    );
+    let speedup =
+        wasm4pm::final_analytics::analyze_process_speedup_from_log(&log, "time:timestamp", 10);
     assert_eq!(speedup["trend"], "speedup", "gaps shrink over time");
 
     // 1e. Structured discovery: the miner must produce a real model (not a
     // flower) and see the planted vitals_check ∥ lab_collect concurrency.
-    let admitted =
-        wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-    let tree_json = wasm4pm::more_discovery::discover_inductive_miner_from_log(
-        &admitted,
-        "concept:name",
-    );
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let tree_json =
+        wasm4pm::more_discovery::discover_inductive_miner_from_log(&admitted, "concept:name");
     let tree: serde_json::Value = serde_json::from_str(&tree_json).unwrap();
     let tree_str = tree["root"].to_string();
-    assert_ne!(tree["root"]["node_type"], "flower", "IM must structure the log");
+    assert_ne!(
+        tree["root"]["node_type"], "flower",
+        "IM must structure the log"
+    );
 
     // ── Phase 2: ANALYZE — breeds deliberate over mined facts ───────────────
     // ltl_monitor: G(sepsis_alert → F antibiotics), states from a mined trace.
@@ -187,14 +226,20 @@ fn aurora_closed_autonomic_loop() {
                 intent: String::new(),
                 architecture: String::new(),
                 outcome_score: 1.0,
-                facts: vec![Fact { key: "sepsis_alert".into(), value: "true".into() }],
+                facts: vec![Fact {
+                    key: "sepsis_alert".into(),
+                    value: "true".into(),
+                }],
             },
             Case {
                 id: "state1".into(),
                 intent: String::new(),
                 architecture: String::new(),
                 outcome_score: 1.0,
-                facts: vec![Fact { key: "antibiotics".into(), value: "true".into() }],
+                facts: vec![Fact {
+                    key: "antibiotics".into(),
+                    value: "true".into(),
+                }],
             },
         ],
         rules: vec![],
@@ -207,7 +252,10 @@ fn aurora_closed_autonomic_loop() {
         .iter()
         .find(|f| f.key == "conforms")
         .expect("ltl verdict fact");
-    assert_eq!(conforms.value, "true", "sepsis protocol must conform in mined trace");
+    assert_eq!(
+        conforms.value, "true",
+        "sepsis protocol must conform in mined trace"
+    );
 
     // mycin: infection diagnosis over mined culture facts (CF chain).
     let mycin_input = BreedInput {
@@ -221,7 +269,10 @@ fn aurora_closed_autonomic_loop() {
             ("portal-of-entry", "gi-tract"),
         ]
         .iter()
-        .map(|(k, v)| Fact { key: (*k).into(), value: (*v).into() })
+        .map(|(k, v)| Fact {
+            key: (*k).into(),
+            value: (*v).into(),
+        })
         .collect(),
         cases: vec![],
         rules: vec![
@@ -252,8 +303,14 @@ fn aurora_closed_autonomic_loop() {
         intent: "arbitrate ltl_monitor vs mycin".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "breed:ltl_monitor:conclusion".into(), value: format!("conforms={}", conforms.value) },
-            Fact { key: "breed:ltl_monitor:confidence".into(), value: "1.0".into() },
+            Fact {
+                key: "breed:ltl_monitor:conclusion".into(),
+                value: format!("conforms={}", conforms.value),
+            },
+            Fact {
+                key: "breed:ltl_monitor:confidence".into(),
+                value: "1.0".into(),
+            },
             Fact {
                 key: "breed:mycin:conclusion".into(),
                 value: mycin_out
@@ -262,9 +319,18 @@ fn aurora_closed_autonomic_loop() {
                     .map(|f| f.value.clone())
                     .unwrap_or_default(),
             },
-            Fact { key: "breed:mycin:confidence".into(), value: "0.63".into() },
-            Fact { key: "drift:tv".into(), value: format!("{tv:.4}") },
-            Fact { key: "outcome:icu_p".into(), value: outcome["probability"].to_string() },
+            Fact {
+                key: "breed:mycin:confidence".into(),
+                value: "0.63".into(),
+            },
+            Fact {
+                key: "drift:tv".into(),
+                value: format!("{tv:.4}"),
+            },
+            Fact {
+                key: "outcome:icu_p".into(),
+                value: outcome["probability"].to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],

@@ -476,7 +476,12 @@ fn inductive_miner_recursive(
     if let Some(groups) = find_xor_cut(activities.len(), &edges) {
         let mut trees = Vec::new();
         for group in materialize_groups(activities, groups) {
-            trees.push(inductive_miner_recursive(log, &group, activity_key, depth + 1)?);
+            trees.push(inductive_miner_recursive(
+                log,
+                &group,
+                activity_key,
+                depth + 1,
+            )?);
         }
         return Ok(ProcessTreeNode::xor(trees));
     }
@@ -485,7 +490,12 @@ fn inductive_miner_recursive(
     if let Some(groups) = find_sequence_cut(activities.len(), &edges) {
         let mut trees = Vec::new();
         for group in materialize_groups(activities, groups) {
-            trees.push(inductive_miner_recursive(log, &group, activity_key, depth + 1)?);
+            trees.push(inductive_miner_recursive(
+                log,
+                &group,
+                activity_key,
+                depth + 1,
+            )?);
         }
         return Ok(ProcessTreeNode::sequence(trees));
     }
@@ -495,7 +505,12 @@ fn inductive_miner_recursive(
     if let Some(groups) = find_parallel_cut(activities.len(), &edges, &starts, &ends) {
         let mut trees = Vec::new();
         for group in materialize_groups(activities, groups) {
-            trees.push(inductive_miner_recursive(log, &group, activity_key, depth + 1)?);
+            trees.push(inductive_miner_recursive(
+                log,
+                &group,
+                activity_key,
+                depth + 1,
+            )?);
         }
         return Ok(ProcessTreeNode::parallel(trees));
     }
@@ -511,7 +526,12 @@ fn inductive_miner_recursive(
         } else {
             let mut redo_trees = Vec::new();
             for group in &redo_groups {
-                redo_trees.push(inductive_miner_recursive(log, group, activity_key, depth + 1)?);
+                redo_trees.push(inductive_miner_recursive(
+                    log,
+                    group,
+                    activity_key,
+                    depth + 1,
+                )?);
             }
             ProcessTreeNode::xor(redo_trees)
         };
@@ -873,7 +893,9 @@ fn find_loop_cut(
     if n < 2 || starts.is_empty() || ends.is_empty() {
         return None;
     }
-    let mut in_body: Vec<bool> = (0..n).map(|i| starts.contains(&i) || ends.contains(&i)).collect();
+    let mut in_body: Vec<bool> = (0..n)
+        .map(|i| starts.contains(&i) || ends.contains(&i))
+        .collect();
     if in_body.iter().all(|&b| b) {
         return None; // no candidate redo activities
     }

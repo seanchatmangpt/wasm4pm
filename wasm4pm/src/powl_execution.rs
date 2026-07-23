@@ -108,9 +108,9 @@ fn to_engine_ast<'a>(
                 })
             }
         },
-        PowlNode::DecisionGraph(_) | PowlNode::ChoiceGraph(_) => Err(
-            "decision/choice-graph POWL nodes are not executable by the engine yet".to_string(),
-        ),
+        PowlNode::DecisionGraph(_) | PowlNode::ChoiceGraph(_) => {
+            Err("decision/choice-graph POWL nodes are not executable by the engine yet".to_string())
+        }
     }
 }
 
@@ -214,9 +214,7 @@ pub fn execute_powl_string(powl_str: &str, max_iters: u8) -> Result<serde_json::
             // LoopRedo re-fires body ops: allow preds satisfied by any prior fire.
             let missing = effective_pred & !fired_before & !(1u64 << i);
             if missing != 0 && !matches!(op.kind, OpKind::LoopRedo) {
-                verdict = format!(
-                    "Violation {{ op_idx: {i}, missing_pred_mask: {missing:#x} }}"
-                );
+                verdict = format!("Violation {{ op_idx: {i}, missing_pred_mask: {missing:#x} }}");
                 break;
             }
             fired_before |= 1u64 << i;
@@ -283,8 +281,9 @@ pub fn powl_execute(powl_str: &str, config_json: &str) -> Result<JsValue, JsValu
     let max_iters: u8 = if config_json.trim().is_empty() {
         3
     } else {
-        let cfg: serde_json::Value = serde_json::from_str(config_json)
-            .map_err(|e| typed_wasm_err(codes::INVALID_JSON, format!("invalid config JSON: {e}")))?;
+        let cfg: serde_json::Value = serde_json::from_str(config_json).map_err(|e| {
+            typed_wasm_err(codes::INVALID_JSON, format!("invalid config JSON: {e}"))
+        })?;
         u8::try_from(cfg.get("max_iters").and_then(|v| v.as_u64()).unwrap_or(3))
             .map_err(|_| typed_wasm_err(codes::INVALID_INPUT, "max_iters must fit in u8"))?
     };

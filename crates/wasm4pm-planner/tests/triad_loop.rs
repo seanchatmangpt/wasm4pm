@@ -15,7 +15,11 @@ fn step(start_time: f64, duration: f64, name: &str) -> PlanStep {
 fn plan_converts_to_powl_v2_and_executes_to_ocel() {
     // FUTURE: a@0 and b@0 run in parallel (1s each); c@1 starts after both end.
     let plan = TemporalPlan {
-        steps: vec![step(0.0, 1.0, "a"), step(0.0, 1.0, "b"), step(1.0, 1.0, "c")],
+        steps: vec![
+            step(0.0, 1.0, "a"),
+            step(0.0, 1.0, "b"),
+            step(1.0, 1.0, "c"),
+        ],
         makespan: 2.0,
     };
     let powl = plan_to_powl_v2(&plan);

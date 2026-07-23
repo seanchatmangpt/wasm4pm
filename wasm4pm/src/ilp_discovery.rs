@@ -471,7 +471,9 @@ pub fn discover_optimized_dfg_from_log(
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let (start, end) = (col.trace_offsets[t], col.trace_offsets[t + 1]);
         for i in start..end.saturating_sub(1) {
-            *edge_freq.entry((col.events[i], col.events[i + 1])).or_default() += 1;
+            *edge_freq
+                .entry((col.events[i], col.events[i + 1]))
+                .or_default() += 1;
         }
     }
     let total_edges = edge_freq.len();
@@ -512,7 +514,11 @@ pub fn discover_optimized_dfg_from_log(
                 let from = col.vocab[from_idx as usize].to_string();
                 let to = col.vocab[to_idx as usize].to_string();
                 let frequency = edge_freq[&(from_idx, to_idx)];
-                dfg.edges.push(DirectlyFollowsRelation { from, to, frequency });
+                dfg.edges.push(DirectlyFollowsRelation {
+                    from,
+                    to,
+                    frequency,
+                });
             }
         }
     }

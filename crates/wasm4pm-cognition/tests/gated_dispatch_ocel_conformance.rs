@@ -464,10 +464,7 @@ fn markov_logic_gated_ok() {
     let mut input = empty_input("conformance");
     input.facts = vec![
         fact("mln:clause:c1", "1.5|!smokes_anna,cancer_anna"),
-        fact(
-            "mln:clause:c2",
-            "1.1|!friends_ab,!smokes_anna,smokes_bob",
-        ),
+        fact("mln:clause:c2", "1.1|!friends_ab,!smokes_anna,smokes_bob"),
         fact("evidence:smokes_anna", "true"),
         fact("evidence:friends_ab", "true"),
     ];
@@ -478,5 +475,6 @@ fn fixture_input(breed: &str) -> BreedInput {
     let path = format!("tests/fixtures/papers/{}.json", breed);
     let content = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {}", path, e));
     let json: serde_json::Value = serde_json::from_str(&content).unwrap();
-    serde_json::from_value(json["input"].clone()).unwrap_or_else(|e| panic!("{} input: {}", path, e))
+    serde_json::from_value(json["input"].clone())
+        .unwrap_or_else(|e| panic!("{} input: {}", path, e))
 }

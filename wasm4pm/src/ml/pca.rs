@@ -314,7 +314,11 @@ mod tests {
             v
         );
         for d in 1..5 {
-            assert!(v[d].abs() < 1e-9, "eigenvector must vanish off-axis: {:?}", v);
+            assert!(
+                v[d].abs() < 1e-9,
+                "eigenvector must vanish off-axis: {:?}",
+                v
+            );
         }
         // Remaining eigenvalues are zero.
         assert!(result.eigenvalues[1].abs() < 1e-12);

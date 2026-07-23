@@ -228,7 +228,10 @@ mod holt_tests {
         let series = [1.0, 2.0, 3.0, 4.0, 5.0];
         let res = holt_internal(&series, 1.0, 1.0);
         assert_eq!(res.next_window, 6.0, "forecast must be exactly 6.0");
-        assert_eq!(res.rmse, 0.0, "linear trend must be forecast with zero error");
+        assert_eq!(
+            res.rmse, 0.0,
+            "linear trend must be forecast with zero error"
+        );
         assert_eq!(res.mae, 0.0);
         assert_eq!(res.mape, 0.0);
     }

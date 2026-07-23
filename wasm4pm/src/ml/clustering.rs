@@ -76,10 +76,7 @@ pub struct KmeansResult<const D: usize> {
 /// Convergence is deterministic for identical input. `k` is clamped to `min(k, n)`.
 /// This implementation uses branchless arithmetic for the assignment step to ensure
 /// high performance.
-pub fn kmeans_internal<const D: usize>(
-    features: &[[f64; D]],
-    k_request: usize,
-) -> KmeansResult<D> {
+pub fn kmeans_internal<const D: usize>(features: &[[f64; D]], k_request: usize) -> KmeansResult<D> {
     let n = features.len();
     let k = k_request.clamp(1, n);
 

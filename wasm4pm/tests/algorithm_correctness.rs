@@ -1146,7 +1146,10 @@ fn predict_outcome_laplace_hand_computed() {
     .unwrap();
     assert_eq!(v2["context_used"], "prior");
     let p2 = v2["probability"].as_f64().unwrap();
-    assert!((p2 - 2.0 / 3.0).abs() < 1e-12, "prior P(ok) must be 2/3, got {p2}");
+    assert!(
+        (p2 - 2.0 / 3.0).abs() < 1e-12,
+        "prior P(ok) must be 2/3, got {p2}"
+    );
 }
 
 /// optimized_dfg: with fitness-only weights all edges survive; with a heavy
@@ -1154,10 +1157,19 @@ fn predict_outcome_laplace_hand_computed() {
 /// always keeping ≥1 edge and remaining a subset of observed edges.
 #[test]
 fn optimized_dfg_threshold_search_prunes() {
-    let log = build_log(&[(20, &["a", "b", "z"]), (1, &["a", "c", "z"]), (1, &["a", "d", "z"])]);
-    let full = wasm4pm::ilp_discovery::discover_optimized_dfg_from_log(&log, "concept:name", 1.0, 0.0);
+    let log = build_log(&[
+        (20, &["a", "b", "z"]),
+        (1, &["a", "c", "z"]),
+        (1, &["a", "d", "z"]),
+    ]);
+    let full =
+        wasm4pm::ilp_discovery::discover_optimized_dfg_from_log(&log, "concept:name", 1.0, 0.0);
     // 6 distinct observed edges: a→b, b→z, a→c, c→z, a→d, d→z
-    assert_eq!(full.edges.len(), 6, "fitness-only must keep all observed edges");
+    assert_eq!(
+        full.edges.len(),
+        6,
+        "fitness-only must keep all observed edges"
+    );
     let pruned =
         wasm4pm::ilp_discovery::discover_optimized_dfg_from_log(&log, "concept:name", 0.1, 10.0);
     assert!(
@@ -1194,12 +1206,27 @@ fn process_skeleton_relations_hand_computed() {
     };
     assert_eq!(pairs("equivalence"), vec![("a".into(), "c".into())]);
     let before = pairs("always_before");
-    assert!(before.contains(&("a".into(), "b".into())), "a always before b");
-    assert!(before.contains(&("a".into(), "c".into())), "a always before c");
-    assert!(!before.contains(&("b".into(), "c".into())), "b not always before c (trace 2 has c, no b)");
+    assert!(
+        before.contains(&("a".into(), "b".into())),
+        "a always before b"
+    );
+    assert!(
+        before.contains(&("a".into(), "c".into())),
+        "a always before c"
+    );
+    assert!(
+        !before.contains(&("b".into(), "c".into())),
+        "b not always before c (trace 2 has c, no b)"
+    );
     let after = pairs("always_after");
-    assert!(after.contains(&("a".into(), "c".into())), "c always after a");
-    assert!(!after.contains(&("a".into(), "b".into())), "b not always after a");
+    assert!(
+        after.contains(&("a".into(), "c".into())),
+        "c always after a"
+    );
+    assert!(
+        !after.contains(&("a".into(), "b".into())),
+        "b not always after a"
+    );
     assert_eq!(pairs("never_together"), Vec::<(String, String)>::new());
     // b occurs 0 times in trace 2 → min 0, max 1
     let counts = skel["activity_counts"].as_array().unwrap();
@@ -1211,8 +1238,8 @@ fn process_skeleton_relations_hand_computed() {
 /// process: early traces have 10-minute gaps, late traces 1-minute gaps.
 #[test]
 fn analyze_process_speedup_windowed_trend() {
-    use wasm4pm::models::{AttributeValue, EventLog, Trace};
     use std::collections::BTreeMap;
+    use wasm4pm::models::{AttributeValue, EventLog, Trace};
     let mut log = EventLog::new();
     // 6 traces over consecutive days: gaps shrink 10min → 1min.
     for t in 0..6usize {
@@ -1220,26 +1247,38 @@ fn analyze_process_speedup_windowed_trend() {
         let mut events = Vec::new();
         for i in 0..3usize {
             let mut attrs = BTreeMap::new();
-            attrs.insert("concept:name".to_string(), AttributeValue::String(format!("act{i}")));
+            attrs.insert(
+                "concept:name".to_string(),
+                AttributeValue::String(format!("act{i}")),
+            );
             attrs.insert(
                 "time:timestamp".to_string(),
-                AttributeValue::String(format!(
-                    "2024-01-{:02}T00:{:02}:00Z",
-                    t + 1,
-                    i * gap_min
-                )),
+                AttributeValue::String(format!("2024-01-{:02}T00:{:02}:00Z", t + 1, i * gap_min)),
             );
             events.push(wasm4pm::models::Event { attributes: attrs });
         }
-        log.traces.push(Trace { attributes: BTreeMap::new(), events });
+        log.traces.push(Trace {
+            attributes: BTreeMap::new(),
+            events,
+        });
     }
     let v = wasm4pm::final_analytics::analyze_process_speedup_from_log(&log, "time:timestamp", 2);
     assert_eq!(v["window_size"], 2);
-    assert_eq!(v["windows"].as_array().unwrap().len(), 3, "6 traces / window_size 2 = 3 windows");
+    assert_eq!(
+        v["windows"].as_array().unwrap().len(),
+        3,
+        "6 traces / window_size 2 = 3 windows"
+    );
     let slope = v["trend_slope"].as_f64().unwrap();
-    assert!(slope < 0.0, "shrinking gaps must give negative slope, got {slope}");
+    assert!(
+        slope < 0.0,
+        "shrinking gaps must give negative slope, got {slope}"
+    );
     assert_eq!(v["trend"], "speedup");
     // Hand-check window means: 10min=600000ms, 6min=360000ms, 1min=60000ms (2 gaps each trace)
     let w0 = v["windows"][0]["mean_gap"].as_f64().unwrap();
-    assert!((w0 - 600_000.0).abs() < 1.0, "window 0 mean gap must be 600000ms, got {w0}");
+    assert!(
+        (w0 - 600_000.0).abs() < 1.0,
+        "window 0 mean gap must be 600000ms, got {w0}"
+    );
 }

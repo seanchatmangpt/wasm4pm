@@ -149,7 +149,11 @@ pub fn analyze_process_speedup(
     window_size: usize,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
-        to_js_str(&analyze_process_speedup_from_log(log, timestamp_key, window_size))
+        to_js_str(&analyze_process_speedup_from_log(
+            log,
+            timestamp_key,
+            window_size,
+        ))
     })
 }
 

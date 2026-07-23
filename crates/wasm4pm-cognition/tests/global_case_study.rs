@@ -7,16 +7,19 @@ fn test_global_case_study_capabilities() {
     // Phase 1: Ingestion, Object-Centric Topology, and Data Normalization
     // (BPMN Import, PNML Import, POWL, YAWL Export, OCEL DFG, OCEL DFG per type, OCEL Encode, OCEL OC Declare, OCEL OCLA, OCEL Petri Net)
     // Note: In a real environment, algorithms are routed dynamically. Here we verify the cognitive bounds and breeds.
-    assert!(all_breeds.len() == 55, "Must support exactly 55 cognitive breeds.");
-    
+    assert!(
+        all_breeds.len() == 55,
+        "Must support exactly 55 cognitive breeds."
+    );
+
     // Phase 3: Streaming, Drift Detection, and Spectral Analytics
     // LTL Monitor ensures compliance
     assert!(all_breeds.contains(&BreedId::LtlMonitor));
-    
+
     // Phase 4: Rigorous Conformance & Formal Constraints
     assert!(all_breeds.contains(&BreedId::AllenTemporal));
     assert!(all_breeds.contains(&BreedId::CtlCheck));
-    
+
     // Phase 7: Probabilistic Logic, Uncertainty, and Abduction
     assert!(all_breeds.contains(&BreedId::FuzzyLogic));
     assert!(all_breeds.contains(&BreedId::DempsterShafer));
@@ -61,7 +64,7 @@ fn test_global_case_study_capabilities() {
     assert!(all_breeds.contains(&BreedId::VersionSpace));
     assert!(all_breeds.contains(&BreedId::AnalogySme));
     assert!(all_breeds.contains(&BreedId::MetaReasoning));
-    
+
     // Phase 10: Auto-Instinct and System Evolution
     assert!(all_breeds.contains(&BreedId::QualitativeReason));
     assert!(all_breeds.contains(&BreedId::NaivePhysics));
@@ -79,5 +82,8 @@ fn test_global_case_study_capabilities() {
     assert!(all_breeds.contains(&BreedId::SituationCalculus));
     assert!(all_breeds.contains(&BreedId::Asp));
 
-    println!("All {} cognitive breeds mapped to the case study successfully verified in the Rust core.", all_breeds.len());
+    println!(
+        "All {} cognitive breeds mapped to the case study successfully verified in the Rust core.",
+        all_breeds.len()
+    );
 }

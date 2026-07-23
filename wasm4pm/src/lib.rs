@@ -520,13 +520,13 @@ pub mod powl_api;
 pub mod powl_arena;
 #[cfg(feature = "powl")]
 pub mod powl_event_log;
+/// Proof-carrying POWL workflow execution (bcinr-powl engine).
+#[cfg(feature = "powl-engine")]
+pub mod powl_execution;
 #[cfg(feature = "powl")]
 pub mod powl_models;
 #[cfg(feature = "powl")]
 pub mod powl_parser;
-/// Proof-carrying POWL workflow execution (bcinr-powl engine).
-#[cfg(feature = "powl-engine")]
-pub mod powl_execution;
 #[cfg(feature = "powl")]
 pub mod powl_petri_net;
 #[cfg(feature = "powl")]
