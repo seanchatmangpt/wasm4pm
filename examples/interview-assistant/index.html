@@ -3,32 +3,87 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
     <title>wasm4pm Interview Cognition</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="shell">
       <header>
-        <div><p class="eyebrow">wasm4pm-cognition</p><h1>Interview Answer Assistant</h1></div>
-        <div class="receipt" id="receipt">No receipted turn</div>
+        <div>
+          <p class="eyebrow">wasm4pm-cognition</p>
+          <h1>Interview Answer Assistant</h1>
+          <p id="kernel-status" class="kernel-status" role="status" aria-live="polite">
+            Initializing local WASM kernel…
+          </p>
+        </div>
+        <div class="header-actions">
+          <div class="receipt" id="receipt" title="Latest receipted turn">No receipted turn</div>
+          <button id="reset" class="secondary compact" type="button">Reset session</button>
+        </div>
       </header>
-      <section class="status-grid">
+
+      <section class="status-grid" aria-label="Current interview state">
         <article class="panel hero">
-          <p class="label">Current track</p><h2 id="current-track">Listening…</h2><div class="phase" id="phase">Track Identification</div>
-          <div id="confirmation" class="confirmation hidden"><p id="confirmation-copy"></p><div class="button-row"><button id="confirm-yes">Yes</button><button id="confirm-no" class="secondary">No</button></div></div>
+          <p class="label">Current track</p>
+          <h2 id="current-track">Listening…</h2>
+          <div class="phase" id="phase">Track Identification</div>
+          <div id="confirmation" class="confirmation hidden">
+            <p id="confirmation-copy"></p>
+            <div class="button-row">
+              <button id="confirm-yes" type="button">Yes</button>
+              <button id="confirm-no" class="secondary" type="button">No</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <p class="label">Live transcript</p>
+          <div id="transcript" class="transcript" aria-live="polite">No transcript yet.</div>
+          <div class="button-row">
+            <button id="listen" type="button" disabled>Start listening</button>
+            <button id="stop" class="secondary" type="button" disabled>Stop</button>
+          </div>
+          <form id="manual-form">
+            <input
+              id="manual-text"
+              autocomplete="off"
+              placeholder="Or enter a transcript fragment"
+              aria-label="Transcript fragment"
+              disabled
+            />
+            <button id="admit" type="submit" disabled>Admit</button>
+          </form>
+          <p id="operation-status" class="operation-status" role="alert" aria-live="assertive"></p>
+        </article>
+      </section>
+
+      <section class="columns" aria-label="Answer analysis">
+        <article class="panel">
+          <p class="label">Track hypotheses</p>
+          <div id="hypotheses" class="hypotheses"></div>
         </article>
         <article class="panel">
-          <p class="label">Live transcript</p><div id="transcript" class="transcript">No transcript yet.</div>
-          <div class="button-row"><button id="listen">Start listening</button><button id="stop" class="secondary" disabled>Stop</button></div>
-          <form id="manual-form"><input id="manual-text" autocomplete="off" placeholder="Or enter a transcript fragment" /><button type="submit">Admit</button></form>
+          <p class="label">Covered concepts</p>
+          <ul id="covered" class="concept-list"></ul>
+        </article>
+        <article class="panel">
+          <p class="label">Remaining guidance</p>
+          <ul id="missing" class="concept-list missing-list"></ul>
         </article>
       </section>
-      <section class="columns">
-        <article class="panel"><p class="label">Track hypotheses</p><div id="hypotheses"></div></article>
-        <article class="panel"><p class="label">Covered concepts</p><ul id="covered"></ul></article>
-        <article class="panel"><p class="label">Missing concepts</p><ul id="missing"></ul></article>
+
+      <section class="panel evidence-panel">
+        <div>
+          <p class="label">Matched evidence</p>
+          <p class="muted">Canonical phrases admitted by the deterministic matcher.</p>
+        </div>
+        <div id="evidence" class="evidence-list"></div>
+        <details>
+          <summary>Latest inference trace</summary>
+          <pre id="trace">[]</pre>
+        </details>
       </section>
-      <section class="panel evidence-panel"><div><p class="label">Machine evidence</p><p class="muted">Every turn executes in WASM and returns an inference trace, OCEL log, and receipt.</p></div><details><summary>Latest inference trace</summary><pre id="trace">[]</pre></details></section>
     </main>
     <script type="module" src="./app.ts"></script>
   </body>
