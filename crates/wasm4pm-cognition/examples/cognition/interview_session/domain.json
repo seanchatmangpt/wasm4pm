@@ -1,0 +1,41 @@
+{
+  "version": "1",
+  "id": "coding-interview-v1",
+  "tracks": [
+    {"id":"coordinate_traversal","label":"Coordinate Traversal","concepts":["state_representation","transition_function","data_structure","termination","complexity","edge_cases"]},
+    {"id":"grid_dfs","label":"Grid DFS","concepts":["state_representation","transition_function","data_structure","termination","complexity","edge_cases"]},
+    {"id":"graph_dfs","label":"Graph DFS","concepts":["state_representation","transition_function","data_structure","termination","complexity","edge_cases"]},
+    {"id":"hash_lookup","label":"Hash Lookup","concepts":["state_representation","data_structure","termination","complexity","edge_cases"]}
+  ],
+  "patterns": [
+    {"id":"coordinate-state","phrases":["x and y","x y coordinates","coordinate pair","coordinates"],"proposition":"uses_coordinate_state","track_weights":{"coordinate_traversal":0.55,"grid_dfs":0.28},"concept":"state_representation"},
+    {"id":"movement-table","phrases":["dictionary of moves","map of moves","movement table","direction lookup"],"proposition":"uses_movement_lookup","track_weights":{"coordinate_traversal":0.60,"hash_lookup":0.20},"concept":"data_structure"},
+    {"id":"cardinal-directions","phrases":["north south east west","four directions","cardinal directions"],"proposition":"uses_cardinal_transitions","track_weights":{"coordinate_traversal":0.70,"grid_dfs":0.25},"concept":"transition_function"},
+    {"id":"iterative-traversal","phrases":["iterate","loop through","for each instruction","process each move"],"proposition":"uses_iteration","track_weights":{"coordinate_traversal":0.40,"grid_dfs":-0.80,"graph_dfs":-0.55},"concept":"termination"},
+    {"id":"recursive-traversal","phrases":["recursion","recursive","recurse"],"proposition":"uses_recursion","track_weights":{"grid_dfs":0.70,"graph_dfs":0.65,"coordinate_traversal":-0.35},"concept":"termination"},
+    {"id":"neighbor-cells","phrases":["neighboring cells","adjacent cells","visit neighbors","visit neighbouring cells"],"proposition":"visits_neighbor_cells","track_weights":{"grid_dfs":0.62,"coordinate_traversal":0.42},"concept":"transition_function"},
+    {"id":"visited-set","phrases":["visited set","mark visited","avoid revisiting"],"proposition":"uses_visited_set","track_weights":{"grid_dfs":0.58,"graph_dfs":0.68},"concept":"data_structure"},
+    {"id":"adjacency-list","phrases":["adjacency list","graph edges","neighbors of each node"],"proposition":"uses_adjacency_list","track_weights":{"graph_dfs":0.78,"grid_dfs":0.15},"concept":"data_structure"},
+    {"id":"direct-lookup","phrases":["constant time lookup","direct lookup","hash lookup","key value lookup"],"proposition":"uses_direct_lookup","track_weights":{"hash_lookup":0.82},"concept":"data_structure"},
+    {"id":"complexity-linear","phrases":["o of n","linear time","one pass"],"proposition":"states_linear_complexity","track_weights":{"coordinate_traversal":0.20,"hash_lookup":0.15},"concept":"complexity"},
+    {"id":"complexity-graph","phrases":["vertices plus edges","o of v plus e","visit every node and edge"],"proposition":"states_graph_complexity","track_weights":{"graph_dfs":0.45},"concept":"complexity"},
+    {"id":"edge-cases","phrases":["empty input","invalid direction","boundary condition","edge cases"],"proposition":"handles_edge_cases","track_weights":{"coordinate_traversal":0.12,"grid_dfs":0.12,"graph_dfs":0.12,"hash_lookup":0.12},"concept":"edge_cases"}
+  ],
+  "rules": [
+    {"id":"coordinate-family","premises":["uses_coordinate_state","uses_movement_lookup","uses_cardinal_transitions"],"track_id":"coordinate_traversal","certainty":0.87,"concept":"transition_function"},
+    {"id":"grid-family","premises":["uses_coordinate_state","visits_neighbor_cells","uses_visited_set"],"track_id":"grid_dfs","certainty":0.84,"concept":"state_representation"},
+    {"id":"graph-family","premises":["uses_adjacency_list","uses_visited_set","uses_recursion"],"track_id":"graph_dfs","certainty":0.86,"concept":"transition_function"},
+    {"id":"lookup-family","premises":["uses_direct_lookup"],"track_id":"hash_lookup","certainty":0.72,"concept":"termination"}
+  ],
+  "phases": [
+    {"id":"track_identification","label":"Track Identification","requires_committed_track":true,"required_concepts":[]},
+    {"id":"state_representation","label":"State Representation","requires_committed_track":true,"required_concepts":["state_representation"]},
+    {"id":"transition_logic","label":"Transition Logic","requires_committed_track":true,"required_concepts":["state_representation","transition_function"]},
+    {"id":"data_structure","label":"Data Structure","requires_committed_track":true,"required_concepts":["data_structure"]},
+    {"id":"complexity","label":"Complexity","requires_committed_track":true,"required_concepts":["complexity"]},
+    {"id":"edge_cases","label":"Edge Cases","requires_committed_track":true,"required_concepts":["edge_cases"]}
+  ],
+  "aliases": {"hash map":"dictionary","hashmap":"dictionary","dict":"dictionary","neighbouring":"neighboring","neighbours":"neighbors","big o n":"o of n","big o v plus e":"o of v plus e"},
+  "thresholds": {"confidence":0.90,"margin":0.20,"minimum_coverage":3,"confirmation_required":true,"maximum_contradiction":0.45},
+  "bounds": {"max_observations":256,"max_evidence":4096,"max_observation_bytes":16384,"max_tracks":32,"max_patterns":1024,"max_rules":1024}
+}
