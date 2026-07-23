@@ -31,6 +31,7 @@ function fakeModule(sessionResult: unknown): CognitionWasmModule {
     cognition_show: () => '{}',
     cognition_run: () => '{}',
     cognition_session_turn: () => sessionResult,
+    cognition_session_verify: () => '{}',
     cognition_verify: () => '{}',
     cognition_replay: () => '{}',
     system_build: () => '{}',
@@ -101,7 +102,7 @@ describe('runSessionTurn', () => {
     });
   });
 
-  it('refuses a loaded module missing the session export', async () => {
+  it('refuses a loaded module missing the session exports', async () => {
     WasmLoader.getInstance({
       moduleLoader: async () => ({
         cognition_show: () => '{}',
