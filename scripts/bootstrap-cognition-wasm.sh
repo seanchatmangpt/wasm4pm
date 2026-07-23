@@ -9,9 +9,10 @@ if ! command -v wasm-pack >/dev/null 2>&1; then
   exit 127
 fi
 
-# packages/cognition/pkg and pkg-web are committed relative symlinks into the
-# Rust crate. Build at the canonical targets; wasm-pack cannot create a
-# directory over an existing symlink.
+# packages/cognition/pkg is a committed relative symlink into the Rust crate.
+# Build its target directly because wasm-pack cannot create a directory over a
+# symlink. pkg-web has no committed symlink, so build the package-local
+# directory that pnpm resolves from packages/cognition/package.json.
 wasm-pack build crates/wasm4pm-cognition \
   --target nodejs \
   --out-dir pkg \
@@ -21,10 +22,10 @@ wasm-pack build crates/wasm4pm-cognition \
 
 wasm-pack build crates/wasm4pm-cognition \
   --target web \
-  --out-dir pkg-web \
+  --out-dir ../../packages/cognition/pkg-web \
   --out-name wasm4pm_cognition \
   --release \
   --features wasm
 
 rm -f crates/wasm4pm-cognition/pkg/.gitignore \
-      crates/wasm4pm-cognition/pkg-web/.gitignore
+      packages/cognition/pkg-web/.gitignore
