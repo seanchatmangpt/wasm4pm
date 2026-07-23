@@ -4,9 +4,9 @@ import {
   DomainPackSchema,
   SessionStateSchema,
   runSessionTurn,
+  verifySessionState,
   type DomainPack,
   type SessionState,
-  type SessionSuccessResult,
 } from '../../packages/cognition/src/index.ts';
 import domainPackJson from '../../crates/wasm4pm-cognition/examples/cognition/interview_session/domain.json';
 
@@ -98,7 +98,6 @@ const SpeechRecognition = (
       webkitSpeechRecognition?: SpeechRecognitionConstructor;
     }
   ).webkitSpeechRecognition;
-
 const recognition = SpeechRecognition ? new SpeechRecognition() : undefined;
 
 function setKernelStatus(message: string, status: 'loading' | 'ready' | 'error'): void {
@@ -127,19 +126,24 @@ function parseReceipt(value: unknown): ReceiptSnapshot | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const candidate = value as Partial<ReceiptSnapshot>;
   if (
-    typeof candidate.turn !== 'number' ||
+    !Number.isSafeInteger(candidate.turn) ||
     typeof candidate.replayPointer !== 'string' ||
     typeof candidate.attestedHash !== 'string' ||
     typeof candidate.attestationKind !== 'string'
   ) {
     return undefined;
   }
-  return {
-    turn: candidate.turn,
-    replayPointer: candidate.replayPointer,
-    attestedHash: candidate.attestedHash,
-    attestationKind: candidate.attestationKind,
-  };
+  return candidate as ReceiptSnapshot;
+}
+
+function clearStoredSession(message?: string): void {
+  if (storageKey) localStorage.removeItem(storageKey);
+  state = undefined;
+  latestTranscript = '';
+  latestReceipt = undefined;
+  latestTrace = [];
+  observationSequence = 0;
+  if (message) setOperationStatus(message, 'error');
 }
 
 function loadStoredSession(): void {
@@ -152,23 +156,15 @@ function loadStoredSession(): void {
       throw new TypeError('Unsupported stored-session format.');
     }
     const parsedState = SessionStateSchema.safeParse(decoded.state);
-    if (!parsedState.success) {
-      throw parsedState.error;
-    }
+    if (!parsedState.success) throw parsedState.error;
     state = parsedState.data;
     latestTranscript = typeof decoded.transcript === 'string' ? decoded.transcript : '';
     latestReceipt = parseReceipt(decoded.receipt);
     latestTrace = Array.isArray(decoded.trace) ? decoded.trace : [];
     observationSequence = state.observations.length;
   } catch (error) {
-    console.warn('Discarding invalid persisted interview session.', error);
-    localStorage.removeItem(storageKey);
-    state = undefined;
-    latestTranscript = '';
-    latestReceipt = undefined;
-    latestTrace = [];
-    observationSequence = 0;
-    setOperationStatus('Stored state was invalid and has been discarded.', 'error');
+    console.warn('Discarding malformed persisted interview session.', error);
+    clearStoredSession('Stored state was malformed and has been discarded.');
   }
 }
 
@@ -185,12 +181,7 @@ function persistStoredSession(): void {
 }
 
 function conceptSpec(id: string): { label: string; prompt: string } {
-  return (
-    domainPack?.concepts[id] ?? {
-      label: id.replaceAll('_', ' '),
-      prompt: '',
-    }
-  );
+  return domainPack?.concepts[id] ?? { label: id.replaceAll('_', ' '), prompt: '' };
 }
 
 function appendEmpty(target: HTMLElement, copy: string): void {
@@ -235,7 +226,6 @@ function renderHypotheses(): void {
   for (const hypothesis of ranked) {
     const wrapper = document.createElement('div');
     wrapper.className = 'hypothesis';
-
     const heading = document.createElement('div');
     heading.className = 'hypothesis-head';
     const label = document.createElement('span');
@@ -243,19 +233,16 @@ function renderHypotheses(): void {
     const score = document.createElement('strong');
     score.textContent = `${Math.round(hypothesis.score * 100)}%`;
     heading.append(label, score);
-
     const bar = document.createElement('div');
     bar.className = 'bar';
     const fill = document.createElement('span');
     fill.style.width = `${Math.round(hypothesis.score * 100)}%`;
     bar.append(fill);
-
     const meta = document.createElement('div');
     meta.className = 'hypothesis-meta';
     meta.textContent = `support ${Math.round(hypothesis.support * 100)}% · contradiction ${Math.round(
       hypothesis.contradiction * 100,
     )}%`;
-
     wrapper.append(heading, bar, meta);
     hypotheses.append(wrapper);
   }
@@ -263,12 +250,12 @@ function renderHypotheses(): void {
 
 function renderEvidence(): void {
   evidence.replaceChildren();
-  const activeEvidence = (state?.evidence ?? []).filter((item) => item.active).slice(-24).reverse();
-  if (activeEvidence.length === 0) {
+  const active = (state?.evidence ?? []).filter((item) => item.active).slice(-24).reverse();
+  if (active.length === 0) {
     appendEmpty(evidence, 'No phrases matched yet.');
     return;
   }
-  for (const item of activeEvidence) {
+  for (const item of active) {
     const chip = document.createElement('span');
     chip.className = 'evidence-chip';
     chip.dataset.polarity = item.polarity;
@@ -282,23 +269,18 @@ function renderEvidence(): void {
 function render(): void {
   const ranked = state?.hypotheses ?? [];
   const selectedId = state?.committed_track ?? ranked.find((item) => !item.eliminated && item.score > 0)?.id;
-  const selected = ranked.find((item) => item.id === selectedId);
-  currentTrack.textContent = selected?.label ?? 'Listening…';
-
+  currentTrack.textContent = ranked.find((item) => item.id === selectedId)?.label ?? 'Listening…';
   const phaseSpec = domainPack?.phases.find((item) => item.id === state?.phase);
   phase.textContent = state?.phase === 'complete' ? 'Complete' : (phaseSpec?.label ?? 'Track Identification');
-
   renderHypotheses();
   renderConcepts(covered, state?.covered_concepts ?? [], false);
   renderConcepts(missing, state?.missing_concepts ?? [], true);
   renderEvidence();
-
   const pending = state?.pending_confirmation;
   confirmation.classList.toggle('hidden', !pending);
   confirmation.dataset.track = pending ?? '';
   const pendingLabel = ranked.find((item) => item.id === pending)?.label ?? pending;
   confirmationCopy.textContent = pending ? `Commit ${pendingLabel} as the active track?` : '';
-
   transcript.textContent = latestTranscript || 'No transcript yet.';
   trace.textContent = JSON.stringify(latestTrace, null, 2);
   receipt.textContent = latestReceipt
@@ -327,18 +309,16 @@ async function executeTurn(request: TurnRequest): Promise<void> {
         retract_evidence_ids: [],
       }
     : undefined;
-
   const result = await runSessionTurn({
     domain_pack: domainPack,
     previous_state: state,
     observation,
     confirmation: request.confirmation,
   });
-
   state = result.output.state;
   if (text) latestTranscript = text;
   latestReceipt = {
-    turn: result.output.state.turn,
+    turn: state.turn,
     replayPointer: result.replay_pointer,
     attestedHash: result.attested_hash,
     attestationKind: result.attestation.kind,
@@ -354,26 +334,17 @@ function enqueueTurn(request: TurnRequest): void {
   updateControls();
   turnQueue = turnQueue
     .then(() => executeTurn(request))
-    .catch((error: unknown) => {
-      setOperationStatus(describeError(error), 'error');
-    })
+    .catch((error: unknown) => setOperationStatus(describeError(error), 'error'))
     .finally(() => {
       queuedTurns -= 1;
-      if (queuedTurns === 0 && operationStatus.dataset.state === 'busy') {
-        setOperationStatus();
-      }
+      if (queuedTurns === 0 && operationStatus.dataset.state === 'busy') setOperationStatus();
       updateControls();
     });
 }
 
 function resetSession(): void {
   recognition?.abort();
-  state = undefined;
-  latestTranscript = '';
-  latestReceipt = undefined;
-  latestTrace = [];
-  observationSequence = 0;
-  if (storageKey) localStorage.removeItem(storageKey);
+  clearStoredSession();
   setOperationStatus('Session reset.');
   render();
 }
@@ -385,17 +356,14 @@ manualForm.addEventListener('submit', (event) => {
   manualText.value = '';
   enqueueTurn({ text });
 });
-
 yesButton.addEventListener('click', () => {
   const track = confirmation.dataset.track;
-  if (track && ready) enqueueTurn({ confirmation: { track_id: track, accepted: true } });
+  if (track && ready && queuedTurns === 0) enqueueTurn({ confirmation: { track_id: track, accepted: true } });
 });
-
 noButton.addEventListener('click', () => {
   const track = confirmation.dataset.track;
-  if (track && ready) enqueueTurn({ confirmation: { track_id: track, accepted: false } });
+  if (track && ready && queuedTurns === 0) enqueueTurn({ confirmation: { track_id: track, accepted: false } });
 });
-
 resetButton.addEventListener('click', resetSession);
 
 if (recognition) {
@@ -412,9 +380,7 @@ if (recognition) {
       if (result.isFinal) finalSegments.push(text);
       else interimSegments.push(text);
     }
-    if (interimSegments.length > 0) {
-      transcript.textContent = interimSegments.join(' ');
-    }
+    if (interimSegments.length > 0) transcript.textContent = interimSegments.join(' ');
     const finalText = finalSegments.join(' ').trim();
     if (finalText) enqueueTurn({ text: finalText });
   };
@@ -450,11 +416,9 @@ async function boot(): Promise<void> {
     setOperationStatus(parsedDomain.error.message, 'error');
     return;
   }
-
   domainPack = parsedDomain.data;
   storageKey = `wasm4pm-interview:${domainPack.id}`;
   loadStoredSession();
-  render();
 
   try {
     const wasmUrl = new URL(
@@ -466,9 +430,24 @@ async function boot(): Promise<void> {
       moduleLoader: () =>
         import('../../packages/cognition/pkg-web/wasm4pm_cognition.js') as Promise<unknown>,
     });
+    if (state) {
+      try {
+        const verification = await verifySessionState(domainPack, state);
+        latestReceipt = {
+          turn: state.turn,
+          replayPointer: verification.replay_pointer,
+          attestedHash: verification.attested_hash,
+          attestationKind: verification.attestation.kind,
+        };
+        persistStoredSession();
+      } catch (error) {
+        console.warn('Discarding replay-invalid persisted interview session.', error);
+        clearStoredSession(`Stored state failed kernel replay and was discarded: ${describeError(error)}`);
+      }
+    }
     ready = true;
     setKernelStatus('Local deterministic WASM kernel ready.', 'ready');
-    updateControls();
+    render();
   } catch (error) {
     ready = false;
     setKernelStatus('Local WASM kernel failed to initialize.', 'error');
