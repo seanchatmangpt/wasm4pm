@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e:visual": "next build && playwright test",
+    "test:e2e:visual:update": "next build && playwright test --update-snapshots",
+    "test:e2e:visual:ui": "playwright test --ui",
+    "test:e2e:visual:report": "playwright show-report"
   },
   "dependencies": {
     "@monaco-editor/react": "4.7.0",
@@ -18,6 +22,7 @@
     "wasm4pm-cognition-web": "file:../../packages/cognition/pkg-web"
   },
   "devDependencies": {
+    "@playwright/test": "1.58.2",
     "@types/node": "^20.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
