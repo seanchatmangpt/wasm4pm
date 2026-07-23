@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { initCognitionBrowser } from '@wasm4pm/cognition/browser';
 import {
@@ -25,6 +25,8 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 const domainPack: DomainPack = DomainPackSchema.parse(domainPackJson);
 const storageKey = `wasm4pm-interview-next:${domainPack.id}`;
 
+type BootStatus = 'loading' | 'ready' | 'failed';
+
 function describeError(error: unknown): string {
   if (error instanceof CognitionError) {
     const refusal = error.details?.refusal_code;
@@ -37,60 +39,71 @@ function percent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function visibleClock(): string {
+  return new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZone: 'America/Los_Angeles',
+  }).format(new Date());
+}
+
 export default function InterviewWorkspace() {
   const [state, setState] = useState<SessionState>();
   const [code, setCode] = useState<CodeProjection | null>(null);
   const [transcript, setTranscript] = useState('');
-  const [kernelReady, setKernelReady] = useState(false);
+  const [bootStatus, setBootStatus] = useState<BootStatus>('loading');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [turnReceipt, setTurnReceipt] = useState('');
   const [codeReceipt, setCodeReceipt] = useState('');
+  const stateRef = useRef<SessionState>();
+  const turnLocked = useRef(false);
 
-  const refreshCode = useCallback(async (nextState: SessionState) => {
-    const projected = await projectSessionCode(domainPack, nextState);
-    setCode(projected.code);
-    setCodeReceipt(projected.attested_hash);
-  }, []);
+  const commitVisibleState = useCallback(
+    (nextState: SessionState, nextCode: CodeProjection | null, nextCodeReceipt: string) => {
+      stateRef.current = nextState;
+      setState(nextState);
+      setCode(nextCode);
+      setCodeReceipt(nextCodeReceipt);
+      localStorage.setItem(storageKey, JSON.stringify(nextState));
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
 
     async function boot(): Promise<void> {
+      setBootStatus('loading');
       try {
         await initCognitionBrowser({
           moduleLoader: () => import('wasm4pm-cognition-web') as Promise<unknown>,
         });
-      } catch (initializationError) {
-        if (!cancelled) {
-          setKernelReady(false);
-          setError(describeError(initializationError));
+
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          const parsed = SessionStateSchema.safeParse(JSON.parse(raw) as unknown);
+          if (!parsed.success) {
+            throw new Error('Stored cognition state failed structural admission.');
+          }
+          await verifySessionState(domainPack, parsed.data);
+          const projected = await projectSessionCode(domainPack, parsed.data);
+          if (cancelled) return;
+          commitVisibleState(parsed.data, projected.code, projected.attested_hash);
         }
-        return;
-      }
 
-      if (cancelled) return;
-      setKernelReady(true);
-
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return;
-
-      try {
-        const parsed = SessionStateSchema.safeParse(JSON.parse(raw) as unknown);
-        if (!parsed.success) {
-          throw new Error('Stored cognition state failed structural admission.');
-        }
-        await verifySessionState(domainPack, parsed.data);
-        if (cancelled) return;
-        setState(parsed.data);
-        await refreshCode(parsed.data);
-      } catch (restoreError) {
+        if (!cancelled) setBootStatus('ready');
+      } catch (bootError) {
         localStorage.removeItem(storageKey);
         if (!cancelled) {
+          stateRef.current = undefined;
           setState(undefined);
           setCode(null);
           setCodeReceipt('');
-          setError(`${describeError(restoreError)} Stored state was discarded.`);
+          setBootStatus('failed');
+          setError(`${describeError(bootError)} Stored state was discarded.`);
         }
       }
     }
@@ -99,21 +112,22 @@ export default function InterviewWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [refreshCode]);
+  }, [commitVisibleState]);
 
   const submitTurn = useCallback(
     async (request: {
       text?: string;
       confirmation?: { track_id: string; accepted: boolean };
     }) => {
-      if (!kernelReady || busy) return;
+      if (bootStatus !== 'ready' || turnLocked.current) return;
+      turnLocked.current = true;
       setBusy(true);
       setError('');
       try {
         const text = request.text?.trim();
         const result = await runSessionTurn({
           domain_pack: domainPack,
-          previous_state: state,
+          previous_state: stateRef.current,
           observation: text
             ? {
                 id: `browser-${crypto.randomUUID()}`,
@@ -125,29 +139,31 @@ export default function InterviewWorkspace() {
           confirmation: request.confirmation,
         });
         const nextState = result.output.state;
-        setState(nextState);
-        localStorage.setItem(storageKey, JSON.stringify(nextState));
+        const projected = await projectSessionCode(domainPack, nextState);
+        commitVisibleState(nextState, projected.code, projected.attested_hash);
         setTurnReceipt(result.attested_hash);
-        await refreshCode(nextState);
       } catch (turnError) {
         setError(describeError(turnError));
       } finally {
+        turnLocked.current = false;
         setBusy(false);
       }
     },
-    [busy, kernelReady, refreshCode, state],
+    [bootStatus, commitVisibleState],
   );
 
   function onSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const text = transcript.trim();
-    if (!text) return;
+    if (!text || turnLocked.current) return;
     setTranscript('');
     void submitTurn({ text });
   }
 
   function reset(): void {
+    if (turnLocked.current) return;
     localStorage.removeItem(storageKey);
+    stateRef.current = undefined;
     setState(undefined);
     setCode(null);
     setTranscript('');
@@ -164,9 +180,11 @@ export default function InterviewWorkspace() {
     return state?.hypotheses.find((item) => item.id === id)?.label ?? 'Undetermined';
   }, [state]);
 
+  const recentObservations = useMemo(() => state?.observations.slice(-8) ?? [], [state]);
   const editorSource =
     code?.source ??
     '# wasm4pm-cognition has not selected an implementation track yet.\n# Continue the interview to accumulate admissible evidence.\n';
+  const controlsDisabled = bootStatus !== 'ready' || busy;
 
   return (
     <main className="workspace">
@@ -176,10 +194,17 @@ export default function InterviewWorkspace() {
           <h1>Interview Code Projection</h1>
         </div>
         <div className="status-cluster">
-          <span className={`kernel-status ${kernelReady ? 'ready' : ''}`}>
-            {kernelReady ? 'WASM ready' : 'WASM unavailable'}
+          <span className="interview-clock" aria-label="Interview clock">
+            {visibleClock()}
           </span>
-          <button type="button" className="ghost-button" onClick={reset} disabled={busy}>
+          <span className={`kernel-status ${bootStatus === 'ready' ? 'ready' : ''}`}>
+            {bootStatus === 'ready'
+              ? 'WASM ready'
+              : bootStatus === 'loading'
+                ? 'WASM loading'
+                : 'WASM unavailable'}
+          </span>
+          <button type="button" className="ghost-button" onClick={reset} disabled={controlsDisabled}>
             Reset
           </button>
         </div>
@@ -270,7 +295,7 @@ export default function InterviewWorkspace() {
                       confirmation: { track_id: pendingTrack, accepted: true },
                     })
                   }
-                  disabled={busy}
+                  disabled={controlsDisabled}
                 >
                   Yes
                 </button>
@@ -282,7 +307,7 @@ export default function InterviewWorkspace() {
                       confirmation: { track_id: pendingTrack, accepted: false },
                     })
                   }
-                  disabled={busy}
+                  disabled={controlsDisabled}
                 >
                   No
                 </button>
@@ -298,12 +323,31 @@ export default function InterviewWorkspace() {
               onChange={(event) => setTranscript(event.target.value)}
               placeholder="I would keep x and y, use a dictionary of moves, and process each command once…"
               rows={5}
-              disabled={!kernelReady || busy}
+              disabled={controlsDisabled}
             />
-            <button type="submit" disabled={!kernelReady || busy || !transcript.trim()}>
+            <button type="submit" disabled={controlsDisabled || !transcript.trim()}>
               {busy ? 'Processing…' : 'Admit observation'}
             </button>
           </form>
+
+          <section className="panel-section transcript-history" aria-label="Admitted transcript">
+            <div className="section-heading">
+              <h2>Admitted transcript</h2>
+              <span>{state?.observations.length ?? 0} observations</span>
+            </div>
+            {recentObservations.length ? (
+              <ol>
+                {recentObservations.map((observation) => (
+                  <li key={observation.id}>
+                    <strong>{observation.source}</strong>
+                    <span>{observation.text}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="empty">No transcript admitted yet.</p>
+            )}
+          </section>
         </aside>
 
         <section className="editor-panel">
