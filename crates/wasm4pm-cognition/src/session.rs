@@ -16,7 +16,7 @@ mod validate;
 
 pub use hash::{hash_domain_pack, hash_session_state};
 pub use model::*;
-pub use turn::run_session_turn;
+pub use turn::{run_session_turn, verify_session_state};
 pub use validate::validate_domain_pack;
 
 #[cfg(test)]
