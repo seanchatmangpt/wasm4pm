@@ -1,6 +1,6 @@
 use wasm4pm_cognition::session::{
-    hash_session_state, run_session_turn, Confirmation, DomainPack, Observation, SessionError,
-    SessionTurnInput,
+    hash_session_state, run_session_turn, validate_domain_pack, Confirmation, DomainPack,
+    Observation, SessionError, SessionTurnInput,
 };
 
 fn pack() -> DomainPack {
@@ -79,4 +79,13 @@ fn confirmation_only_turns_are_resource_bounded() {
             resource: "turns".to_string()
         }
     );
+}
+
+#[test]
+fn minimum_coverage_must_be_feasible_for_every_track() {
+    let mut domain = pack();
+    domain.thresholds.minimum_coverage = 6;
+
+    let error = validate_domain_pack(&domain).expect_err("hash lookup only declares five concepts");
+    assert!(matches!(error, SessionError::InvalidDomain { .. }));
 }
