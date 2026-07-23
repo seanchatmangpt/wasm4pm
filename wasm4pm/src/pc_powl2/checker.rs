@@ -575,14 +575,14 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
         Ok(current)
     }
 
-    fn outputs_for_term(
+    pub(super) fn outputs_for_term(
         &self,
         certificate: &CertifiedPowl,
         proof: &ProofTerm,
         state: &D::State,
         visits: &mut usize,
     ) -> PcpResult<HashSet<D::State>> {
-        *visits += 1;
+        *visits = visits.saturating_add(1);
         if *visits > certificate.bounds.max_choice_visits {
             return Err(PcpRefusal::ChoiceVisitBoundExceeded {
                 actual: *visits,
@@ -611,11 +611,38 @@ impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
             ProofTerm::Consequence { inner, .. } => {
                 self.outputs_for_term(certificate, inner, state, visits)?
             }
-            ProofTerm::PartialOrder {
-                canonical,
-                children,
-                ..
-            } => self.compose_nodes(certificate, &proof_map(children), canonical, state, visits)?,
+            ProofTerm::PartialOrder { children, .. } => {
+                let PowlNodeKind::PartialOrder(model_children) = &node.kind else {
+                    return Err(PcpRefusal::RuleDoesNotMatchNode { node: node.id });
+                };
+                let child_proofs = proof_map(children);
+                let model_set: HashSet<_> = model_children.iter().copied().collect();
+                let proof_set: HashSet<_> = child_proofs.keys().copied().collect();
+                if model_set != proof_set {
+                    return Err(PcpRefusal::CanonicalCoverageMismatch {
+                        node: node.id,
+                        canonical: model_set.len(),
+                        children: proof_set.len(),
+                    });
+                }
+
+                let orders = self.topological_orders(
+                    &certificate.model,
+                    model_children,
+                    certificate.bounds.max_choice_visits,
+                )?;
+                let mut outputs = HashSet::new();
+                for order in orders {
+                    outputs.extend(self.compose_nodes(
+                        certificate,
+                        &child_proofs,
+                        &order,
+                        state,
+                        visits,
+                    )?);
+                }
+                outputs
+            }
             ProofTerm::ChoiceGraph { nodes, .. } => {
                 let PowlNodeKind::ChoiceGraph {
                     nodes: graph_nodes,

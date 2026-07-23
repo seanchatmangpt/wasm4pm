@@ -517,3 +517,55 @@ fn selection_visit_bound_counts_every_selected_node() {
         })
     );
 }
+
+#[test]
+fn nested_partial_order_denotation_contains_every_linearization() {
+    let domain = ToyDomain;
+    let checker = PcPowl2Checker::new(&domain);
+    let mut certificate = certificate(
+        Powl {
+            nodes: vec![
+                atom(0, "set_x_one"),
+                atom(1, "copy_x_to_y"),
+                PowlNode::new(
+                    PowlNodeId(2),
+                    PowlNodeKind::PartialOrder(vec![PowlNodeId(0), PowlNodeId(1)]),
+                ),
+            ],
+            edges: vec![],
+            root: Some(PowlNodeId(2)),
+        },
+        ProofTerm::PartialOrder {
+            node: PowlNodeId(2),
+            pre: AssertionRef::new("zero"),
+            post: AssertionRef::new("x_one"),
+            canonical: vec![PowlNodeId(0), PowlNodeId(1)],
+            children: vec![
+                atom_proof(0, "true", "x_one"),
+                atom_proof(1, "true", "y_eq_x"),
+            ],
+            commutations: vec![CommutationWitness {
+                left: PowlNodeId(0),
+                right: PowlNodeId(1),
+            }],
+        },
+        "nested-partial-order-denotation",
+    );
+    checker.bind_certificate(&mut certificate).unwrap();
+
+    let mut visits = 0usize;
+    let outputs = checker
+        .outputs_for_term(
+            &certificate,
+            &certificate.proof,
+            &ToyState { x: 0, y: 0 },
+            &mut visits,
+        )
+        .unwrap();
+
+    assert_eq!(
+        outputs,
+        std::collections::HashSet::from([ToyState { x: 1, y: 1 }, ToyState { x: 1, y: 0 },])
+    );
+    assert!(visits >= 5, "both linearizations must be evaluated");
+}
