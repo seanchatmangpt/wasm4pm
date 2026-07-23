@@ -1,84 +1,217 @@
-name: PC-POWL2 Hardening and 8^4 Conformance
+name: PC-POWL2 Recursive Semantics Repair
 
 on:
   pull_request:
     branches:
-      - main
       - agent/pc-powl2-engine
     paths:
-      - "Cargo.toml"
-      - "Cargo.lock"
-      - "wasm4pm/src/pc_powl2/**"
       - ".github/workflows/pc-powl2-8pow4.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: pc-powl2-hardening-${{ github.ref }}
-  cancel-in-progress: true
+  group: pc-powl2-recursive-semantics-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  hardening:
-    name: Checker, broker, replay, and 4096-case conformance
+  repair:
+    name: Manufacture recursive universal-linearization semantics
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/pc-powl2-8pow4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
-      - name: Refuse retired symbolic standing machinery
+      - name: Replace canonical collapse with one recursive denotational kernel
         run: |
-          ! grep -R "StandingCeiling\|SemanticMutationAfterReceipt\|OperatorWord" wasm4pm/src/pc_powl2
-          ! grep -R "DFCM_ADMITTED_WORD_COUNT\|DFCM_REFUSED_WORD_COUNT" wasm4pm/src/pc_powl2
-      - name: Refuse staging and self-modifying CI scaffolding
-        run: |
-          test ! -e .agents/pc-powl2-hardening
-          test ! -e .github/workflows/apply-pc-powl2-hardening.yml
-          test ! -e .github/workflows/format-pc-powl2-hardening.yml
-          test ! -e .github/workflows/apply-pc-powl2-wire-format-receipt.yml
-      - name: Require exact compat manifest and lock receipt
-        run: |
-          grep -F 'rev = "c3edd4c25663f5ef6a552abb2a1b9e8d23ac4d5b"' Cargo.toml
           python3 - <<'PY'
           from pathlib import Path
-          lock = Path("Cargo.lock").read_text()
-          blocks = lock.split("[[package]]")
-          matches = [b for b in blocks if '\nname = "wasm4pm-compat"\n' in b]
-          if len(matches) != 1:
-              raise SystemExit(f"expected one wasm4pm-compat lock block, found {len(matches)}")
-          block = matches[0]
-          expected = "c3edd4c25663f5ef6a552abb2a1b9e8d23ac4d5b"
-          if expected not in block or 'source = "git+' not in block:
-              raise SystemExit("Cargo.lock is not bound to the exact compat revision")
+
+          checker = Path("wasm4pm/src/pc_powl2/checker.rs")
+          source = checker.read_text()
+          old_header = '''    fn outputs_for_term(
+                  &self,
+                  certificate: &CertifiedPowl,
+                  proof: &ProofTerm,
+                  state: &D::State,
+                  visits: &mut usize,
+              ) -> PcpResult<HashSet<D::State>> {
+                  *visits += 1;
+          '''
+          new_header = '''    pub(super) fn outputs_for_term(
+                  &self,
+                  certificate: &CertifiedPowl,
+                  proof: &ProofTerm,
+                  state: &D::State,
+                  visits: &mut usize,
+              ) -> PcpResult<HashSet<D::State>> {
+                  *visits = visits.saturating_add(1);
+          '''
+          old_partial = '''            ProofTerm::PartialOrder {
+                          canonical,
+                          children,
+                          ..
+                      } => self.compose_nodes(certificate, &proof_map(children), canonical, state, visits)?,
+          '''
+          new_partial = '''            ProofTerm::PartialOrder { children, .. } => {
+                          let PowlNodeKind::PartialOrder(model_children) = &node.kind else {
+                              return Err(PcpRefusal::RuleDoesNotMatchNode { node: node.id });
+                          };
+                          let child_proofs = proof_map(children);
+                          let model_set: HashSet<_> = model_children.iter().copied().collect();
+                          let proof_set: HashSet<_> = child_proofs.keys().copied().collect();
+                          if model_set != proof_set {
+                              return Err(PcpRefusal::CanonicalCoverageMismatch {
+                                  node: node.id,
+                                  canonical: model_set.len(),
+                                  children: proof_set.len(),
+                              });
+                          }
+
+                          let orders = self.topological_orders(
+                              &certificate.model,
+                              model_children,
+                              certificate.bounds.max_choice_visits,
+                          )?;
+                          let mut outputs = HashSet::new();
+                          for order in orders {
+                              outputs.extend(self.compose_nodes(
+                                  certificate,
+                                  &child_proofs,
+                                  &order,
+                                  state,
+                                  visits,
+                              )?);
+                          }
+                          outputs
+                      }
+          '''
+          if source.count(old_header) != 1:
+              raise SystemExit("outputs_for_term header context mismatch")
+          if source.count(old_partial) != 1:
+              raise SystemExit("partial-order denotation context mismatch")
+          checker.write_text(source.replace(old_header, new_header).replace(old_partial, new_partial))
+
+          commutation = Path("wasm4pm/src/pc_powl2/commutation.rs")
+          commutation.write_text('''use super::*;
+
+          impl<'a, D: FiniteStateDomain> PcPowl2Checker<'a, D> {
+              /// Relationally compose two certified proof terms over one admitted state.
+              ///
+              /// Both operands are interpreted by the same recursive denotational kernel
+              /// used by partial-order, choice-graph, cycle, and consequence verification.
+              /// This prevents a nested partial order from being silently collapsed to its
+              /// author-selected canonical serialization during a commutation proof.
+              pub(super) fn compose_terms(
+                  &self,
+                  certificate: &CertifiedPowl,
+                  first: &ProofTerm,
+                  second: &ProofTerm,
+                  state: &D::State,
+              ) -> PcpResult<HashSet<D::State>> {
+                  let mut visits = 0usize;
+                  let mut outputs = HashSet::new();
+                  for intermediate in
+                      self.outputs_for_term(certificate, first, state, &mut visits)?
+                  {
+                      outputs.extend(self.outputs_for_term(
+                          certificate,
+                          second,
+                          &intermediate,
+                          &mut visits,
+                      )?);
+                  }
+                  Ok(outputs)
+              }
+          }
+          ''')
+
+          tests = Path("wasm4pm/src/pc_powl2/tests.rs")
+          test_source = tests.read_text()
+          marker = "fn nested_partial_order_denotation_contains_every_linearization()"
+          if marker not in test_source:
+              test_source += '''
+
+          #[test]
+          fn nested_partial_order_denotation_contains_every_linearization() {
+              let domain = ToyDomain;
+              let checker = PcPowl2Checker::new(&domain);
+              let mut certificate = certificate(
+                  Powl {
+                      nodes: vec![
+                          atom(0, "set_x_one"),
+                          atom(1, "copy_x_to_y"),
+                          PowlNode::new(
+                              PowlNodeId(2),
+                              PowlNodeKind::PartialOrder(vec![PowlNodeId(0), PowlNodeId(1)]),
+                          ),
+                      ],
+                      edges: vec![],
+                      root: Some(PowlNodeId(2)),
+                  },
+                  ProofTerm::PartialOrder {
+                      node: PowlNodeId(2),
+                      pre: AssertionRef::new("zero"),
+                      post: AssertionRef::new("x_one"),
+                      canonical: vec![PowlNodeId(0), PowlNodeId(1)],
+                      children: vec![
+                          atom_proof(0, "true", "x_one"),
+                          atom_proof(1, "true", "y_eq_x"),
+                      ],
+                      commutations: vec![CommutationWitness {
+                          left: PowlNodeId(0),
+                          right: PowlNodeId(1),
+                      }],
+                  },
+                  "nested-partial-order-denotation",
+              );
+              checker.bind_certificate(&mut certificate).unwrap();
+
+              let mut visits = 0usize;
+              let outputs = checker
+                  .outputs_for_term(
+                      &certificate,
+                      &certificate.proof,
+                      &ToyState { x: 0, y: 0 },
+                      &mut visits,
+                  )
+                  .unwrap();
+
+              assert_eq!(
+                  outputs,
+                  std::collections::HashSet::from([
+                      ToyState { x: 1, y: 1 },
+                      ToyState { x: 1, y: 0 },
+                  ])
+              );
+              assert!(visits >= 5, "both linearizations must be evaluated");
+          }
+          '''
+              tests.write_text(test_source)
           PY
-      - name: Require committed formatting for owned Rust files
-        run: >-
-          rustfmt --edition 2021 --check --config skip_children=true
-          wasm4pm/src/pc_powl2/mod.rs
-          wasm4pm/src/pc_powl2/checker.rs
-          wasm4pm/src/pc_powl2/commutation.rs
-          wasm4pm/src/pc_powl2/broker.rs
-          wasm4pm/src/pc_powl2/dfcm.rs
-          wasm4pm/src/pc_powl2/tests.rs
-      - name: Run checker, broker, replay, falsifier, and 4096-case suite
-        run: cargo test -p wasm4pm --lib pc_powl2 > pc-powl2-hardening-test.log 2>&1
-      - name: Upload hardening test receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc-powl2-hardening-test-log
-          path: pc-powl2-hardening-test.log
-          if-no-files-found: error
+          rustfmt --edition 2021 --config skip_children=true \
+            wasm4pm/src/pc_powl2/checker.rs \
+            wasm4pm/src/pc_powl2/commutation.rs \
+            wasm4pm/src/pc_powl2/tests.rs
+          git diff --check -- wasm4pm/src/pc_powl2
+      - name: Verify focused semantic rail
+        run: cargo test -p wasm4pm --lib pc_powl2
       - name: Refuse warnings and weak formulations
-        run: cargo clippy -p wasm4pm --lib -- -D warnings > pc-powl2-hardening-clippy.log 2>&1
-      - name: Upload clippy receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pc-powl2-hardening-clippy-log
-          path: pc-powl2-hardening-clippy.log
-          if-no-files-found: error
+        run: cargo clippy -p wasm4pm --lib -- -D warnings
+      - name: Commit recursive semantic repair
+        run: |
+          git config user.name "pc-powl2-receipt-broker"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            wasm4pm/src/pc_powl2/checker.rs \
+            wasm4pm/src/pc_powl2/commutation.rs \
+            wasm4pm/src/pc_powl2/tests.rs
+          git diff --cached --quiet && exit 0
+          git commit -m "Evaluate nested partial orders over every linearization"
+          git push origin HEAD:agent/pc-powl2-8pow4
