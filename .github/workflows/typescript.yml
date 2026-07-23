@@ -28,8 +28,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
 
-      # Rust + wasm-pack are required before pnpm build because TypeScript packages
-      # import from wasm4pm/pkg-nodejs/, which wasm-pack produces.
+      # Rust + wasm-pack are required before pnpm resolution because
+      # @wasm4pm/cognition depends on the local wasm-pack package outputs.
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@master
         with:
@@ -44,10 +44,13 @@ jobs:
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: Bootstrap cognition WASM packages
+        run: bash scripts/bootstrap-cognition-wasm.sh
 
-      # Build WASM Node.js target first so downstream TS packages can import it
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Build the core WASM Node.js target so downstream TS packages can import it.
       - name: Build WASM (Node.js target)
         working-directory: ./wasm4pm
         run: npm run build:nodejs
