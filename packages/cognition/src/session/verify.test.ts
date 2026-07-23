@@ -39,6 +39,7 @@ function moduleWithVerification(result: unknown): CognitionWasmModule {
     cognition_run: () => '{}',
     cognition_session_turn: () => '{}',
     cognition_session_verify: () => result,
+    cognition_session_code: () => '{}',
     cognition_verify: () => '{}',
     cognition_replay: () => '{}',
     system_build: () => '{}',
