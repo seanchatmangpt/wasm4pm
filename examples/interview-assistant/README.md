@@ -23,7 +23,7 @@ pnpm run interview:build
 
 The Web Speech API supplies final transcript fragments when the browser supports it. Manual transcript entry remains available on every supported browser.
 
-Every observation and yes or no confirmation is serialized through one state chain. The browser persists the latest receipted state in `localStorage`; on reload, the state is schema-checked before use, and the Rust kernel reconstructs evidence and derived state before admitting the next transition. Invalid local state is discarded rather than silently trusted.
+Every observation and yes or no confirmation is serialized through one bounded canonical turn ledger. The browser persists the latest receipted state in `localStorage`; on reload, the state is schema-checked before use, and the Rust kernel replays the complete ledger to reconstruct observations, retractions, evidence, rejections, commitments, rankings, and phases before admitting the next transition. Invalid local state is refused rather than silently trusted.
 
 The **Reset session** control clears the local state and begins a new interview. This is also the lawful recovery path after switching ontology versions or intentionally abandoning a rejected track.
 
