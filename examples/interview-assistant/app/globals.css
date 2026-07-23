@@ -93,6 +93,13 @@ h2 {
   gap: 0.75rem;
 }
 
+.interview-clock {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .kernel-status {
   color: var(--muted);
   font-size: 0.82rem;
@@ -121,7 +128,7 @@ h2 {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(330px, 34vw) 1fr;
+  grid-template-columns: minmax(390px, 38vw) 1fr;
 }
 
 .cognition-panel {
@@ -283,6 +290,36 @@ h2 {
   line-height: 1.5;
 }
 
+.transcript-history ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transcript-history li {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.65rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.transcript-history li:first-child {
+  border-top: 0;
+}
+
+.transcript-history strong {
+  color: var(--accent-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transcript-history span {
+  color: var(--text);
+}
+
 .editor-panel {
   min-width: 0;
   min-height: 0;
@@ -337,6 +374,16 @@ h2 {
 }
 
 @media (max-width: 900px) {
+  .topbar,
+  .status-cluster {
+    align-items: flex-start;
+  }
+
+  .status-cluster {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(520px, 65vh);
