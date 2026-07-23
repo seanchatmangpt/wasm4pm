@@ -1,1 +1,0 @@
-PASS: 0 unsupported synthetic formulas remain. All formulas are CODE_DERIVED_FORMULA or STANDARD_FORMULA_WITH_BOUNDARY.

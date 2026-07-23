@@ -1,1 +1,0 @@
-PASS: 0 BLOCKING findings. Placeholder text removed, equations grounded.
