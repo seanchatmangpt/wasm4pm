@@ -144,7 +144,7 @@ fn explicit_rejection_eliminates_track() {
         .find(|h| h.id == "coordinate_traversal")
         .expect("rejected hypothesis");
     assert!(rejected.eliminated);
-    assert_eq!(rejected.score, 0.0);
+    assert!(rejected.score.abs() <= f32::EPSILON);
 }
 
 #[test]
