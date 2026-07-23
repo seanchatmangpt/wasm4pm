@@ -1,7 +1,10 @@
 //! Canonical source-code projection selected by the cognition kernel.
 
-use super::{verify_session_state, DomainPack, SessionError, SessionState};
+use super::{hash_domain_pack, verify_session_state, DomainPack, SessionError, SessionState};
 use serde::{Deserialize, Serialize};
+
+const CANONICAL_INTERVIEW_PACK: &str =
+    include_str!("../../examples/cognition/interview_session/domain.json");
 
 /// One canonical source artifact selected from an admitted cognition state.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -45,12 +48,34 @@ fn source_for(track_id: &str) -> Option<(&'static str, &'static str)> {
     }
 }
 
+fn verify_canonical_artifact_domain(pack: &DomainPack) -> Result<(), SessionError> {
+    let canonical: DomainPack = serde_json::from_str(CANONICAL_INTERVIEW_PACK).map_err(|error| {
+        SessionError::Serialization {
+            reason: format!("canonical interview domain could not be decoded: {error}"),
+        }
+    })?;
+    let supplied_hash = hash_domain_pack(pack)?;
+    let canonical_hash = hash_domain_pack(&canonical)?;
+    if supplied_hash != canonical_hash {
+        return Err(SessionError::InvalidDomain {
+            reason: "Python artifacts are bound to the canonical coding-interview-v2 domain pack"
+                .to_string(),
+        });
+    }
+    Ok(())
+}
+
 /// Replay-verify state and select the canonical Python artifact for its cognition track.
+///
+/// The embedded Python artifacts are admitted only for the exact canonical interview
+/// domain pack. Reusing a canonical track identifier in another valid domain cannot
+/// select these artifacts.
 pub fn project_python_code(
     pack: &DomainPack,
     state: &SessionState,
 ) -> Result<Option<CodeProjection>, SessionError> {
     verify_session_state(pack, state)?;
+    verify_canonical_artifact_domain(pack)?;
 
     let (track_id, selection_status) = if let Some(track_id) = &state.committed_track {
         (track_id.as_str(), "committed")
@@ -75,8 +100,8 @@ pub fn project_python_code(
         return Ok(None);
     };
 
-    let mut hasher = blake3::Hasher::new_derive_key("wasm4pm.cognition.code-projection.v1");
-    hasher.update(pack.id.as_bytes());
+    let mut hasher = blake3::Hasher::new_derive_key("wasm4pm.cognition.code-projection.v2");
+    hasher.update(state.domain_pack_hash.as_bytes());
     hasher.update(track_id.as_bytes());
     hasher.update(filename.as_bytes());
     hasher.update(source.as_bytes());
