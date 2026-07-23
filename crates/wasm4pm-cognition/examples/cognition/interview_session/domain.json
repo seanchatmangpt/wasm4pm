@@ -213,6 +213,7 @@
     "maximum_contradiction": 0.45
   },
   "bounds": {
+    "max_turns": 512,
     "max_observations": 256,
     "max_evidence": 4096,
     "max_observation_bytes": 16384,
