@@ -15,33 +15,71 @@ export interface SessionTurnOptions {
   spanSink?: SpanSink;
 }
 
+/** Execute one admitted session turn through the Rust/WASM kernel. */
 export async function runSessionTurn(
   input: SessionTurnInput,
   options: SessionTurnOptions = {},
 ): Promise<SessionSuccessResult> {
-  const admitted = SessionTurnInputSchema.parse(input);
-  const loader = WasmLoader.getInstance();
-  await loader.init();
-  const wasm = loader.get();
   const started = Date.now();
   let status: 'OK' | 'ERROR' = 'OK';
   let runId: string | undefined;
   let errorMessage: string | undefined;
 
   try {
-    const raw = wasm.cognition_session_turn(JSON.stringify(admitted));
-    const decoded = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    const result = SessionBoundaryResultSchema.parse(decoded);
+    const admitted = SessionTurnInputSchema.safeParse(input);
+    if (!admitted.success) {
+      throw new CognitionError('Session input failed boundary validation.', 'SESSION_INPUT_INVALID', {
+        cause: admitted.error,
+        details: { issues: admitted.error.issues },
+      });
+    }
+
+    const loader = WasmLoader.getInstance();
+    await loader.init();
+    const wasm = loader.get();
+
+    let raw: unknown;
+    try {
+      raw = wasm.cognition_session_turn(JSON.stringify(admitted.data));
+    } catch (error) {
+      throw new CognitionError('Session WASM execution failed.', 'SESSION_EXECUTION_FAILED', {
+        cause: error,
+      });
+    }
+
+    let decoded: unknown = raw;
+    if (typeof raw === 'string') {
+      try {
+        decoded = JSON.parse(raw) as unknown;
+      } catch (error) {
+        throw new CognitionError('Session WASM returned malformed JSON.', 'OUTPUT_PARSE_FAILED', {
+          cause: error,
+          details: { raw },
+        });
+      }
+    }
+
+    const parsed = SessionBoundaryResultSchema.safeParse(decoded);
+    if (!parsed.success) {
+      throw new CognitionError('Session WASM returned an invalid boundary shape.', 'OUTPUT_SHAPE_INVALID', {
+        cause: parsed.error,
+        details: { issues: parsed.error.issues },
+      });
+    }
+
+    const result = parsed.data;
     runId = result.run_id;
     if (result.status === 'refused') {
-      status = 'ERROR';
-      errorMessage = result.message;
       throw new CognitionError(result.message, 'SESSION_REFUSED', {
         details: {
           refusal_code: result.refusal.code,
+          refusal: result.refusal,
           run_id: result.run_id,
+          input_hash: result.input_hash,
           refusal_hash: result.refusal_hash,
+          attested_hash: result.attested_hash,
           replay_pointer: result.replay_pointer,
+          attestation: result.attestation,
         },
       });
     }
@@ -50,7 +88,7 @@ export async function runSessionTurn(
     status = 'ERROR';
     errorMessage = error instanceof Error ? error.message : String(error);
     if (error instanceof CognitionError) throw error;
-    throw new CognitionError(errorMessage, 'OUTPUT_SHAPE_INVALID', { cause: error });
+    throw new CognitionError(errorMessage, 'SESSION_EXECUTION_FAILED', { cause: error });
   } finally {
     const sink = options.spanSink ?? defaultSpanSink;
     try {
@@ -65,7 +103,7 @@ export async function runSessionTurn(
         attributes: {
           'service.name': 'wasm4pm',
           'cognition.operation': 'session_turn',
-          'cognition.domain_pack': input.domain_pack.id,
+          'cognition.domain_pack': input.domain_pack?.id ?? 'unknown',
           'cognition.turn': (input.previous_state?.turn ?? 0) + 1,
           ...(runId ? { 'cognition.run_id': runId } : {}),
         },
