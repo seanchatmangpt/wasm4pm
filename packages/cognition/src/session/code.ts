@@ -12,6 +12,7 @@ import {
 } from './schemas.js';
 
 const HashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const ReplayPointerSchema = z.string().regex(/^[0-9a-f]{16}$/);
 const AttestationSchema = z.discriminatedUnion('kind', [
   z
     .object({
@@ -48,7 +49,7 @@ const SuccessSchema = z
     run_id: HashSchema,
     input_hash: HashSchema,
     attested_hash: HashSchema,
-    replay_pointer: z.string().regex(/^[0-9a-f]{16}$/),
+    replay_pointer: ReplayPointerSchema,
     code: CodeProjectionSchema.nullable(),
     attestation: AttestationSchema,
   })
@@ -61,7 +62,7 @@ const RefusalSchema = z
     input_hash: HashSchema,
     refusal_hash: HashSchema,
     attested_hash: HashSchema,
-    replay_pointer: z.string().regex(/^[0-9a-f]{16}$/),
+    replay_pointer: ReplayPointerSchema,
     refusal: z.object({ code: SessionRefusalCodeSchema }).passthrough(),
     message: z.string().min(1),
     attestation: AttestationSchema,
@@ -124,8 +125,12 @@ export async function projectSessionCode(
       details: {
         refusal_code: parsed.data.refusal.code,
         refusal: parsed.data.refusal,
-        refusal_hash: parsed.data.refusal_hash,
         run_id: parsed.data.run_id,
+        input_hash: parsed.data.input_hash,
+        refusal_hash: parsed.data.refusal_hash,
+        attested_hash: parsed.data.attested_hash,
+        replay_pointer: parsed.data.replay_pointer,
+        attestation: parsed.data.attestation,
       },
     });
   }
