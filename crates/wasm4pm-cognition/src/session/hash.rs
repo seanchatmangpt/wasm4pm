@@ -4,11 +4,11 @@ use super::model::*;
 use crate::breeds::TraceStep;
 use serde::Serialize;
 
-const STATE_HASH_DOMAIN: &str = "wasm4pm.cognition.session.state.v1";
-const PACK_HASH_DOMAIN: &str = "wasm4pm.cognition.session.pack.v1";
-const INPUT_HASH_DOMAIN: &str = "wasm4pm.cognition.session.input.v1";
-const OUTPUT_HASH_DOMAIN: &str = "wasm4pm.cognition.session.output.v1";
-const RECEIPT_HASH_DOMAIN: &str = "wasm4pm.cognition.session.receipt.v1";
+const STATE_HASH_DOMAIN: &str = "wasm4pm.cognition.session.state.v2";
+const PACK_HASH_DOMAIN: &str = "wasm4pm.cognition.session.pack.v2";
+const INPUT_HASH_DOMAIN: &str = "wasm4pm.cognition.session.input.v2";
+const OUTPUT_HASH_DOMAIN: &str = "wasm4pm.cognition.session.output.v2";
+const RECEIPT_HASH_DOMAIN: &str = "wasm4pm.cognition.session.receipt.v2";
 
 #[derive(Serialize)]
 struct StateHashView<'a> {
