@@ -61,7 +61,6 @@ fn track_satisfies_commitment(
     {
         return false;
     }
-
     let coverage = analysis
         .covered_by_track
         .get(track_id)
@@ -70,7 +69,6 @@ fn track_satisfies_commitment(
     if coverage < pack.thresholds.minimum_coverage {
         return false;
     }
-
     let best_competitor = analysis
         .hypotheses
         .iter()
@@ -169,7 +167,6 @@ fn apply_confirmation(
             id: confirmation.track_id.clone(),
         });
     }
-
     if confirmation.accepted {
         if state.committed_track.is_some()
             || analysis.eligible_track.as_deref() != Some(confirmation.track_id.as_str())
@@ -199,7 +196,6 @@ fn apply_confirmation(
             id: confirmation.track_id.clone(),
         });
     }
-
     state.rejected_tracks.insert(confirmation.track_id.clone());
     if targets_committed {
         state.committed_track = None;
@@ -230,7 +226,6 @@ fn apply_turn_record(
             resource: "turns".to_string(),
         });
     }
-
     let next_turn = state
         .turn
         .checked_add(1)
@@ -248,13 +243,10 @@ fn apply_turn_record(
         depth: 0,
         objects: vec![],
     });
-
     if let Some(observation) = &record.observation {
         apply_observation(pack, state, observation, trace)?;
     }
-
     let mut analysis = analyze(pack, &state.evidence, &state.rejected_tracks, trace);
-
     if record.observation.is_some() {
         if let Some(committed) = state.committed_track.clone() {
             if !track_satisfies_commitment(pack, &analysis, &committed) {
@@ -269,11 +261,9 @@ fn apply_turn_record(
             }
         }
     }
-
     if let Some(confirmation) = &record.confirmation {
         apply_confirmation(pack, state, confirmation, &mut analysis, trace)?;
     }
-
     if !pack.thresholds.confirmation_required
         && state.committed_track.is_none()
         && analysis.eligible_track.is_some()
@@ -314,7 +304,6 @@ fn apply_turn_record(
     };
     let (phase, phase_label, complete) =
         current_phase(pack, state.committed_track.as_deref(), &covered);
-
     trace.push(TraceStep {
         step: trace.len(),
         kind: "commitment-gate".to_string(),
@@ -419,12 +408,10 @@ fn verify_previous_state(
             "non-genesis state requires a valid previous-state hash",
         ));
     }
-
     let recomputed_hash = hash_session_state(state)?;
     if recomputed_hash != state.state_hash {
         return Err(SessionError::StateHashMismatch);
     }
-
     let rebuilt = replay_history(pack, pack_hash, &state.turns)
         .map_err(|error| invalid_state(format!("turn-ledger replay refused: {error}")))?;
     if rebuilt != *state {
@@ -433,6 +420,16 @@ fn verify_previous_state(
         ));
     }
     Ok(())
+}
+
+/// Verify a persisted state without admitting a new turn.
+pub fn verify_session_state(
+    domain_pack: &DomainPack,
+    state: &SessionState,
+) -> Result<(), SessionError> {
+    validate_domain_pack(domain_pack)?;
+    let pack_hash = hash_domain_pack(domain_pack)?;
+    verify_previous_state(domain_pack, state, &pack_hash)
 }
 
 /// Execute one deterministic, receipted session turn.
@@ -445,7 +442,6 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
     if record.observation.is_none() && record.confirmation.is_none() {
         return Err(SessionError::EmptyTurn);
     }
-
     let pack_hash = hash_domain_pack(&input.domain_pack)?;
     let mut state = match &input.previous_state {
         Some(previous) => {
@@ -459,7 +455,6 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
         .as_ref()
         .map(|state| state.state_hash.clone())
         .unwrap_or_else(|| "0".repeat(64));
-
     let mut trace = Vec::new();
     let projection = apply_turn_record(
         &input.domain_pack,
@@ -468,12 +463,10 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
         &record,
         &mut trace,
     )?;
-
     let ocel = crate::ocel::derive_ocel("cognition_session", &state.state_hash, &trace);
     let ocel_log = serde_json::to_value(ocel).map_err(|error| SessionError::Serialization {
         reason: error.to_string(),
     })?;
-
     let input_hash = hash_turn_input(input)?;
     let output_hash = hash_output_payload(&state, &projection, &trace, &ocel_log)?;
     let combined_hash = hash_receipt_material(
@@ -489,7 +482,6 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
         output_hash,
         combined_hash,
     };
-
     Ok(SessionTurnOutput {
         state,
         projection,
