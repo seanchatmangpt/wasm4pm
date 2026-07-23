@@ -5,42 +5,33 @@ use super::model::*;
 use crate::breeds::TraceStep;
 use std::collections::{BTreeMap, BTreeSet};
 
-fn normalize(text: &str, aliases: &BTreeMap<String, String>) -> String {
-    let mut normalized = String::with_capacity(text.len());
-    let mut previous_space = true;
-    for ch in text.chars().flat_map(char::to_lowercase) {
-        if ch.is_alphanumeric() || ch == '_' {
-            normalized.push(ch);
-            previous_space = false;
-        } else if !previous_space {
-            normalized.push(' ');
-            previous_space = true;
-        }
-    }
-    let mut normalized = normalized.trim().to_string();
-    let mut alias_pairs: Vec<_> = aliases.iter().collect();
-    alias_pairs.sort_by(|(ak, _), (bk, _)| bk.len().cmp(&ak.len()).then_with(|| ak.cmp(bk)));
-    for (alias, canonical) in alias_pairs {
-        let alias = normalize_without_aliases(alias);
-        let canonical = normalize_without_aliases(canonical);
-        normalized = replace_phrase(&normalized, &alias, &canonical);
-    }
-    normalized
-}
-
-fn normalize_without_aliases(text: &str) -> String {
+fn normalize_characters(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut previous_space = true;
     for ch in text.chars().flat_map(char::to_lowercase) {
         if ch.is_alphanumeric() || ch == '_' {
             out.push(ch);
             previous_space = false;
+        } else if matches!(ch, '\'' | '’') {
+            // Preserve contractions as one token: "don't" -> "dont".
         } else if !previous_space {
             out.push(' ');
             previous_space = true;
         }
     }
     out.trim().to_string()
+}
+
+fn normalize(text: &str, aliases: &BTreeMap<String, String>) -> String {
+    let mut normalized = normalize_characters(text);
+    let mut alias_pairs: Vec<_> = aliases.iter().collect();
+    alias_pairs.sort_by(|(ak, _), (bk, _)| bk.len().cmp(&ak.len()).then_with(|| ak.cmp(bk)));
+    for (alias, canonical) in alias_pairs {
+        let alias = normalize_characters(alias);
+        let canonical = normalize_characters(canonical);
+        normalized = replace_phrase(&normalized, &alias, &canonical);
+    }
+    normalized
 }
 
 fn replace_phrase(text: &str, from: &str, to: &str) -> String {
@@ -69,12 +60,20 @@ fn phrase_polarity(text: &str, phrase: &str) -> EvidencePolarity {
         format!("do not {phrase}"),
         format!("wouldnt {phrase}"),
         format!("would not {phrase}"),
+        format!("never {phrase}"),
     ];
     if negations.iter().any(|needle| contains_phrase(text, needle)) {
         EvidencePolarity::Negative
     } else {
         EvidencePolarity::Positive
     }
+}
+
+fn phrase_matches(text: &str, phrase: &str) -> bool {
+    contains_phrase(text, phrase)
+        || ["not", "no", "without", "dont", "do not", "wouldnt", "would not", "never"]
+            .iter()
+            .any(|prefix| contains_phrase(text, &format!("{prefix} {phrase}")))
 }
 
 pub(super) fn extract_evidence(
@@ -85,20 +84,11 @@ pub(super) fn extract_evidence(
     let normalized = normalize(&observation.text, &pack.aliases);
     let mut records = Vec::new();
     for pattern in &pack.patterns {
-        let mut matched_phrase: Option<String> = None;
-        for phrase in &pattern.phrases {
-            let phrase = normalize(phrase, &pack.aliases);
-            if contains_phrase(&normalized, &phrase)
-                || contains_phrase(&normalized, &format!("not {phrase}"))
-                || contains_phrase(&normalized, &format!("no {phrase}"))
-                || contains_phrase(&normalized, &format!("without {phrase}"))
-                || contains_phrase(&normalized, &format!("do not {phrase}"))
-                || contains_phrase(&normalized, &format!("would not {phrase}"))
-            {
-                matched_phrase = Some(phrase);
-                break;
-            }
-        }
+        let matched_phrase = pattern
+            .phrases
+            .iter()
+            .map(|phrase| normalize(phrase, &pack.aliases))
+            .find(|phrase| phrase_matches(&normalized, phrase));
         let Some(phrase) = matched_phrase else {
             continue;
         };
@@ -107,24 +97,29 @@ pub(super) fn extract_evidence(
             &observation.id,
             &pattern.id,
             &pattern.proposition,
+            &phrase,
             &normalized,
             polarity,
         );
-        let id = hash_serializable("wasm4pm.cognition.session.evidence.v1", &evidence_material)?;
+        let id = hash_serializable("wasm4pm.cognition.session.evidence.v2", &evidence_material)?;
         trace.push(TraceStep {
             step: trace.len(),
             kind: "match-pattern".to_string(),
             detail: format!(
-                "observation={} pattern={} proposition={} polarity={:?}",
-                observation.id, pattern.id, pattern.proposition, polarity
+                "observation={} pattern={} phrase={} proposition={} polarity={:?}",
+                observation.id, pattern.id, phrase, pattern.proposition, polarity
             ),
             depth: 0,
-            objects: vec![("observation".to_string(), observation.id.clone())],
+            objects: vec![
+                ("observation".to_string(), observation.id.clone()),
+                ("evidence".to_string(), id.clone()),
+            ],
         });
         records.push(EvidenceRecord {
             id,
             observation_id: observation.id.clone(),
             pattern_id: pattern.id.clone(),
+            matched_phrase: phrase,
             proposition: pattern.proposition.clone(),
             track_weights: pattern.track_weights.clone(),
             concept: pattern.concept.clone(),
@@ -151,12 +146,4 @@ pub(super) fn active_propositions(
         }
     }
     (positive, negative)
-}
-
-pub(super) fn concept_confidence(item: &EvidenceRecord) -> f32 {
-    item.track_weights
-        .values()
-        .map(|v| v.abs())
-        .fold(0.0_f32, f32::max)
-        .clamp(0.5, 1.0)
 }
