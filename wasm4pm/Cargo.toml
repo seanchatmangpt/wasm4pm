@@ -63,6 +63,8 @@ ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_c
 getrandom = { version = "0.2", features = ["js"] }
 wasm4pm-cognition = { workspace = true, default-features = false, optional = true }
 miniml = { workspace = true, optional = true }
+wgpu = { version = "0.19", optional = true }
+pollster = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.16.0", features = ["v4", "js"] }
@@ -320,7 +322,7 @@ feature-statrs = ["statrs", "dep:statrs"]
 #               then change this to feature-gpu = ["gpu", "dep:wgpu", "dep:pollster"].
 # Until those deps are added the internal "gpu" flag is NOT activated to prevent
 # compile errors from missing wgpu/pollster crates.
-feature-gpu = []
+feature-gpu = ["gpu"]
 
 # Parallel processing via rayon (NOT for wasm32 — WASM is single-threaded)
 # PREREQUISITE: add `rayon = { version = "1", optional = true }` to [dependencies],
@@ -469,7 +471,7 @@ montecarlo = []
 # Dependencies
 statrs = ["dep:statrs"]
 miniml = ["dep:miniml"]
-gpu = []
+gpu = ["dep:wgpu", "dep:pollster"]
 # rayon — no-op flag (rayon crate not yet added as dep; flag exists so feature-rayon
 # can be declared without cargo errors; parallel_executor.rs guards rayon use internally)
 rayon = []
