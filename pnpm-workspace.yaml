@@ -5,6 +5,7 @@ packages:
   - 'playground'
   - 'lab'
   - 'examples'
+  - 'examples/*'
   - 'tests/proof'
   - 'tests/archive'
 
