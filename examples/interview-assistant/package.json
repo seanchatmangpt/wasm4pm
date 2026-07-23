@@ -1,0 +1,31 @@
+{
+  "name": "@wasm4pm/interview-assistant",
+  "version": "26.7.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test:e2e:visual": "next build && playwright test",
+    "test:e2e:visual:update": "next build && playwright test --update-snapshots",
+    "test:e2e:visual:ui": "next build && playwright test --ui",
+    "test:e2e:visual:report": "playwright show-report"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "4.7.0",
+    "@wasm4pm/cognition": "workspace:*",
+    "monaco-editor": "0.56.0",
+    "next": "16.2.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "wasm4pm-cognition-web": "file:../../packages/cognition/pkg-web"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "^20.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}

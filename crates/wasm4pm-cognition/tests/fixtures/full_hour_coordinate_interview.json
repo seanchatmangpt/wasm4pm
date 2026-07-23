@@ -1,0 +1,217 @@
+{
+  "title": "Senior software engineer coding interview — coordinate navigation",
+  "started_at": "2026-07-23T09:00:00-07:00",
+  "ended_at": "2026-07-23T10:00:00-07:00",
+  "events": [
+    {
+      "elapsed_minutes": 0,
+      "timestamp": "2026-07-23T09:00:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "Good morning. We will spend about an hour together. I will introduce the problem, you can clarify it, then we will discuss your approach, implementation, testing, and a follow-up.",
+      "checkpoint": "opening"
+    },
+    {
+      "elapsed_minutes": 3,
+      "timestamp": "2026-07-23T09:03:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "You receive a string of movement instructions for a robot. Return its final location after applying the instructions in order.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 5,
+      "timestamp": "2026-07-23T09:05:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "Before choosing an approach, may I assume the robot starts at the origin and that the instruction alphabet is fixed? I also want to know whether malformed commands should be ignored or rejected.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 7,
+      "timestamp": "2026-07-23T09:07:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "Assume it starts at the origin. Commands are uppercase letters. Explain a reasonable policy for malformed commands, but focus first on the normal path.",
+      "checkpoint": "clarification"
+    },
+    {
+      "elapsed_minutes": 9,
+      "timestamp": "2026-07-23T09:09:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "My first thought is to model the location as x and y coordinates. I do not need to materialize a grid because the robot only needs its current position.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 11,
+      "timestamp": "2026-07-23T09:11:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "I would keep a dictionary of moves so each command maps to a small coordinate delta. That keeps the branch logic centralized and makes the transition table easy to inspect.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 13,
+      "timestamp": "2026-07-23T09:13:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "The four directions are north south east west. I would iterate through the instruction string and apply one delta for each command.",
+      "checkpoint": "approach-detected"
+    },
+    {
+      "elapsed_minutes": 15,
+      "timestamp": "2026-07-23T09:15:00-07:00",
+      "speaker": "interviewer",
+      "kind": "confirmation",
+      "track_id": "coordinate_traversal",
+      "accepted": true,
+      "text": "Yes. Coordinate traversal is the intended primary track.",
+      "checkpoint": "approach-confirmed"
+    },
+    {
+      "elapsed_minutes": 17,
+      "timestamp": "2026-07-23T09:17:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "State the invariant before you write code. What must x and y mean after the first k commands?",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 19,
+      "timestamp": "2026-07-23T09:19:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "After processing the first k commands, the coordinate pair is exactly the displacement from the origin produced by that prefix. The next command changes only that state through its direction lookup.",
+      "checkpoint": "state-and-transition"
+    },
+    {
+      "elapsed_minutes": 22,
+      "timestamp": "2026-07-23T09:22:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "In Rust I would represent the deltas as a match or a static map of directions. The accumulator can be a tuple of signed integers, and each recognized command updates the tuple.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 25,
+      "timestamp": "2026-07-23T09:25:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "Walk through NNEESW without executing code. I want to hear each state transition.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 27,
+      "timestamp": "2026-07-23T09:27:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "Starting at zero zero, north gives zero one, the second north gives zero two, east gives one two, the second east gives two two, south gives two one, and west finishes at one one.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 30,
+      "timestamp": "2026-07-23T09:30:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "I am writing the function now. It initializes the coordinate pair, loops through the bytes, obtains the delta, and updates the accumulator. There is no recursion and no visited set.",
+      "checkpoint": "implementation-midpoint"
+    },
+    {
+      "elapsed_minutes": 34,
+      "timestamp": "2026-07-23T09:34:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "What is the complexity, including auxiliary space? Be precise about the input size.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 36,
+      "timestamp": "2026-07-23T09:36:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "It is one pass over n commands, so linear time, or O of n. Auxiliary space is constant because the coordinate state and movement table have fixed size.",
+      "checkpoint": "complexity"
+    },
+    {
+      "elapsed_minutes": 39,
+      "timestamp": "2026-07-23T09:39:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "Now test it. Give me a compact test matrix rather than only one happy-path example.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 42,
+      "timestamp": "2026-07-23T09:42:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "I would test a single move, opposite moves that cancel, a loop returning to the origin, a long repeated direction, and mixed commands whose final coordinate is known independently.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 45,
+      "timestamp": "2026-07-23T09:45:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "What edge cases and failure policy would you commit to in production?",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 47,
+      "timestamp": "2026-07-23T09:47:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "For edge cases I would cover empty input, an invalid direction, very long input, and integer boundary conditions. I would return a typed error for malformed commands rather than silently changing the meaning.",
+      "checkpoint": "solution-complete"
+    },
+    {
+      "elapsed_minutes": 50,
+      "timestamp": "2026-07-23T09:50:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "Follow-up. Suppose commands arrive as a stream and callers want the current location after every chunk. What changes?",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 52,
+      "timestamp": "2026-07-23T09:52:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "The invariant remains the same. I would expose a small stateful accumulator whose state representation is the current coordinate pair. Each chunk is processed in order and the current value can be returned without replaying earlier chunks.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 55,
+      "timestamp": "2026-07-23T09:55:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "What if multiple producers submit chunks concurrently?",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 57,
+      "timestamp": "2026-07-23T09:57:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "The order becomes part of the contract. I would require sequence numbers or one serialized input channel, reject gaps and duplicates, and receipt each admitted chunk before updating the coordinate state.",
+      "checkpoint": "follow-up"
+    },
+    {
+      "elapsed_minutes": 59,
+      "timestamp": "2026-07-23T09:59:00-07:00",
+      "speaker": "interviewer",
+      "kind": "observation",
+      "text": "That covers the coding portion. Summarize the solution and the main tradeoff in one minute.",
+      "checkpoint": null
+    },
+    {
+      "elapsed_minutes": 60,
+      "timestamp": "2026-07-23T10:00:00-07:00",
+      "speaker": "candidate",
+      "kind": "observation",
+      "text": "The solution is coordinate traversal with a fixed direction lookup and one ordered pass. It is simple, linear time, constant auxiliary space, and testable through an explicit state invariant. The main tradeoff is choosing a strict typed error policy instead of silently ignoring malformed commands.",
+      "checkpoint": "wrap-up"
+    }
+  ]
+}
