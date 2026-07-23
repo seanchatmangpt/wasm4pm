@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Q-value delta tracking tests (Gap 2 — Rank-1 mathematical oracle).
 //!
 //! These tests verify that the update() method emits OTEL spans with Q-value deltas.

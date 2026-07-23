@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Adversarial Test Category C — SPC Time-Series (Rank-1 Oracle)
 //!
 //! From ADVERSARIAL_TEST_PLAN.md, Category C:

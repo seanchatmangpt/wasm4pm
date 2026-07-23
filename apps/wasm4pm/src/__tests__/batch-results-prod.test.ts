@@ -1,8 +1,20 @@
 /**
  * batch-results-prod.test.ts
  *
- * Production-quality tests for wpm batch, wpm results, and wpm benchmark perf.
- * Validates the spec-mandated JSON output shapes and flag behaviors.
+ * Production-quality tests for the retired `wpm batch`/`wpm results`
+ * commands, and `wpm benchmark perf`. Validates the spec-mandated JSON
+ * output shapes and flag behaviors under their noun/verb equivalents
+ * (nouns/_removed.ts):
+ *   - 'batch'  -> 'pipeline run'   (name-only absorption — see the big
+ *                                   comment in batch-cli.test.ts; the
+ *                                   multi-file/--continue-on-error/
+ *                                   --parallel behavior tested here has NO
+ *                                   replacement anywhere in the new surface)
+ *   - 'results' -> 'evidence report' (bridged unchanged — legacy envelope
+ *                                     `{command,status,exit_code,payload,meta}`
+ *                                     preserved verbatim on success)
+ *   - 'benchmark perf' -> 'lab benchmark perf' (bridged unchanged, same
+ *                                                envelope preservation)
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -16,27 +28,29 @@ import * as os from 'os';
 const MIN_VALID_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0" xmlns="http://www.xes.org/">
   <trace>
+    <string key="concept:name" value="case_1"/>
     <event>
       <string key="concept:name" value="Register"/>
-      <string key="time:timestamp" value="2024-01-01T00:00:00Z"/>
+      <date key="time:timestamp" value="2024-01-01T00:00:00Z"/>
     </event>
     <event>
       <string key="concept:name" value="Approve"/>
-      <string key="time:timestamp" value="2024-01-01T00:10:00Z"/>
+      <date key="time:timestamp" value="2024-01-01T00:10:00Z"/>
     </event>
     <event>
       <string key="concept:name" value="Complete"/>
-      <string key="time:timestamp" value="2024-01-01T00:20:00Z"/>
+      <date key="time:timestamp" value="2024-01-01T00:20:00Z"/>
     </event>
   </trace>
   <trace>
+    <string key="concept:name" value="case_2"/>
     <event>
       <string key="concept:name" value="Register"/>
-      <string key="time:timestamp" value="2024-01-02T00:00:00Z"/>
+      <date key="time:timestamp" value="2024-01-02T00:00:00Z"/>
     </event>
     <event>
       <string key="concept:name" value="Reject"/>
-      <string key="time:timestamp" value="2024-01-02T00:05:00Z"/>
+      <date key="time:timestamp" value="2024-01-02T00:05:00Z"/>
     </event>
   </trace>
 </log>`;
@@ -53,9 +67,9 @@ function parseJsonOutput(stdout: string): Record<string, unknown> {
   return JSON.parse(match[0]) as Record<string, unknown>;
 }
 
-// ─── Test suite ───────────────────────────────────────────────────────────────
+// ─── Test suite: wpm batch (retired — see batch-cli.test.ts for full coverage) ─
 
-describe('wpm batch — improved multi-file processing', () => {
+describe("wpm batch — retired; 'wpm pipeline run' does not reimplement multi-file/--continue-on-error/--parallel", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
@@ -70,7 +84,7 @@ describe('wpm batch — improved multi-file processing', () => {
     }
   });
 
-  it('exits 0 and emits total_files in JSON when processing a valid XES file', async () => {
+  it("'wpm batch -i <file> --algorithm dfg --format json --no-save' still hard-redirects (removed)", async () => {
     const xesPath = path.join(tmpDir, 'valid.xes');
     await fs.writeFile(xesPath, MIN_VALID_XES);
 
@@ -81,55 +95,11 @@ describe('wpm batch — improved multi-file processing', () => {
       '--format', 'json',
       '--no-save',
     ]);
-
-    // Exit 0 (success) for a single valid file
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-
-    const json = parseJsonOutput(result.stdout);
-    const payload = (json['payload'] ?? json) as Record<string, unknown>;
-
-    // Spec-mandated top-level keys
-    expect(payload).toHaveProperty('total_files');
-    expect(payload).toHaveProperty('successful');
-    expect(payload).toHaveProperty('failed');
-    expect(payload).toHaveProperty('results');
-    expect(payload).toHaveProperty('summary');
-
-    expect(typeof payload['total_files']).toBe('number');
-    expect((payload['total_files'] as number)).toBeGreaterThanOrEqual(1);
-    expect(typeof payload['successful']).toBe('number');
-    expect(typeof payload['failed']).toBe('number');
-    expect(Array.isArray(payload['results'])).toBe(true);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/'wpm batch' was removed — use 'wpm pipeline run'/);
   });
 
-  it('results array contains file/status/fitness/duration_ms entries', async () => {
-    const xesPath = path.join(tmpDir, 'log.xes');
-    await fs.writeFile(xesPath, MIN_VALID_XES);
-
-    const result = await runCli([
-      'batch', '-i', xesPath,
-      '--algorithm', 'dfg',
-      '--format', 'json',
-      '--no-save',
-    ]);
-
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-
-    const json = parseJsonOutput(result.stdout);
-    const payload = (json['payload'] ?? json) as Record<string, unknown>;
-    const results = payload['results'] as Array<Record<string, unknown>>;
-
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    const first = results[0];
-    expect(first).toHaveProperty('file');
-    expect(first).toHaveProperty('status');
-    expect(typeof first['duration_ms']).toBe('number');
-    // fitness may be null for DFG (no conformance check) or a number
-    expect(['number', 'object']).toContain(typeof first['fitness']); // null is 'object'
-  });
-
-  it('--continue-on-error does not stop on first failure', async () => {
-    // Create one valid and one broken XES file
+  it("'--continue-on-error' and comma-separated multi-file '-i' also just hard-redirect (no replacement exists)", async () => {
     const goodPath = path.join(tmpDir, 'good.xes');
     const badPath = path.join(tmpDir, 'broken.xes');
     await fs.writeFile(goodPath, MIN_VALID_XES);
@@ -143,25 +113,11 @@ describe('wpm batch — improved multi-file processing', () => {
       '--format', 'json',
       '--no-save',
     ]);
-
-    // partial_failure (4) is expected when one file fails
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-
-    const json = parseJsonOutput(result.stdout);
-    const payload = (json['payload'] ?? json) as Record<string, unknown>;
-    const results = payload['results'] as Array<Record<string, unknown>>;
-
-    // Both files were processed (not stopped on first failure)
-    expect((payload['total_files'] as number)).toBe(2);
-    expect(results.length).toBe(2);
-
-    // One succeeded, one failed
-    const statuses = results.map((r) => r['status']);
-    expect(statuses).toContain('success');
-    expect(statuses).toContain('error');
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/'wpm batch' was removed/);
   });
 
-  it('--parallel flag is accepted and processed', async () => {
+  it("'--parallel' flag shape also just hard-redirects", async () => {
     const xesPath = path.join(tmpDir, 'p.xes');
     await fs.writeFile(xesPath, MIN_VALID_XES);
 
@@ -172,37 +128,24 @@ describe('wpm batch — improved multi-file processing', () => {
       '--format', 'json',
       '--no-save',
     ]);
-
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    // Should not error out due to the flag itself
-    expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    expect(result.exitCode).toBe(1);
   });
 
-  it('summary contains avg_fitness and avg_duration_ms keys', async () => {
+  it("the single-file case DOES survive under 'wpm pipeline run --auto --input <file>'", async () => {
     const xesPath = path.join(tmpDir, 's.xes');
     await fs.writeFile(xesPath, MIN_VALID_XES);
 
-    const result = await runCli([
-      'batch', '-i', xesPath,
-      '--algorithm', 'dfg',
-      '--format', 'json',
-      '--no-save',
-    ]);
-
-    expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-
-    const json = parseJsonOutput(result.stdout);
-    const payload = (json['payload'] ?? json) as Record<string, unknown>;
-    const summary = payload['summary'] as Record<string, unknown>;
-
-    expect(summary).toHaveProperty('avg_fitness');
-    expect(summary).toHaveProperty('avg_duration_ms');
+    const result = await runCli(['pipeline', 'run', '--auto', '--input', xesPath], { cwd: tmpDir });
+    expect(result.exitCode).toBe(EXIT_CODES.success);
+    const report = parseJsonOutput(result.stdout) as { status: string; steps: unknown[] };
+    expect(report.status).toBe('ok');
+    expect(Array.isArray(report.steps)).toBe(true);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('wpm results — improved inspection flags', () => {
+describe('wpm evidence report — improved inspection flags (was: wpm results)', () => {
   let tmpDir: string;
 
   beforeEach(async () => {
@@ -218,7 +161,7 @@ describe('wpm results — improved inspection flags', () => {
   it('--stats exits 0 even when results dir is empty or missing', async () => {
     // Run from tmpDir (which has no .wasm4pm/results/) to simulate missing dir
     const result = await runCli(
-      ['results', '--stats', '--format', 'json'],
+      ['evidence', 'report', '--stats', '--format', 'json'],
       { cwd: tmpDir }
     );
 
@@ -229,7 +172,7 @@ describe('wpm results — improved inspection flags', () => {
   it('--stats emits total_runs, successful, failed, algorithms, fitness keys', async () => {
     // Run from tmpDir with no results dir — should return empty/zero stats
     const result = await runCli(
-      ['results', '--stats', '--format', 'json'],
+      ['evidence', 'report', '--stats', '--format', 'json'],
       { cwd: tmpDir }
     );
 
@@ -246,23 +189,23 @@ describe('wpm results — improved inspection flags', () => {
   });
 
   it('--top 5 --format json exits 0', async () => {
-    const result = await runCli(['results', '--top', '5', '--format', 'json']);
+    const result = await runCli(['evidence', 'report', '--top', '5', '--format', 'json']);
     // Even with no saved results this should exit cleanly
     expect(result.exitCode).toBe(EXIT_CODES.success);
   });
 
   it('--sort fitness --format json exits 0', async () => {
-    const result = await runCli(['results', '--sort', 'fitness', '--format', 'json']);
+    const result = await runCli(['evidence', 'report', '--sort', 'fitness', '--format', 'json']);
     expect(result.exitCode).toBe(EXIT_CODES.success);
   });
 
   it('--sort timestamp --format json exits 0', async () => {
-    const result = await runCli(['results', '--sort', 'date', '--format', 'json']);
+    const result = await runCli(['evidence', 'report', '--sort', 'date', '--format', 'json']);
     expect(result.exitCode).toBe(EXIT_CODES.success);
   });
 
   it('--trend fitness --format json exits 0 and emits trend_direction and data_points array', async () => {
-    const result = await runCli(['results', '--trend', 'fitness', '--format', 'json']);
+    const result = await runCli(['evidence', 'report', '--trend', 'fitness', '--format', 'json']);
     expect(result.exitCode).toBe(EXIT_CODES.success);
 
     const json = parseJsonOutput(result.stdout);
@@ -285,7 +228,7 @@ describe('wpm results — improved inspection flags', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('wpm benchmark perf — improved timing stats', () => {
+describe('wpm lab benchmark perf — improved timing stats (was: wpm benchmark perf)', () => {
   let tmpDir: string;
 
   beforeEach(async () => {
@@ -303,11 +246,10 @@ describe('wpm benchmark perf — improved timing stats', () => {
     await fs.writeFile(xesPath, MIN_VALID_XES);
 
     const result = await runCli([
-      'benchmark', 'perf',
+      'lab', 'benchmark', 'perf',
       '-i', xesPath,
       '--algorithms', 'dfg',
       '--runs', '2',
-      '--format', 'json',
     ]);
 
     expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
@@ -332,11 +274,10 @@ describe('wpm benchmark perf — improved timing stats', () => {
     await fs.writeFile(xesPath, MIN_VALID_XES);
 
     const result = await runCli([
-      'benchmark', 'perf',
+      'lab', 'benchmark', 'perf',
       '-i', xesPath,
       '--algorithms', 'dfg',
       '--runs', '2',
-      '--format', 'json',
     ]);
 
     expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
@@ -353,12 +294,11 @@ describe('wpm benchmark perf — improved timing stats', () => {
     await fs.writeFile(xesPath, MIN_VALID_XES);
 
     const result = await runCli([
-      'benchmark', 'perf',
+      'lab', 'benchmark', 'perf',
       '-i', xesPath,
       '--algorithms', 'dfg',
       '--runs', '2',
       '--no-warmup',
-      '--format', 'json',
     ]);
 
     expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);

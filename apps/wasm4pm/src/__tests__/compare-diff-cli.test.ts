@@ -181,11 +181,21 @@ const LOG2_XES = buildXes(buildLog2Traces());
 const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
 
 interface CliResult { exitCode: number; stdout: string; stderr: string }
+/**
+ * `model compare`/`model diff` are bridged verbs (`nouns/_bridge.ts`): a
+ * SUCCESSFUL bridged invocation returns the legacy command's own
+ * `{command,status,exit_code,payload,meta}` envelope verbatim (the bridge
+ * just parses and forwards it), but a FAILED one is always converted to a
+ * thrown `NounVerbError` and serialized as the new framework's
+ * `{error:{code,message,action_template}}` envelope instead — the legacy
+ * envelope's `status`/`exit_code`/`payload` never reach stdout for an error
+ * outcome. So all of those fields are optional here; check `error` first.
+ */
 interface Envelope {
-  command: string;
-  status: 'ok' | 'error';
-  exit_code: number;
-  payload: Record<string, unknown> | null;
+  command?: string;
+  status?: 'ok' | 'error';
+  exit_code?: number;
+  payload?: Record<string, unknown> | null;
   error?: { code: string; message: string };
   meta?: { timestamp: string; duration_ms: number; run_id: string; version: string };
 }
@@ -254,42 +264,50 @@ afterAll(() => {
 describe('wpm compare', () => {
 
   // C-1: missing input → source_error (exit 2)
-  it('C-1: missing input file exits 2 (source_error)', async () => {
+  it('C-1: missing input file exits 2 (source_error) with the new {error:{code,message}} envelope', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', path.join(tempDir, 'does_not_exist.xes'),
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
 
     expect(result.exitCode).toBe(2);
+    // Bridged-verb failures are always converted to a thrown NounVerbError
+    // and serialized via the new framework's ErrorEnvelope — the legacy
+    // `{status,exit_code,payload}` envelope never reaches stdout for an
+    // error outcome (see the "C-3.." success-path tests below, which do
+    // still see the raw legacy envelope).
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
-    expect(j.exit_code).toBe(2);
+    expect(j.status).toBeUndefined();
     expect(j.error?.code).toBeDefined();
   });
 
-  // C-2: --format badformat → config_error (exit 1) before WASM
-  it('C-2: --format badformat exits 1 (config_error) with JSON error envelope', async () => {
+  // C-2: --format badformat → the legacy command's own config_error(1)/
+  // 'INVALID_FORMAT' classification is collapsed by the generic bridge
+  // (`classifyLegacyFailure` in `nouns/_bridge.ts`, documented as a
+  // "best-effort mapping, not a lossless one") into the framework's
+  // generic INVALID_INPUT bucket, which wpm's errorCodeMap resolves to
+  // exit 2 (source_error), not the legacy exit 1.
+  it('C-2: --format badformat exits 2 (source_error) with a generic INVALID_INPUT error envelope', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'badformat',
       '--no-save',
     ], { cwd: tempDir });
 
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
-    expect(j.exit_code).toBe(1);
-    expect(j.error?.code).toBe('INVALID_FORMAT');
+    expect(j.status).toBeUndefined();
+    expect(j.error?.code).toBe('INVALID_INPUT');
     expect(j.error?.message).toMatch(/badformat/i);
   });
 
   // C-3: JSON envelope has top-level command, status, exit_code, payload, meta
   it('C-3: JSON envelope has required top-level fields (command, status, exit_code, payload, meta)', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -304,10 +322,17 @@ describe('wpm compare', () => {
     expect('payload' in j).toBe(true);
   });
 
-  // C-4: payload.algorithms is an array of strings (algorithm names)
-  it('C-4: payload.algorithms is an array of algorithm name strings', async () => {
+  // C-4: payload.algorithms is an array of per-algorithm result objects.
+  // `commands/compare.ts` (unchanged by the noun-verb migration — this is
+  // the same legacy command body, just bridged) has always populated both
+  // `payload.algorithms` and `payload.comparisons` with the SAME array of
+  // result objects (`{algorithm, nodes, edges, duration_ms, ...}`), never
+  // an array of bare name strings — see `stats` reused for both keys in
+  // `commands/compare.ts`. This was true before this migration too; fixed
+  // here to assert what the command actually returns.
+  it('C-4: payload.algorithms is an array of per-algorithm result objects with an `algorithm` name field', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -317,18 +342,18 @@ describe('wpm compare', () => {
     const j = parseEnvelope(result);
     expect(j.status).toBe('ok');
     const p = j.payload!;
-    const algorithms = p['algorithms'] as unknown[];
+    const algorithms = p['algorithms'] as Array<Record<string, unknown>>;
     expect(Array.isArray(algorithms)).toBe(true);
-    // All entries must be strings (algorithm names, not objects)
     for (const entry of algorithms) {
-      expect(typeof entry).toBe('string');
+      expect(typeof entry).toBe('object');
+      expect(typeof entry['algorithm']).toBe('string');
     }
   });
 
   // C-5: payload.comparisons is an array with per-algorithm entries
   it('C-5: payload.comparisons is an array of per-algorithm result objects', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -346,7 +371,7 @@ describe('wpm compare', () => {
   // C-6: each comparisons entry has algorithm, duration_ms, edge_count fields
   it('C-6: each comparisons entry has algorithm, duration_ms, and edge_count fields', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -368,7 +393,7 @@ describe('wpm compare', () => {
   // C-7: payload.winner is string or null
   it('C-7: payload.winner is a string (algorithm name) or null', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -383,7 +408,7 @@ describe('wpm compare', () => {
   // C-8: payload.input is present
   it('C-8: payload.input is present and matches the requested log path', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -398,10 +423,11 @@ describe('wpm compare', () => {
     expect(input).toContain('log1.xes');
   });
 
-  // C-9: payload.algorithms length matches requested algorithms
+  // C-9: payload.algorithms length matches requested algorithms (length is
+  // unaffected by the C-4 object-vs-string shape correction — unchanged).
   it('C-9: payload.algorithms length equals the number of requested algorithms', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -417,7 +443,7 @@ describe('wpm compare', () => {
   // C-10: payload.comparisons length matches requested algorithms
   it('C-10: payload.comparisons length equals the number of requested algorithms', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -433,7 +459,7 @@ describe('wpm compare', () => {
   // C-11: exit code 0 on success
   it('C-11: exit code is 0 on successful comparison', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -442,16 +468,24 @@ describe('wpm compare', () => {
     expect(result.exitCode).toBe(0);
   });
 
-  // C-12: human output contains algorithm names
-  it('C-12: human output includes both algorithm names in stdout/stderr', async () => {
+  // C-12: `model compare` is a bridged verb — `nouns/_bridge.ts` strips any
+  // caller-supplied `--format human`/`json` and forces the legacy command's
+  // own JSON output path so its result can be parsed and returned as the
+  // verb's plain result (per the framework's "stdout is ALWAYS JSON"
+  // contract). So `--format human` no longer produces human/sparkline text
+  // at all here; it degrades to the same JSON envelope as `--format json`.
+  // Assert the new, intentional contract: both algorithm names still show
+  // up, just inside the JSON payload rather than in rendered text.
+  it('C-12: stdout includes both algorithm names (now inside the JSON payload, not human text)', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'human',
       '--no-save',
     ], { cwd: tempDir });
 
     expect(result.exitCode).toBe(0);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
     const out = result.stdout + result.stderr;
     expect(out).toMatch(/dfg/i);
     expect(out).toMatch(/heuristic/i);
@@ -460,7 +494,7 @@ describe('wpm compare', () => {
   // C-13: meta.timestamp is valid ISO-8601
   it('C-13: meta.timestamp is a valid ISO-8601 string', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -476,7 +510,7 @@ describe('wpm compare', () => {
   // C-14: meta.duration_ms is a non-negative number
   it('C-14: meta.duration_ms is a non-negative number', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -492,7 +526,7 @@ describe('wpm compare', () => {
   // C-15: payload.activityKey is present
   it('C-15: payload.activityKey is present and defaults to concept:name', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -506,7 +540,7 @@ describe('wpm compare', () => {
   // C-16: payload.recommendation is present (object or null)
   it('C-16: payload.recommendation is an object or null', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -518,40 +552,45 @@ describe('wpm compare', () => {
     expect(rec === null || (typeof rec === 'object' && rec !== null)).toBe(true);
   });
 
-  // C-17: single algorithm → exit 1 (config_error, too few)
-  it('C-17: single algorithm exits 1 (config_error: at least two required)', async () => {
+  // C-17: single algorithm → the legacy config_error(1) collapses to the
+  // bridge's generic source_error(2) — same rationale as C-2 — and the
+  // error surfaces via the new {error:{code,message}} envelope, not the
+  // legacy {status,error} shape.
+  it('C-17: single algorithm exits 2 (source_error: at least two required)', async () => {
     const result = await runCli([
-      'compare', 'dfg',
+      'model', 'compare', 'dfg',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
 
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    expect(j.status).toBeUndefined();
     expect(j.error?.message).toMatch(/two|minimum|least/i);
   });
 
-  // C-18: unknown algorithm → exit 1 (config_error)
-  it('C-18: unknown algorithm name exits 1 (config_error) with helpful message', async () => {
+  // C-18: unknown algorithm → same source_error(2) collapse as C-17.
+  it('C-18: unknown algorithm name exits 2 (source_error) with helpful message', async () => {
     const result = await runCli([
-      'compare', 'dfg,totally_unknown_algo_xyz',
+      'model', 'compare', 'dfg,totally_unknown_algo_xyz',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
 
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    expect(j.status).toBeUndefined();
     expect(j.error?.message).toMatch(/unknown|algorithm/i);
   });
 
-  // C-19: two valid algorithms — both names appear in payload.algorithms
+  // C-19: two valid algorithms — both names appear as `.algorithm` fields
+  // in payload.algorithms (see the C-4 comment: entries are result objects,
+  // not bare name strings).
   it('C-19: payload.algorithms contains both requested algorithm names', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -559,30 +598,36 @@ describe('wpm compare', () => {
 
     expect(result.exitCode).toBe(0);
     const j = parseEnvelope(result);
-    const algorithms = j.payload!['algorithms'] as string[];
-    expect(algorithms.some(a => a.includes('dfg') || a === 'dfg')).toBe(true);
-    expect(algorithms.some(a => a.includes('heuristic'))).toBe(true);
+    const algorithms = j.payload!['algorithms'] as Array<Record<string, unknown>>;
+    const names = algorithms.map((a) => a['algorithm']);
+    expect(names.some((n) => n === 'dfg')).toBe(true);
+    expect(names.some((n) => typeof n === 'string' && n.includes('heuristic'))).toBe(true);
   });
 
-  // C-20: human output contains sparkline characters
-  it('C-20: human output includes sparkline bar characters (▓ or ░)', async () => {
+  // C-20: bridged verb — same "always JSON on stdout" collapse as C-12.
+  // Sparkline rendering only exists in the legacy command's human-format
+  // path, which this bridge never reaches; assert the new JSON contract
+  // instead of text that can no longer appear.
+  it('C-20: stdout is the JSON payload, not human sparkline text (sparkline rendering is unreachable via the bridged verb)', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'human',
       '--no-save',
     ], { cwd: tempDir });
 
     expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('ok');
     const out = result.stdout + result.stderr;
-    const hasSparkline = out.includes('▓') || out.includes('░');
-    expect(hasSparkline).toBe(true);
+    expect(out.includes('▓') || out.includes('░')).toBe(false);
   });
 
-  // C-21: payload.winner matches an entry in payload.algorithms when not null
+  // C-21: payload.winner matches an `.algorithm` entry in payload.algorithms
+  // when not null (object shape — see C-4).
   it('C-21: payload.winner (when not null) is one of the algorithms in payload.algorithms', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner',
+      'model', 'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -591,26 +636,27 @@ describe('wpm compare', () => {
     expect(result.exitCode).toBe(0);
     const j = parseEnvelope(result);
     const winner = j.payload!['winner'] as string | null;
-    const algorithms = j.payload!['algorithms'] as string[];
+    const algorithms = j.payload!['algorithms'] as Array<Record<string, unknown>>;
 
     if (winner !== null) {
       expect(typeof winner).toBe('string');
-      expect(algorithms).toContain(winner);
+      expect(algorithms.map((a) => a['algorithm'])).toContain(winner);
     }
   });
 
-  // C-22: error envelope on config_error has both code and message
-  it('C-22: config_error envelope has non-empty code and message fields', async () => {
+  // C-22: error envelope has both code and message — now the new framework
+  // envelope, not the legacy {status,error} shape (see C-17/C-2).
+  it('C-22: error envelope has non-empty code and message fields', async () => {
     const result = await runCli([
-      'compare', 'dfg',
+      'model', 'compare', 'dfg',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
 
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
     const j = parseEnvelope(result);
-    expect(j.status).toBe('error');
+    expect(j.status).toBeUndefined();
     expect(typeof j.error?.code).toBe('string');
     expect((j.error?.code ?? '').length).toBeGreaterThan(0);
     expect(typeof j.error?.message).toBe('string');
@@ -620,7 +666,7 @@ describe('wpm compare', () => {
   // Additional: three-algorithm comparison
   it('C-23: three algorithms — payload.algorithms has 3 entries and payload.comparisons has 3 entries', async () => {
     const result = await runCli([
-      'compare', 'dfg,heuristic_miner,inductive',
+      'model', 'compare', 'dfg,heuristic_miner,inductive',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -642,7 +688,7 @@ describe('wpm compare', () => {
   // Additional: dfg,ilp pair — both appear in comparisons, winner is non-null
   it('C-24: dfg,ilp — winner is non-null (ilp has higher quality tier)', async () => {
     const result = await runCli([
-      'compare', 'dfg,ilp',
+      'model', 'compare', 'dfg,ilp',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
@@ -662,7 +708,7 @@ describe('wpm compare', () => {
 describe('wpm diff', () => {
   it('D-1: self-diff jaccard equals 1.0 (same file → identical DFGs)', async () => {
     const result = await runCli([
-      'diff', log1Path, log1Path,
+      'model', 'diff', log1Path, log1Path,
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
@@ -680,7 +726,7 @@ describe('wpm diff', () => {
 
   it('D-2: two-log diff jaccard is a number in [0, 1]', async () => {
     const result = await runCli([
-      'diff', log1Path, log2Path,
+      'model', 'diff', log1Path, log2Path,
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
@@ -706,7 +752,7 @@ describe('wpm diff', () => {
 
   it('D-3: diff JSON payload contains activities, edges, and variants sub-fields', async () => {
     const result = await runCli([
-      'diff', log1Path, log2Path,
+      'model', 'diff', log1Path, log2Path,
       '--format', 'json',
       '--no-save',
     ], { cwd: tempDir });
@@ -747,17 +793,26 @@ describe('wpm diff', () => {
     }
   });
 
-  it('D-4: human output includes structural similarity line', async () => {
+  // `model diff` is a bridged verb — same "always JSON on stdout" collapse
+  // as compare's C-12/C-20 above. The literal "Structural similarity:"
+  // header only exists in `printHumanDiff()` (diff.ts's human renderer),
+  // which this bridge never reaches; the equivalent info is the JSON
+  // payload's `diff.summary` field (e.g. "Structurally nearly identical
+  // (Jaccard 1.000)").
+  it('D-4: JSON payload carries the structural-similarity summary (human rendering is unreachable via the bridged verb)', async () => {
     const result = await runCli([
-      'diff', log1Path, log1Path,
+      'model', 'diff', log1Path, log1Path,
       '--format', 'human',
       '--no-save',
       '--deep',
     ], { cwd: tempDir });
 
     expect(result.exitCode).toBe(0);
-    const out = result.stdout + result.stderr;
-    // Human diff emits "Structural similarity:" header
-    expect(out).toMatch(/[Ss]tructural\s+similarity/i);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('ok');
+    const p = j.payload as Record<string, unknown>;
+    const diff = p['diff'] as Record<string, unknown>;
+    expect(typeof diff['summary']).toBe('string');
+    expect(diff['summary'] as string).toMatch(/structur/i);
   });
 });

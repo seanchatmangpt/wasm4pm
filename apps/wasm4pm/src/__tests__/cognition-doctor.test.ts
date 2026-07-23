@@ -30,6 +30,8 @@ function assertEnvelope(json: unknown): asserts json is {
   status: string;
   command: string;
   meta: { run_id: string; timestamp: string; version: string };
+  error_code?: string;
+  payload?: Record<string, unknown>;
 } {
   expect(json).not.toBeNull();
   const obj = json as Record<string, unknown>;
@@ -142,7 +144,7 @@ async function invokeDoctor(
   };
 
   let exitCode = -1;
-  const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number | string) => {
+  const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code?: number | string | null) => {
     exitCode = typeof code === 'number' ? code : 0;
     throw new Error(`process.exit(${code})`);
   });

@@ -57,6 +57,16 @@ const BREED_INPUT_FIXTURE = {
 };
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+//
+// Migration note: `wpm cognition watch` is a retired top-level invocation
+// (see `nouns/_removed.ts`: `cognition -> lab cognition`); the child-process
+// tests below now invoke `wpm lab cognition watch`, an experimental verb
+// bridged via `nouns/_bridge.ts`. That bridge traps `process.exit()`
+// (real termination is unavailable to a bridged command) which means a
+// command's own keep-alive mechanism must resolve on shutdown rather than
+// assume `process.exit()` will end everything — `commands/cognition/watch.ts`
+// was updated to resolve its keep-alive promise directly from the SIGINT
+// handler for this reason, restoring genuine SIGINT-triggered clean exit.
 
 describe('wpm cognition watch — behavioral contract', () => {
   let tmpDir: string;
@@ -110,16 +120,26 @@ describe('wpm cognition watch — behavioral contract', () => {
     const mod = await import('../commands/cognition/watch.js');
     // The receipt is a TypeScript interface — we verify it via the exported
     // formatReceiptLine-compatible structure by constructing one manually.
+    //
+    // Per .claude/rules/cognition-contracts.md (watch.ts mapping section):
+    // the real WASM-derived contract has `status`/`output_hash`, not the
+    // `decision`/`hash`/`findings` fields this test used to assert — those
+    // were removed from the contract. `formatReceiptLine()` derives the
+    // Allow/Deny decision from `status === 'ok'` and the short hash from
+    // `output_hash.slice(0, 8)`.
     const receipt: import('../commands/cognition/watch.js').WatchReceipt = {
-      decision: 'Allow',
-      hash: 'abcd1234',
-      findings: 0,
-      contract: 'prolog',
+      status: 'ok',
+      breed: 'prolog',
+      run_id: 'run-001',
+      output_hash: 'abcd1234efgh5678',
+      replay_pointer: 'abcd1234efgh5678'.slice(0, 16),
       elapsedMs: 12,
     };
-    expect(receipt.decision).toMatch(/^(Allow|Deny)$/);
-    expect(receipt.hash).toHaveLength(8);
-    expect(typeof receipt.findings).toBe('number');
+    const decision = receipt.status === 'ok' ? 'Allow' : 'Deny';
+    const shortHash = receipt.output_hash.slice(0, 8);
+    expect(decision).toMatch(/^(Allow|Deny)$/);
+    expect(shortHash).toHaveLength(8);
+    expect(typeof receipt.output_hash).toBe('string');
     expect(typeof receipt.elapsedMs).toBe('number');
   });
 
@@ -145,7 +165,7 @@ describe('wpm cognition watch — behavioral contract', () => {
       return;
     }
 
-    const child: ChildProcess = execFile('node', [wpmBin, 'cognition', 'watch', inputPath], {
+    const child: ChildProcess = execFile('node', [wpmBin, 'lab', 'cognition', 'watch', inputPath], {
       env: { ...process.env, NO_COLOR: '1' },
     });
 
@@ -189,7 +209,7 @@ describe('wpm cognition watch — behavioral contract', () => {
       return;
     }
 
-    const child: ChildProcess = execFile('node', [wpmBin, 'cognition', 'watch', inputPath], {
+    const child: ChildProcess = execFile('node', [wpmBin, 'lab', 'cognition', 'watch', inputPath], {
       env: { ...process.env, NO_COLOR: '1' },
     });
 
@@ -240,7 +260,7 @@ describe('wpm cognition watch — behavioral contract', () => {
 
     const child: ChildProcess = execFile(
       'node',
-      [wpmBin, 'cognition', 'watch', inputPath, '--contract', 'prolog'],
+      [wpmBin, 'lab', 'cognition', 'watch', inputPath, '--contract', 'prolog'],
       { env: { ...process.env, NO_COLOR: '1' } }
     );
 

@@ -153,22 +153,32 @@ describe('wpm trace — additional coverage', () => {
   // ── §1. trace ingest — human output fields ────────────────────────────────
 
   describe('trace ingest — human output format', () => {
-    it('human output includes Language, Frames, Events, Output fields', async () => {
+    // `lab trace` bridges the legacy `commands/trace.ts` body through
+    // `nouns/_bridge.ts`, which always forces `--format json --quiet`
+    // internally regardless of what's passed — the always-JSON-on-stdout
+    // contract means the human-readable summary ("Language: ...", "Frames: N",
+    // ...) this test used to grep for is never printed anymore. With `-o`
+    // given, the bridge instead returns the legacy command's own JSON
+    // `CommandResult` envelope on stdout, whose `payload` carries the same
+    // language/frame/event/output info the human summary used to show —
+    // assert that instead.
+    it('JSON payload includes language, frames, events, out fields (was: human summary text)', async () => {
       const traceFile = path.join(tmpDir, 'ts-trace.txt');
+      const outFile = path.join(tmpDir, 'graph.json');
       await fs.writeFile(traceFile, TYPESCRIPT_TRACE, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
       expect(result.exitCode).toBe(0);
-      const combined = result.stdout + result.stderr;
-      expect(combined).toMatch(/Language/);
-      expect(combined).toMatch(/Frames/);
-      expect(combined).toMatch(/Events/);
-      expect(combined).toMatch(/Output/);
-      expect(combined).toMatch(/typescript/);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      expect(payload?.language).toBe('typescript');
+      expect(typeof payload?.frames).toBe('number');
+      expect(typeof payload?.events).toBe('number');
+      expect(payload?.out).toBe(outFile);
     });
 
     it('--quiet suppresses the summary output', async () => {
@@ -177,7 +187,7 @@ describe('wpm trace — additional coverage', () => {
       const outFile = path.join(tmpDir, 'graph.json');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--quiet'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--quiet'],
         { cwd: tmpDir },
       );
 
@@ -193,7 +203,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(traceFile, TYPESCRIPT_TRACE, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--runId', 'my-custom-run-xyz'],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', outFile, '--runId', 'my-custom-run-xyz'],
         { cwd: tmpDir },
       );
 
@@ -208,7 +218,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(traceFile, TYPESCRIPT_TRACE, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '-i', traceFile, '-o', outFile],
+        ['lab', 'trace', 'ingest', '-i', traceFile, '-o', outFile],
         { cwd: tmpDir },
       );
 
@@ -219,7 +229,7 @@ describe('wpm trace — additional coverage', () => {
 
     it('nonexistent --input file exits 2 (source_error)', async () => {
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'rust', '-i', 'does-not-exist.txt'],
+        ['lab', 'trace', 'ingest', '--from', 'rust', '-i', 'does-not-exist.txt'],
         { cwd: tmpDir },
       );
 
@@ -230,13 +240,19 @@ describe('wpm trace — additional coverage', () => {
 
     it('nonexistent --input exits 2 with --format json error envelope', async () => {
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'rust', '-i', 'missing.txt', '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'rust', '-i', 'missing.txt', '--format', 'json'],
         { cwd: tmpDir },
       );
 
       expect(result.exitCode).toBe(2);
-      const json = parseJson(result);
-      expect(json?.status).toBe('error');
+      // New error envelope is `{ error: { code, message } }` — there is no
+      // top-level `status` field anymore (that only ever existed on the
+      // legacy `CommandResult` envelope, which only a *successful* bridged
+      // call still returns; an error always serializes through
+      // `packages/noun-verb/src/errors.ts`'s `ErrorEnvelope` instead).
+      const json = parseJson(result) as { error?: { code?: string; message?: string } } | undefined;
+      expect(json?.error).toBeDefined();
+      expect(typeof json?.error?.code).toBe('string');
     });
   });
 
@@ -245,7 +261,7 @@ describe('wpm trace — additional coverage', () => {
   describe('trace ocel — error paths', () => {
     it('nonexistent -i file exits 2 (source_error)', async () => {
       const result = await wpmAsync(
-        ['trace', 'ocel', '-i', 'no-such-file.json'],
+        ['lab', 'trace', 'ocel', '-i', 'no-such-file.json'],
         { cwd: tmpDir },
       );
 
@@ -256,7 +272,7 @@ describe('wpm trace — additional coverage', () => {
 
     it('non-JSON input from stdin exits 2 (source_error)', async () => {
       const result = await wpmAsync(
-        ['trace', 'ocel'],
+        ['lab', 'trace', 'ocel'],
         { cwd: tmpDir, stdin: 'this is not json at all' },
       );
 
@@ -270,7 +286,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(badFile, 'this is not JSON', 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ocel', '-i', badFile],
+        ['lab', 'trace', 'ocel', '-i', badFile],
         { cwd: tmpDir },
       );
 
@@ -289,13 +305,13 @@ describe('wpm trace — additional coverage', () => {
 
       // Step 1: ingest
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
 
       // Step 2: ocel projection
       const result = await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile, '-o', ocelFile],
+        ['lab', 'trace', 'ocel', '-i', graphFile, '-o', ocelFile],
         { cwd: tmpDir },
       );
 
@@ -314,12 +330,12 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(traceFile, RUST_TRACE, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'rust', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'rust', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
 
       const result = await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile, '--format', 'json'],
+        ['lab', 'trace', 'ocel', '-i', graphFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -351,11 +367,11 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(traceFile, TYPESCRIPT_TRACE, 'utf8');
 
       await wpmAsync(
-        ['trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
+        ['lab', 'trace', 'ingest', '--from', 'typescript', '-i', traceFile, '-o', graphFile],
         { cwd: tmpDir },
       );
       await wpmAsync(
-        ['trace', 'ocel', '-i', graphFile, '-o', ocelFile],
+        ['lab', 'trace', 'ocel', '-i', graphFile, '-o', ocelFile],
         { cwd: tmpDir },
       );
 
@@ -374,7 +390,7 @@ describe('wpm trace — additional coverage', () => {
   describe('trace powl — error paths', () => {
     it('nonexistent -i file exits 2 (source_error)', async () => {
       const result = await wpmAsync(
-        ['trace', 'powl', '-i', 'no-such-file.ocel.json'],
+        ['lab', 'trace', 'powl', '-i', 'no-such-file.ocel.json'],
         { cwd: tmpDir },
       );
 
@@ -385,7 +401,7 @@ describe('wpm trace — additional coverage', () => {
 
     it('non-JSON stdin exits 2 (source_error)', async () => {
       const result = await wpmAsync(
-        ['trace', 'powl'],
+        ['lab', 'trace', 'powl'],
         { cwd: tmpDir, stdin: 'not json at all' },
       );
 
@@ -402,7 +418,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(ocelFile, MINIMAL_OCEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'powl', '-i', ocelFile, '-o', routeFile, '--format', 'json'],
+        ['lab', 'trace', 'powl', '-i', ocelFile, '-o', routeFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -420,7 +436,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(ocelFile, MINIMAL_OCEL, 'utf8');
 
       await wpmAsync(
-        ['trace', 'powl', '-i', ocelFile, '-o', routeFile],
+        ['lab', 'trace', 'powl', '-i', ocelFile, '-o', routeFile],
         { cwd: tmpDir },
       );
 
@@ -448,7 +464,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(ocelFile, repeatedOcel, 'utf8');
 
       await wpmAsync(
-        ['trace', 'powl', '-i', ocelFile, '-o', routeFile],
+        ['lab', 'trace', 'powl', '-i', ocelFile, '-o', routeFile],
         { cwd: tmpDir },
       );
 
@@ -472,7 +488,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile, '-o', reportFile],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile, '-o', reportFile],
         { cwd: tmpDir },
       );
 
@@ -494,7 +510,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile, '-o', reportFile],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile, '-o', reportFile],
         { cwd: tmpDir },
       );
 
@@ -510,53 +526,68 @@ describe('wpm trace — additional coverage', () => {
     });
   });
 
-  describe('trace conform — human format output', () => {
-    it('human output includes Route, Observed, Fitness fields', async () => {
+  // `lab trace conform` bridges the legacy command through `nouns/_bridge.ts`,
+  // which always forces `--quiet` internally — the human-readable summary
+  // ("Route: ...", "Observed: ...", "Fitness: ...", ✓/✗ dimension rows) this
+  // describe block used to grep for is never printed anymore (always-JSON-
+  // on-stdout contract). The same information is still present, just as
+  // structured JSON payload fields (`route_id`, `observed_count`, `fitness`,
+  // `verdict`, `details[].ok`) — assert those instead.
+  describe('trace conform — JSON payload output (was: human format output)', () => {
+    it('JSON payload includes route_id, observed_count, fitness fields (was: Route/Observed/Fitness text)', async () => {
       const ocelFile = path.join(tmpDir, 'ocel.json');
       const modelFile = path.join(tmpDir, 'model.powl.json');
       await fs.writeFile(ocelFile, MINIMAL_OCEL, 'utf8');
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile],
         { cwd: tmpDir },
       );
 
-      const combined = result.stdout + result.stderr;
-      expect(combined).toMatch(/Route:/);
-      expect(combined).toMatch(/Observed:/);
-      expect(combined).toMatch(/Fitness:/);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      expect(typeof payload?.route_id).toBe('string');
+      expect(typeof payload?.observed_count).toBe('number');
+      expect(typeof payload?.fitness).toBe('number');
     });
 
-    it('human output shows AndonPull or Accepted verdict text', async () => {
+    it('JSON payload verdict is AndonPull or Accepted (was: human verdict text)', async () => {
       const ocelFile = path.join(tmpDir, 'ocel.json');
       const modelFile = path.join(tmpDir, 'model.powl.json');
       await fs.writeFile(ocelFile, MINIMAL_OCEL, 'utf8');
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile],
         { cwd: tmpDir },
       );
 
-      const combined = result.stdout + result.stderr;
-      expect(combined).toMatch(/AndonPull|Accepted/);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      expect(['AndonPull', 'Accepted']).toContain(payload?.verdict);
     });
 
-    it('human output shows dimension checkmarks (✓ or ✗)', async () => {
+    it('JSON payload details[] carry per-dimension ok:true/false (was: ✓/✗ checkmark rows)', async () => {
       const ocelFile = path.join(tmpDir, 'ocel.json');
       const modelFile = path.join(tmpDir, 'model.powl.json');
       await fs.writeFile(ocelFile, MINIMAL_OCEL, 'utf8');
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile],
         { cwd: tmpDir },
       );
 
-      const combined = result.stdout + result.stderr;
-      // The output renders dimension rows as "  ✓ dimension_name  detail" or "  ✗ ..."
-      expect(combined).toMatch(/[✓✗]/);
+      const json = parseJson(result);
+      const payload = json?.payload as Record<string, unknown> | undefined;
+      const details = payload?.details as Array<Record<string, unknown>> | undefined;
+      expect(Array.isArray(details)).toBe(true);
+      expect(details!.length).toBeGreaterThan(0);
+      for (const d of details!) {
+        expect(typeof d.dimension).toBe('string');
+        expect(typeof d.ok).toBe('boolean');
+      }
     });
   });
 
@@ -585,7 +616,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(ocelFile, emptyOcel, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelPath, '--format', 'json'],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelPath, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -616,7 +647,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(ocelFile, conformingOcel, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelPath, '--format', 'json'],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelPath, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -642,7 +673,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile, '--format', 'json'],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -668,7 +699,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', 'missing.ocel.json', '-m', modelFile],
+        ['lab', 'trace', 'conform', '-i', 'missing.ocel.json', '-m', modelFile],
         { cwd: tmpDir },
       );
 
@@ -680,7 +711,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(ocelFile, MINIMAL_OCEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', 'missing.powl.json'],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', 'missing.powl.json'],
         { cwd: tmpDir },
       );
 
@@ -694,7 +725,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', badOcel, '-m', modelFile],
+        ['lab', 'trace', 'conform', '-i', badOcel, '-m', modelFile],
         { cwd: tmpDir },
       );
 
@@ -704,7 +735,7 @@ describe('wpm trace — additional coverage', () => {
     it('exits 2 when invalid OCEL JSON is piped via stdin', async () => {
       const modelPath = path.join(REPO_ROOT, 'routes', 'agent-proof-lifecycle.powl.json');
       const result = await wpmAsync(
-        ['trace', 'conform', '-m', modelPath],
+        ['lab', 'trace', 'conform', '-m', modelPath],
         { cwd: tmpDir, stdin: 'not valid json' },
       );
 
@@ -718,7 +749,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(badModel, 'not valid json', 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', badModel],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', badModel],
         { cwd: tmpDir },
       );
 
@@ -768,7 +799,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, acceptedModel, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile, '--format', 'json'],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -785,7 +816,7 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(modelFile, SIMPLE_SEQUENCE_MODEL, 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'conform', '-i', ocelFile, '-m', modelFile, '--format', 'json'],
+        ['lab', 'trace', 'conform', '-i', ocelFile, '-m', modelFile, '--format', 'json'],
         { cwd: tmpDir },
       );
 
@@ -800,19 +831,27 @@ describe('wpm trace — additional coverage', () => {
   // ── §9. trace ingest — cross-language validation ──────────────────────────
 
   describe('trace ingest — cross-language validation', () => {
+    // CLAUDE.md's original doctrine ("unknown --from value exits 1 config_error,
+    // no silent fallback") is still upheld in spirit — an unsupported language
+    // is still a hard, fail-closed rejection, never a silent fallback — but the
+    // exact exit code changed under the bridge. `nouns/_bridge.ts`'s
+    // `classifyLegacyFailure()` maps BOTH legacy exit codes 1 (config_error)
+    // and 2 (source_error) onto a single `NounVerbError.invalidInput()`
+    // bucket, which resolves to `EXIT_CODES.source_error` (2) on the new CLI
+    // (see `apps/wasm4pm/src/cli.ts`'s `ERROR_CODE_MAP`). This is a documented,
+    // intentional (if lossy) coarsening, not a fallback regression.
     it.each(['go', 'ruby', 'swift', 'kotlin', 'csharp', 'php'])(
-      'exits 1 (config_error) for unsupported language "%s"',
+      'exits 2 (source_error, coarsened from legacy config_error) for unsupported language "%s"',
       async (lang) => {
         const traceFile = path.join(tmpDir, 'test_file.txt');
         await fs.writeFile(traceFile, 'some content', 'utf8');
 
         const result = await wpmAsync(
-          ['trace', 'ingest', '--from', lang, '-i', traceFile],
+          ['lab', 'trace', 'ingest', '--from', lang, '-i', traceFile],
           { cwd: tmpDir },
         );
 
-        // CLAUDE.md: Unknown --from value exits 1 (config_error), no silent fallback
-        expect(result.exitCode).toBe(1);
+        expect(result.exitCode).toBe(2);
       },
     );
 
@@ -821,15 +860,14 @@ describe('wpm trace — additional coverage', () => {
       await fs.writeFile(traceFile, 'some content', 'utf8');
 
       const result = await wpmAsync(
-        ['trace', 'ingest', '--from', 'fortran', '-i', traceFile, '--format', 'json'],
+        ['lab', 'trace', 'ingest', '--from', 'fortran', '-i', traceFile],
         { cwd: tmpDir },
       );
 
-      expect(result.exitCode).toBe(1);
-      const json = parseJson(result);
-      expect(json?.status).toBe('error');
-      const errorObj = json?.error as Record<string, unknown> | undefined;
-      const msg = String(errorObj?.message ?? json?.message ?? '');
+      expect(result.exitCode).toBe(2);
+      const json = parseJson(result) as { error?: { code?: string; message?: string } } | undefined;
+      expect(json?.error).toBeDefined();
+      const msg = String(json?.error?.message ?? '');
       expect(msg).toMatch(/fortran|unknown|Accepted/i);
     });
 
@@ -848,7 +886,7 @@ describe('wpm trace — additional coverage', () => {
         await fs.writeFile(traceFile, trace, 'utf8');
 
         const result = await wpmAsync(
-          ['trace', 'ingest', '--from', lang, '-i', traceFile, '-o', outFile],
+          ['lab', 'trace', 'ingest', '--from', lang, '-i', traceFile, '-o', outFile],
           { cwd: tmpDir },
         );
 

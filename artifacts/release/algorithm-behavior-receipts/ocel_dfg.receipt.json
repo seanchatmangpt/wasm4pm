@@ -9,15 +9,15 @@
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
-  "wasm_export_present": false,
+  "wasm_export_present": true,
   "positive_cases": [
     {
       "case_id": "ocel_dfg.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-      "duration_ms": 0.131082999998398,
-      "receipt_hash": "bbc7800f843763b72b902729c6d0148a374608f25d662a23901fd01d898c3340"
+      "duration_ms": 0.17529199999989942,
+      "receipt_hash": "070ce737300b5bfdee692952216564a5946f036b788829d21e639fe961212075"
     }
   ],
   "negative_cases": [
@@ -49,5 +49,5 @@
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "d8a2d941ffd805ebb687174a77cde0448854e0c6d5dbc5d3715aa4b0734b8619"
+  "algorithm_evidence_hash": "be94db4d2b1cd1f9d76e590cb1338561c467ac34a50f973fff95b4bf3b0caf0f"
 }

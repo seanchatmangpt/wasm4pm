@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Action History tests — Rank-2 domain contract verification.
 //!
 //! Tests for ActionHistory struct including:

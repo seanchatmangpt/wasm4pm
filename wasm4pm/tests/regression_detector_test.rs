@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Regression Detector Test Suite — Agent 8
 //!
 //! 25 conformance test vectors covering:

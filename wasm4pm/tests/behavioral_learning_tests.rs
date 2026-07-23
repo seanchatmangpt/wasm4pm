@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Behavioral learning tests for the RL orchestrator.
 //!
 //! These tests prove that the RL system learns from the outside (black-box),

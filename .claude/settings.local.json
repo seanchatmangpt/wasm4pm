@@ -5,5 +5,8 @@
       "WebSearch",
       "Bash(cargo test *)"
     ]
-  }
+  },
+  "disabledMcpjsonServers": [
+    "oclnr"
+  ]
 }

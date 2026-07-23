@@ -261,8 +261,8 @@ describe('wpm conformance --precision-mode', () => {
     });
 
     it('should show hint when precision not available', () => {
-      const notAvailable = {
-        computed_at: 'fast' as const,
+      const notAvailable: { computed_at: 'fast' | 'lazy' | 'full'; precision_available: boolean } = {
+        computed_at: 'fast',
         precision_available: false,
       };
 

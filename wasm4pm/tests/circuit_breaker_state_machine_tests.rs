@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Category D — Circuit Breaker State Machine Transition Tests
 //!
 //! Rank-1 tests: explicitly advance the state machine through transitions

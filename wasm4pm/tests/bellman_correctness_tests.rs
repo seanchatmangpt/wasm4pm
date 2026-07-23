@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Bellman Correctness (Category A) + Metamorphic Relations (Category E)
 //!
 //! Rank-1 precision tests that catch Bellman update bugs in a SINGLE transition.

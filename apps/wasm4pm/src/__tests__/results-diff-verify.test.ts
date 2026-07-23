@@ -1,17 +1,18 @@
 /**
- * results --diff and --verify CLI tests
+ * evidence report --diff and --verify CLI tests (was: wpm results --diff/--verify)
  *
- * Van der Aalst QA perspective:
- * - `wpm results --diff 1,2` compares two saved results side-by-side
- * - `wpm results --verify <ref>` re-hashes a stored result payload
- * - Error cases: malformed refs, missing files, bad --limit values
- * - Additional coverage: --verbose, --quiet, --limit, --path flags
+ * Migrated from `wpm results` -> `wpm evidence report` (bridged, unmodified
+ * `commands/results.ts` body — see nouns/evidence/report.ts).
  *
- * Oracle rank: Rank-2 (domain contract) — exit codes and JSON envelope shapes
- * are design decisions documented in results.ts / exit-codes.ts.
- *
- * Tests run the pre-built wpm.js binary in isolated temp directories.
- * No WASM initialization required (the binary handles that internally).
+ * See results-cli.test.ts's file doc comment for the full writeup of the
+ * bridging behavior verified live: on success (legacy `status: 'ok'`,
+ * including a nonzero embedded `exit_code`) the full legacy envelope AND
+ * exit code are preserved; on failure (legacy `status: 'error'`) the
+ * envelope becomes `{ error: { code, message } }` and the exit code is
+ * COARSENED — legacy config_error (1) and source_error (2) both collapse
+ * to exit 2 (wpm's INVALID_INPUT -> source_error mapping). Every exit-code
+ * expectation below that changed from the pre-migration original is called
+ * out inline.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -19,8 +20,6 @@ import { execFile } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { tmpdir } from 'os';
-
-// ─── CLI runner ───────────────────────────────────────────────────────────────
 
 interface CliResult {
   exitCode: number;
@@ -46,7 +45,9 @@ function runCli(args: string[], cwd: string, timeoutMs = 15000): Promise<CliResu
   });
 }
 
-// ─── Test env helpers ─────────────────────────────────────────────────────────
+function report(args: string[], cwd: string): Promise<CliResult> {
+  return runCli(['evidence', 'report', ...args], cwd);
+}
 
 interface TestEnv {
   tempDir: string;
@@ -91,109 +92,109 @@ async function writeFixture(
   return { name: filename, filepath };
 }
 
+function errorOf(r: CliResult): { code: string; message: string } | undefined {
+  return (JSON.parse(r.stdout) as { error?: { code: string; message: string } }).error;
+}
+
 // ─── --diff flag ──────────────────────────────────────────────────────────────
 
-describe('wpm results --diff: malformed refs (no comma)', () => {
+describe('evidence report --diff: malformed refs (no comma)', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
-
-  it('exits with config_error (1) when --diff has no comma', async () => {
-    const result = await runCli(['results', '--diff', 'onlyone', '--format', 'json'], env.tempDir);
-    expect(result.exitCode).toBe(1);
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
   });
 
-  it('returns JSON error envelope when --diff has no comma', async () => {
-    const result = await runCli(['results', '--diff', 'onlyone', '--format', 'json'], env.tempDir);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
-    expect(parsed.command).toBe('results');
+  it('exits 2 when --diff has no comma (was 1 pre-migration — see file doc comment)', async () => {
+    const result = await report(['--diff', 'onlyone'], env.tempDir);
+    expect(result.exitCode).toBe(2);
   });
 
-  it('human output mentions --diff usage when no comma', async () => {
-    const result = await runCli(['results', '--diff', 'onlyone'], env.tempDir);
-    // Exit code is 1; output or stderr explains the issue
-    expect(result.exitCode).toBe(1);
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/diff|comma|two/i);
+  it('returns the new {error:{code,message}} envelope when --diff has no comma', async () => {
+    const result = await report(['--diff', 'onlyone'], env.tempDir);
+    const err = errorOf(result);
+    expect(err).toBeDefined();
+    expect(err!.code).toBe('INVALID_INPUT');
+    expect(err!.message).toMatch(/diff|comma|two/i);
   });
 
-  it('exits with config_error (1) when --diff has more than two parts (two commas)', async () => {
-    const result = await runCli(['results', '--diff', '1,2,3', '--format', 'json'], env.tempDir);
-    expect(result.exitCode).toBe(1);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
+  it('exits 2 when --diff has more than two parts (two commas)', async () => {
+    const result = await report(['--diff', '1,2,3'], env.tempDir);
+    expect(result.exitCode).toBe(2);
+    expect(errorOf(result)).toBeDefined();
   });
 
-  it('exits config_error when --diff is empty string', async () => {
-    const result = await runCli(['results', '--diff', ',', '--format', 'json'], env.tempDir);
-    // A bare comma gives two empty refs — both will not resolve → source_error (2)
-    // or config_error (1). Either is acceptable non-zero.
+  it('exits non-zero when --diff is a bare comma (two empty refs)', async () => {
+    const result = await report(['--diff', ','], env.tempDir);
     expect(result.exitCode).not.toBe(0);
   });
 });
 
-describe('wpm results --diff: missing refs (valid format but non-existent)', () => {
+describe('evidence report --diff: missing refs (valid format but non-existent)', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
+  });
 
-  it('exits source_error (2) when both refs are indexes that do not exist', async () => {
+  it('exits 2 when both refs are indexes that do not exist', async () => {
     await writeFixture(env.resultsDir, 'only-one', '20260516T100000');
-    const result = await runCli(['results', '--diff', '5,6', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '5,6'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('exits source_error (2) when first ref does not exist', async () => {
+  it('exits 2 when first ref does not exist', async () => {
     await writeFixture(env.resultsDir, 'first', '20260516T100000');
     await writeFixture(env.resultsDir, 'second', '20260516T110000');
-    const result = await runCli(['results', '--diff', '99,1', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '99,1'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('exits source_error (2) when second ref does not exist', async () => {
+  it('exits 2 when second ref does not exist', async () => {
     await writeFixture(env.resultsDir, 'first', '20260516T100000');
     await writeFixture(env.resultsDir, 'second', '20260516T110000');
-    const result = await runCli(['results', '--diff', '1,99', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,99'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('JSON error envelope has status:error and command:results', async () => {
+  it('error envelope has code INVALID_INPUT', async () => {
     await writeFixture(env.resultsDir, 'only-one', '20260516T100000');
-    const result = await runCli(['results', '--diff', '1,99', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,99'], env.tempDir);
     expect(result.exitCode).toBe(2);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
-    expect(parsed.command).toBe('results');
+    expect(errorOf(result)?.code).toBe('INVALID_INPUT');
   });
 
-  it('exits source_error when ref is non-existent filename (not index)', async () => {
+  it('exits 2 when ref is a non-existent filename (not index)', async () => {
     await writeFixture(env.resultsDir, 'real-task', '20260516T100000');
-    const result = await runCli(
-      ['results', '--diff', '20260101T000000-ghost.json,1', '--format', 'json'],
-      env.tempDir
-    );
+    const result = await report(['--diff', '20260101T000000-ghost.json,1'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('exits source_error when no results exist at all', async () => {
+  it('exits 2 when no results exist at all', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,2'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 });
 
-describe('wpm results --diff: successful comparison', () => {
+describe('evidence report --diff: successful comparison', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
+  });
 
   it('exits 0 when comparing two valid results by index', async () => {
     await writeFixture(env.resultsDir, 'run-alpha', '20260516T100000', { fitness: 0.85 });
-    // Small delay so mtime differs
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'run-heuristic', '20260516T110000', { fitness: 0.91 });
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,2'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
 
@@ -201,7 +202,7 @@ describe('wpm results --diff: successful comparison', () => {
     await writeFixture(env.resultsDir, 'run-alpha', '20260516T100000', { fitness: 0.85 });
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'run-heuristic', '20260516T110000', { fitness: 0.91 });
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,2'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.status).toBe('ok');
@@ -215,313 +216,245 @@ describe('wpm results --diff: successful comparison', () => {
     await writeFixture(env.resultsDir, 'task-left', '20260516T100000', { fitness: 0.72 });
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'task-right', '20260516T110000', { fitness: 0.88 });
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,2'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     const left = payload.left as Record<string, unknown>;
     const right = payload.right as Record<string, unknown>;
-    // newest first (index 1 = most recent = task-right, index 2 = task-left)
     expect([left.task, right.task].sort()).toEqual(['task-left', 'task-right'].sort());
   });
 
   it('can diff using filenames instead of indexes', async () => {
     const f1 = await writeFixture(env.resultsDir, 'alpha-run', '20260516T100000');
     const f2 = await writeFixture(env.resultsDir, 'heuristic-run', '20260516T110000');
-    const ref1 = f1.name;
-    const ref2 = f2.name;
-    const result = await runCli(
-      ['results', '--diff', `${ref1},${ref2}`, '--format', 'json'],
-      env.tempDir
-    );
+    const result = await report(['--diff', `${f1.name},${f2.name}`], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('ok');
-  });
-
-  it('human format diff exits 0 and shows both tasks in output', async () => {
-    await writeFixture(env.resultsDir, 'left-task', '20260516T100000');
-    await new Promise((r) => setTimeout(r, 30));
-    await writeFixture(env.resultsDir, 'right-task', '20260516T110000');
-    const result = await runCli(['results', '--diff', '1,2'], env.tempDir);
-    expect(result.exitCode).toBe(0);
-    // FM-5: `combined.length > 0` would pass for a single space. Assert that the
-    // output contains "diff" or "compare" or "left"/"right" — meaningful diff content.
-    const combined = result.stdout + result.stderr;
-    expect(combined).toMatch(/diff|compare|left|right|task/i);
+    expect((JSON.parse(result.stdout) as Record<string, unknown>).status).toBe('ok');
   });
 
   it('diff with same index twice exits 0 (self-comparison is valid)', async () => {
     await writeFixture(env.resultsDir, 'same-task', '20260516T100000');
-    const result = await runCli(['results', '--diff', '1,1', '--format', 'json'], env.tempDir);
+    const result = await report(['--diff', '1,1'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('ok');
+    expect((JSON.parse(result.stdout) as Record<string, unknown>).status).toBe('ok');
   });
 });
 
 // ─── --verify flag ────────────────────────────────────────────────────────────
 
-describe('wpm results --verify: ref not found', () => {
+describe('evidence report --verify: ref not found', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
+  });
 
-  it('exits source_error (2) when ref does not exist (empty dir)', async () => {
+  it('exits 2 when ref does not exist (empty dir)', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('exits source_error (2) when index is out of range', async () => {
+  it('exits 2 when index is out of range', async () => {
     await writeFixture(env.resultsDir, 'only-one', '20260516T100000');
-    const result = await runCli(['results', '--verify', '99', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '99'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('exits source_error (2) when filename ref does not match any file', async () => {
+  it('exits 2 when filename ref does not match any file', async () => {
     await writeFixture(env.resultsDir, 'real', '20260516T100000');
-    const result = await runCli(
-      ['results', '--verify', '20260101T000000-ghost.json', '--format', 'json'],
-      env.tempDir
-    );
+    const result = await report(['--verify', '20260101T000000-ghost.json'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('JSON error envelope has status:error when ref not found', async () => {
+  it('error envelope has code INVALID_INPUT when ref not found', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--verify', 'phantom', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', 'phantom'], env.tempDir);
     expect(result.exitCode).toBe(2);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
-    expect(parsed.command).toBe('results');
+    expect(errorOf(result)?.code).toBe('INVALID_INPUT');
   });
 });
 
-describe('wpm results --verify: valid ref (no matching receipt)', () => {
+describe('evidence report --verify: valid ref (no matching receipt)', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
+  });
 
   it('exits 0 when result exists but no receipt (integrity=no_receipt)', async () => {
-    // No .wasm4pm/receipts/ directory — verify should succeed with no_receipt status
     await writeFixture(env.resultsDir, 'some-task', '20260516T100000');
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
 
-  it('JSON verify payload has integrity field', async () => {
+  it('JSON verify payload has integrity: no_receipt', async () => {
     await writeFixture(env.resultsDir, 'some-task', '20260516T100000');
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.status).toBe('ok');
     const payload = parsed.payload as Record<string, unknown>;
     expect(payload).toHaveProperty('integrity');
-    // Without a receipt, integrity should be no_receipt
     expect(payload.integrity).toBe('no_receipt');
   });
 
-  it('verify payload has recomputed_output_hash field', async () => {
+  it('verify payload has recomputed_output_hash as a BLAKE3 hex-64 string', async () => {
     await writeFixture(env.resultsDir, 'hash-task', '20260516T100000');
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
-    // FM-5: BLAKE3 hex-64 hashes are exactly 64 hex characters. A length check of
-    // > 0 would pass for a single character "x". Assert the full contract.
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     expect(typeof payload.recomputed_output_hash).toBe('string');
     expect(payload.recomputed_output_hash as string).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('verify payload has receipt_found: false when no receipts dir', async () => {
     await writeFixture(env.resultsDir, 'unreceipted', '20260516T100000');
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     expect(payload.receipt_found).toBe(false);
   });
 
   it('verify payload has result_file field with .json extension', async () => {
     await writeFixture(env.resultsDir, 'my-task', '20260516T100000');
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     expect(typeof payload.result_file).toBe('string');
     expect((payload.result_file as string).endsWith('.json')).toBe(true);
   });
 
   it('verify by filename also exits 0 with no_receipt', async () => {
     const fixture = await writeFixture(env.resultsDir, 'my-task', '20260516T100000');
-    const result = await runCli(
-      ['results', '--verify', fixture.name, '--format', 'json'],
-      env.tempDir
-    );
+    const result = await report(['--verify', fixture.name], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('ok');
-    const payload = parsed.payload as Record<string, unknown>;
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     expect(payload.integrity).toBe('no_receipt');
-  });
-
-  it('human verify output mentions the result file and hash', async () => {
-    await writeFixture(env.resultsDir, 'my-task', '20260516T100000');
-    const result = await runCli(['results', '--verify', '1'], env.tempDir);
-    expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    // Human output should show hash or result file name
-    expect(combined).toMatch(/hash|my-task|20260516/i);
   });
 });
 
 // ─── --limit flag ─────────────────────────────────────────────────────────────
 
-describe('wpm results --limit', () => {
+describe('evidence report --limit', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
+  });
 
   it('--limit 1 shows only 1 result when 3 exist', async () => {
     await writeFixture(env.resultsDir, 'task-a', '20260516T100000');
     await writeFixture(env.resultsDir, 'task-b', '20260516T110000');
     await writeFixture(env.resultsDir, 'task-c', '20260516T120000');
-    const result = await runCli(['results', '--limit', '1', '--format', 'json'], env.tempDir);
+    const result = await report(['--limit', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
-    expect(payload.count).toBe(3);     // total is still 3
-    expect(payload.showing).toBe(1);   // but only 1 shown
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
+    expect(payload.count).toBe(3);
+    expect(payload.showing).toBe(1);
     expect((payload.results as unknown[]).length).toBe(1);
   });
 
   it('--limit 0 shows 0 results but exits 0', async () => {
     await writeFixture(env.resultsDir, 'task-a', '20260516T100000');
-    const result = await runCli(['results', '--limit', '0', '--format', 'json'], env.tempDir);
+    const result = await report(['--limit', '0'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     expect(payload.showing).toBe(0);
     expect((payload.results as unknown[]).length).toBe(0);
   });
 
-  it('--limit with non-numeric value exits config_error (1)', async () => {
-    const result = await runCli(['results', '--limit', 'notanumber', '--format', 'json'], env.tempDir);
-    expect(result.exitCode).toBe(1);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
+  it('--limit with non-numeric value exits 2 (INVALID_INPUT — was config_error 1 pre-migration)', async () => {
+    const result = await report(['--limit', 'notanumber'], env.tempDir);
+    expect(result.exitCode).toBe(2);
+    expect(errorOf(result)?.code).toBe('INVALID_INPUT');
   });
 
   it('--limit exceeding total count returns all results', async () => {
     await writeFixture(env.resultsDir, 'task-a', '20260516T100000');
     await writeFixture(env.resultsDir, 'task-b', '20260516T110000');
-    const result = await runCli(['results', '--limit', '100', '--format', 'json'], env.tempDir);
+    const result = await report(['--limit', '100'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    const payload = parsed.payload as Record<string, unknown>;
+    const payload = (JSON.parse(result.stdout) as Record<string, unknown>).payload as Record<string, unknown>;
     expect(payload.count).toBe(2);
     expect(payload.showing).toBe(2);
   });
 });
 
-// ─── --verbose flag ───────────────────────────────────────────────────────────
+// ─── --verbose / --quiet flags ────────────────────────────────────────────────
 
-describe('wpm results --verbose', () => {
+describe('evidence report --verbose / --quiet', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
+  });
 
   it('--verbose exits 0 with saved results', async () => {
     await writeFixture(env.resultsDir, 'task-x', '20260516T100000');
-    const result = await runCli(['results', '--verbose'], env.tempDir);
+    const result = await report(['--verbose'], env.tempDir);
     expect(result.exitCode).toBe(0);
-  });
-
-  it('--verbose --format json exits 0', async () => {
-    await writeFixture(env.resultsDir, 'task-x', '20260516T100000');
-    const result = await runCli(['results', '--verbose', '--format', 'json'], env.tempDir);
-    expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('ok');
   });
 
   it('-v short alias works the same as --verbose', async () => {
     await writeFixture(env.resultsDir, 'task-x', '20260516T100000');
-    const result = await runCli(['results', '-v'], env.tempDir);
+    const result = await report(['-v'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
-});
-
-// ─── --quiet flag ─────────────────────────────────────────────────────────────
-
-describe('wpm results --quiet', () => {
-  let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
 
   it('--quiet exits 0 when results exist', async () => {
     await writeFixture(env.resultsDir, 'task-q', '20260516T100000');
-    const result = await runCli(['results', '--quiet'], env.tempDir);
+    const result = await report(['--quiet'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
 
   it('-q short alias works', async () => {
     await writeFixture(env.resultsDir, 'task-q', '20260516T100000');
-    const result = await runCli(['results', '-q'], env.tempDir);
+    const result = await report(['-q'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
 });
 
 // ─── --path flag ──────────────────────────────────────────────────────────────
 
-describe('wpm results --path', () => {
+describe('evidence report --path', () => {
   let env: TestEnv;
-  beforeEach(async () => { env = await createTestEnv(); });
-  afterEach(async () => { await env.cleanup(); });
-
-  it('--path with existing file exits 0', async () => {
-    const fixture = await writeFixture(env.resultsDir, 'path-task', '20260516T100000');
-    const result = await runCli(
-      ['results', '--path', fixture.filepath, '--format', 'json'],
-      env.tempDir
-    );
-    expect(result.exitCode).toBe(0);
+  beforeEach(async () => {
+    env = await createTestEnv();
+  });
+  afterEach(async () => {
+    await env.cleanup();
   });
 
-  it('--path with existing file returns cat payload', async () => {
+  it('--path with an existing file within cwd returns the cat payload', async () => {
     const fixture = await writeFixture(env.resultsDir, 'path-task', '20260516T100000');
-    const result = await runCli(
-      ['results', '--path', fixture.filepath, '--format', 'json'],
-      env.tempDir
-    );
-    expect(result.exitCode).toBe(0);
+    const result = await report(['--path', fixture.filepath], env.tempDir);
+    expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.status).toBe('ok');
     const payload = parsed.payload as Record<string, unknown>;
     expect(payload).toHaveProperty('cat');
-    const cat = payload.cat as Record<string, unknown>;
-    expect(cat.task).toBe('path-task');
+    expect((payload.cat as Record<string, unknown>).task).toBe('path-task');
   });
 
-  it('--path with non-existent file exits source_error (2)', async () => {
-    const result = await runCli(
-      ['results', '--path', '/nonexistent/path/to/result.json', '--format', 'json'],
-      env.tempDir
-    );
+  it('--path with non-existent file exits 2 (INVALID_INPUT)', async () => {
+    const result = await report(['--path', '/nonexistent/path/to/result.json'], env.tempDir);
     expect(result.exitCode).toBe(2);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
+    expect(errorOf(result)?.code).toBe('INVALID_INPUT');
   });
 
   it('-p short alias works for --path', async () => {
     const fixture = await writeFixture(env.resultsDir, 'alias-task', '20260516T100000');
-    const result = await runCli(
-      ['results', '-p', fixture.filepath, '--format', 'json'],
-      env.tempDir
-    );
-    expect(result.exitCode).toBe(0);
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('ok');
+    const result = await report(['-p', fixture.filepath], env.tempDir);
+    expect(result.exitCode, `stdout: ${result.stdout}`).toBe(0);
+    expect((JSON.parse(result.stdout) as Record<string, unknown>).status).toBe('ok');
   });
 });

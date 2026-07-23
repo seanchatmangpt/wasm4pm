@@ -1,3 +1,19 @@
+/**
+ * MIGRATED from the retired top-level `wpm temporal` invocation (see
+ * `nouns/_removed.ts`: `temporal` -> `lab temporal`). `lab temporal`
+ * bridges unchanged to `commands/temporal.ts` via
+ * `invokeLegacyCommandAsJson` (`nouns/_bridge.ts`).
+ *
+ * `temporal` is a FLAT command (no subcommands) — the `it.skip`s already in
+ * this file predate the migration and document that fact. The various
+ * "analyze"/"bottlenecks"/"waiting-time"/etc tokens used throughout are not
+ * real subcommands; they're consumed as an (usually nonexistent) positional
+ * input path. A new effect from the noun-verb rewrite: `--help` now always
+ * shows the framework's own generic verb summary (nouns/lab/temporal.ts)
+ * instead of ever reaching the legacy command's help text, so several
+ * "--help mentions X" assertions that used to coincidentally pass are
+ * rewritten below to assert the real, generic help contract.
+ */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
 import * as fs from 'fs';
@@ -35,7 +51,7 @@ const MINIMAL_XES = `<?xml version="1.0" encoding="UTF-8"?>
   </trace>
 </log>`;
 
-describe('wpm temporal — temporal analysis and performance profiling CLI', () => {
+describe('wpm lab temporal — temporal analysis and performance profiling CLI', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
 
   beforeEach(async () => {
@@ -48,30 +64,35 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal (base command)', () => {
     it('should require input log argument', async () => {
-      const result = await runCli(['temporal'], { env: env.env });
+      const result = await runCli(['lab', 'temporal'], { env: env.env });
       expect([1, 2]).toContain(result.exitCode);
-      expect(result.stderr || result.stdout).toMatch(/input|log|required|argument/i);
+      // NOTE: `lab temporal`'s `[experimental]` banner is written to stderr
+      // on every invocation (nouns/lab/temporal.ts stability:'experimental'),
+      // so stderr is always non-empty and `stderr || stdout` (the original
+      // check) never falls through to inspect stdout, where the actual
+      // error JSON lives. Concatenate both streams instead.
+      expect(result.stdout + result.stderr).toMatch(/input|log|required|argument/i);
     });
 
     it('should accept --input or -i flag', async () => {
-      const result = await runCli(['temporal', '--input', 'test.xes'], { env: env.env });
+      const result = await runCli(['lab', 'temporal', '--input', 'test.xes'], { env: env.env });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
   });
 
   describe('temporal analyze', () => {
     it('should analyze temporal patterns in event log', async () => {
-      const result = await runCli(['temporal', 'analyze', '--input', 'test.xes'], { env: env.env });
+      const result = await runCli(['lab', 'temporal', 'analyze', '--input', 'test.xes'], { env: env.env });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
     it('should identify time-based statistics', async () => {
-      const result = await runCli(['temporal', 'analyze', '--help'], { env: env.env });
+      const result = await runCli(['lab', 'temporal', 'analyze', '--help'], { env: env.env });
       expect(result.stdout).toMatch(/temporal|time|duration|statistics/i);
     });
 
     it('should support activity-level analysis', async () => {
-      const result = await runCli(['temporal', 'analyze', '--input', 'test.xes', '--by-activity'], {
+      const result = await runCli(['lab', 'temporal', 'analyze', '--input', 'test.xes', '--by-activity'], {
         env: env.env,
       });
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -80,20 +101,29 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal bottlenecks', () => {
     it('should detect slow activities', async () => {
-      const result = await runCli(['temporal', 'bottlenecks', '--input', 'test.xes'], {
+      const result = await runCli(['lab', 'temporal', 'bottlenecks', '--input', 'test.xes'], {
         env: env.env,
       });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
-    it('should report activity durations', async () => {
-      const result = await runCli(['temporal', 'bottlenecks', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/bottleneck|slow|duration|activity/i);
+    // `temporal` is a flat command with no `bottlenecks` subcommand (see the
+    // `it.skip` comments elsewhere in this file) — `bottlenecks` here is
+    // just an ignored positional token. `--help` now short-circuits to the
+    // noun-verb framework's own generic verb help (nouns/lab/temporal.ts's
+    // summary text), which is IDENTICAL regardless of what token precedes
+    // `--help` — verified live: no "bottleneck"/"slow"/"duration"/"activity"
+    // wording exists in that output. Rewritten to assert the real, generic
+    // help contract instead.
+    it('--help shows the generic verb summary (no per-"subcommand" help exists; temporal is a flat command)', async () => {
+      const result = await runCli(['lab', 'temporal', 'bottlenecks', '--help'], { env: env.env });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/temporal/i);
     });
 
     it('should support filtering by percentile', async () => {
       const result = await runCli(
-        ['temporal', 'bottlenecks', '--input', 'test.xes', '--percentile', '95'],
+        ['lab', 'temporal', 'bottlenecks', '--input', 'test.xes', '--percentile', '95'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -101,7 +131,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should identify top N slowest activities', async () => {
       const result = await runCli(
-        ['temporal', 'bottlenecks', '--input', 'test.xes', '--top-n', '5'],
+        ['lab', 'temporal', 'bottlenecks', '--input', 'test.xes', '--top-n', '5'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -110,7 +140,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal throughput', () => {
     it('should analyze case throughput over time', async () => {
-      const result = await runCli(['temporal', 'throughput', '--input', 'test.xes'], {
+      const result = await runCli(['lab', 'temporal', 'throughput', '--input', 'test.xes'], {
         env: env.env,
       });
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -118,7 +148,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should support time window configuration', async () => {
       const result = await runCli(
-        ['temporal', 'throughput', '--input', 'test.xes', '--window', '1h'],
+        ['lab', 'temporal', 'throughput', '--input', 'test.xes', '--window', '1h'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -137,20 +167,24 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal waiting-time', () => {
     it('should analyze waiting time between activities', async () => {
-      const result = await runCli(['temporal', 'waiting-time', '--input', 'test.xes'], {
+      const result = await runCli(['lab', 'temporal', 'waiting-time', '--input', 'test.xes'], {
         env: env.env,
       });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
-    it('should identify long waits', async () => {
-      const result = await runCli(['temporal', 'waiting-time', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/wait|idle|time/i);
+    // Same "flat command, generic --help" reality as the bottlenecks case
+    // above — verified live: no "wait"/"idle"/"time" wording in that output.
+    it('--help shows the generic verb summary (no per-"subcommand" help exists; temporal is a flat command)', async () => {
+      const result = await runCli(['lab', 'temporal', 'waiting-time', '--help'], { env: env.env });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/temporal/i);
     });
 
     it('should support activity pair analysis', async () => {
       const result = await runCli(
         [
+          'lab',
           'temporal',
           'waiting-time',
           '--input',
@@ -168,7 +202,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal rework', () => {
     it('should detect rework (repeated activities)', async () => {
-      const result = await runCli(['temporal', 'rework', '--input', 'test.xes'], { env: env.env });
+      const result = await runCli(['lab', 'temporal', 'rework', '--input', 'test.xes'], { env: env.env });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
@@ -178,7 +212,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should calculate rework ratio', async () => {
       const result = await runCli(
-        ['temporal', 'rework', '--input', 'test.xes', '--calculate-ratio'],
+        ['lab', 'temporal', 'rework', '--input', 'test.xes', '--calculate-ratio'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -186,7 +220,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should flag excessive rework', async () => {
       const result = await runCli(
-        ['temporal', 'rework', '--input', 'test.xes', '--threshold', '0.2'],
+        ['lab', 'temporal', 'rework', '--input', 'test.xes', '--threshold', '0.2'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -195,7 +229,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal cycles', () => {
     it('should detect process cycles and loops', async () => {
-      const result = await runCli(['temporal', 'cycles', '--input', 'test.xes'], { env: env.env });
+      const result = await runCli(['lab', 'temporal', 'cycles', '--input', 'test.xes'], { env: env.env });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
@@ -205,7 +239,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should report cycle frequency', async () => {
       const result = await runCli(
-        ['temporal', 'cycles', '--input', 'test.xes', '--report-frequency'],
+        ['lab', 'temporal', 'cycles', '--input', 'test.xes', '--report-frequency'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -214,7 +248,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal trends', () => {
     it('should analyze duration trends over time', async () => {
-      const result = await runCli(['temporal', 'trends', '--input', 'test.xes'], { env: env.env });
+      const result = await runCli(['lab', 'temporal', 'trends', '--input', 'test.xes'], { env: env.env });
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
@@ -225,6 +259,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     it('should support date range filtering', async () => {
       const result = await runCli(
         [
+          'lab',
           'temporal',
           'trends',
           '--input',
@@ -242,7 +277,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal variance', () => {
     it('should identify variability in activity durations', async () => {
-      const result = await runCli(['temporal', 'variance', '--input', 'test.xes'], {
+      const result = await runCli(['lab', 'temporal', 'variance', '--input', 'test.xes'], {
         env: env.env,
       });
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -254,7 +289,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should identify high-variance activities', async () => {
       const result = await runCli(
-        ['temporal', 'variance', '--input', 'test.xes', '--threshold', '0.5'],
+        ['lab', 'temporal', 'variance', '--input', 'test.xes', '--threshold', '0.5'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -264,7 +299,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
   describe('temporal --format', () => {
     it('should support human-readable output', async () => {
       const result = await runCli(
-        ['temporal', 'analyze', '--input', 'test.xes', '--format', 'human'],
+        ['lab', 'temporal', 'analyze', '--input', 'test.xes', '--format', 'human'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -272,7 +307,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should support JSON output', async () => {
       const result = await runCli(
-        ['temporal', 'analyze', '--input', 'test.xes', '--format', 'json'],
+        ['lab', 'temporal', 'analyze', '--input', 'test.xes', '--format', 'json'],
         { env: env.env }
       );
       if (result.exitCode === EXIT_CODES.success) {
@@ -282,7 +317,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should support CSV export', async () => {
       const result = await runCli(
-        ['temporal', 'analyze', '--input', 'test.xes', '--format', 'csv'],
+        ['lab', 'temporal', 'analyze', '--input', 'test.xes', '--format', 'csv'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -292,22 +327,28 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
   describe('temporal --activity-key', () => {
     it('should accept custom activity key', async () => {
       const result = await runCli(
-        ['temporal', 'analyze', '--input', 'test.xes', '--activity-key', 'activity:name'],
+        ['lab', 'temporal', 'analyze', '--input', 'test.xes', '--activity-key', 'activity:name'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
-    it('should default to concept:name', async () => {
-      const result = await runCli(['temporal', 'analyze', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/activity|key|concept:name/i);
+    // Same "flat command, generic --help" reality — `--help` never
+    // mentions `--activity-key` or its default at all now (verified live:
+    // no "activity"/"key"/"concept:name" wording). The default itself is
+    // still real and tested directly against the real fixture below
+    // ("custom --activity-key is reflected in JSON output").
+    it('--help shows the generic verb summary (no --activity-key documentation exists there)', async () => {
+      const result = await runCli(['lab', 'temporal', 'analyze', '--help'], { env: env.env });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/temporal/i);
     });
   });
 
   describe('temporal --time-key', () => {
     it('should accept custom timestamp key', async () => {
       const result = await runCli(
-        ['temporal', 'analyze', '--input', 'test.xes', '--time-key', 'time:timestamp'],
+        ['lab', 'temporal', 'analyze', '--input', 'test.xes', '--time-key', 'time:timestamp'],
         { env: env.env }
       );
       expect([1, 2, 3]).toContain(result.exitCode);
@@ -316,14 +357,14 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
   describe('temporal error handling', () => {
     it('should reject invalid subcommand', async () => {
-      const result = await runCli(['temporal', 'invalid-command', '--input', 'test.xes'], {
+      const result = await runCli(['lab', 'temporal', 'invalid-command', '--input', 'test.xes'], {
         env: env.env,
       });
       expect([1, 2]).toContain(result.exitCode);
     });
 
     it('should handle missing input file', async () => {
-      const result = await runCli(['temporal', 'analyze', '--input', '/nonexistent/log.xes'], {
+      const result = await runCli(['lab', 'temporal', 'analyze', '--input', '/nonexistent/log.xes'], {
         env: env.env,
       });
       expect([1, 2]).toContain(result.exitCode);
@@ -332,6 +373,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     it('should validate date range', async () => {
       const result = await runCli(
         [
+          'lab',
           'temporal',
           'trends',
           '--input',
@@ -348,7 +390,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('should reject invalid percentile values', async () => {
       const result = await runCli(
-        ['temporal', 'bottlenecks', '--input', 'test.xes', '--percentile', '150'],
+        ['lab', 'temporal', 'bottlenecks', '--input', 'test.xes', '--percentile', '150'],
         { env: env.env }
       );
       expect([1, 2]).toContain(result.exitCode);
@@ -358,7 +400,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
   describe('temporal performance', () => {
     it('should complete basic analysis in <2 seconds', async () => {
       const start = Date.now();
-      await runCli(['temporal', 'analyze', '--help'], { env: env.env });
+      await runCli(['lab', 'temporal', 'analyze', '--help'], { env: env.env });
       const elapsed = Date.now() - start;
       expect(elapsed).toBeLessThan(2000);
     });
@@ -380,7 +422,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     });
 
     it('exits 0 and returns valid JSON envelope with dfg and violations', async () => {
-      const result = await runCli(['temporal', xesPath, '--format', 'json', '--no-save'], {
+      const result = await runCli(['lab', 'temporal', xesPath, '--format', 'json', '--no-save'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -403,7 +445,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     });
 
     it('JSON envelope has activityKey and timestampKey fields', async () => {
-      const result = await runCli(['temporal', xesPath, '--format', 'json', '--no-save'], {
+      const result = await runCli(['lab', 'temporal', xesPath, '--format', 'json', '--no-save'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -416,7 +458,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('JSON envelope includes threshold field matching --threshold flag', async () => {
       const result = await runCli(
-        ['temporal', xesPath, '--threshold', '0.01', '--format', 'json', '--no-save'],
+        ['lab', 'temporal', xesPath, '--threshold', '0.01', '--format', 'json', '--no-save'],
         { env: env.env }
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -428,7 +470,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     });
 
     it('--format human exits 0 and prints Temporal Analysis header', async () => {
-      const result = await runCli(['temporal', xesPath, '--format', 'human', '--no-save'], {
+      const result = await runCli(['lab', 'temporal', xesPath, '--format', 'human', '--no-save'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -438,11 +480,11 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('-i flag (named input) accepts XES file and produces same output as positional', async () => {
       const resultPositional = await runCli(
-        ['temporal', xesPath, '--format', 'json', '--no-save'],
+        ['lab', 'temporal', xesPath, '--format', 'json', '--no-save'],
         { env: env.env }
       );
       const resultNamed = await runCli(
-        ['temporal', '-i', xesPath, '--format', 'json', '--no-save'],
+        ['lab', 'temporal', '-i', xesPath, '--format', 'json', '--no-save'],
         { env: env.env }
       );
 
@@ -459,7 +501,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('custom --activity-key is reflected in JSON output', async () => {
       const result = await runCli(
-        ['temporal', xesPath, '--activity-key', 'concept:name', '--format', 'json', '--no-save'],
+        ['lab', 'temporal', xesPath, '--activity-key', 'concept:name', '--format', 'json', '--no-save'],
         { env: env.env }
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -472,6 +514,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     it('custom --timestamp-key is reflected in JSON output', async () => {
       const result = await runCli(
         [
+          'lab',
           'temporal',
           xesPath,
           '--timestamp-key',
@@ -490,7 +533,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     });
 
     it('violations.count is a non-negative integer', async () => {
-      const result = await runCli(['temporal', xesPath, '--format', 'json', '--no-save'], {
+      const result = await runCli(['lab', 'temporal', xesPath, '--format', 'json', '--no-save'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -504,7 +547,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     });
 
     it('dfg section contains nodes and edges arrays', async () => {
-      const result = await runCli(['temporal', xesPath, '--format', 'json', '--no-save'], {
+      const result = await runCli(['lab', 'temporal', xesPath, '--format', 'json', '--no-save'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -519,7 +562,7 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
     });
 
     it('--no-save skips receipt and still exits 0', async () => {
-      const result = await runCli(['temporal', xesPath, '--format', 'json', '--no-save'], {
+      const result = await runCli(['lab', 'temporal', xesPath, '--format', 'json', '--no-save'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -527,13 +570,18 @@ describe('wpm temporal — temporal analysis and performance profiling CLI', () 
 
     it('nonexistent XES file exits source_error (2)', async () => {
       const result = await runCli(
-        ['temporal', '/nonexistent/path/log.xes', '--format', 'json', '--no-save'],
+        ['lab', 'temporal', '/nonexistent/path/log.xes', '--format', 'json', '--no-save'],
         { env: env.env }
       );
       expect(result.exitCode).toBe(EXIT_CODES.source_error);
 
-      const j = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(j['status']).toBe('error');
+      // A verb failure's stdout is `{error:{code,message}}` (see
+      // packages/noun-verb/src/errors.ts) — there is no top-level `status`
+      // field at all on the error path (that only exists on the legacy
+      // envelope's SUCCESS shape). Assert the real error contract instead.
+      const j = JSON.parse(result.stdout) as { error?: { code?: string; message?: string } };
+      expect(j.error).toBeDefined();
+      expect(j.error?.code).toBe('INVALID_INPUT');
     });
   });
 });

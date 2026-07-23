@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Rework Detection Integration Tests.
 //!
 //! Tests that verify rework (activity repetition within traces) is correctly

@@ -28,3 +28,5 @@ tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
+wasm4pm = { workspace = true }
+wasm4pm-cognition = { workspace = true }

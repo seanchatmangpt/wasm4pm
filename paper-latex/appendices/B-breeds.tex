@@ -1,0 +1,548 @@
+\subsection{ltl\_monitor}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/ltl\_monitor.rs}
+\paragraph{Mathematical model.} $\sigma,t\models \mathbf{G}\varphi \iff \forall k\ge t,\ \sigma,k\models\varphi.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{allen\_temporal}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/allen\_temporal.rs}
+\paragraph{Mathematical model.} $R_{ik}\leftarrow R_{ik}\cap(R_{ij}\circ R_{jk}).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if A meets B and B during C does not reduce A:C to the expected composition mask.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ctl\_check}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/ctl\_check.rs}
+\paragraph{Mathematical model.} $M,s\models \mathbf{EX}\varphi \iff \exists s'.\ (s,s')\in R \land M,s'\models\varphi.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the inference resolution tree yields a contradiction on a known-satisfiable bounded hypothesis.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{event\_calculus}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/event\_calculus.rs}
+\paragraph{Mathematical model.} $\operatorname{HoldsAt}(f,t) \leftarrow \exists e,t_0<t: \operatorname{Initiates}(e,f,t_0) \land \neg\operatorname{Clipped}(t_0,f,t).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{situation\_calculus}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/situation\_calculus.rs}
+\paragraph{Mathematical model.} $T_{situationcalculus}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{fuzzy\_logic}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/fuzzy\_logic.rs}
+\paragraph{Mathematical model.} $\mu_{A\cap B}(x)=\min(\mu_A(x),\mu_B(x)), \qquad \mu_{A\cup B}(x)=\max(\mu_A(x),\mu_B(x)).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the inference resolution tree yields a contradiction on a known-satisfiable bounded hypothesis.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{dempster\_shafer}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/dempster\_shafer.rs}
+\paragraph{Mathematical model.} $m_{12}(A) = \frac{\sum_{B\cap C=A}m_1(B)m_2(C)}{1-\sum_{B\cap C=\varnothing}m_1(B)m_2(C)}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{abductive\_ibe}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/abductive\_ibe.rs}
+\paragraph{Mathematical model.} $T_{abductiveibe}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{bayesian\_network}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/bayesian\_network.rs}
+\paragraph{Mathematical model.} $P(X_1,\ldots,X_n) = \prod_i P(X_i\mid Pa(X_i)).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{problog}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/problog.rs}
+\paragraph{Mathematical model.} $T_{problog}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{markov\_logic}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/markov\_logic.rs}
+\paragraph{Mathematical model.} $\Phi \vdash_{markovlogic} \psi \text{ evaluated by bounded inference graph}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the inference resolution tree yields a contradiction on a known-satisfiable bounded hypothesis.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{htn\_planning}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/htn\_planning.rs}
+\paragraph{Mathematical model.} $T_{htnplanning}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{partial\_order\_plan}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/partial\_order\_plan.rs}
+\paragraph{Mathematical model.} $T_{partialorderplan}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{contingent\_plan}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/contingent\_plan.rs}
+\paragraph{Mathematical model.} $T_{contingentplan}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{mdp}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/mdp.rs}
+\paragraph{Mathematical model.} $V_{k+1}(s) = \max_a \left[ R(s,a)+\gamma\sum_{s'}P(s'|s,a)V_k(s') \right].$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{pomdp}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/pomdp.rs}
+\paragraph{Mathematical model.} $b'(s') = \eta O(o|s',a)\sum_sP(s'|s,a)b(s).$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{strips}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/strips.rs}
+\paragraph{Mathematical model.} $T_{strips}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{gps}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/gps.rs}
+\paragraph{Mathematical model.} $T_{gps}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{asp}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/asp.rs}
+\paragraph{Mathematical model.} $T_{asp}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{abductive\_lp}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/abductive\_lp.rs}
+\paragraph{Mathematical model.} $T_{abductivelp}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{tableaux}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/tableaux.rs}
+\paragraph{Mathematical model.} $T_{tableaux}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{prolog}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/prolog.rs}
+\paragraph{Mathematical model.} $T_{prolog}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{clp}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/clp.rs}
+\paragraph{Mathematical model.} $T_{clp}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{sat\_cdcl}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/sat\_cdcl.rs}
+\paragraph{Mathematical model.} $\varphi=\bigwedge_i\bigvee_j\ell_{ij}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} FIXTURE\_EVIDENCED
+\begin{falsifier}
+Falsified if a known unsatisfiable CNF is admitted as satisfiable or a known satisfiable CNF is refused.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{csp\_ac3}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/csp\_ac3.rs}
+\paragraph{Mathematical model.} $D_i\leftarrow D_i\setminus \{x\in D_i:\nexists y\in D_j,\ C_{ij}(x,y)\}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{default\_logic}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/default\_logic.rs}
+\paragraph{Mathematical model.} $\Phi \vdash_{defaultlogic} \psi \text{ evaluated by bounded inference graph}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the inference resolution tree yields a contradiction on a known-satisfiable bounded hypothesis.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{circumscription}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/circumscription.rs}
+\paragraph{Mathematical model.} $T_{circumscription}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{frames\_inheritance}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/frames\_inheritance.rs}
+\paragraph{Mathematical model.} $T_{framesinheritance}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{description\_logic}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/description\_logic.rs}
+\paragraph{Mathematical model.} $\mathcal{I}\models C\sqsubseteq D \iff C^\mathcal{I}\subseteq D^\mathcal{I}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the inference resolution tree yields a contradiction on a known-satisfiable bounded hypothesis.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{belief\_merging}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/belief\_merging.rs}
+\paragraph{Mathematical model.} $T_{beliefmerging}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{script\_sam}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/script\_sam.rs}
+\paragraph{Mathematical model.} $T_{scriptsam}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{act\_r}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/act\_r.rs}
+\paragraph{Mathematical model.} $T_{actr}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{soar}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/soar.rs}
+\paragraph{Mathematical model.} $T_{soar}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{episodic\_memory}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/episodic\_memory.rs}
+\paragraph{Mathematical model.} $T_{episodicmemory}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ebl}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/ebl.rs}
+\paragraph{Mathematical model.} $T_{ebl}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ilp}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/ilp.rs}
+\paragraph{Mathematical model.} $T_{ilp}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} EXECUTION\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{version\_space}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/version\_space.rs}
+\paragraph{Mathematical model.} $T_{versionspace}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{analogy\_sme}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/analogy\_sme.rs}
+\paragraph{Mathematical model.} $T_{analogysme}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{rl\_symbolic}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/rl\_symbolic.rs}
+\paragraph{Mathematical model.} $Q(s,a) \leftarrow Q(s,a) + \alpha\left[r+\gamma\max_{a'}Q(s',a')-Q(s,a)\right].$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{qualitative\_reason}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/qualitative\_reason.rs}
+\paragraph{Mathematical model.} $T_{qualitativereason}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{naive\_physics}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/naive\_physics.rs}
+\paragraph{Mathematical model.} $T_{naivephysics}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{triz}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/triz.rs}
+\paragraph{Mathematical model.} $T_{triz}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{morphological}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/morphological.rs}
+\paragraph{Mathematical model.} $\Phi \vdash_{morphological} \psi \text{ evaluated by bounded inference graph}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the inference resolution tree yields a contradiction on a known-satisfiable bounded hypothesis.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{construction\_grammar}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/construction\_grammar.rs}
+\paragraph{Mathematical model.} $T_{constructiongrammar}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{meta\_reasoning}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/meta\_reasoning.rs}
+\paragraph{Mathematical model.} $T_{metareasoning}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{autoinstinct\_learning}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/autoinstinct\_learning.rs}
+\paragraph{Mathematical model.} $T_{autoinstinctlearning}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{autoinstinct\_neurosis}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/autoinstinct\_neurosis.rs}
+\paragraph{Mathematical model.} $T_{autoinstinctneurosis}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{autoinstinct\_semantics}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/autoinstinct\_semantics.rs}
+\paragraph{Mathematical model.} $T_{autoinstinctsemantics}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{autoinstinct\_vision}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/autoinstinct\_vision.rs}
+\paragraph{Mathematical model.} $T_{autoinstinctvision}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{cbr}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/cbr.rs}
+\paragraph{Mathematical model.} $T_{cbr}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{dendral}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/dendral.rs}
+\paragraph{Mathematical model.} $T_{dendral}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{eliza}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/frame.rs}
+\paragraph{Mathematical model.} $T_{eliza}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{hearsay}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/hearsay.rs}
+\paragraph{Mathematical model.} $T_{hearsay}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{mycin}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/production\_rules.rs}
+\paragraph{Mathematical model.} $T_{mycin}(S) \subseteq S \times S \text{ representing safe state transitions}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the generated artifact fails to map deterministically to the known receipt hash for the fixture input.
+\end{falsifier}
+
+\vspace{1em}\hrule\vspace{1em}
+\subsection{ocpm\_route\_discoverer}
+\paragraph{Implemented object.} \code{crates/wasm4pm-cognition/src/breeds/ocpm\_route\_discoverer.rs}
+\paragraph{Mathematical model.} $\mathcal{G}_{ocpmroutediscoverer} = (V, E), \ E \subseteq V \times V \text{ bounded by event count}.$
+\paragraph{Bounded execution claim.} Bounded to finite structure traversal. Assumes bounded input matrix or token graph.
+\paragraph{Receipt status.} TEST\_LOG\_RECEIPTED
+\begin{falsifier}
+Falsified if the discovered structural graph fails to replay the exact log fixture under structural equivalence.
+\end{falsifier}

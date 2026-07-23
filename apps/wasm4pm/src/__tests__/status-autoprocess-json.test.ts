@@ -1,9 +1,18 @@
 /**
- * JSON output coverage for `wpm status` and `wpm autoprocess`.
+ * JSON output coverage for `wpm system status` and `wpm lab autoprocess`.
+ *
+ * MIGRATED from the retired top-level `wpm status` / `wpm autoprocess`
+ * invocations (see `nouns/_removed.ts`: `status` -> `system status`,
+ * `autoprocess` -> `lab autoprocess`). Both bridge unchanged to
+ * `commands/status.ts` / `commands/autoprocess.ts` via
+ * `invokeLegacyCommandAsJson` (`nouns/_bridge.ts`) — the legacy
+ * `CommandResult` envelope (`{command,status,payload,...}`) is returned
+ * as-is as the verb's plain JSON result on success. `--format` is always
+ * forced to `json` by the bridge regardless of what's passed.
  *
  * Van der Aalst QA perspective:
- * - `wpm status --format json` must include wasmLoaded and algorithmCount
- * - `wpm autoprocess --cycles 1 --format json` must complete and exit 0
+ * - `wpm system status --format json` must include wasmLoaded and algorithmCount
+ * - `wpm lab autoprocess --cycles 1 --format json` must complete and exit 0
  *
  * Tests skip honestly when the WASM build does not export the required symbols
  * rather than fabricating a pass.
@@ -95,18 +104,18 @@ afterEach(async () => {
   }
 });
 
-// ─── wpm status --format json ─────────────────────────────────────────────────
+// ─── wpm system status --format json ──────────────────────────────────────────
 
-describe('wpm status --format json', () => {
+describe('wpm system status --format json', () => {
   it('exits 0 and returns valid JSON', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status', '--format', 'json']);
     expect(r.exitCode).toBe(0);
     const json = JSON.parse(r.stdout);
     expect(json).toBeDefined();
   });
 
   it('payload includes wasmLoaded: true', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status', '--format', 'json']);
     expect(r.exitCode).toBe(0);
     const json = JSON.parse(r.stdout);
     // JSON envelope: { status, command, payload, ... }
@@ -115,7 +124,7 @@ describe('wpm status --format json', () => {
   });
 
   it('payload includes algorithmCount >= 36', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status', '--format', 'json']);
     expect(r.exitCode).toBe(0);
     const json = JSON.parse(r.stdout);
     const payload = json.payload ?? json;
@@ -125,7 +134,7 @@ describe('wpm status --format json', () => {
   });
 
   it('payload includes memory section with heapUsed', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status', '--format', 'json']);
     expect(r.exitCode).toBe(0);
     const json = JSON.parse(r.stdout);
     const payload = json.payload ?? json;
@@ -134,11 +143,11 @@ describe('wpm status --format json', () => {
   });
 });
 
-// ─── wpm autoprocess --cycles 1 --format json ────────────────────────────────
+// ─── wpm lab autoprocess --cycles 1 --format json ─────────────────────────────
 
-describe('wpm autoprocess --cycles 1 --format json', () => {
+describe('wpm lab autoprocess --cycles 1 --format json', () => {
   it('exits 0 when autonomic_execute_cycle is available', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '1', '--format', 'json'], { cwd: tempDir });
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '1', '--format', 'json'], { cwd: tempDir });
 
     // Honest skip when the current WASM profile omits autonomic_execute_cycle.
     const wasmMissing = /autonomic_execute_cycle is not a function/i.test(r.stderr + r.stdout);
@@ -151,7 +160,7 @@ describe('wpm autoprocess --cycles 1 --format json', () => {
   });
 
   it('returns parseable JSON with cycles_run field', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '1', '--format', 'json'], { cwd: tempDir });
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '1', '--format', 'json'], { cwd: tempDir });
 
     const wasmMissing = /autonomic_execute_cycle is not a function/i.test(r.stderr + r.stdout);
     if (wasmMissing) {
@@ -168,7 +177,7 @@ describe('wpm autoprocess --cycles 1 --format json', () => {
   });
 
   it('--cycles 2 runs exactly 2 cycles', async () => {
-    const r = await runCli(['autoprocess', xesPath, '--cycles', '2', '--format', 'json'], { cwd: tempDir });
+    const r = await runCli(['lab', 'autoprocess', xesPath, '--cycles', '2', '--format', 'json'], { cwd: tempDir });
 
     const wasmMissing = /autonomic_execute_cycle is not a function/i.test(r.stderr + r.stdout);
     if (wasmMissing) {

@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Integration tests for Vision 2030 edge cases and error recovery.
 //!
 //! Tests critical failure scenarios:

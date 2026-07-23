@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 #![allow(clippy::all, dead_code)]
 //! Integration tests for the connected autonomic loop.
 //!

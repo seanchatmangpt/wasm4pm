@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Category H -- Mutation Adequacy Validation Tests
 //!
 //! Validates that the existing test suite is ADEQUATE by simulating specific

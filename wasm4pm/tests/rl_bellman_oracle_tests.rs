@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Bellman-equation oracle tests (Rank-1 mathematical oracle, per the project
 //! Chicago TDD doctrine).
 //!

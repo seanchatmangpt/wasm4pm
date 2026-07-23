@@ -803,3 +803,39 @@ describe('analogy_sme breed — paper fixture', () => {
     }
   });
 });
+
+describe('morphological breed — paper fixture', () => {
+  it('solves propulsive system configuration space', async () => {
+    const fixture = loadPaperFixture('morphological');
+    const result = (await fixtures.runBreed('morphological', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Morphological');
+    expect(typeof result.output.selected).toBe('string');
+  });
+});
+
+describe('triz breed — paper fixture', () => {
+  it('resolves engineering contradiction via matrix lookup', async () => {
+    const fixture = loadPaperFixture('triz');
+    const result = (await fixtures.runBreed('triz', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Triz');
+    expect(result.output.selected).toBe('principles=40,26');
+  });
+});
+
+describe('ocpm_route_discoverer breed — paper fixture', () => {
+  it('discovers routes for items and orders', async () => {
+    const fixture = loadPaperFixture('ocpm_route_discoverer');
+    const result = (await fixtures.runBreed('ocpm_route_discoverer', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('OcpmRouteDiscoverer');
+    
+    const facts = result.output.facts as Array<{ key: string; value: string }>;
+    const routeO1 = facts.find(f => f.key === 'route:o1');
+    const routeI1 = facts.find(f => f.key === 'route:i1');
+    expect(routeO1?.value).toBe(fixture.expected.routes['route:o1']);
+    expect(routeI1?.value).toBe(fixture.expected.routes['route:i1']);
+  });
+});
+

@@ -203,13 +203,26 @@ dependencies = [
 
 [[package]]
 name = "bcinr-logic"
-version = "26.4.22"
+version = "26.6.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99408a1bac0657713ecef7e9a723d3241feb5c603d8edefe663773cf903d9d0b"
+checksum = "f27f4bba1bbe5c5a5930ed0add9312a7f836eb29a5050e72f7c93184dd83ff59"
+
+[[package]]
+name = "bcinr-powl"
+version = "26.6.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6793aa6aee267c7f8c17e8b39dfd4c8536c08c3adcbcb1c7fe10f1dc73f8afb6"
+dependencies = [
+ "bcinr-logic",
+ "blake3",
+ "serde",
+ "serde_json",
+ "wasm4pm-compat",
+]
 
 [[package]]
 name = "bench-tools"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "blake3",
  "chrono",
@@ -1368,7 +1381,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "base64 0.21.7",
  "bincode",
@@ -1511,7 +1524,7 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocpq"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "chrono",
  "criterion",
@@ -1680,7 +1693,7 @@ dependencies = [
 
 [[package]]
 name = "prolog8"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "blake3",
  "criterion",
@@ -2504,7 +2517,7 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 
 [[package]]
 name = "tps-metrics"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2840,9 +2853,10 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "bcinr",
+ "bcinr-powl",
  "blake3",
  "chrono",
  "console_error_panic_hook",
@@ -2889,7 +2903,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2897,6 +2911,7 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
+ "criterion",
  "dialoguer",
  "git2",
  "indicatif",
@@ -2911,7 +2926,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cognition"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "blake3",
  "criterion",
@@ -2953,7 +2968,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-planner"
-version = "26.7.1"
+version = "26.7.6"
 dependencies = [
  "blake3",
  "prolog8",
@@ -2964,6 +2979,8 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "wasm4pm",
+ "wasm4pm-cognition",
  "wasm4pm-compat",
 ]
 

@@ -1,7 +1,30 @@
 /**
+ * `wpm social` was retired; the hard-break table (nouns/_removed.ts) forwards
+ * it to `wpm lab social`, an experimental-tagged bridge to this same
+ * `commands/social.ts` body (nouns/lab/social.ts). Confirmed live against the
+ * built CLI:
+ *   - A successful call returns the legacy `{command,status,payload,meta}`
+ *     envelope verbatim (bridge passthrough on the success path).
+ *   - A failing call is thrown as the framework's `{error:{code,message}}`
+ *     envelope instead — there is no more top-level `command`/`status` field
+ *     on an error result, and the legacy per-error code (e.g. a
+ *     config-error-specific code) collapses to the generic `INVALID_INPUT`
+ *     (see packages/noun-verb `_bridge.ts` classifyLegacyFailure). Exit
+ *     codes 1 and 2 both collapse to source_error (2) under the ERROR_CODE_MAP
+ *     mapping wpm supplies to the framework, so the old "config_error (1) for
+ *     bad --metric" distinction no longer holds.
+ *   - `lab` verbs print an `[experimental] ...` banner to stderr on every
+ *     invocation (writeExperimentalBanner) — present here as extra stderr
+ *     noise but never on stdout, so it doesn't affect JSON parsing.
+ *   - stdout is always a single JSON value regardless of the caller's own
+ *     `--format` flag (the bridge always forces `--format json --quiet`
+ *     internally), so the old `--format human` assertions that scraped
+ *     human-rendered text (e.g. "Social Network Mining" header) no longer
+ *     apply — the always-JSON-on-stdout contract wins.
+ *
  * social-cli.test.ts
  *
- * End-to-end CLI tests for `wpm social` — social network mining command.
+ * End-to-end CLI tests for `wpm lab social` (was: wpm social) — social network mining command.
  *
  * The social command supports three metrics:
  *   handover         — directed handover-of-work network (default)
@@ -108,9 +131,10 @@ const MINIMAL_XES_WITH_RESOURCES = `<?xml version="1.0" encoding="UTF-8"?>
 
 const SOCIAL_TEST_TIMEOUT_MS = 30_000;
 
-interface SocialEnvelope {
+/** Success shape: the bridge returns the legacy envelope verbatim. */
+interface SocialSuccessEnvelope {
   command: string;
-  status: 'ok' | 'error';
+  status: 'ok';
   exit_code: number;
   payload: {
     metric?: string;
@@ -119,12 +143,22 @@ interface SocialEnvelope {
       edges: Array<{ from: string; to: string; weight: number }>;
     };
     [key: string]: unknown;
-  } | null;
-  error?: { code: string; message: string };
+  };
 }
+
+/** Error shape: a bridged failure is thrown and reaches stdout as `{error:{...}}` only. */
+interface SocialErrorEnvelope {
+  error: { code: string; message: string };
+}
+
+type SocialEnvelope = SocialSuccessEnvelope | SocialErrorEnvelope;
 
 function parseEnvelope(stdout: string): SocialEnvelope {
   return JSON.parse(stdout) as SocialEnvelope;
+}
+
+function isError(env: SocialEnvelope): env is SocialErrorEnvelope {
+  return 'error' in env;
 }
 
 let tempDir: string;
@@ -150,18 +184,18 @@ afterAll(() => {
 
 describe('SN-1: --help exits 0 and describes the command', () => {
   it('wpm social --help exits 0', async () => {
-    const result = await runCli(['social', '--help'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
+    const result = await runCli(['lab', 'social', '--help'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
     expect(result.exitCode).toBe(EXIT_CODES.success);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('--help output mentions handover or network concept', async () => {
-    const result = await runCli(['social', '--help'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
+    const result = await runCli(['lab', 'social', '--help'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
     const combined = result.stdout + result.stderr;
     expect(combined.toLowerCase()).toMatch(/handover|network|social/);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('--help output mentions metric flag', async () => {
-    const result = await runCli(['social', '--help'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
+    const result = await runCli(['lab', 'social', '--help'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
     const combined = result.stdout + result.stderr;
     expect(combined.toLowerCase()).toMatch(/metric|network/);
   }, SOCIAL_TEST_TIMEOUT_MS);
@@ -173,34 +207,39 @@ describe('SN-1: --help exits 0 and describes the command', () => {
 
 describe('SN-2: no input is a structured error with exit 2', () => {
   it('wpm social with no arguments exits non-zero', async () => {
-    const result = await runCli(['social'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
+    const result = await runCli(['lab', 'social'], { timeout: SOCIAL_TEST_TIMEOUT_MS });
     expect(result.exitCode).not.toBe(EXIT_CODES.success);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('wpm social --format json with no input exits 2', async () => {
-    const result = await runCli(['social', '--format', 'json'], {
+    const result = await runCli(['lab', 'social', '--format', 'json'], {
       timeout: SOCIAL_TEST_TIMEOUT_MS,
     });
     expect(result.exitCode).toBe(EXIT_CODES.source_error);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
-  it('JSON error envelope has command=social when no input given', async () => {
-    const result = await runCli(['social', '--format', 'json'], {
+  it('JSON error envelope is the bare {error} shape (no top-level command/status)', async () => {
+    // Bridged failures never carry the legacy `command`/`status` fields —
+    // only `{error:{code,message}}` — see packages/noun-verb `output.ts`.
+    const result = await runCli(['lab', 'social', '--format', 'json'], {
       timeout: SOCIAL_TEST_TIMEOUT_MS,
     });
     const env = parseEnvelope(result.stdout);
-    expect(env.command).toBe('social');
-    expect(env.status).toBe('error');
+    expect(isError(env)).toBe(true);
+    expect('command' in env).toBe(false);
+    expect('status' in env).toBe(false);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('JSON error envelope has error.code and error.message', async () => {
-    const result = await runCli(['social', '--format', 'json'], {
+    const result = await runCli(['lab', 'social', '--format', 'json'], {
       timeout: SOCIAL_TEST_TIMEOUT_MS,
     });
     const env = parseEnvelope(result.stdout);
-    expect(env.error).toBeDefined();
-    expect(typeof env.error!.code).toBe('string');
-    expect(typeof env.error!.message).toBe('string');
+    expect(isError(env)).toBe(true);
+    if (isError(env)) {
+      expect(typeof env.error.code).toBe('string');
+      expect(typeof env.error.message).toBe('string');
+    }
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
@@ -210,14 +249,14 @@ describe('SN-2: no input is a structured error with exit 2', () => {
 
 describe('SN-3: nonexistent file exits 2', () => {
   it('-i nonexistent.xes exits 2 (source_error)', async () => {
-    const result = await runCli(['social', '-i', '/tmp/does-not-exist-wpm.xes', '--format', 'json'], {
+    const result = await runCli(['lab', 'social', '-i', '/tmp/does-not-exist-wpm.xes', '--format', 'json'], {
       timeout: SOCIAL_TEST_TIMEOUT_MS,
     });
     expect(result.exitCode).toBe(EXIT_CODES.source_error);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('nonexistent positional file exits 2', async () => {
-    const result = await runCli(['social', '/tmp/no-such-file-xyz.xes', '--format', 'json'], {
+    const result = await runCli(['lab', 'social', '/tmp/no-such-file-xyz.xes', '--format', 'json'], {
       timeout: SOCIAL_TEST_TIMEOUT_MS,
     });
     expect(result.exitCode).toBe(EXIT_CODES.source_error);
@@ -231,7 +270,7 @@ describe('SN-3: nonexistent file exits 2', () => {
 describe('SN-4: --metric handover is accepted', () => {
   it('--metric handover does not exit 1 (config_error)', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'handover', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--metric', 'handover', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -245,7 +284,7 @@ describe('SN-4: --metric handover is accepted', () => {
 describe('SN-5: --metric working-together is accepted', () => {
   it('--metric working-together does not exit 1 (config_error)', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'working-together', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--metric', 'working-together', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -259,23 +298,29 @@ describe('SN-5: --metric working-together is accepted', () => {
 // files; flag validation failures are always config errors.
 // ---------------------------------------------------------------------------
 
-describe('SN-6: invalid --metric exits 1 (config_error)', () => {
-  it('--metric invalid-network exits 1 (config_error)', async () => {
+describe('SN-6: invalid --metric exits 2 (source_error)', () => {
+  // Bridged failures collapse to the framework's generic INVALID_INPUT code,
+  // which wpm's ERROR_CODE_MAP maps to source_error (2) — the legacy
+  // config_error (1) vs source_error (2) distinction for this path no
+  // longer exists (confirmed live against the built CLI).
+  it('--metric invalid-network exits 2 (source_error), not 1', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'invalid-network', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--metric', 'invalid-network', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
-    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    expect(result.exitCode).toBe(EXIT_CODES.source_error);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('invalid metric error envelope names the invalid value', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'bogus-metric', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--metric', 'bogus-metric', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    expect(env.status).toBe('error');
-    expect(env.error!.message.toLowerCase()).toMatch(/bogus-metric|invalid.*metric|metric.*invalid/i);
+    expect(isError(env)).toBe(true);
+    if (isError(env)) {
+      expect(env.error.message.toLowerCase()).toMatch(/bogus-metric|invalid.*metric|metric.*invalid/i);
+    }
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
@@ -286,7 +331,7 @@ describe('SN-6: invalid --metric exits 1 (config_error)', () => {
 describe('SN-7: valid input + --format json produces parseable JSON', () => {
   it('--format json stdout is valid JSON', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect(() => parseEnvelope(result.stdout)).not.toThrow();
@@ -300,46 +345,48 @@ describe('SN-7: valid input + --format json produces parseable JSON', () => {
 describe('SN-8: JSON payload network structure', () => {
   it('payload.network has nodes array when command succeeds', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status === 'error') {
-      expect(env.error).toBeDefined();
+    if (isError(env)) {
       return;
     }
     expect(env.payload).not.toBeNull();
-    expect(env.payload!.network).toBeDefined();
-    expect(Array.isArray(env.payload!.network!.nodes)).toBe(true);
+    expect(env.payload.network).toBeDefined();
+    expect(Array.isArray(env.payload.network!.nodes)).toBe(true);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('payload.network has edges array when command succeeds', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status === 'error') {
-      expect(env.error).toBeDefined();
+    if (isError(env)) {
       return;
     }
-    expect(env.payload!.network).toBeDefined();
-    expect(Array.isArray(env.payload!.network!.edges)).toBe(true);
+    expect(env.payload.network).toBeDefined();
+    expect(Array.isArray(env.payload.network!.edges)).toBe(true);
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// SN-9: JSON payload has status field
+// SN-9: JSON envelope is always either the success shape or {error}
 // ---------------------------------------------------------------------------
 
-describe('SN-9: JSON envelope has status field', () => {
-  it('status is ok or error — never undefined', async () => {
+describe('SN-9: JSON envelope is always success or error shape, never ambiguous', () => {
+  it('envelope is either {command,status:"ok",payload,meta} or {error} — never undefined/malformed', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    expect(['ok', 'error']).toContain(env.status);
+    if (isError(env)) {
+      expect(typeof env.error.code).toBe('string');
+    } else {
+      expect(env.status).toBe('ok');
+    }
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
@@ -350,7 +397,7 @@ describe('SN-9: JSON envelope has status field', () => {
 describe('SN-10: valid input exits 0 (success) or 3 (WASM unavailable)', () => {
   it('social with valid XES exits 0 or 3', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
@@ -364,7 +411,7 @@ describe('SN-10: valid input exits 0 (success) or 3 (WASM unavailable)', () => {
 describe('SN-11: human output for valid input is non-empty', () => {
   it('--format human produces non-empty stdout or stderr', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'human', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'human', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const combined = result.stdout + result.stderr;
@@ -379,7 +426,7 @@ describe('SN-11: human output for valid input is non-empty', () => {
 describe('SN-12/SN-13: --resource-key and --activity-key are accepted', () => {
   it('--resource-key org:resource is accepted (no config_error)', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--resource-key', 'org:resource', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--resource-key', 'org:resource', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -387,7 +434,7 @@ describe('SN-12/SN-13: --resource-key and --activity-key are accepted', () => {
 
   it('--activity-key concept:name is accepted (no config_error)', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--activity-key', 'concept:name', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--activity-key', 'concept:name', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -398,13 +445,19 @@ describe('SN-12/SN-13: --resource-key and --activity-key are accepted', () => {
 // SN-14: JSON envelope command field is 'social'
 // ---------------------------------------------------------------------------
 
-describe('SN-14: JSON envelope command field', () => {
-  it('command field is social in success and error responses', async () => {
+describe('SN-14: JSON envelope command field (success path only)', () => {
+  it('command field is social on a successful response', async () => {
+    // The bridge only preserves the legacy `command` field on the success
+    // path (verbatim passthrough of the legacy envelope); an error result
+    // has no `command` field at all (see the SN-2 "bare {error} shape" test).
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
+    if (isError(env)) {
+      return;
+    }
     expect(env.command).toBe('social');
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
@@ -416,15 +469,14 @@ describe('SN-14: JSON envelope command field', () => {
 describe('SN-15: network edges have from, to, weight fields', () => {
   it('each edge in network.edges has from, to, and numeric weight', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status === 'error') {
-      expect(env.error).toBeDefined();
+    if (isError(env)) {
       return;
     }
-    const edges = env.payload!.network!.edges;
+    const edges = env.payload.network!.edges;
     for (const edge of edges) {
       expect(typeof edge.from).toBe('string');
       expect(typeof edge.to).toBe('string');
@@ -441,7 +493,7 @@ describe('SN-15: network edges have from, to, weight fields', () => {
 describe('SN-16: --no-save flag is accepted', () => {
   it('--no-save does not cause a config_error', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--no-save', '--format', 'json'],
+      ['lab', 'social', '-i', xesPath, '--no-save', '--format', 'json'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -455,7 +507,7 @@ describe('SN-16: --no-save flag is accepted', () => {
 describe('SN-17: --metric similar-task does not crash', () => {
   it('similar-task exits 0 or 3 (not a crash)', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
@@ -469,50 +521,50 @@ describe('SN-17: --metric similar-task does not crash', () => {
 describe('SN-18: working-together metric reflected in JSON payload', () => {
   it('payload.metric equals working-together when that metric is requested', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'working-together', '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--metric', 'working-together', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status === 'error') {
-      expect(env.error).toBeDefined();
+    if (isError(env)) {
       return;
     }
-    expect(env.payload!.metric).toBe('working-together');
+    expect(env.payload.metric).toBe('working-together');
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// SN-19: JSON envelope status is never missing
+// SN-19: A missing file always produces the {error} shape
 // ---------------------------------------------------------------------------
 
-describe('SN-19: JSON envelope status is always present', () => {
-  it('error envelope has status=error for missing file', async () => {
+describe('SN-19: a missing file always produces the {error} envelope shape', () => {
+  it('error envelope for missing file has no top-level status field', async () => {
     const result = await runCli(
-      ['social', '-i', '/no/such/file.xes', '--format', 'json'],
+      ['lab', 'social', '-i', '/no/such/file.xes', '--format', 'json'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    expect(env.status).toBe('error');
+    expect(isError(env)).toBe(true);
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// SN-20: Human output contains "Social Network Mining" header
+// SN-20: Human output — rewritten for the always-JSON-on-stdout contract
 // ---------------------------------------------------------------------------
 
-describe('SN-20: human output contains Social Network Mining header', () => {
-  it('social command human output includes Social Network Mining', async () => {
+describe('SN-20: stdout is JSON regardless of --format (was: human output header check)', () => {
+  it('social command stdout is JSON even with --format human (bridge always forces JSON)', async () => {
+    // Bridged verbs always append `--format json --quiet` internally
+    // (_bridge.ts's invokeLegacyCommandAsJson), so the legacy human
+    // ConsoleRenderer that used to print a "Social Network Mining" header
+    // never runs anymore — confirmed live against the built CLI. stdout is
+    // always the JSON envelope; a `--human` (framework-native) run would
+    // additionally get a generic key:value dump on stderr, but that's a
+    // different flag from the legacy `--format human`.
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'human', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'human', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
-    if (result.exitCode === EXIT_CODES.success) {
-      const combined = result.stdout + result.stderr;
-      expect(combined).toMatch(/Social Network Mining/i);
-    } else {
-      // WASM not available — just verify non-zero exit
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    }
+    expect(() => parseEnvelope(result.stdout)).not.toThrow();
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
@@ -521,18 +573,17 @@ describe('SN-20: human output contains Social Network Mining header', () => {
 // ---------------------------------------------------------------------------
 
 describe('SN-21: --format json with valid file produces payload', () => {
-  it('payload is an object (not null) when status is ok', async () => {
+  it('payload is an object (not null) on success', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status === 'ok') {
-      expect(env.payload).not.toBeNull();
-      expect(typeof env.payload).toBe('object');
-    } else {
-      expect(env.error).toBeDefined();
+    if (isError(env)) {
+      return;
     }
+    expect(env.payload).not.toBeNull();
+    expect(typeof env.payload).toBe('object');
   }, SOCIAL_TEST_TIMEOUT_MS);
 });
 
@@ -543,7 +594,7 @@ describe('SN-21: --format json with valid file produces payload', () => {
 describe('SN-22: default metric (handover) is used when no --metric given', () => {
   it('social without --metric flag exits 0 or 3', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
@@ -551,14 +602,13 @@ describe('SN-22: default metric (handover) is used when no --metric given', () =
 
   it('default metric in payload is handover', async () => {
     const result = await runCli(
-      ['social', '-i', xesPath, '--format', 'json', '--no-save'],
+      ['lab', 'social', '-i', xesPath, '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status === 'ok') {
-      expect(env.payload!.metric).toBe('handover');
-    } else {
-      expect(env.error).toBeDefined();
+    if (isError(env)) {
+      return;
     }
+    expect(env.payload.metric).toBe('handover');
   }, SOCIAL_TEST_TIMEOUT_MS);
 });

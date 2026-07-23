@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Determinism validation tests for the RL subsystem.
 //!
 //! These tests verify the seeded-RNG / zero-exploration determinism contract

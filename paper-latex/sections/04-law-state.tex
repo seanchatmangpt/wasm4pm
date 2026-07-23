@@ -1,0 +1,6 @@
+The Law-State framework dictates how events transition from unstructured observation to verified truth. Observations at the edge are inherently untrusted. They must pass through a strict "Court of Admissibility" defined by the capability schema. If an event log violates the structural typing expected by an algorithm, it is refused with a typed \code{MALFORMED\_EVENT\_LOG} receipt.
+
+Once admitted, the execution authority is sovereign. The WASM runtime linearly computes the result, completely isolated from host entropy. This guarantees that the execution calculus $f(\text{Binary\_Hash}, \text{Input\_Hash}, \text{Seed}, \text{Params}) \to (\text{Output}, \text{Receipt\_Hash})$ holds perfectly.
+
+\paragraph{Declared vs. Admitted Capability.} 
+A capability is merely declared if its Rust source code exists. It is admitted to the kernel only when its mathematical model is formalized, bounded, and verified against execution receipts. This monograph transitions all 115 capabilities from declared to admitted under the strict evidence bindings described in the appendices.

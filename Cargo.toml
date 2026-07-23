@@ -7,7 +7,7 @@ members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core",
 # git history (crates/wasm4pm-lsp @ pre-26.7.1) once lsp-max is vendored or published.
 
 [workspace.package]
-version = "26.7.1"
+version = "26.7.6"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
@@ -26,12 +26,13 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
+bcinr-powl = { version = "26.6.25", features = ["std"] }
 wasm4pm-compat = { version = "26.6", features = ["formats", "strict", "wasm4pm"] }
-wasm4pm = { version = "26.7.1", path = "wasm4pm", features = ["cloud"] }
-wasm4pm-cognition = { version = "26.7.1", path = "crates/wasm4pm-cognition" }
-prolog8 = { version = "26.7.1", path = "crates/prolog8" }
-miniml = { version = "26.7.1", path = "crates/miniml-core" }
-ocpq = { version = "26.7.1", path = "crates/ocpq" }
+wasm4pm = { version = "26.7.6", path = "wasm4pm", features = ["cloud"] }
+wasm4pm-cognition = { version = "26.7.6", path = "crates/wasm4pm-cognition" }
+prolog8 = { version = "26.7.6", path = "crates/prolog8" }
+miniml = { version = "26.7.6", path = "crates/miniml-core" }
+ocpq = { version = "26.7.6", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 criterion = { version = "0.5", features = ["html_reports"] }

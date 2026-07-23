@@ -1,4 +1,16 @@
 /**
+ * `wpm results` was retired; the hard-break table (nouns/_removed.ts) forwards
+ * it to `wpm evidence report`, which bridges unmodified to this same
+ * `commands/results.ts` body (nouns/evidence/report.ts). A successful bridged
+ * call returns the legacy `{command,status,payload,meta}` envelope verbatim
+ * (confirmed live against the built CLI); a failing one is thrown as the
+ * framework's `{error:{code,message}}` envelope instead, with the legacy
+ * `error.code` (e.g. `RESULT_NOT_FOUND`) collapsed to the generic
+ * `INVALID_INPUT` (see packages/noun-verb `_bridge.ts` classifyLegacyFailure)
+ * — exit codes are otherwise preserved (source_error paths still exit 2,
+ * and the bridge's `resolveResultExitCode` reads the legacy `exit_code`
+ * field on the success path, so `integrity: 'mismatch'` still exits 4).
+ *
  * results QoL (Quality-of-Life) tests — gaps not covered by results-cli.test.ts,
  * results-diff-verify.test.ts, or results-jtbd.test.ts.
  *
@@ -124,6 +136,13 @@ async function writeFixture(
 /**
  * Write a CommandReceipt JSON that matches the given output_hash into the
  * receipts directory. Returns the receipt run_id.
+ *
+ * Includes `observed_path.observed_ocel2` — `--verify`'s integrity check
+ * (commands/results.ts) reports `missing_ocel` instead of `ok` when a
+ * matched receipt lacks an embedded canonical OCEL slice, a pre-existing
+ * constraint unrelated to noun-verb migration but required for a matching
+ * receipt to actually resolve to `integrity: 'ok'` (confirmed live against
+ * the built CLI).
  */
 async function writeMatchingReceipt(
   receiptsDir: string,
@@ -139,6 +158,7 @@ async function writeMatchingReceipt(
     output_hash: outputHash,
     status: 'success',
     timestamp: new Date().toISOString(),
+    observed_path: { observed_ocel2: true },
   };
   const json = JSON.stringify(receipt, null, 2);
   await fs.writeFile(path.join(receiptsDir, `${runId}.json`), json, 'utf-8');
@@ -157,12 +177,12 @@ describe('G1 — wpm results: .wasm4pm/results directory does not exist', () => 
   afterEach(async () => { await env.cleanup(); });
 
   it('exits 0 when .wasm4pm/results does not exist', async () => {
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
 
   it('returns count:0 and empty results array when dir is missing', async () => {
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.status).toBe('ok');
@@ -172,16 +192,24 @@ describe('G1 — wpm results: .wasm4pm/results directory does not exist', () => 
     expect((payload.results as unknown[]).length).toBe(0);
   });
 
-  it('human output explains how to generate results when dir is missing', async () => {
-    const result = await runCli(['results'], env.tempDir);
+  it('output tells the practitioner where results will be written when dir is missing', async () => {
+    // Bridged verbs always force `--format json --quiet` regardless of the
+    // caller's own `--format` (see _bridge.ts's invokeLegacyCommandAsJson) —
+    // the legacy human ConsoleRenderer (which used to print "no saved
+    // results yet, run `wpm run` to create one") never executes anymore,
+    // per the framework's always-JSON-on-stdout contract. The equivalent
+    // practitioner-facing information is now the JSON payload's own
+    // `directory`/`count` fields, asserted below instead of scraping text.
+    const result = await runCli(['evidence', 'report'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    // Must mention the save-triggering commands so the practitioner knows what to do next
-    expect(combined).toMatch(/wpm run|Results are saved|No saved results/i);
+    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+    const payload = parsed.payload as Record<string, unknown>;
+    expect(payload.count).toBe(0);
+    expect(typeof payload.directory).toBe('string');
   });
 
   it('JSON output includes a directory field even when the dir is missing', async () => {
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
@@ -200,7 +228,7 @@ describe('G2 — wpm results --verify: human output is informative on not-found'
 
   it('human output for missing verify ref mentions the ref value', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--verify', 'phantom-ref'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', 'phantom-ref'], env.tempDir);
     expect(result.exitCode).toBe(2);
     const combined = result.stdout + result.stderr;
     // Must identify which ref was not found
@@ -209,7 +237,7 @@ describe('G2 — wpm results --verify: human output is informative on not-found'
 
   it('human output for missing verify ref with no saved results hints the practitioner', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--verify', '1'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(2);
     const combined = result.stdout + result.stderr;
     // Must give guidance when the entire results dir is empty
@@ -218,7 +246,7 @@ describe('G2 — wpm results --verify: human output is informative on not-found'
 
   it('human output for missing verify ref with saved results shows available range', async () => {
     await writeFixture(env.resultsDir, 'only-one', '20260516T100000');
-    const result = await runCli(['results', '--verify', '99'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '99'], env.tempDir);
     expect(result.exitCode).toBe(2);
     const combined = result.stdout + result.stderr;
     // Must tell practitioner the valid range
@@ -239,7 +267,7 @@ describe('G3 — wpm results --verify: matching receipt produces integrity=ok', 
     const outputHash = hashJsonString(resultJson);
     await writeMatchingReceipt(env.receiptsDir, outputHash);
 
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.status).toBe('ok');
@@ -256,7 +284,7 @@ describe('G3 — wpm results --verify: matching receipt produces integrity=ok', 
       command: 'predict',
     });
 
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
@@ -272,7 +300,7 @@ describe('G3 — wpm results --verify: matching receipt produces integrity=ok', 
     const outputHash = hashJsonString(resultJson);
     await writeMatchingReceipt(env.receiptsDir, outputHash, { command: 'predict' });
 
-    const result = await runCli(['results', '--verify', '1'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const combined = result.stdout + result.stderr;
     // Human output must show the hash value (64 hex chars or at least a 32-char prefix)
@@ -302,7 +330,7 @@ describe('G4 — wpm results --verify: tampered payload produces hash mismatch',
     resultData['tampered'] = true;
     await fs.writeFile(filepath, JSON.stringify({ ...parsed, result: resultData }, null, 2), 'utf-8');
 
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1', '--format', 'json'], env.tempDir);
     // partial_failure = 4
     expect(result.exitCode).toBe(4);
   });
@@ -318,7 +346,7 @@ describe('G4 — wpm results --verify: tampered payload produces hash mismatch',
     (parsedFile.result as Record<string, unknown>)['injected'] = 'evil';
     await fs.writeFile(filepath, JSON.stringify(parsedFile, null, 2), 'utf-8');
 
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(4);
     const parsedOut = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsedOut.status).toBe('ok'); // the operation itself succeeded
@@ -336,7 +364,7 @@ describe('G4 — wpm results --verify: tampered payload produces hash mismatch',
     (parsedFile.result as Record<string, unknown>)['extra'] = 42;
     await fs.writeFile(filepath, JSON.stringify(parsedFile, null, 2), 'utf-8');
 
-    const result = await runCli(['results', '--verify', '1'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1'], env.tempDir);
     expect(result.exitCode).toBe(4);
     const combined = result.stdout + result.stderr;
     expect(combined).toMatch(/FAIL|mismatch/i);
@@ -353,7 +381,7 @@ describe('G4 — wpm results --verify: tampered payload produces hash mismatch',
     (parsedFile.result as Record<string, unknown>)['delta'] = 999;
     await fs.writeFile(filepath, JSON.stringify(parsedFile, null, 2), 'utf-8');
 
-    const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(4);
     const parsedOut = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsedOut.payload as Record<string, unknown>;
@@ -377,7 +405,7 @@ describe('G5 — wpm results --diff: JSON payload structure', () => {
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'heuristic-run', '20260516T110000', { fitness: 0.91 });
 
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--diff', '1,2', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.status).toBe('ok');
@@ -394,7 +422,7 @@ describe('G5 — wpm results --diff: JSON payload structure', () => {
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'task-right', '20260516T110000');
 
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--diff', '1,2', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
@@ -409,7 +437,7 @@ describe('G5 — wpm results --diff: JSON payload structure', () => {
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'algo-b', '20260516T110000');
 
-    const result = await runCli(['results', '--diff', '1,2', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--diff', '1,2', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.command).toBe('results');
@@ -433,35 +461,49 @@ describe('G6 — wpm results --diff: human output quality', () => {
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'second-algo', '20260516T110000');
 
-    const result = await runCli(['results', '--diff', '1,2'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--diff', '1,2'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const combined = result.stdout + result.stderr;
     // Both filenames (containing the task slug) must appear in human output
     expect(combined).toMatch(/first-algo|second-algo/);
   });
 
-  it('human diff output includes a winner column header', async () => {
+  // These two tests used to assert on the legacy human-readable diff table
+  // (a "Winner" column, percentage-formatted fitness). Bridged verbs always
+  // force `--format json --quiet` (_bridge.ts's invokeLegacyCommandAsJson),
+  // so that ConsoleRenderer never runs anymore, per the framework's
+  // always-JSON-on-stdout contract — the equivalent information now lives
+  // in the JSON payload's `diff.fitness_a`/`diff.fitness_b` fields.
+
+  it('diff JSON payload reports which side has the higher fitness', async () => {
     await writeFixture(env.resultsDir, 'run-a', '20260516T100000', { fitness: 0.72 });
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'run-b', '20260516T110000', { fitness: 0.91 });
 
-    const result = await runCli(['results', '--diff', '1,2'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--diff', '1,2', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    // The diff table has a Winner column
-    expect(combined).toMatch(/Winner|#A|#B/i);
+    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+    const payload = parsed.payload as Record<string, unknown>;
+    const diff = payload.diff as Record<string, unknown>;
+    expect(typeof diff.fitness_a).toBe('number');
+    expect(typeof diff.fitness_b).toBe('number');
+    expect(diff.fitness_a).not.toBe(diff.fitness_b);
   });
 
-  it('human diff output includes fitness comparison when both results have fitness', async () => {
+  it('diff JSON payload carries both fitness values as fractions in [0,1]', async () => {
     await writeFixture(env.resultsDir, 'low-fit', '20260516T100000', { fitness: 0.72 });
     await new Promise((r) => setTimeout(r, 30));
     await writeFixture(env.resultsDir, 'high-fit', '20260516T110000', { fitness: 0.96 });
 
-    const result = await runCli(['results', '--diff', '1,2'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--diff', '1,2', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    const combined = result.stdout + result.stderr;
-    // Must show percentage fitness values
-    expect(combined).toMatch(/\d+%/);
+    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+    const payload = parsed.payload as Record<string, unknown>;
+    const diff = payload.diff as Record<string, unknown>;
+    for (const f of [diff.fitness_a as number, diff.fitness_b as number]) {
+      expect(f).toBeGreaterThanOrEqual(0);
+      expect(f).toBeLessThanOrEqual(1);
+    }
   });
 });
 
@@ -474,22 +516,26 @@ describe('G7 — wpm results --cat: actionable not-found error', () => {
 
   it('--cat on empty dir exits source_error (2)', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--cat', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--cat', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(2);
   });
 
-  it('--cat not-found JSON error has RESULT_NOT_FOUND code', async () => {
+  it('--cat not-found JSON error has INVALID_INPUT code', async () => {
+    // Bridged failure: the legacy `RESULT_NOT_FOUND` code is normalized to
+    // the framework's generic INVALID_INPUT by _bridge.ts's
+    // classifyLegacyFailure — there is no longer a top-level `status` field
+    // on an error result, only `{error:{code,message}}`.
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--cat', '1', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--cat', '1', '--format', 'json'], env.tempDir);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-    expect(parsed.status).toBe('error');
     const error = parsed.error as Record<string, unknown>;
-    expect(error.code).toBe('RESULT_NOT_FOUND');
+    expect(error.code).toBe('INVALID_INPUT');
+    expect(error.message).toMatch(/No results saved yet/i);
   });
 
   it('--cat human error message mentions "No results saved yet" when dir is empty', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--cat', '5'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--cat', '5'], env.tempDir);
     expect(result.exitCode).toBe(2);
     const combined = result.stdout + result.stderr;
     expect(combined).toMatch(/No results saved yet/i);
@@ -497,7 +543,7 @@ describe('G7 — wpm results --cat: actionable not-found error', () => {
 
   it('--cat human error message shows available range when some results exist', async () => {
     await writeFixture(env.resultsDir, 'one-task', '20260516T100000');
-    const result = await runCli(['results', '--cat', '99'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--cat', '99'], env.tempDir);
     expect(result.exitCode).toBe(2);
     const combined = result.stdout + result.stderr;
     // Must tell the practitioner what indexes are valid
@@ -514,14 +560,14 @@ describe('G8 — wpm results --format json: always valid JSON', () => {
 
   it('--format json output is valid JSON even when dir is completely absent', async () => {
     // No resultsDir created at all
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
   it('--format json output has the canonical envelope shape (command, status, payload, meta)', async () => {
     await fs.mkdir(env.resultsDir, { recursive: true });
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.command).toBe('results');
@@ -536,7 +582,7 @@ describe('G8 — wpm results --format json: always valid JSON', () => {
 
   it('--format json payload includes directory, count, showing, and results array', async () => {
     await writeFixture(env.resultsDir, 'sample', '20260516T100000');
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
@@ -548,7 +594,7 @@ describe('G8 — wpm results --format json: always valid JSON', () => {
 
   it('each result entry in the JSON list has index, name, filepath, savedAt, and task', async () => {
     await writeFixture(env.resultsDir, 'verify-shape', '20260516T100000');
-    const result = await runCli(['results', '--format', 'json'], env.tempDir);
+    const result = await runCli(['evidence', 'report', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;

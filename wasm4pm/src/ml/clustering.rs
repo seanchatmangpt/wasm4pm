@@ -1,7 +1,7 @@
 //! Nanosecond Clustering Family — branchless K-Means for process mining.
 #![allow(clippy::needless_range_loop)] // branchless argmin: index carries centroid identity
 
-use crate::ml::classification::extract_features;
+use crate::ml::classification::{extract_features, normalize_features};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -36,7 +36,9 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
         }));
     }
 
-    let result = kmeans_internal(&features, K_CLUSTERS);
+    // Mixed magnitudes (seconds vs counts) — min-max normalize before distances.
+    let normalized = normalize_features(&features, &features);
+    let result = kmeans_internal(&normalized, K_CLUSTERS);
 
     // SAFETY: to_js_str required here; to_js(&json!()) silently returns {} on wasm32.
     crate::utilities::to_js_str(&json!({
@@ -54,11 +56,11 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
 ///
 /// Contains the discovered centroids, cluster assignments for each input feature,
 /// and performance metrics like inertia and silhouette score.
-pub struct KmeansResult {
+pub struct KmeansResult<const D: usize> {
     /// The number of clusters discovered.
     pub k: usize,
     /// The centroids of the discovered clusters.
-    pub centroids: Vec<[f64; 2]>,
+    pub centroids: Vec<[f64; D]>,
     /// Cluster index assigned to each input feature.
     pub assignments: Vec<usize>,
     /// Within-cluster sum of squares (WCSS / inertia). A measure of cluster tightness.
@@ -69,17 +71,17 @@ pub struct KmeansResult {
     pub iterations: usize,
 }
 
-/// Branchless K-Means implementation on 2-D points.
+/// Branchless K-Means implementation on `D`-dimensional points.
 ///
 /// Convergence is deterministic for identical input. `k` is clamped to `min(k, n)`.
 /// This implementation uses branchless arithmetic for the assignment step to ensure
 /// high performance.
-pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult {
+pub fn kmeans_internal<const D: usize>(features: &[[f64; D]], k_request: usize) -> KmeansResult<D> {
     let n = features.len();
     let k = k_request.clamp(1, n);
 
     // Initialize centroids evenly spaced across the input
-    let mut centroids = vec![[0.0, 0.0]; k];
+    let mut centroids = vec![[0.0; D]; k];
     for i in 0..k {
         centroids[i] = features[i * (n / k)];
     }
@@ -99,7 +101,11 @@ pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult 
 
             for j in 0..k {
                 let c = centroids[j];
-                let dist = (f[0] - c[0]) * (f[0] - c[0]) + (f[1] - c[1]) * (f[1] - c[1]);
+                let mut dist = 0.0;
+                for d in 0..D {
+                    let diff = f[d] - c[d];
+                    dist += diff * diff;
+                }
                 // Branchless argmin: select j when dist < best_dist, else keep best_c.
                 let is_better = (dist < best_dist) as usize;
                 best_c = j * is_better + best_c * (1 - is_better);
@@ -119,21 +125,23 @@ pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult 
         // Update step — accumulate per-cluster sums then divide.
         // BUGFIX: previously `centroids` was divided by counts without ever
         // receiving the new sums, so centroids never moved past the seed values.
-        let mut sums = vec![[0.0f64, 0.0f64]; k];
+        let mut sums = vec![[0.0f64; D]; k];
         let mut counts = vec![0usize; k];
 
         for i in 0..n {
             let c = assignments[i];
-            sums[c][0] += features[i][0];
-            sums[c][1] += features[i][1];
+            for d in 0..D {
+                sums[c][d] += features[i][d];
+            }
             counts[c] += 1;
         }
 
         for j in 0..k {
             if counts[j] > 0 {
                 let cnt = counts[j] as f64;
-                centroids[j][0] = sums[j][0] / cnt;
-                centroids[j][1] = sums[j][1] / cnt;
+                for d in 0..D {
+                    centroids[j][d] = sums[j][d] / cnt;
+                }
             }
             // Empty cluster: keep prior centroid (avoids collapse to origin).
         }
@@ -143,9 +151,10 @@ pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult 
     let mut inertia = 0.0f64;
     for i in 0..n {
         let c = centroids[assignments[i]];
-        let dx = features[i][0] - c[0];
-        let dy = features[i][1] - c[1];
-        inertia += dx * dx + dy * dy;
+        for d in 0..D {
+            let diff = features[i][d] - c[d];
+            inertia += diff * diff;
+        }
     }
 
     let silhouette = silhouette_score(features, &assignments, k);
@@ -162,7 +171,7 @@ pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult 
 
 /// Mean silhouette score over all samples. Returns `0.0` when `k < 2` or any
 /// cluster has fewer than 2 members (silhouette is undefined for singletons).
-fn silhouette_score(features: &[[f64; 2]], assignments: &[usize], k: usize) -> f64 {
+fn silhouette_score<const D: usize>(features: &[[f64; D]], assignments: &[usize], k: usize) -> f64 {
     let n = features.len();
     if k < 2 || n <= k {
         return 0.0;
@@ -198,9 +207,12 @@ fn silhouette_score(features: &[[f64; 2]], assignments: &[usize], k: usize) -> f
             if i == j {
                 continue;
             }
-            let dx = features[i][0] - features[j][0];
-            let dy = features[i][1] - features[j][1];
-            let d = (dx * dx + dy * dy).sqrt();
+            let mut sq = 0.0;
+            for dim in 0..D {
+                let diff = features[i][dim] - features[j][dim];
+                sq += diff * diff;
+            }
+            let d = sq.sqrt();
             let c = assignments[j];
             if c == own {
                 sum_intra += d;

@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.7.1",
+  "version": "26.7.6",
   "description": "wasm4pm \u2014 High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -20,10 +20,14 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "pretest": "tsc -p tsconfig.tests.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "vitest bench --run",
     "lint": "tsc --noEmit",
+    "typecheck:scripts": "tsc --noEmit -p tsconfig.scripts.json",
+    "typecheck:tests": "tsc -p tsconfig.tests.json",
+    "gen:docs": "tsx scripts/gen-cli-docs.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -34,6 +38,7 @@
     "@wasm4pm/engine": "workspace:*",
     "wasm4pm": "workspace:*",
     "@wasm4pm/ml": "workspace:*",
+    "@wasm4pm/noun-verb": "workspace:*",
     "@wasm4pm/observability": "workspace:*",
     "@wasm4pm/planner": "workspace:*",
     "@wasm4pm/supabase": "workspace:*",
@@ -47,6 +52,7 @@
     "@faker-js/faker": "^10.4.0",
     "@types/node": "^20.10.0",
     "@wasm4pm/testing": "workspace:*",
+    "citty-test-utils": "^0.1.0",
     "typescript": "^5.3.3",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "^1.1.0"

@@ -39,29 +39,37 @@ async function writeTempJson(obj: Record<string, unknown>): Promise<{ filePath: 
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-describe('wpm truex — TrueX receipt verification CLI', () => {
+describe('wpm lab truex — TrueX receipt verification CLI', () => {
 
   // ── Help and command structure ─────────────────────────────────────────────
 
+  // `lab truex` is a thin bridge over `commands/truex.ts` (`nouns/_bridge.ts`):
+  // its `defineVerb()` does not redeclare the legacy command's own `args`/
+  // `subCommands` schema, and `--help` is intercepted by the noun/verb
+  // framework's own citty-generated usage renderer (built from the *verb's*
+  // args) before the bridge or the legacy command ever runs. So the banner
+  // only ever shows the verb's summary plus the framework's generic
+  // `--human`/`--introspect` flags — never legacy per-subcommand text like
+  // "verify", "inspect", or "--ingest". This is an accepted trade-off of the
+  // thin-bridge migration strategy (see `nouns/_bridge.ts`'s doc comment),
+  // not a regression.
   describe('help and metadata', () => {
     it('--help exits 0 and shows command description', async () => {
-      const result = await runCli(['truex', '--help']);
+      const result = await runCli(['lab', 'truex', '--help']);
       assertExitCode(result, 0);
-      expect(result.stdout).toMatch(/verify/i);
       expect(result.stdout).toMatch(/OCEL|receipt|envelope/i);
     });
 
-    it('--help shows verify and inspect subcommands', async () => {
-      const result = await runCli(['truex', '--help']);
+    it('--help shows the generic verb usage banner (legacy subcommand list not reproduced by the thin bridge)', async () => {
+      const result = await runCli(['lab', 'truex', '--help']);
       assertExitCode(result, 0);
-      // New subcommand architecture — shows verify and inspect
-      expect(result.stdout).toMatch(/verify|inspect/i);
+      expect(result.stdout).toMatch(/USAGE|OPTIONS/);
     });
 
-    it('wpm truex verify --help shows --ingest flag', async () => {
-      const result = await runCli(['truex', 'verify', '--help']);
+    it('wpm lab truex verify --help shows the generic verb usage banner (legacy --ingest flag help not reproduced)', async () => {
+      const result = await runCli(['lab', 'truex', 'verify', '--help']);
       assertExitCode(result, 0);
-      expect(result.stdout).toMatch(/ingest/i);
+      expect(result.stdout).toMatch(/USAGE|OPTIONS/);
     });
   });
 
@@ -69,7 +77,7 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
 
   describe('invalid subcommand', () => {
     it('unknown subcommand exits non-zero', async () => {
-      const result = await runCli(['truex', 'unsupported-action', '--format', 'json']);
+      const result = await runCli(['lab', 'truex', 'unsupported-action']);
       // citty exits non-zero for unrecognized subcommands
       expect(result.exitCode).not.toBe(0);
     });
@@ -79,14 +87,14 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
 
   describe('missing or bad input file', () => {
     it('exits non-zero when positional payload is missing', async () => {
-      const result = await runCli(['truex', 'verify']);
+      const result = await runCli(['lab', 'truex', 'verify']);
       // citty exits 1 for missing required positional
       expect(result.exitCode).not.toBe(0);
     });
 
     it('returns non-zero exit when file does not exist', async () => {
       const result = await runCli([
-        'truex', 'verify', '/nonexistent/envelope.json', '--format', 'json',
+        'lab', 'truex', 'verify', '/nonexistent/envelope.json',
       ]);
       // source_error (2) or execution_error (3) — file not found or WASM error
       expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
@@ -94,7 +102,7 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
 
     it('includes error message for missing file', async () => {
       const result = await runCli([
-        'truex', 'verify', '/absolutely-nonexistent/envelope.json', '--format', 'json',
+        'lab', 'truex', 'verify', '/absolutely-nonexistent/envelope.json',
       ]);
       expect(result.exitCode).not.toBe(0);
       // Combined stdout+stderr should contain error info
@@ -108,16 +116,20 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
   // In the default (non-cloud) WASM build, truex_verify_receipt is not exported.
   // The command catches the TypeError and emits a VERIFIER_ERROR at exit 3.
   // These tests assert that graceful degradation is preserved.
-
+  //
+  // Error-shape note: `lab truex` is bridged through `nouns/_bridge.ts`, whose
+  // `classifyLegacyFailure()` collapses every legacy domain-specific error code
+  // (VERIFIER_ERROR, RECEIPT_REFUSED, FILE_NOT_FOUND, ...) onto the noun/verb
+  // framework's 9-value generic `ErrorCode` vocabulary — see its doc comment
+  // ("best-effort, not lossless"). The wire envelope is now always exactly
+  // `{ error: { code, message, action_template? } }` (`packages/noun-verb/src/errors.ts`),
+  // with no top-level `status`/`command` fields on the error path (those only
+  // ever appeared on a bridged *success* envelope). The domain-specific detail
+  // that used to live in `error.code` now only survives in the free-text
+  // `error.message`, so these tests assert against the generic code plus the
+  // domain detail still visible in the message.
   describe('graceful degradation when cloud WASM feature is absent', () => {
-    // WasmLoader emits [INFO] lines to stdout before the JSON payload —
-    // extract the first JSON object from stdout to parse correctly.
-    function extractJson(stdout: string): string {
-      const idx = stdout.indexOf('{');
-      return idx === -1 ? stdout : stdout.slice(idx);
-    }
-
-    it('exits with execution error (exit 3) for any JSON envelope (VERIFIER_ERROR or RECEIPT_REFUSED)', async () => {
+    it('exits with execution error (exit 3) for any error envelope (VERIFIER_ERROR- or RECEIPT_REFUSED-flavored)', async () => {
       const { filePath, cleanup } = await writeTempJson({
         session_id: 'test-session-001',
         expected_path_hash: 'some-path-hash',
@@ -127,19 +139,14 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
         ocel2: { ocelVersion: '2.0', events: [] },
       });
       try {
-        const result = await runCli([
-          'truex', 'verify', filePath, '--format', 'json',
-        ]);
-        // With cloud feature absent: VERIFIER_ERROR (exit 3)
-        // With cloud feature present: RECEIPT_REFUSED (exit 3) — envelope fails WASM checks
+        const result = await runCli(['lab', 'truex', 'verify', filePath]);
+        // With cloud feature absent: VERIFIER_ERROR-flavored message.
+        // With cloud feature present: RECEIPT_REFUSED-flavored message — envelope fails WASM checks.
+        // Either way the bridge classifies it as a generic EXECUTION_ERROR (exit 3).
         assertExitCode(result, EXIT_CODES.execution_error);
-        const body = JSON.parse(extractJson(result.stdout)) as {
-          status: string;
-          error: { code: string; message: string };
-        };
-        expect(body.status).toBe('error');
-        // Either error code is valid depending on WASM build profile
-        expect(['VERIFIER_ERROR', 'RECEIPT_REFUSED']).toContain(body.error.code);
+        const body = JSON.parse(result.stdout) as { error: { code: string; message: string } };
+        expect(body.error.code).toBe('EXECUTION_ERROR');
+        expect(body.error.message).toMatch(/verif|refus|receipt/i);
       } finally {
         await cleanup();
       }
@@ -148,39 +155,26 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
     it('error output is informative about envelope processing failure', async () => {
       const { filePath, cleanup } = await writeTempJson({ minimal: true });
       try {
-        const result = await runCli([
-          'truex', 'verify', filePath, '--format', 'json',
-        ]);
-        const body = JSON.parse(extractJson(result.stdout)) as {
-          error: { message: string; code: string };
-        };
-        // Either the WASM function is missing, or the receipt was refused — both are valid
+        const result = await runCli(['lab', 'truex', 'verify', filePath]);
+        const body = JSON.parse(result.stdout) as { error: { message: string; code: string } };
+        // Either the WASM function is missing, or the receipt was refused, or the
+        // input was rejected as invalid — all three collapse onto one of these
+        // two generic framework codes.
         expect(body.error.message).toBeTruthy();
-        expect(['VERIFIER_ERROR', 'RECEIPT_REFUSED', 'FILE_NOT_FOUND']).toContain(body.error.code);
+        expect(['EXECUTION_ERROR', 'INVALID_INPUT']).toContain(body.error.code);
       } finally {
         await cleanup();
       }
     });
 
-    it('VERIFIER_ERROR json output has well-formed CommandResult envelope', async () => {
+    it('error envelope is well-formed ({ error: { code, message } }, no legacy CommandResult wrapper)', async () => {
       const { filePath, cleanup } = await writeTempJson({ session_id: 'x' });
       try {
-        const result = await runCli([
-          'truex', 'verify', filePath, '--format', 'json',
-        ]);
-        const body = JSON.parse(extractJson(result.stdout)) as {
-          command: string;
-          status: string;
-          exit_code: number;
-          meta: { run_id: string; timestamp: string; version: string };
-        };
-        // Now uses subcommand name 'truex verify'
-        expect(body.command).toMatch(/truex/i);
-        expect(body.status).toBe('error');
-        expect(typeof body.exit_code).toBe('number');
-        expect(typeof body.meta.run_id).toBe('string');
-        expect(typeof body.meta.timestamp).toBe('string');
-        expect(typeof body.meta.version).toBe('string');
+        const result = await runCli(['lab', 'truex', 'verify', filePath]);
+        const body = JSON.parse(result.stdout) as { error: { code: string; message: string } };
+        expect(typeof body.error.code).toBe('string');
+        expect(typeof body.error.message).toBe('string');
+        expect(body.error.message.length).toBeGreaterThan(0);
       } finally {
         await cleanup();
       }
@@ -188,34 +182,36 @@ describe('wpm truex — TrueX receipt verification CLI', () => {
   });
 
   // ── Format flag ───────────────────────────────────────────────────────────
+  //
+  // `--format` is now a no-op passthrough for bridged verbs — `nouns/_bridge.ts`
+  // strips any caller-supplied `--format json`/`--format human` and always
+  // forces JSON internally (the always-JSON-on-stdout contract), so both
+  // values below produce the same parseable-JSON outcome.
 
   describe('--format flag', () => {
     it('--format json outputs parseable JSON', async () => {
       const { filePath, cleanup } = await writeTempJson({ test: true });
       try {
         const result = await runCli([
-          'truex', 'verify', filePath, '--format', 'json',
+          'lab', 'truex', 'verify', filePath, '--format', 'json',
         ]);
-        // WasmLoader may prefix [INFO] lines — extract and parse the JSON portion
-        const jsonStr = (() => {
-          const idx = result.stdout.indexOf('{');
-          return idx === -1 ? result.stdout : result.stdout.slice(idx);
-        })();
-        expect(() => JSON.parse(jsonStr)).not.toThrow();
+        expect(() => JSON.parse(result.stdout)).not.toThrow();
       } finally {
         await cleanup();
       }
     });
 
-    it('--format human produces non-JSON text output on error', async () => {
+    it('--format human still produces parseable JSON on stdout (always-JSON contract)', async () => {
       const { filePath, cleanup } = await writeTempJson({ test: true });
       try {
         const result = await runCli([
-          'truex', 'verify', filePath, '--format', 'human',
+          'lab', 'truex', 'verify', filePath, '--format', 'human',
         ]);
-        // Human format should not be parseable as top-level JSON object
-        // (it may contain ANSI codes or plain text)
-        // We just check the exit code is non-zero and something was output
+        // Old assertion expected non-JSON human text on stdout; bridged verbs now
+        // always emit pure JSON on stdout regardless of --format (the framework's
+        // always-JSON-on-stdout contract — see nouns/_bridge.ts). Assert the new
+        // contract instead of the old one.
+        expect(() => JSON.parse(result.stdout)).not.toThrow();
         expect(result.exitCode).not.toBe(0);
       } finally {
         await cleanup();

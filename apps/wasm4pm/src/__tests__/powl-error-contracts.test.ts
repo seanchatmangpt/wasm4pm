@@ -1,5 +1,31 @@
 /**
- * POWL CLI — Error Contract and Structural Field Tests
+ * POWL — Error Contract and Structural Field Tests
+ *
+ * `wpm powl <anything>` is now intercepted unconditionally by the hard-break
+ * table (nouns/_removed.ts): only two-token entries `powl replay` and
+ * `powl construct` are listed there; every OTHER `powl <subcommand>` (parse,
+ * simplify, convert, diff, complexity, footprints, conformance, import,
+ * discover, get-children, node-info, freq-analysis) falls through to the
+ * one-token catch-all `{ old: 'powl', replacement: 'model discover' }` and
+ * is rejected before ever reaching `commands/powl.ts`. None of these twelve
+ * subcommands have a noun/verb equivalent — this is a genuine, intentional
+ * feature retirement from the CLI surface (see `powl-cli.test.ts`'s header
+ * for the fuller rationale), not a rename.
+ *
+ * `commands/powl.ts` itself is untouched and still fully functional. Rather
+ * than deleting real error-contract and structural-field regression
+ * coverage for code that still exists and still runs (real WASM calls
+ * included), these tests now invoke it in-process the same way the
+ * framework's own bridge does for still-wired legacy commands
+ * (`nouns/_bridge.ts`'s `invokeLegacyCommand`), instead of spawning the
+ * (now hard-broken for this path) `wpm` binary. All original assertions
+ * are unchanged.
+ *
+ * NOTE: `invokeLegacyCommand` traps `process.exit`/stdout globally for the
+ * duration of one call. Concurrent in-process invocations (`Promise.all`)
+ * race on that shared global state, unlike the original two-separate-
+ * child-processes version of this suite — the handful of places that used
+ * `Promise.all` below now run sequentially instead.
  *
  * Van der Aalst QA perspective:
  * - Error paths are first-class defects; every invalid input must produce a typed
@@ -19,15 +45,14 @@
  * constants). Test runtime is fast because most cases hit the pre-WASM guard path.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { execFile } from 'child_process';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { powl } from '../commands/powl.js';
+import { invokeLegacyCommand } from '../nouns/_bridge.js';
 
-// ─── CLI runner ───────────────────────────────────────────────────────────────
-
-const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
+// ─── In-process legacy command runner ────────────────────────────────────────
 
 interface CliResult {
   exitCode: number;
@@ -43,28 +68,13 @@ interface Envelope {
   error?: { code: string; message: string };
 }
 
-function runCli(args: string[], opts: { timeoutMs?: number } = {}): Promise<CliResult> {
-  const { timeoutMs = 45_000 } = opts;
-  const cwd = path.resolve(__dirname, '../..');
-  return new Promise((resolve) => {
-    const child = execFile(
-      process.execPath,
-      [CLI_PATH, ...args],
-      { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, cwd },
-      (error, stdout, stderr) => {
-        const exitCode =
-          error && 'code' in error && typeof error.code === 'number'
-            ? error.code
-            : error
-              ? 1
-              : 0;
-        resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '' });
-      }
-    );
-    child.on('error', () =>
-      resolve({ exitCode: 5, stdout: '', stderr: 'Process failed to start' })
-    );
-  });
+async function runCli(args: string[]): Promise<CliResult> {
+  // `args[0]` is 'powl' in every call site below (kept from the original
+  // suite's CLI-argv shape); `commands/powl.ts` is itself the 'powl'
+  // command, so drop that leading token before invoking it directly.
+  const [, ...rest] = args;
+  const { stdout, stderr, exitCode } = await invokeLegacyCommand(powl, rest);
+  return { exitCode, stdout, stderr };
 }
 
 function parseEnvelope(result: CliResult): Envelope {
@@ -72,7 +82,7 @@ function parseEnvelope(result: CliResult): Envelope {
     return JSON.parse(result.stdout) as Envelope;
   } catch {
     throw new Error(
-      `Failed to parse CLI JSON output.\nstdout: ${result.stdout.slice(0, 500)}\nstderr: ${result.stderr.slice(0, 500)}`
+      `Failed to parse command JSON output.\nstdout: ${result.stdout.slice(0, 500)}\nstderr: ${result.stderr.slice(0, 500)}`
     );
   }
 }
@@ -607,10 +617,9 @@ describe('powl node-info — structural field contract', () => {
 
 describe('POWL structural metamorphic relations (Rank 3)', () => {
   it('footprints.activities.length equals number of labeled nodes from parse for a linear model', async () => {
-    const [fpResult, parseResult] = await Promise.all([
-      runCli(['powl', 'footprints', `--model=${LINEAR_3}`, '--format=json', '--no-save']),
-      runCli(['powl', 'parse', `--model=${LINEAR_3}`, '--format=json', '--no-save']),
-    ]);
+    // Sequential — see file header re: invokeLegacyCommand's shared global state.
+    const fpResult = await runCli(['powl', 'footprints', `--model=${LINEAR_3}`, '--format=json', '--no-save']);
+    const parseResult = await runCli(['powl', 'parse', `--model=${LINEAR_3}`, '--format=json', '--no-save']);
     expect(fpResult.exitCode).toBe(0);
     expect(parseResult.exitCode).toBe(0);
 
@@ -620,10 +629,8 @@ describe('POWL structural metamorphic relations (Rank 3)', () => {
   });
 
   it('simplify preserves all activities from the original model (no activities dropped)', async () => {
-    const [simplifyResult, parseResult] = await Promise.all([
-      runCli(['powl', 'simplify', `--model=${LINEAR_3}`, '--format=json', '--no-save']),
-      runCli(['powl', 'footprints', `--model=${LINEAR_3}`, '--format=json', '--no-save']),
-    ]);
+    const simplifyResult = await runCli(['powl', 'simplify', `--model=${LINEAR_3}`, '--format=json', '--no-save']);
+    const parseResult = await runCli(['powl', 'footprints', `--model=${LINEAR_3}`, '--format=json', '--no-save']);
     expect(simplifyResult.exitCode).toBe(0);
     expect(parseResult.exitCode).toBe(0);
 
@@ -637,10 +644,8 @@ describe('POWL structural metamorphic relations (Rank 3)', () => {
   });
 
   it('complexity score of XOR model >= complexity of single-activity model (operator adds complexity)', async () => {
-    const [xorResult, singleResult] = await Promise.all([
-      runCli(['powl', 'complexity', `--model=${XOR_AB}`, '--format=json', '--no-save']),
-      runCli(['powl', 'complexity', `--model=${SINGLE_A}`, '--format=json', '--no-save']),
-    ]);
+    const xorResult = await runCli(['powl', 'complexity', `--model=${XOR_AB}`, '--format=json', '--no-save']);
+    const singleResult = await runCli(['powl', 'complexity', `--model=${SINGLE_A}`, '--format=json', '--no-save']);
     expect(xorResult.exitCode).toBe(0);
     expect(singleResult.exitCode).toBe(0);
 
@@ -657,12 +662,30 @@ describe('POWL structural metamorphic relations (Rank 3)', () => {
 // ─── Human format output contract ────────────────────────────────────────────
 
 describe('POWL human format output — does not crash and exits 0', () => {
-  it('simplify --format human exits 0 and produces non-empty stdout', async () => {
-    const result = await runCli(['powl', 'simplify', `--model=${SINGLE_A}`, '--format=human', '--no-save']);
-    expect(result.exitCode).toBe(0);
-    // Human output goes to stdout (combined with WASM init logs); must be non-empty
-    const combined = result.stdout + result.stderr;
-    expect(combined.length).toBeGreaterThan(0);
+  it('simplify --format human exits 0 and produces non-empty output', async () => {
+    // Human-format success/info output goes through `consola` (output.ts's
+    // `ConsoleProjection`), which — under vitest's worker pool — writes via
+    // `console.log`, a global vitest itself redirects for its own per-test
+    // log capture. That redirection is invisible to `invokeLegacyCommand`'s
+    // `process.stdout.write` trap (confirmed: the same call captures this
+    // output correctly when run as a plain Node script, outside vitest —
+    // see the migration notes for this file). Spy on `console.log` directly
+    // instead, which reliably observes the call regardless of what else
+    // vitest does with it.
+    // No implementation override — this repo's test-purity hook forbids
+    // stubbing implementations in integration tests (Gemba: real deps
+    // only). Plain `vi.spyOn` still records calls while forwarding to the
+    // real `console.log`.
+    const logSpy = vi.spyOn(console, 'log');
+    try {
+      const result = await runCli(['powl', 'simplify', `--model=${SINGLE_A}`, '--format=human', '--no-save']);
+      expect(result.exitCode).toBe(0);
+      const viaStdout = result.stdout + result.stderr;
+      const viaConsole = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+      expect((viaStdout + viaConsole).length).toBeGreaterThan(0);
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   it('footprints --format human exits 0', async () => {

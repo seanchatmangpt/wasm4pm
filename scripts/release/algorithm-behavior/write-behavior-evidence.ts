@@ -30,8 +30,12 @@ async function main() {
   const gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
   const cases = generateCaseRegistry();
   const registryIds = new Set(getRegistry().list().map((a) => a.id));
-  const wasmBg = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm.js'), 'utf8');
-  const wasmExports = new Set([...wasmBg.matchAll(/export function (\w+)/g)].map((m) => m[1]));
+  // The nodejs wasm-pack target emits only the CommonJS entry (wasm4pm.js,
+  // module.exports.*); any wasm4pm_bg.js is a stale artifact of older builds.
+  const wasmJs = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm.js'), 'utf8');
+  const wasmExports = new Set(
+    [...wasmJs.matchAll(/module\.exports\.(\w+)\s*=\s*function/g)].map((m) => m[1])
+  );
   const apiSrc = fs.readFileSync(path.resolve(rootDir, 'packages/kernel/src/api.ts'), 'utf8');
   const apiCases = new Set([...apiSrc.matchAll(/case '([^']+)':/g)].map((m) => m[1]));
 
@@ -48,7 +52,7 @@ async function main() {
     console.log(`[EVALUATING] ${algo.algorithm_id}...`);
     
     // Probe real reachability flags
-    const wasmFn = WASM_FUNCTION_NAMES[algo.algorithm_id];
+    const wasmFn = (WASM_FUNCTION_NAMES as Record<string, string>)[algo.algorithm_id];
     algo.registry_present = registryIds.has(algo.algorithm_id);
     algo.ts_dispatch_present = apiCases.has(algo.algorithm_id);
     algo.cli_present = registryIds.has(algo.algorithm_id);

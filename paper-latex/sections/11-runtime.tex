@@ -1,0 +1,6 @@
+The Device-Side WASM Runtime is the execution engine enforcing these bounds. It operates entirely within a linear memory sanctuary. All state transitions within this domain are provably free from side effects of the host environment (no direct syscalls, no unmanaged entropy, no global clocks).
+
+The WASM boundary acts as the ultimate security and performance governor. By stripping away OS-level multiplexing, the runtime ensures that capabilities execute with maximum cache locality.
+
+\paragraph{Limitation.}
+Because the runtime is perfectly deterministic, any capability requiring stochastic behavior (like Monte Carlo simulations) must be provided a deterministic seed via the input hash. True randomness is structurally prohibited.

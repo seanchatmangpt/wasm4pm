@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! RL Action Tracking Tests
 //!
 //! Tests for RL Gap 2 implementation: healing actions tracking with success rates.

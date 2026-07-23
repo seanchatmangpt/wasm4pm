@@ -1,6 +1,15 @@
 /**
  * doctor-verbs.test.ts — tests for all 8 `wpm doctor <verb>` subcommands
  *
+ * Migrated from the retired top-level `wpm doctor` command (removed — see
+ * `apps/wasm4pm/src/nouns/_removed.ts`: `doctor` -> `system doctor`) to
+ * `wpm system doctor <verb>`. `system doctor` is a legacy BRIDGE verb
+ * (`invokeLegacyCommandAsJson`) that reuses `commands/doctor/` unmodified,
+ * so the `{command,status,payload,meta}` envelope `assertEnvelope` checks
+ * for is unchanged on success, and every subcommand's payload field names
+ * (`payload.environment`, `payload.ready`, `payload.regressions`, etc.)
+ * are identical — only the invocation prefix changed.
+ *
  * Oracle rank: Rank 2 (Domain contract — CLI exit codes and output shape).
  * Tests run against the compiled CLI via child_process.
  */
@@ -32,7 +41,7 @@ function wpmJson(...args: string[]): { json: unknown; status: number } {
 
 describe('wpm doctor check', () => {
   it('exits 0-2, returns JSON with checks array and summary counts', () => {
-    const { json, status } = wpmJson('doctor', 'check', '--format', 'json');
+    const { json, status } = wpmJson('system', 'doctor', 'check', '--format', 'json');
     expect([0, 1, 2]).toContain(status);
     assertEnvelope(json, { command: 'doctor check' });
     const payload = (json as { payload: { checks: unknown[]; summary: Record<string, number> } }).payload;
@@ -44,10 +53,10 @@ describe('wpm doctor check', () => {
 
 describe('wpm doctor fix', () => {
   it('--dry-run exits 0, mentions dry-run in output, and returns truthy JSON', () => {
-    const { stdout, status } = wpm('doctor', 'fix', '--dry-run', '--yes');
+    const { stdout, status } = wpm('system', 'doctor', 'fix', '--dry-run', '--yes');
     expect(status).toBe(0);
     expect(stdout.toLowerCase()).toMatch(/dry.?run|would|preview/);
-    const { json: jsonResult } = wpmJson('doctor', 'fix', '--dry-run', '--yes', '--format', 'json');
+    const { json: jsonResult } = wpmJson('system', 'doctor', 'fix', '--dry-run', '--yes', '--format', 'json');
     assertEnvelope(jsonResult, { command: 'doctor fix' });
     expect((jsonResult as { payload: { dry_run: boolean } }).payload.dry_run).toBe(true);
   });
@@ -55,9 +64,9 @@ describe('wpm doctor fix', () => {
 
 describe('wpm doctor publish', () => {
   it('exits 0 or 1 and JSON output includes ready boolean', () => {
-    const { status } = wpm('doctor', 'publish');
+    const { status } = wpm('system', 'doctor', 'publish');
     expect([0, 1]).toContain(status);
-    const { json } = wpmJson('doctor', 'publish', '--format', 'json');
+    const { json } = wpmJson('system', 'doctor', 'publish', '--format', 'json');
     assertEnvelope(json, { command: 'doctor publish' });
     expect(typeof (json as { payload: { ready: boolean } }).payload.ready).toBe('boolean');
   });
@@ -66,9 +75,9 @@ describe('wpm doctor publish', () => {
 describe('wpm doctor env', () => {
   it('completes under 5 seconds and JSON output has environment array', () => {
     const start = Date.now();
-    wpm('doctor', 'env');
+    wpm('system', 'doctor', 'env');
     expect(Date.now() - start).toBeLessThan(10_000);
-    const { json } = wpmJson('doctor', 'env', '--format', 'json');
+    const { json } = wpmJson('system', 'doctor', 'env', '--format', 'json');
     assertEnvelope(json, { command: 'doctor env' });
     expect(Array.isArray((json as { payload: { environment: unknown[] } }).payload.environment)).toBe(true);
   });
@@ -76,20 +85,20 @@ describe('wpm doctor env', () => {
 
 describe('wpm doctor tps', () => {
   it('exits 0 or 1 with JSON checks output and --fail-fast stays within 0-1', () => {
-    const { json, status } = wpmJson('doctor', 'tps', '--format', 'json');
+    const { json, status } = wpmJson('system', 'doctor', 'tps', '--format', 'json');
     expect([0, 1]).toContain(status);
     assertEnvelope(json, { command: 'doctor tps' });
     expect((json as { payload: { checks: unknown } }).payload.checks).toBeDefined();
-    const { status: ffStatus } = wpm('doctor', 'tps', '--fail-fast');
+    const { status: ffStatus } = wpm('system', 'doctor', 'tps', '--fail-fast');
     expect([0, 1]).toContain(ffStatus);
   });
 });
 
 describe('wpm doctor perf', () => {
   it('exits 0 or 1 with JSON containing regressions and within_threshold arrays', () => {
-    const { status } = wpm('doctor', 'perf');
+    const { status } = wpm('system', 'doctor', 'perf');
     expect([0, 1]).toContain(status);
-    const { json } = wpmJson('doctor', 'perf', '--format', 'json');
+    const { json } = wpmJson('system', 'doctor', 'perf', '--format', 'json');
     assertEnvelope(json, { command: 'doctor perf' });
     expect(Array.isArray((json as { payload: { regressions: unknown[] } }).payload.regressions)).toBe(true);
   });
@@ -97,12 +106,12 @@ describe('wpm doctor perf', () => {
 
 describe('wpm doctor watch', () => {
   it('rejects --interval less than 5 and starts successfully with default interval', () => {
-    const { status, stderr, stdout } = wpm('doctor', 'watch', '--interval', '2');
+    const { status, stderr, stdout } = wpm('system', 'doctor', 'watch', '--interval', '2');
     const output = stdout + stderr;
     const rejected = status !== 0 || output.toLowerCase().includes('warn') || output.toLowerCase().includes('5');
     expect(rejected).toBe(true);
 
-    const result = spawnSync(process.execPath, [CLI, 'doctor', 'watch', '--interval', '30'], { encoding: 'utf8', timeout: 1_500, cwd: os.tmpdir() });
+    const result = spawnSync(process.execPath, [CLI, 'system', 'doctor', 'watch', '--interval', '30'], { encoding: 'utf8', timeout: 1_500, cwd: os.tmpdir() });
     const s = result.status ?? result.signal ? 0 : 1;
     expect([0, null]).toContain(s);
   });
@@ -111,7 +120,7 @@ describe('wpm doctor watch', () => {
 describe('wpm doctor report', () => {
   it('generates parseable JSON report and self-contained HTML report', () => {
     const jsonOut = path.join(os.tmpdir(), `wpm-doctor-test-${Date.now()}.json`);
-    const { status: js } = wpm('doctor', 'report', '--format', 'json', '--out', jsonOut);
+    const { status: js } = wpm('system', 'doctor', 'report', '--format', 'json', '--out', jsonOut);
     expect(js).toBe(0);
     expect(fs.existsSync(jsonOut)).toBe(true);
     const parsed = JSON.parse(fs.readFileSync(jsonOut, 'utf8'));
@@ -121,7 +130,7 @@ describe('wpm doctor report', () => {
     fs.unlinkSync(jsonOut);
 
     const htmlOut = path.join(os.tmpdir(), `wpm-doctor-test-${Date.now()}.html`);
-    const { status: hs } = wpm('doctor', 'report', '--format', 'html', '--out', htmlOut);
+    const { status: hs } = wpm('system', 'doctor', 'report', '--format', 'html', '--out', htmlOut);
     expect(hs).toBe(0);
     expect(fs.existsSync(htmlOut)).toBe(true);
     const content = fs.readFileSync(htmlOut, 'utf8');

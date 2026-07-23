@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "26.7.1"
+version = "26.7.6"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman"]
@@ -56,6 +56,7 @@ rand_distr = "0.4"
 tracing = "0.1"
 statrs = { version = "0.17", default-features = false, optional = true }
 bcinr = { workspace = true, optional = true }
+bcinr-powl = { workspace = true, optional = true }
 blake3 = { workspace = true }
 sha2 = { workspace = true }
 ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_core"] }
@@ -330,6 +331,9 @@ feature-rayon = []
 # Branchless algorithms (bcinr integration)
 bcinr = ["dep:bcinr"]
 
+# Proof-carrying POWL workflow execution engine (bcinr-powl integration)
+powl-engine = ["dep:bcinr-powl"]
+
 # Cognition kernel re-export (wasm4pm-cognition substrate)
 cognition = ["dep:wasm4pm-cognition"]
 
@@ -409,6 +413,7 @@ browser = [
   "statrs",
   "ocel",
   "powl",
+  "powl-engine",
   "console_error_panic_hook",
   "import"
 ]

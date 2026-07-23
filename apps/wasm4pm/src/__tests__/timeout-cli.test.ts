@@ -1,7 +1,17 @@
 /**
  * timeout-cli.test.ts
  *
- * CLI tests for `wpm timeout estimate <log> <algorithm>`
+ * MIGRATED from the retired top-level `wpm timeout` invocation (see
+ * `nouns/_removed.ts`: `timeout` -> `lab timeout`). `lab timeout` bridges
+ * unchanged to `commands/timeout.ts` via `invokeLegacyCommandAsJson`
+ * (`nouns/_bridge.ts`) — the legacy `CommandResult` envelope is returned
+ * as-is as the verb's plain JSON result on success, and `--format` is
+ * always forced to `json` regardless of what's passed. Most of this file's
+ * loose regex checks (`/timeout|seconds/i`, `/base|factor|multiplier/i`,
+ * etc) still pass unmodified because the forced-JSON payload's field names
+ * happen to contain the same keywords the human renderer would have used.
+ *
+ * CLI tests for `wpm lab timeout estimate <log> <algorithm>`
  *
  * Tests verify:
  * 1. Timeout estimation with real or synthetic logs
@@ -15,7 +25,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
 
-describe('wpm timeout — adaptive timeout estimation', () => {
+describe('wpm lab timeout — adaptive timeout estimation', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
   let tempDir: string;
   let smallLogPath: string;
@@ -73,7 +83,7 @@ ${Array.from({ length: 100 })
 
   describe('timeout estimate (basic)', () => {
     it('TC-1: should estimate timeout for DFG on small log', async () => {
-      const result = await runCli(['timeout', 'estimate', smallLogPath, 'dfg'], {
+      const result = await runCli(['lab', 'timeout', 'estimate', smallLogPath, 'dfg'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -82,7 +92,7 @@ ${Array.from({ length: 100 })
     });
 
     it('TC-2: should estimate timeout for heuristic on large log', async () => {
-      const result = await runCli(['timeout', 'estimate', largeLogPath, 'heuristic_miner'], {
+      const result = await runCli(['lab', 'timeout', 'estimate', largeLogPath, 'heuristic_miner'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -90,7 +100,7 @@ ${Array.from({ length: 100 })
     });
 
     it('TC-3: should estimate timeout for genetic (quality tier)', async () => {
-      const result = await runCli(['timeout', 'estimate', largeLogPath, 'genetic_algorithm'], {
+      const result = await runCli(['lab', 'timeout', 'estimate', largeLogPath, 'genetic_algorithm'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -98,7 +108,7 @@ ${Array.from({ length: 100 })
     });
 
     it('TC-4: should estimate timeout for ILP (longest timeout)', async () => {
-      const result = await runCli(['timeout', 'estimate', smallLogPath, 'ilp'], {
+      const result = await runCli(['lab', 'timeout', 'estimate', smallLogPath, 'ilp'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -109,7 +119,7 @@ ${Array.from({ length: 100 })
   describe('timeout estimate --verbose', () => {
     it('TC-5: should show detailed breakdown with verbose flag', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'dfg', '--verbose'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'dfg', '--verbose'],
         {
           env: env.env,
         }
@@ -120,7 +130,7 @@ ${Array.from({ length: 100 })
 
     it('TC-6: verbose output includes event count and complexity', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', largeLogPath, 'heuristic', '--verbose'],
+        ['lab', 'timeout', 'estimate', largeLogPath, 'heuristic', '--verbose'],
         {
           env: env.env,
         }
@@ -131,7 +141,7 @@ ${Array.from({ length: 100 })
 
     it('TC-7: verbose shows algorithm tier', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'genetic_algorithm', '-v'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'genetic_algorithm', '-v'],
         {
           env: env.env,
         }
@@ -144,7 +154,7 @@ ${Array.from({ length: 100 })
   describe('timeout estimate --format json', () => {
     it('TC-8: should output valid JSON with --format json', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
         {
           env: env.env,
         }
@@ -157,7 +167,7 @@ ${Array.from({ length: 100 })
 
     it('TC-9: JSON output includes timeout_ms and timeout_seconds', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', largeLogPath, 'heuristic_miner', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', largeLogPath, 'heuristic_miner', '--format', 'json'],
         {
           env: env.env,
         }
@@ -175,7 +185,7 @@ ${Array.from({ length: 100 })
 
     it('TC-10: JSON output includes timeout computation details', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'genetic_algorithm', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'genetic_algorithm', '--format', 'json'],
         {
           env: env.env,
         }
@@ -192,16 +202,21 @@ ${Array.from({ length: 100 })
 
   describe('timeout estimate (error handling)', () => {
     it('TC-11: should exit with SOURCE_ERROR for missing log file', async () => {
-      const result = await runCli(['timeout', 'estimate', '/nonexistent/log.xes', 'dfg'], {
+      const result = await runCli(['lab', 'timeout', 'estimate', '/nonexistent/log.xes', 'dfg'], {
         env: env.env,
       });
       expect(result.exitCode).toBe(EXIT_CODES.source_error);
-      expect(result.stderr || result.stdout).toMatch(/cannot read|no such file|not found/i);
+      // NOTE: `lab timeout`'s `[experimental]` banner is written to stderr
+      // on every invocation (nouns/lab/timeout.ts stability:'experimental'),
+      // so stderr is always non-empty and `stderr || stdout` (the original
+      // check) never falls through to inspect stdout, where the actual
+      // error JSON message lives. Concatenate both streams instead.
+      expect(result.stdout + result.stderr).toMatch(/cannot read|no such file|not found/i);
     });
 
     it('TC-12: should handle invalid algorithm gracefully', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'unknown_algo'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'unknown_algo'],
         {
           env: env.env,
         }
@@ -213,7 +228,7 @@ ${Array.from({ length: 100 })
 
     it('TC-13: should reject invalid format argument', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'dfg', '--format', 'invalid'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'dfg', '--format', 'invalid'],
         {
           env: env.env,
         }
@@ -226,13 +241,13 @@ ${Array.from({ length: 100 })
   describe('timeout estimate (scaling)', () => {
     it('TC-14: both algorithms produce valid timeouts', async () => {
       const smallResult = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'heuristic_miner', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'heuristic_miner', '--format', 'json'],
         {
           env: env.env,
         }
       );
       const largeResult = await runCli(
-        ['timeout', 'estimate', largeLogPath, 'heuristic_miner', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', largeLogPath, 'heuristic_miner', '--format', 'json'],
         {
           env: env.env,
         }
@@ -249,13 +264,13 @@ ${Array.from({ length: 100 })
 
     it('TC-15: quality algorithm should produce valid timeout', async () => {
       const dfgResult = await runCli(
-        ['timeout', 'estimate', largeLogPath, 'dfg', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', largeLogPath, 'dfg', '--format', 'json'],
         {
           env: env.env,
         }
       );
       const geneticResult = await runCli(
-        ['timeout', 'estimate', largeLogPath, 'genetic_algorithm', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', largeLogPath, 'genetic_algorithm', '--format', 'json'],
         {
           env: env.env,
         }
@@ -276,7 +291,7 @@ ${Array.from({ length: 100 })
       const malformedPath = path.join(tempDir, 'malformed.xes');
       await fs.writeFile(malformedPath, '<invalid>not xes</invalid>');
 
-      const result = await runCli(['timeout', 'estimate', malformedPath, 'dfg'], {
+      const result = await runCli(['lab', 'timeout', 'estimate', malformedPath, 'dfg'], {
         env: env.env,
       });
 
@@ -286,7 +301,7 @@ ${Array.from({ length: 100 })
 
     it('TC-17: should clamp timeout to bounds (min 5s, max 5min)', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
         {
           env: env.env,
         }
@@ -306,7 +321,7 @@ ${Array.from({ length: 100 })
   describe('gap: duration_ms in output envelope', () => {
     it('JSON output should include a non-zero duration_ms in meta', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
         { env: env.env }
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -323,7 +338,7 @@ ${Array.from({ length: 100 })
 
     it('human output (default format) produces a valid CommandResult envelope', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', smallLogPath, 'dfg'],
+        ['lab', 'timeout', 'estimate', smallLogPath, 'dfg'],
         { env: env.env }
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);
@@ -334,7 +349,7 @@ ${Array.from({ length: 100 })
 
     it('JSON output for large log has duration_ms reflecting actual computation', async () => {
       const result = await runCli(
-        ['timeout', 'estimate', largeLogPath, 'genetic_algorithm', '--format', 'json'],
+        ['lab', 'timeout', 'estimate', largeLogPath, 'genetic_algorithm', '--format', 'json'],
         { env: env.env }
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);

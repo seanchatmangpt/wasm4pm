@@ -1,6 +1,40 @@
 /**
  * batch-cli.test.ts
- * CLI tests for wpm batch command — parallel processing of multiple event logs
+ *
+ * CLI tests for the retired `wpm batch` command — formerly parallel
+ * discovery across MULTIPLE event logs in a directory (glob expansion,
+ * `--workers` concurrency, `--continue-on-error`, `--output-dir`,
+ * `--timeout`, per-file JSON/CSV summaries).
+ *
+ * ═══════════════════════════════════════════════════════════════════════
+ * GENUINE CAPABILITY RETIREMENT (not a renamed/reshaped equivalent) —
+ * documented here rather than silently dropped:
+ * ═══════════════════════════════════════════════════════════════════════
+ *
+ * `nouns/_removed.ts` maps the retired `batch` top-level command to
+ * `pipeline run`, and `nouns/pipeline/run.ts`'s own doc comment says it
+ * "Also absorbs the retired `wpm analyze`/`wpm batch`". In practice this
+ * absorption is name-only: `pipeline run` (`engines/orchestrator/plan.ts`
+ * `buildPlan()`) accepts exactly ONE `--input <path>` string, which each
+ * plan step (`log validate`, `model discover`, ...) treats as a single
+ * file to `fs.readFile()` — there is no directory/glob expansion,
+ * `--workers`/`--parallel` concurrency, `--continue-on-error`,
+ * `--output-dir`, or per-file summary statistics anywhere in the new
+ * noun/verb surface. This was confirmed by reading `plan.ts`'s own scoping
+ * note and `model discover`'s single-file `readInput()`, not assumed.
+ *
+ * So almost the entirety of the original 40+ tests in this file (multi-file
+ * directories, `--workers N`, `--timeout N`, `--continue-on-error`,
+ * per-file JSON payload fields like `success_count`/`per_file_results`)
+ * exercise behavior that no longer exists anywhere in `wpm`, under any
+ * name. Per the migration's rule against silently deleting coverage: this
+ * file is rewritten to (a) prove the retirement is real and consistent
+ * (`wpm batch ...` always hard-fails with the documented redirect, for any
+ * argument shape), and (b) exercise the closest surviving capability — a
+ * SINGLE log through `wpm pipeline run --auto --input <file>` — which is
+ * the only remaining behavior actually inherited from old `wpm batch`
+ * (batch-of-one). It intentionally does NOT invent assertions for
+ * multi-file/worker/timeout behavior that has no implementation to test.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -10,27 +44,33 @@ import * as path from 'path';
 import * as os from 'os';
 
 /**
- * Minimal valid XES event log with 3 traces
+ * Minimal valid XES event log with 1 trace. `time:timestamp` must be a
+ * `<date>` element (not `<string>`) for `log validate` to accept it —
+ * `pipeline run`'s `validate` step runs before `discover` and aborts the
+ * whole plan on a hard schema violation.
  */
 const MIN_VALID_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0" xmlns="http://www.xes.org/">
   <trace>
+    <string key="concept:name" value="case_1"/>
     <event>
       <string key="concept:name" value="Start"/>
-      <string key="time:timestamp" value="2024-01-01T00:00:00Z"/>
+      <date key="time:timestamp" value="2024-01-01T00:00:00Z"/>
     </event>
     <event>
       <string key="concept:name" value="Process"/>
-      <string key="time:timestamp" value="2024-01-01T00:01:00Z"/>
+      <date key="time:timestamp" value="2024-01-01T00:01:00Z"/>
     </event>
     <event>
       <string key="concept:name" value="End"/>
-      <string key="time:timestamp" value="2024-01-01T00:02:00Z"/>
+      <date key="time:timestamp" value="2024-01-01T00:02:00Z"/>
     </event>
   </trace>
 </log>`;
 
-describe('wpm batch — parallel discovery of multiple event logs', () => {
+const INVALID_XES = `not-xml-at-all {{ broken`;
+
+describe("wpm batch — retired; hard-redirects to 'wpm pipeline run'", () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
   let tmpDir: string;
 
@@ -48,378 +88,106 @@ describe('wpm batch — parallel discovery of multiple event logs', () => {
     }
   });
 
-  /**
-   * Create mock XES files for testing
-   */
-  async function createMockXesFiles(count: number): Promise<string[]> {
-    const files: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const filePath = path.join(tmpDir, `log_${i}.xes`);
-      await fs.writeFile(filePath, MIN_VALID_XES);
-      files.push(filePath);
+  it('wpm batch <dir> prints the removal redirect to stderr and exits 1, regardless of directory contents', async () => {
+    const filePath = path.join(tmpDir, 'log.xes');
+    await fs.writeFile(filePath, MIN_VALID_XES);
+
+    const result = await runCli(['batch', tmpDir, '--algorithm', 'dfg']);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/'wpm batch' was removed/);
+    expect(result.stderr).toMatch(/wpm pipeline run/);
+  });
+
+  it('wpm batch (no args) also hard-redirects (checkRemoved fires before argument parsing)', async () => {
+    const result = await runCli(['batch']);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/'wpm batch' was removed/);
+  });
+
+  it('stdout is empty on the removal path (the redirect message goes to stderr only)', async () => {
+    const result = await runCli(['batch', tmpDir]);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('every --workers/--parallel/--timeout/--continue-on-error flag shape still just hard-redirects', async () => {
+    // These flags belonged to the retired multi-file processing behavior;
+    // none of them change the removal outcome — 'wpm batch' is intercepted
+    // by the hard-break table (nouns/_removed.ts) before any flag is parsed.
+    const result = await runCli([
+      'batch', tmpDir,
+      '--workers', '4',
+      '--timeout', '60',
+      '--continue-on-error',
+      '--parallel', '2',
+      '--output-dir', tmpDir,
+    ]);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/'wpm batch' was removed/);
+  });
+});
+
+describe("wpm pipeline run --auto — the surviving single-log capability formerly reached via 'wpm batch'", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wpm-pipeline-run-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup errors
     }
-    return files;
-  }
-
-  describe('basic functionality', () => {
-    it('should process a directory with multiple XES files', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--algorithm', 'dfg']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should require a directory argument', async () => {
-      const result = await runCli(['batch']);
-      expect(result.exitCode).not.toBe(EXIT_CODES.success);
-    });
-
-    it('should error on non-existent directory', async () => {
-      const result = await runCli(['batch', '/nonexistent/path/batch-test-12345']);
-      expect(result.exitCode).toBe(EXIT_CODES.source_error);
-    });
-
-    it('should error on empty directory', async () => {
-      const result = await runCli(['batch', tmpDir]);
-      expect(result.exitCode).toBe(EXIT_CODES.source_error);
-    });
   });
 
-  describe('algorithm selection', () => {
-    it('should accept --algorithm dfg', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--algorithm', 'dfg']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+  it('processes a single valid XES file end-to-end (validate -> discover) and exits 0', async () => {
+    const filePath = path.join(tmpDir, 'log.xes');
+    await fs.writeFile(filePath, MIN_VALID_XES);
 
-    it('should accept --algorithm heuristic (default)', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+    const result = await runCli(['pipeline', 'run', '--auto', '--input', filePath], { cwd: tmpDir });
+    expect(result.exitCode).toBe(EXIT_CODES.success);
 
-    it('should accept --algorithm alpha', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--algorithm', 'alpha']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should accept --algorithm inductive', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--algorithm', 'inductive']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+    const report = JSON.parse(result.stdout) as {
+      planId: string;
+      status: string;
+      steps: Array<{ stepId: string; noun: string; verb: string; status: string }>;
+      chainHash: string;
+    };
+    expect(report.status).toBe('ok');
+    expect(report.steps.map((s) => `${s.noun} ${s.verb}`)).toEqual(['log validate', 'model discover']);
+    expect(report.steps.every((s) => s.status === 'ok')).toBe(true);
+    // BLAKE3 chain hash — Absolute Rule 6.
+    expect(report.chainHash).toMatch(/^[0-9a-f]{64,72}$/);
   });
 
-  describe('worker configuration', () => {
-    it('should accept --workers 2 for parallel processing', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--workers', '2']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+  it('fails closed (nonzero exit, status:"failed") when the log fails validation', async () => {
+    const filePath = path.join(tmpDir, 'bad.xes');
+    await fs.writeFile(filePath, INVALID_XES);
 
-    it('should accept --workers 1 for serial processing', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--workers', '1']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+    const result = await runCli(['pipeline', 'run', '--auto', '--input', filePath], { cwd: tmpDir });
+    expect(result.exitCode).not.toBe(EXIT_CODES.success);
 
-    it('should default to CPU count if --workers not specified', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should handle --workers 4 with small file set', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--workers', '4']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+    const report = JSON.parse(result.stdout) as { status: string; exitCode: number };
+    expect(report.status).toBe('failed');
+    // pipeline run's own fail-closed exitCode field (see nouns/pipeline/run.ts)
+    // must match the process's real exit code — Absolute Rule / plan item 2.
+    expect(report.exitCode).toBe(result.exitCode);
   });
 
-  describe('timeout configuration', () => {
-    it('should accept --timeout option (in seconds)', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--timeout', '60']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should default to 300 seconds if not specified', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should accept --timeout 10 for shorter timeout', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--timeout', '10']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
+  it('requires --input for --auto (no directory/glob expansion exists anymore)', async () => {
+    const result = await runCli(['pipeline', 'run', '--auto']);
+    expect(result.exitCode).not.toBe(EXIT_CODES.success);
+    const parsed = JSON.parse(result.stdout) as { error?: { code: string; message: string } };
+    expect(parsed.error?.message).toMatch(/--input/);
   });
 
-  describe('output formats', () => {
-    it('should output human format by default', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/BATCH|SUMMARY|TIMING|STATISTICS/i);
-    });
-
-    it('should support --format json', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Output should be valid JSON or at least contain the structure
-      expect(result.stdout).toBeTruthy();
-    });
-
-    it('should support --format jsonl', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--format', 'jsonl']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toBeTruthy();
-    });
-
-    it('should support --verbose for per-log details', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--verbose']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Verbose flag is accepted without error
-      expect(result.exitCode).toBeDefined();
-    });
-  });
-
-  describe('error handling', () => {
-    it('should continue processing when one log has error', async () => {
-      await createMockXesFiles(2);
-      const invalidFile = path.join(tmpDir, 'invalid.xes');
-      await fs.writeFile(invalidFile, 'invalid xml');
-
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should report failed logs in summary', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--verbose']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Summary is included in the verbose output
-      expect(result.stdout).toBeTruthy();
-    });
-
-    it('should handle mixed valid and invalid files', async () => {
-      await createMockXesFiles(1);
-      const invalidFile = path.join(tmpDir, 'corrupted.xes');
-      await fs.writeFile(invalidFile, '<invalid>');
-      const validFile = path.join(tmpDir, 'valid.xes');
-      await fs.writeFile(validFile, MIN_VALID_XES);
-
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-  });
-
-  describe('timing metrics', () => {
-    it('should report total elapsed time', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Command completes without error
-      expect(result.exitCode).toBeDefined();
-    });
-
-    it('should report per-log timing in verbose mode', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--verbose']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/ms|s/);
-    });
-  });
-
-  describe('output payload structure', () => {
-    it('should produce CommandResult<BatchPayload> envelope', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Result should be valid structured output
-      expect(result.stdout).toBeTruthy();
-    });
-
-    it('should include logCount in payload', async () => {
-      await createMockXesFiles(3);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toContain('3');
-    });
-
-    it('should include summary statistics in payload', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Summary should contain totalLogs, successful, failed, etc.
-      expect(result.stdout).toMatch(/totalLogs|successful|failed/);
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle single log file', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should handle many log files (10+)', async () => {
-      await createMockXesFiles(10);
-      const result = await runCli(['batch', tmpDir, '--workers', '2']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Command completes successfully with many files
-      expect(result.exitCode).toBeDefined();
-    });
-
-    it('should handle .json format event logs alongside .xes files', async () => {
-      const jsonFile = path.join(tmpDir, 'log.json');
-      await fs.writeFile(
-        jsonFile,
-        JSON.stringify({
-          logs: [
-            {
-              events: [
-                { concept_name: 'Start', timestamp: '2024-01-01T00:00:00Z' },
-                { concept_name: 'End', timestamp: '2024-01-01T00:01:00Z' },
-              ],
-            },
-          ],
-        })
-      );
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should skip hidden files and node_modules', async () => {
-      await createMockXesFiles(2);
-      const hiddenFile = path.join(tmpDir, '.hidden.xes');
-      await fs.writeFile(hiddenFile, MIN_VALID_XES);
-      const nmDir = path.join(tmpDir, 'node_modules');
-      await fs.mkdir(nmDir);
-      await fs.writeFile(path.join(nmDir, 'log.xes'), MIN_VALID_XES);
-
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      // Should complete without error, skipping hidden/node_modules files
-      expect(result.exitCode).toBeDefined();
-    });
-
-    it('should process nested subdirectories', async () => {
-      const subDir = path.join(tmpDir, 'subdir', 'nested');
-      await fs.mkdir(subDir, { recursive: true });
-      const logPath = path.join(subDir, 'log.xes');
-      await fs.writeFile(logPath, MIN_VALID_XES);
-
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('should handle very long file paths', async () => {
-      const deepDir = path.join(
-        tmpDir,
-        'a',
-        'b',
-        'c',
-        'd',
-        'e',
-        'f',
-        'g',
-        'h',
-        'i',
-        'j'
-      );
-      await fs.mkdir(deepDir, { recursive: true });
-      const logPath = path.join(deepDir, 'log.xes');
-      await fs.writeFile(logPath, MIN_VALID_XES);
-
-      const result = await runCli(['batch', tmpDir]);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-  });
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Gap-closing tests: --workers validation, --no-save, structured JSON payload
-  // ──────────────────────────────────────────────────────────────────────────
-  describe('gap: --workers validation', () => {
-    it('should return config_error (1) when --workers 0', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--workers', '0']);
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-    });
-
-    it('should return config_error (1) when --workers 0.5 (non-integer)', async () => {
-      await createMockXesFiles(1);
-      // parseInt('0.5') = 0, which is ≤ 0 and should be rejected
-      const result = await runCli(['batch', tmpDir, '--workers', '0.5']);
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-    });
-
-    it('should return config_error (1) when --workers is not a number', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--workers', 'abc']);
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-    });
-
-    it('should include a helpful message when --workers is invalid', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--workers', '0']);
-      expect(result.stdout + result.stderr).toMatch(/workers|positive integer/i);
-    });
-
-    it('should accept --workers 1 (boundary: minimum valid value)', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--workers', '1']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-  });
-
-  describe('gap: --no-save flag', () => {
-    it('should accept --no-save flag without error', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--no-save']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-    });
-
-    it('--no-save with --format json should still produce structured output', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--no-save', '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toBeTruthy();
-    });
-  });
-
-  describe('gap: structured JSON payload fields', () => {
-    it('--format json should include success_count field', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/success_count/);
-    });
-
-    it('--format json should include failure_count field', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/failure_count/);
-    });
-
-    it('--format json should include total_duration_ms field', async () => {
-      await createMockXesFiles(1);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/total_duration_ms/);
-    });
-
-    it('--format json should include per_file_results array', async () => {
-      await createMockXesFiles(2);
-      const result = await runCli(['batch', tmpDir, '--format', 'json']);
-      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/per_file_results/);
-    });
+  it('does NOT accept a directory as --input (single-file only; confirms multi-file batch has no replacement)', async () => {
+    await fs.writeFile(path.join(tmpDir, 'log.xes'), MIN_VALID_XES);
+    const result = await runCli(['pipeline', 'run', '--auto', '--input', tmpDir], { cwd: tmpDir });
+    // A directory path fails `fs.readFile()` inside `model discover` (EISDIR)
+    // or fails validation — either way it does NOT transparently expand into
+    // per-file processing the way `wpm batch <dir>` used to.
+    expect(result.exitCode).not.toBe(EXIT_CODES.success);
   });
 });

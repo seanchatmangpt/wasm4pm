@@ -4,12 +4,21 @@
  * Tests that the wasm4pm CLI exposes the algorithm registry data in a format
  * that external marketplace/catalog consumers can use, via two CLI commands:
  *
- *   R2 — wpm status --format json: algorithm registry section
+ *   R2 — wpm system status: algorithm registry section
  *        algorithmBreakdown shape + count invariants for monitoring integrations.
  *
- *   R3 — wpm explain <algo> --format json: per-algorithm marketplace fields
+ *   R3 — wpm model explain <algo>: per-algorithm marketplace fields
  *        quality_score, speed_score, output_type, deployment_profiles,
  *        quality_dimensions — the 5 fields an external system needs to route/price.
+ *
+ * MIGRATION NOTE: `status` -> `system status` and `explain` -> `model
+ * explain` per nouns/_removed.ts. Both are bridged verbs (nouns/system/
+ * status.ts, nouns/model/explain.ts) that return the full legacy
+ * `{command, status, payload, meta}` envelope unchanged on success — only
+ * the invocation prefix changes, not the payload shape. `--format json` is
+ * dropped from invocations below: bridged verbs force `--format json`
+ * internally regardless of what's passed (nouns/_bridge.ts), and passing it
+ * again is harmless (stripped before forwarding) but redundant.
  *
  * Oracle ranks (Chicago TDD):
  *   Rank 1 — Mathematical invariant (holds for any correct implementation)
@@ -76,7 +85,7 @@ function tryParseJson(s: string): Record<string, unknown> | null {
 
 describe('R2 — wpm status --format json: registry metadata in JSON payload (Rank 2)', () => {
   it('payload.engine.algorithmBreakdown section is present and an object', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status']);
     const parsed = tryParseJson(r.stdout);
     const engine = (parsed?.payload as Record<string, unknown>)?.engine as
       | Record<string, unknown>
@@ -87,7 +96,7 @@ describe('R2 — wpm status --format json: registry metadata in JSON payload (Ra
   }, 30_000);
 
   it('algorithmBreakdown has exactly 3 categories: discovery, ml, analytics', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status']);
     const parsed = tryParseJson(r.stdout);
     const engine = (parsed?.payload as Record<string, unknown>)?.engine as
       | Record<string, unknown>
@@ -99,7 +108,7 @@ describe('R2 — wpm status --format json: registry metadata in JSON payload (Ra
   }, 30_000);
 
   it('all breakdown values are non-negative integers', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status']);
     const parsed = tryParseJson(r.stdout);
     const engine = (parsed?.payload as Record<string, unknown>)?.engine as
       | Record<string, unknown>
@@ -118,7 +127,7 @@ describe('R2 — wpm status --format json: registry metadata in JSON payload (Ra
      * the total algorithmCount. If a new outputType is added without updating
      * the breakdown, this test will catch the discrepancy.
      */
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status']);
     const parsed = tryParseJson(r.stdout);
     const engine = (parsed?.payload as Record<string, unknown>)?.engine as
       | Record<string, unknown>
@@ -133,7 +142,7 @@ describe('R2 — wpm status --format json: registry metadata in JSON payload (Ra
   }, 30_000);
 
   it('breakdown.discovery >= 15 (at least the 15 registered discovery algorithms)', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status']);
     const parsed = tryParseJson(r.stdout);
     const engine = (parsed?.payload as Record<string, unknown>)?.engine as
       | Record<string, unknown>
@@ -143,7 +152,7 @@ describe('R2 — wpm status --format json: registry metadata in JSON payload (Ra
   }, 30_000);
 
   it('payload.engine.deploymentProfile is one of the 5 canonical profiles', async () => {
-    const r = await runCli(['status', '--format', 'json']);
+    const r = await runCli(['system', 'status']);
     const parsed = tryParseJson(r.stdout);
     const engine = (parsed?.payload as Record<string, unknown>)?.engine as
       | Record<string, unknown>
@@ -171,17 +180,17 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
    */
 
   it('exits 0 for wpm explain dfg --format json', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     expect(r.exitCode).toBe(0);
   }, 30_000);
 
   it('stdout is valid JSON', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     expect(tryParseJson(r.stdout)).not.toBeNull();
   }, 30_000);
 
   it('payload has all 5 marketplace fields present (not missing keys)', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     for (const field of [
@@ -196,7 +205,7 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
   }, 30_000);
 
   it('payload.quality_score is a number when present (not undefined)', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (payload?.quality_score !== null) {
@@ -205,7 +214,7 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
   }, 30_000);
 
   it('payload.speed_score is a number when present', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (payload?.speed_score !== null) {
@@ -214,7 +223,7 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
   }, 30_000);
 
   it('payload.output_type is a non-empty string when present', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (payload?.output_type !== null) {
@@ -224,7 +233,7 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
   }, 30_000);
 
   it('payload.deployment_profiles is an array when present', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (payload?.deployment_profiles !== null) {
@@ -233,7 +242,7 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
   }, 30_000);
 
   it('payload.quality_dimensions is an object with 4 Van der Aalst keys when present', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (payload?.quality_dimensions !== null && payload?.quality_dimensions !== undefined) {
@@ -246,21 +255,21 @@ describe('R3 — wpm explain dfg --format json: 5 marketplace fields in payload 
   }, 30_000);
 
   it('payload.subject is "dfg" (the queried algorithm)', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     expect(payload?.subject).toBe('dfg');
   }, 30_000);
 
   it('payload.level is "detailed" by default', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     expect(payload?.level).toBe('detailed');
   }, 30_000);
 
   it('payload.content is a non-empty string (the explanation text)', async () => {
-    const r = await runCli(['explain', 'dfg', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'dfg']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     expect(typeof payload?.content).toBe('string');
@@ -276,19 +285,19 @@ describe('R3 — wpm explain ilp --format json: high-quality algorithm format st
    */
 
   it('exits 0 for wpm explain ilp --format json', async () => {
-    const r = await runCli(['explain', 'ilp', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'ilp']);
     expect(r.exitCode).toBe(0);
   }, 30_000);
 
   it('payload.subject is "ilp"', async () => {
-    const r = await runCli(['explain', 'ilp', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'ilp']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     expect(payload?.subject).toBe('ilp');
   }, 30_000);
 
   it('payload has the same 5 marketplace fields as dfg (format stability across algorithms)', async () => {
-    const r = await runCli(['explain', 'ilp', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'ilp']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     for (const field of [
@@ -312,12 +321,12 @@ describe('R3 — wpm explain: unknown algorithm returns exit 0 with null scores 
    */
 
   it('exits 0 for wpm explain unknown_algo_xyz --format json', async () => {
-    const r = await runCli(['explain', 'unknown_algo_xyz', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'unknown_algo_xyz']);
     expect(r.exitCode).toBe(0);
   }, 30_000);
 
   it('quality_score is null for an unknown algorithm (no registry entry, no fabricated number)', async () => {
-    const r = await runCli(['explain', 'unknown_algo_xyz', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'unknown_algo_xyz']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (parsed !== null) {
@@ -326,7 +335,7 @@ describe('R3 — wpm explain: unknown algorithm returns exit 0 with null scores 
   }, 30_000);
 
   it('deployment_profiles is null for an unknown algorithm', async () => {
-    const r = await runCli(['explain', 'unknown_algo_xyz', '--format', 'json']);
+    const r = await runCli(['model', 'explain', 'unknown_algo_xyz']);
     const parsed = tryParseJson(r.stdout);
     const payload = parsed?.payload as Record<string, unknown> | undefined;
     if (parsed !== null) {

@@ -13,7 +13,7 @@ import * as path from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { hashJsonString } from '@wasm4pm/contracts';
 
-function atomicWriteSync(target: string, content: string): void {
+export function atomicWriteSync(target: string, content: string): void {
   const tmp = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`;
   fs.writeFileSync(tmp, content);
   try {

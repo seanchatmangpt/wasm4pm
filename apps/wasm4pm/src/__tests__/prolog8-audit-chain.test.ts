@@ -353,7 +353,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       // A receipt where receipt_hash doesn't match the content → ReceiptInvalid
       // Enterprise invariant: "If a receipt chain has gaps, the proof is invalid"
       const replayPath = writeTmp(tmpDir, 'forged-receipt.json', makeGapReceiptReplay());
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       // Engine: ReceiptInvalid → conformance_fail (6) or unavailable → source_error (2)
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
       expect([EXIT_CODES.source_error, EXIT_CODES.conformance_fail]).toContain(result.exitCode);
@@ -362,42 +362,40 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('replay with forged receipt_hash --format json status is "error"', async () => {
       const replayPath = writeTmp(tmpDir, 'forged-receipt-json.json', makeGapReceiptReplay());
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env }
       );
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      // Status must be "error" regardless of whether WASM is available
-      expect(['ok', 'error']).toContain(parsed['status']);
-      // When engine is present, it must not be "ok"
-      if (result.exitCode !== EXIT_CODES.source_error) {
-        expect(parsed['status']).toBe('error');
-      }
+      // A failing bridged verb serializes ONLY {error:{code,message}} — the
+      // framework's one error wire-format (no `status` field on it; see
+      // packages/noun-verb/src/errors.ts). Already asserted non-success above.
+      expect(parsed).toHaveProperty('error');
     });
 
     it('replay with tampered proof_root exits non-zero (Mismatch path)', async () => {
       // Tamper the proof_root but keep receipt_hash valid — engine sees Mismatch
       const replayPath = writeTmp(tmpDir, 'tampered-proof.json', makeGapReceiptReplay('proof_root'));
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('replay with tampered catalog_root exits non-zero (Mismatch path)', async () => {
       const replayPath = writeTmp(tmpDir, 'tampered-catalog.json', makeGapReceiptReplay('catalog_root'));
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('replay with tampered fact_root exits non-zero (Mismatch path)', async () => {
       // Enterprise invariant: "If output_hash mismatches, the artifact is tampered"
       const replayPath = writeTmp(tmpDir, 'tampered-fact.json', makeGapReceiptReplay('fact_root'));
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('replay mismatch human output contains mismatch/tamper terminology', async () => {
       const replayPath = writeTmp(tmpDir, 'tampered-msg.json', makeGapReceiptReplay());
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return; // WASM not built, vacuous
       const combined = result.stdout + result.stderr;
       // Must explain the failure — not silently fail
@@ -407,13 +405,18 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('replay --format json when engine returns non-Verified includes status payload', async () => {
       const replayPath = writeTmp(tmpDir, 'forged-replay-j.json', makeGapReceiptReplay());
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      // Envelope is always present regardless of exit code
-      expect(parsed).toHaveProperty('status');
-      expect(parsed).toHaveProperty('exit_code');
+      // On success, the full legacy envelope (status/exit_code) survives; on
+      // failure, only {error:{code,message}} exists (see contract notes above).
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed).toHaveProperty('status');
+        expect(parsed).toHaveProperty('exit_code');
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
   });
 
@@ -423,7 +426,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('query for validated stage exits non-success when stage fact is absent', async () => {
       // Enterprise invariant: "If a stage is skipped, conformance must fail"
       const queryPath = writeTmp(tmpDir, 'missing-stage.json', makeMissingStageQuery());
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Engine: stage(run-001, validated) is not in facts → Denied or unavailable
       // Either engine rejects (0 = Denied exits 0 per CLI contract!) or SOURCE_ERROR
       // NOTE: In Prolog8 CLI, Denied also exits 0 (it's a valid negative answer).
@@ -436,7 +439,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('query for missing stage --format json returns Denied when WASM available', async () => {
       const queryPath = writeTmp(tmpDir, 'missing-stage-j.json', makeMissingStageQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -454,7 +457,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
 
     it('query for validated stage with ALL stages present exits success when WASM available', async () => {
       const queryPath = writeTmp(tmpDir, 'full-stage.json', makeFullStageQuery());
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Engine: all three stages present → Answered (exit 0) or SOURCE_ERROR
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
@@ -462,7 +465,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('query for full stage --format json returns Answered when WASM available', async () => {
       const queryPath = writeTmp(tmpDir, 'full-stage-j.json', makeFullStageQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -479,8 +482,8 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('stage-present query is deterministic — two runs produce identical exit codes', async () => {
       const queryPath = writeTmp(tmpDir, 'stage-det.json', makeFullStageQuery());
       const [r1, r2] = await Promise.all([
-        runCli(['prolog8', 'query', '-i', queryPath, '--format', 'json'], { env: env.env }),
-        runCli(['prolog8', 'query', '-i', queryPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'], { env: env.env }),
       ]);
       expect(r1.exitCode).toBe(r2.exitCode);
     });
@@ -492,7 +495,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('admitted(X) :- receipt(X), conformance(X) query input is accepted (schema not rejected)', async () => {
       // Test that the engine accepts a 2-body Horn rule — admission gate is correct
       const queryPath = writeTmp(tmpDir, 'admitted-full.json', makeAdmittedQueryInput('full'));
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Must not exit CONFIG_ERROR (bad schema) — engine may reject due to rule inference
       // not yet implemented, but the JSON must be schema-valid
       expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
@@ -506,29 +509,30 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       const fullPath = writeTmp(tmpDir, 'admitted-full2.json', makeAdmittedQueryInput('full'));
       const noConfPath = writeTmp(tmpDir, 'admitted-noconf.json', makeAdmittedQueryInput('no-conformance'));
       const [fullResult, noConfResult] = await Promise.all([
-        runCli(['prolog8', 'query', '-i', fullPath, '--format', 'json'], { env: env.env }),
-        runCli(['prolog8', 'query', '-i', noConfPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', fullPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', noConfPath, '--format', 'json'], { env: env.env }),
       ]);
       // Both must produce valid JSON
       expect(() => JSON.parse(fullResult.stdout)).not.toThrow();
       expect(() => JSON.parse(noConfResult.stdout)).not.toThrow();
-      // Both must have the standard envelope fields
+      // Both must have either the success envelope (status) or the
+      // framework error envelope (error) — never neither.
       const full = JSON.parse(fullResult.stdout) as Record<string, unknown>;
       const noConf = JSON.parse(noConfResult.stdout) as Record<string, unknown>;
-      expect(full).toHaveProperty('status');
-      expect(noConf).toHaveProperty('status');
+      expect(full['status'] !== undefined || full['error'] !== undefined).toBe(true);
+      expect(noConf['status'] !== undefined || noConf['error'] !== undefined).toBe(true);
     });
 
     it('simple receipt(run-001) fact query exits success or source_error (no rules needed)', async () => {
       const queryPath = writeTmp(tmpDir, 'simple-receipt.json', makeSimpleReceiptQuery());
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
     it('simple receipt query --format json produces parseable JSON with result key', async () => {
       const queryPath = writeTmp(tmpDir, 'simple-receipt-j.json', makeSimpleReceiptQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       expect(() => JSON.parse(result.stdout)).not.toThrow();
@@ -537,7 +541,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('receipt query when WASM available has Answered in payload result', async () => {
       const queryPath = writeTmp(tmpDir, 'receipt-ans.json', makeSimpleReceiptQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       if (result.exitCode === EXIT_CODES.source_error) return; // WASM absent
@@ -562,7 +566,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       // The test validates that the JSON is either rejected at schema parse or
       // at fact admission.
       const queryPath = writeTmp(tmpDir, 'arity-violation.json', makeArityViolationQuery());
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // If WASM is available: admission rejects → exits 0 with Invalid envelope
       // or exits SOURCE_ERROR if catalog arity=9 is rejected at schema parse.
       // Either way: the query must NOT succeed as an Answered result.
@@ -574,7 +578,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('arity-9 query --format json never has Answered result', async () => {
       const queryPath = writeTmp(tmpDir, 'arity-v-j.json', makeArityViolationQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -588,7 +592,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('body-len-9 rule query exits non-zero (RuleBodyCapExceeded)', async () => {
       // P8-CF-2: rule body > 8 atoms must be rejected
       const queryPath = writeTmp(tmpDir, 'body-cap-violation.json', makeBodyCapViolationQuery());
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Admission must reject: exits 0 (Invalid) or source_error (WASM absent)
       expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
@@ -598,7 +602,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('body-len-9 rule --format json never has Answered result', async () => {
       const queryPath = writeTmp(tmpDir, 'body-cap-j.json', makeBodyCapViolationQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -614,7 +618,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       // at the 10MiB gate. Here we verify the CLI does not silently accept.
       const queryPath = writeTmp(tmpDir, 'max-bytes-1.json', makeSimpleReceiptQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--max-bytes', '1'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--max-bytes', '1'],
         { env: env.env }
       );
       // --max-bytes=1 is a positive integer → CLI does not reject it (config_error)
@@ -655,7 +659,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         },
       });
       const queryPath = writeTmp(tmpDir, 'unit-clause.json', unitClauseQuery);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Must not crash the process with an unexpected exit code
       expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
@@ -693,13 +697,13 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         },
       });
       const queryPath = writeTmp(tmpDir, 'self-neg.json', selfNegatingRule);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return; // WASM absent
       // When engine is present: admission must reject NegationRequiresFeature
       // The CLI maps this to an Invalid response (exit 0 with "Invalid" payload)
       // OR to execution_error (3) — but never to a successful Answered result.
       const resultJson = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       if (resultJson.exitCode === EXIT_CODES.source_error) return;
@@ -714,7 +718,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       // FM-5 guard: querying an unregistered predicate must be rejected at admission
       const queryPath = writeTmp(tmpDir, 'unknown-pred.json', makeUnknownPredicateQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -760,14 +764,14 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         // Not large enough to trigger the gate — skip the engine assertion
         // but still verify the JSON is valid and CLI handles it gracefully
         const queryPath = writeTmp(tmpDir, 'big-input.json', bigInput);
-        const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+        const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
         expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
           result.exitCode
         );
         return;
       }
       const queryPath = writeTmp(tmpDir, 'oversized-input.json', bigInput);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Engine rejects oversized input: exits source_error or execution_error
       expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
@@ -798,7 +802,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         },
       });
       const queryPath = writeTmp(tmpDir, 'medium-input.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
@@ -834,7 +838,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       });
       const queryPath = writeTmp(tmpDir, 'truncated-130.json', input);
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
@@ -875,7 +879,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         },
       });
       const queryPath = writeTmp(tmpDir, 'truncated-hint.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return;
       if (result.stdout.includes('TruncatedAnswers') || result.stdout.includes('truncated')) {
         expect(result.stdout).toMatch(/narrow|truncat|binding.mask|128/i);
@@ -889,11 +893,11 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     it('two sequential runs of identical audit query produce identical JSON payloads', async () => {
       const queryPath = writeTmp(tmpDir, 'det-receipt.json', makeSimpleReceiptQuery());
       const r1 = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const r2 = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       expect(r1.exitCode).toBe(r2.exitCode);
@@ -908,8 +912,8 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
 
     it('replay of a mismatched receipt is deterministic — two runs agree on rejection', async () => {
       const replayPath = writeTmp(tmpDir, 'det-mismatch.json', makeGapReceiptReplay());
-      const r1 = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
-      const r2 = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const r1 = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
+      const r2 = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(r1.exitCode).toBe(r2.exitCode);
     });
   });
@@ -918,7 +922,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
 
   describe('Enterprise: show capabilities for audit configuration', () => {
     it('show --format json reports max_answers cap as 128 when WASM available', async () => {
-      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'show', '--format', 'json'], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return;
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       const caps = (
@@ -930,7 +934,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     });
 
     it('show --format json reports arity cap as 8', async () => {
-      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'show', '--format', 'json'], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return;
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       const caps = (
@@ -942,7 +946,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     });
 
     it('show --format json reports body cap as 8', async () => {
-      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'show', '--format', 'json'], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return;
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       const caps = (
@@ -954,7 +958,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
     });
 
     it('show --format json engine name is "prolog8"', async () => {
-      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'show', '--format', 'json'], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return;
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       const caps = (
@@ -969,34 +973,46 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
   // ── 10. Cross-cutting: exit code contract ─────────────────────────────────
 
   describe('Enterprise: exit code contract correctness', () => {
-    it('show JSON exit_code field equals process exit code', async () => {
-      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+    it('show JSON exit_code field equals process exit code (success envelope only — error envelope has no exit_code field)', async () => {
+      const result = await runCli(['lab', 'prolog8', 'show', '--format', 'json'], { env: env.env });
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed['exit_code']).toBe(result.exitCode);
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed['exit_code']).toBe(result.exitCode);
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
-    it('query JSON exit_code field equals process exit code', async () => {
+    it('query JSON exit_code field equals process exit code (success envelope only)', async () => {
       const queryPath = writeTmp(tmpDir, 'ec-query.json', makeSimpleReceiptQuery());
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed['exit_code']).toBe(result.exitCode);
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed['exit_code']).toBe(result.exitCode);
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
-    it('replay JSON exit_code field equals process exit code', async () => {
+    it('replay JSON exit_code field equals process exit code (success envelope only)', async () => {
       const replayPath = writeTmp(tmpDir, 'ec-replay.json', makeGapReceiptReplay());
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env }
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed['exit_code']).toBe(result.exitCode);
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed['exit_code']).toBe(result.exitCode);
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
     it('show never exits with a code not in [0, 2]', async () => {
-      const result = await runCli(['prolog8', 'show'], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'show'], { env: env.env });
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
@@ -1007,9 +1023,9 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       const replayPath = writeTmp(tmpDir, 'timing-r.json', makeGapReceiptReplay());
       const start = Date.now();
       await Promise.all([
-        runCli(['prolog8', 'show'], { env: env.env }),
-        runCli(['prolog8', 'query', '-i', queryPath], { env: env.env }),
-        runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env }),
+        runCli(['lab', 'prolog8', 'show'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', replayPath], { env: env.env }),
       ]);
       expect(Date.now() - start).toBeLessThan(20000);
     });

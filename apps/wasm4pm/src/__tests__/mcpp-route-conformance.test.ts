@@ -4,7 +4,13 @@
  * Oracle rank: Rank 2 (Domain contract)
  *
  * Verifies the integration between mcpp's native OCEL JSONL format and
- * wasm4pm's `wpm trace conform` POWL v2 conformance engine.
+ * wasm4pm's `wpm lab trace conform` (was: `wpm trace conform`) POWL v2
+ * conformance engine. Migrated to the noun/verb surface: `trace` -> `lab
+ * trace` (see nouns/_removed.ts), a straight bridge over the unmodified
+ * `commands/trace.ts` body (`nouns/lab/trace.ts`) — behavior, payload
+ * shape, and exit codes are all unchanged, only the invocation prefix
+ * changed. `parsePayload()` below already unwraps `.payload ?? parsed`
+ * generically, so it needed no changes.
  *
  * MCPP Admission Doctrine (mcpp-conformance.md):
  *   - Conformance must equal exactly 1.0 for admission.
@@ -272,7 +278,7 @@ describe('C1: Accepted — fully conforming OCEL admits with verdict Accepted', 
     }
 
     const result = await wpmAsync(
-      ['trace', 'conform', '-m', modelPath, '-i', fixturePath, '--format', 'json'],
+      ['lab', 'trace', 'conform', '-m', modelPath, '-i', fixturePath, '--format', 'json'],
       { cwd: REPO_ROOT }, // schema path resolves relative to cwd
     );
 
@@ -316,7 +322,7 @@ describe('C1: Accepted — fully conforming OCEL admits with verdict Accepted', 
     // Conformance checks schema file relative to cwd (defaults to process.cwd())
     // Run from repo root so schema path resolves correctly
     const result = await wpmAsync(
-      ['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json'],
+      ['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json'],
       { cwd: path.resolve(import.meta.dirname, '../../../..') },
     );
 
@@ -371,7 +377,7 @@ describe('C2: AndonPull — missing required stages → MissingRequiredStages', 
 
     const ocelPath = await writeTempOcel(ocel);
     const modelPath = await writeTempModel(model);
-    const result = await wpmAsync(['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
 
     // MCPP Admission Doctrine: AndonPull → exit 3 (execution_error)
     expect(result.exitCode).toBe(3);
@@ -445,7 +451,7 @@ describe('C3: AndonPull — wrong activity order violates sequence model', () =>
 
     const ocelPath = await writeTempOcel(ocel);
     const modelPath = await writeTempModel(model);
-    const result = await wpmAsync(['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
 
     expect(result.exitCode).toBe(3);
     const payload = parsePayload(result);
@@ -503,7 +509,7 @@ describe('C4: AndonPull — activity-only fake route (no object evidence)', () =
 
     const ocelPath = await writeTempOcel(ocel);
     const modelPath = await writeTempModel(model);
-    const result = await wpmAsync(['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
 
     expect(result.exitCode).toBe(3);
     const payload = parsePayload(result);
@@ -553,7 +559,7 @@ describe('C5: AndonPull — receipt_required but OCEL has no Receipt objects', (
       return; // Skip if fixture not present
     }
 
-    const result = await wpmAsync(['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
 
     // AndonPull — no Receipt objects → eventually InsufficientReceiptCoverage
     // (after schema check on zero-Receipt objects may still raise ReceiptSchemaViolation
@@ -794,7 +800,7 @@ describe('C7: Route catalog — ai-code-review conformance', () => {
     ]);
 
     const ocelPath = await writeTempOcel(ocel);
-    const result = await wpmAsync(['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
 
     expect(result.exitCode).toBe(3); // AndonPull → execution_error
     const payload = parsePayload(result);
@@ -842,7 +848,7 @@ describe('C8: Route catalog — agent-proof-lifecycle real model', () => {
       return; // Skip if fixture not present
     }
 
-    const result = await wpmAsync(['trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-m', modelPath, '-i', ocelPath, '--format', 'json']);
 
     expect(result.exitCode).toBe(3);
     const payload = parsePayload(result);
@@ -894,7 +900,7 @@ describe('C9: Exit code contract — MCPP admission doctrine enforcement', () =>
     const ocel = makeOcel([{ activity: 'a' }]);
     const ocelPath = await writeTempOcel(ocel);
 
-    const result = await wpmAsync(['trace', 'conform', '-i', ocelPath, '--format', 'json']);
+    const result = await wpmAsync(['lab', 'trace', 'conform', '-i', ocelPath, '--format', 'json']);
 
     expect(result.exitCode).not.toBe(0);
   });
@@ -906,7 +912,7 @@ describe('C9: Exit code contract — MCPP admission doctrine enforcement', () =>
     }
 
     const result = await wpmAsync([
-      'trace', 'conform',
+      'lab', 'trace', 'conform',
       '-m', modelPath,
       '-i', '/no/such/file.json',
       '--format', 'json',
@@ -925,7 +931,7 @@ describe('C9: Exit code contract — MCPP admission doctrine enforcement', () =>
     await fs.writeFile(badPath, '{ not valid json !!', 'utf8');
 
     const result = await wpmAsync([
-      'trace', 'conform',
+      'lab', 'trace', 'conform',
       '-m', modelPath,
       '-i', badPath,
       '--format', 'json',

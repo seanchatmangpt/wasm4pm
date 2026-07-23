@@ -5,6 +5,16 @@
  * - JSON output returns ≥ 30 checks
  * - Each check has id, label, status fields
  * - --fix exits 0 and creates .wasm4pm/results/
+ *
+ * Migrated from the retired top-level `wpm doctor` command (removed — see
+ * `apps/wasm4pm/src/nouns/_removed.ts`: `doctor` -> `system doctor`) to
+ * `wpm system doctor`. Most of this file exercises `ALL_CHECKS` directly
+ * (imported from `../commands/doctor.js`) rather than the CLI, so those
+ * tests are unaffected by the noun/verb rebuild; only the handful of
+ * `runCli([...])` invocations below needed the `system doctor` prefix.
+ * `system doctor` is a legacy BRIDGE verb (`invokeLegacyCommandAsJson`),
+ * so the old `{command,status,payload,meta}` envelope on success is
+ * unchanged.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -79,7 +89,10 @@ describe('wpm doctor --format json output shape', () => {
   it('returns valid JSON with checks array containing at least 30 items', async () => {
     const env = await createCliTestEnv();
     // Use 'doctor check' subcommand — the root 'doctor' command defers to subcommands
-    const result = await runCli(['doctor', 'check', '--format', 'json', '--quiet'], { env, timeout: 60000 });
+    const result = await runCli(['system', 'doctor', 'check', '--format', 'json', '--quiet'], {
+      env: env.env,
+      timeout: 60000,
+    });
 
     // Exit code 0 (healthy) or 1 (config errors present) — both are valid
     expect([0, 1]).toContain(result.exitCode);
@@ -159,8 +172,8 @@ describe('wpm doctor --fix', () => {
   it('exits 0 when fix subcommand is used', async () => {
     const env = await createCliTestEnv();
     // Use 'doctor fix --dry-run' to avoid actually executing repair commands
-    const result = await runCli(['doctor', 'fix', '--dry-run', '--format', 'json', '--quiet'], {
-      env,
+    const result = await runCli(['system', 'doctor', 'fix', '--dry-run', '--format', 'json', '--quiet'], {
+      env: env.env,
       timeout: 90000,
     });
     // fix --dry-run should always exit 0
@@ -240,7 +253,10 @@ describe('wpm doctor required check coverage', () => {
 describe('wpm doctor JSON payload total field', () => {
   it('payload.total equals checks.length', async () => {
     const env = await createCliTestEnv();
-    const result = await runCli(['doctor', 'check', '--format', 'json', '--quiet'], { env, timeout: 60000 });
+    const result = await runCli(['system', 'doctor', 'check', '--format', 'json', '--quiet'], {
+      env: env.env,
+      timeout: 60000,
+    });
 
     const stdout = result.stdout ?? '';
     const jsonStart = stdout.indexOf('{');

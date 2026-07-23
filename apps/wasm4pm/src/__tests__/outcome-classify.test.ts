@@ -16,6 +16,24 @@ import { spawn } from 'child_process';
 import { extractOutcomeFeatures, normalizeOutcomeFeatures, classifyTraces } from '@wasm4pm/ml';
 import type { FeatureMatrix } from '@wasm4pm/ml';
 
+/**
+ * `classifyTraces` takes per-case records (`Array<Record<string, unknown>>`
+ * with a `case_id` and a categorical target field), not a `FeatureMatrix` —
+ * `buildFeatureMatrix` inside `classifyTraces` is what *produces* a
+ * `FeatureMatrix`, not what consumes one. Convert the row-oriented test
+ * fixtures below into the per-case record shape the real API expects.
+ */
+function matrixToRecords(matrix: FeatureMatrix): Array<Record<string, unknown>> {
+  return matrix.caseIds.map((caseId, i) => {
+    const row: Record<string, unknown> = { case_id: caseId };
+    matrix.featureNames.forEach((name, j) => {
+      row[name] = matrix.data[i][j];
+    });
+    row.outcome = matrix.labels[i];
+    return row;
+  });
+}
+
 // Use a sample XES log for testing
 const SAMPLE_LOG_PATH = path.join(__dirname, '../../..', 'fixtures/real/hiring_process.xes');
 const OUTPUT_DIR = path.join(__dirname, '.outcome-test-output');
@@ -199,7 +217,7 @@ describe('outcome-classify integration', () => {
         labels: ['success', 'failure', 'success', 'failure', 'success'],
       };
 
-      const result = await classifyTraces(featureData, { method: 'knn', k: 3 });
+      const result = await classifyTraces(matrixToRecords(featureData), { method: 'knn', k: 3 });
 
       // Rank-1: Result has required fields
       expect(result).toBeDefined();
@@ -209,7 +227,7 @@ describe('outcome-classify integration', () => {
       // Rank-2: All predictions are valid
       for (const pred of result.predictions) {
         expect(typeof pred).toBe('object');
-        expect(typeof pred.predicted_label).toBe('string');
+        expect(typeof pred.predicted).toBe('string');
         expect(typeof pred.confidence).toBe('number');
         expect(pred.confidence).toBeGreaterThanOrEqual(0);
         expect(pred.confidence).toBeLessThanOrEqual(1.0);
@@ -237,13 +255,14 @@ describe('outcome-classify integration', () => {
         labels: ['success', 'failure', 'success'],
       };
 
-      const result1 = await classifyTraces(featureData, { method: 'knn', k: 2 });
-      const result2 = await classifyTraces(featureData, { method: 'knn', k: 2 });
+      const records = matrixToRecords(featureData);
+      const result1 = await classifyTraces(records, { method: 'knn', k: 2 });
+      const result2 = await classifyTraces(records, { method: 'knn', k: 2 });
 
       // Rank-1: Deterministic — same input → same output
       expect(result1.predictions.length).toBe(result2.predictions.length);
       for (let i = 0; i < result1.predictions.length; i++) {
-        expect(result1.predictions[i].predicted_label).toBe(result2.predictions[i].predicted_label);
+        expect(result1.predictions[i].predicted).toBe(result2.predictions[i].predicted);
         expect(Math.abs(result1.predictions[i].confidence - result2.predictions[i].confidence))
           .toBeLessThan(1e-10);
       }

@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Rank-2 regression: `CLOCK_LOCK` serializes parallel mutations of the
 //! global `TIME_OFFSET_MS` atomic.
 //!

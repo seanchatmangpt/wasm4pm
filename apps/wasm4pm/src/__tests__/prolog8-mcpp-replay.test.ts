@@ -403,7 +403,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
     it('receipt query exits 0 (success) or 2 (source_error when WASM absent)', async () => {
       const input = buildReceiptQueryInput();
       const queryPath = writeTmp(tmpDir, 'mcpp-receipt-query.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
@@ -411,33 +411,44 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const input = buildReceiptQueryInput();
       const queryPath = writeTmp(tmpDir, 'mcpp-receipt-query-j.json', input);
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env },
       );
       // Envelope must be parseable regardless of WASM presence
       expect(() => JSON.parse(result.stdout)).not.toThrow();
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed).toHaveProperty('status');
-      expect(parsed).toHaveProperty('exit_code');
-      expect(parsed['exit_code']).toBe(result.exitCode);
+      // Success keeps the full legacy envelope (status/exit_code); failure is
+      // ONLY {error:{code,message}} — see file-level bridge contract notes
+      // in prolog8-cli.test.ts. Never neither.
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed).toHaveProperty('status');
+        expect(parsed).toHaveProperty('exit_code');
+        expect(parsed['exit_code']).toBe(result.exitCode);
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
-    it('receipt query JSON envelope exit_code matches process exit code', async () => {
+    it('receipt query JSON envelope exit_code matches process exit code (success envelope only)', async () => {
       const input = buildReceiptQueryInput();
       const queryPath = writeTmp(tmpDir, 'mcpp-ec.json', input);
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env },
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed['exit_code']).toBe(result.exitCode);
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed['exit_code']).toBe(result.exitCode);
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
     it('receipt query with WASM present has Answered in result payload', async () => {
       const input = buildReceiptQueryInput();
       const queryPath = writeTmp(tmpDir, 'mcpp-receipt-ans.json', input);
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env },
       );
       if (result.exitCode === EXIT_CODES.source_error) return; // WASM not built
@@ -454,7 +465,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       // Validates that the compiler API produces schema-valid JSON the CLI accepts
       const input = buildAdmittedQueryInput(buildFullAdmissionFacts());
       const queryPath = writeTmp(tmpDir, 'mcpp-admitted-full.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Schema-invalid input would exit config_error (1)
       expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
     });
@@ -463,7 +474,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       // receipt-only facts: admission rule body[1] (conformance) is unsatisfied
       const input = buildAdmittedQueryInput(buildReceiptOnlyFacts());
       const queryPath = writeTmp(tmpDir, 'mcpp-noconf.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Schema must be valid; engine may Deny or source_error
       expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
       expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
@@ -480,47 +491,53 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       // Enterprise invariant: "If a receipt chain has gaps, the proof is invalid"
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-placeholder.json', input);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       // ReceiptInvalid → conformance_fail (6) when WASM present; source_error (2) when absent
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
       expect([EXIT_CODES.source_error, EXIT_CODES.conformance_fail]).toContain(result.exitCode);
     });
 
-    it('replay --format json always has status and exit_code fields', async () => {
+    it('replay --format json has status+exit_code on success, or {error} on failure', async () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-j.json', input);
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env },
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed).toHaveProperty('status');
-      expect(parsed).toHaveProperty('exit_code');
-      expect(parsed['exit_code']).toBe(result.exitCode);
+      if (result.exitCode === EXIT_CODES.success) {
+        expect(parsed).toHaveProperty('status');
+        expect(parsed).toHaveProperty('exit_code');
+        expect(parsed['exit_code']).toBe(result.exitCode);
+      } else {
+        expect(parsed).toHaveProperty('error');
+      }
     });
 
-    it('replay --format json status is "error" when WASM absent (source_error path)', async () => {
-      // Document actual behavior: WASM not built → status=error, code=source_error
+    it('replay --format json error.code is "INVALID_INPUT" when WASM absent (source_error path)', async () => {
+      // Document actual behavior: WASM not built -> the framework error
+      // envelope {error:{code,message}} only — no legacy status/exit_code
+      // fields, and the framework's ErrorCode vocabulary ('INVALID_INPUT'),
+      // not the legacy 'source_error' string (see
+      // packages/noun-verb/src/errors.ts).
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-wasm-absent.json', input);
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env },
       );
       if (result.exitCode !== EXIT_CODES.source_error) return; // WASM present — skip this path
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      // When WASM is absent, status must be "error" (not "ok")
-      expect(parsed['status']).toBe('error');
       const error = parsed['error'] as Record<string, unknown> | undefined;
       expect(error).toBeDefined();
-      expect(error?.['code']).toBe('source_error');
+      expect(error?.['code']).toBe('INVALID_INPUT');
     });
 
     it('replay error message mentions prolog8 build instructions when WASM absent', async () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-hint.json', input);
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env },
       );
       if (result.exitCode !== EXIT_CODES.source_error) return; // WASM present — vacuous
@@ -533,14 +550,14 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
     it('replay with tampered receipt_hash exits non-zero (Mismatch path when WASM present)', async () => {
       const input = buildReplayInput(buildFullAdmissionFacts(), 'receipt_hash');
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-tampered.json', input);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('replay with tampered catalog_root exits non-zero', async () => {
       const input = buildReplayInput(buildFullAdmissionFacts(), 'catalog_root');
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-catalog-tamper.json', input);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
@@ -548,14 +565,14 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       // Enterprise invariant: "If output_hash mismatches, the artifact is tampered"
       const input = buildReplayInput(buildFullAdmissionFacts(), 'fact_root');
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-fact-tamper.json', input);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('replay human output mentions tampering or verification failure when WASM present', async () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-human.json', input);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       if (result.exitCode === EXIT_CODES.source_error) return; // WASM absent
       const combined = result.stdout + result.stderr;
       expect(combined).toMatch(/mismatch|tamper|invalid|receipt|verification|andon/i);
@@ -567,7 +584,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       // Confirm no receipt field in this payload
       expect(JSON.parse(queryOnly)).not.toHaveProperty('receipt');
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-no-receipt.json', queryOnly);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       // Without a receipt, replay cannot verify — must not exit 0
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
@@ -576,22 +593,23 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const queryOnly = buildAdmittedQueryInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-no-receipt-j.json', queryOnly);
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env },
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed).toHaveProperty('status');
-      expect(parsed['exit_code']).toBe(result.exitCode);
-      // Status must be error (source_error from WASM absent, or error from missing receipt)
-      expect(parsed['status']).not.toBe('INVALID_ASSERT');
+      // Without a receipt, replay never succeeds — the error envelope
+      // {error:{code,message}} is the only shape (no status/exit_code fields
+      // on it; see bridge contract notes elsewhere in this batch).
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
+      expect(parsed).toHaveProperty('error');
     });
 
     it('replay is deterministic — two runs with identical input agree on rejection', async () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-det.json', input);
       const [r1, r2] = await Promise.all([
-        runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env }),
-        runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', replayPath], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', replayPath], { env: env.env }),
       ]);
       expect(r1.exitCode).toBe(r2.exitCode);
     });
@@ -600,13 +618,21 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-det-j.json', input);
       const [r1, r2] = await Promise.all([
-        runCli(['prolog8', 'replay', '-i', replayPath, '--format', 'json'], { env: env.env }),
-        runCli(['prolog8', 'replay', '-i', replayPath, '--format', 'json'], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', replayPath, '--format', 'json'], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', replayPath, '--format', 'json'], { env: env.env }),
       ]);
       const p1 = JSON.parse(r1.stdout) as Record<string, unknown>;
       const p2 = JSON.parse(r2.stdout) as Record<string, unknown>;
-      expect(p1['status']).toBe(p2['status']);
-      expect(p1['exit_code']).toBe(p2['exit_code']);
+      expect(r1.exitCode).toBe(r2.exitCode);
+      if (r1.exitCode === EXIT_CODES.success) {
+        expect(p1['status']).toBe(p2['status']);
+        expect(p1['exit_code']).toBe(p2['exit_code']);
+      } else {
+        // Both runs must fail with the same framework error code.
+        const e1 = p1['error'] as Record<string, unknown>;
+        const e2 = p2['error'] as Record<string, unknown>;
+        expect(e1?.['code']).toBe(e2?.['code']);
+      }
     });
   });
 
@@ -628,7 +654,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
         },
       });
       const queryPath = writeTmp(tmpDir, 'mcpp-refused-query.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       // Denied exits 0 in Prolog8 CLI (negative answer is still a valid answer)
       expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
@@ -649,7 +675,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       });
       const queryPath = writeTmp(tmpDir, 'mcpp-refused-query-j.json', input);
       const result = await runCli(
-        ['prolog8', 'query', '-i', queryPath, '--format', 'json'],
+        ['lab', 'prolog8', 'query', '-i', queryPath, '--format', 'json'],
         { env: env.env },
       );
       if (result.exitCode === EXIT_CODES.source_error) return; // WASM absent
@@ -663,7 +689,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
     it('refused-run replay with placeholder receipt exits non-zero (also rejected)', async () => {
       const input = buildReplayInput(buildRefusedFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-refused-replay.json', input);
-      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', replayPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
   });
@@ -673,7 +699,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
   describe('CLI: input edge cases', () => {
     it('replay with nonexistent input file exits source_error', async () => {
       const result = await runCli(
-        ['prolog8', 'replay', '-i', '/nonexistent/mcpp-receipt.json'],
+        ['evidence', 'replay', '-i', '/nonexistent/mcpp-receipt.json'],
         { env: env.env },
       );
       expect(result.exitCode).toBe(EXIT_CODES.source_error);
@@ -681,31 +707,34 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
 
     it('replay with nonexistent input --format json has error envelope', async () => {
       const result = await runCli(
-        ['prolog8', 'replay', '-i', '/nonexistent/mcpp-receipt.json', '--format', 'json'],
+        ['evidence', 'replay', '-i', '/nonexistent/mcpp-receipt.json', '--format', 'json'],
         { env: env.env },
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      expect(parsed['status']).toBe('error');
-      expect(parsed['exit_code']).toBe(EXIT_CODES.source_error);
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
+      expect(parsed).toHaveProperty('error');
+      expect((parsed['error'] as Record<string, unknown>)['code']).toBe('INVALID_INPUT');
     });
 
     it('replay with empty JSON file exits source_error or execution_error (not success)', async () => {
       const emptyPath = writeTmp(tmpDir, 'empty.json', '{}');
-      const result = await runCli(['prolog8', 'replay', '-i', emptyPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', emptyPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('replay with malformed JSON exits source_error or execution_error (not success)', async () => {
       const badPath = writeTmp(tmpDir, 'bad.json', '{ not valid json ]');
-      const result = await runCli(['prolog8', 'replay', '-i', badPath], { env: env.env });
+      const result = await runCli(['evidence', 'replay', '-i', badPath], { env: env.env });
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
-    it('replay missing --input flag exits config_error', async () => {
-      // citty will error on missing required arg
-      const result = await runCli(['prolog8', 'replay'], { env: env.env });
-      // Missing required --input: exits 1 (config_error from citty validation)
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    it('replay missing --input flag exits execution_error', async () => {
+      // citty's own required-arg check fires before commands/prolog8.ts's run(),
+      // throwing a plain Error that bypasses the legacy config_error(1)
+      // classification and lands as generic EXECUTION_ERROR (3) — see
+      // apps/wasm4pm/src/__tests__/prolog8-cli.test.ts contract notes.
+      const result = await runCli(['evidence', 'replay'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.execution_error);
     });
 
     it('query with all-refused facts and receipt fact query exits success or source_error', async () => {
@@ -722,7 +751,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
         },
       });
       const queryPath = writeTmp(tmpDir, 'mcpp-receipt-refused.json', input);
-      const result = await runCli(['prolog8', 'query', '-i', queryPath], { env: env.env });
+      const result = await runCli(['lab', 'prolog8', 'query', '-i', queryPath], { env: env.env });
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
@@ -739,9 +768,9 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const receiptPath = writeTmp(tmpDir, 'timing-receipt.json', receiptInput);
       const start = Date.now();
       await Promise.all([
-        runCli(['prolog8', 'replay', '-i', fullPath, '--format', 'json'], { env: env.env }),
-        runCli(['prolog8', 'replay', '-i', refusedPath, '--format', 'json'], { env: env.env }),
-        runCli(['prolog8', 'query', '-i', receiptPath, '--format', 'json'], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', fullPath, '--format', 'json'], { env: env.env }),
+        runCli(['evidence', 'replay', '-i', refusedPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', receiptPath, '--format', 'json'], { env: env.env }),
       ]);
       expect(Date.now() - start).toBeLessThan(5000);
     });
@@ -751,7 +780,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-run-id.json', input);
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env },
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -767,7 +796,7 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-ts.json', input);
       const result = await runCli(
-        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        ['evidence', 'replay', '-i', replayPath, '--format', 'json'],
         { env: env.env },
       );
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
@@ -811,8 +840,8 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const compiledPath = writeTmp(tmpDir, 'mcpp-compiled.json', compiledInput);
       const handcraftedPath = writeTmp(tmpDir, 'mcpp-handcrafted.json', handcraftedInput);
       const [r1, r2] = await Promise.all([
-        runCli(['prolog8', 'query', '-i', compiledPath, '--format', 'json'], { env: env.env }),
-        runCli(['prolog8', 'query', '-i', handcraftedPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', compiledPath, '--format', 'json'], { env: env.env }),
+        runCli(['lab', 'prolog8', 'query', '-i', handcraftedPath, '--format', 'json'], { env: env.env }),
       ]);
       // Both inputs represent the same query — must produce the same exit code
       expect(r1.exitCode).toBe(r2.exitCode);

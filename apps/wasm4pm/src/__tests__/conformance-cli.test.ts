@@ -1,401 +1,236 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
+/**
+ * Migrated from the old top-level `wpm conformance` surface (removed — see
+ * `apps/wasm4pm/src/nouns/_removed.ts`: `conformance` -> `model check --mode
+ * replay`) to the new noun/verb `wpm model check` command
+ * (`apps/wasm4pm/src/nouns/model/check.ts`).
+ *
+ * Behavioral notes carried over from the old suite:
+ * - A successful (non-throwing) result IS the JSON payload directly — no
+ *   `{command,status,payload,meta}` wrapper. Stdout is ALWAYS JSON
+ *   (`packages/noun-verb/src/output.ts`), whether the outcome is success or
+ *   `{error:{code,message,action_template}}`.
+ * - Several old flags have no new equivalent and are simply ignored by the
+ *   new verb (unknown flags are not rejected — see `packages/noun-verb`
+ *   citty wiring): `--format`, `--classify`, `--diagnosis`, `--strict-mode`,
+ *   `--fail-fast`, `--save-report`, `--algorithm`, `--precision-mode`,
+ *   `--timeout`, `--max-traces`, `--statistics`, `--method` (replaced by
+ *   `--mode`), `--threshold` (renamed `--fitness-threshold`), `--object-types`
+ *   (renamed singular `--object-type`), `--model-from`. These are exercised
+ *   below only where the new contract has a direct replacement; the rest is
+ *   noted as intentionally removed rather than silently dropped.
+ */
+import { describe, it, expect, beforeAll } from 'vitest';
+import * as fs from 'node:fs';
+import { runCli, tryParseJson, fixture, writeTempFile, CLI_PATH } from './cli-contracts/_helpers.js';
 
-describe('wpm conformance — log-to-model conformance checking CLI', () => {
-  let env: Awaited<ReturnType<typeof createCliTestEnv>>;
+const RUNNING_EXAMPLE_XES = fixture('fixtures/shared/running-example.xes');
+const GGEN_MODEL = fixture('fixtures/models/living_diagnostic_clear_v1.pnml');
+const REAL_OCEL = fixture('fixtures/world/ocel-v2.json');
 
-  beforeEach(async () => {
-    env = await createCliTestEnv();
-  });
+interface Verdict {
+  mode?: string;
+  format?: string;
+  status?: string;
+  checked?: number;
+  admitted?: number;
+  rejected?: number;
+  exitCode?: number;
+  findings?: unknown[];
+}
+interface ErrorEnvelope {
+  error?: { code?: string; message?: string };
+}
 
-  afterEach(() => {
-    env?.cleanup?.();
-  });
+beforeAll(() => {
+  expect(fs.existsSync(CLI_PATH), `Built CLI missing at ${CLI_PATH} — run "pnpm --filter @wasm4pm/cli build" first`).toBe(true);
+  expect(fs.existsSync(RUNNING_EXAMPLE_XES)).toBe(true);
+  expect(fs.existsSync(GGEN_MODEL)).toBe(true);
+  expect(fs.existsSync(REAL_OCEL)).toBe(true);
+});
 
-  describe('conformance (basic)', () => {
-    it('should require input log argument', async () => {
-      const result = await runCli(['conformance'], { env: env.env });
-      expect([1, 2]).toContain(result.exitCode);
-      expect(result.stderr || result.stdout).toMatch(/log|input|argument|required/i);
+describe('wpm model check — conformance checking (was: wpm conformance)', () => {
+  describe('model check (basic)', () => {
+    it('should require input log argument (exits source_error, JSON error envelope)', async () => {
+      const r = await runCli(['model', 'check']);
+      expect(r.exitCode).toBe(2); // source_error — INVALID_INPUT maps to source_error in wpm's ERROR_CODE_MAP
+      const parsed = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+      expect(parsed?.error?.code).toBe('INVALID_INPUT');
     });
 
-    it('should accept --input or -i flag', async () => {
-      // Note: Test setup may not have real log files, so this verifies the flag is accepted
-      const result = await runCli(['conformance', '--input', 'test.xes'], { env: env.env });
-      // Will likely fail due to missing file, but flag should be recognized
-      expect([1, 2, 3]).toContain(result.exitCode);
-    });
-  });
-
-  describe('conformance --model', () => {
-    it('should require model specification', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes'], { env: env.env });
-      expect([1, 2, 3]).toContain(result.exitCode);
-      expect(result.stderr || result.stdout).toMatch(/model|required|argument/i);
-    });
-
-    it('should return source error for malformed PNML model file', async () => {
-      const modelFile = env.tempDir + '/test-model.pnml';
-      const fs = require('fs');
-      fs.writeFileSync(modelFile, '<model/>'); // Invalid PNML — missing <pnml> wrapper
-
-      const result = await runCli(['conformance', '--input', 'test.xes', '--model', modelFile], {
-        env: env.env,
-      });
-      // <model/> is not valid PNML; from_pnml_wasm returns SOURCE_ERROR (exit 2)
-      expect([1, 2]).toContain(result.exitCode);
-      expect(result.stdout + result.stderr).toMatch(/INVALID_MODEL_HANDLE|not supported yet|pnml|error/i);
-    });
-
-    it('should accept model from discovery algorithm', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--model-from', 'dfg'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
-    });
-  });
-
-  describe('conformance --method', () => {
-    const methods = ['replay', 'alignment', 'token-replay'];
-
-    methods.forEach((method) => {
-      it(`should support ${method} conformance method`, async () => {
-        const result = await runCli(['conformance', '--input', 'test.xes', '--method', method], {
-          env: env.env,
-        });
-        expect([1, 2, 3]).toContain(result.exitCode);
-      });
+    it('should accept a positional input path and detect its format', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'self', '--fitness-threshold', '0.01']);
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed, `stdout must be JSON: ${r.stdout.slice(0, 300)}`).toBeDefined();
+      expect(parsed?.format).toBe('xes');
     });
   });
 
-  describe('conformance output metrics', () => {
-    it('should report fitness score', async () => {
-      const result = await runCli(['conformance', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/fitness|score|metric/i);
+  describe('model check --model / --mode', () => {
+    it('should require --model for --mode replay (INVALID_INPUT, exit source_error)', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'replay']);
+      expect(r.exitCode).toBe(2);
+      const parsed = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+      expect(parsed?.error?.code).toBe('INVALID_INPUT');
+      expect(parsed?.error?.message).toMatch(/--model is required/i);
     });
 
-    it('should report precision score', async () => {
-      const result = await runCli(['conformance', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/precision|metric|output/i);
+    it('should return an execution error for a malformed PNML model file', async () => {
+      const modelFile = writeTempFile('bad-model.pnml', '<model/>'); // missing <net> element
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--model', modelFile, '--mode', 'replay']);
+      expect(r.exitCode).toBe(3); // execution_error — PNML parse failure surfaces as EXECUTION_ERROR
+      const parsed = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+      expect(parsed?.error?.code).toBe('EXECUTION_ERROR');
+      expect(parsed?.error?.message).toMatch(/pnml|net/i);
     });
 
-    it('should support --format json for structured output', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--format', 'json'], {
-        env: env.env,
-      });
-      // Will error on missing files, but JSON flag should be accepted
-      if (result.exitCode === EXIT_CODES.success) {
-        expect(() => JSON.parse(result.stdout)).not.toThrow();
-      }
-    });
-  });
-
-  describe('conformance --classify', () => {
-    it('should classify conforming vs deviating traces', async () => {
-      const result = await runCli(['conformance', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/trace|classify|conform|deviat/i);
+    it('--mode self does not require --model (discovers from the log itself)', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'self', '--fitness-threshold', '0.01']);
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed?.mode).toBe('self');
+      expect(typeof parsed?.status).toBe('string');
     });
 
-    it('should output trace classifications with --classify flag', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--classify'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
-    });
-  });
-
-  describe('conformance --diagnosis', () => {
-    it('should provide deviation diagnosis', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--diagnosis'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
+    it('--mode oracle requires an OCEL log, not XES', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'oracle', '--model', 'dummy-handle']);
+      expect(r.exitCode).toBe(2);
+      const parsed = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+      expect(parsed?.error?.code).toBe('INVALID_INPUT');
+      expect(parsed?.error?.message).toMatch(/oracle requires an OCEL/i);
     });
 
-    it('should explain missing/extra/late activities', async () => {
-      const result = await runCli(['conformance', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/missing|extra|late|diagnos/i);
-    });
-  });
-
-  describe('conformance --strict-mode', () => {
-    it('should enforce 0.85+ fitness threshold in strict mode', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--strict-mode'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
+    it('--mode drift requires an XES/CSV log, not OCEL', async () => {
+      const r = await runCli(['model', 'check', REAL_OCEL, '--mode', 'drift']);
+      expect(r.exitCode).toBe(2);
+      const parsed = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+      expect(parsed?.error?.code).toBe('INVALID_INPUT');
+      expect(parsed?.error?.message).toMatch(/drift requires an XES or CSV/i);
     });
 
-    it('should fail fast on non-conforming traces in strict mode', async () => {
-      const result = await runCli(
-        ['conformance', '--input', 'test.xes', '--strict-mode', '--fail-fast'],
-        { env: env.env }
-      );
-      expect([1, 2, 3]).toContain(result.exitCode);
+    it('rejects an unknown --mode value', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'bogus']);
+      expect(r.exitCode).toBe(2);
+      const parsed = tryParseJson(r.stdout) as ErrorEnvelope | undefined;
+      expect(parsed?.error?.code).toBe('INVALID_INPUT');
+      expect(parsed?.error?.message).toMatch(/unknown --mode/i);
     });
   });
 
-  describe('conformance --threshold', () => {
-    it('should accept custom fitness threshold', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--threshold', '0.75'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
+  describe('model check help text — replaces old fitness/precision/diagnosis --help assertions', () => {
+    it('should mention fitness in --fitness-threshold help', async () => {
+      const r = await runCli(['model', 'check', '--help']);
+      expect(r.stdout + r.stderr).toMatch(/fitness/i);
     });
 
-    it('should reject non-numeric threshold with config_error', async () => {
-      // The conformance command validates that --threshold is numeric (not NaN).
-      // It does NOT validate range 0–1; that is a future enhancement.
-      // We use the positional arg to ensure the file-required gate is passed first
-      // (threshold validation happens before WASM loads).
-      const result = await runCli(['conformance', 'test.xes', '--threshold', 'not-a-number'], {
-        env: env.env,
-      });
-      // Exits config_error (1) when threshold is NaN, or source_error (2) for missing file
-      expect([1, 2]).toContain(result.exitCode);
+    it('should describe the available conformance modes', async () => {
+      const r = await runCli(['model', 'check', '--help']);
+      const help = r.stdout + r.stderr;
+      expect(help).toMatch(/replay/i);
+      expect(help).toMatch(/oracle/i);
+      expect(help).toMatch(/prefix/i);
+      expect(help).toMatch(/drift/i);
     });
   });
 
-  describe('conformance --save-report', () => {
-    it('should save conformance report to file', async () => {
-      const report = env.tempDir + '/conformance-report.json';
-      const result = await runCli(['conformance', '--input', 'test.xes', '--save-report', report], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
+  describe('model check findings — replaces old --classify / --diagnosis assertions', () => {
+    // The old CLI had dedicated --classify/--diagnosis flags gating a subset of
+    // output. The new contract always includes full per-episode `findings`
+    // (with deviation-level detail) whenever the verdict is REJECTED — no flag
+    // needed; there is nothing left to gate.
+    it('REJECTED verdicts include per-episode findings with deviation diagnosis detail', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'self', '--fitness-threshold', '0.999999']);
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed?.status).toBe('REJECTED');
+      expect(Array.isArray(parsed?.findings)).toBe(true);
+      expect((parsed!.findings as unknown[]).length).toBeGreaterThan(0);
+      const finding = (parsed!.findings as Record<string, unknown>[])[0];
+      expect(finding).toHaveProperty('episodeId');
+      expect(finding).toHaveProperty('conforms', false);
+      expect(finding).toHaveProperty('details');
     });
   });
 
-  describe('conformance --algorithm', () => {
-    it('should support dfg for model discovery before conformance', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--algorithm', 'dfg'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
+  describe('model check --fitness-threshold (was: --threshold)', () => {
+    it('a non-numeric --fitness-threshold makes every episode NaN-compare false, so the log is always REJECTED, never ADMITTED', async () => {
+      // fitness >= NaN is false in JS for any fitness value, so this is a
+      // deterministic, well-defined (if surprising) fail-closed behavior —
+      // not a config-time validation error like the old --threshold check.
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'self', '--fitness-threshold', 'not-a-number']);
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed?.status).toBe('REJECTED');
+      expect(r.exitCode).toBe(6); // conformance_fail
     });
 
-    it('should support heuristic miner', async () => {
-      const result = await runCli(
-        ['conformance', '--input', 'test.xes', '--algorithm', 'heuristic'],
-        { env: env.env }
-      );
-      expect([1, 2, 3]).toContain(result.exitCode);
-    });
-  });
-
-  describe('conformance --ocel support', () => {
-    it('should accept object-centric event logs', async () => {
-      const result = await runCli(['conformance', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/ocel|object.centric|log/i);
-    });
-
-    it('should support --object-types for OCEL', async () => {
-      const result = await runCli(
-        ['conformance', '--input', 'test.ocel.json', '--object-types', 'order,item'],
-        { env: env.env }
-      );
-      expect([1, 2, 3]).toContain(result.exitCode);
+    it('a very low --fitness-threshold (0) still requires --model for --mode replay', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'replay', '--fitness-threshold', '0']);
+      expect(r.exitCode).toBe(2);
     });
   });
 
-  describe('conformance error handling', () => {
-    it('should handle invalid log format — exits non-zero (WASM required for content check)', async () => {
-      // The conformance command requires WASM to parse the XES file.
-      // Without WASM, the command fails at the WASM load stage, not the parse stage.
-      // We verify the exit code is non-zero; content assertions need a live WASM binary.
-      const badLog = env.tempDir + '/bad.xes';
-      const fs = require('fs');
-      fs.writeFileSync(badLog, 'not valid xes');
-
-      // Use -i flag (not --input which is not a recognized flag; conformance uses -i/--file)
-      const result = await runCli(['conformance', '-i', badLog], { env: env.env });
-      // Exits non-zero: 2 (source), 3 (execution), or 5 (system — WASM not available)
-      expect([2, 3, 5]).toContain(result.exitCode);
+  describe('model check --activity-key / --object-type (was: --object-types plural)', () => {
+    it('accepts a custom --activity-key', async () => {
+      const r = await runCli([
+        'model', 'check', RUNNING_EXAMPLE_XES,
+        '--mode', 'self', '--fitness-threshold', '0.01', '--activity-key', 'concept:name',
+      ]);
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed?.mode).toBe('self');
     });
 
-    it('should handle invalid model format — exits non-zero', async () => {
-      const badModel = env.tempDir + '/bad.pnml';
-      const fs = require('fs');
-      fs.writeFileSync(badModel, 'not valid pnml');
-
-      // Use -i flag for the log path; --model is the correct flag for the model
-      const result = await runCli(['conformance', '-i', 'test.xes', '--model', badModel], {
-        env: env.env,
-      });
-      // Exits non-zero (source_error=2 if model file JSON is bad, or 3/5 for WASM errors)
-      expect([1, 2, 3, 5]).toContain(result.exitCode);
-    });
-
-    it('should reject invalid threshold values', async () => {
-      const result = await runCli(
-        ['conformance', 'test.xes', '--threshold', 'not-a-number'],
-        { env: env.env }
-      );
-      expect([1, 2]).toContain(result.exitCode);
+    it('accepts --object-type for --mode oracle (episode grouping key) — grouping by "order" finds a real episode, unlike the default key', async () => {
+      const r = await runCli(['model', 'check', REAL_OCEL, '--mode', 'oracle', '--model', GGEN_MODEL, '--object-type', 'order']);
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed, `stdout must be JSON: ${r.stdout.slice(0, 300)}`).toBeDefined();
+      expect(parsed?.mode).toBe('oracle');
+      expect(parsed?.checked).toBeGreaterThan(0);
     });
   });
 
-  describe('conformance performance', () => {
-    it('should accept --timeout flag', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--timeout', '30'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
-    });
-
-    it('should support --max-traces for performance', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--max-traces', '1000'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
+  describe('model check --human (was: --format json toggling human vs JSON)', () => {
+    it('stdout stays pure JSON even with --human; the human view goes to stderr only', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'self', '--fitness-threshold', '0.01', '--human']);
+      expect(() => JSON.parse(r.stdout)).not.toThrow();
+      expect(r.stderr).toMatch(/\[self]/);
     });
   });
 
-  describe('conformance quality gates', () => {
-    it('should verify conformance quality metrics', async () => {
-      const result = await runCli(['conformance', '--help'], { env: env.env });
-      expect(result.stdout).toMatch(/fitness|precision|quality/i);
+  describe('model check JSON payload shape (was: {command,status,payload,meta} envelope assertions)', () => {
+    it('a successful result is the plain verdict payload, not wrapped', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'self', '--fitness-threshold', '0.01']);
+      const json = tryParseJson(r.stdout) as Record<string, unknown> | undefined;
+      expect(json).toBeDefined();
+      expect(json).not.toHaveProperty('command');
+      expect(json).not.toHaveProperty('payload');
+      expect(json).toHaveProperty('mode');
+      expect(json).toHaveProperty('status');
+      expect(json).toHaveProperty('checked');
+      expect(json).toHaveProperty('exitCode');
     });
 
-    it('should report trace-level statistics', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--statistics'], {
-        env: env.env,
-      });
-      expect([1, 2, 3]).toContain(result.exitCode);
-    });
-  });
-
-  describe('conformance --json structure', () => {
-    it('should return valid JSON when requested', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--format', 'json'], {
-        env: env.env,
-      });
-
-      if (result.exitCode === EXIT_CODES.success || result.stdout.includes('{')) {
-        try {
-          JSON.parse(result.stdout);
-          expect(true).toBe(true);
-        } catch (e) {
-          expect.fail(`Invalid JSON: ${e}`);
-        }
-      }
-    });
-
-    it('should include conformance metrics in JSON', async () => {
-      const result = await runCli(['conformance', '--input', 'test.xes', '--format', 'json'], {
-        env: env.env,
-      });
-
-      if (result.exitCode === EXIT_CODES.success && result.stdout.includes('{')) {
-        const json = JSON.parse(result.stdout);
-        expect(json.payload?.fitness !== undefined || json.fitness !== undefined).toBe(true);
-      }
+    it('an error result is exactly {error:{code,message}}, never the old {command,status} shape', async () => {
+      const r = await runCli(['model', 'check']);
+      const json = tryParseJson(r.stdout) as Record<string, unknown> | undefined;
+      expect(json).toEqual({ error: expect.objectContaining({ code: 'INVALID_INPUT', message: expect.any(String) }) });
     });
   });
 
-  describe('conformance --precision-mode validation (unit, no WASM)', () => {
-    it('should reject --precision-mode invalid with config_error (exit 1)', async () => {
-      const result = await runCli(
-        ['conformance', '--precision-mode', 'invalid', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-      const json = JSON.parse(result.stdout);
-      expect(json.status).toBe('error');
-      expect(json.error.message).toMatch(/precision-mode/i);
-    });
-
-    it('should reject --precision-mode FAST (wrong case) with config_error (exit 1)', async () => {
-      const result = await runCli(
-        ['conformance', '--precision-mode', 'FAST', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-    });
-
-    it('should accept --precision-mode fast (exits non-config-error)', async () => {
-      const result = await runCli(
-        ['conformance', '--precision-mode', 'fast', '--format', 'json'],
-        { env: env.env }
-      );
-      // Fails on missing input (source_error=2) not config_error (1)
-      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
-    });
-
-    it('should accept --precision-mode lazy (exits non-config-error)', async () => {
-      const result = await runCli(
-        ['conformance', '--precision-mode', 'lazy', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
-    });
-
-    it('should accept --precision-mode full (exits non-config-error)', async () => {
-      const result = await runCli(
-        ['conformance', '--precision-mode', 'full', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+  describe('model check --window-size (was: n/a — new drift-only flag)', () => {
+    it('accepts a custom --window-size for --mode drift', async () => {
+      const r = await runCli(['model', 'check', RUNNING_EXAMPLE_XES, '--mode', 'drift', '--window-size', '10']);
+      const parsed = tryParseJson(r.stdout) as { windowSize?: number } | undefined;
+      expect(parsed?.windowSize).toBe(10);
     });
   });
 
-  describe('conformance --threshold validation (unit, no WASM)', () => {
-    it('should reject --threshold 1.5 with config_error (exit 1) even without input', async () => {
-      const result = await runCli(
-        ['conformance', '--threshold', '1.5', '--format', 'json'],
-        { env: env.env }
-      );
-      // Threshold is now validated before I/O — fires even without an input file
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-      const json = JSON.parse(result.stdout);
-      expect(json.status).toBe('error');
-      expect(json.error.message).toMatch(/threshold/i);
-    });
-
-    it('should reject --threshold -0.1 with config_error (exit 1)', async () => {
-      const result = await runCli(
-        ['conformance', '--threshold', '-0.1', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-    });
-
-    it('should reject --threshold abc with config_error (exit 1)', async () => {
-      const result = await runCli(
-        ['conformance', '--threshold', 'abc', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).toBe(EXIT_CODES.config_error);
-    });
-
-    it('should accept --threshold 0 (valid lower boundary)', async () => {
-      const result = await runCli(
-        ['conformance', '--threshold', '0', '--format', 'json'],
-        { env: env.env }
-      );
-      // Fails on missing input (source_error=2) not config_error (1)
-      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
-    });
-
-    it('should accept --threshold 1 (valid upper boundary)', async () => {
-      const result = await runCli(
-        ['conformance', '--threshold', '1', '--format', 'json'],
-        { env: env.env }
-      );
-      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
-    });
-  });
-
-  describe('conformance JSON payload fields (computed_at and precision_available)', () => {
-    it('error envelope for --precision-mode invalid is structured JSON with correct fields', async () => {
-      const result = await runCli(
-        ['conformance', '--precision-mode', 'invalid', '--format', 'json'],
-        { env: env.env }
-      );
-      const json = JSON.parse(result.stdout);
-      expect(json).toHaveProperty('command', 'conformance');
-      expect(json).toHaveProperty('status', 'error');
-      expect(json).toHaveProperty('exit_code', EXIT_CODES.config_error);
+  describe('removed old flags are silently ignored, not rejected (intentional — no per-flag validation left)', () => {
+    it('unknown legacy flags (--format, --classify, --strict-mode, --precision-mode) do not break dispatch', async () => {
+      const r = await runCli([
+        'model', 'check', RUNNING_EXAMPLE_XES,
+        '--mode', 'self', '--fitness-threshold', '0.01',
+        '--format', 'json', '--classify', '--strict-mode', '--precision-mode', 'fast',
+      ]);
+      // Ignored flags don't error; the verb runs normally on its recognized args.
+      const parsed = tryParseJson(r.stdout) as Verdict | undefined;
+      expect(parsed?.mode).toBe('self');
     });
   });
 });

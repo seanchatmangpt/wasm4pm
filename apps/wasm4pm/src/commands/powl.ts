@@ -42,6 +42,7 @@ class PowlSourceError extends Error {
 
 const POWL_SUBCOMMANDS = [
   'parse',
+  'exec',
   'simplify',
   'convert',
   'diff',
@@ -100,6 +101,10 @@ export const powl = defineCommand({
     to: {
       type: 'string',
       description: 'Target format for convert: petri-net, process-tree, bpmn',
+    },
+    'max-iters': {
+      type: 'string',
+      description: 'Loop redo bound for exec (0 = unlimited, default 3)',
     },
     from: {
       type: 'string',
@@ -183,7 +188,7 @@ export const powl = defineCommand({
       const result = makeErrorResult(
         'powl',
         `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
-        EXIT_CODES.source_error,
+        EXIT_CODES.config_error,
         'INVALID_SUBCOMMAND'
       );
       emitResult(result, { format, verbose, quiet });
@@ -383,6 +388,22 @@ async function executePowlCommand(
   switch (subcommand) {
     case 'parse': {
       const raw = wasm.parse_powl(modelStr);
+      return normalizeResult(raw);
+    }
+
+    case 'exec': {
+      // Proof-carrying execution via the bcinr-powl engine (feature powl-engine).
+      if (typeof wasm.powl_execute !== 'function') {
+        throw new PowlConfigError(
+          'This WASM build does not include the powl-engine feature (powl_execute export missing)',
+          'POWL_ENGINE_UNAVAILABLE'
+        );
+      }
+      const maxIters = args['max-iters'] !== undefined ? Number(args['max-iters']) : 3;
+      if (!Number.isInteger(maxIters) || maxIters < 0 || maxIters > 255) {
+        throw new PowlConfigError('--max-iters must be an integer in [0, 255]');
+      }
+      const raw = wasm.powl_execute(modelStr, JSON.stringify({ max_iters: maxIters }));
       return normalizeResult(raw);
     }
 

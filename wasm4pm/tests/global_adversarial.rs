@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 use fake::Fake;
 use proptest::prelude::*;
 use wasm4pm::autoprocess::{AutoProcessAgent, CircuitState};

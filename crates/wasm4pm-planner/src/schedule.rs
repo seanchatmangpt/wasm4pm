@@ -29,6 +29,57 @@ pub fn max_parallelism(plan: &TemporalPlan) -> usize {
     max_seen.max(0) as usize
 }
 
+/// Convert a temporal plan (the FUTURE) into a POWL v2 model string (the
+/// PRESENT) executable by wasm4pm's `powl_execute` engine, which in turn
+/// emits an OCEL 2.0 log (the PAST). Precedence: step i orders before step j
+/// iff `end_i <= start_j` (interval order — a valid strict partial order);
+/// overlapping steps stay unordered (parallel).
+pub fn plan_to_powl_v2(plan: &TemporalPlan) -> String {
+    // Deterministic step order: by start time, then name+args.
+    let mut steps: Vec<&crate::ground::PlanStep> = plan.steps.iter().collect();
+    steps.sort_by(|a, b| {
+        a.start_time
+            .partial_cmp(&b.start_time)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.action_name.cmp(&b.action_name))
+            .then_with(|| a.args.cmp(&b.args))
+    });
+
+    // Node ids: sanitized action name + args, deduped with an index suffix.
+    let mut ids: Vec<String> = Vec::with_capacity(steps.len());
+    for (i, s) in steps.iter().enumerate() {
+        let mut base: String = s
+            .action_name
+            .chars()
+            .chain(s.args.iter().flat_map(|a| "_".chars().chain(a.chars())))
+            .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+            .collect();
+        if base.is_empty() {
+            base = "step".to_string();
+        }
+        if ids.contains(&base) {
+            base = format!("{base}_{i}");
+        }
+        ids.push(base);
+    }
+
+    let mut edges: Vec<String> = Vec::new();
+    for i in 0..steps.len() {
+        let end_i = steps[i].start_time + steps[i].duration;
+        for j in 0..steps.len() {
+            if i != j && end_i <= steps[j].start_time {
+                edges.push(format!("({}, {})", ids[i], ids[j]));
+            }
+        }
+    }
+
+    format!(
+        "PartialOrder(plan) {{ nodes: [{}], edges: [{}] }}",
+        ids.join(", "),
+        edges.join(", ")
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

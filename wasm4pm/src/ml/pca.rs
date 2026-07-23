@@ -1,21 +1,28 @@
-//! Nanosecond Dimensionality Reduction Family — branchless PCA for process mining.
+//! Nanosecond Dimensionality Reduction Family — deterministic N-dim PCA
+//! (power iteration with deflation) for process mining.
 
+use crate::ml::classification::extract_features;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 const MIN_PCA_SAMPLES: usize = 2;
-const FALLBACK_VARIANCE: f64 = 0.5;
+const MAX_COMPONENTS: usize = 3;
+const POWER_MAX_ITER: usize = 100;
+const POWER_TOL: f64 = 1e-12;
 
-/// PCA result structure for zero-allocation path.
+/// PCA result: top-k eigenpairs of the sample covariance matrix,
+/// k = min(3, input dimensionality). Components are sorted descending
+/// by eigenvalue (power iteration extracts the dominant pair first).
 pub struct PcaResult {
-    pub eigenvalues: [f64; 2],
-    pub explained_variance: [f64; 2],
-    /// Cumulative explained variance ratio: [explained_variance[0], explained_variance[0] + explained_variance[1]].
-    /// Standard PCA report field — answers "how much variance do the first k components explain?".
-    /// cumulative_variance[1] is always 1.0 (within FP precision) when total variance > 0.
-    pub cumulative_variance: [f64; 2],
-    /// Total covariance trace = sum of eigenvalues = sum of feature variances.
+    pub eigenvalues: Vec<f64>,
+    /// Explained variance ratio per component: eigenvalue / trace(cov).
+    pub explained_variance: Vec<f64>,
+    /// Cumulative explained variance ratio over the retained components.
+    pub cumulative_variance: Vec<f64>,
+    /// Principal directions (unit eigenvectors), one Vec<f64> of length D per component.
+    pub components: Vec<Vec<f64>>,
+    /// Total covariance trace = sum of ALL feature variances (not just retained).
     /// Surfaces the absolute scale; explained_variance is normalized, total is not.
     pub total_variance: f64,
 }
@@ -25,27 +32,7 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
     let state = get_or_init_state();
 
     let features = state.with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let col = log.to_columnar_owned(activity_key);
-            let num_traces = col.trace_offsets.len() - 1;
-            let mut features = Vec::with_capacity(num_traces);
-
-            for i in 0..num_traces {
-                let start = col.trace_offsets[i];
-                let end = col.trace_offsets[i + 1];
-                let len = (end - start) as f64;
-
-                let mut unique = 0;
-                let mut seen = std::collections::HashSet::new();
-                for &ev in &col.events[start..end] {
-                    if seen.insert(ev) {
-                        unique += 1;
-                    }
-                }
-                features.push([len, unique as f64]);
-            }
-            Ok(features)
-        }
+        Some(StoredObject::EventLog(log)) => Ok(extract_features(log, activity_key).0),
         _ => Err(crate::error::js_val("not_found")),
     })?;
 
@@ -53,7 +40,8 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
 
     to_js_val(&json!({
         "algorithm": "ml_pca",
-        "components": 2,
+        "components": result.eigenvalues.len(),
+        "eigenvectors": result.components,
         "explained_variance": result.explained_variance,
         "cumulative_variance": result.cumulative_variance,
         "total_variance": result.total_variance,
@@ -61,114 +49,150 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
     }))
 }
 
-/// Core PCA implementation with manual loop unrolling and zero heap allocation.
-pub fn pca_internal(features: &[[f64; 2]]) -> PcaResult {
+/// Core PCA over N-dimensional feature vectors. Deterministic: fixed start
+/// vectors, fixed iteration counts, no RNG.
+pub fn pca_internal<const D: usize>(features: &[[f64; D]]) -> PcaResult {
+    let k = MAX_COMPONENTS.min(D);
     let n = features.len();
-    if n < MIN_PCA_SAMPLES {
+    if n < MIN_PCA_SAMPLES || D == 0 {
         return PcaResult {
-            eigenvalues: [0.0, 0.0],
-            explained_variance: [0.0, 0.0],
-            cumulative_variance: [0.0, 0.0],
+            eigenvalues: vec![0.0; k],
+            explained_variance: vec![0.0; k],
+            cumulative_variance: vec![0.0; k],
+            components: vec![vec![0.0; D]; k],
             total_variance: 0.0,
         };
     }
 
     let nf = n as f64;
-    let mut sum_x = 0.0;
-    let mut sum_y = 0.0;
-
-    // Mean calculation with manual loop unrolling
-    let chunks = features.chunks_exact(4);
-    let remainder = chunks.remainder();
-
-    for chunk in chunks {
-        sum_x += chunk[0][0] + chunk[1][0] + chunk[2][0] + chunk[3][0];
-        sum_y += chunk[0][1] + chunk[1][1] + chunk[2][1] + chunk[3][1];
+    let mut mean = [0.0f64; D];
+    for f in features {
+        for d in 0..D {
+            mean[d] += f[d];
+        }
     }
-    for f in remainder {
-        sum_x += f[0];
-        sum_y += f[1];
+    for m in mean.iter_mut() {
+        *m /= nf;
     }
 
-    let mean_x = sum_x / nf;
-    let mean_y = sum_y / nf;
-
-    let mut cov_00 = 0.0;
-    let mut cov_01 = 0.0;
-    let mut cov_11 = 0.0;
-
-    // Covariance calculation with manual loop unrolling
-    let chunks = features.chunks_exact(4);
-    let remainder = chunks.remainder();
-
-    for chunk in chunks {
-        let x0 = chunk[0][0] - mean_x;
-        let y0 = chunk[0][1] - mean_y;
-        let x1 = chunk[1][0] - mean_x;
-        let y1 = chunk[1][1] - mean_y;
-        let x2 = chunk[2][0] - mean_x;
-        let y2 = chunk[2][1] - mean_y;
-        let x3 = chunk[3][0] - mean_x;
-        let y3 = chunk[3][1] - mean_y;
-
-        cov_00 += x0 * x0 + x1 * x1 + x2 * x2 + x3 * x3;
-        cov_01 += x0 * y0 + x1 * y1 + x2 * y2 + x3 * y3;
-        cov_11 += y0 * y0 + y1 * y1 + y2 * y2 + y3 * y3;
-    }
-
-    for f in remainder {
-        let x = f[0] - mean_x;
-        let y = f[1] - mean_y;
-        cov_00 += x * x;
-        cov_01 += x * y;
-        cov_11 += y * y;
-    }
-
+    // Sample covariance (n-1 denominator, matching the legacy 2x2 path).
     let divisor = (nf - 1.0).max(1.0);
-    cov_00 /= divisor;
-    cov_01 /= divisor;
-    cov_11 /= divisor;
+    let mut cov = [[0.0f64; D]; D];
+    for f in features {
+        for r in 0..D {
+            let xr = f[r] - mean[r];
+            for c in r..D {
+                cov[r][c] += xr * (f[c] - mean[c]);
+            }
+        }
+    }
+    for r in 0..D {
+        for c in r..D {
+            cov[r][c] /= divisor;
+            cov[c][r] = cov[r][c];
+        }
+    }
 
-    let eigenvalues = eigen_decomposition_2x2(cov_00, cov_01, cov_11);
-    let total_var = eigenvalues[0] + eigenvalues[1];
+    let total_variance: f64 = (0..D).map(|d| cov[d][d]).sum();
 
-    let explained_variance = if total_var > 0.0 {
-        [eigenvalues[0] / total_var, eigenvalues[1] / total_var]
+    let mut eigenvalues = Vec::with_capacity(k);
+    let mut components = Vec::with_capacity(k);
+    let mut work = cov;
+    for _ in 0..k {
+        let (lambda, vec) = dominant_eigenpair(&work);
+        // Deflate: work -= lambda * v v^T so the next pass finds the next pair.
+        for r in 0..D {
+            for c in 0..D {
+                work[r][c] -= lambda * vec[r] * vec[c];
+            }
+        }
+        eigenvalues.push(lambda.max(0.0));
+        components.push(vec.to_vec());
+    }
+
+    let explained_variance: Vec<f64> = if total_variance > 0.0 {
+        eigenvalues.iter().map(|&e| e / total_variance).collect()
     } else {
-        [FALLBACK_VARIANCE, FALLBACK_VARIANCE]
+        vec![0.0; k]
     };
-
-    // Cumulative variance ratio: components are sorted descending by
-    // eigen_decomposition_2x2 (lambda1 >= lambda2). cumulative_variance[1]
-    // saturates at 1.0 in both the normal and degenerate-fallback paths.
-    let cumulative_variance = [
-        explained_variance[0],
-        explained_variance[0] + explained_variance[1],
-    ];
+    let mut cumulative_variance = Vec::with_capacity(k);
+    let mut acc = 0.0;
+    for &ev in &explained_variance {
+        acc += ev;
+        cumulative_variance.push(acc);
+    }
 
     PcaResult {
         eigenvalues,
         explained_variance,
         cumulative_variance,
-        total_variance: total_var,
+        components,
+        total_variance,
     }
 }
 
-/// Closed-form Eigenvalue decomposition for 2x2 symmetric matrices.
-#[inline(always)]
-fn eigen_decomposition_2x2(cov_00: f64, cov_01: f64, cov_11: f64) -> [f64; 2] {
-    let tr = cov_00 + cov_11;
-    let det = cov_00 * cov_11 - cov_01 * cov_01;
+/// Power iteration for the dominant eigenpair of a symmetric PSD matrix.
+///
+/// Deterministic start vectors: normalized ones vector, then each basis
+/// vector in index order — needed because after deflation the ones vector
+/// may already lie in the extracted eigenspace (mat*v ≈ 0).
+fn dominant_eigenpair<const D: usize>(mat: &[[f64; D]; D]) -> (f64, [f64; D]) {
+    let ones_norm = 1.0 / (D as f64).sqrt();
+    let mut starts: Vec<[f64; D]> = Vec::with_capacity(D + 1);
+    starts.push([ones_norm; D]);
+    for d in 0..D {
+        let mut e = [0.0f64; D];
+        e[d] = 1.0;
+        starts.push(e);
+    }
 
-    // Characteristic equation: λ^2 - tr(A)λ + det(A) = 0
-    // λ = [tr(A) ± sqrt(tr(A)^2 - 4*det(A))] / 2
-    let discriminant = (tr * tr / 4.0 - det).max(0.0);
-    let sqrt_disc = discriminant.sqrt();
+    for start in starts {
+        let mut v = start;
+        let mut converged_v: Option<[f64; D]> = None;
+        for _ in 0..POWER_MAX_ITER {
+            let w = mat_vec(mat, &v);
+            let norm = w.iter().map(|x| x * x).sum::<f64>().sqrt();
+            if norm < POWER_TOL {
+                // This start vector is (numerically) in the null space — try next.
+                break;
+            }
+            let mut next = [0.0f64; D];
+            for d in 0..D {
+                next[d] = w[d] / norm;
+            }
+            // Convergence up to sign flip (eigenvectors are sign-ambiguous).
+            let diff_plus: f64 = (0..D).map(|d| (next[d] - v[d]).abs()).sum();
+            let diff_minus: f64 = (0..D).map(|d| (next[d] + v[d]).abs()).sum();
+            v = next;
+            if diff_plus.min(diff_minus) < POWER_TOL {
+                converged_v = Some(v);
+                break;
+            }
+            converged_v = Some(v);
+        }
+        if let Some(v) = converged_v {
+            // Rayleigh quotient: v is unit-norm.
+            let w = mat_vec(mat, &v);
+            let lambda: f64 = (0..D).map(|d| v[d] * w[d]).sum();
+            if lambda.abs() >= POWER_TOL {
+                return (lambda, v);
+            }
+        }
+    }
+    (0.0, [0.0; D])
+}
 
-    let lambda1 = tr / 2.0 + sqrt_disc;
-    let lambda2 = tr / 2.0 - sqrt_disc;
-
-    [lambda1, lambda2]
+#[inline]
+fn mat_vec<const D: usize>(mat: &[[f64; D]; D], v: &[f64; D]) -> [f64; D] {
+    let mut out = [0.0f64; D];
+    for r in 0..D {
+        let mut acc = 0.0;
+        for c in 0..D {
+            acc += mat[r][c] * v[c];
+        }
+        out[r] = acc;
+    }
+    out
 }
 
 fn to_js_val(value: &serde_json::Value) -> Result<JsValue, JsValue> {
@@ -180,6 +204,16 @@ fn to_js_val(value: &serde_json::Value) -> Result<JsValue, JsValue> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Closed-form eigenvalues for 2x2 symmetric matrices — kept as a
+    /// cross-check oracle for the power-iteration path.
+    fn eigen_decomposition_2x2(cov_00: f64, cov_01: f64, cov_11: f64) -> [f64; 2] {
+        let tr = cov_00 + cov_11;
+        let det = cov_00 * cov_11 - cov_01 * cov_01;
+        let discriminant = (tr * tr / 4.0 - det).max(0.0);
+        let sqrt_disc = discriminant.sqrt();
+        [tr / 2.0 + sqrt_disc, tr / 2.0 - sqrt_disc]
+    }
 
     #[test]
     fn test_pca_internal_basic() {
@@ -211,6 +245,84 @@ mod tests {
         assert_eq!(result.eigenvalues, [0.0, 0.0]);
         assert_eq!(result.cumulative_variance, [0.0, 0.0]);
         assert_eq!(result.total_variance, 0.0);
+    }
+
+    /// Power-iteration eigenvalues must match the closed-form 2x2 oracle
+    /// on a generic (non-degenerate) 2-D dataset.
+    #[test]
+    fn power_iteration_matches_closed_form_2x2() {
+        let features = vec![[1.0, 0.5], [2.0, 1.9], [3.0, 2.1], [4.0, 4.2], [5.0, 4.4]];
+        let n = features.len() as f64;
+        let mean_x = features.iter().map(|f| f[0]).sum::<f64>() / n;
+        let mean_y = features.iter().map(|f| f[1]).sum::<f64>() / n;
+        let mut c00 = 0.0;
+        let mut c01 = 0.0;
+        let mut c11 = 0.0;
+        for f in &features {
+            let x = f[0] - mean_x;
+            let y = f[1] - mean_y;
+            c00 += x * x;
+            c01 += x * y;
+            c11 += y * y;
+        }
+        c00 /= n - 1.0;
+        c01 /= n - 1.0;
+        c11 /= n - 1.0;
+        let expected = eigen_decomposition_2x2(c00, c01, c11);
+
+        let result = pca_internal(&features);
+        assert!(
+            (result.eigenvalues[0] - expected[0]).abs() < 1e-6,
+            "dominant eigenvalue: power iteration {} vs closed form {}",
+            result.eigenvalues[0],
+            expected[0]
+        );
+        assert!(
+            (result.eigenvalues[1] - expected[1]).abs() < 1e-6,
+            "second eigenvalue: power iteration {} vs closed form {}",
+            result.eigenvalues[1],
+            expected[1]
+        );
+    }
+
+    /// Hand-computable 5-D case: all variance on axis 0.
+    /// Sample variance of [1,2,3] with n-1 denominator is exactly 1.0.
+    #[test]
+    fn pca_5d_axis_aligned_hand_computed() {
+        let features: Vec<[f64; 5]> = vec![
+            [1.0, 0.0, 0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0, 0.0, 0.0],
+            [3.0, 0.0, 0.0, 0.0, 0.0],
+        ];
+        let result = pca_internal(&features);
+        assert_eq!(result.eigenvalues.len(), 3, "k = min(3, 5) components");
+        assert!(
+            (result.eigenvalues[0] - 1.0).abs() < 1e-12,
+            "first eigenvalue must equal sample variance 1.0 exactly, got {}",
+            result.eigenvalues[0]
+        );
+        assert!(
+            (result.explained_variance[0] - 1.0).abs() < 1e-12,
+            "single informative axis must explain 100% of variance"
+        );
+        assert!((result.total_variance - 1.0).abs() < 1e-12);
+        // First eigenvector = ±e0.
+        let v = &result.components[0];
+        assert!(
+            (v[0].abs() - 1.0).abs() < 1e-9,
+            "first eigenvector must be ±e0, got {:?}",
+            v
+        );
+        for d in 1..5 {
+            assert!(
+                v[d].abs() < 1e-9,
+                "eigenvector must vanish off-axis: {:?}",
+                v
+            );
+        }
+        // Remaining eigenvalues are zero.
+        assert!(result.eigenvalues[1].abs() < 1e-12);
+        assert!(result.eigenvalues[2].abs() < 1e-12);
     }
 
     // Rank-2 domain-contract tests for cumulative_variance + total_variance.

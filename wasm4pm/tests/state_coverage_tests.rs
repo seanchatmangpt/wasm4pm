@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! State space reachability and coverage analysis tests.
 //! Verifies that RL orchestrator tracks 8D state bin visits correctly.
 

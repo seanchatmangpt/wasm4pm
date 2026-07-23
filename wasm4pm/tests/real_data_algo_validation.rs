@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Real-Data Algorithm Validation — all algorithms against real XES/OCEL files
 //!
 //! Validates every algorithm category (discovery, ML, social, temporal, conformance)
