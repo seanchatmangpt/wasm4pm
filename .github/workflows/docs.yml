@@ -4,9 +4,19 @@ on:
   pull_request:
     paths:
       - '**/*.md'
+      - '.markdownlint.json'
+      - '.mlc.config.json'
+      - '.github/workflows/docs.yml'
   push:
     paths:
       - '**/*.md'
+      - '.markdownlint.json'
+      - '.mlc.config.json'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -16,7 +26,18 @@ jobs:
       - name: Install markdownlint
         run: npm install -g markdownlint-cli
       - name: Lint markdown
-        run: markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs/archive
+        shell: bash
+        run: |
+          set -o pipefail
+          markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs/archive 2>&1 | tee markdownlint-receipt.log
+      - name: Upload markdownlint receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdownlint-receipt
+          path: markdownlint-receipt.log
+          if-no-files-found: error
+          retention-days: 7
 
   link-check:
     runs-on: ubuntu-latest
@@ -25,5 +46,17 @@ jobs:
       - name: Install markdown-link-check
         run: npm install -g markdown-link-check
       - name: Check links
+        shell: bash
         run: |
-          find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs/archive/*' -print0 | xargs -0 markdown-link-check --config .mlc.config.json
+          set -o pipefail
+          find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs/archive/*' -print0 \
+            | xargs -0 markdown-link-check --config .mlc.config.json 2>&1 \
+            | tee markdown-link-check-receipt.log
+      - name: Upload link-check receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-link-check-receipt
+          path: markdown-link-check-receipt.log
+          if-no-files-found: error
+          retention-days: 7
