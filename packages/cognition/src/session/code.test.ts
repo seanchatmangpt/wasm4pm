@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import domainPackJson from '../../../../crates/wasm4pm-cognition/examples/cognition/interview_session/domain.json';
+import { CognitionError } from '../errors.js';
 import { WasmLoader, type CognitionWasmModule } from '../init.js';
 import { projectSessionCode } from './code.js';
 import { DomainPackSchema, type SessionState } from './schemas.js';
 
 const HASH = 'a'.repeat(64);
+const OTHER_HASH = 'c'.repeat(64);
 const POINTER = 'b'.repeat(16);
 const domainPack = DomainPackSchema.parse(domainPackJson);
 const observation = {
@@ -107,5 +109,50 @@ describe('projectSessionCode', () => {
     });
 
     await expect(projectSessionCode(domainPack, state)).resolves.toMatchObject({ code: null });
+  });
+
+  it('preserves the complete receipted refusal boundary', async () => {
+    WasmLoader.getInstance({
+      moduleLoader: async () =>
+        moduleWithCode(
+          JSON.stringify({
+            status: 'refused',
+            run_id: HASH,
+            input_hash: OTHER_HASH,
+            refusal_hash: HASH,
+            attested_hash: HASH,
+            replay_pointer: POINTER,
+            refusal: { code: 'INVALID_DOMAIN', reason: 'artifact domain mismatch' },
+            message: 'invalid domain pack: artifact domain mismatch',
+            attestation: {
+              kind: 'blake3-only',
+              signature: null,
+              public_key: null,
+            },
+          }),
+        ),
+    });
+
+    try {
+      await projectSessionCode(domainPack, state);
+      throw new Error('expected code-projection refusal');
+    } catch (error) {
+      expect(error).toBeInstanceOf(CognitionError);
+      expect(error).toMatchObject({
+        code: 'SESSION_REFUSED',
+        details: {
+          refusal_code: 'INVALID_DOMAIN',
+          input_hash: OTHER_HASH,
+          refusal_hash: HASH,
+          attested_hash: HASH,
+          replay_pointer: POINTER,
+          attestation: {
+            kind: 'blake3-only',
+            signature: null,
+            public_key: null,
+          },
+        },
+      });
+    }
   });
 });
