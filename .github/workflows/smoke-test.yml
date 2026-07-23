@@ -61,10 +61,10 @@ jobs:
         working-directory: ./wasm4pm
         run: rm -f pkg/.gitignore
 
-      - name: Pack tarball
+      - name: Pack publishable tarball
         working-directory: ./wasm4pm
         run: |
-          npm pack
+          pnpm pack --pack-destination .
           echo "TARBALL=$(ls wasm4pm-*.tgz)" >> $GITHUB_ENV
 
       - name: Install from tarball in clean directory
@@ -79,10 +79,10 @@ jobs:
         working-directory: /tmp/smoke-test-$$
         run: |
           node -e "
-            const pm = require('wasm4pm');
+            const pm = require('@wasm4pm/core');
             console.log('--- Smoke Test: require() ---');
 
-            console.log('OK require(\"wasm4pm\")');
+            console.log('OK require(\"@wasm4pm/core\")');
 
             if (!pm.WasmEventLog)  throw new Error('WasmEventLog not exported');
             if (!pm.WasmOCEL)      throw new Error('WasmOCEL not exported');
