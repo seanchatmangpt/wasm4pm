@@ -16,15 +16,22 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
         return Err(invalid("domain id must be non-empty".to_string()));
     }
     if pack.concepts.is_empty() {
-        return Err(invalid("at least one guidance concept is required".to_string()));
+        return Err(invalid(
+            "at least one guidance concept is required".to_string(),
+        ));
     }
     for (id, concept) in &pack.concepts {
-        if id.trim().is_empty() || concept.label.trim().is_empty() || concept.prompt.trim().is_empty() {
+        if id.trim().is_empty()
+            || concept.label.trim().is_empty()
+            || concept.prompt.trim().is_empty()
+        {
             return Err(invalid(format!("malformed concept: {id}")));
         }
     }
     if pack.tracks.is_empty() || pack.tracks.len() > pack.bounds.max_tracks {
-        return Err(invalid("track count is empty or exceeds max_tracks".to_string()));
+        return Err(invalid(
+            "track count is empty or exceeds max_tracks".to_string(),
+        ));
     }
     if pack.patterns.len() > pack.bounds.max_patterns {
         return Err(invalid("pattern count exceeds max_patterns".to_string()));
@@ -32,7 +39,8 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     if pack.rules.len() > pack.bounds.max_rules {
         return Err(invalid("rule count exceeds max_rules".to_string()));
     }
-    if pack.bounds.max_observations == 0
+    if pack.bounds.max_turns == 0
+        || pack.bounds.max_observations == 0
         || pack.bounds.max_evidence == 0
         || pack.bounds.max_observation_bytes == 0
         || pack.bounds.max_tracks == 0
@@ -50,7 +58,9 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
         || !(0.0..=1.0).contains(&pack.thresholds.concept_coverage)
         || !(0.0..=1.0).contains(&pack.thresholds.maximum_contradiction)
     {
-        return Err(invalid("thresholds must be finite and inside [0,1]".to_string()));
+        return Err(invalid(
+            "thresholds must be finite and inside [0,1]".to_string(),
+        ));
     }
     if pack.phases.is_empty() {
         return Err(invalid("at least one phase is required".to_string()));
@@ -61,13 +71,18 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     let mut max_concepts = 0usize;
     for track in &pack.tracks {
         if track.id.trim().is_empty() || track.label.trim().is_empty() {
-            return Err(invalid("track id and label must be non-empty".to_string()));
+            return Err(invalid(
+                "track id and label must be non-empty".to_string(),
+            ));
         }
         if !track_ids.insert(track.id.clone()) {
             return Err(invalid(format!("duplicate track id: {}", track.id)));
         }
         if track.concepts.is_empty() {
-            return Err(invalid(format!("track {} has no expected concepts", track.id)));
+            return Err(invalid(format!(
+                "track {} has no expected concepts",
+                track.id
+            )));
         }
         let mut concepts = BTreeSet::new();
         for concept in &track.concepts {
@@ -96,7 +111,9 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
 
     for (alias, canonical) in &pack.aliases {
         if alias.trim().is_empty() || canonical.trim().is_empty() {
-            return Err(invalid("aliases must have non-empty keys and values".to_string()));
+            return Err(invalid(
+                "aliases must have non-empty keys and values".to_string(),
+            ));
         }
         if alias.trim().eq_ignore_ascii_case(canonical.trim()) {
             return Err(invalid(format!("alias maps to itself: {alias}")));
@@ -107,12 +124,15 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     let mut propositions = BTreeSet::new();
     for pattern in &pack.patterns {
         if !pattern_ids.insert(pattern.id.clone()) {
-            return Err(invalid(format!("duplicate pattern id: {}", pattern.id)));
+            return Err(invalid(format!(
+                "duplicate pattern id: {}",
+                pattern.id
+            )));
         }
         if pattern.id.trim().is_empty()
             || pattern.proposition.trim().is_empty()
             || pattern.phrases.is_empty()
-            || pattern.phrases.iter().any(|p| p.trim().is_empty())
+            || pattern.phrases.iter().any(|phrase| phrase.trim().is_empty())
         {
             return Err(invalid(format!("malformed pattern: {}", pattern.id)));
         }
@@ -175,7 +195,10 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
             )));
         }
         if !rule.certainty.is_finite() || !(0.0..=1.0).contains(&rule.certainty) {
-            return Err(invalid(format!("rule {} certainty outside [0,1]", rule.id)));
+            return Err(invalid(format!(
+                "rule {} certainty outside [0,1]",
+                rule.id
+            )));
         }
         if let Some(concept) = &rule.concept {
             let belongs = track_concepts
@@ -193,7 +216,9 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     let mut phase_ids = BTreeSet::new();
     for phase in &pack.phases {
         if phase.id.trim().is_empty() || phase.label.trim().is_empty() {
-            return Err(invalid("phase id and label must be non-empty".to_string()));
+            return Err(invalid(
+                "phase id and label must be non-empty".to_string(),
+            ));
         }
         if !phase_ids.insert(phase.id.clone()) {
             return Err(invalid(format!("duplicate phase id: {}", phase.id)));
