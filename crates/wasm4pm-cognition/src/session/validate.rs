@@ -68,7 +68,7 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
 
     let mut track_ids = BTreeSet::new();
     let mut track_concepts: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    let mut max_concepts = 0usize;
+    let mut minimum_track_concepts = usize::MAX;
     for track in &pack.tracks {
         if track.id.trim().is_empty() || track.label.trim().is_empty() {
             return Err(invalid(
@@ -99,12 +99,12 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
                 )));
             }
         }
-        max_concepts = max_concepts.max(concepts.len());
+        minimum_track_concepts = minimum_track_concepts.min(concepts.len());
         track_concepts.insert(track.id.clone(), concepts);
     }
-    if pack.thresholds.minimum_coverage > max_concepts {
+    if pack.thresholds.minimum_coverage > minimum_track_concepts {
         return Err(invalid(format!(
-            "minimum_coverage {} exceeds every track concept count",
+            "minimum_coverage {} exceeds at least one track concept count",
             pack.thresholds.minimum_coverage
         )));
     }
