@@ -33,8 +33,10 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
             "track count is empty or exceeds max_tracks".to_string(),
         ));
     }
-    if pack.patterns.len() > pack.bounds.max_patterns {
-        return Err(invalid("pattern count exceeds max_patterns".to_string()));
+    if pack.patterns.is_empty() || pack.patterns.len() > pack.bounds.max_patterns {
+        return Err(invalid(
+            "pattern count is empty or exceeds max_patterns".to_string(),
+        ));
     }
     if pack.rules.len() > pack.bounds.max_rules {
         return Err(invalid("rule count exceeds max_rules".to_string()));
@@ -67,8 +69,8 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     }
 
     let mut track_ids = BTreeSet::new();
+    let mut track_labels = BTreeSet::new();
     let mut track_concepts: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    let mut minimum_track_concepts = usize::MAX;
     for track in &pack.tracks {
         if track.id.trim().is_empty() || track.label.trim().is_empty() {
             return Err(invalid(
@@ -77,6 +79,9 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
         }
         if !track_ids.insert(track.id.clone()) {
             return Err(invalid(format!("duplicate track id: {}", track.id)));
+        }
+        if !track_labels.insert(track.label.clone()) {
+            return Err(invalid(format!("duplicate track label: {}", track.label)));
         }
         if track.concepts.is_empty() {
             return Err(invalid(format!(
@@ -99,14 +104,15 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
                 )));
             }
         }
-        minimum_track_concepts = minimum_track_concepts.min(concepts.len());
+        if pack.thresholds.minimum_coverage > concepts.len() {
+            return Err(invalid(format!(
+                "minimum_coverage {} exceeds concept count {} for track {}",
+                pack.thresholds.minimum_coverage,
+                concepts.len(),
+                track.id
+            )));
+        }
         track_concepts.insert(track.id.clone(), concepts);
-    }
-    if pack.thresholds.minimum_coverage > minimum_track_concepts {
-        return Err(invalid(format!(
-            "minimum_coverage {} exceeds at least one track concept count",
-            pack.thresholds.minimum_coverage
-        )));
     }
 
     for (alias, canonical) in &pack.aliases {
@@ -122,6 +128,7 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
 
     let mut pattern_ids = BTreeSet::new();
     let mut propositions = BTreeSet::new();
+    let mut proposition_supporters: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for pattern in &pack.patterns {
         if !pattern_ids.insert(pattern.id.clone()) {
             return Err(invalid(format!(
@@ -136,6 +143,24 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
         {
             return Err(invalid(format!("malformed pattern: {}", pattern.id)));
         }
+        let unique_phrases: BTreeSet<&str> = pattern.phrases.iter().map(String::as_str).collect();
+        if unique_phrases.len() != pattern.phrases.len() {
+            return Err(invalid(format!(
+                "pattern {} repeats an exact phrase",
+                pattern.id
+            )));
+        }
+        if pattern.track_weights.is_empty()
+            || pattern
+                .track_weights
+                .values()
+                .all(|weight| weight.abs() <= f32::EPSILON)
+        {
+            return Err(invalid(format!(
+                "pattern {} has no non-zero track effect",
+                pattern.id
+            )));
+        }
         propositions.insert(pattern.proposition.clone());
         for (track, weight) in &pattern.track_weights {
             if !track_ids.contains(track) {
@@ -149,6 +174,12 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
                     "pattern {} has invalid weight for {}",
                     pattern.id, track
                 )));
+            }
+            if *weight > 0.0 {
+                proposition_supporters
+                    .entry(pattern.proposition.clone())
+                    .or_default()
+                    .insert(track.clone());
             }
             if let Some(concept) = &pattern.concept {
                 let belongs = track_concepts
@@ -180,13 +211,9 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
         if rule.id.trim().is_empty() || rule.premises.is_empty() {
             return Err(invalid(format!("malformed rule: {}", rule.id)));
         }
-        for premise in &rule.premises {
-            if !propositions.contains(premise) {
-                return Err(invalid(format!(
-                    "rule {} references unknown proposition {}",
-                    rule.id, premise
-                )));
-            }
+        let unique_premises: BTreeSet<&str> = rule.premises.iter().map(String::as_str).collect();
+        if unique_premises.len() != rule.premises.len() {
+            return Err(invalid(format!("rule {} repeats a premise", rule.id)));
         }
         if !track_ids.contains(&rule.track_id) {
             return Err(invalid(format!(
@@ -194,11 +221,31 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
                 rule.id, rule.track_id
             )));
         }
-        if !rule.certainty.is_finite() || !(0.0..=1.0).contains(&rule.certainty) {
+        if !rule.certainty.is_finite()
+            || rule.certainty <= 0.0
+            || rule.certainty > 1.0
+        {
             return Err(invalid(format!(
-                "rule {} certainty outside [0,1]",
+                "rule {} certainty must be inside (0,1]",
                 rule.id
             )));
+        }
+        for premise in &rule.premises {
+            if !propositions.contains(premise) {
+                return Err(invalid(format!(
+                    "rule {} references unknown proposition {}",
+                    rule.id, premise
+                )));
+            }
+            let supports_target = proposition_supporters
+                .get(premise)
+                .is_some_and(|tracks| tracks.contains(&rule.track_id));
+            if !supports_target {
+                return Err(invalid(format!(
+                    "rule {} premise {} has no positive producer for target {}",
+                    rule.id, premise, rule.track_id
+                )));
+            }
         }
         if let Some(concept) = &rule.concept {
             let belongs = track_concepts
@@ -222,6 +269,14 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
         }
         if !phase_ids.insert(phase.id.clone()) {
             return Err(invalid(format!("duplicate phase id: {}", phase.id)));
+        }
+        let unique_concepts: BTreeSet<&str> =
+            phase.required_concepts.iter().map(String::as_str).collect();
+        if unique_concepts.len() != phase.required_concepts.len() {
+            return Err(invalid(format!(
+                "phase {} repeats a required concept",
+                phase.id
+            )));
         }
         for concept in &phase.required_concepts {
             if !pack.concepts.contains_key(concept) {
