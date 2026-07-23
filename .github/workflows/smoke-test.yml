@@ -7,6 +7,11 @@ on:
   pull_request:
     paths:
       - 'wasm4pm/**'
+      - 'packages/cognition/**'
+      - 'crates/wasm4pm-cognition/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'scripts/bootstrap-cognition-wasm.sh'
       - '.github/workflows/smoke-test.yml'
   workflow_dispatch:
 
@@ -43,8 +48,11 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Bootstrap cognition WASM packages
+        run: bash scripts/bootstrap-cognition-wasm.sh
+
       - name: Install dependencies (workspace install covers wasm4pm)
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build nodejs target
         working-directory: ./wasm4pm
