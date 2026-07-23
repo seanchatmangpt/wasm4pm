@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>wasm4pm Interview Cognition</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div><p class="eyebrow">wasm4pm-cognition</p><h1>Interview Answer Assistant</h1></div>
+        <div class="receipt" id="receipt">No receipted turn</div>
+      </header>
+      <section class="status-grid">
+        <article class="panel hero">
+          <p class="label">Current track</p><h2 id="current-track">Listening…</h2><div class="phase" id="phase">Track Identification</div>
+          <div id="confirmation" class="confirmation hidden"><p id="confirmation-copy"></p><div class="button-row"><button id="confirm-yes">Yes</button><button id="confirm-no" class="secondary">No</button></div></div>
+        </article>
+        <article class="panel">
+          <p class="label">Live transcript</p><div id="transcript" class="transcript">No transcript yet.</div>
+          <div class="button-row"><button id="listen">Start listening</button><button id="stop" class="secondary" disabled>Stop</button></div>
+          <form id="manual-form"><input id="manual-text" autocomplete="off" placeholder="Or enter a transcript fragment" /><button type="submit">Admit</button></form>
+        </article>
+      </section>
+      <section class="columns">
+        <article class="panel"><p class="label">Track hypotheses</p><div id="hypotheses"></div></article>
+        <article class="panel"><p class="label">Covered concepts</p><ul id="covered"></ul></article>
+        <article class="panel"><p class="label">Missing concepts</p><ul id="missing"></ul></article>
+      </section>
+      <section class="panel evidence-panel"><div><p class="label">Machine evidence</p><p class="muted">Every turn executes in WASM and returns an inference trace, OCEL log, and receipt.</p></div><details><summary>Latest inference trace</summary><pre id="trace">[]</pre></details></section>
+    </main>
+    <script type="module" src="./app.ts"></script>
+  </body>
+</html>
