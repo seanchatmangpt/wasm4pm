@@ -26,21 +26,6 @@ const fixturePath = resolve(
 );
 const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as InterviewFixture;
 
-async function installDeterministicBrowserEnvironment(page: Page): Promise<void> {
-  await page.clock.setFixedTime(fixture.started_at);
-  await page.addInitScript(() => {
-    let sequence = 0;
-    const deterministicUuid = () => {
-      sequence += 1;
-      return `00000000-0000-4000-8000-${String(sequence).padStart(12, '0')}`;
-    };
-    Object.defineProperty(globalThis.crypto, 'randomUUID', {
-      configurable: true,
-      value: deterministicUuid,
-    });
-  });
-}
-
 async function admitObservation(page: Page, event: InterviewEvent): Promise<void> {
   const input = page.getByLabel('Admit transcript observation');
   await input.fill(event.text);
@@ -65,13 +50,15 @@ async function captureCheckpoint(page: Page, event: InterviewEvent): Promise<voi
     `${String(event.elapsed_minutes).padStart(2, '0')}m-${event.checkpoint}.png`,
     {
       fullPage: true,
+      mask: [page.locator('.hash-group')],
+      maskColor: '#111722',
     },
   );
 }
 
 test.describe('full interview visual contract', () => {
   test('an hour-long interview evolves from no evidence to committed Python code', async ({ page }) => {
-    await installDeterministicBrowserEnvironment(page);
+    await page.clock.setFixedTime(fixture.started_at);
     await page.goto('/');
     await page.getByText('WASM ready', { exact: true }).waitFor();
     await page.locator('.monaco-editor').waitFor();
