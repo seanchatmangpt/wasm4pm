@@ -17,6 +17,26 @@ permissions:
   contents: read
 
 jobs:
+  workflow-source:
+    name: ggen workflow source receipt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Capture ggen workflow commands
+        shell: bash
+        run: |
+          set -o pipefail
+          grep -R -n -B 8 -A 30 -E 'Install ggen|Receipt hash verification|output_hashes' .github/workflows 2>&1 \
+            | tee ggen-workflow-source.log
+      - name: Upload workflow source receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggen-workflow-source
+          path: ggen-workflow-source.log
+          if-no-files-found: error
+          retention-days: 7
+
   receipt-hashes:
     name: ggen receipt hash diagnostics
     runs-on: ubuntu-latest
