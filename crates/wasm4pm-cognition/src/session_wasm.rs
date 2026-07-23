@@ -77,7 +77,11 @@ struct VerificationInput {
 fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
     serde_json::to_string(value)
         .map(|json| JsValue::from_str(&json))
-        .map_err(|error| JsValue::from_str(&format!("session boundary serialization failed: {error}")))
+        .map_err(|error| {
+            JsValue::from_str(&format!(
+                "session boundary serialization failed: {error}"
+            ))
+        })
 }
 
 fn raw_hash(input: &str) -> String {
@@ -160,40 +164,30 @@ fn refused(input_hash: String, refusal: SessionError) -> Result<JsValue, JsValue
     })
 }
 
-fn parse_verified_input(input_json: &str) -> Result<(String, VerificationInput), JsValue> {
+fn parse_verification_input(
+    input_json: &str,
+) -> Result<(String, VerificationInput), Result<JsValue, JsValue>> {
     let input_hash = raw_hash(input_json);
     if input_json.len() > MAX_SESSION_INPUT_LEN {
-        return Err(refused(input_hash, SessionError::InputTooLarge)?);
+        return Err(refused(input_hash, SessionError::InputTooLarge));
     }
-    let input = serde_json::from_str(input_json).map_err(|error| {
-        refused(
-            input_hash.clone(),
+    match serde_json::from_str(input_json) {
+        Ok(input) => Ok((input_hash, input)),
+        Err(error) => Err(refused(
+            input_hash,
             SessionError::MalformedInput {
                 reason: error.to_string(),
             },
-        )
-        .unwrap_or_else(|failure| failure)
-    })?;
-    Ok((input_hash, input))
+        )),
+    }
 }
 
 /// Verify a persisted session state without admitting a new turn.
 #[wasm_bindgen]
 pub fn cognition_session_verify(input_json: &str) -> Result<JsValue, JsValue> {
-    let input_hash = raw_hash(input_json);
-    if input_json.len() > MAX_SESSION_INPUT_LEN {
-        return refused(input_hash, SessionError::InputTooLarge);
-    }
-    let input: VerificationInput = match serde_json::from_str(input_json) {
-        Ok(input) => input,
-        Err(error) => {
-            return refused(
-                input_hash,
-                SessionError::MalformedInput {
-                    reason: error.to_string(),
-                },
-            )
-        }
+    let (input_hash, input) = match parse_verification_input(input_json) {
+        Ok(value) => value,
+        Err(boundary) => return boundary,
     };
     if let Err(error) = verify_session_state(&input.domain_pack, &input.state) {
         return refused(input_hash, error);
@@ -220,20 +214,9 @@ pub fn cognition_session_verify(input_json: &str) -> Result<JsValue, JsValue> {
 /// Replay-verify state and return the canonical Python artifact selected by cognition.
 #[wasm_bindgen]
 pub fn cognition_session_code(input_json: &str) -> Result<JsValue, JsValue> {
-    let input_hash = raw_hash(input_json);
-    if input_json.len() > MAX_SESSION_INPUT_LEN {
-        return refused(input_hash, SessionError::InputTooLarge);
-    }
-    let input: VerificationInput = match serde_json::from_str(input_json) {
-        Ok(input) => input,
-        Err(error) => {
-            return refused(
-                input_hash,
-                SessionError::MalformedInput {
-                    reason: error.to_string(),
-                },
-            )
-        }
+    let (input_hash, input) = match parse_verification_input(input_json) {
+        Ok(value) => value,
+        Err(boundary) => return boundary,
     };
     let code = match project_python_code(&input.domain_pack, &input.state) {
         Ok(code) => code,
