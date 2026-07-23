@@ -1,0 +1,101 @@
+name: CI Failure Receipts
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.ggen/receipts/latest.json'
+      - 'crates/**'
+      - 'packages/**'
+      - 'wasm4pm/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/ci-failure-receipts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  receipt-hashes:
+    name: ggen receipt hash diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify every output hash
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 - <<'PY' 2>&1 | tee ggen-hash-receipt.log
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          receipt = json.loads(pathlib.Path('.ggen/receipts/latest.json').read_text())
+          failed = False
+          for item in receipt['output_hashes']:
+              path_text, expected = item.rsplit(':', 1)
+              path = pathlib.Path(path_text)
+              if not path.is_file():
+                  print(f'MISSING {path_text} expected={expected}')
+                  failed = True
+                  continue
+              actual = hashlib.sha256(path.read_bytes()).hexdigest()
+              status = 'OK' if actual == expected else 'MISMATCH'
+              print(f'{status} {path_text} expected={expected} actual={actual}')
+              failed |= actual != expected
+          sys.exit(1 if failed else 0)
+          PY
+      - name: Upload hash receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggen-hash-receipt
+          path: ggen-hash-receipt.log
+          if-no-files-found: error
+          retention-days: 7
+
+  linux-clippy:
+    name: Linux clippy diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Run workspace clippy
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo clippy --workspace --all-targets --all-features -- -D warnings 2>&1 | tee linux-clippy-receipt.log
+      - name: Upload clippy receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-clippy-receipt
+          path: linux-clippy-receipt.log
+          if-no-files-found: error
+          retention-days: 7
+
+  windows-build:
+    name: Windows build diagnostics
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build workspace
+        shell: pwsh
+        run: |
+          cargo build --workspace --all-features --verbose *>&1 | Tee-Object -FilePath windows-build-receipt.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload Windows receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-receipt
+          path: windows-build-receipt.log
+          if-no-files-found: error
+          retention-days: 7
