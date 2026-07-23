@@ -29,7 +29,7 @@ export interface WasmLoaderConfig {
   wasmUrl?: string | URL;
 }
 
-const REQUIRED_EXPORTS: Array<keyof CognitionWasmModule> = [
+const REQUIRED_EXPORTS = [
   'cognition_show',
   'cognition_run',
   'cognition_session_turn',
@@ -37,7 +37,7 @@ const REQUIRED_EXPORTS: Array<keyof CognitionWasmModule> = [
   'cognition_replay',
   'system_build',
   'system_verify',
-];
+] as const;
 
 function assertModuleShape(module: unknown): asserts module is CognitionWasmModule {
   if (!module || typeof module !== 'object') {
