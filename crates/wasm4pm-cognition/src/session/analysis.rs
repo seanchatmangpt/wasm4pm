@@ -110,12 +110,11 @@ pub(super) fn analyze(
         } else {
             (positive * (1.0 - negative)).clamp(0.0, 1.0)
         };
-        let mut ids: Vec<String> = evidence_ids
+        let ids: Vec<String> = evidence_ids
             .remove(&track.id)
             .unwrap_or_default()
             .into_iter()
             .collect();
-        ids.sort();
         let mut rules = fired_rules.remove(&track.id).unwrap_or_default();
         rules.sort();
         hypotheses.push(TrackHypothesis {
@@ -190,7 +189,7 @@ pub(super) fn analyze(
             && top.score - second_score >= pack.thresholds.margin
             && coverage >= pack.thresholds.minimum_coverage
             && top.contradiction <= pack.thresholds.maximum_contradiction;
-        eligible.then(|| top.id.clone())
+        eligible.then_some(top.id.clone())
     });
 
     Analysis {
@@ -204,7 +203,7 @@ pub(super) fn analyze(
 
 pub(super) fn current_phase(
     pack: &DomainPack,
-    committed_track: &Option<String>,
+    committed_track: Option<&str>,
     covered: &[String],
 ) -> (String, String, bool) {
     let covered: BTreeSet<&str> = covered.iter().map(String::as_str).collect();
