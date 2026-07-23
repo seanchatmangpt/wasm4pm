@@ -1,7 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { initCognitionBrowser } from '@wasm4pm/cognition/browser';
 import {
   CognitionError,
@@ -43,11 +44,13 @@ export default function InterviewWorkspace() {
   const [kernelReady, setKernelReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [lastReceipt, setLastReceipt] = useState('');
+  const [turnReceipt, setTurnReceipt] = useState('');
+  const [codeReceipt, setCodeReceipt] = useState('');
 
   const refreshCode = useCallback(async (nextState: SessionState) => {
     const projected = await projectSessionCode(domainPack, nextState);
     setCode(projected.code);
+    setCodeReceipt(projected.attested_hash);
   }, []);
 
   useEffect(() => {
@@ -58,26 +61,36 @@ export default function InterviewWorkspace() {
         await initCognitionBrowser({
           moduleLoader: () => import('wasm4pm-cognition-web') as Promise<unknown>,
         });
-        if (cancelled) return;
-
-        const raw = localStorage.getItem(storageKey);
-        if (raw) {
-          const parsed = SessionStateSchema.safeParse(JSON.parse(raw) as unknown);
-          if (!parsed.success) {
-            localStorage.removeItem(storageKey);
-            throw new Error('Stored cognition state failed structural admission and was discarded.');
-          }
-          await verifySessionState(domainPack, parsed.data);
-          if (cancelled) return;
-          setState(parsed.data);
-          await refreshCode(parsed.data);
+      } catch (initializationError) {
+        if (!cancelled) {
+          setKernelReady(false);
+          setError(describeError(initializationError));
         }
-        if (!cancelled) setKernelReady(true);
-      } catch (bootError) {
+        return;
+      }
+
+      if (cancelled) return;
+      setKernelReady(true);
+
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+
+      try {
+        const parsed = SessionStateSchema.safeParse(JSON.parse(raw) as unknown);
+        if (!parsed.success) {
+          throw new Error('Stored cognition state failed structural admission.');
+        }
+        await verifySessionState(domainPack, parsed.data);
+        if (cancelled) return;
+        setState(parsed.data);
+        await refreshCode(parsed.data);
+      } catch (restoreError) {
         localStorage.removeItem(storageKey);
         if (!cancelled) {
-          setError(describeError(bootError));
-          setKernelReady(true);
+          setState(undefined);
+          setCode(null);
+          setCodeReceipt('');
+          setError(`${describeError(restoreError)} Stored state was discarded.`);
         }
       }
     }
@@ -114,7 +127,7 @@ export default function InterviewWorkspace() {
         const nextState = result.output.state;
         setState(nextState);
         localStorage.setItem(storageKey, JSON.stringify(nextState));
-        setLastReceipt(result.attested_hash);
+        setTurnReceipt(result.attested_hash);
         await refreshCode(nextState);
       } catch (turnError) {
         setError(describeError(turnError));
@@ -138,13 +151,16 @@ export default function InterviewWorkspace() {
     setState(undefined);
     setCode(null);
     setTranscript('');
-    setLastReceipt('');
+    setTurnReceipt('');
+    setCodeReceipt('');
     setError('');
   }
 
   const pendingTrack = state?.pending_confirmation;
   const currentTrack = useMemo(() => {
-    const id = state?.committed_track ?? state?.hypotheses.find((item) => !item.eliminated)?.id;
+    const id =
+      state?.committed_track ??
+      state?.hypotheses.find((item) => !item.eliminated && item.score > 0)?.id;
     return state?.hypotheses.find((item) => item.id === id)?.label ?? 'Undetermined';
   }, [state]);
 
@@ -161,7 +177,7 @@ export default function InterviewWorkspace() {
         </div>
         <div className="status-cluster">
           <span className={`kernel-status ${kernelReady ? 'ready' : ''}`}>
-            {kernelReady ? 'WASM ready' : 'Initializing WASM'}
+            {kernelReady ? 'WASM ready' : 'WASM unavailable'}
           </span>
           <button type="button" className="ghost-button" onClick={reset} disabled={busy}>
             Reset
@@ -195,7 +211,11 @@ export default function InterviewWorkspace() {
             </div>
             <div className="hypothesis-list">
               {(state?.hypotheses ?? []).map((hypothesis) => (
-                <article className="hypothesis" key={hypothesis.id} data-eliminated={hypothesis.eliminated}>
+                <article
+                  className="hypothesis"
+                  key={hypothesis.id}
+                  data-eliminated={hypothesis.eliminated}
+                >
                   <div className="hypothesis-title">
                     <span>{hypothesis.label}</span>
                     <strong>{percent(hypothesis.score)}</strong>
@@ -204,7 +224,8 @@ export default function InterviewWorkspace() {
                     <span style={{ width: percent(hypothesis.score) }} />
                   </div>
                   <small>
-                    support {percent(hypothesis.support)} · contradiction {percent(hypothesis.contradiction)}
+                    support {percent(hypothesis.support)} · contradiction{' '}
+                    {percent(hypothesis.contradiction)}
                   </small>
                 </article>
               ))}
@@ -237,11 +258,18 @@ export default function InterviewWorkspace() {
 
           {pendingTrack ? (
             <section className="confirmation-card">
-              <p>Commit {state?.hypotheses.find((item) => item.id === pendingTrack)?.label ?? pendingTrack}?</p>
+              <p>
+                Commit{' '}
+                {state?.hypotheses.find((item) => item.id === pendingTrack)?.label ?? pendingTrack}?
+              </p>
               <div>
                 <button
                   type="button"
-                  onClick={() => void submitTurn({ confirmation: { track_id: pendingTrack, accepted: true } })}
+                  onClick={() =>
+                    void submitTurn({
+                      confirmation: { track_id: pendingTrack, accepted: true },
+                    })
+                  }
                   disabled={busy}
                 >
                   Yes
@@ -249,7 +277,11 @@ export default function InterviewWorkspace() {
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() => void submitTurn({ confirmation: { track_id: pendingTrack, accepted: false } })}
+                  onClick={() =>
+                    void submitTurn({
+                      confirmation: { track_id: pendingTrack, accepted: false },
+                    })
+                  }
                   disabled={busy}
                 >
                   No
@@ -285,8 +317,10 @@ export default function InterviewWorkspace() {
             <div className="hash-group">
               <span>source</span>
               <code>{code?.source_hash.slice(0, 16) ?? '—'}</code>
+              <span>code receipt</span>
+              <code>{codeReceipt.slice(0, 16) || '—'}</code>
               <span>turn receipt</span>
-              <code>{lastReceipt.slice(0, 16) || '—'}</code>
+              <code>{turnReceipt.slice(0, 16) || '—'}</code>
             </div>
           </div>
           <div className="editor-frame">
