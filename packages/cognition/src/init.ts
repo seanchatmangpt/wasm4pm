@@ -9,6 +9,7 @@ import { CognitionError } from './errors.js';
 export interface CognitionWasmModule {
   cognition_show: () => unknown;
   cognition_run: (input_json: string) => unknown;
+  cognition_session_turn: (input_json: string) => unknown;
   cognition_verify: (result_json: string) => unknown;
   cognition_replay: (run_id: string) => unknown;
   system_build: (intent_json: string) => unknown;
@@ -62,15 +63,11 @@ export class WasmLoader {
       const rawMod = await import(/* @vite-ignore */ specifier);
 
       // Three module shapes are supported:
-      //  1. `--target web`:    default export is an async `init()` that fetches +
-      //     instantiates the .wasm; the named exports (`cognition_run`, …) only
-      //     work AFTER it resolves. Detected by `default` being a function.
-      //  2. node default-object: `default` is the module object carrying
-      //     `cognition_run` directly (some bundler interop).
+      //  1. `--target web`: default export is an async `init()`.
+      //  2. node default-object: `default` carries cognition exports.
       //  3. `--target nodejs`: named exports live on the namespace itself.
       const def = (rawMod as { default?: unknown }).default;
       if (typeof def === 'function') {
-        // Web target — instantiate before the exports are callable.
         await (def as (input?: string | URL) => Promise<unknown>)(this.config.wasmUrl);
         this.module = rawMod as CognitionWasmModule;
       } else if (def && typeof (def as { cognition_run?: unknown }).cognition_run === 'function') {
