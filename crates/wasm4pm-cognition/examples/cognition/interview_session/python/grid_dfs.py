@@ -2,12 +2,20 @@ from collections.abc import Sequence
 
 
 def count_islands(grid: Sequence[Sequence[str]]) -> int:
-    """Count four-directionally connected components of land cells."""
+    """Count four-directionally connected components of land cells.
+
+    The grid must be rectangular and contain only ``"0"`` and ``"1"`` cells.
+    """
     if not grid:
         return 0
 
-    rows = len(grid)
     columns = len(grid[0])
+    if any(len(row) != columns for row in grid):
+        raise ValueError("grid must be rectangular")
+    if any(cell not in {"0", "1"} for row in grid for cell in row):
+        raise ValueError('grid cells must be "0" or "1"')
+
+    rows = len(grid)
     visited: set[tuple[int, int]] = set()
 
     def visit(start_row: int, start_column: int) -> None:
