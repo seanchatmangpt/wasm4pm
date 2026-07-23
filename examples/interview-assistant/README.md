@@ -50,9 +50,26 @@ pnpm run interview:typecheck
 
 The application uses Next.js App Router and Monaco Editor. Monaco is browser-only and is loaded through `next/dynamic` with server-side rendering disabled.
 
+## Full-hour Playwright visual interview
+
+The browser-level acceptance suite follows classical Chicago TDD. It builds and serves the production Next.js application, initializes the real browser WASM package, drives the actual textarea and confirmation button, and renders the real Monaco editor. It does not mock routes, WASM exports, React state, persistence, or cognition state.
+
+The only behavioral assertions are full-page screenshot comparisons. The shared 26-event fixture is driven from 9:00 AM through 10:00 AM using Playwright's browser clock. Nine visual checkpoints cover opening, clarification, approach detection, confirmation, implementation, complexity, completion, follow-up, and wrap-up.
+
+```bash
+pnpm run interview:test:visual:install
+pnpm run interview:test:visual:update
+pnpm run interview:test:visual
+pnpm run interview:test:visual:ui
+```
+
+UUID generation remains real. Only the receipt-value region is masked because those hashes intentionally incorporate nonce-sensitive observation identities. Local snapshot authoring permits missing baselines; CI sets snapshot updates to `none`, so missing or changed screenshots fail.
+
+See `tests/e2e/README.md` for the exact Chicago boundary and snapshot review workflow.
+
 ## Full-hour text-screen simulation
 
-Run the deterministic hour-long interview simulation with:
+Run the deterministic hour-long Rust integration simulation with:
 
 ```bash
 pnpm run interview:test:text
