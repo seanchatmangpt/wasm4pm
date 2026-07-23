@@ -135,7 +135,9 @@ pub(super) fn extract_evidence(
     Ok(records)
 }
 
-pub(super) fn active_propositions(evidence: &[EvidenceRecord]) -> (BTreeSet<String>, BTreeSet<String>) {
+pub(super) fn active_propositions(
+    evidence: &[EvidenceRecord],
+) -> (BTreeSet<String>, BTreeSet<String>) {
     let mut positive = BTreeSet::new();
     let mut negative = BTreeSet::new();
     for item in evidence.iter().filter(|e| e.active) {
@@ -156,6 +158,5 @@ pub(super) fn concept_confidence(item: &EvidenceRecord) -> f32 {
         .values()
         .map(|v| v.abs())
         .fold(0.0_f32, f32::max)
-        .max(0.5)
-        .min(1.0)
+        .clamp(0.5, 1.0)
 }
