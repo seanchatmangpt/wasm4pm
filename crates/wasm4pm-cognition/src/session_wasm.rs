@@ -3,8 +3,11 @@
 #![cfg(feature = "wasm")]
 
 use crate::registry::{CognitionReceipt, REGISTRY};
-use crate::session::{run_session_turn, SessionError, SessionTurnInput, SessionTurnOutput};
-use serde::Serialize;
+use crate::session::{
+    run_session_turn, verify_session_state, DomainPack, SessionError, SessionState,
+    SessionTurnInput, SessionTurnOutput,
+};
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 const MAX_SESSION_INPUT_LEN: usize = 10 * 1024 * 1024;
@@ -29,6 +32,18 @@ struct SuccessBoundary<'a> {
 }
 
 #[derive(Serialize)]
+struct VerificationBoundary<'a> {
+    status: &'static str,
+    run_id: &'a str,
+    input_hash: &'a str,
+    state_hash: &'a str,
+    domain_pack_hash: &'a str,
+    attested_hash: &'a str,
+    replay_pointer: &'a str,
+    attestation: &'a AttestationBoundary,
+}
+
+#[derive(Serialize)]
 struct RefusalBoundary<'a> {
     status: &'static str,
     run_id: &'a str,
@@ -39,6 +54,13 @@ struct RefusalBoundary<'a> {
     refusal: &'a SessionError,
     message: String,
     attestation: &'a AttestationBoundary,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct VerificationInput {
+    domain_pack: DomainPack,
+    state: SessionState,
 }
 
 fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
@@ -73,8 +95,6 @@ fn run_id(kind: &str, digest: &str) -> String {
 fn attest(run_id: &str, input_hash: &str, attested_hash: &str) -> AttestationBoundary {
     use crate::autosystems::receipt::ActorSigner;
 
-    // Browser WASM cannot protect a private identity key. This deterministic key
-    // provides a replayable self-signature, not remote actor authentication.
     let signer = ActorSigner::from_seed(
         *blake3::hash(b"wasm4pm.cognition.session.v2.local-self-signer").as_bytes(),
     );
@@ -97,21 +117,25 @@ fn attest(_run_id: &str, _input_hash: &str, _attested_hash: &str) -> Attestation
     }
 }
 
+fn register_receipt(id: &str, digest: &str, replay_pointer: &str) {
+    REGISTRY.with(|registry| {
+        registry.borrow_mut().insert(
+            id.to_string(),
+            CognitionReceipt {
+                run_id: id.to_string(),
+                output_hash: digest.to_string(),
+                replay_pointer: replay_pointer.to_string(),
+            },
+        );
+    });
+}
+
 fn refused(input_hash: String, refusal: SessionError) -> Result<JsValue, JsValue> {
     let digest = refusal_hash(&input_hash, &refusal)?;
     let id = run_id("refusal", &digest);
     let replay_pointer = digest[..16].to_string();
     let attestation = attest(&id, &input_hash, &digest);
-    REGISTRY.with(|registry| {
-        registry.borrow_mut().insert(
-            id.clone(),
-            CognitionReceipt {
-                run_id: id.clone(),
-                output_hash: digest.clone(),
-                replay_pointer: replay_pointer.clone(),
-            },
-        );
-    });
+    register_receipt(&id, &digest, &replay_pointer);
     to_js(&RefusalBoundary {
         status: "refused",
         run_id: &id,
@@ -121,6 +145,46 @@ fn refused(input_hash: String, refusal: SessionError) -> Result<JsValue, JsValue
         replay_pointer: &replay_pointer,
         message: refusal.to_string(),
         refusal: &refusal,
+        attestation: &attestation,
+    })
+}
+
+/// Verify a persisted session state without admitting a new turn.
+#[wasm_bindgen]
+pub fn cognition_session_verify(input_json: &str) -> Result<JsValue, JsValue> {
+    let input_hash = raw_hash(input_json);
+    if input_json.len() > MAX_SESSION_INPUT_LEN {
+        return refused(input_hash, SessionError::InputTooLarge);
+    }
+    let input: VerificationInput = match serde_json::from_str(input_json) {
+        Ok(input) => input,
+        Err(error) => {
+            return refused(
+                input_hash,
+                SessionError::MalformedInput {
+                    reason: error.to_string(),
+                },
+            )
+        }
+    };
+    if let Err(error) = verify_session_state(&input.domain_pack, &input.state) {
+        return refused(input_hash, error);
+    }
+
+    let state_hash = input.state.state_hash.clone();
+    let domain_pack_hash = input.state.domain_pack_hash.clone();
+    let id = run_id("verification", &state_hash);
+    let replay_pointer = state_hash[..16].to_string();
+    let attestation = attest(&id, &input_hash, &state_hash);
+    register_receipt(&id, &state_hash, &replay_pointer);
+    to_js(&VerificationBoundary {
+        status: "verified",
+        run_id: &id,
+        input_hash: &input_hash,
+        state_hash: &state_hash,
+        domain_pack_hash: &domain_pack_hash,
+        attested_hash: &state_hash,
+        replay_pointer: &replay_pointer,
         attestation: &attestation,
     })
 }
@@ -161,17 +225,7 @@ pub fn cognition_session_turn(input_json: &str) -> Result<JsValue, JsValue> {
     let id = run_id("success", &attested_hash);
     let replay_pointer = attested_hash[..16].to_string();
     let attestation = attest(&id, &input_hash, &attested_hash);
-
-    REGISTRY.with(|registry| {
-        registry.borrow_mut().insert(
-            id.clone(),
-            CognitionReceipt {
-                run_id: id.clone(),
-                output_hash: output_hash.clone(),
-                replay_pointer: replay_pointer.clone(),
-            },
-        );
-    });
+    register_receipt(&id, &output_hash, &replay_pointer);
 
     to_js(&SuccessBoundary {
         status: "ok",
