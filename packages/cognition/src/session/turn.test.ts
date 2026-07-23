@@ -32,6 +32,7 @@ function fakeModule(sessionResult: unknown): CognitionWasmModule {
     cognition_run: () => '{}',
     cognition_session_turn: () => sessionResult,
     cognition_session_verify: () => '{}',
+    cognition_session_code: () => '{}',
     cognition_verify: () => '{}',
     cognition_replay: () => '{}',
     system_build: () => '{}',
