@@ -1,18 +1,34 @@
 # Interview Answer Assistant
 
-A browser-first reference UI for `cognition_session_turn`.
+A lower-screen browser application for the deterministic `cognition_session_turn` kernel.
 
-The shared upper monitor remains the interview workspace. This lower-screen UI runs the bounded interview domain entirely in browser WASM and displays ranked tracks, covered concepts, missing concepts, confirmation gates, inference traces, and receipt pointers.
+The shared upper monitor remains the interview workspace. The laptop screen displays the current answer track, ranked alternatives, covered concepts, remaining ontology-level guidance, exact matched phrases, confirmation gates, inference traces, and receipt identifiers. It does not generate code or prose answers.
 
 ## Run
 
-After building both cognition WASM targets and the TypeScript package, serve this directory through a Vite-compatible dev server:
+Install the repository dependencies and `wasm-pack`, then run the canonical command from the repository root:
 
 ```bash
-pnpm run build --workspace @wasm4pm/cognition
-pnpm dlx vite examples/interview-assistant
+pnpm install
+pnpm run interview:dev
 ```
 
-The browser Web Speech API is used when available. Manual transcript entry is always available. No LLM or vector database is involved.
+`interview:dev` builds the cognition crate as browser WebAssembly and starts Vite with this directory as the application root. A production bundle can be manufactured with:
 
-Session state is persisted in `localStorage`, then returned to WASM on every turn. The kernel recomputes and verifies the state hash before accepting a transition.
+```bash
+pnpm run interview:build
+```
+
+## Operation
+
+The Web Speech API supplies final transcript fragments when the browser supports it. Manual transcript entry remains available on every supported browser.
+
+Every observation and yes or no confirmation is serialized through one state chain. The browser persists the latest receipted state in `localStorage`; on reload, the state is schema-checked before use, and the Rust kernel reconstructs evidence and derived state before admitting the next transition. Invalid local state is discarded rather than silently trusted.
+
+The **Reset session** control clears the local state and begins a new interview. This is also the lawful recovery path after switching ontology versions or intentionally abandoning a rejected track.
+
+## Boundary semantics
+
+No LLM or vector database is involved. Phrase matching, evidence fusion, rule firing, track commitment, phase progression, refusals, hashing, and receipt manufacture execute in Rust/WASM.
+
+The optional Ed25519 value is explicitly a deterministic local self-signature. It supports replay verification but is not represented as remote actor authentication. The BLAKE3 receipt is the canonical tamper-evident computation commitment.
