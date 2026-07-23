@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test:e2e:visual": "next build && playwright test",
     "test:e2e:visual:update": "next build && playwright test --update-snapshots",
-    "test:e2e:visual:ui": "playwright test --ui",
+    "test:e2e:visual:ui": "next build && playwright test --ui",
     "test:e2e:visual:report": "playwright show-report"
   },
   "dependencies": {
