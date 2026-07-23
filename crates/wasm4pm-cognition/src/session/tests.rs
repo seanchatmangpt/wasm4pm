@@ -28,17 +28,14 @@ fn turn(
     }
 }
 
+fn coordinate_answer() -> &'static str {
+    "I would use x and y with a dictionary of moves north south east west and iterate"
+}
+
 #[test]
 fn converges_and_requires_confirmation() {
-    let output = run_session_turn(&turn(
-        None,
-        Some((
-            "o1",
-            "I would use x and y with a dictionary of moves north south east west and iterate",
-        )),
-        None,
-    ))
-    .expect("turn succeeds");
+    let output = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
+        .expect("turn succeeds");
     assert_eq!(
         output.projection.current_track.as_deref(),
         Some("coordinate_traversal")
@@ -48,20 +45,18 @@ fn converges_and_requires_confirmation() {
         Some("coordinate_traversal")
     );
     assert!(output.projection.covered_concepts.len() >= 3);
-    assert!(hash_session_state(&output.state).is_ok_and(|h| h == output.state.state_hash));
+    assert!(hash_session_state(&output.state).is_ok_and(|hash| hash == output.state.state_hash));
+    assert!(output
+        .state
+        .evidence
+        .iter()
+        .any(|evidence| evidence.matched_phrase == "dictionary of moves"));
 }
 
 #[test]
 fn confirmation_commits_track() {
-    let first = run_session_turn(&turn(
-        None,
-        Some((
-            "o1",
-            "x and y dictionary of moves north south east west iterate",
-        )),
-        None,
-    ))
-    .expect("first turn");
+    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
+        .expect("first turn");
     let second = run_session_turn(&turn(
         Some(first.state),
         None,
@@ -105,29 +100,82 @@ fn contradictory_iteration_reduces_recursive_track() {
         .projection
         .hypotheses
         .iter()
-        .find(|h| h.id == "grid_dfs")
+        .find(|hypothesis| hypothesis.id == "grid_dfs")
         .expect("grid hypothesis");
     let coordinate = second
         .projection
         .hypotheses
         .iter()
-        .find(|h| h.id == "coordinate_traversal")
+        .find(|hypothesis| hypothesis.id == "coordinate_traversal")
         .expect("coordinate hypothesis");
     assert!(coordinate.score > grid.score);
     assert!(grid.contradiction > 0.0);
 }
 
 #[test]
-fn explicit_rejection_eliminates_track() {
+fn contractions_are_recognized_as_negative_evidence() {
+    let output = run_session_turn(&turn(None, Some(("o1", "I don't recurse")), None))
+        .expect("turn succeeds");
+    let evidence = output
+        .state
+        .evidence
+        .iter()
+        .find(|evidence| evidence.pattern_id == "recursive-traversal")
+        .expect("recursive evidence");
+    assert_eq!(evidence.polarity, EvidencePolarity::Negative);
+    assert_eq!(evidence.matched_phrase, "recurse");
+}
+
+#[test]
+fn concept_coverage_is_scoped_to_the_ranked_track() {
+    let output = run_session_turn(&turn(
+        None,
+        Some((
+            "o1",
+            "coordinates adjacency list visited set recursion vertices plus edges edge cases",
+        )),
+        None,
+    ))
+    .expect("turn succeeds");
+    assert_eq!(output.projection.current_track.as_deref(), Some("graph_dfs"));
+    assert!(output
+        .projection
+        .missing_concepts
+        .contains(&"state_representation".to_string()));
+}
+
+#[test]
+fn hash_lookup_can_complete_without_a_transition_concept() {
     let first = run_session_turn(&turn(
         None,
         Some((
             "o1",
-            "x and y dictionary of moves north south east west iterate",
+            "key value pairs hash lookup linear time missing key",
         )),
         None,
     ))
     .expect("first turn");
+    assert_eq!(
+        first.projection.pending_confirmation.as_deref(),
+        Some("hash_lookup")
+    );
+    let second = run_session_turn(&turn(
+        Some(first.state),
+        None,
+        Some(Confirmation {
+            track_id: "hash_lookup".to_string(),
+            accepted: true,
+        }),
+    ))
+    .expect("confirmation turn");
+    assert!(second.projection.complete);
+    assert_eq!(second.projection.phase, "complete");
+}
+
+#[test]
+fn explicit_rejection_eliminates_track() {
+    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
+        .expect("first turn");
     let second = run_session_turn(&turn(
         Some(first.state),
         None,
@@ -141,32 +189,108 @@ fn explicit_rejection_eliminates_track() {
         .projection
         .hypotheses
         .iter()
-        .find(|h| h.id == "coordinate_traversal")
+        .find(|hypothesis| hypothesis.id == "coordinate_traversal")
         .expect("rejected hypothesis");
     assert!(rejected.eliminated);
     assert!(rejected.score.abs() <= f32::EPSILON);
 }
 
 #[test]
-fn refuses_tampered_state() {
+fn rejection_must_target_pending_or_committed_track() {
+    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
+        .expect("first turn");
+    let error = run_session_turn(&turn(
+        Some(first.state),
+        None,
+        Some(Confirmation {
+            track_id: "graph_dfs".to_string(),
+            accepted: false,
+        }),
+    ))
+    .expect_err("unrelated rejection must refuse");
+    assert_eq!(
+        error,
+        SessionError::ConfirmationNotPending {
+            id: "graph_dfs".to_string()
+        }
+    );
+}
+
+#[test]
+fn later_contradiction_reopens_a_committed_track() {
+    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
+        .expect("first turn");
+    let committed = run_session_turn(&turn(
+        Some(first.state),
+        None,
+        Some(Confirmation {
+            track_id: "coordinate_traversal".to_string(),
+            accepted: true,
+        }),
+    ))
+    .expect("confirmation turn");
+    let revised = run_session_turn(&turn(
+        Some(committed.state),
+        Some((
+            "o2",
+            "not x and y no dictionary of moves without cardinal directions current node adjacency list visited set recursion vertices plus edges edge cases",
+        )),
+        None,
+    ))
+    .expect("revision turn");
+    assert!(revised.state.committed_track.is_none());
+    assert_eq!(revised.projection.current_track.as_deref(), Some("graph_dfs"));
+    assert!(revised
+        .inference_trace
+        .iter()
+        .any(|step| step.kind == "reopen-commitment"));
+}
+
+#[test]
+fn refuses_tampered_state_hash() {
     let mut first = run_session_turn(&turn(None, Some(("o1", "x and y")), None))
         .expect("first turn");
     first.state.turn = 99;
-    let err = run_session_turn(&turn(
+    let error = run_session_turn(&turn(
         Some(first.state),
         Some(("o2", "dictionary of moves")),
         None,
     ))
     .expect_err("tamper must refuse");
-    assert_eq!(err, SessionError::StateHashMismatch);
+    assert_eq!(error, SessionError::StateHashMismatch);
+}
+
+#[test]
+fn refuses_semantically_forged_state_with_recomputed_hash() {
+    let mut first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
+        .expect("first turn");
+    first
+        .state
+        .covered_concepts
+        .push("complexity".to_string());
+    first.state.state_hash = hash_session_state(&first.state).expect("rehash forged state");
+    let error = run_session_turn(&turn(
+        Some(first.state),
+        Some(("o2", "linear time")),
+        None,
+    ))
+    .expect_err("semantic forgery must refuse");
+    assert!(matches!(error, SessionError::InvalidState { .. }));
+}
+
+#[test]
+fn empty_observation_refuses() {
+    let error = run_session_turn(&turn(None, Some(("o1", "   ")), None))
+        .expect_err("empty observation must refuse");
+    assert_eq!(error, SessionError::EmptyObservation);
 }
 
 #[test]
 fn identical_inputs_replay_bit_exactly() {
     let input = turn(None, Some(("o1", "x and y dictionary of moves")), None);
-    let a = run_session_turn(&input).expect("first replay");
-    let b = run_session_turn(&input).expect("second replay");
-    assert_eq!(a, b);
+    let first = run_session_turn(&input).expect("first replay");
+    let second = run_session_turn(&input).expect("second replay");
+    assert_eq!(first, second);
 }
 
 #[test]
