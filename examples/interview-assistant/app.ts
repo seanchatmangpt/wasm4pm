@@ -10,18 +10,8 @@ import {
 } from '../../packages/cognition/src/index.ts';
 import domainPackJson from '../../crates/wasm4pm-cognition/examples/cognition/interview_session/domain.json';
 
-type TurnRequest = {
-  text?: string;
-  confirmation?: { track_id: string; accepted: boolean };
-};
-
-type ReceiptSnapshot = {
-  turn: number;
-  replayPointer: string;
-  attestedHash: string;
-  attestationKind: string;
-};
-
+type TurnRequest = { text?: string; confirmation?: { track_id: string; accepted: boolean } };
+type ReceiptSnapshot = { turn: number; replayPointer: string; attestedHash: string; attestationKind: string };
 type StoredSession = {
   format: 'wasm4pm-interview-session-v2';
   state: unknown;
@@ -29,12 +19,10 @@ type StoredSession = {
   receipt?: unknown;
   trace?: unknown;
 };
-
 type SpeechRecognitionEventLike = {
   resultIndex: number;
   results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
 };
-
 type SpeechRecognitionConstructor = new () => {
   continuous: boolean;
   interimResults: boolean;
@@ -81,7 +69,6 @@ let state: SessionState | undefined;
 let latestTranscript = '';
 let latestReceipt: ReceiptSnapshot | undefined;
 let latestTrace: unknown[] = [];
-let observationSequence = 0;
 let ready = false;
 let listening = false;
 let queuedTurns = 0;
@@ -93,11 +80,8 @@ const SpeechRecognition = (
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
 ).SpeechRecognition ??
-  (
-    globalThis as typeof globalThis & {
-      webkitSpeechRecognition?: SpeechRecognitionConstructor;
-    }
-  ).webkitSpeechRecognition;
+  (globalThis as typeof globalThis & { webkitSpeechRecognition?: SpeechRecognitionConstructor })
+    .webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : undefined;
 
 function setKernelStatus(message: string, status: 'loading' | 'ready' | 'error'): void {
@@ -130,9 +114,7 @@ function parseReceipt(value: unknown): ReceiptSnapshot | undefined {
     typeof candidate.replayPointer !== 'string' ||
     typeof candidate.attestedHash !== 'string' ||
     typeof candidate.attestationKind !== 'string'
-  ) {
-    return undefined;
-  }
+  ) return undefined;
   return candidate as ReceiptSnapshot;
 }
 
@@ -142,26 +124,19 @@ function clearStoredSession(message?: string): void {
   latestTranscript = '';
   latestReceipt = undefined;
   latestTrace = [];
-  observationSequence = 0;
   if (message) setOperationStatus(message, 'error');
 }
 
 function loadStoredSession(): void {
-  if (!storageKey) return;
-  const raw = localStorage.getItem(storageKey);
+  const raw = storageKey ? localStorage.getItem(storageKey) : null;
   if (!raw) return;
   try {
     const decoded = JSON.parse(raw) as StoredSession;
-    if (decoded.format !== 'wasm4pm-interview-session-v2') {
-      throw new TypeError('Unsupported stored-session format.');
-    }
-    const parsedState = SessionStateSchema.safeParse(decoded.state);
-    if (!parsedState.success) throw parsedState.error;
-    state = parsedState.data;
+    if (decoded.format !== 'wasm4pm-interview-session-v2') throw new TypeError('Unsupported stored-session format.');
+    state = SessionStateSchema.parse(decoded.state);
     latestTranscript = typeof decoded.transcript === 'string' ? decoded.transcript : '';
     latestReceipt = parseReceipt(decoded.receipt);
     latestTrace = Array.isArray(decoded.trace) ? decoded.trace : [];
-    observationSequence = state.observations.length;
   } catch (error) {
     console.warn('Discarding malformed persisted interview session.', error);
     clearStoredSession('Stored state was malformed and has been discarded.');
@@ -219,10 +194,7 @@ function renderConcepts(target: HTMLElement, ids: string[], includePrompt: boole
 function renderHypotheses(): void {
   hypotheses.replaceChildren();
   const ranked = state?.hypotheses ?? [];
-  if (ranked.length === 0) {
-    appendEmpty(hypotheses, 'No track evidence yet.');
-    return;
-  }
+  if (ranked.length === 0) return appendEmpty(hypotheses, 'No track evidence yet.');
   for (const hypothesis of ranked) {
     const wrapper = document.createElement('div');
     wrapper.className = 'hypothesis';
@@ -240,9 +212,7 @@ function renderHypotheses(): void {
     bar.append(fill);
     const meta = document.createElement('div');
     meta.className = 'hypothesis-meta';
-    meta.textContent = `support ${Math.round(hypothesis.support * 100)}% · contradiction ${Math.round(
-      hypothesis.contradiction * 100,
-    )}%`;
+    meta.textContent = `support ${Math.round(hypothesis.support * 100)}% · contradiction ${Math.round(hypothesis.contradiction * 100)}%`;
     wrapper.append(heading, bar, meta);
     hypotheses.append(wrapper);
   }
@@ -251,10 +221,7 @@ function renderHypotheses(): void {
 function renderEvidence(): void {
   evidence.replaceChildren();
   const active = (state?.evidence ?? []).filter((item) => item.active).slice(-24).reverse();
-  if (active.length === 0) {
-    appendEmpty(evidence, 'No phrases matched yet.');
-    return;
-  }
+  if (active.length === 0) return appendEmpty(evidence, 'No phrases matched yet.');
   for (const item of active) {
     const chip = document.createElement('span');
     chip.className = 'evidence-chip';
@@ -279,8 +246,9 @@ function render(): void {
   const pending = state?.pending_confirmation;
   confirmation.classList.toggle('hidden', !pending);
   confirmation.dataset.track = pending ?? '';
-  const pendingLabel = ranked.find((item) => item.id === pending)?.label ?? pending;
-  confirmationCopy.textContent = pending ? `Commit ${pendingLabel} as the active track?` : '';
+  confirmationCopy.textContent = pending
+    ? `Commit ${ranked.find((item) => item.id === pending)?.label ?? pending} as the active track?`
+    : '';
   transcript.textContent = latestTranscript || 'No transcript yet.';
   trace.textContent = JSON.stringify(latestTrace, null, 2);
   receipt.textContent = latestReceipt
@@ -298,21 +266,19 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function newObservationId(): string {
+  return `browser-${crypto.randomUUID()}`;
+}
+
 async function executeTurn(request: TurnRequest): Promise<void> {
   if (!domainPack) throw new Error('Interview domain is not initialized.');
   const text = request.text?.trim();
-  const observation = text
-    ? {
-        id: `browser-${++observationSequence}`,
-        source: 'conversation',
-        text,
-        retract_evidence_ids: [],
-      }
-    : undefined;
   const result = await runSessionTurn({
     domain_pack: domainPack,
     previous_state: state,
-    observation,
+    observation: text
+      ? { id: newObservationId(), source: 'conversation', text, retract_evidence_ids: [] }
+      : undefined,
     confirmation: request.confirmation,
   });
   state = result.output.state;
@@ -371,17 +337,16 @@ if (recognition) {
   recognition.interimResults = true;
   recognition.lang = 'en-US';
   recognition.onresult = (event) => {
-    const finalSegments: string[] = [];
-    const interimSegments: string[] = [];
+    const finals: string[] = [];
+    const interim: string[] = [];
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const result = event.results[index];
       const text = result?.[0]?.transcript.trim();
       if (!text) continue;
-      if (result.isFinal) finalSegments.push(text);
-      else interimSegments.push(text);
+      (result.isFinal ? finals : interim).push(text);
     }
-    if (interimSegments.length > 0) transcript.textContent = interimSegments.join(' ');
-    const finalText = finalSegments.join(' ').trim();
+    if (interim.length > 0) transcript.textContent = interim.join(' ');
+    const finalText = finals.join(' ').trim();
     if (finalText) enqueueTurn({ text: finalText });
   };
   recognition.onend = () => {
@@ -419,16 +384,11 @@ async function boot(): Promise<void> {
   domainPack = parsedDomain.data;
   storageKey = `wasm4pm-interview:${domainPack.id}`;
   loadStoredSession();
-
   try {
-    const wasmUrl = new URL(
-      '../../packages/cognition/pkg-web/wasm4pm_cognition_bg.wasm',
-      import.meta.url,
-    );
+    const wasmUrl = new URL('../../packages/cognition/pkg-web/wasm4pm_cognition_bg.wasm', import.meta.url);
     await initCognitionBrowser({
       wasmUrl,
-      moduleLoader: () =>
-        import('../../packages/cognition/pkg-web/wasm4pm_cognition.js') as Promise<unknown>,
+      moduleLoader: () => import('../../packages/cognition/pkg-web/wasm4pm_cognition.js') as Promise<unknown>,
     });
     if (state) {
       try {
