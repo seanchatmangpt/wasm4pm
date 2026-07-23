@@ -27,19 +27,19 @@ fn source_for(track_id: &str) -> Option<(&'static str, &'static str)> {
     match track_id {
         "coordinate_traversal" => Some((
             "coordinate_traversal.py",
-            include_str!("../examples/cognition/interview_session/python/coordinate_traversal.py"),
+            include_str!("../../examples/cognition/interview_session/python/coordinate_traversal.py"),
         )),
         "grid_dfs" => Some((
             "grid_dfs.py",
-            include_str!("../examples/cognition/interview_session/python/grid_dfs.py"),
+            include_str!("../../examples/cognition/interview_session/python/grid_dfs.py"),
         )),
         "graph_dfs" => Some((
             "graph_dfs.py",
-            include_str!("../examples/cognition/interview_session/python/graph_dfs.py"),
+            include_str!("../../examples/cognition/interview_session/python/graph_dfs.py"),
         )),
         "hash_lookup" => Some((
             "hash_lookup.py",
-            include_str!("../examples/cognition/interview_session/python/hash_lookup.py"),
+            include_str!("../../examples/cognition/interview_session/python/hash_lookup.py"),
         )),
         _ => None,
     }
