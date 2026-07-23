@@ -28,13 +28,17 @@ jobs:
           set -o pipefail
           grep -R -n -B 8 -A 30 -E 'Install ggen|Receipt hash verification|output_hashes' .github/workflows 2>&1 \
             | tee ggen-workflow-source.log
-      - name: Upload workflow source receipt
+      - name: Upload workflow and manifest sources
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ggen-workflow-source
-          path: ggen-workflow-source.log
+          name: ci-source-receipt
+          path: |
+            ggen-workflow-source.log
+            .github/workflows
+            wasm4pm/Cargo.toml
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
 
   receipt-hashes:
