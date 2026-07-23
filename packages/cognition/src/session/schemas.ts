@@ -62,6 +62,7 @@ const ThresholdSpecSchema = z
 
 const SessionBoundsSchema = z
   .object({
+    max_turns: z.number().int().positive(),
     max_observations: z.number().int().positive(),
     max_evidence: z.number().int().positive(),
     max_observation_bytes: z.number().int().positive(),
@@ -105,6 +106,17 @@ export const ConfirmationSchema = z
   .strict();
 export type Confirmation = z.infer<typeof ConfirmationSchema>;
 
+export const SessionTurnRecordSchema = z
+  .object({
+    observation: ObservationSchema.nullable().optional(),
+    confirmation: ConfirmationSchema.nullable().optional(),
+  })
+  .strict()
+  .refine((record) => record.observation != null || record.confirmation != null, {
+    message: 'A turn record requires an observation or confirmation.',
+  });
+export type SessionTurnRecord = z.infer<typeof SessionTurnRecordSchema>;
+
 export const EvidenceRecordSchema = z
   .object({
     id: HashSchema,
@@ -139,6 +151,7 @@ export interface SessionState {
   turn: number;
   domain_pack_hash: string;
   previous_state_hash?: string | null;
+  turns: SessionTurnRecord[];
   observations: Observation[];
   evidence: EvidenceRecord[];
   rejected_tracks: string[];
@@ -158,6 +171,7 @@ export const SessionStateSchema: z.ZodType<SessionState> = z.lazy(() =>
       turn: z.number().int().positive(),
       domain_pack_hash: HashSchema,
       previous_state_hash: HashSchema.nullable().optional(),
+      turns: z.array(SessionTurnRecordSchema).min(1),
       observations: z.array(ObservationSchema),
       evidence: z.array(EvidenceRecordSchema),
       rejected_tracks: z.array(z.string()),
@@ -169,7 +183,11 @@ export const SessionStateSchema: z.ZodType<SessionState> = z.lazy(() =>
       pending_confirmation: z.string().nullable().optional(),
       state_hash: HashSchema,
     })
-    .strict(),
+    .strict()
+    .refine((session) => session.turn === session.turns.length, {
+      message: 'turn must equal the canonical turn-ledger length',
+      path: ['turn'],
+    }),
 );
 
 export const SessionTurnInputSchema = z
@@ -179,7 +197,10 @@ export const SessionTurnInputSchema = z
     observation: ObservationSchema.nullable().optional(),
     confirmation: ConfirmationSchema.nullable().optional(),
   })
-  .strict();
+  .strict()
+  .refine((input) => input.observation != null || input.confirmation != null, {
+    message: 'A session turn requires an observation or confirmation.',
+  });
 export type SessionTurnInput = z.infer<typeof SessionTurnInputSchema>;
 
 const TraceStepSchema = z
