@@ -10,6 +10,7 @@ export interface CognitionWasmModule {
   cognition_show: () => unknown;
   cognition_run: (input_json: string) => unknown;
   cognition_session_turn: (input_json: string) => unknown;
+  cognition_session_verify: (input_json: string) => unknown;
   cognition_verify: (result_json: string) => unknown;
   cognition_replay: (run_id: string) => unknown;
   system_build: (intent_json: string) => unknown;
@@ -33,6 +34,7 @@ const REQUIRED_EXPORTS = [
   'cognition_show',
   'cognition_run',
   'cognition_session_turn',
+  'cognition_session_verify',
   'cognition_verify',
   'cognition_replay',
   'system_build',
@@ -89,10 +91,6 @@ export class WasmLoader {
         ? await this.config.moduleLoader()
         : await import(/* @vite-ignore */ this.config.modulePath ?? 'wasm4pm-cognition');
 
-      // Supported module shapes:
-      //  1. web target: default export is async `init()`; named exports follow.
-      //  2. default-object interop: default carries the callable exports.
-      //  3. node target: callable exports live on the namespace itself.
       const defaultExport = (rawModule as { default?: unknown }).default;
       let module: unknown;
       if (typeof defaultExport === 'function') {
