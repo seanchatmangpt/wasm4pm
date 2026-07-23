@@ -21,6 +21,31 @@ A production bundle can be manufactured with:
 pnpm run interview:build
 ```
 
+## Full-hour text-screen simulation
+
+Run the deterministic hour-long interview simulation with:
+
+```bash
+pnpm run interview:test:text
+```
+
+The fixture covers a realistic 9:00 AM to 10:00 AM senior-engineering interview with 26 ordered turns:
+
+- introductions and problem presentation;
+- clarification questions;
+- ambiguous early evidence;
+- coordinate-traversal detection and explicit confirmation;
+- state invariant and transition discussion;
+- implementation walkthrough;
+- complexity analysis;
+- test planning and production edge cases;
+- a streaming and concurrency follow-up;
+- final one-minute summary.
+
+The integration test renders canonical text screens at nine checkpoints. Each screen includes the fake clock, elapsed time, turn number, current phase, ranked hypotheses, commitment status, covered and missing concepts, recent transcript, receipt prefix, state-hash prefix, and completion state. The complete 60-minute ledger is replay-verified, and a second execution must produce bit-identical final state and text screens.
+
+The timestamps are intentionally fictional. They model interview cadence and do not enter cognition scoring.
+
 ## Operation
 
 The Web Speech API supplies final transcript fragments when the browser supports it. Manual transcript entry remains available on every supported browser.
