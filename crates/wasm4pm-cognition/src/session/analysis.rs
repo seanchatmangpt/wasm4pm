@@ -1,6 +1,5 @@
 //! Hearsay-style fusion, MYCIN-style rules, and phase selection.
 
-use super::matcher::active_propositions;
 use super::model::*;
 use crate::breeds::hearsay::noisy_or;
 use crate::breeds::TraceStep;
@@ -25,6 +24,31 @@ fn concept_score(scores: &ConceptScores, track_id: &str, concept: &str) -> f32 {
         .and_then(|concepts| concepts.get(concept))
         .copied()
         .unwrap_or(0.0)
+}
+
+fn effective_track_weight(item: &EvidenceRecord, track_id: &str) -> f32 {
+    let declared = item.track_weights.get(track_id).copied().unwrap_or(0.0);
+    match item.polarity {
+        EvidencePolarity::Positive => declared,
+        EvidencePolarity::Negative => -declared,
+    }
+}
+
+fn premise_certainty(evidence: &[EvidenceRecord], proposition: &str, track_id: &str) -> f32 {
+    let mut support = 0.0_f32;
+    let mut contradiction = 0.0_f32;
+    for item in evidence
+        .iter()
+        .filter(|item| item.active && item.proposition == proposition)
+    {
+        let signed = effective_track_weight(item, track_id);
+        if signed > 0.0 {
+            support = noisy_or(support, signed);
+        } else if signed < 0.0 {
+            contradiction = noisy_or(contradiction, signed.abs());
+        }
+    }
+    (support * (1.0 - contradiction)).clamp(0.0, 1.0)
 }
 
 pub(super) struct Analysis {
@@ -55,12 +79,9 @@ pub(super) fn analyze(
     let mut concept_support: ConceptScores = BTreeMap::new();
     let mut concept_contradiction: ConceptScores = BTreeMap::new();
 
-    for item in evidence.iter().filter(|e| e.active) {
-        for (track_id, declared_weight) in &item.track_weights {
-            let signed = match item.polarity {
-                EvidencePolarity::Positive => *declared_weight,
-                EvidencePolarity::Negative => -*declared_weight,
-            };
+    for item in evidence.iter().filter(|item| item.active) {
+        for track_id in item.track_weights.keys() {
+            let signed = effective_track_weight(item, track_id);
             if signed > 0.0 {
                 let previous = support.get(track_id).copied().unwrap_or(0.0);
                 support.insert(track_id.clone(), noisy_or(previous, signed));
@@ -89,18 +110,27 @@ pub(super) fn analyze(
         }
     }
 
-    let (positive_props, negative_props) = active_propositions(evidence);
     let mut fired_rules: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for rule in &pack.rules {
-        let fires = rule
+        let premise_certainties: Vec<f32> = rule
             .premises
             .iter()
-            .all(|p| positive_props.contains(p) && !negative_props.contains(p));
-        if !fires {
+            .map(|premise| premise_certainty(evidence, premise, &rule.track_id))
+            .collect();
+        let weakest_premise = premise_certainties
+            .iter()
+            .copied()
+            .fold(1.0_f32, f32::min);
+        let contribution = (weakest_premise * rule.certainty).clamp(0.0, 1.0);
+        if contribution <= f32::EPSILON {
             continue;
         }
+
         let previous = support.get(&rule.track_id).copied().unwrap_or(0.0);
-        support.insert(rule.track_id.clone(), noisy_or(previous, rule.certainty));
+        support.insert(
+            rule.track_id.clone(),
+            noisy_or(previous, contribution),
+        );
         fired_rules
             .entry(rule.track_id.clone())
             .or_default()
@@ -110,15 +140,15 @@ pub(super) fn analyze(
                 &mut concept_support,
                 &rule.track_id,
                 concept,
-                rule.certainty,
+                contribution,
             );
         }
         trace.push(TraceStep {
             step: trace.len(),
             kind: "fire-rule".to_string(),
             detail: format!(
-                "rule={} track={} certainty={:.6}",
-                rule.id, rule.track_id, rule.certainty
+                "rule={} track={} certainty={:.6} weakest_premise={:.6} contribution={:.6}",
+                rule.id, rule.track_id, rule.certainty, weakest_premise, contribution
             ),
             depth: 0,
             objects: vec![("track".to_string(), rule.track_id.clone())],
@@ -178,8 +208,8 @@ pub(super) fn analyze(
 
     let top_track = hypotheses
         .first()
-        .filter(|h| !h.eliminated && h.score > 0.0)
-        .map(|h| h.id.clone());
+        .filter(|hypothesis| !hypothesis.eliminated && hypothesis.score > 0.0)
+        .map(|hypothesis| hypothesis.id.clone());
 
     let mut covered_by_track = BTreeMap::new();
     let mut missing_by_track = BTreeMap::new();
@@ -205,7 +235,7 @@ pub(super) fn analyze(
         if top.eliminated || top.score <= 0.0 {
             return None;
         }
-        let second_score = hypotheses.get(1).map(|h| h.score).unwrap_or(0.0);
+        let second_score = hypotheses.get(1).map(|hypothesis| hypothesis.score).unwrap_or(0.0);
         let coverage = covered_by_track
             .get(&top.id)
             .map(Vec::len)
