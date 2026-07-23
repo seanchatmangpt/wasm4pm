@@ -9,24 +9,21 @@ SessionTurn(domain_pack, previous_state, observation, confirmation)
   -> next_state + projection + inference_trace + OCEL + receipt
 ```
 
-The host persists `next_state` and supplies it on the next turn. Before admission, the Rust kernel verifies the state hash, replays every observation, confirmation, and explicit evidence retraction, reconstructs the evidence set, recomputes the ranking and concept coverage, and verifies the stored phase and confirmation state. A state with a freshly recomputed hash is still refused when its derived contents do not follow from its admitted ledger.
-
-Session state is explicit rather than server-owned. This makes one turn a deterministic function of the domain pack, prior state, observation, and confirmation.
+The host persists `next_state` and supplies it on the next turn. Before admission, the Rust kernel verifies the state hash, replays every observation, confirmation, and explicit evidence retraction, reconstructs evidence, recomputes ranking and concept coverage, and verifies phase and confirmation state.
 
 ## Browser initialization
 
-The browser target must expose its generated JavaScript module to the bundler. Use a literal `moduleLoader` callback and the generated WASM URL:
+Browser applications initialize the web-target package through a bundle-visible loader:
 
 ```ts
 import { initCognitionBrowser } from '@wasm4pm/cognition/browser';
 
 await initCognitionBrowser({
-  wasmUrl: new URL('./pkg-web/wasm4pm_cognition_bg.wasm', import.meta.url),
-  moduleLoader: () => import('./pkg-web/wasm4pm_cognition.js'),
+  moduleLoader: () => import('wasm4pm-cognition-web'),
 });
 ```
 
-The callback avoids a variable bare import that bundlers cannot discover statically. After initialization, all package wrappers consume the same `WasmLoader` singleton.
+All wrappers then consume the same `WasmLoader` singleton.
 
 ## Session API
 
@@ -45,7 +42,7 @@ const result = await runSessionTurn({
   domain_pack: domainPack,
   previous_state: state,
   observation: {
-    id: 'transcript-1',
+    id: crypto.randomUUID(),
     source: 'candidate',
     text: 'I would use x and y and a dictionary of moves',
     retract_evidence_ids: [],
@@ -54,35 +51,35 @@ const result = await runSessionTurn({
 state = result.output.state;
 ```
 
-The TypeScript boundary validates and transports structured data only. Matching, negation, evidence fusion, rule firing, commitment revision, phase transitions, hashing, and OCEL derivation execute in Rust/WASM.
+The TypeScript boundary validates and transports structured data only. Matching, evidence fusion, rule firing, commitment revision, phase transitions, hashing, and OCEL derivation execute in Rust/WASM.
 
 ## Domain packs
 
 A version 2 domain pack declares:
 
 - a guidance catalog for every concept;
-- candidate tracks and the concepts applicable to each track;
+- candidate tracks and applicable concepts;
 - all-match phrases with signed per-track weights;
-- forward-chaining rules whose premises must be producible by target-supporting patterns;
+- forward-chaining rules whose premises have target-supporting producers;
 - ordered workflow phases;
 - confidence, margin, coverage, contradiction, and confirmation gates;
 - hard resource caps.
 
-The coding-interview reference pack is located at:
+The reference pack is:
 
 ```text
 crates/wasm4pm-cognition/examples/cognition/interview_session/domain.json
 ```
 
-It contains coordinate traversal, grid DFS, graph DFS, and hash lookup. The domain pack is canonical source data, not generated output or kernel code.
+It contains coordinate traversal, grid DFS, graph DFS, and hash lookup.
 
 ## Track-conditioned coverage
 
-Concept coverage is computed separately for every track. Evidence that establishes `data_structure` for graph DFS does not mark `data_structure` covered for coordinate traversal. A workflow phase is skipped only when its required concept does not apply to the committed track; for example, hash lookup does not need an artificial transition-function phase.
+Concept coverage is computed separately for every track. Evidence that establishes `data_structure` for graph DFS does not cover `data_structure` for coordinate traversal.
 
 ## Confirmation and revision
 
-When the top hypothesis passes all machine gates, the projection exposes `pending_confirmation`. Submit a confirmation-only turn:
+When the top hypothesis passes all machine gates, the projection exposes `pending_confirmation`:
 
 ```ts
 const confirmed = await runSessionTurn({
@@ -92,11 +89,11 @@ const confirmed = await runSessionTurn({
 });
 ```
 
-A rejection must target the pending or currently committed track. It eliminates that track and recomputes the ranking. Later observations can also reopen a previously confirmed commitment when contradiction, confidence, margin, or minimum-coverage gates cease to hold.
+Later observations reopen a commitment when confidence, margin, minimum coverage, or contradiction authorization no longer holds.
 
 ## Persisted-state verification
 
-Shape validation does not grant standing to a restored state. Browser applications must replay-verify persisted state before rendering it:
+Shape validation does not grant standing. Restored state must be replay-verified before rendering:
 
 ```ts
 import { verifySessionState } from '@wasm4pm/cognition';
@@ -104,54 +101,82 @@ import { verifySessionState } from '@wasm4pm/cognition';
 await verifySessionState(domainPack, restoredState);
 ```
 
-`cognition_session_verify` performs no new turn. It validates the domain, checks the state hash, replays the canonical turn ledger, compares the reconstructed state, and emits either a verified receipt or a receipted refusal.
+`cognition_session_verify` performs no new turn. It validates the domain, checks the state hash, replays the ledger, compares reconstructed state, and emits a verified receipt or receipted refusal.
+
+## Canonical Python projection
+
+The cognition kernel can project a canonical Python artifact from replay-verified state:
+
+```ts
+import { projectSessionCode } from '@wasm4pm/cognition';
+
+const projected = await projectSessionCode(domainPack, state);
+console.log(projected.code?.filename);
+console.log(projected.code?.source_hash);
+```
+
+The authority path is:
+
+```text
+SessionState
+  -> replay verification
+  -> committed track or leading non-eliminated hypothesis
+  -> canonical first-class .py artifact
+  -> domain-separated BLAKE3 source hash
+  -> receipted cognition_session_code response
+```
+
+React does not map track IDs to source. The canonical files live at:
+
+```text
+crates/wasm4pm-cognition/examples/cognition/interview_session/python/
+```
+
+A leading hypothesis produces `selection_status = leading_hypothesis`. Confirmation changes the status to `committed` while preserving the same source and source hash.
+
+## Next.js and Monaco
+
+`examples/interview-assistant` is a Next.js App Router package. It:
+
+- initializes the browser WASM package client-side;
+- replay-verifies `localStorage` state before rendering;
+- serializes observations and confirmations through one state chain;
+- requests code through `projectSessionCode` after every successful turn;
+- displays the returned Python source in read-only Monaco;
+- displays source, code-projection, and turn receipt hashes;
+- exposes explicit yes, no, and reset controls.
+
+Monaco is loaded with `next/dynamic` and server-side rendering disabled because the editor requires a browser document.
+
+Run it with:
+
+```bash
+pnpm run interview:dev
+```
+
+Build or type-check it with:
+
+```bash
+pnpm run interview:build
+pnpm run interview:typecheck
+```
 
 ## Full-hour text-screen simulation
 
-The repository contains a realistic one-hour interview fixture and a deterministic text-screen integration test:
+The repository contains a realistic 9:00 AM–10:00 AM interview fixture with 26 ordered turns:
 
 ```bash
 pnpm run interview:test:text
 ```
 
-The fixture runs from 9:00 AM through 10:00 AM with 26 ordered candidate and interviewer turns. It covers introductions, problem clarification, approach detection, explicit track confirmation, invariant discussion, implementation, complexity, test design, production edge cases, a streaming/concurrency follow-up, and the final summary.
+Nine checkpoints render deterministic text screens with elapsed time, turn number, phase, ranked hypotheses, commitment, coverage, transcript, and receipt prefixes. The final state is a complete committed coordinate-traversal solution and replaying the hour produces bit-identical state and screens.
 
-Nine checkpoints render a canonical text screen containing:
-
-- fake clock and elapsed minutes;
-- ledger turn number;
-- current phase and completion state;
-- leading and committed track;
-- pending confirmation;
-- ranked hypotheses with support and contradiction;
-- covered and missing concepts;
-- ontology prompts for missing concepts;
-- recent timestamped transcript;
-- receipt and state-hash prefixes.
-
-The test verifies that the final state is a complete committed coordinate-traversal solution, replay-admits the entire hour, and produces bit-identical state and text screens on a second execution. The timestamps model realistic pacing but do not influence scoring.
+Separate Rust tests prove that this state selects `coordinate_traversal.py` and that confirmation changes status without changing source identity.
 
 ## Correct refusals
 
-The WASM boundary returns `status: "refused"` for malformed input, empty observations, domain violations, inconsistent state, domain mismatches, resource exhaustion, identity reuse, unknown retractions, and invalid confirmations. `runSessionTurn` converts this into a `CognitionError` with code `SESSION_REFUSED` while preserving the exact refusal, refusal hash, attested hash, replay pointer, and attestation in `error.details`.
-
-Input validation, malformed boundary JSON, invalid boundary shapes, WASM initialization, and execution failures retain separate TypeScript error codes.
+The WASM boundaries return `status: "refused"` for malformed input, empty observations, domain violations, inconsistent state, domain mismatches, resource exhaustion, identity reuse, unknown retractions, and invalid confirmations. TypeScript preserves the exact refusal and receipt evidence in `CognitionError.details`.
 
 ## Receipts and attestations
 
-The canonical computation commitment is the domain-separated BLAKE3 receipt. A successful boundary response exposes the receipt's combined hash as `attested_hash`; a refusal exposes its refusal hash.
-
-When the crate includes `actor-ed25519`, the browser boundary adds an `ed25519-self-signed` attestation over the run ID, input hash, and attested hash. The deterministic browser key is intentionally described as a local replay signature, not remote actor authentication. Without that feature, the response reports `blake3-only` with null signature fields.
-
-## Reference UI
-
-`examples/interview-assistant` is the laptop-oriented lower-screen application. It:
-
-- serializes speech, manual observations, and confirmations through one state chain;
-- processes only newly finalized Web Speech results;
-- replay-verifies persisted state before rendering it;
-- displays ranked tracks, exact matched phrases, concept coverage, and remaining ontology guidance;
-- provides explicit yes, no, and reset controls;
-- displays the latest inference trace and receipt pointer.
-
-Run it from the repository root with `pnpm run interview:dev`.
+The canonical computation commitment is the domain-separated BLAKE3 receipt. When `actor-ed25519` is enabled, the browser boundary adds an `ed25519-self-signed` local replay signature. It is not remote actor authentication.
