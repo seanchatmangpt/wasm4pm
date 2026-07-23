@@ -1,7 +1,7 @@
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable, Mapping
 from typing import TypeVar
 
-Key = TypeVar("Key", bound=object)
+Key = TypeVar("Key", bound=Hashable)
 Value = TypeVar("Value")
 
 
@@ -13,6 +13,6 @@ def build_lookup(entries: Iterable[tuple[Key, Value]]) -> dict[Key, Value]:
     return lookup
 
 
-def lookup_or_none(lookup: dict[Key, Value], key: Key) -> Value | None:
-    """Return the value for key without raising when the key is absent."""
+def lookup_or_none(lookup: Mapping[Key, Value], key: Key) -> Value | None:
+    """Return the value for ``key`` without raising when the key is absent."""
     return lookup.get(key)
