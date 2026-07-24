@@ -17,9 +17,9 @@ fn returned_state_verifies_against_domain_pack() {
 #[test]
 fn confirmation_turn_extends_receipt_chain() {
     let first = first_response();
-    let first_receipt = first.receipt.clone().expect("first receipt");
     let prompt = first.confirmation.clone().expect("confirmation prompt");
     let state = first.result.expect("success").state;
+    let first_state_hash = state.cognition.state_hash.clone();
 
     let mut next = request();
     next.event = None;
@@ -34,7 +34,7 @@ fn confirmation_turn_extends_receipt_chain() {
 
     let second = run_interview_assist_request(domain_pack(), next);
     let second_receipt = second.receipt.expect("second receipt");
-    assert_eq!(second_receipt.previous_state_hash, first_receipt.output_hash);
+    assert_eq!(second_receipt.previous_state_hash, first_state_hash);
 }
 
 #[test]
