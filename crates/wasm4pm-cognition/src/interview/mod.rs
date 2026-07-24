@@ -13,6 +13,7 @@ pub mod authority_broker;
 pub mod blackboard;
 pub mod capability;
 pub mod composition;
+mod composition_defaults;
 pub mod construct;
 pub mod event;
 pub mod graph;
