@@ -1,0 +1,5 @@
+v26.7.23 release retry receipt
+
+Cause: the original tag workflows failed before publication because the release graph did not bootstrap local cognition WASM packages under pnpm 11, and crates.io publication was not topologically ordered.
+
+Actuation: merging this file to main triggers the repaired Release & Publish, Publish to npm, and Publish to crates.io workflows without moving or recreating the existing v26.7.23 tag.
