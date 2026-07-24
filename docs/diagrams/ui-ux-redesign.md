@@ -1,15 +1,24 @@
 # UI/UX redesign spec
 
-Canonical UI/UX specification for InterviewAssist, authored directly by the project owner this
-session. Reproduced verbatim. Status confirmed against real code in
-`docs/jira/v26.7.24/README.md` §2: the structural skeleton (SessionHeader/SessionWorkspace/
-SessionActivityDrawer/CognitionPanel) is already merged into `app/page.tsx` — the developer-
-scaffolding screenshot that prompted this spec predates that merge.
+Canonical UI/UX specification for InterviewAssist, authored directly by the project owner. The specification diagrams remain the target interaction model; source-grounded corrections are fenced explicitly rather than silently rewriting the target.
+
+**Re-verified:** 2026-07-24.
+
+## Source commands executed for the grounded corrections
+
+```text
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/page.tsx ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/cognition-adapter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/cognition-rules.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=crates/wasm4pm-cognition/src/breeds/mod.rs ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=crates/wasm4pm-cognition/src/breeds/dendral.rs ref=docs/v26.7.24-planning-diagramming
+```
+
+The structural shell (`SessionHeader`, `SessionWorkspace`, `SessionActivityDrawer`, and `CognitionPanel`) is present in `examples/interview-assist/app/page.tsx`. Runtime completion and scenario standing remain tracked separately in [unfinished-work.md](unfinished-work.md).
 
 ## 1. Primary interaction model
 
-The normal interface is driven by observed interview events and cognition — not manual
-state-transition buttons.
+The normal interface is driven by observed interview events and cognition — not manual state-transition buttons.
 
 ```mermaid
 flowchart LR
@@ -40,8 +49,7 @@ flowchart LR
     O --> B
 ```
 
-`Advance to PREPARING` and `Add track candidate` are not user actions. They are state-machine and
-cognition actions, and should not appear in the normal interface.
+`Advance to PREPARING` and `Add track candidate` are not user actions. They are state-machine and cognition actions, and should not appear in the normal interface.
 
 ## 2. Professional desktop layout
 
@@ -83,16 +91,15 @@ flowchart TB
     H --> W --> T
 ```
 
-| Region        | User-facing purpose                                              |
-| ------------- | ------------------------------------------------------------------ |
-| Header        | Orientation: mode, state, audio/transcript status, accessibility |
-| Left          | What InterviewAssist thinks is happening                         |
-| Center        | Where the candidate solves the problem                           |
-| Right         | What happened, what is authorized, and what to do next            |
-| Bottom drawer | Transcript, event history, receipts, and technical diagnostics   |
+| Region | User-facing purpose |
+|---|---|
+| Header | Orientation: mode, state, audio/transcript status, accessibility |
+| Left | What InterviewAssist thinks is happening |
+| Center | Where the candidate solves the problem |
+| Right | What happened, what is authorized, and what to do next |
+| Bottom drawer | Transcript, event history, receipts, and technical diagnostics |
 
-Raw capability identifiers shown as buttons belong in the developer diagnostics drawer, not the
-interview workspace.
+Raw capability identifiers shown as buttons belong in the developer diagnostics drawer, not the interview workspace.
 
 ## 3. Proposed screen structure
 
@@ -172,12 +179,11 @@ stateDiagram-v2
     Refused --> [*]
 ```
 
-Compact indicator: `Observing → Hypothesizing → Confirming → Solving → Verifying`. Only the current
-state and immediately relevant next action should be emphasized.
+Compact indicator: `Observing → Hypothesizing → Confirming → Solving → Verifying`. Only the current state and immediately relevant next action should be emphasized.
 
 ## 5. Eliza-style cognition panel
 
-Instead of "Add track candidate," a meaningful cognition surface:
+Instead of `Add track candidate`, a meaningful cognition surface:
 
 ```mermaid
 flowchart TD
@@ -201,13 +207,20 @@ flowchart TD
     EVIDENCE --> Q
 ```
 
-**Note (grounded correction, from `docs/jira/v26.7.24/README.md` §2's source-code read of
-`cognition-adapter.ts`):** the real Eliza breed returns one keyword-matched `selected`/
-`explanation` pair, not a percentage-ranked candidate list — the 78%/14%/8% ranking in this diagram
-is the original conceptual mockup, not the currently implemented behavior. A ranked-candidate UI
-would need a different breed (e.g. `version_space`) or a custom scoring layer on top; the current
-`CognitionPanel` renders a single proposed track with Yes/No/Correct, matching what `runCognition()`
-actually returns.
+### Grounded correction and decision
+
+The currently wired Eliza call returns one keyword-matched `selected`/`explanation` pair, not a percentage-ranked candidate list. The 78%/14%/8% values above remain the target UX, not current runtime behavior. The current `CognitionPanel` renders one proposed track with Yes/No/Correct.
+
+[ADR-001](../jira/v26.7.24/DECISIONS.md) resolves the implementation design:
+
+```text
+deterministic TypeScript scoring
+  → ABI Candidate[]
+  → real Dendral elimination and highest-survivor selection
+  → real Eliza clarification question
+```
+
+TypeScript derives scores from admitted free-text evidence. Dendral supplies real breed provenance for elimination and survivor selection. Eliza supplies the scoped question text. This branch documents the decision but does not implement it.
 
 ## 6. Keyboard and screen-reader flow
 
@@ -235,28 +248,22 @@ Accessibility contract — semantic landmarks:
 <footer>   session controls
 ```
 
-Behavioral requirements: visible focus indicator on every interactive control; no state change
-triggered by focus alone; execution results announced through a polite live region; refusals and
-fatal execution errors announced as alerts; focus returns to the initiating control after ordinary
-actions; after a track question appears, focus moves to its heading — not directly to "Yes"; editor
-shortcuts do not trap keyboard-only users; motion/density/contrast/captions/audio controls live in
-one accessible preferences dialog altering the same canonical state projection, not a parallel
-workflow.
+Behavioral requirements: visible focus indicator on every interactive control; no state change triggered by focus alone; execution results announced through a polite live region; refusals and fatal execution errors announced as alerts; focus returns to the initiating control after ordinary actions; after a track question appears, focus moves to its heading — not directly to Yes; editor shortcuts do not trap keyboard-only users; motion/density/contrast/captions/audio controls live in one accessible preferences dialog altering the same canonical state projection, not a parallel workflow.
 
 ## 7. Control-replacement table
 
-| Current surface                         | Production replacement                                         |
-| ---------------------------------------- | ---------------------------------------------------------------- |
-| `Advance to PREPARING`                  | Automatic transition after an admitted event                     |
-| `Refuse session`                        | Session menu → End or refuse session                             |
-| `Trigger admission refusal (demo)`      | Developer diagnostics only                                       |
-| `No problem data yet`                   | Empty-state card explaining what input is awaited                |
-| `Add track candidate`                   | Automatic cognition output                                       |
-| Raw `editor/*` buttons                  | Editor toolbar, command palette, or diagnostics drawer           |
-| Plain textarea                          | Monaco with a plain-text accessibility fallback                  |
-| Separate contradictory exit messages    | One authoritative execution-result card                          |
-| Sixteen inline accessibility checkboxes | Accessibility preferences dialog with profiles                   |
-| `Finish session`                        | Contextual "Submit for verification" or "End practice session"   |
+| Current surface | Production replacement |
+|---|---|
+| `Advance to PREPARING` | Automatic transition after an admitted event |
+| `Refuse session` | Session menu → End or refuse session |
+| `Trigger admission refusal (demo)` | Developer diagnostics only |
+| `No problem data yet` | Empty-state card explaining what input is awaited |
+| `Add track candidate` | Automatic cognition output |
+| Raw `editor/*` buttons | Editor toolbar, command palette, or diagnostics drawer |
+| Plain textarea | Monaco with a plain-text accessibility fallback |
+| Separate contradictory exit messages | One authoritative execution-result card |
+| Sixteen inline accessibility checkboxes | Accessibility preferences dialog with profiles |
+| `Finish session` | Contextual Submit for verification or End practice session |
 
 ## 8. Responsive behavior
 
@@ -286,11 +293,11 @@ The redesigned first slice is complete when a user can:
 9. Complete the session without using any manual phase-transition control.
 10. Replay the session and reproduce the same visible state.
 
-The professional interface is built around **cognition → confirmation → coding → evidence**, not
-around the internal capability inventory.
+The professional interface is built around **cognition → confirmation → coding → evidence**, not around the internal capability inventory.
 
-## See Also
+## See also
 
-- [unfinished-work.md](unfinished-work.md) — what's left to fully realize this spec
-- [sequence-cognition.md](sequence-cognition.md) — the real request/response flow behind §5
-- `docs/jira/v26.7.24/README.md` — backlog and DoD tracking this spec's completion
+- [ADR-001](../jira/v26.7.24/DECISIONS.md)
+- [Unfinished work](unfinished-work.md)
+- [Cognition sequence](sequence-cognition.md)
+- [Priority matrix](../jira/v26.7.24/README.md)
