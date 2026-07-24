@@ -1,9 +1,6 @@
 name: Apply InterviewAssist TICKET-056 page
 
 on:
-  push:
-    branches:
-      - agent/interviewassist-receipt-chain
   pull_request:
     branches:
       - main
@@ -14,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: apply-interviewassist-ticket-056
@@ -21,23 +19,33 @@ concurrency:
 
 jobs:
   apply-page:
-    if: >-
-      (github.event_name == 'push' && github.ref_name == 'agent/interviewassist-receipt-chain') ||
-      github.head_ref == 'agent/interviewassist-receipt-chain'
+    if: github.head_ref == 'agent/interviewassist-receipt-chain'
     runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/interviewassist-receipt-chain
           fetch-depth: 0
 
-      - name: Apply guarded page patch
+      - name: Apply and commit guarded page patch
         shell: bash
         run: |
           set -euo pipefail
+          report_failure() {
+            status=$?
+            gh pr comment "$PR_NUMBER" --repo seanchatmangpt/wasm4pm \
+              --body "TICKET-056 page applier refused with exit status ${status} on source commit ${GITHUB_SHA}. No page commit was pushed."
+            exit "$status"
+          }
+          trap report_failure ERR
+
           page=examples/interview-assist/app/page.tsx
           if grep -q 'const ADMISSION_TIMEOUT_MS = 10_000;' "$page"; then
-            echo 'page already patched'
+            gh pr comment "$PR_NUMBER" --repo seanchatmangpt/wasm4pm \
+              --body "TICKET-056 page wiring is already present at ${GITHUB_SHA}; no additional page commit was required."
             exit 0
           fi
 
@@ -80,16 +88,11 @@ jobs:
           page.write_text(text.replace(old, new, 1))
           PY
 
-      - name: Commit page when changed
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- examples/interview-assist/app/page.tsx; then
-            echo 'no page change to commit'
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add examples/interview-assist/app/page.tsx
+          git add "$page"
           git commit -m 'wire live InterviewAssist receipt chain'
+          candidate=$(git rev-parse HEAD)
+          gh pr comment "$PR_NUMBER" --repo seanchatmangpt/wasm4pm \
+            --body "TICKET-056 guarded page patch produced candidate commit ${candidate}; pushing it to the PR branch now."
           git push origin HEAD:agent/interviewassist-receipt-chain
