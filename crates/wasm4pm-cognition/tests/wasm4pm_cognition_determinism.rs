@@ -117,26 +117,34 @@ fn replay_state(state: &SessionState) -> Result<SessionTurnOutput, SessionError>
 
 fn json_contains_rust_debug_text(value: &Value) -> bool {
     let encoded = serde_json::to_string(value).expect("JSON serialization");
-    ["Some(", "Ok(", "Err(", "EnumVariant("].iter().any(|needle| encoded.contains(needle))
+    ["Some(", "Ok(", "Err(", "EnumVariant("].iter().any(|needle| encoded.contains(*needle))
 }
 
 fn assert_finite_json_numbers(value: &Value) {
     match value {
         Value::Array(items) => items.iter().for_each(assert_finite_json_numbers),
         Value::Object(fields) => fields.values().for_each(assert_finite_json_numbers),
-        Value::Number(number) => if let Some(value) = number.as_f64() { assert!(value.is_finite(), "JSON number must be finite"); },
+        Value::Number(number) => {
+            if let Some(value) = number.as_f64() {
+                assert!(value.is_finite(), "JSON number must be finite");
+            }
+        }
         _ => {}
     }
 }
 
 #[test]
 fn same_request_and_same_state_produce_the_same_canonical_result() {
-    assert_eq!(first_turn(), first_turn());
+    let first = first_turn();
+    let second = first_turn();
+    assert_eq!(first, second);
 }
 
 #[test]
 fn same_request_produces_the_same_candidate_order() {
-    assert_eq!(candidate_ids(&first_turn()), candidate_ids(&first_turn()));
+    let first = first_turn();
+    let second = first_turn();
+    assert_eq!(candidate_ids(&first), candidate_ids(&second));
 }
 
 #[test]
@@ -151,8 +159,9 @@ fn same_request_produces_the_same_confirmation_question() {
 
 #[test]
 fn candidate_order_does_not_depend_on_hashmap_iteration() {
+    let expected = candidate_ids(&first_turn());
     for _ in 0..16 {
-        assert_eq!(candidate_ids(&first_turn()), candidate_ids(&first_turn()));
+        assert_eq!(candidate_ids(&first_turn()), expected);
     }
 }
 
@@ -194,10 +203,9 @@ fn canonical_serialization_is_stable() {
 
 #[test]
 fn canonical_output_hash_is_stable() {
-    assert_eq!(
-        first_turn().receipt.output_hash,
-        first_turn().receipt.output_hash
-    );
+    let first = first_turn();
+    let second = first_turn();
+    assert_eq!(first.receipt.output_hash, second.receipt.output_hash);
 }
 
 #[test]
