@@ -1,6 +1,8 @@
+mod interview_assist_scenario;
 mod interview_assist_support;
 
-use interview_assist_support::{first_response, REQUEST_ID, SESSION_ID};
+use interview_assist_scenario::{first_response, InterviewAssistResponseExt};
+use interview_assist_support::{REQUEST_ID, SESSION_ID};
 use serde_json::Value;
 use wasm4pm_cognition::interview_assist::INTERVIEW_ASSIST_PROTOCOL_VERSION;
 
@@ -13,6 +15,7 @@ fn response_is_valid_utf8_json() {
 #[test]
 fn response_echoes_protocol_and_identity() {
     let response = first_response();
+    response.assert_success();
     assert_eq!(response.protocol_version, INTERVIEW_ASSIST_PROTOCOL_VERSION);
     assert_eq!(response.request_id, REQUEST_ID);
     assert_eq!(response.session_id, SESSION_ID);
@@ -23,6 +26,7 @@ fn response_echoes_protocol_and_identity() {
 #[test]
 fn response_contains_consumer_projection() {
     let response = first_response();
+    response.assert_success();
     assert!(response.observed_question.is_some());
     assert!(!response.detected_constraints.is_empty());
     assert!(!response.candidates.is_empty());
@@ -37,8 +41,7 @@ fn success_and_refusal_are_mutually_exclusive() {
 
 #[test]
 fn response_contains_no_rust_debug_encoding() {
-    let value = serde_json::to_value(first_response()).expect("response JSON");
-    let encoded = serde_json::to_string(&value).expect("response JSON string");
+    let encoded = serde_json::to_string(&first_response()).expect("response JSON string");
     for marker in ["Some(", "Ok(", "Err("] {
         assert!(!encoded.contains(marker));
     }
@@ -59,6 +62,5 @@ fn every_json_number_is_finite() {
         }
     }
 
-    let value = serde_json::to_value(first_response()).expect("response JSON");
-    assert_finite(&value);
+    assert_finite(&serde_json::to_value(first_response()).expect("response JSON"));
 }
