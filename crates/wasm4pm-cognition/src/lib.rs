@@ -39,6 +39,7 @@ pub mod autosystems;
 pub mod breeds;
 pub mod evidence;
 pub mod ghf;
+pub mod interview;
 pub mod log_adapter;
 pub mod observability;
 pub mod ocel;
