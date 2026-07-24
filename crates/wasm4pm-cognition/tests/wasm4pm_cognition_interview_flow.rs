@@ -117,14 +117,18 @@ fn replay_state(state: &SessionState) -> Result<SessionTurnOutput, SessionError>
 
 fn json_contains_rust_debug_text(value: &Value) -> bool {
     let encoded = serde_json::to_string(value).expect("JSON serialization");
-    ["Some(", "Ok(", "Err(", "EnumVariant("].iter().any(|needle| encoded.contains(needle))
+    ["Some(", "Ok(", "Err(", "EnumVariant("].iter().any(|needle| encoded.contains(*needle))
 }
 
 fn assert_finite_json_numbers(value: &Value) {
     match value {
         Value::Array(items) => items.iter().for_each(assert_finite_json_numbers),
         Value::Object(fields) => fields.values().for_each(assert_finite_json_numbers),
-        Value::Number(number) => if let Some(value) = number.as_f64() { assert!(value.is_finite(), "JSON number must be finite"); },
+        Value::Number(number) => {
+            if let Some(value) = number.as_f64() {
+                assert!(value.is_finite(), "JSON number must be finite");
+            }
+        }
         _ => {}
     }
 }
@@ -172,13 +176,11 @@ fn low_confidence_produces_one_scoped_confirmation_question() {
     assert!(output.state.committed_track.is_none());
     assert!(output.state.pending_confirmation.is_some());
     let value = output_json(&output);
-    let prompts = value
+    let prompt = value
         .get("confirmation")
         .and_then(Value::as_object)
-        .and_then(|item| item.get("question"))
-        .into_iter()
-        .count();
-    assert_eq!(prompts, 1);
+        .and_then(|item| item.get("question"));
+    assert!(prompt.is_some());
 }
 
 #[test]
