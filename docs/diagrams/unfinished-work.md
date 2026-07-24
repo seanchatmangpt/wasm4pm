@@ -1,70 +1,134 @@
 # Unfinished work
 
-Grounded in `docs/jira/v26.7.24/README.md` §2 (re-verified this session via `grep`/`ls` against the
-real filesystem, not the stale ggen ticket statuses, which marked several of these `PLANNED` while
-real code/tests already existed on disk).
+**Re-verified:** 2026-07-24.
+
+This map separates source existence from executable standing. The local runtime could not obtain a checkout, so none of the six requested scenario files was executed in this pass.
+
+## Verification commands executed
+
+```text
+cd ~/wasm4pm && git fetch origin && git checkout docs/v26.7.24-planning-diagramming && git status --short
+# Failed: /home/oai/wasm4pm did not exist.
+
+git clone --branch docs/v26.7.24-planning-diagramming --single-branch --depth 1 https://github.com/seanchatmangpt/wasm4pm.git /home/oai/wasm4pm
+# Failed: Could not resolve host: github.com.
+
+gh --version
+# Failed: gh was not installed.
+
+GitHub.fetch_commit_workflow_runs repo_full_name=seanchatmangpt/wasm4pm commit_sha=05b33494e0a181302f7ffb2c63944a288c662f7d
+# Result: no workflow runs.
+```
+
+The source files and integration paths were read with `GitHub.fetch_file` against `ref=docs/v26.7.24-planning-diagramming`; the exact source ledger is in `docs/jira/v26.7.24/README.md` §0.
 
 ## Status map
 
 ```mermaid
 flowchart TD
-    subgraph Done["Confirmed real and merged"]
-        UI["Phase-4 UI redesign<br/>SessionHeader/Workspace/ActivityDrawer/CognitionPanel"]
-        COG["Cognition adapter + route<br/>4 real outcome branches, receipted"]
-        TESTFILES["Scenario test files exist<br/>048-053 all have real .test files"]
-        RECEIPTTYPES["Receipt types + emission layer<br/>receipt.ts, receipt-emitter.ts, reducer-with-receipts.ts"]
+    subgraph Done["DONE — source-grounded artifacts exist"]
+        UI["Phase-4 UI shell<br/>SessionHeader / Workspace / ActivityDrawer / CognitionPanel"]
+        COG["Current Eliza adapter + route<br/>typed outcomes and cognition receipts"]
+        FILES["Six requested scenario files exist"]
+        RP["Receipt primitives<br/>type + emitter + admission wrapper"]
+        ADR["ADR-001 accepted<br/>TypeScript score → Dendral → Eliza"]
     end
 
-    subgraph Unverified["Exists, but real pass/fail not yet confirmed this session"]
-        RUN048["048 persistence-and-replay.test.ts"]
-        RUN049["049 tamper-detection.test.tsx"]
-        RUN050["050 accessibility-projection.test.tsx"]
-        RUN051["051 zero-input-cognition.test.ts"]
-        RUN052["052 self-play-manufacturing.test.ts<br/>(real Ollama call, slow)"]
-        RUN053["053 full-decisive-acceptance-test.test.tsx<br/>11 assertions"]
+    subgraph Blocked["BLOCKED — no executable receipt this pass"]
+        P["048 persistence<br/>3 declared cases"]
+        T["049 tamper<br/>2 declared cases"]
+        A["050 accessibility<br/>4 declared; 3 browser-gated"]
+        Z["051 zero-input<br/>3 declared cases"]
+        S["052 self-play<br/>4 declared; 2 Ollama-gated"]
+        D["053 decisive<br/>12 declared; 1 browser-gated"]
     end
 
-    subgraph Missing["Confirmed absent"]
-        M057["057 final verifier report<br/>no file anywhere"]
-        M056V["056 hardening: is the 5-step receipt chain<br/>emitted end-to-end for one real session?<br/>(types exist; full-chain assertion unverified)"]
+    subgraph Broken["BUILD_BROKEN — source-proven integration gaps"]
+        CHAIN["056 continuous five-step receipt chain<br/>admission absent; run starts new head;<br/>accessibility absent"]
+        MAT["Fresh-checkout cognition materialization<br/>referenced postinstall script/package paths absent"]
     end
 
-    subgraph Partial["Confirmed partial, disclosed"]
-        A11Y["13 of 16 accessibility keys<br/>persist but have no observable visual effect yet"]
+    subgraph Partial["PARTIAL"]
+        A11Y["3 of 16 accessibility settings<br/>have observable page projections"]
+        ROUTE["/api/sandbox catalog accepts operations<br/>but does not execute them"]
     end
 
-    TESTFILES --> RUN048
-    TESTFILES --> RUN049
-    TESTFILES --> RUN050
-    TESTFILES --> RUN051
-    TESTFILES --> RUN052
-    TESTFILES --> RUN053
+    subgraph Report["BLOCKED REPORT"]
+        V["057 final verifier report<br/>NOT UNBLOCKED"]
+    end
 
-    RUN048 & RUN049 & RUN050 & RUN051 & RUN052 & RUN053 --> M057
-    RECEIPTTYPES --> M056V --> M057
+    FILES --> P & T & A & Z & S & D
+    P & T & A & Z & S & D --> V
+    CHAIN --> V
 ```
 
-## What "unfinished" concretely means right now
+## Scenario execution state
 
-1. **Confirm 048–053 actually pass.** A `vitest run` across all six scenario files was started this
-   session and did not complete within the observation window (self-play calls a real local Ollama
-   model). Until that run's real output is read, none of the six may be marked ALIVE — they are
-   `Unverified`, not `Done` and not `PLANNED`.
-2. **TICKET-056 hardening.** The receipt *types* and emission *functions* are real (`receipt.ts`,
-   `receipt-emitter.ts`), but whether the full 5-step chain (admission → cognition-run →
-   sandbox-execution → test-result → accessibility-projection) is actually emitted end-to-end for
-   one real session, with each step's `derivedFrom`/`relation` correctly chaining to the previous
-   step's checksum, has not been re-confirmed this session.
-3. **TICKET-057 final verifier report.** Confirmed absent by `find`. Cannot be honestly written
-   until items 1–2 above produce real, quotable evidence — a report citing unverified claims would
-   itself be an overclaim.
-4. **Accessibility control effects.** Already-disclosed partial (per the ggen-side executive
-   summary, re-affirmed here): 13 of 16 accessibility keys persist as state but don't yet drive an
-   observable effect. Each remaining key needs either a real wired effect + test, or an explicit
-   negative test asserting "persists, no visual effect yet" — not silence either way.
+| Ticket/file | Declared cases from source | Exact pass/fail/skip count | Classification |
+|---|---:|---|---|
+| 048 `persistence-and-replay.test.ts` | 3 | unavailable — command did not run | BLOCKED |
+| 049 `tamper-detection.test.tsx` | 2 | unavailable — command did not run | BLOCKED |
+| 050 `accessibility-projection.test.tsx` | 4 | unavailable — command did not run | BLOCKED |
+| 051 `zero-input-cognition.test.ts` | 3 | unavailable — command did not run | BLOCKED |
+| 052 `self-play-manufacturing.test.ts` | 4 | unavailable — command did not run | BLOCKED |
+| 053 `full-decisive-acceptance-test.test.tsx` | 12 | unavailable — command did not run | BLOCKED |
 
-## See Also
+Required next command from a runnable checkout:
 
-- `docs/jira/v26.7.24/README.md` — the scored backlog and DoD rubrics these items map to
-- [ui-ux-redesign.md](ui-ux-redesign.md) — the spec this work realizes
-- [sequence-receipt-replay.md](sequence-receipt-replay.md) — the receipt chain item 2 concerns
+```bash
+cd examples/interview-assist
+npx vitest run \
+  tests/scenarios/persistence-and-replay.test.ts \
+  tests/scenarios/tamper-detection.test.tsx \
+  tests/scenarios/accessibility-projection.test.tsx \
+  tests/scenarios/zero-input-cognition.test.ts \
+  tests/scenarios/self-play-manufacturing.test.ts \
+  tests/scenarios/full-decisive-acceptance-test.test.tsx
+```
+
+Each file must then move independently to DONE, FAILING, or remain BLOCKED/SKIPPED. A green process summary is insufficient if environment-gated cases were skipped.
+
+## Confirmed integration work
+
+### TICKET-056 — continuous receipt chain
+
+The intended chain is:
+
+```text
+admission → cognition-run → sandbox-execution → test-result → accessibility-projection
+```
+
+Source reads confirm these breaks:
+
+- The page calls `sessionReducer()` instead of `admitWithReceipt()`, so admission has no live receipt.
+- Cognition can chain from the current last receipt.
+- `runCode()` omits `prevReceipt`, so sandbox execution starts a new chain head.
+- Tests can chain from the current last receipt, but that may already be the broken sandbox head.
+- Accessibility preference changes bypass the receipt-producing accessibility adapter.
+- Finish session creates a separate event-label hash rather than closing the manufacturing chain.
+
+TICKET-056 is therefore BUILD_BROKEN, not UNKNOWN.
+
+### TICKET-057 — final verifier report
+
+**TICKET-057 is not unblocked.** It remains gated on:
+
+1. exact per-file scenario execution output; and
+2. one real, continuous five-step receipt chain with replayable checksum links.
+
+The report was intentionally not written.
+
+## Additional drift found
+
+- `/api/sandbox/[capability]` is a static operation catalog/validator, not a subprocess route.
+- The persistence adapter uses filesystem JSON, not browser localStorage/IndexedDB.
+- The current timeout/output-cap implementation kills the process and returns a receipted `exitCode: -1`; it does not emit the declared typed timeout/payload refusal variants.
+- `full-decisive-acceptance-test.test.tsx` contains absolute `/Users/sac/ggen` paths and asserts that `next build` fails with an earlier regression; both facts require reconciliation before the file can be portable evidence in `wasm4pm`.
+- `package.json` references a WASM materialization postinstall script whose cited tracked path was absent from this branch.
+
+## See also
+
+- [Priority matrix and evidence ledger](../jira/v26.7.24/README.md)
+- [ADR-001](../jira/v26.7.24/DECISIONS.md)
+- [Receipt/replay sequence](sequence-receipt-replay.md)
+- [Sandbox sequence](sequence-sandbox-execution.md)
