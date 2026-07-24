@@ -62,7 +62,7 @@ jobs:
         run: cd examples && npm run validate
 
   interview-assist-wpm:
-    name: InterviewAssist through wpm
+    name: Run InterviewAssist CLI directly
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -100,11 +100,88 @@ jobs:
       - name: Build wpm runtime dependency closure
         run: pnpm --filter @wasm4pm/cli... build
 
-      - name: Build wpm test harness
-        run: pnpm --filter @wasm4pm/testing... build
+      - name: Run the built wpm binary
+        env:
+          WASM4PM_OTEL_ENABLED: 'true'
+          WASM4PM_OTEL_ENDPOINT: http://127.0.0.1:9
+          WASM4PM_SPANS_FILE: .wasm4pm/spans.jsonl
+        run: |
+          node apps/wasm4pm/dist/bin/wpm.js \
+            lab interview-assist \
+            --workspace "$GITHUB_WORKSPACE" \
+            --output "$GITHUB_WORKSPACE/.wasm4pm/interview-assist/latest.json" \
+            --timeout-ms 150000 \
+            > /tmp/interview-assist-wpm.json
+          cat /tmp/interview-assist-wpm.json
 
-      - name: Typecheck wpm process test
-        run: pnpm --filter @wasm4pm/cli typecheck:tests
+      - name: Verify artifacts emitted by the direct CLI run
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
 
-      - name: Run InterviewAssist through wpm
-        run: pnpm --filter @wasm4pm/cli exec vitest run src/__tests__/interview-assist-cli.test.ts --reporter=verbose
+          const hex64 = /^[0-9a-f]{64}$/;
+          const expectedStages = [
+            'admission',
+            'cognition-run',
+            'sandbox-execution',
+            'test-result',
+            'accessibility-projection',
+          ];
+          const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
+
+          const stdout = await readJson('/tmp/interview-assist-wpm.json');
+          if (stdout.status !== 'verified' || stdout.receipt_count !== 5) {
+            throw new Error(`unexpected wpm stdout: ${JSON.stringify(stdout)}`);
+          }
+
+          const evidence = await readJson('.wasm4pm/interview-assist/latest.json');
+          if (evidence.status !== 'verified' || evidence.command !== 'wpm lab interview-assist') {
+            throw new Error('session evidence did not record a verified direct CLI run');
+          }
+          const stages = evidence.stages;
+          if (!Array.isArray(stages) || stages.length !== expectedStages.length) {
+            throw new Error(`expected ${expectedStages.length} stages`);
+          }
+          const seen = new Set();
+          stages.forEach((entry, index) => {
+            if (entry.stage !== expectedStages[index]) throw new Error(`wrong stage at ${index}`);
+            const receipt = entry.receipt;
+            const checksum = receipt?.checksum?.checksumValue;
+            if (receipt?.checksum?.algorithm !== 'BLAKE3' || !hex64.test(checksum)) {
+              throw new Error(`invalid receipt checksum at ${entry.stage}`);
+            }
+            if (seen.has(checksum)) throw new Error(`duplicate checksum at ${entry.stage}`);
+            seen.add(checksum);
+            if (index === 0) {
+              if (receipt.derivedFrom !== undefined || receipt.relation !== undefined) {
+                throw new Error('chain head unexpectedly has a predecessor');
+              }
+            } else {
+              const predecessor = stages[index - 1].receipt.checksum.checksumValue;
+              if (receipt.derivedFrom !== predecessor || receipt.relation !== predecessor) {
+                throw new Error(`broken predecessor link at ${entry.stage}`);
+              }
+            }
+          });
+          if (evidence.execution?.exit_code !== 0 || evidence.visible_test?.exit_code !== 0) {
+            throw new Error('real Python or pytest execution did not exit zero');
+          }
+
+          const commandReceipt = await readJson('.wasm4pm/receipts/latest.json');
+          if (commandReceipt.command !== 'lab interview-assist' || commandReceipt.status !== 'success') {
+            throw new Error('wpm command receipt did not record success');
+          }
+          if (!hex64.test(commandReceipt.input_hash) || !hex64.test(commandReceipt.output_hash)) {
+            throw new Error('wpm command receipt hashes are invalid');
+          }
+
+          const spans = (await readFile('.wasm4pm/spans.jsonl', 'utf8'))
+            .trim()
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => JSON.parse(line));
+          const span = spans.find((entry) => entry.name === 'wpm.lab.interview-assist');
+          if (!span || span.status?.code !== 'OK') {
+            throw new Error('wpm.lab.interview-assist OK span not found');
+          }
+          NODE
