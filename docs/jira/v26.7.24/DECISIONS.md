@@ -109,4 +109,4 @@ No application or cognition-crate code is changed by this ADR.
 ## Links
 
 - [Priority matrix and release backlog](README.md)
-- [UI/UX redesign §5](../../diagrams/ui-ux-redesign.md#5-eliza-style-cognition-panel)
+- [UI/UX redesign §5](../../../diagrams/ui-ux-redesign.md#5-eliza-style-cognition-panel)
