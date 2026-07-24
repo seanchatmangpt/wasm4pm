@@ -1,82 +1,104 @@
-# C4: Component (inside the Next.js app)
+# C4: Component — inside the Next.js app
 
-Source: `ls examples/interview-assist/components/` (20 real components, confirmed this session) and
-`ls examples/interview-assist/lib/adapters/` (8 real adapters: cognition, sandbox-executor,
-checksum, persistence, policy-check(-adapter/-stub), ollama, monaco, accessibility-platform).
+**Re-verified:** 2026-07-24.
+
+## Source commands executed
+
+```text
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/page.tsx ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/reducer.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/reducer-with-receipts.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/receipt-emitter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/replay.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/cognition-adapter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/sandbox-executor.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/accessibility-platform-adapter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/persistence-adapter.ts ref=docs/v26.7.24-planning-diagramming
+```
 
 ```mermaid
 flowchart TB
-    subgraph UI["UI components (client)"]
-        SH["SessionHeader"]
-        SW["SessionWorkspace"]
-        SAD["SessionActivityDrawer"]
-        CP["CognitionPanel"]
-        TCP["TrackCandidatePanel"]
-        ES["EditorShell"]
-        DP["DiagnosticsPanel"]
-        CoP["ConsolePanel"]
-        TRV["TestResultView"]
-        RP["RefusalPresentation"]
-        RFP["ReplayFailurePresentation"]
-        AC["AccessibilityControls"]
-        APD["AccessibilityPreferencesDialog"]
-        SS["SessionSummary"]
-        ERC["ExecutionResultCard"]
-        SM["SessionMenu"]
+    subgraph Client["Client composition — app/page.tsx"]
+        Page["InterviewAssistPage<br/>state + fetch orchestration"]
+        Header["SessionHeader"]
+        Workspace["SessionWorkspace"]
+        CognitionPanel["CognitionPanel"]
+        TrackPanel["TrackCandidatePanel"]
+        Editor["EditorShell"]
+        Result["ExecutionResultCard"]
+        Drawer["SessionActivityDrawer"]
+        Menu["SessionMenu"]
+        A11yDialog["AccessibilityPreferencesDialog"]
     end
 
-    subgraph Domain["Domain (lib/domain)"]
-        RED["reducer.ts<br/>sessionReducer"]
-        RWR["reducer-with-receipts.ts"]
-        PT["phase-transitions.ts"]
-        REC["receipt.ts / receipt-emitter.ts"]
-        REPLAY["replay.ts<br/>replaySession"]
-        SEL["selectors.ts"]
-        REF["refusal.ts"]
-        CR["cognition-rules.ts<br/>(ggen-generated, COGNITION_RULES)"]
+    subgraph Domain["Client-safe domain"]
+        Reducer["sessionReducer"]
+        Replay["replaySession"]
+        Selectors["selectors"]
+        Rules["COGNITION_RULES"]
     end
 
-    subgraph Adapters["Adapters (lib/adapters, server-only unless noted)"]
-        CogA["cognition-adapter.ts"]
-        SandA["sandbox-executor.ts"]
-        ChkA["checksum-adapter.ts<br/>(real BLAKE3)"]
-        PersA["persistence-adapter.ts<br/>(client-safe: browser storage)"]
-        PolA["policy-check-adapter.ts /<br/>policy-check-stub.ts"]
-        OllA["ollama-adapter.ts"]
-        MonA["monaco-adapter.ts<br/>(client-safe)"]
-        A11yA["accessibility-platform-adapter.ts<br/>(client-safe)"]
+    subgraph Server["Server-only routes/adapters"]
+        CogRoute["/api/cognition"]
+        CogAdapter["cognition-adapter"]
+        RunRoute["/api/run"]
+        TestRoute["/api/test"]
+        Sandbox["sandbox-executor"]
+        ReceiptRoute["/api/receipt"]
+        Emitter["receipt-emitter"]
+        AdmitWrapper["admitWithReceipt<br/>reducer-with-receipts"]
+        A11yAdapter["accessibility-platform-adapter"]
+        Persistence["filesystem persistence adapter"]
     end
 
-    SH --> RED
-    CP -->|"dispatch HypothesisEvent"| RED
-    TCP --> SEL
-    ES -->|"dispatch EditorEvent"| RED
-    SAD --> REC
-    SAD --> SEL
+    Page --> Header
+    Page --> Workspace
+    Workspace --> CognitionPanel
+    Workspace --> TrackPanel
+    Workspace --> Editor
+    Workspace --> Result
+    Page --> Drawer
+    Page --> Menu
+    Page --> A11yDialog
 
-    RED --> PT
-    RED --> REF
-    RWR --> REC
-    REPLAY --> RED
+    Page --> Reducer
+    TrackPanel --> Selectors
+    Replay --> Reducer
 
-    CP -.->|"POST /api/cognition"| CogA
-    ES -.->|"POST /api/run, /api/sandbox/*, /api/test"| SandA
-    CogA --> CR
-    CogA --> REC
-    SandA --> PolA
-    SandA --> REC
-    PersA --> REPLAY
-    Domain -.-> ChkA
+    Page -.->|"POST"| CogRoute --> CogAdapter --> Rules
+    Page -.->|"POST"| RunRoute --> Sandbox
+    Page -.->|"POST"| TestRoute --> Sandbox
+    Page -.->|"POST"| ReceiptRoute
+
+    AdmitWrapper --> Reducer
+    AdmitWrapper --> Emitter
+    CogAdapter --> Emitter
+    Sandbox --> Emitter
+    A11yAdapter --> Emitter
+    Persistence --> Replay
 ```
 
-Dashed arrows cross the client/server or HTTP boundary (component → API route → adapter); solid
-arrows are same-process calls. `checksum-adapter.ts`, `cognition-adapter.ts`, `sandbox-executor.ts`,
-and `policy-check-adapter.ts` must never be imported by a `"use client"` component — a real
-Turbopack client-bundle bug (`node:module`/native BLAKE3 dragged into the client bundle via
-`reducer.ts`) was found and fixed this session by splitting the receipt-emitting path into
-`reducer-with-receipts.ts`, which nothing client-side imports.
+## Verified integration state
 
-## See Also
+The receipt-emitting components exist, but the live page does not compose them into one continuous chain:
 
-- [c4-container.md](c4-container.md) — one level up
-- [sequence-cognition.md](sequence-cognition.md), [sequence-sandbox-execution.md](sequence-sandbox-execution.md), [sequence-receipt-replay.md](sequence-receipt-replay.md) — the real runtime flows through this component graph
+1. `InterviewAssistPage.dispatch()` calls `sessionReducer()` directly. It does not call `admitWithReceipt()`.
+2. The cognition request passes the current last receipt and can append a `cognition-run` receipt.
+3. `runCode()` does not pass `prevReceipt` to `/api/run`, so the sandbox receipt starts a new chain head.
+4. `runTests()` does pass the current last receipt to `/api/test`.
+5. Accessibility preference changes mutate page state directly; the page does not call `buildAnnouncement()` or another accessibility-receipt path.
+6. The final `/api/receipt` hash is a separate event-label receipt, not the fifth linked manufacturing-chain receipt.
+
+Therefore the receipt types and emitters are **DONE**, while the live five-step chain is **BUILD_BROKEN**. See [unfinished-work.md](unfinished-work.md).
+
+## Boundary corrections
+
+- `persistence-adapter.ts` is Node filesystem code and is not client-safe browser persistence.
+- `cognition-adapter.ts`, `sandbox-executor.ts`, `receipt-emitter.ts`, and their native/Node dependencies stay server-side.
+- Dashed arrows above cross the HTTP/client-server boundary. They do not imply direct component imports of server adapters.
+
+## See also
+
+- [C4 container](c4-container.md)
+- [Receipt and replay sequence](sequence-receipt-replay.md)
+- [Unfinished work](unfinished-work.md)
