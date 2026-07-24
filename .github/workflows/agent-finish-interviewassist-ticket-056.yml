@@ -1,4 +1,4 @@
-name: Finish InterviewAssist TICKET-056
+name: Validate InterviewAssist TICKET-056
 
 on:
   pull_request:
@@ -10,21 +10,20 @@ on:
       - synchronize
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: finish-interviewassist-ticket-056
-  cancel-in-progress: false
+  group: validate-interviewassist-ticket-056
+  cancel-in-progress: true
 
 jobs:
-  patch-validate-push:
+  validate-export:
     if: github.head_ref == 'agent/interviewassist-receipt-chain'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/interviewassist-receipt-chain
-          fetch-depth: 0
 
       - name: Patch live client receipt threading
         shell: bash
@@ -54,21 +53,6 @@ jobs:
           path.write_text(text)
           PY
           python .github/agent/finish_interviewassist_ticket_056.py 2>&1 | tee /tmp/patch.log
-
-      - name: Create exact candidate commit
-        shell: bash
-        run: |
-          set -o pipefail
-          {
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git rm .github/workflows/agent-finish-interviewassist-ticket-056.yml
-            git rm -f .github/agent/finish_interviewassist_ticket_056.py
-            git add examples/interview-assist/app/page.tsx
-            git status --short
-            git commit -m "wire live InterviewAssist receipt chain"
-            git rev-parse HEAD
-          } 2>&1 | tee /tmp/candidate.log
 
       - uses: pnpm/action-setup@v4
         with:
@@ -118,20 +102,17 @@ jobs:
           set -o pipefail
           pnpm --dir examples/interview-assist exec playwright test tests/e2e/ticket-056-continuous-receipt-chain.spec.ts --project=chromium 2>&1 | tee /tmp/playwright.log
 
-      - name: Upload validation evidence
+      - name: Export patched page and validation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ticket-056-validation-evidence
+          name: ticket-056-validated-page
           path: |
+            examples/interview-assist/app/page.tsx
             /tmp/patch.log
-            /tmp/candidate.log
             /tmp/install.log
             /tmp/typecheck.log
             /tmp/vitest.log
             /tmp/chromium-install.log
             /tmp/playwright.log
-          if-no-files-found: warn
-
-      - name: Push validated commit
-        run: git push origin HEAD:agent/interviewassist-receipt-chain
+          if-no-files-found: error
