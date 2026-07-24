@@ -88,7 +88,7 @@ jobs:
     name: npm Install Smoke Test
     needs: verify-release
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -99,6 +99,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
@@ -118,66 +119,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build nodejs target
-        working-directory: ./wasm4pm
-        run: npm run build:nodejs
-
-      - name: Remove wasm-pack generated ignore file
-        run: rm -f wasm4pm/pkg/.gitignore
-
-      - name: Pack and install from tarball
+      - name: Pack, install, and execute published packages
         shell: bash
-        run: |
-          set -euo pipefail
-          tarball=$(cd wasm4pm && npm pack --silent)
-          smoke_dir=$(mktemp -d)
-          cp "wasm4pm/${tarball}" "$smoke_dir/"
-          cd "$smoke_dir"
-          npm init -y >/dev/null
-          npm install "./${tarball}"
-          echo "SMOKE_DIR=$smoke_dir" >> "$GITHUB_ENV"
-
-      - name: Verify exports and WASM execution
-        working-directory: ${{ env.SMOKE_DIR }}
-        run: |
-          node - <<'NODE'
-          const pm = require('wasm4pm');
-          for (const name of [
-            'WasmEventLog',
-            'WasmOCEL',
-            'discover_dfg',
-            'discover_alpha_plus_plus',
-            'discover_heuristic_miner',
-            'load_eventlog_from_json',
-            'get_version',
-            'clear_all_objects',
-          ]) {
-            if (pm[name] === undefined) throw new Error(`${name} missing`);
-          }
-
-          const sv = (value) => ({ tag: 'String', value });
-          const log = JSON.stringify({
-            attributes: {},
-            traces: [
-              { attributes: {}, events: [
-                { attributes: { 'concept:name': sv('A') } },
-                { attributes: { 'concept:name': sv('B') } },
-              ] },
-              { attributes: {}, events: [
-                { attributes: { 'concept:name': sv('A') } },
-                { attributes: { 'concept:name': sv('C') } },
-              ] },
-            ],
-          });
-          const handle = pm.load_eventlog_from_json(log);
-          pm.discover_dfg(handle, 'concept:name');
-          pm.clear_all_objects();
-          console.log('Smoke test passed:', pm.get_version());
-          NODE
-
-      - name: Cleanup
-        if: always()
-        run: rm -rf "${SMOKE_DIR:-}"
+        run: bash scripts/npm-install-smoke.sh
 
   build-release:
     name: Build Release Artifacts
@@ -210,8 +154,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install build tools
-        run: |
-          npm install -g wasm-pack@0.13.1 wasm-opt
+        run: npm install -g wasm-pack@0.13.1 wasm-opt
 
       - name: Bootstrap cognition WASM packages
         run: bash scripts/bootstrap-cognition-wasm.sh
