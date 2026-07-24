@@ -30,6 +30,29 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/agent/finish_interviewassist_ticket_056.py')
+          text = path.read_text()
+          old_argument = '    "  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real",'
+          new_argument = '''    """  function rejectCognitionProposal(): void {
+              setCognitionIntent(null);
+              setCognitionOutcome(null);
+            }""",'''
+          old_replacement = '    """  async function changeAccessibilityPreference('
+          new_replacement = '''    """  function rejectCognitionProposal(): void {
+              setCognitionIntent(null);
+              setCognitionOutcome(null);
+            }
+
+            async function changeAccessibilityPreference('''
+          if text.count(old_argument) != 1 or text.count(old_replacement) != 1:
+              raise SystemExit('temporary patch script drifted before anchor repair')
+          text = text.replace(old_argument, new_argument, 1)
+          text = text.replace(old_replacement, new_replacement, 1)
+          path.write_text(text)
+          PY
           python .github/agent/finish_interviewassist_ticket_056.py 2>&1 | tee /tmp/patch.log
 
       - name: Create exact candidate commit
