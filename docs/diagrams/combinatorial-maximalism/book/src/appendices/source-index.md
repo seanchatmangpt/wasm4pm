@@ -1,0 +1,36 @@
+# Mermaid source index
+
+- [Flowchart](../diagrams/01-flowchart.mmd) - `01-flowchart.mmd`
+- [Swimlanes](../diagrams/02-swimlanes.mmd) - `02-swimlanes.mmd`
+- [Sequence Diagram](../diagrams/03-sequence.mmd) - `03-sequence.mmd`
+- [Class Diagram](../diagrams/04-class.mmd) - `04-class.mmd`
+- [State Diagram](../diagrams/05-state.mmd) - `05-state.mmd`
+- [Entity Relationship Diagram](../diagrams/06-er.mmd) - `06-er.mmd`
+- [User Journey](../diagrams/07-user-journey.mmd) - `07-user-journey.mmd`
+- [Gantt Chart](../diagrams/08-gantt.mmd) - `08-gantt.mmd`
+- [Pie Chart](../diagrams/09-pie.mmd) - `09-pie.mmd`
+- [Quadrant Chart](../diagrams/10-quadrant.mmd) - `10-quadrant.mmd`
+- [Requirement Diagram](../diagrams/11-requirement.mmd) - `11-requirement.mmd`
+- [GitGraph](../diagrams/12-gitgraph.mmd) - `12-gitgraph.mmd`
+- [C4 Context](../diagrams/13-c4-context.mmd) - `13-c4-context.mmd`
+- [C4 Container](../diagrams/14-c4-container.mmd) - `14-c4-container.mmd`
+- [C4 Component](../diagrams/15-c4-component.mmd) - `15-c4-component.mmd`
+- [C4 Dynamic](../diagrams/16-c4-dynamic.mmd) - `16-c4-dynamic.mmd`
+- [C4 Deployment](../diagrams/17-c4-deployment.mmd) - `17-c4-deployment.mmd`
+- [Mindmap](../diagrams/18-mindmap.mmd) - `18-mindmap.mmd`
+- [Timeline](../diagrams/19-timeline.mmd) - `19-timeline.mmd`
+- [ZenUML](../diagrams/20-zenuml.mmd) - `20-zenuml.mmd`
+- [Sankey Diagram](../diagrams/21-sankey.mmd) - `21-sankey.mmd`
+- [XY Chart](../diagrams/22-xychart.mmd) - `22-xychart.mmd`
+- [Block Diagram](../diagrams/23-block.mmd) - `23-block.mmd`
+- [Packet Diagram](../diagrams/24-packet.mmd) - `24-packet.mmd`
+- [Kanban](../diagrams/25-kanban.mmd) - `25-kanban.mmd`
+- [Architecture Diagram](../diagrams/26-architecture.mmd) - `26-architecture.mmd`
+- [Radar Chart](../diagrams/27-radar.mmd) - `27-radar.mmd`
+- [Event Modeling](../diagrams/28-event-modeling.mmd) - `28-event-modeling.mmd`
+- [Treemap](../diagrams/29-treemap.mmd) - `29-treemap.mmd`
+- [Venn Diagram](../diagrams/30-venn.mmd) - `30-venn.mmd`
+- [Ishikawa Diagram](../diagrams/31-ishikawa.mmd) - `31-ishikawa.mmd`
+- [Wardley Map](../diagrams/32-wardley.mmd) - `32-wardley.mmd`
+- [Cynefin Diagram](../diagrams/33-cynefin.mmd) - `33-cynefin.mmd`
+- [TreeView](../diagrams/34-treeview.mmd) - `34-treeview.mmd`

@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    actor U as Researcher
+    participant G as Event Gateway
+    participant A as Admission Gate
+    participant R as InterviewRuntime
+    participant B as Authority Broker
+    participant X as Executor
+    participant P as Receipt Ledger
+    U->>G: Submit bounded observation
+    G->>A: Normalize and evaluate
+    alt Observation refused
+        A-->>U: Typed refusal
+    else Observation admitted
+        A->>R: AdmittedObservation
+        R->>R: Derive reversible candidates
+        R->>B: Request scoped authority
+        alt Authority denied
+            B-->>U: Typed refusal
+        else Authority granted
+            B->>X: Single actuation
+            X->>P: Append result receipt
+            P-->>U: Artifact plus standing evidence
+        end
+    end

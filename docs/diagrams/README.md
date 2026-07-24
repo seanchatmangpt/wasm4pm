@@ -8,7 +8,8 @@ The local shell could not obtain a repository checkout (`~/wasm4pm` was absent a
 
 ## Contents
 
-- [Design for Combinatorial Maximalism using all Mermaid](combinatorial-maximalism/SUMMARY.md) — Alexander-style pattern language with 34 standalone wasm4pm case-study diagrams covering all 30 Mermaid 11.16 families and all five C4 variants.
+- [Design for Combinatorial Maximalism using all Mermaid](combinatorial-maximalism/SUMMARY.md) — compact Alexander-style pattern atlas with 34 standalone wasm4pm case-study diagrams covering all 30 Mermaid 11.16 families and all five C4 variants.
+- [Full DCM mdBook and 121-page PDF](combinatorial-maximalism/PUBLICATION.md) — complete pattern-language publication, deterministic build sources, validation receipt, and PDF export.
 - [ui-ux-redesign.md](ui-ux-redesign.md) — canonical interaction and layout specification, plus the source-grounded correction to the ranked cognition design.
 - [unfinished-work.md](unfinished-work.md) — current law-state map: DONE, PARTIAL, BLOCKED, and BUILD_BROKEN.
 - [c4-context.md](c4-context.md) — system context and real external boundaries.

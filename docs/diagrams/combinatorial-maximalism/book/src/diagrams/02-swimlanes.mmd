@@ -1,0 +1,27 @@
+swimlane-beta LR
+subgraph Observer [Observer]
+    capture[Capture observation]
+end
+subgraph Admission [Admission boundary]
+    normalize[Normalize canonical event]
+    admit{Admit into O*?}
+end
+subgraph Construction [Reversible construction]
+    construct[Expand candidate graph]
+end
+subgraph Broker [Authority broker]
+    authorize{Scoped authority?}
+    refusal[Emit typed refusal]
+end
+subgraph Execution [Actuation]
+    actuate[Perform one authorized effect]
+end
+subgraph Verification [Verification]
+    receipt[Append receipt]
+    verify[Replay and assign standing]
+end
+capture --> normalize --> admit
+admit -->|No| refusal
+admit -->|Yes| construct --> authorize
+authorize -->|No| refusal
+authorize -->|Yes| actuate --> receipt --> verify

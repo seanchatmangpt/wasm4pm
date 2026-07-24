@@ -1,0 +1,14 @@
+gantt
+    title DCM proof ladder for a wasm4pm increment
+    dateFormat YYYY-MM-DD
+    axisFormat %m-%d
+    section Observe
+    Bound O*                    :done, obs, 2026-07-24, 1d
+    section Construct
+    Expand reversible graph     :active, con, after obs, 2d
+    section Admit
+    Run proofs and tests        :crit, ver, after con, 2d
+    section Actuate
+    Broker one release          :act, after ver, 1d
+    section Replay
+    Verify receipts             :rep, after act, 1d

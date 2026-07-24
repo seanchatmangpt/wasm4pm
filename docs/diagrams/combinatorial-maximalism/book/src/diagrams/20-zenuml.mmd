@@ -1,0 +1,21 @@
+zenuml
+    title Bounded wasm4pm actuation
+    @Actor Researcher
+    Researcher -> Gateway.submit(observation) {
+      Gateway -> Admission.normalizeAndAdmit(observation) {
+        if(refused) {
+          return TypedRefusal
+        } else {
+          Admission -> Runtime.handle(admittedObservation) {
+            Runtime -> Broker.authorize(capability) {
+              if(denied) { return TypedRefusal }
+              else {
+                Broker -> Executor.actuate(grant)
+                Executor -> Ledger.append(result)
+                return ArtifactWithStanding
+              }
+            }
+          }
+        }
+      }
+    }

@@ -1,0 +1,10 @@
+C4Context
+    title wasm4pm system context
+    Person(researcher, "Researcher", "States intent and reviews standing")
+    System(wasm4pm, "wasm4pm", "Proof-carrying process manufacturing")
+    System_Ext(ggen, "ggen", "Projects admitted graphs into artifacts")
+    System_Ext(verifier, "Verifier", "Runs tests, proofs, and replay")
+    Rel(researcher, wasm4pm, "Submits bounded observations")
+    Rel(wasm4pm, ggen, "Requests reversible projection")
+    Rel(ggen, verifier, "Requests evidence")
+    Rel(verifier, researcher, "Returns standing and receipts")

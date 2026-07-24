@@ -1,0 +1,10 @@
+packet-beta
+    0-7: "Version"
+    8-15: "Flags"
+    16-47: "Sequence u32"
+    48-79: "Session length u32"
+    80-111: "Policy length u32"
+    112-143: "Payload length u32"
+    144-399: "Previous receipt hash 256b"
+    400-655: "Subject hash 256b"
+    656-: "Length-prefixed session, policy, payload"

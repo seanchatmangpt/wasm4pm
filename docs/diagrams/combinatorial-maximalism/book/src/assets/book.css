@@ -1,0 +1,7 @@
+:root { --dcm-ink:#17212b; --dcm-muted:#5f6b76; --dcm-rule:#c8d0d8; --dcm-accent:#334e68; }
+.content main { max-width: 980px; }
+blockquote { border-left: 4px solid var(--dcm-accent); background: rgba(51,78,104,.06); padding: .7rem 1rem; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .86em; }
+table { width:100%; }
+code { font-variant-ligatures:none; }
+h1 { border-bottom: 1px solid var(--dcm-rule); padding-bottom:.35rem; }
