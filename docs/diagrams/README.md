@@ -8,6 +8,7 @@ The local shell could not obtain a repository checkout (`~/wasm4pm` was absent a
 
 ## Contents
 
+- [Design for Combinatorial Maximalism using all Mermaid](combinatorial-maximalism/SUMMARY.md) — Alexander-style pattern language with 34 standalone wasm4pm case-study diagrams covering all 30 Mermaid 11.16 families and all five C4 variants.
 - [ui-ux-redesign.md](ui-ux-redesign.md) — canonical interaction and layout specification, plus the source-grounded correction to the ranked cognition design.
 - [unfinished-work.md](unfinished-work.md) — current law-state map: DONE, PARTIAL, BLOCKED, and BUILD_BROKEN.
 - [c4-context.md](c4-context.md) — system context and real external boundaries.
@@ -24,10 +25,12 @@ The local shell could not obtain a repository checkout (`~/wasm4pm` was absent a
 
 ## Verification command pattern
 
-Every diagram names the exact repository files re-read. The command form executed was:
+Every source-grounded diagram names the exact repository files re-read. The command form executed was:
 
 ```text
 GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=<repository-root path> ref=docs/v26.7.24-planning-diagramming
 ```
 
 No diagram should be read as proof that a runtime path passes. Runtime standing is tracked in [unfinished-work.md](unfinished-work.md) and the Jira README.
+
+The all-Mermaid atlas targets Mermaid 11.16.0. Source coverage is documented, but parser and renderer compatibility remain `UNKNOWN` until CI validates every `.mmd` against the pinned renderer. Beta and experimental families are explicitly quarantined in the atlas summary.

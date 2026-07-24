@@ -1,0 +1,18 @@
+wardley-beta
+    title wasm4pm manufacturing strategy
+    anchor Researcher [0.95, 0.90]
+    component InterviewAssist [0.82, 0.62] (build)
+    component InterviewRuntime [0.70, 0.30] (build)
+    component Public Ontologies [0.58, 0.72] (market)
+    component Rust and WASM [0.45, 0.82] (market)
+    component Receipt Ledger [0.50, 0.55] (build)
+    component Local Compute [0.20, 0.94] (market)
+    Researcher -> InterviewAssist
+    InterviewAssist -> InterviewRuntime
+    InterviewRuntime -> Public Ontologies
+    InterviewRuntime -> Rust and WASM
+    InterviewRuntime -> Receipt Ledger
+    Receipt Ledger -> Local Compute
+    evolve InterviewRuntime 0.58
+    evolve Receipt Ledger 0.72
+    note "Differentiate on lawful composition, commoditize execution" [0.66, 0.46]

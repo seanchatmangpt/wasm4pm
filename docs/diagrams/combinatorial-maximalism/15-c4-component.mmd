@@ -1,0 +1,15 @@
+C4Component
+    title wasm4pm cognition component view
+    Container_Boundary(cognition, "wasm4pm-cognition") {
+        Component(gateway, "Event Gateway", "Rust", "Canonicalizes observations")
+        Component(admission, "Admission Gate", "Rust", "Produces admitted facts or refusals")
+        Component(runtime, "InterviewRuntime", "Rust", "Composes the law path")
+        Component(construct, "CONSTRUCT Engine", "Rust", "Derives reversible candidates")
+        Component(broker, "Authority Broker", "Rust", "Default-deny actuation")
+        Component(receipts, "Receipt Ledger", "Rust", "Chains and verifies evidence")
+    }
+    Rel(gateway, admission, "Normalizes into")
+    Rel(admission, runtime, "Supplies admitted observation")
+    Rel(runtime, construct, "Derives through")
+    Rel(runtime, broker, "Requests scoped authority")
+    Rel(broker, receipts, "Records decision and result")

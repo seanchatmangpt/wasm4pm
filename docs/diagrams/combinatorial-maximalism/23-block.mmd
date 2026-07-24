@@ -1,0 +1,19 @@
+block
+    columns 5
+    O["Observation"]
+    Admit{"Admit?"}
+    Construct["CONSTRUCT"]
+    Broker{"Authority?"}
+    Act["Actuate"]
+    O --> Admit
+    Admit --> Construct
+    Construct --> Broker
+    Broker --> Act
+    block:Evidence:5
+        Receipt["Receipt"]
+        Replay["Replay"]
+        Standing["Standing"]
+    end
+    Act --> Receipt
+    Receipt --> Replay
+    Replay --> Standing

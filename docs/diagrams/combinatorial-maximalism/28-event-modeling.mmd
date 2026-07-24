@@ -1,0 +1,13 @@
+eventmodeling
+    tf 01 ui InterviewAssist
+    tf 02 cmd SubmitObservation { text: string }
+    tf 03 evt ObservationCaptured { observationHash: string }
+    tf 04 pcr AdmissionProcessor
+    tf 05 cmd AdmitObservation { policyScope: string }
+    tf 06 evt ObservationAdmitted { factHash: string }
+    tf 07 pcr ConstructionRuntime
+    tf 08 cmd RequestCapability { capability: string }
+    tf 09 evt AuthorityGranted { grantHash: string }
+    tf 10 evt ArtifactReceipted { receiptHash: string }
+    tf 11 rmo StandingReport
+    tf 12 ui InterviewAssistSummary

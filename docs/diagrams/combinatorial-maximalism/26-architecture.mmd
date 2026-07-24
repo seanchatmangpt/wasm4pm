@@ -1,0 +1,14 @@
+architecture-beta
+    group edge(cloud)[Observation boundary]
+    service ui(server)[InterviewAssist UI] in edge
+    group core(server)[wasm4pm core]
+    service gateway(server)[Event Gateway] in core
+    service runtime(server)[InterviewRuntime] in core
+    service broker(server)[Authority Broker] in core
+    service executor(server)[Executor] in core
+    service ledger(database)[Receipt Ledger] in core
+    ui:R --> L:gateway
+    gateway:R --> L:runtime
+    runtime:R --> L:broker
+    broker:R --> L:executor
+    executor:B --> T:ledger
