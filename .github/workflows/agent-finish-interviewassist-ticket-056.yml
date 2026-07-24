@@ -1,6 +1,9 @@
 name: Apply InterviewAssist TICKET-056 page
 
 on:
+  push:
+    branches:
+      - agent/interviewassist-receipt-chain
   pull_request:
     branches:
       - main
@@ -18,7 +21,9 @@ concurrency:
 
 jobs:
   apply-page:
-    if: github.head_ref == 'agent/interviewassist-receipt-chain'
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/interviewassist-receipt-chain') ||
+      github.head_ref == 'agent/interviewassist-receipt-chain'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -64,16 +69,15 @@ jobs:
           from pathlib import Path
           page = Path('examples/interview-assist/app/page.tsx')
           text = page.read_text()
-          duplicate = '''  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real
+          old = '''  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real
 
-  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real'''
-          if text.count(duplicate) != 1:
+  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the
+   * real checksum-adapter'''
+          new = '''  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the
+   * real checksum-adapter'''
+          if text.count(old) != 1:
               raise SystemExit('expected one duplicate comment anchor after guarded patch')
-          page.write_text(text.replace(
-              duplicate,
-              '  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real',
-              1,
-          ))
+          page.write_text(text.replace(old, new, 1))
           PY
 
       - name: Commit page when changed
