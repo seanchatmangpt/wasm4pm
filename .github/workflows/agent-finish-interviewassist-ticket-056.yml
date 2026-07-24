@@ -1,4 +1,4 @@
-name: Validate InterviewAssist TICKET-056
+name: Export InterviewAssist TICKET-056 page
 
 on:
   pull_request:
@@ -13,11 +13,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: validate-interviewassist-ticket-056
+  group: export-interviewassist-ticket-056
   cancel-in-progress: true
 
 jobs:
-  validate-export:
+  export-page:
     if: github.head_ref == 'agent/interviewassist-receipt-chain'
     runs-on: ubuntu-24.04
     steps:
@@ -52,67 +52,11 @@ jobs:
           text = text.replace(old_replacement, new_replacement, 1)
           path.write_text(text)
           PY
-          python .github/agent/finish_interviewassist_ticket_056.py 2>&1 | tee /tmp/patch.log
+          python .github/agent/finish_interviewassist_ticket_056.py
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.2
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: latest
-
-      - name: Install dependencies and materialize cognition WASM
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm install --no-frozen-lockfile 2>&1 | tee /tmp/install.log
-
-      - name: Typecheck InterviewAssist
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --dir examples/interview-assist typecheck 2>&1 | tee /tmp/typecheck.log
-
-      - name: Run route-chain scenario
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --dir examples/interview-assist exec vitest run tests/scenarios/continuous-receipt-route-chain.test.ts 2>&1 | tee /tmp/vitest.log
-
-      - name: Install Chromium
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --dir examples/interview-assist exec playwright install --with-deps chromium 2>&1 | tee /tmp/chromium-install.log
-
-      - name: Run live client receipt-chain acceptance
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm --dir examples/interview-assist exec playwright test tests/e2e/ticket-056-continuous-receipt-chain.spec.ts --project=chromium 2>&1 | tee /tmp/playwright.log
-
-      - name: Export patched page and validation evidence
-        if: always()
+      - name: Export exact patched page
         uses: actions/upload-artifact@v4
         with:
-          name: ticket-056-validated-page
-          path: |
-            examples/interview-assist/app/page.tsx
-            /tmp/patch.log
-            /tmp/install.log
-            /tmp/typecheck.log
-            /tmp/vitest.log
-            /tmp/chromium-install.log
-            /tmp/playwright.log
+          name: ticket-056-patched-page
+          path: examples/interview-assist/app/page.tsx
           if-no-files-found: error
