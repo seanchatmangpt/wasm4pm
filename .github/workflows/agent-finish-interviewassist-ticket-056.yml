@@ -27,17 +27,22 @@ jobs:
           fetch-depth: 0
 
       - name: Patch live client receipt threading
-        run: python .github/agent/finish_interviewassist_ticket_056.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python .github/agent/finish_interviewassist_ticket_056.py 2>&1 | tee /tmp/patch.log
 
       - name: Create exact candidate commit
+        shell: bash
         run: |
+          set -o pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/agent-finish-interviewassist-ticket-056.yml
           git rm .github/agent/finish_interviewassist_ticket_056.py
           git add examples/interview-assist/app/page.tsx
           git commit -m "wire live InterviewAssist receipt chain"
-          git rev-parse HEAD
+          git rev-parse HEAD | tee /tmp/candidate-sha.log
 
       - uses: pnpm/action-setup@v4
         with:
@@ -58,19 +63,49 @@ jobs:
           version: latest
 
       - name: Install dependencies and materialize cognition WASM
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
 
       - name: Typecheck InterviewAssist
-        run: pnpm --dir examples/interview-assist typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir examples/interview-assist typecheck 2>&1 | tee /tmp/typecheck.log
 
       - name: Run route-chain scenario
-        run: pnpm --dir examples/interview-assist exec vitest run tests/scenarios/continuous-receipt-route-chain.test.ts
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir examples/interview-assist exec vitest run tests/scenarios/continuous-receipt-route-chain.test.ts 2>&1 | tee /tmp/vitest.log
 
       - name: Install Chromium
-        run: pnpm --dir examples/interview-assist exec playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir examples/interview-assist exec playwright install --with-deps chromium 2>&1 | tee /tmp/chromium-install.log
 
       - name: Run live client receipt-chain acceptance
-        run: pnpm --dir examples/interview-assist exec playwright test tests/e2e/ticket-056-continuous-receipt-chain.spec.ts --project=chromium
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir examples/interview-assist exec playwright test tests/e2e/ticket-056-continuous-receipt-chain.spec.ts --project=chromium 2>&1 | tee /tmp/playwright.log
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ticket-056-validation-evidence
+          path: |
+            /tmp/patch.log
+            /tmp/candidate-sha.log
+            /tmp/install.log
+            /tmp/typecheck.log
+            /tmp/vitest.log
+            /tmp/chromium-install.log
+            /tmp/playwright.log
+          if-no-files-found: warn
 
       - name: Push validated commit
         run: git push origin HEAD:agent/interviewassist-receipt-chain
