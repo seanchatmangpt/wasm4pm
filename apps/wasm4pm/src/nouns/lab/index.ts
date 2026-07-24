@@ -1,8 +1,7 @@
 /**
- * wpm lab — experimental/advanced command suites, forwarded (not
- * re-derived) to their existing legacy implementations. Every verb here
- * is `stability: 'experimental'`, so the framework prints the
- * `[experimental]` stderr banner automatically on every invocation.
+ * wpm lab — experimental/advanced command suites. Every verb here is
+ * `stability: 'experimental'`, so the framework prints the `[experimental]`
+ * stderr banner automatically on every invocation.
  */
 import { defineNoun } from '@wasm4pm/noun-verb';
 import { membraneVerb } from './membrane.js';
@@ -25,10 +24,11 @@ import { feedbackVerb } from './feedback.js';
 import { mlVerb } from './ml.js';
 import { temporalVerb } from './temporal.js';
 import { socialVerb } from './social.js';
+import { interviewAssistVerb } from './interview-assist.js';
 
 export const labNoun = defineNoun({
   name: 'lab',
-  description: 'Experimental and advanced command suites (legacy behavior, unchanged)',
+  description: 'Experimental and advanced command suites',
   verbs: [
     membraneVerb,
     cellVerb,
@@ -50,5 +50,6 @@ export const labNoun = defineNoun({
     mlVerb,
     temporalVerb,
     socialVerb,
+    interviewAssistVerb,
   ],
 });
