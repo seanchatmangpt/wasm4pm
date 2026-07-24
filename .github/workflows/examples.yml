@@ -93,8 +93,11 @@ jobs:
       - name: Install workspace and materialize cognition WASM
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build wpm
-        run: pnpm --filter @wasm4pm/cli build
+      - name: Build wpm runtime dependency closure
+        run: pnpm --filter @wasm4pm/cli... build
+
+      - name: Build wpm test harness
+        run: pnpm --filter @wasm4pm/testing... build
 
       - name: Typecheck wpm process test
         run: pnpm --filter @wasm4pm/cli typecheck:tests
