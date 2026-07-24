@@ -1,3 +1,11 @@
+node_modules/
 .next/
 playwright-report/
 test-results/
+.env
+.env.local
+.ggen/keys/
+.ggen/cache/
+.ggen/tmp/
+.ggen-v2/
+tsconfig.tsbuildinfo
