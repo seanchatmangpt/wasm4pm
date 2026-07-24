@@ -15,12 +15,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSandboxExecutor, isExecutionRefusal, type CapabilityId } from "../../../lib/adapters/sandbox-executor";
 import type { PolicyId } from "../../../lib/adapters/policy-check-adapter";
+import type { TransitionReceipt } from "../../../lib/domain/receipt";
 
 interface RunRequestBody {
   capability: CapabilityId;
   files: Record<string, string>;
   timeoutMs?: number;
   activeMode?: PolicyId;
+  /** TICKET-056: immediately preceding manufacturing-chain receipt. */
+  prevReceipt?: TransitionReceipt;
 }
 
 export async function POST(request: NextRequest) {
@@ -34,6 +37,7 @@ export async function POST(request: NextRequest) {
     files: body.files,
     timeoutMs: body.timeoutMs ?? 10_000,
     activeMode: body.activeMode,
+    prevReceipt: body.prevReceipt,
   });
   if (isExecutionRefusal(result)) {
     return NextResponse.json({ refusal: result });
