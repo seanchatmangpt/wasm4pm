@@ -63,7 +63,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git rm .github/workflows/agent-finish-interviewassist-ticket-056.yml
-            git rm .github/agent/finish_interviewassist_ticket_056.py
+            git rm -f .github/agent/finish_interviewassist_ticket_056.py
             git add examples/interview-assist/app/page.tsx
             git status --short
             git commit -m "wire live InterviewAssist receipt chain"
