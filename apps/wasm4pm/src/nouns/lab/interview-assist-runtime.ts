@@ -172,7 +172,7 @@ async function reservePort(): Promise<number> {
   server.unref();
   await new Promise<void>((resolvePromise, rejectPromise) => {
     server.once('error', rejectPromise);
-    server.listen(0, '127.0.0.1', resolvePromise);
+    server.listen(0, '127.0.0.1', () => resolvePromise());
   });
   const address = server.address();
   const port = typeof address === 'object' && address !== null ? address.port : undefined;
@@ -370,7 +370,9 @@ export async function runInterviewAssistSession(options: InterviewAssistRunOptio
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const logSuffix = serverLog.trim().length > 0 ? `\nNext server log:\n${serverLog.slice(-4_000)}` : '';
-    throw new Error(`${message}${logSuffix}`, { cause: error });
+    const wrapped = new Error(`${message}${logSuffix}`);
+    (wrapped as Error & { cause?: unknown }).cause = error;
+    throw wrapped;
   } finally {
     await terminateProcessTree(child);
   }
