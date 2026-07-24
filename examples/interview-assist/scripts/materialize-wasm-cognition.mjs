@@ -3,6 +3,8 @@ import { mkdirSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Materialize into this package's node_modules so cognition-adapter.ts's bare
+// server-side require resolves identically in local installs and CI.
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const packageDir = resolve(scriptDir, "..");
 const repositoryRoot = resolve(packageDir, "../..");
