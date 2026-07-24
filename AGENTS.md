@@ -1,232 +1,167 @@
-# AGENTS.md — ChatGPT Operating Contract for wasm4pm
+# AGENTS.md — Authoritative Agent Contract for wasm4pm
 
-This file is the repository-wide operating contract for ChatGPT and other
-OpenAI agents working on `wasm4pm`.
+This file is the repository-wide operating contract for every coding agent,
+regardless of model, vendor, editor, shell, or orchestration system.
 
-It is intentionally about **how to work truthfully in the available agent
-environment**. Project architecture and command details live in `CLAUDE.md`.
-Release and proof-closure doctrine lives in `GEMINI.md`.
+`AGENTS.md` is the sole normative agent document for this repository.
+`CLAUDE.md` and `GEMINI.md` are compatibility pointers only.
 
 A more specific `AGENTS.md` in a subdirectory overrides this file for work
 under that directory.
 
-## 1. First principle
+Hosted ChatGPT agents working through the GitHub connector or an ephemeral
+cloud shell must also read `CHATGPT-CLOUD-AGENTS.md`. Local agents, including
+Claude Code, may skip that file unless their runtime has the same constraints.
 
-A claim must not exceed the evidence available in the current environment.
+## 1. First principles
 
-Keep these states separate:
+### 1.1 Claims may not exceed evidence
+
+Keep these states distinct:
 
 - **Observed**: source, metadata, logs, or artifacts were read.
-- **Executed**: a command was actually run in a local checkout.
-- **Changed**: a file, branch, issue, or pull request was actually modified.
+- **Executed**: a command actually ran against the claimed checkout or artifact.
+- **Changed**: a file, branch, issue, pull request, or artifact was modified.
+- **Verified**: an independent check recomputed or exercised the claimed fact.
 - **Inferred**: a conclusion was derived from observed evidence.
 - **Blocked**: the required boundary could not be reached.
 
 Examples:
 
-- Reading a Vitest file proves that test cases are declared. It does not prove
-  that they pass.
-- Reading a `package.json` script proves what the script currently expands to.
-  It does not prove that the script succeeds.
-- A GitHub connector update is a real remote commit. It is not a local working
-  tree edit.
-- A green workflow proves only the commands and commit covered by that
-  workflow.
-- A receipt file proves that bytes exist. It does not prove that the receipt
-  recomputes or binds to the current commit.
+- Reading a test file proves that tests are declared, not that they pass.
+- Reading a script proves what it invokes, not that it succeeds.
+- A green workflow proves only the commands and commit covered by that run.
+- A receipt file proves that bytes exist, not that its hash recomputes.
+- A diagram can be coherent and still describe behavior that is not wired.
 
 The compact law is:
 
 > No execution claim without execution. No closure claim without verified
-> evidence. No hidden assumption presented as repository fact.
+> evidence. No architecture claim without an implemented path.
+
+### 1.2 Real boundaries outrank wrappers
+
+The real runtime boundary is authoritative.
+
+- A WASM refusal may not be converted into success by TypeScript, a CLI, or UI.
+- A generic exception is not a typed domain refusal.
+- A mocked boundary cannot prove the production boundary.
+- A local source pass cannot prove a packed, installed, or published artifact.
+- A representative receipt cannot prove global behavior closure.
+
+### 1.3 Correct refusal is successful behavior
+
+A lawful refusal is a valid outcome when it:
+
+- is produced by the real boundary;
+- uses a stable typed refusal code;
+- avoids panic, silent fallback, and false success;
+- emits the required receipt or evidence artifact;
+- can be recomputed or replayed where the claim requires it.
+
+### 1.4 Determinism is a repository property
+
+Deterministic paths must not depend on unordered iteration, host entropy,
+hidden clocks, or unreceipted state.
+
+Use:
+
+- `BTreeMap` and `BTreeSet`;
+- explicitly sorted vectors;
+- repository-provided seeded RNG helpers;
+- explicit inputs for state that affects output;
+- stable serialization before hashing.
 
 ## 2. Instruction precedence
 
 Use this order when instructions conflict:
 
-1. Platform, safety, and tool constraints.
+1. Platform and safety constraints.
 2. The user's current request and explicit scope.
 3. The nearest path-specific `AGENTS.md`.
 4. This root `AGENTS.md`.
-5. `CLAUDE.md` for repository architecture, commands, and coding rules.
-6. `GEMINI.md` for release, receipt, and proof-closure requirements.
-7. Other repository documentation and historical notes.
+5. Current source, manifests, build recipes, and tests.
+6. Other documentation and historical notes.
 
-Do not assume this file was automatically injected into the session. Read it
-from the target ref before substantial repository work. Read the nearest
-nested `AGENTS.md` as well when one exists.
+Documentation is subordinate to current executable source when they disagree.
+Record the drift instead of silently choosing whichever source is convenient.
 
-## 3. Establish the operating mode first
+## 3. Repository orientation
 
-Before editing or making validation claims, determine which environment is
-actually available.
+`wasm4pm` is a process-mining platform with two primary implementation layers:
 
-### 3.1 Local-checkout mode
+1. Rust and WASM core algorithms.
+2. A TypeScript monorepo containing packages, applications, examples, and the
+   published `wpm` CLI.
 
-A local checkout exists and shell commands can inspect and execute it.
+Important paths:
 
-Establish:
-
-```bash
-pwd
-git rev-parse --show-toplevel
-git status -sb
-git branch --show-current
-git remote -v
-```
-
-Then verify required tools individually. Do not assume `gh`, `ggen`,
-`wasm-pack`, `just`, Node, pnpm, Rust, browsers, containers, or network access
-are installed merely because the repository uses them.
-
-Only local-checkout mode can directly prove:
-
-- working-tree state;
-- local diffs and staged files;
-- command exit codes;
-- locally generated artifacts;
-- exact test output;
-- local receipt recomputation.
-
-### 3.2 GitHub-connector mode
-
-The repository is accessible through a connected GitHub tool, but there may be
-no local checkout.
-
-This mode can usually:
-
-- fetch known files and refs;
-- search indexed repository source;
-- inspect commits, pull requests, issues, changed paths, and workflow state;
-- create or replace UTF-8 repository files;
-- create real commits on an existing branch;
-- create or update pull requests.
-
-This mode cannot by itself:
-
-- run pnpm, Vitest, Cargo, `just`, `make`, or shell commands;
-- inspect an uncommitted working tree;
-- generate build artifacts from source;
-- prove that a command succeeds;
-- claim that literal `grep`, `find`, `ls`, or verifier commands were run.
-
-Connector search can time out or omit results. Prefer fetching a known path
-when the path is available. Treat a failed search as incomplete discovery, not
-proof that a file does not exist.
-
-A connector file update is normally a complete-file replacement and creates a
-remote commit immediately. Fetch the current blob SHA immediately before an
-update. Never write the same path concurrently.
-
-### 3.3 Hybrid mode
-
-Both a local checkout and the GitHub connector are available.
-
-Keep them aligned:
-
-- identify the local branch and remote head;
-- fetch before comparing;
-- do not use a stale connector blob SHA after a local push;
-- do not describe connector commits as uncommitted local work;
-- do not describe local changes as pushed until the remote ref confirms them.
-
-Prefer local tools for execution and diffs. Prefer the connector for structured
-pull-request and issue operations.
-
-### 3.4 CI-observation mode
-
-GitHub Actions may provide workflow, job, step, log, and artifact evidence.
-Tie every observation to the exact commit SHA.
-
-CI evidence is bounded by the workflow:
-
-- a generic package test step is not proof that a requested six-file command
-  ran;
-- a queued or in-progress job is not a pass;
-- a successful setup step is not a successful test step;
-- an old green run is not evidence for a newer branch head;
-- a workflow artifact must be inspected before making claims about its
-  contents.
-
-## 4. What commonly works and what commonly does not
-
-The ChatGPT execution host is not a developer laptop and is not guaranteed to
-be stable across sessions.
-
-| Capability | Expected handling |
-|---|---|
-| Fetch a known GitHub file | Usually reliable through the connector |
-| Search repository source | Useful but may time out or be incomplete |
-| Replace a GitHub text file | Reliable when the branch exists and blob SHA is current |
-| Create a connector commit | Real remote write; often one commit per file update |
-| Run repository commands | Requires an actual local checkout and installed tools |
-| Clone from GitHub | Outbound DNS or network access may be unavailable |
-| Use `gh` | The CLI may be absent or unauthenticated |
-| Inspect local files | Impossible when only connector file references exist |
-| Download whole repositories | Not guaranteed through file-oriented connectors |
-| Inspect Actions | Use workflow/job/log data tied to the current SHA |
-| Run work in the background | Not available; complete the current turn or report the blocker |
-
-A known lawful fallback is:
-
-1. Attempt to locate the requested checkout.
-2. Check the required command or CLI once.
-3. If the checkout is absent and cloning fails, stop retrying the same boundary.
-4. Switch to connector-backed source inspection or remote documentation edits.
-5. Mark local execution and disk verification as blocked.
-6. Never invent command output to fill the gap.
-
-In some hosted shells, `rm` is blocked. Use `trash` when available. Do not
-silently substitute destructive commands.
-
-## 5. Repository orientation
-
-Read `CLAUDE.md` before broad implementation work. The current high-level map
-is:
-
-- `wasm4pm/`: Rust/WASM process-mining core;
-- `crates/wasm4pm-cognition/`: cognition breeds and WASM cognition layer;
-- `crates/prolog8/`: Prolog-related runtime;
-- `apps/wasm4pm/`: published TypeScript `wpm` CLI;
-- `crates/wasm4pm-cli/`: Rust development CLI, not the published CLI;
-- `packages/`: TypeScript monorepo packages;
-- `apps/`: applications;
-- `examples/`: runnable examples, including InterviewAssist;
-- `ocel/models/l1/`: OCPN models;
+- `wasm4pm/`: Rust/WASM process-mining core.
+- `crates/wasm4pm-cognition/`: cognition breeds and WASM cognition layer.
+- `crates/prolog8/`: Prolog-related runtime.
+- `apps/wasm4pm/`: published TypeScript `wpm` CLI.
+- `crates/wasm4pm-cli/`: Rust development CLI, not the published CLI.
+- `packages/`: TypeScript workspace packages.
+- `apps/`: applications.
+- `examples/`: runnable examples, including InterviewAssist.
+- `ocel/models/l1/`: OCPN models.
 - `ocel/reports/`: measured fitness and admission evidence.
+- `artifacts/release/`: release evidence and certificates when generated.
 
-CalVer uses `vYY.M.D`. The patch component is the day of the month, not an
-incrementing release counter. Same-day variants append a letter.
+Primary references:
 
-Do not reconstruct repository facts from memory. Re-read the current target
-ref because architecture, package counts, scripts, and admission standing can
-drift.
+- `docs/explanation/architecture_overview.md`
+- `WASM_API.md`
+- `TESTING.md`
+- `Justfile`
+- `Makefile`
+- root and package-level `package.json` files
 
-## 6. Understand commands before running them
+Do not reconstruct package counts, breed counts, routes, or release standing
+from memory. Re-read the target ref.
 
-Command names are not evidence of their scope. Inspect `Justfile`, `Makefile`,
-and the relevant `package.json` before relying on a shortcut.
+## 4. Versioning and package identity
+
+The project uses CalVer `vYY.M.D`.
+
+- The patch component is the day of the month.
+- It never increments beyond 31.
+- Same-day variants append `a`, `b`, `c`, and so on.
+
+Never hardcode a release version in reusable scripts when a manifest is the
+source of truth.
+
+For npm release evidence, verify the exact artifact identity being published.
+The repository root package is private and is not automatically the published
+artifact.
+
+For Cargo release work, verify workspace version consistency from current
+manifests before making a release claim.
+
+`wasm4pm-compat` is crates.io-only in this repository. Never add it as a path
+dependency.
+
+## 5. Understand commands before relying on them
+
+Command names do not prove their scope. Inspect `Justfile`, `Makefile`, and the
+relevant package manifest before using a shortcut as evidence.
 
 Current important semantics include:
 
-- `just test` delegates to `make test`, which currently runs the test command
-  inside `wasm4pm/`. It is not the complete TypeScript monorepo suite.
-- `just test-full` delegates to `make verify-ts`. Despite the name,
-  `verify-ts` intentionally excludes multiple packages with WASM-build or V8
-  worker constraints. Read the recipe and run excluded packages independently
-  when they are in scope.
-- `just ci` expands to `polish`, `test-full`, and `anticheat`. It inherits the
-  exclusions of `test-full`.
-- root `pnpm test` currently delegates to recursive integration tests across
-  workspaces with test scripts.
+- `just test` delegates to `make test`, which runs tests in `wasm4pm/`.
+- `just test-full` delegates to `make verify-ts`.
+- `make verify-ts` intentionally excludes packages with known WASM-build or V8
+  worker constraints.
+- `just ci` expands to `polish`, `test-full`, and `anticheat`, so it inherits the
+  `test-full` exclusions.
+- root `pnpm test` runs recursive integration tests for workspaces with tests.
 - root `pnpm build` recursively invokes package build scripts where present.
-- `just ggen-gate` runs generation conformance and drift checks; it is not a
-  substitute for unrelated unit or integration tests.
+- `just ggen-gate` validates generated cognition surfaces and receipt bridging.
 - `pnpm run docs:check` runs Markdown lint and link checking.
-- `pnpm run release:full` is a release-evidence workflow. Use it only when
-  release closure is in scope and follow `GEMINI.md`.
+- `pnpm run release:full` is a release-evidence workflow, not an ordinary unit
+  test command.
 
-For the primary language boundaries, the baseline commands are:
+Baseline language gates are:
 
 ```bash
 pnpm build && pnpm test
@@ -235,107 +170,131 @@ wasm-pack build --target nodejs --out-dir pkg -- --features wasm
 cargo check --target wasm32-unknown-unknown --features wasm
 ```
 
-These are starting points, not universal proof commands. Narrow validation to
-the package and boundary changed by the task, then expand as required.
+These are starting points, not universal proof commands. Validate the package,
+boundary, target, and artifact changed by the task.
 
-Run Vitest from the owning package directory unless the package scripts prove
-otherwise. For a requested file-level result, execute those exact files and
-preserve per-file pass, fail, and skipped counts.
+## 6. Test discipline
 
-Do not derive executed counts from source patterns such as:
+### 6.1 Run the owning test boundary
+
+Run Vitest from the owning package directory unless the package scripts prove a
+different invocation is canonical.
+
+For requested file-level results, execute the exact files and preserve:
+
+- passed tests;
+- failed tests;
+- skipped or conditional tests;
+- process exit status;
+- relevant runtime prerequisites.
+
+Do not derive executed counts using source grep patterns. Forms such as
+`it.runIf`, `it.skip`, parameterized tests, and helper wrappers make static
+counting unreliable.
+
+### 6.2 A printed pass count is not always a clean pass
+
+A process that prints passing tests and then exits non-zero from `SIGABRT`, a
+worker crash, or teardown failure is not a clean pass. Report both facts.
+
+Several TypeScript packages can pass in isolation but crash when loaded in
+parallel with WASM consumers. Follow the independent package commands recorded
+in `Makefile` when those packages are in scope.
+
+Some tests require a Node-target WASM bundle. Build the declared target before
+classifying loader failures as product failures.
+
+Conditional tests may skip when Ollama, browsers, datasets, credentials, or
+other live dependencies are unavailable. Skipped is neither passed nor failed.
+
+### 6.3 Tests must have teeth
+
+A proof-oriented test must fail when the claimed property is intentionally
+broken.
+
+For paper-grounded cognition tests:
+
+- assert the published value with an appropriate tolerance;
+- assert provenance, not merely output shape or matching strings;
+- fail loudly when a required fixture is missing;
+- do not silently skip absent fixtures;
+- tamper with the implementation or fixture, confirm failure, then restore it.
+
+A breed test passing does not automatically prove the algorithm is correct.
+
+### 6.4 Known implementation gotchas
+
+- `WasmLoader` is a singleton; reset it between tests.
+- Use `to_js_str()` where host-style JSON conversion fails on wasm32.
+- Verify current wasm32 field names rather than copying host-only examples.
+- Cognition randomness must use the repository seeded RNG path.
+- `CognitionBreed::postconditions` currently takes `(&self, input, output)`.
+- Deterministic collections must not rely on `HashMap` iteration order.
+- Environment variables use the `WASM4PM_*` prefix.
+- Exit codes are currently: 0 success, 1 configuration, 2 source, 3 execution,
+  4 partial, and 5 system.
+
+## 7. Generated cognition surfaces
+
+The following files are generated and must not be hand-edited:
+
+- `crates/wasm4pm-cognition/src/breeds/registration.rs`
+- `crates/wasm4pm-cognition/breeds/registry.json`
+- `packages/cognition/src/breed-ids.ts`
+- `crates/wasm4pm-cognition/tests/paper_pointers_generated.rs`
+- `crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs`
+
+Change the admitted source in `ggen/ontology/breeds.ttl`, run `ggen sync`, and
+validate with:
 
 ```bash
-grep -c "test(\|it("
+just ggen-gate
 ```
 
-That misses forms such as `it.runIf`, `it.skip`, parameterized tests, and
-helper wrappers. Source enumeration is not test execution.
+Breed admission is evidence-derived.
 
-## 7. Known validation boundaries
+A breed may become `PARTIAL_ALIVE` only when the required measured evidence is
+present and the generation gates project that standing. Do not hand-flip
+`registry.json`.
 
-The repository contains real environment-sensitive failure modes. Report them
-precisely rather than normalizing them into green or red folklore.
+Paper-pointer assertions and decoys must remain separated from production
+source as required by the anti-cheat gates.
 
-- Several TypeScript packages can pass in isolation but crash when loaded in
-  parallel workers with WASM consumers. Follow the independent commands
-  documented in `Makefile` for packages excluded by `verify-ts`.
-- Some TypeScript tests require a Node-target WASM bundle. Build the declared
-  target before treating loader failures as product failures.
-- A process that prints passing test counts and then exits non-zero from
-  `SIGABRT` is not a clean pass. Report both the observed test counts and the
-  process failure.
-- Conditional tests may skip when Ollama, browsers, datasets, or another live
-  dependency is unavailable. Skipped is neither passed nor failed.
-- Machine-specific absolute paths in tests or scripts are defects in
-  reproducibility unless explicitly part of a fixture.
-- A source comment describing a fixed defect is not proof that a stale test
-  expecting the defect remains valid. Reconcile test intent with current
-  source behavior.
-- Node filesystem persistence used in tests is not browser persistence.
-- A static route that validates an operation catalog is not an execution route
-  unless it invokes the executor.
-- Semantic event replay is not cryptographic receipt-chain verification unless
-  the implementation actually verifies the chain.
-
-When a requested boundary cannot run, record the exact missing prerequisite or
-failed command. Do not replace it with a weaker check without labeling the
-substitution.
-
-## 8. Source and documentation verification
+## 8. Source and architecture truth
 
 Documentation must distinguish:
 
 - implemented behavior;
 - intended architecture;
 - generated surfaces;
-- test fixtures;
+- fixtures and test substitutes;
 - proposed work;
-- unsupported or broken composition paths.
+- unsupported behavior;
+- broken composition paths.
 
 For source-grounded documentation:
 
-1. Fetch or read the current source at the target ref.
+1. Read current source at the target ref.
 2. Cite exact paths and symbols.
 3. Verify every claimed route, script, adapter, and generated file exists.
-4. Re-run searches after editing to catch renamed or deleted paths.
-5. Re-read the final document from the branch after the write.
-6. Date re-verification records when a task requires a point-in-time audit.
+4. Trace runtime edges through actual calls, not file-name proximity.
+5. Re-run searches after editing to catch renamed or removed paths.
+6. Re-read the committed document after the write.
 
-A diagram can be internally coherent and still be false. Every edge that
-claims runtime execution must correspond to an implemented call path. Dashed
-or labeled future edges must not be presented as admitted behavior.
+Specific distinctions that must remain explicit:
 
-## 9. Editing through the GitHub connector
+- Node filesystem persistence is not browser persistence.
+- A static capability catalog is not an execution route.
+- Semantic event replay is not receipt-chain verification.
+- A receipt emitter existing in source does not prove end-to-end composition.
+- Two architectural rails are not one runtime until a composition root wires
+  them together.
 
-Use this protocol when no local checkout is available:
+## 9. Multi-agent and git discipline
 
-1. Confirm repository, branch, path, and user-requested scope.
-2. Fetch the target file from the exact branch.
-3. Capture its current blob SHA.
-4. Construct the complete replacement content.
-5. Update the file sequentially using that SHA.
-6. Re-fetch the file from the branch and inspect the result.
-7. Compare the branch against its base and audit changed paths.
-8. Update the existing pull request when its title or body no longer describes
-   the full diff.
+Multiple agent fleets may edit this repository simultaneously.
 
-Important consequences:
-
-- Each connector update may create a separate commit.
-- There is no staging area.
-- `git status` cannot be claimed.
-- Generated local artifacts do not exist unless a separate execution boundary
-  created and committed them.
-- A successful connector response is evidence of a remote write, not evidence
-  that tests ran.
-
-Do not create fake sandbox download links for connector file references.
-
-## 10. Editing in a local checkout
-
-Preserve the user's work and the work of other agents.
-
-Before changing files:
+Before changing files in a local checkout:
 
 ```bash
 git status -sb
@@ -345,90 +304,174 @@ git diff -- <intended-paths>
 
 Rules:
 
+- Preserve unrelated user and agent changes.
+- Use a dedicated worktree when concurrent edits may collide.
+- Treat other agents' output as untrusted until reviewed.
+- Do not rebase shared fleet branches.
+- Integrators union branches explicitly with merge commits where required.
 - Never use `git add .` for mixed or evidence-sensitive work.
 - Stage explicit intended paths.
-- Do not revert unrelated changes.
-- Do not overwrite another fleet's active work because a test changed between
-  runs.
-- Use a dedicated worktree when multiple agents are active.
-- Do not rebase shared fleet branches; integrators union branches explicitly.
 - Inspect the staged diff before committing.
-- Never commit credentials, `.env` files, private keys, PII, host-specific
-  secrets, or accidental generated bulk output.
+- Do not claim a clean tree without checking it.
+- Never merge, publish, delete branches, or rewrite history without explicit
+  authorization.
 
-If command failures change without corresponding edits, assume concurrent work
-or an unstable boundary until proven otherwise.
+If diagnostics change between runs without corresponding edits, investigate
+concurrent work or an unstable runtime before modifying unrelated code.
 
-## 11. Generated surfaces are not ordinary source
+## 10. Security and artifact hygiene
 
-The following cognition files are ggen-rendered and must not be hand-edited:
+Never commit:
 
-- `crates/wasm4pm-cognition/src/breeds/registration.rs`;
-- `crates/wasm4pm-cognition/breeds/registry.json`;
-- `packages/cognition/src/breed-ids.ts`;
-- `crates/wasm4pm-cognition/tests/paper_pointers_generated.rs`;
-- `crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs`.
+- `.env` files;
+- private keys;
+- credentials or tokens;
+- PII;
+- host-specific secrets;
+- accidental large generated output;
+- unredacted sensitive logs.
 
-Change the admitted source in `ggen/ontology/breeds.ttl`, run `ggen sync`, and
-validate with `just ggen-gate`.
+Data crossing host-to-WASM boundaries must be validated before execution.
+Malformed, recursive, oversized, or adversarial inputs must produce typed
+refusals rather than panics or silent truncation where the contract requires it.
 
-Breed standing is evidence-derived. Do not hand-flip registry state.
+Receipts and telemetry must not expose credentials, PII, or sensitive local
+paths.
 
-`wasm4pm-compat` is crates.io-only in this repository. Never add it as a path
-dependency.
+## 11. Evidence and receipt rules
 
-## 12. Coding and proof invariants
+A receipt must contain real, recomputable values.
 
-Preserve these repository-level invariants:
+Invalid evidence includes placeholders such as:
 
-- WASM refusal is authoritative; wrappers must not convert it into success.
-- Failures intended as domain refusals use typed refusal codes, not generic
-  errors or panics.
-- Deterministic surfaces use `BTreeMap`, `BTreeSet`, or explicitly sorted
-  vectors instead of unordered iteration.
-- Cognition randomness uses the repository's seeded RNG path.
-- Tests for paper-grounded behavior assert the published value and provenance,
-  not merely output shape or a matching string.
-- Missing fixtures fail loudly; they do not silently skip.
-- A proof-oriented test must have teeth: demonstrate that an intentional
-  mutation makes it fail, then restore the implementation.
-- `WasmLoader` singleton state is reset between tests.
-- wasm32 JSON conversion follows the current `CLAUDE.md` guidance rather than
-  host-only helpers.
-- Real-boundary claims are not replaced by mocks, sample JSON, or manual props.
+- `sample`;
+- `fake`;
+- `stub`;
+- `TODO`;
+- `assume success`;
+- `calculated_at_runtime` without the calculated value;
+- a missing artifact described only in prose.
 
-For release, receipt, algorithm-closure, and publish work, `GEMINI.md` is
-binding. Do not duplicate its full evidence matrix here.
+Where applicable, release evidence must bind to:
 
-## 13. GitHub and pull-request discipline
+- package identity and version;
+- current commit;
+- tarball name and integrity;
+- WASM bundle hash;
+- examples manifest hash;
+- reachability evidence hash;
+- behavior evidence hash;
+- release certificate hash.
 
-- Stay on the user-specified branch unless the task requires another branch.
-- Default new agent pull requests to draft unless the user explicitly requests
-  ready-for-review.
-- Never merge without an explicit user instruction.
-- Before reporting scope, compare the branch with the target base and inspect
-  the complete changed-file list.
-- Tie CI status to the current head SHA.
-- Update a pull-request description when new work materially changes its scope.
-- Do not claim a single commit when connector-backed multi-file updates created
-  several commits.
-- Do not claim a clean tree from remote metadata.
+Hash values must be recomputable by a verifier.
 
-## 14. Completion language
+Enumeration is not execution. A representative receipt is not global evidence.
+A certificate is not closure unless its embedded hashes recompute against the
+current artifacts and commit.
 
-For ordinary implementation and documentation work, report one of:
+## 12. Algorithm closure requirements
 
-- **Completed**: requested changes are committed or otherwise delivered, and
-  all required available validation passed.
-- **Partial**: useful requested work was delivered, but a stated validation or
-  boundary remains incomplete.
+Do not count an algorithm as behavior-verified unless the claimed surface has:
+
+- a registry entry;
+- dispatcher reachability;
+- the claimed CLI or API surface;
+- the required WASM export, or a structured reason for its absence;
+- at least one positive case;
+- at least one typed negative case;
+- at least one relevant invariant or property case;
+- no panic, unhandled exception, silent fallback, or false success;
+- recomputable evidence and receipt hashes.
+
+Formal claims such as soundness or deadlock freedom require a recomputable
+witness, not only a Boolean result.
+
+Global closure requires global evidence. Do not infer complete behavior closure
+from one algorithm, one receipt, one matrix row, or one happy path.
+
+## 13. Release and publish discipline
+
+Release work must prove the complete claimed chain, including the relevant
+subset of:
+
+- registry to dispatcher;
+- dispatcher to CLI or API;
+- CLI or API to WASM;
+- example to receipt;
+- behavior case to evidence file;
+- evidence file to release certificate;
+- package source to tarball;
+- tarball to clean install;
+- published artifact to post-publish verification.
+
+Before publishing:
+
+- verify the exact package target;
+- inspect `npm pack` output and tarball contents;
+- ensure no secrets or unintended files are included;
+- install from the tarball in a clean temporary project;
+- bind the release certificate to the tarball;
+- prove package identity consistency across all evidence.
+
+Do not recursively publish every workspace unless every package is intentionally
+part of the release and has its own evidence.
+
+For release-readiness claims, preserve actual output for the commands that are
+in scope, including as applicable:
+
+```bash
+git status --short
+git rev-parse HEAD
+pnpm run release:full
+pnpm run release:algorithm-reachability
+pnpm run release:algorithm-behavior
+pnpm run release:verify-algorithm-behavior
+pnpm run examples:gate
+pnpm run cli:parity
+pnpm run prepublish:pack-smoke
+pnpm run release:certificate
+npm pack --dry-run
+npm publish --dry-run
+cargo check
+cargo test --workspace
+cargo publish --dry-run --allow-dirty --workspace
+```
+
+Inspect the actual evidence files from disk with tools such as `cat`, `jq`,
+`find`, and a hash utility. Do not reconstruct artifact JSON in prose.
+
+Prove that verification has teeth by corrupting a disposable copy of an
+artifact, confirming the verifier rejects it, and restoring the valid state.
+
+## 14. State classification
+
+For ordinary work, use:
+
+- **Completed**: the requested deliverable exists and required available checks
+  passed.
+- **Partial**: useful work was delivered, but a required check or boundary
+  remains incomplete.
 - **Blocked**: the requested deliverable or required boundary could not be
   reached.
 
-For release and proof-closure tasks, use the state taxonomy and exact proof
-block required by `GEMINI.md`.
+For release and proof-closure work, use the most precise state:
 
-A final response should identify:
+- **Closed**
+- **PrePublishOnly**
+- **EvidenceIncomplete**
+- **InfrastructureBlocked**
+- **RegistryAdmissionBlocked**
+- **PackageIdentityBlocked**
+- **BehaviorEvidenceMissing**
+- **RuntimeBoundaryFailed**
+- **ReceiptTheaterDetected**
+- **NeedsHumanCredential**
+- **BlockedFromClosure**
+
+Never say `Closed` unless every required real boundary passed, receipts verify,
+and the evidence binds to the current commit.
+
+A final report should identify, as applicable:
 
 ```text
 State:
@@ -437,44 +480,45 @@ Files changed:
 Commands actually executed:
 Validation observed:
 Commands not executed:
+Artifacts and receipts:
 Remaining blockers:
 Pull request:
+Next command:
 ```
 
-Omit irrelevant fields, but never hide an unexecuted required check.
+## 15. Stop conditions
 
-## 15. Forbidden agent behavior
-
-Never:
-
-- pretend a local checkout exists;
-- describe connector source inspection as a shell command execution;
-- invent test output, hashes, receipts, line counts, or file-system state;
-- call declared test cases passed tests;
-- use a generic green workflow as proof of a different exact command;
-- cite stale paths without re-verifying them;
-- hand-edit generated cognition surfaces;
-- convert intended architecture into claims of implemented runtime behavior;
-- silently broaden the changed-file scope;
-- stage all files blindly;
-- publish, merge, delete branches, or mutate unrelated issues without explicit
-  authorization;
-- say “closed,” “verified,” or “fully working” when the required real boundary
-  was unavailable.
-
-## 16. Stop conditions
-
-Stop the current execution layer and report the result when any of these occur:
+Stop the current execution layer and report the exact result when any of these
+occur:
 
 - Rust diagnostics matching `error[E`;
 - test output containing `FAILED`;
 - `FM-5 violation`;
-- a panic or `SIGABRT`;
+- panic or `SIGABRT`;
 - new diagnostics introduced by the change;
 - receipt verification failure;
 - generated-surface drift;
+- package identity mismatch;
 - missing credentials required for a protected operation;
 - unavailable infrastructure required by the claim;
-- branch or blob-SHA drift that makes a write unsafe.
+- branch, working-tree, or blob-SHA drift that makes a write unsafe.
 
 A blocker is a valid result. Fabricated closure is not.
+
+## 16. Forbidden agent behavior
+
+Never:
+
+- invent command output, hashes, receipts, counts, or filesystem state;
+- call declared tests passed tests;
+- cite stale paths without re-verifying them;
+- convert intended architecture into implemented behavior;
+- hand-edit generated cognition surfaces;
+- hide skipped tests or non-zero process exits;
+- silently broaden changed-file scope;
+- overwrite unrelated work;
+- stage all files blindly;
+- use a generic green workflow as proof of a different command;
+- publish or merge without explicit authorization;
+- say `verified`, `fully working`, or `closed` when the required boundary was
+  unavailable.
