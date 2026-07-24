@@ -18,6 +18,7 @@
 //! - [`breeds::strips`] — STRIPS-style means-ends planner (Fikes & Nilsson 1971)
 //! - [`breeds::hearsay`] — Hearsay-II blackboard architecture (Erman & Lesser 1980)
 //! - [`session`] — receipted, state-carrying compound cognition sessions
+//! - [`interview`] — InterviewAssist cognition runtime core
 //! - [`interview_assist`] — bounded InterviewAssist consumer protocol
 //! - [`autosystems::cost_law`] — traditional + replacement cost-law evaluators
 //! - [`autosystems::dominance`] — Pareto dominance over scored candidates
@@ -40,6 +41,7 @@ pub mod autosystems;
 pub mod breeds;
 pub mod evidence;
 pub mod ghf;
+pub mod interview;
 pub mod interview_assist;
 pub mod log_adapter;
 pub mod observability;
