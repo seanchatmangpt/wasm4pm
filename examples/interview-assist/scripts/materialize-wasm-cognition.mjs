@@ -4,8 +4,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Tracked fresh-checkout bootstrap. Materialize into this package's node_modules
-// so cognition-adapter.ts's bare server-side require resolves identically in a
-// local install and in CI.
+// so cognition-adapter.ts uses the same bare server-side require in local and
+// CI installations.
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const packageDir = resolve(scriptDir, "..");
 const repositoryRoot = resolve(packageDir, "../..");
