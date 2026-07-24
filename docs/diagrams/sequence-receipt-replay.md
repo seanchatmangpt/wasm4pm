@@ -1,70 +1,99 @@
-# Sequence: receipt chain emission and replay
+# Sequence: receipt primitives, live-chain gaps, and replay
 
-Source: `examples/interview-assist/lib/domain/receipt-emitter.ts` and `lib/domain/replay.ts`, read
-directly this session.
+**Re-verified:** 2026-07-24.
 
-## Emission (live session)
+## Source commands executed
 
-```mermaid
-sequenceDiagram
-    participant Session as Live session (reducer/adapters)
-    participant Emitter as emitReceipt()
-    participant Checksum as checksum-adapter.ts (real BLAKE3)
-
-    Note over Session: 5 real manufacturing-chain steps, fixed by the ontology:<br/>admission → cognition-run → sandbox-execution →<br/>test-result → accessibility-projection
-
-    Session->>Emitter: emitReceipt("admission", {used, generated, timestamp, prevReceipt: undefined})
-    Emitter->>Checksum: hash(canonical JSON of step + inputs + output + timestamp + prevReceipt.checksum)
-    Checksum-->>Emitter: real BLAKE3 hex checksum
-    Emitter-->>Session: TransitionReceipt #1 (chain head — no prevReceipt)
-
-    Session->>Emitter: emitReceipt("cognition-run", {..., prevReceipt: receipt#1})
-    Emitter->>Checksum: hash(... + prevReceipt#1.checksum)
-    Checksum-->>Emitter: checksum
-    Emitter-->>Session: TransitionReceipt #2 (derivedFrom/relation = receipt#1.checksum)
-
-    Note over Session,Emitter: same pattern repeats for sandbox-execution,<br/>test-result, accessibility-projection —<br/>each receipt's derivedFrom/relation = prior receipt's checksum
+```text
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/page.tsx ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/api/receipt/route.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/receipt.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/receipt-emitter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/reducer-with-receipts.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/domain/replay.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/tests/scenarios/persistence-and-replay.test.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/tests/scenarios/tamper-detection.test.tsx ref=docs/v26.7.24-planning-diagramming
 ```
 
-`emitReceipt` is a pure function of its arguments — it never reads `Date.now()` internally, so it's
-deterministically unit-testable. The caller supplies a real timestamp and the immediately-prior
-receipt at the moment the real action happened.
-
-## Replay (re-derivation, never trust)
+## Receipt primitive
 
 ```mermaid
 sequenceDiagram
-    participant Log as Persisted event log
-    participant Replay as replaySession()
-    participant Reducer as sessionReducer (same instance used live)
+    participant Caller
+    participant Emitter as emitReceipt(step, data)
+    participant Hash as checksum-adapter.ts
 
-    Replay->>Replay: current = { status: "admitted", value: { phase: INITIAL_PHASE } }
-    loop for each event in eventLog, in order
-        Replay->>Reducer: sessionReducer(current.value, event)
-        Reducer-->>Replay: AdmissionResult (admitted or refused)
-        alt event refused
-            Note over Replay: stop folding — a refused event never mutated<br/>state in the live session either
-        else event admitted
-            Replay->>Replay: current = result, continue
+    Caller->>Emitter: step, used, generated, timestamp, prevReceipt?
+    Emitter->>Emitter: canonical stable-key JSON
+    Emitter->>Hash: BLAKE3(payload)
+    Hash-->>Emitter: checksumValue
+    alt prevReceipt supplied
+        Emitter->>Emitter: derivedFrom = relation = previous checksum
+    else chain head
+        Note over Emitter: no derivedFrom or relation
+    end
+    Emitter-->>Caller: TransitionReceipt
+```
+
+The primitive is deterministic with respect to its arguments. The caller supplies the timestamp and prior receipt.
+
+## Current live wiring — not one continuous chain
+
+```mermaid
+flowchart LR
+    A["Admission<br/>page calls sessionReducer directly"]
+    C["Cognition<br/>prevReceipt = current last receipt"]
+    S["Sandbox run<br/>/api/run receives no prevReceipt"]
+    T["Tests<br/>/api/test receives current last receipt"]
+    X["Accessibility settings<br/>page mutates state directly"]
+    F["Finish session<br/>separate event-label BLAKE3 hash"]
+
+    A -.->|"no admission receipt"| C
+    C -->|"cognition receipt may append"| S
+    S -.->|"new chain head"| T
+    T -->|"test receipt may chain from sandbox head"| X
+    X -.->|"no accessibility receipt"| F
+```
+
+The intended ontology order is:
+
+```text
+admission → cognition-run → sandbox-execution → test-result → accessibility-projection
+```
+
+The receipt types and emitters support that order, but `app/page.tsx` does not currently actuate it end to end. TICKET-056 is therefore **BUILD_BROKEN at integration**, not merely unverified.
+
+## Replay and tamper detection actually exercised by the scenarios
+
+```mermaid
+sequenceDiagram
+    participant Store as FilesystemEventLogStore
+    participant Replay as replaySession()
+    participant Reducer as sessionReducer()
+    participant Hash as getChecksum().hashHex()
+
+    Store-->>Replay: persisted event payloads
+    loop each event in order
+        Replay->>Reducer: current state + event
+        Reducer-->>Replay: admitted or refused
+        alt refused
+            Note over Replay: stop folding at first refusal
         end
     end
-    Replay-->>Replay: final AdmissionResult
+    Replay-->>Hash: JSON.stringify(final AdmissionResult)
+    Hash-->>Replay: BLAKE3 final-state hash
 ```
 
-Given an **untampered** log, `replaySession`'s output exactly reproduces the live session's final
-state (acceptance-step/3, acceptance-step/4). Given a log with **any** event payload altered,
-re-running `isLegalTransition` (via `sessionReducer`) independently re-derives a result that
-diverges from the untampered replay whenever the alteration changes an admitted transition's
-legality or the final phase reached — this divergence is the exact mechanism TICKET-049 (tamper
-detection) depends on: the replayed final receipt's checksum won't match the original's.
+The persistence and tamper scenarios compare BLAKE3 hashes of the replayed final `AdmissionResult`. A single-field tamper that makes a transition illegal causes replay to return `refused`, which changes that final-state hash. The scenarios do **not** replay or independently validate a `TransitionReceipt` chain.
 
-No separate replay-specific transition table exists — `replaySession` reuses the same
-`sessionReducer`/`isLegalTransition` the live session used, per Architecture Decision 12: replay
-must independently revalidate every transition, never trust a persisted final state.
+## Terminology fence
 
-## See Also
+- **Transition receipt chain:** the `emitReceipt()` structure with `derivedFrom`/`relation` links. The live five-step chain is not currently complete.
+- **Replay final-state hash:** a BLAKE3 digest over `JSON.stringify(replaySession(...))`, computed inside the scenario tests. This is the current tamper-detection mechanism.
+- **Finish-session receipt:** `/api/receipt` hashes the page's event-label list. It is separate from both mechanisms above.
 
-- [sequence-cognition.md](sequence-cognition.md), [sequence-sandbox-execution.md](sequence-sandbox-execution.md) — the two steps that emit into this chain
-- [unfinished-work.md](unfinished-work.md) — item 2 (TICKET-056 hardening: full end-to-end chain
-  emission for one real session not yet re-confirmed) and item 1 (048/049, which depend on this
-  replay/tamper mechanism, not yet confirmed passing)
+## See also
+
+- [Sandbox execution sequence](sequence-sandbox-execution.md)
+- [C4 component](c4-component.md)
+- [Unfinished work](unfinished-work.md)
