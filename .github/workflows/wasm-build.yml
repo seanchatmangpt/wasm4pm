@@ -5,11 +5,21 @@ on:
     branches: [main]
     paths:
       - 'wasm4pm/**'
+      - 'packages/cognition/**'
+      - 'crates/wasm4pm-cognition/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'scripts/bootstrap-cognition-wasm.sh'
       - '.github/workflows/wasm-build.yml'
   pull_request:
     branches: [main]
     paths:
       - 'wasm4pm/**'
+      - 'packages/cognition/**'
+      - 'crates/wasm4pm-cognition/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'scripts/bootstrap-cognition-wasm.sh'
       - '.github/workflows/wasm-build.yml'
   release:
     types: [published]
@@ -19,6 +29,7 @@ jobs:
     name: Build WASM and Run Tests
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         node-version: [22.x, 24.x]
@@ -48,11 +59,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          cache: pnpm
+
+      - name: Bootstrap cognition WASM packages
+        shell: bash
+        run: bash scripts/bootstrap-cognition-wasm.sh
 
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: .
 
       - name: Build WASM (bundler target)
         run: pnpm run build
@@ -94,6 +108,7 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}-node${{ matrix.node-version }}
           path: wasm4pm/coverage
+          if-no-files-found: ignore
 
       - name: Upload documentation
         uses: actions/upload-artifact@v4
@@ -101,3 +116,4 @@ jobs:
         with:
           name: docs
           path: wasm4pm/docs
+          if-no-files-found: error
