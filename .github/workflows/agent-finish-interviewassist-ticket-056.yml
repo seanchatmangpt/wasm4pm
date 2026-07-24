@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - agent/interviewassist-ticket-056-final
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 permissions:
   contents: write
@@ -14,6 +21,9 @@ concurrency:
 
 jobs:
   patch-validate-push:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'agent/interviewassist-ticket-056-final') ||
+      github.head_ref == 'agent/interviewassist-ticket-056-final'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
