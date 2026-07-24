@@ -1,31 +1,32 @@
 {
-  "name": "@wasm4pm/interview-assistant",
-  "version": "26.7.1",
+  "name": "interviewassist",
+  "version": "0.1.0",
+  "description": "A local-first, accessible technical interview environment that observes interview events and automatically presents verified assistance.",
   "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:e2e:visual": "next build && playwright test",
-    "test:e2e:visual:update": "next build && playwright test --update-snapshots",
-    "test:e2e:visual:ui": "next build && playwright test --ui",
-    "test:e2e:visual:report": "playwright show-report"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "postinstall": "node scripts/materialize-wasm-cognition.mjs"
   },
   "dependencies": {
-    "@monaco-editor/react": "4.7.0",
-    "@wasm4pm/cognition": "workspace:*",
-    "monaco-editor": "0.56.0",
+    "blake3": "^2.1.7",
     "next": "16.2.11",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "wasm4pm-cognition-web": "file:../../packages/cognition/pkg-web"
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "@types/node": "^20.19.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "typescript": "^5.9.0"
+    "vitest": "^2.1.9",
+    "typescript": "^5.6.3",
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7"
   }
 }
+
