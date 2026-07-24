@@ -9,7 +9,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  GGEN_REV: 555f857ac5dcf236eba0121d0833bb764a782e3a
+  GGEN_REV: b82ea9ef848a5164dd6a09bb76539908fde41922
   COMPAT_REV: 9bffd6625b7e55ea2b5e25d3370fc33b797e6745
 
 jobs:
@@ -59,10 +59,9 @@ jobs:
           git diff --exit-code -- ocel/reports/evidence.ttl \
             || { echo "::error::ocel/reports/evidence.ttl is stale — regenerate via 'python3 scripts/project_evidence.py'"; exit 1; }
 
-  # Full sync conformance: build the exact ggen source revision, run `ggen sync`
-  # against the pinned sibling ontology pack, and assert every projected source
-  # remains byte-identical. Building from the pinned source checkout avoids the
-  # invalid `cargo install` boundary for an unpublished workspace binary.
+  # Full sync conformance: build an immutable clean-checkout ggen revision,
+  # run `ggen sync` against the pinned sibling ontology pack, and assert every
+  # projected source remains byte-identical.
   ggen-sync:
     name: ggen sync conformance
     runs-on: ubuntu-latest
