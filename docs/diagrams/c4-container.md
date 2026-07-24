@@ -1,62 +1,83 @@
 # C4: Container
 
-Source: `ls examples/interview-assist/app/api/` → `cognition`, `receipt`, `run`, `sandbox`, `test`
-(5 real route directories, confirmed this session); `lib/wasm/wasm4pm-cognition/` (materialized
-WASM package, per `scripts/materialize-wasm-cognition.mjs`); `lib/domain/` (reducer + receipt +
-state-projection layer, all real generated/hand-authored TS).
+**Re-verified:** 2026-07-24.
+
+## Source commands executed
+
+```text
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/page.tsx ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/api/cognition/route.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/api/run/route.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/api/test/route.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/api/receipt/route.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/api/sandbox/[capability]/route.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/cognition-adapter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/sandbox-executor.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/checksum-adapter.ts ref=docs/v26.7.24-planning-diagramming
+```
 
 ```mermaid
 flowchart TB
-    Candidate(["Candidate<br/>(browser)"])
+    Candidate(["Candidate browser"])
 
     subgraph NextApp["Next.js App Router application"]
-        Client["Client components<br/>(\"use client\")<br/>page.tsx, SessionHeader,<br/>SessionWorkspace, CognitionPanel, EditorShell"]
+        Client["Client page and components<br/>app/page.tsx"]
 
-        subgraph APIRoutes["API routes (server-only)"]
-            R_COG["app/api/cognition/route.ts"]
-            R_RUN["app/api/run/route.ts"]
-            R_SANDBOX["app/api/sandbox/[capability]/route.ts"]
-            R_TEST["app/api/test/route.ts"]
-            R_RECEIPT["app/api/receipt/route.ts"]
+        subgraph Routes["Server route handlers"]
+            CogRoute["POST /api/cognition"]
+            RunRoute["POST /api/run"]
+            TestRoute["POST /api/test"]
+            ReceiptRoute["POST /api/receipt"]
+            CatalogRoute["GET/POST /api/sandbox/[capability]<br/>static catalog validation only"]
         end
 
-        Domain["Domain layer<br/>reducer.ts, phase-transitions.ts,<br/>receipt-emitter.ts, replay.ts,<br/>policy-check.ts (server-only, non-client-bundled)"]
+        Reducer["Client-safe domain reducer<br/>sessionReducer"]
+        CogAdapter["Server cognition adapter"]
+        SandboxAdapter["Server sandbox executor"]
+        ChecksumAdapter["Server BLAKE3 adapter"]
+        StaticOps["Static OPERATIONS table"]
     end
 
-    WasmPkg[["lib/wasm/wasm4pm-cognition<br/>(materialized wasm-pack --target nodejs<br/>package, required() by cognition-adapter.ts)"]]
-    SandboxProc[["Subprocess<br/>python3 / rustc / pytest / cargo,<br/>spawned by sandbox-executor.ts"]]
-    OllamaSvc[["Local Ollama service<br/>(ollama-adapter.ts)"]]
-    BrowserStore[["Browser storage<br/>(persistence-adapter.ts)"]]
+    Cognition[["Externalized Node/WASM package<br/>wasm4pm-cognition"]]
+    Proc[["Local subprocesses<br/>python3 / rustc / pytest / cargo"]]
 
     Candidate <--> Client
-    Client -->|"POST /api/cognition"| R_COG
-    Client -->|"POST /api/run, /api/sandbox/*, /api/test"| R_RUN
-    Client -->|""| R_SANDBOX
-    Client -->|""| R_TEST
-    Client -->|"GET/POST /api/receipt"| R_RECEIPT
+    Client --> Reducer
+    Client --> CogRoute
+    Client --> RunRoute
+    Client --> TestRoute
+    Client --> ReceiptRoute
 
-    R_COG --> Domain
-    R_RUN --> Domain
-    R_SANDBOX --> Domain
-    R_TEST --> Domain
-    R_RECEIPT --> Domain
-
-    R_COG -->|"require('wasm4pm-cognition')"| WasmPkg
-    R_RUN --> SandboxProc
-    R_SANDBOX --> SandboxProc
-    R_TEST --> SandboxProc
-    Domain -.->|"self-play, outside session critical path"| OllamaSvc
-    Client -->|"replay / persist"| BrowserStore
+    CogRoute --> CogAdapter --> Cognition
+    RunRoute --> SandboxAdapter --> Proc
+    TestRoute --> SandboxAdapter
+    ReceiptRoute --> ChecksumAdapter
+    CatalogRoute --> StaticOps
 ```
 
-Note (grounded, from `cognition-adapter.ts`'s own module doc, read this session): the WASM package
-is required by its real `node_modules` package name (`"wasm4pm-cognition"`), not a relative path —
-a real Turbopack bundling bug was found and fixed live when a relative `require()` broke the
-package's internal `__dirname`-relative `.wasm` asset load. `next.config.ts`'s
-`serverExternalPackages` depends on that package-name resolution to keep this module out of the
-client bundle.
+## Route semantics
 
-## See Also
+| Route | Real behavior re-verified from source |
+|---|---|
+| `/api/cognition` | Calls `runCognition()` server-side and maps typed outcomes to 200/422/503. |
+| `/api/run` | Calls the real subprocess executor with a caller-supplied capability/files request. |
+| `/api/test` | Builds visible/hidden pytest files server-side, then calls the same real executor with `run_pytest`. |
+| `/api/receipt` | Computes a separate BLAKE3 hash over the supplied session event labels. |
+| `/api/sandbox/[capability]` | Looks up a static operation and returns `status: "accepted"`; it does not call `sandbox-executor.ts`. |
 
-- [c4-context.md](c4-context.md) — one level up
-- [c4-component.md](c4-component.md) — one level down, inside the Next.js app
+## Materialization status
+
+`cognition-adapter.ts` requires `wasm4pm-cognition` by bare package name and `next.config.ts` externalizes it. However, the branch reads for both of these previously cited paths returned 404:
+
+```text
+examples/interview-assist/scripts/materialize-wasm-cognition.mjs
+examples/interview-assist/lib/wasm/wasm4pm-cognition/package.json
+```
+
+`examples/interview-assist/package.json` still names the missing script as `postinstall`. A pre-materialized local environment may contain the package, but fresh-checkout reproducibility is not proven by the tracked branch state inspected here.
+
+## See also
+
+- [C4 context](c4-context.md)
+- [C4 component](c4-component.md)
+- [Sandbox execution sequence](sequence-sandbox-execution.md)
