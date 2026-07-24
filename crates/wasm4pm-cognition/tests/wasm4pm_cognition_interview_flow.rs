@@ -278,7 +278,7 @@ fn live_cognition_path_does_not_require_ollama() {
         .expect("environment mutex");
 
     let names = ["OLLAMA_HOST", "OLLAMA_BASE_URL", "OLLAMA_API_BASE"];
-    let previous: Vec<_> = names.iter().map(|name| (*name, std::env::var(name).ok())).collect();
+    let previous: Vec<_> = names.iter().map(|name| (*name, std::env::var(*name).ok())).collect();
     for name in names {
         std::env::set_var(name, "http://127.0.0.1:9");
     }
