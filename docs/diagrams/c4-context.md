@@ -1,33 +1,49 @@
 # C4: System Context
 
-Source: `examples/interview-assist/app/api/` (5 real routes), `lib/adapters/` (real external
-integrations: `cognition-adapter.ts` → wasm4pm-cognition WASM, `sandbox-executor.ts` → local
-subprocess, `ollama-adapter.ts` → local Ollama, `persistence-adapter.ts` → browser storage).
+**Re-verified:** 2026-07-24.
+
+## Source commands executed
+
+```text
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/app/page.tsx ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/cognition-adapter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/sandbox-executor.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/ollama-adapter.ts ref=docs/v26.7.24-planning-diagramming
+GitHub.fetch_file repository_full_name=seanchatmangpt/wasm4pm path=examples/interview-assist/lib/adapters/persistence-adapter.ts ref=docs/v26.7.24-planning-diagramming
+```
 
 ```mermaid
 flowchart TB
     Candidate(["Candidate<br/>(person)"])
 
-    subgraph System["InterviewAssist (Next.js app)"]
-        App["InterviewAssist Session App"]
+    subgraph System["InterviewAssist — Next.js application"]
+        App["Candidate-facing session UI<br/>plus server route handlers"]
     end
 
-    Cognition[["wasm4pm-cognition WASM module<br/>(wasm-pack --target nodejs build,<br/>Eliza breed, real Ed25519-signed output)"]]
-    Sandbox[["Local subprocess sandbox<br/>(python3 / rustc / pytest / cargo test)"]]
-    Ollama[["Local Ollama<br/>(self-play worker only,<br/>outside the live session critical path)"]]
-    Storage[["Browser storage<br/>(localStorage / IndexedDB<br/>via persistence-adapter.ts)"]]
+    Cognition[["wasm4pm-cognition Node/WASM package<br/>Eliza currently wired"]]
+    Sandbox[["Local OS subprocesses<br/>python3 / rustc / pytest / cargo"]]
+    Ollama[["Local Ollama service<br/>self-play only; outside live-session critical path"]]
+    NodeFs[["Local filesystem JSON store<br/>Node/Vitest persistence substitute"]]
 
-    Candidate -->|"submits utterances,<br/>writes/runs code,<br/>confirms tracks"| App
-    App -->|"real cognition_run call<br/>(intent + rule catalog)"| Cognition
-    Cognition -->|"selected + explanation<br/>+ Ed25519 signature"| App
-    App -->|"real compile/execute/test<br/>via child_process.spawn"| Sandbox
-    Sandbox -->|"stdout/stderr/exitCode"| App
-    App -->|"self-play delta generation<br/>(outside critical path)"| Ollama
-    App -->|"persist/replay session event log"| Storage
+    Candidate -->|"utterance, track confirmation,<br/>code, run/test actions"| App
+    App -->|"server-side cognition_run"| Cognition
+    Cognition -->|"selected + explanation + signature<br/>or typed refusal/unavailable outcome"| App
+    App -->|"authorized compile/execute/test"| Sandbox
+    Sandbox -->|"stdout / stderr / exit code"| App
+    App -.->|"offline self-play scenarios"| Ollama
+    App -.->|"scenario/test persistence only"| NodeFs
 ```
 
-## See Also
+## Boundary corrections
 
-- [c4-container.md](c4-container.md) — one level down
-- [sequence-cognition.md](sequence-cognition.md) — the cognition boundary crossing in detail
-- [sequence-sandbox-execution.md](sequence-sandbox-execution.md) — the sandbox boundary crossing
+- The persistence adapter is explicitly implemented with Node filesystem I/O as a stand-in. It is **not** current `localStorage` or IndexedDB integration.
+- The live page does not call the persistence adapter. Filesystem persistence is exercised by scenario tests.
+- The cognition adapter requires the bare package name `wasm4pm-cognition`. This diagram treats it as a runtime dependency, not a proven tracked in-repository artifact; the previously cited materialization script/package paths were absent from this branch when fetched.
+- Ollama remains outside the candidate-facing request path. The self-play scenario conditionally calls it when the local service is reachable.
+
+## See also
+
+- [C4 container](c4-container.md)
+- [Cognition sequence](sequence-cognition.md)
+- [Sandbox sequence](sequence-sandbox-execution.md)
+- [Unfinished work](unfinished-work.md)
