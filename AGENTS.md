@@ -1,521 +1,480 @@
-# AGENTS.md — Release and Proof Discipline
+# AGENTS.md — ChatGPT Operating Contract for wasm4pm
 
-## Rationalizing the Law
+This file is the repository-wide operating contract for ChatGPT and other
+OpenAI agents working on `wasm4pm`.
 
-This project is an **Autonomic Process Mining System**. To achieve self-healing, self-optimization, and verified trust, we require that every action produce a cryptographic trace. The "Laws" below ensure that our system's claims are not just prose, but mathematically verifiable artifacts. We prioritize **High Engineering Standards** to enable **High Autonomy**.
+It is intentionally about **how to work truthfully in the available agent
+environment**. Project architecture and command details live in `CLAUDE.md`.
+Release and proof-closure doctrine lives in `GEMINI.md`.
 
-## One-Line Law
+A more specific `AGENTS.md` in a subdirectory overrides this file for work
+under that directory.
 
-No receipt, no claim. No real boundary, no proof. No correct refusal, no closure. No invariant, no trust. No trace, no truth.
+## 1. First principle
 
-## Sovereign Execution Authority
+A claim must not exceed the evidence available in the current environment.
 
-The WASM runtime is the final arbiter of truth. Execution is a sovereign act.
+Keep these states separate:
 
-1. **Law of the Kernel**: If the WASM kernel refuses an input (e.g., `Refused`), that verdict is absolute and binding. No TypeScript wrapper or CLI flag shall override the Kernel's refusal.
-2. **Authority of the Receipt**: The cryptographic receipt emitted by the WASM boundary is the ONLY acceptable proof of execution.
-3. **Immutability of Outcome**: Once a receipt is generated and hashed, the truth it represents is immutable. Any change to the logic requires a new WASM binary, a new hash, and a new proof.
-
-## The Contributor's Lifecycle (DX Workflow)
-
-To navigate these requirements effectively, follow this three-stage lifecycle:
-
-| Stage | Goal | Tooling | Outcome |
-|-------|------|---------|---------|
-| **1. Design** | Chicago TDD | `pnpm test` | Failing test (Red) |
-| **2. Implement** | Surgical Change | `cargo check` / `tsc` | Passing test (Green) |
-| **3. Evidence** | Generate Proof | `pnpm run release:full` | Artifacts on disk |
-| **4. Validate** | Self-Audit | `wpm doctor` | Ready for Closure |
-
-## Observability and Telemetry Discipline
-
-Every lawful execution MUST be observable through high-fidelity telemetry.
-
-1. **Trace Binding**: Every receipt (e.g., `.receipt.json`) MUST include a `trace_id` field that binds the cryptographic proof to the distributed trace that generated it.
-2. **Span Content**: Every significant algorithm transition MUST emit an OpenTelemetry span. Spans MUST include:
-   - `algorithm.name`
-   - `run.id`
-   - `execution.profile`
-   - `input.hash` and `output.hash`
-3. **Correct Refusal Telemetry**: A "Correct Refusal" MUST NOT be swallowed or treated as a generic error. It MUST emit a span with `status.code = ERROR` and the specific refusal code (e.g., `MALFORMED_EVENT_LOG`) in the `error.code` attribute.
-4. **No Silent Drops**: If the OTel exporter drops spans (backpressure), the task state is `EvidenceIncomplete`. Closure requires 100% span delivery for the critical path.
-
-## Prime Directive
-
-Do not optimize for the smallest passing change.
-
-This repository uses Combinatorial Maximalism: every meaningful feature, release, algorithm, route, and test must prove both successful behavior and correct refusal behavior through real boundaries and receipts.
-
-## Deterministic Calculus & Linear Memory Sanctuary
-
-Truth is manufactured within the sanctuary of isolated linear memory.
-
-1. **The Sanctuary Rule**: WASM linear memory is an isolated domain. All state transitions within this domain MUST be provably free from side effects of the host environment (no direct syscalls, no unmanaged entropy, no global clocks).
-2. **The Execution Calculus**: Every execution must be a pure function: `f(Binary_Hash, Input_Hash, Seed, Params) -> (Output, Receipt_Hash)`.
-3. **Rank-1 Determinism**: All algorithms (except those explicitly marked as stochastic) MUST satisfy bit-exact identity across runs. Stochastic algorithms MUST satisfy bit-exact identity given the same seed.
-4. **No Hidden State**: No execution shall rely on hidden or unreceipted state. If a transition depends on previous outcomes, those outcomes MUST be provided as cryptographically bound inputs.
-
-A task is not complete because code was changed.
-A task is complete only when the relevant evidence artifacts exist, verify, and bind to the current commit.
-
-## State Classification Table
-
-Before claiming completion, classify your work:
-
-| State | Meaning | Action |
-|-------|---------|--------|
-| **Closed** | All boundaries pass, receipts verify, artifacts committed. | Submit PR. |
-| **PrePublishOnly** | Local work complete, blocked by publish step. | Prepare for release. |
-| **EvidenceIncomplete** | Code works but artifacts/proofs are missing. | Run evidence commands. |
-| **InfrastructureBlocked**| Blocked by external services (Supabase, npm). | Document blocker. |
-| **ReceiptTheaterDetected**| Artifacts exist but fail verification or are fake. | Fix verification logic. |
-
-## Forbidden Completion Patterns
-
-Never claim completion from:
-
-- walkthrough.md
-- prose summaries
-- sample JSON
-- placeholder hashes
-- hidden command output
-- one happy-path test
-- skipped runtime boundary
-- local-only success
-- a passing unit test that bypasses the real product path
-- future-tense statements such as “will be produced after publish”
-- narrative phrases such as “fully closed,” “ready,” or “verified” without artifact proof
-
-If the proof is not visible from disk, command output, or app UI, the task is not closed.
-
-## Required State Classification
-
-Every final response must include a state classification.
-
-Use one of:
-
-- Closed
-- PrePublishOnly
-- InfrastructureBlocked
-- RegistryAdmissionBlocked
-- ReceiptTheaterDetected
-- BehaviorEvidenceMissing
-- RuntimeBoundaryFailed
-- NeedsHumanCredential
-- BlockedFromClosure
-
-Never say Closed unless all required real-boundary checks pass and receipts verify.
-
-## Receipt Rules
-
-A receipt must contain real, recomputable values.
-
-Invalid receipt values include:
-
-- ...
-- placeholder
-- sample
-- fake
-- stub
-- verified_via_gate
-- calculated_at_runtime
-- tarball_not_found
-- TODO
-- assume success
-
-Every release receipt must bind to:
-
-- package name
-- package version from package.json
-- current git commit
-- tarball name
-- tarball integrity or hash
-- WASM bundle hash where applicable
-- examples manifest hash
-- behavior evidence hash
-- reachability evidence hash
-
-Every receipt hash must be recomputable by a verifier.
-
-## Algorithm Evidence Rules
-
-Do not count an algorithm as verified unless all of the following are true:
-
-- registry entry exists
-- TypeScript dispatch exists
-- CLI surface exists where claimed
-- WASM export exists where required, or absence has a structured reason
-- **Totality:** The algorithm handles the entire valid input space; all edge cases result in either a valid output or a typed refusal.
-- **Positive Evidence:** At least one positive case passes with a recomputable receipt.
-- **Negative Evidence:** At least one negative case fails correctly with a typed refusal code.
-- **Algebraic Invariant:** At least one mathematical property (e.g., Symmetry, Identity, Monotonicity, or Idempotency) is verified via property-based sampling.
-- **Witness Generation:** For claims of formal properties (e.g., Soundness, Deadlock-freedom), the receipt includes a recomputable witness (e.g., a reachability graph hash or firing sequence).
-- failure uses a typed failure code
-- no panic, unhandled exception, silent fallback, or false success occurs
-- behavior evidence receipt exists
-- behavior evidence hash recomputes
-
-The release must include:
-
-- ALGORITHM_REACHABILITY_EVIDENCE.v${VERSION}.json
-- ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json
-- ALGORITHM_BEHAVIOR_MATRIX.v${VERSION}.md
-- algorithm behavior receipts
-- updated RELEASE_CERTIFICATE.v${VERSION}.json
-
-## Correct Failure Is Success
-
-A correct refusal is a successful boundary operation.
+- **Observed**: source, metadata, logs, or artifacts were read.
+- **Executed**: a command was actually run in a local checkout.
+- **Changed**: a file, branch, issue, or pull request was actually modified.
+- **Inferred**: a conclusion was derived from observed evidence.
+- **Blocked**: the required boundary could not be reached.
 
 Examples:
 
-- malformed log refuses with MALFORMED_EVENT_LOG
-- empty event log refuses with EMPTY_EVENT_LOG
-- missing activity key refuses with MISSING_ACTIVITY_FIELD
-- missing timestamp refuses with MISSING_TIMESTAMP_FIELD
-- invalid model handle refuses with INVALID_MODEL_HANDLE
-- unsupported profile refuses with UNSUPPORTED_PROFILE
-- receipt mismatch refuses with RECEIPT_HASH_MISMATCH
+- Reading a Vitest file proves that test cases are declared. It does not prove
+  that they pass.
+- Reading a `package.json` script proves what the script currently expands to.
+  It does not prove that the script succeeds.
+- A GitHub connector update is a real remote commit. It is not a local working
+  tree edit.
+- A green workflow proves only the commands and commit covered by that
+  workflow.
+- A receipt file proves that bytes exist. It does not prove that the receipt
+  recomputes or binds to the current commit.
 
-**The Refusal Coverage Rule:** A refusal path is not considered "proven" until a receipt exists for that specific typed failure code. Do not treat a generic 400/500 as a correct refusal.
+The compact law is:
 
-Do not convert refusals into generic errors.
-Do not treat thrown panics as correct failure.
+> No execution claim without execution. No closure claim without verified
+> evidence. No hidden assumption presented as repository fact.
 
-## Real Boundary Rule
+## 2. Instruction precedence
 
-Tests must exercise the real boundary for the claim being made.
+Use this order when instructions conflict:
 
-For release work, prove:
+1. Platform, safety, and tool constraints.
+2. The user's current request and explicit scope.
+3. The nearest path-specific `AGENTS.md`.
+4. This root `AGENTS.md`.
+5. `CLAUDE.md` for repository architecture, commands, and coding rules.
+6. `GEMINI.md` for release, receipt, and proof-closure requirements.
+7. Other repository documentation and historical notes.
 
-- registry to dispatcher
-- dispatcher to CLI
-- CLI to WASM where applicable
-- example to receipt
-- behavior case to evidence file
-- evidence file to certificate
-- package source to npm tarball
-- tarball to clean install
+Do not assume this file was automatically injected into the session. Read it
+from the target ref before substantial repository work. Read the nearest
+nested `AGENTS.md` as well when one exists.
 
-For app work, prove:
+## 3. Establish the operating mode first
 
-- service or hook path
-- local persistence
-- sync queue
-- Supabase boundary
-- Edge Function where applicable
-- receipt row
-- receipt verification
-- app-visible receipt surface
+Before editing or making validation claims, determine which environment is
+actually available.
 
-Do not replace real boundaries with mocks, fake clients, manual props, or sample results.
+### 3.1 Local-checkout mode
 
-## Version Rule
+A local checkout exists and shell commands can inspect and execute it.
 
-Never hardcode release versions in reusable scripts.
+Establish:
+
+```bash
+pwd
+git rev-parse --show-toplevel
+git status -sb
+git branch --show-current
+git remote -v
+```
+
+Then verify required tools individually. Do not assume `gh`, `ggen`,
+`wasm-pack`, `just`, Node, pnpm, Rust, browsers, containers, or network access
+are installed merely because the repository uses them.
+
+Only local-checkout mode can directly prove:
 
-Version source of truth:
+- working-tree state;
+- local diffs and staged files;
+- command exit codes;
+- locally generated artifacts;
+- exact test output;
+- local receipt recomputation.
 
-- package.json
+### 3.2 GitHub-connector mode
+
+The repository is accessible through a connected GitHub tool, but there may be
+no local checkout.
+
+This mode can usually:
+
+- fetch known files and refs;
+- search indexed repository source;
+- inspect commits, pull requests, issues, changed paths, and workflow state;
+- create or replace UTF-8 repository files;
+- create real commits on an existing branch;
+- create or update pull requests.
+
+This mode cannot by itself:
+
+- run pnpm, Vitest, Cargo, `just`, `make`, or shell commands;
+- inspect an uncommitted working tree;
+- generate build artifacts from source;
+- prove that a command succeeds;
+- claim that literal `grep`, `find`, `ls`, or verifier commands were run.
 
-Scripts must compute:
-
-- VERSION
-- TAG=v${VERSION}
-- RELEASE_CERTIFICATE.v${VERSION}.json
-- POST_PUBLISH_RECEIPT.v${VERSION}.json
-
-A CLI version argument is allowed only if it matches package.json.
-
-## Publish Rule
-
-Do not publish from the monorepo root unless that is the intended npm artifact.
-
-Before publish, prove:
-
-- git status is clean
-- package name is correct
-- npm pack target is correct
-- package size and file count are expected
-- tarball contents inspected
-- no secrets, env files, private files, or unintended artifacts are included
-- pack smoke installs from tarball in a clean temp project
-- release certificate binds to the tarball
-
-Do not use recursive publish unless every workspace package is intended to publish and every package has its own release certificate.
-
-## Required Evidence Commands
-
-When claiming release readiness, show actual output for:
-
-- `git status --short`
-- `git rev-parse HEAD`
-- `node -p "require('./package.json').version"`
-- `pnpm run release:full`
-- `pnpm run release:algorithm-behavior`
-- `pnpm run release:verify-algorithm-behavior`
-- `pnpm run examples:gate`
-- `pnpm run examples:verify-receipts`
-- `pnpm run cli:parity`
-- `pnpm run prepublish:pack-smoke`
-- `pnpm run release:pack-contents`
-- `pnpm run release:certificate`
-- `npm pack --dry-run`
-- `npm publish --dry-run`
-- `cargo check && cargo test --lib --workspace`
-- `cargo publish --dry-run --allow-dirty --workspace`
-
-Also show actual files from disk:
-
-- RELEASE_CERTIFICATE.v${VERSION}.json
-- ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json
-- ALGORITHM_REACHABILITY_EVIDENCE.v${VERSION}.json
-- examples manifest
-- representative positive behavior receipt
-- representative structured-failure receipt
-- representative invariant receipt
-
-## Boundary Proof Verification (Ostar Doctor & Auditor)
-
-Before claiming release readiness, you MUST prove that the verifiers actually work by intentionally corrupting an artifact (e.g. modifying a receipt hash) and verifying that the `release:verify-algorithm-behavior` and/or `verify-receipt-authenticity.ts` scripts correctly reject the corrupted state. This prevents "Receipt Theater".
-
-## Blocker Handling
-
-If infrastructure fails, do not proceed to the next layer.
-
-Examples:
-
-- Supabase unavailable means InfrastructureBlocked
-- Kong unreachable means InfrastructureBlocked
-- npm auth failure means RegistryAdmissionBlocked
-- npm package name mismatch means PackageIdentityBlocked
-- invalid hash in receipt means ReceiptTheaterDetected
-- hidden command output means EvidenceIncomplete
-
-A blocker is not an excuse to continue. It is the current lawful outcome.
-
-## Sovereign Execution & Security Discipline
-
-### One-Line Law of Sovereignty
-Execution is only sovereign if it is isolated, immutable, and verified.
-
-### Credential & PII Protection
-- **Zero-Credential Commits:** Never stage or commit `.env`, `*.key`, or private configuration.
-- **Sanitized Artifacts:** Receipts and observability logs MUST NOT contain credentials, PII, or sensitive host-specific metadata.
-- **Redaction-by-Default:** Algorithms processing sensitive fields must redact data in output artifacts unless explicitly configured for "High-Fidelity Debugging" (which blocks release).
-
-### Zero-Trust Boundary Rules
-- **Untrusted Host:** The host environment (Node.js/OS) is untrusted. All data crossing the host-to-WASM boundary MUST be validated by the "Court of Admissibility" (Schema + Typestate) before reaching the Execution Authority.
-- **Adversarial Input Refusal:** Malformed inputs (e.g., recursive XES, payload bombs) MUST be refused with specific failure codes (e.g., `RESOURCE_EXHAUSTED`, `MALFORMED_INPUT`).
-- **Sovereign Bypass:** Any attempt to execute an algorithm outside of the `VALID_TRANSITIONS` or with an unvalidated handle MUST trigger a `SECURITY_HALT`.
-
-## Package Identity Gate
-
-The package identity in all release evidence must match the exact npm artifact being published.
-
-For wasm4pm, the npm package is unscoped:
-
-wasm4pm
-
-Invalid package identities include:
-
-@wasm4pm/kernel
-wasm4pm-monorepo
-@wasm4pm/*
-workspace package aliases
-
-Before claiming release readiness, show:
-
-`node -p "require('./packages/kernel/package.json').name + '@' + require('./packages/kernel/package.json').version"`
-
-Expected:
-
-`wasm4pm@<version>`
-
-The release certificate, reachability evidence, behavior evidence, example receipts, npm pack output, and post-publish receipt must all use the same package identity.
-
-For Cargo (Rust), all workspace members MUST use the exact same version string as the root `Cargo.toml` (which must match `package.json`) to ensure dependency consistency during `cargo publish`. Any mismatch in path dependency versions is a state of `PackageIdentityMismatch`.
-
-If any artifact uses a different package identity, state is PackageIdentityMismatch.
-
-## Evidence Completeness Gate
-
-Do not summarize partial evidence as closure.
-
-A transcript is incomplete if any of the following are true:
-
-- command output is hidden, folded, truncated, or replaced by summaries
-- JSON output is excerpted rather than shown from disk
-- receipt files are described but not printed or verified
-- a directory count is claimed but `find` / `ls` output is not shown
-- a hash is shown but recomputation output is not shown
-- a representative receipt is shown but the full manifest is not shown
-- command output contains duplicated pasted sections
-- command output contains malformed or repeated JSON fragments
-- final grep/placeholder scan output is missing
-- git status is not shown after artifact generation
-- final package identity is not shown from the actual package being published
-
-If evidence is incomplete, final state must be:
-
-EvidenceIncomplete
-
-not:
-
-Closed
-Ready
-Verified
-Sealed
-Admitted
-
-The agent must explicitly say which evidence is missing and provide the next command to obtain it.
-
-## No Representative-Only Closure
-
-Representative receipts are useful for review, but they do not prove global closure.
-
-A representative `dfg.receipt.json` proves only that one algorithm receipt exists.
-
-Do not claim 60/60 behavior closure unless all of the following are shown or verified:
-
-- ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json exists
-- the evidence file contains exactly 60 algorithm rows
-- each row has at least one positive case
-- each row has at least one negative case
-- each row has at least one invariant case
-- each row has an algorithm_evidence_hash
-- the top-level behavior_evidence_hash recomputes
-- `find artifacts/release/algorithm-behavior-receipts -name '*.receipt.json' | wc -l` matches the expected receipt count
-- `release:verify-algorithm-behavior` passes from the committed state
-- RELEASE_CERTIFICATE.v${VERSION}.json embeds the behavior_evidence_hash
-
-Never infer global closure from one representative receipt.
-
-## Required Final Proof Block
-
-For release or evidence tasks, the final response must include this exact proof block.
-
-State:
-<Closed | PrePublishOnly | EvidenceIncomplete | RegistryAdmissionBlocked | ReceiptTheaterDetected | InfrastructureBlocked>
-
-Commit:
-<output of git rev-parse HEAD>
-
-Tree:
-<output of git status --short>
-
-Package:
-<output of node -p "require('./packages/kernel/package.json').name + '@' + require('./packages/kernel/package.json').version">
-
-Commands:
-- <exact command run>: <pass/fail>
-
-Artifacts:
-- <path>: <exists/hash/count>
-
-Receipts:
-- reachability evidence: <hash/count>
-- behavior evidence: <hash/count>
-- examples evidence: <hash/count>
-- release certificate: <hash>
-
-Verifier Output:
-- release:verify-algorithm-behavior: <pass/fail>
-- release:certificate: <pass/fail>
-- placeholder scan: <pass/fail>
-
-Remaining Blockers:
-- <none or exact blocker>
-
-Next Command:
-<single exact command>
-
-## Disk Artifact Rule
-
-When asked to show receipts or evidence, use `cat`, `jq`, `find`, `sha256sum` / `shasum`, and verifier commands against files on disk.
-
-Do not reconstruct JSON in prose.
-Do not paste a manually assembled sample.
-Do not show a representative object and call it the artifact.
-Do not use “summary” as a replacement for the actual file.
-
-Valid examples:
-
-- `cat artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v$(node -p "require('./package.json').version").json`
-- `jq '.algorithms | length' artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json`
-- `jq '.summary' artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json`
-- `find artifacts/release/algorithm-behavior-receipts -name '*.receipt.json' | wc -l`
-- `shasum -a 256 artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json`
-- `pnpm run release:verify-algorithm-behavior`
-
-The only valid source of truth is the file system plus verifier output.
-
-## No Blind Git Add
-
-Never run:
-
-git add .
-
-for release, evidence, certificate, package, or publish work.
-
-Use explicit paths.
-
-Required:
-
-git status --short
+Connector search can time out or omit results. Prefer fetching a known path
+when the path is available. Treat a failed search as incomplete discovery, not
+proof that a file does not exist.
+
+A connector file update is normally a complete-file replacement and creates a
+remote commit immediately. Fetch the current blob SHA immediately before an
+update. Never write the same path concurrently.
+
+### 3.3 Hybrid mode
+
+Both a local checkout and the GitHub connector are available.
+
+Keep them aligned:
+
+- identify the local branch and remote head;
+- fetch before comparing;
+- do not use a stale connector blob SHA after a local push;
+- do not describe connector commits as uncommitted local work;
+- do not describe local changes as pushed until the remote ref confirms them.
+
+Prefer local tools for execution and diffs. Prefer the connector for structured
+pull-request and issue operations.
+
+### 3.4 CI-observation mode
+
+GitHub Actions may provide workflow, job, step, log, and artifact evidence.
+Tie every observation to the exact commit SHA.
+
+CI evidence is bounded by the workflow:
+
+- a generic package test step is not proof that a requested six-file command
+  ran;
+- a queued or in-progress job is not a pass;
+- a successful setup step is not a successful test step;
+- an old green run is not evidence for a newer branch head;
+- a workflow artifact must be inspected before making claims about its
+  contents.
+
+## 4. What commonly works and what commonly does not
+
+The ChatGPT execution host is not a developer laptop and is not guaranteed to
+be stable across sessions.
+
+| Capability | Expected handling |
+|---|---|
+| Fetch a known GitHub file | Usually reliable through the connector |
+| Search repository source | Useful but may time out or be incomplete |
+| Replace a GitHub text file | Reliable when the branch exists and blob SHA is current |
+| Create a connector commit | Real remote write; often one commit per file update |
+| Run repository commands | Requires an actual local checkout and installed tools |
+| Clone from GitHub | Outbound DNS or network access may be unavailable |
+| Use `gh` | The CLI may be absent or unauthenticated |
+| Inspect local files | Impossible when only connector file references exist |
+| Download whole repositories | Not guaranteed through file-oriented connectors |
+| Inspect Actions | Use workflow/job/log data tied to the current SHA |
+| Run work in the background | Not available; complete the current turn or report the blocker |
+
+A known lawful fallback is:
+
+1. Attempt to locate the requested checkout.
+2. Check the required command or CLI once.
+3. If the checkout is absent and cloning fails, stop retrying the same boundary.
+4. Switch to connector-backed source inspection or remote documentation edits.
+5. Mark local execution and disk verification as blocked.
+6. Never invent command output to fill the gap.
+
+In some hosted shells, `rm` is blocked. Use `trash` when available. Do not
+silently substitute destructive commands.
+
+## 5. Repository orientation
+
+Read `CLAUDE.md` before broad implementation work. The current high-level map
+is:
+
+- `wasm4pm/`: Rust/WASM process-mining core;
+- `crates/wasm4pm-cognition/`: cognition breeds and WASM cognition layer;
+- `crates/prolog8/`: Prolog-related runtime;
+- `apps/wasm4pm/`: published TypeScript `wpm` CLI;
+- `crates/wasm4pm-cli/`: Rust development CLI, not the published CLI;
+- `packages/`: TypeScript monorepo packages;
+- `apps/`: applications;
+- `examples/`: runnable examples, including InterviewAssist;
+- `ocel/models/l1/`: OCPN models;
+- `ocel/reports/`: measured fitness and admission evidence.
+
+CalVer uses `vYY.M.D`. The patch component is the day of the month, not an
+incrementing release counter. Same-day variants append a letter.
+
+Do not reconstruct repository facts from memory. Re-read the current target
+ref because architecture, package counts, scripts, and admission standing can
+drift.
+
+## 6. Understand commands before running them
+
+Command names are not evidence of their scope. Inspect `Justfile`, `Makefile`,
+and the relevant `package.json` before relying on a shortcut.
+
+Current important semantics include:
+
+- `just test` delegates to `make test`, which currently runs the test command
+  inside `wasm4pm/`. It is not the complete TypeScript monorepo suite.
+- `just test-full` delegates to `make verify-ts`. Despite the name,
+  `verify-ts` intentionally excludes multiple packages with WASM-build or V8
+  worker constraints. Read the recipe and run excluded packages independently
+  when they are in scope.
+- `just ci` expands to `polish`, `test-full`, and `anticheat`. It inherits the
+  exclusions of `test-full`.
+- root `pnpm test` currently delegates to recursive integration tests across
+  workspaces with test scripts.
+- root `pnpm build` recursively invokes package build scripts where present.
+- `just ggen-gate` runs generation conformance and drift checks; it is not a
+  substitute for unrelated unit or integration tests.
+- `pnpm run docs:check` runs Markdown lint and link checking.
+- `pnpm run release:full` is a release-evidence workflow. Use it only when
+  release closure is in scope and follow `GEMINI.md`.
+
+For the primary language boundaries, the baseline commands are:
+
+```bash
+pnpm build && pnpm test
+cargo check && cargo test
+wasm-pack build --target nodejs --out-dir pkg -- --features wasm
+cargo check --target wasm32-unknown-unknown --features wasm
+```
+
+These are starting points, not universal proof commands. Narrow validation to
+the package and boundary changed by the task, then expand as required.
+
+Run Vitest from the owning package directory unless the package scripts prove
+otherwise. For a requested file-level result, execute those exact files and
+preserve per-file pass, fail, and skipped counts.
+
+Do not derive executed counts from source patterns such as:
+
+```bash
+grep -c "test(\|it("
+```
+
+That misses forms such as `it.runIf`, `it.skip`, parameterized tests, and
+helper wrappers. Source enumeration is not test execution.
+
+## 7. Known validation boundaries
+
+The repository contains real environment-sensitive failure modes. Report them
+precisely rather than normalizing them into green or red folklore.
+
+- Several TypeScript packages can pass in isolation but crash when loaded in
+  parallel workers with WASM consumers. Follow the independent commands
+  documented in `Makefile` for packages excluded by `verify-ts`.
+- Some TypeScript tests require a Node-target WASM bundle. Build the declared
+  target before treating loader failures as product failures.
+- A process that prints passing test counts and then exits non-zero from
+  `SIGABRT` is not a clean pass. Report both the observed test counts and the
+  process failure.
+- Conditional tests may skip when Ollama, browsers, datasets, or another live
+  dependency is unavailable. Skipped is neither passed nor failed.
+- Machine-specific absolute paths in tests or scripts are defects in
+  reproducibility unless explicitly part of a fixture.
+- A source comment describing a fixed defect is not proof that a stale test
+  expecting the defect remains valid. Reconcile test intent with current
+  source behavior.
+- Node filesystem persistence used in tests is not browser persistence.
+- A static route that validates an operation catalog is not an execution route
+  unless it invokes the executor.
+- Semantic event replay is not cryptographic receipt-chain verification unless
+  the implementation actually verifies the chain.
+
+When a requested boundary cannot run, record the exact missing prerequisite or
+failed command. Do not replace it with a weaker check without labeling the
+substitution.
+
+## 8. Source and documentation verification
+
+Documentation must distinguish:
+
+- implemented behavior;
+- intended architecture;
+- generated surfaces;
+- test fixtures;
+- proposed work;
+- unsupported or broken composition paths.
+
+For source-grounded documentation:
+
+1. Fetch or read the current source at the target ref.
+2. Cite exact paths and symbols.
+3. Verify every claimed route, script, adapter, and generated file exists.
+4. Re-run searches after editing to catch renamed or deleted paths.
+5. Re-read the final document from the branch after the write.
+6. Date re-verification records when a task requires a point-in-time audit.
+
+A diagram can be internally coherent and still be false. Every edge that
+claims runtime execution must correspond to an implemented call path. Dashed
+or labeled future edges must not be presented as admitted behavior.
+
+## 9. Editing through the GitHub connector
+
+Use this protocol when no local checkout is available:
+
+1. Confirm repository, branch, path, and user-requested scope.
+2. Fetch the target file from the exact branch.
+3. Capture its current blob SHA.
+4. Construct the complete replacement content.
+5. Update the file sequentially using that SHA.
+6. Re-fetch the file from the branch and inspect the result.
+7. Compare the branch against its base and audit changed paths.
+8. Update the existing pull request when its title or body no longer describes
+   the full diff.
+
+Important consequences:
+
+- Each connector update may create a separate commit.
+- There is no staging area.
+- `git status` cannot be claimed.
+- Generated local artifacts do not exist unless a separate execution boundary
+  created and committed them.
+- A successful connector response is evidence of a remote write, not evidence
+  that tests ran.
+
+Do not create fake sandbox download links for connector file references.
+
+## 10. Editing in a local checkout
+
+Preserve the user's work and the work of other agents.
+
+Before changing files:
+
+```bash
+git status -sb
 git diff --stat
-git diff -- <each changed source file>
-git add <specific intended files>
+git diff -- <intended-paths>
+```
 
-Before committing, confirm no unintended artifacts, temp files, secrets, hidden outputs, local env files, or bulky generated outputs are staged.
+Rules:
 
-## Algorithm Behavior Evidence Closure Rule
+- Never use `git add .` for mixed or evidence-sensitive work.
+- Stage explicit intended paths.
+- Do not revert unrelated changes.
+- Do not overwrite another fleet's active work because a test changed between
+  runs.
+- Use a dedicated worktree when multiple agents are active.
+- Do not rebase shared fleet branches; integrators union branches explicitly.
+- Inspect the staged diff before committing.
+- Never commit credentials, `.env` files, private keys, PII, host-specific
+  secrets, or accidental generated bulk output.
 
-For algorithm behavior evidence, closure requires all four domains:
+If command failures change without corresponding edits, assume concurrent work
+or an unstable boundary until proven otherwise.
 
-1. Reachability
-   - 60/60 registry entries
-   - 60/60 dispatch entries
-   - CLI/WASM mapping as claimed
+## 11. Generated surfaces are not ordinary source
 
-2. Behavior
-   - 60/60 positive cases pass
-   - 60/60 negative cases fail correctly with specific refusal receipts
-   - 60/60 algebraic invariants pass or have structured nondeterministic invariant
-   - 60/60 witness objects verify against output (for formal property claims)
-   - no panic, unhandled exception, silent fallback, or false success
+The following cognition files are ggen-rendered and must not be hand-edited:
 
-3. Receipts
-   - every algorithm row has receipt evidence for success, refusal, and invariant
-   - every evidence hash recomputes
-   - behavior_evidence_hash recomputes
+- `crates/wasm4pm-cognition/src/breeds/registration.rs`;
+- `crates/wasm4pm-cognition/breeds/registry.json`;
+- `packages/cognition/src/breed-ids.ts`;
+- `crates/wasm4pm-cognition/tests/paper_pointers_generated.rs`;
+- `crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs`.
 
-4. Certificate Binding
-   - release certificate embeds reachability hash
-   - release certificate embeds behavior evidence hash
-   - release certificate embeds examples manifest hash
-   - release certificate embeds tarball/package artifact hash
+Change the admitted source in `ggen/ontology/breeds.ttl`, run `ggen sync`, and
+validate with `just ggen-gate`.
 
-If any domain is missing, state is BehaviorEvidenceMissing or EvidenceIncomplete.
+Breed standing is evidence-derived. Do not hand-flip registry state.
 
-## Final Law
+`wasm4pm-compat` is crates.io-only in this repository. Never add it as a path
+dependency.
 
-Enumeration is not execution.
-Representative evidence is not global evidence.
-Summary is not receipt.
-Receipt is not closure unless it verifies from disk and binds to the current commit.
+## 12. Coding and proof invariants
 
-## Final Response Format
+Preserve these repository-level invariants:
 
-Every task response must include:
+- WASM refusal is authoritative; wrappers must not convert it into success.
+- Failures intended as domain refusals use typed refusal codes, not generic
+  errors or panics.
+- Deterministic surfaces use `BTreeMap`, `BTreeSet`, or explicitly sorted
+  vectors instead of unordered iteration.
+- Cognition randomness uses the repository's seeded RNG path.
+- Tests for paper-grounded behavior assert the published value and provenance,
+  not merely output shape or a matching string.
+- Missing fixtures fail loudly; they do not silently skip.
+- A proof-oriented test must have teeth: demonstrate that an intentional
+  mutation makes it fail, then restore the implementation.
+- `WasmLoader` singleton state is reset between tests.
+- wasm32 JSON conversion follows the current `CLAUDE.md` guidance rather than
+  host-only helpers.
+- Real-boundary claims are not replaced by mocks, sample JSON, or manual props.
 
-1. State classification
-2. Commands actually run
-3. Artifacts actually changed
-4. Receipts actually emitted
-5. Verification results
-6. Remaining blockers
-7. Exact next command
+For release, receipt, algorithm-closure, and publish work, `GEMINI.md` is
+binding. Do not duplicate its full evidence matrix here.
 
-Do not say “done” if any blocker remains.
-Do not say “closed” unless all closure gates pass.
+## 13. GitHub and pull-request discipline
+
+- Stay on the user-specified branch unless the task requires another branch.
+- Default new agent pull requests to draft unless the user explicitly requests
+  ready-for-review.
+- Never merge without an explicit user instruction.
+- Before reporting scope, compare the branch with the target base and inspect
+  the complete changed-file list.
+- Tie CI status to the current head SHA.
+- Update a pull-request description when new work materially changes its scope.
+- Do not claim a single commit when connector-backed multi-file updates created
+  several commits.
+- Do not claim a clean tree from remote metadata.
+
+## 14. Completion language
+
+For ordinary implementation and documentation work, report one of:
+
+- **Completed**: requested changes are committed or otherwise delivered, and
+  all required available validation passed.
+- **Partial**: useful requested work was delivered, but a stated validation or
+  boundary remains incomplete.
+- **Blocked**: the requested deliverable or required boundary could not be
+  reached.
+
+For release and proof-closure tasks, use the state taxonomy and exact proof
+block required by `GEMINI.md`.
+
+A final response should identify:
+
+```text
+State:
+Target ref or commit:
+Files changed:
+Commands actually executed:
+Validation observed:
+Commands not executed:
+Remaining blockers:
+Pull request:
+```
+
+Omit irrelevant fields, but never hide an unexecuted required check.
+
+## 15. Forbidden agent behavior
+
+Never:
+
+- pretend a local checkout exists;
+- describe connector source inspection as a shell command execution;
+- invent test output, hashes, receipts, line counts, or file-system state;
+- call declared test cases passed tests;
+- use a generic green workflow as proof of a different exact command;
+- cite stale paths without re-verifying them;
+- hand-edit generated cognition surfaces;
+- convert intended architecture into claims of implemented runtime behavior;
+- silently broaden the changed-file scope;
+- stage all files blindly;
+- publish, merge, delete branches, or mutate unrelated issues without explicit
+  authorization;
+- say “closed,” “verified,” or “fully working” when the required real boundary
+  was unavailable.
+
+## 16. Stop conditions
+
+Stop the current execution layer and report the result when any of these occur:
+
+- Rust diagnostics matching `error[E`;
+- test output containing `FAILED`;
+- `FM-5 violation`;
+- a panic or `SIGABRT`;
+- new diagnostics introduced by the change;
+- receipt verification failure;
+- generated-surface drift;
+- missing credentials required for a protected operation;
+- unavailable infrastructure required by the claim;
+- branch or blob-SHA drift that makes a write unsafe.
+
+A blocker is a valid result. Fabricated closure is not.
