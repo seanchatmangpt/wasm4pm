@@ -1,0 +1,12 @@
+{
+  "extends": "../../examples/interview-assist/tsconfig.json",
+  "include": [
+    "../../examples/interview-assist/app/page.tsx",
+    "../../examples/interview-assist/app/api/admission/route.ts",
+    "../../examples/interview-assist/app/api/accessibility/route.ts",
+    "../../examples/interview-assist/app/api/run/route.ts",
+    "../../examples/interview-assist/tests/scenarios/continuous-receipt-route-chain.test.ts",
+    "../../examples/interview-assist/tests/e2e/ticket-056-continuous-receipt-chain.spec.ts"
+  ],
+  "exclude": ["../../examples/interview-assist/node_modules"]
+}
