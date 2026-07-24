@@ -12,6 +12,7 @@ pub mod admission;
 pub mod authority_broker;
 pub mod blackboard;
 pub mod capability;
+#[allow(clippy::all, clippy::pedantic, clippy::nursery)]
 pub mod composition;
 mod composition_defaults;
 pub mod construct;
