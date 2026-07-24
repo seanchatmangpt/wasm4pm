@@ -12,9 +12,7 @@ pub mod admission;
 pub mod authority_broker;
 pub mod blackboard;
 pub mod capability;
-#[allow(clippy::all, clippy::pedantic, clippy::nursery)]
 pub mod composition;
-mod composition_defaults;
 pub mod construct;
 pub mod event;
 pub mod graph;
@@ -24,3 +22,21 @@ pub mod receipt;
 pub mod self_play;
 pub mod verification;
 pub mod workflow;
+
+pub use composition::{
+    BreedFailure, BreedInput, BreedProposal, CapabilityRequestRefusal, ClosureBreed,
+    CognitiveBreed, CognitivePipeline, CognitivePipelineBuilder, CompositionContext,
+    PipelineEvent, PipelineInput, PipelineOutput, PipelineRefusal,
+};
+
+impl Default for CompositionContext {
+    fn default() -> Self {
+        Self::new(0.0)
+    }
+}
+
+impl Default for CognitivePipelineBuilder {
+    fn default() -> Self {
+        Self::new(0.0)
+    }
+}
