@@ -1,4 +1,4 @@
-name: Export InterviewAssist TICKET-056 page
+name: Apply InterviewAssist TICKET-056 page
 
 on:
   pull_request:
@@ -10,30 +10,37 @@ on:
       - synchronize
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: export-interviewassist-ticket-056
+  group: apply-interviewassist-ticket-056
   cancel-in-progress: true
 
 jobs:
-  export-page:
+  apply-page:
     if: github.head_ref == 'agent/interviewassist-receipt-chain'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/interviewassist-receipt-chain
+          fetch-depth: 0
 
-      - name: Patch live client receipt threading
+      - name: Apply guarded page patch
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
+          page=examples/interview-assist/app/page.tsx
+          if grep -q 'const ADMISSION_TIMEOUT_MS = 10_000;' "$page"; then
+            echo 'page already patched'
+            exit 0
+          fi
+
           python - <<'PY'
           from pathlib import Path
 
-          path = Path('.github/agent/finish_interviewassist_ticket_056.py')
-          text = path.read_text()
+          helper = Path('.github/agent/finish_interviewassist_ticket_056.py')
+          text = helper.read_text()
           old_argument = '    "  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real",'
           new_argument = '''    """  function rejectCognitionProposal(): void {
               setCognitionIntent(null);
@@ -47,16 +54,38 @@ jobs:
 
             async function changeAccessibilityPreference('''
           if text.count(old_argument) != 1 or text.count(old_replacement) != 1:
-              raise SystemExit('temporary patch script drifted before anchor repair')
-          text = text.replace(old_argument, new_argument, 1)
-          text = text.replace(old_replacement, new_replacement, 1)
-          path.write_text(text)
+              raise SystemExit('temporary patch helper drifted')
+          helper.write_text(text.replace(old_argument, new_argument, 1).replace(old_replacement, new_replacement, 1))
           PY
+
           python .github/agent/finish_interviewassist_ticket_056.py
 
-      - name: Export exact patched page
-        uses: actions/upload-artifact@v4
-        with:
-          name: ticket-056-patched-page
-          path: examples/interview-assist/app/page.tsx
-          if-no-files-found: error
+          python - <<'PY'
+          from pathlib import Path
+          page = Path('examples/interview-assist/app/page.tsx')
+          text = page.read_text()
+          duplicate = '''  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real
+
+  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real'''
+          if text.count(duplicate) != 1:
+              raise SystemExit('expected one duplicate comment anchor after guarded patch')
+          page.write_text(text.replace(
+              duplicate,
+              '  /** Real end-to-end receipt: POSTs to app/api/receipt, which calls the real',
+              1,
+          ))
+          PY
+
+      - name: Commit page when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- examples/interview-assist/app/page.tsx; then
+            echo 'no page change to commit'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add examples/interview-assist/app/page.tsx
+          git commit -m 'wire live InterviewAssist receipt chain'
+          git push origin HEAD:agent/interviewassist-receipt-chain
