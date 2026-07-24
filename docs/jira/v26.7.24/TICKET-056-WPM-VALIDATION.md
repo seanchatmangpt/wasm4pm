@@ -1,9 +1,13 @@
 # TICKET-056 — wpm validation boundary
 
-The executable acceptance boundary for the continuous InterviewAssist receipt chain is:
+The executable acceptance boundary for the continuous InterviewAssist receipt chain is the built CLI binary itself:
 
-```text
-wpm lab interview-assist --workspace <repository-root>
+```bash
+node apps/wasm4pm/dist/bin/wpm.js \
+  lab interview-assist \
+  --workspace "$PWD" \
+  --output "$PWD/.wasm4pm/interview-assist/latest.json" \
+  --timeout-ms 150000
 ```
 
 The command starts the real InterviewAssist Next server and crosses these HTTP routes in order:
@@ -14,19 +18,16 @@ The command starts the real InterviewAssist Next server and crosses these HTTP r
 4. `POST /api/test`
 5. `POST /api/accessibility`
 
-It requires a BLAKE3 receipt at every stage, checks each `derivedFrom` and `relation` value against the immediately preceding checksum, requires real Python execution and real pytest to exit zero, and writes the observed session evidence to `.wasm4pm/interview-assist/latest.json` by default.
+It requires a BLAKE3 receipt at every stage, checks each `derivedFrom` and `relation` value against the immediately preceding checksum, requires real Python execution and real pytest to exit zero, and writes the observed session evidence to `.wasm4pm/interview-assist/latest.json`.
 
-The `wpm` middleware separately emits the command receipt and OTEL span. The process-level test invokes the built `wpm` binary with `@wasm4pm/testing`'s `runCli`, then reopens all three durable evidence surfaces from an isolated working directory.
+The normal `wpm` middleware separately emits `.wasm4pm/receipts/latest.json` and the `wpm.lab.interview-assist` OTEL span. CI runs the binary directly and then reopens those durable artifacts. It does not invoke `runCli`, Vitest, a route handler, a reducer, or an adapter as the primary execution boundary.
 
-No route handler, reducer, WASM adapter, subprocess executor, network response, or filesystem result is replaced in this test path.
+The owning CI lane installs the real runtime prerequisites, materializes the Node-target cognition WASM package, builds the CLI dependency closure, runs the command above, and independently checks:
 
-The owning CI lane executes these narrow commands after installing the real runtime prerequisites and materializing the Node-target cognition WASM package:
+- machine-readable CLI stdout;
+- the five-stage session evidence and immediate predecessor chain;
+- real Python and pytest exit codes;
+- the CLI command receipt;
+- the persisted OTEL span.
 
-```bash
-pnpm --filter @wasm4pm/cli... build
-pnpm --filter @wasm4pm/testing... build
-pnpm --filter @wasm4pm/cli typecheck:tests
-pnpm --filter @wasm4pm/cli exec vitest run src/__tests__/interview-assist-cli.test.ts --reporter=verbose
-```
-
-A declared command is not a pass result. Standing changes only when GitHub Actions executes these commands against the exact PR head and the job conclusion is observed.
+A declared command is not a pass result. Standing changes only when GitHub Actions executes the direct binary command against the exact PR head and the job conclusion is observed.
