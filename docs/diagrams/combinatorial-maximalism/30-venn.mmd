@@ -1,0 +1,9 @@
+venn-beta
+    title "Artifact with standing"
+    set Constructed["Constructed"]:24
+    set Authorized["Authorized"]:18
+    set Verified["Verified"]:20
+    union Constructed,Authorized["Lawful candidate"]:12
+    union Constructed,Verified["Evidence-backed candidate"]:14
+    union Authorized,Verified["Safe to actuate"]:10
+    union Constructed,Authorized,Verified["Artifact with standing"]:8

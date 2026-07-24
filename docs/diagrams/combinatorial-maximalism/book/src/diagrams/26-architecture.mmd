@@ -1,0 +1,15 @@
+architecture-beta
+    group observe(cloud)[Observation]
+    group construct(cloud)[Construction]
+    group authority(cloud)[Authority]
+    group execute(cloud)[Execution]
+    group evidence(database)[Evidence]
+    service gateway(server)[Gateway] in observe
+    service graph(server)[Graph Engine] in construct
+    service broker(server)[BRCE Broker] in authority
+    service runner(server)[Bounded Executor] in execute
+    service ledger(database)[Receipt Ledger] in evidence
+    gateway:R --> L:graph
+    graph:R --> L:broker
+    broker:R --> L:runner
+    runner:B --> T:ledger

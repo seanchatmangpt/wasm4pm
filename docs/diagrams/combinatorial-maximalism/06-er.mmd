@@ -1,0 +1,9 @@
+erDiagram
+    SESSION ||--o{ EVENT : records
+    EVENT ||--o| ADMITTED_FACT : yields
+    ADMITTED_FACT ||--o{ DERIVATION : supports
+    DERIVATION ||--o{ CAPABILITY_REQUEST : proposes
+    CAPABILITY_REQUEST ||--o| AUTHORITY_GRANT : may_receive
+    AUTHORITY_GRANT ||--|| ARTIFACT : permits
+    ARTIFACT ||--|| RECEIPT : produces
+    RECEIPT }o--|| SESSION : chains_in

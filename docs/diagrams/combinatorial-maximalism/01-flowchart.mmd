@@ -1,0 +1,12 @@
+flowchart LR
+    O["O: observed world"] --> Gate{"Admit into O*?"}
+    Gate -->|No| Refusal["Typed refusal"]
+    Gate -->|Yes| OStar["O*: bounded observation"]
+    OStar --> Construct["CONSTRUCT reversible graph"]
+    Construct --> Broker["BRCE authority broker"]
+    Broker -->|Denied| Refusal
+    Broker -->|Granted| Act["Actuate artifact"]
+    Act --> Receipt["Receipt + replay evidence"]
+    Receipt --> Standing{"Standing proven?"}
+    Standing -->|Yes| Alive["ALIVE"]
+    Standing -->|No| Partial["PARTIAL_ALIVE / BUILD_BROKEN"]

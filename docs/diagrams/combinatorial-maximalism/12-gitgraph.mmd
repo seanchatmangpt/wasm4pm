@@ -1,0 +1,12 @@
+gitGraph
+    commit id: "observe"
+    branch construct
+    checkout construct
+    commit id: "expand-graph"
+    branch proof
+    checkout proof
+    commit id: "verify-candidate"
+    checkout construct
+    merge proof id: "admit-proof"
+    checkout main
+    merge construct id: "artifact-with-standing"

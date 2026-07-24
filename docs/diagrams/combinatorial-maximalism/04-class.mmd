@@ -1,0 +1,33 @@
+classDiagram
+    class InterviewRuntime {
+        +handleEvent(event) RuntimeOutcome
+    }
+    class EventGateway {
+        +normalize(raw) CanonicalEvent
+    }
+    class AdmissionGate {
+        +admit(event) AdmissionResult
+    }
+    class Blackboard {
+        +facts() AdmittedFact[]
+    }
+    class ConstructEngine {
+        +derive(facts) Candidate[]
+    }
+    class AuthorityBroker {
+        +authorize(capability) Grant
+    }
+    class Executor {
+        +actuate(grant) Artifact
+    }
+    class ReceiptLedger {
+        +append(result) Receipt
+        +verify(chain) bool
+    }
+    EventGateway --> AdmissionGate
+    AdmissionGate --> InterviewRuntime
+    InterviewRuntime *-- Blackboard
+    InterviewRuntime *-- ConstructEngine
+    InterviewRuntime --> AuthorityBroker
+    AuthorityBroker --> Executor
+    Executor --> ReceiptLedger

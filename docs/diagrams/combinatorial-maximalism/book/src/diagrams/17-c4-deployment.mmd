@@ -1,0 +1,11 @@
+C4Deployment
+    title wasm4pm local deployment
+    Deployment_Node(workstation, "Developer workstation", "Local host") {
+        Container(app, "InterviewAssist", "Next.js", "Human interaction surface")
+        Container(cognition, "wasm4pm-cognition", "Rust/WASM", "Admission and construction")
+        Container(executor, "Bounded executor", "Local subprocess", "Authorized effects only")
+        ContainerDb(ledger, "Receipt store", "Filesystem", "Tamper-evident evidence")
+    }
+    Rel(app, cognition, "Calls")
+    Rel(cognition, executor, "Authorizes")
+    Rel(executor, ledger, "Writes receipt")

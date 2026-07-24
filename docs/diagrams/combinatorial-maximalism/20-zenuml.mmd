@@ -1,0 +1,28 @@
+zenuml
+    title wasm4pm law path
+    @Actor Researcher
+    @Boundary EventGateway
+    @Entity Admission
+    @Entity Runtime
+    @Entity Broker
+    @Entity Executor
+    @Database Ledger
+    Researcher->EventGateway: submit observation
+    EventGateway.normalize() {
+        Admission.admit() {
+            if(admitted) {
+                Runtime.construct() {
+                    Broker.authorize() {
+                        if(granted) {
+                            Executor.actuate()
+                            Ledger.appendReceipt()
+                        } else {
+                            Broker->Researcher: typed refusal
+                        }
+                    }
+                }
+            } else {
+                Admission->Researcher: typed refusal
+            }
+        }
+    }

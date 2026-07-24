@@ -1,0 +1,13 @@
+C4Container
+    title wasm4pm container view
+    Person(researcher, "Researcher")
+    System_Boundary(system, "wasm4pm") {
+        Container(cli, "CLI and app surfaces", "Rust / TypeScript", "Accept bounded intent")
+        Container(cognition, "Cognition runtime", "Rust / WASM", "Admits, constructs, and brokers")
+        ContainerDb(ledger, "Receipt ledger", "BLAKE3 chain", "Stores replay evidence")
+    }
+    System_Ext(ggen, "ggen projection engine", "Projects admitted graphs")
+    Rel(researcher, cli, "Uses")
+    Rel(cli, cognition, "Submits canonical events")
+    Rel(cognition, ggen, "Requests projection")
+    Rel(cognition, ledger, "Appends receipts")

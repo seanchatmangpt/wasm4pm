@@ -1,0 +1,11 @@
+C4Dynamic
+    title wasm4pm authorized actuation
+    Person(researcher, "Researcher")
+    System(wasm4pm, "wasm4pm runtime")
+    System_Ext(executor, "Bounded executor")
+    System_Ext(ledger, "Receipt ledger")
+    RelIndex(1, researcher, wasm4pm, "Submit bounded observation")
+    RelIndex(2, wasm4pm, wasm4pm, "Admit and construct")
+    RelIndex(3, wasm4pm, executor, "Broker one authorized effect")
+    RelIndex(4, executor, ledger, "Append result receipt")
+    RelIndex(5, wasm4pm, researcher, "Return artifact and standing")

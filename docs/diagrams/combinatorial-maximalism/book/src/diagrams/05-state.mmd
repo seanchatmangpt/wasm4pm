@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> UNKNOWN
+    UNKNOWN --> PARTIAL_ALIVE: source located
+    PARTIAL_ALIVE --> ALIVE: proof ladder passes
+    PARTIAL_ALIVE --> BUILD_BROKEN: integration fails
+    UNKNOWN --> UNSUPPORTED: capability absent
+    BUILD_BROKEN --> PARTIAL_ALIVE: repair admitted
+    ALIVE --> PARTIAL_ALIVE: drift detected
+    PARTIAL_ALIVE --> BLOCKED: evidence unavailable
+    BLOCKED --> PARTIAL_ALIVE: evidence restored
+    UNSUPPORTED --> PARTIAL_ALIVE: capability implemented

@@ -1,0 +1,26 @@
+requirementDiagram
+    direction LR
+    requirement zero_unreceipted_actuation {
+        id: BRCE-001
+        text: Every actuation is brokered and receipted.
+        risk: high
+        verifymethod: test
+    }
+    functionalRequirement deterministic_replay {
+        id: RPL-001
+        text: Replay independently revalidates every admitted transition.
+        risk: high
+        verifymethod: demonstration
+    }
+    designConstraint bounded_observation {
+        id: OBS-001
+        text: Only bounded canonical observations influence construction.
+        risk: medium
+        verifymethod: analysis
+    }
+    element broker { type: Rust module docref: authority_broker.rs }
+    element runtime { type: composition root docref: interview/runtime.rs }
+    element gateway { type: boundary docref: interview/event.rs }
+    broker - satisfies -> zero_unreceipted_actuation
+    runtime - satisfies -> deterministic_replay
+    gateway - satisfies -> bounded_observation
