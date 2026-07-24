@@ -3,8 +3,13 @@
 //! A cold-start orchestrator and authority broker must refuse work rather
 //! than silently permit it just because nothing has been denied yet.
 
+use wasm4pm_cognition::interview::accessibility::{
+    select_projection, AccessibilityProfile, ProjectionOption,
+};
 use wasm4pm_cognition::interview::authority_broker::{AuthorityBroker, AuthorityClass};
 use wasm4pm_cognition::interview::blackboard::Blackboard;
+use wasm4pm_cognition::interview::construct::construct_obligations;
+use wasm4pm_cognition::interview::graph::SemanticGraph;
 use wasm4pm_cognition::interview::orchestrator::{Orchestrator, Phase};
 use wasm4pm_cognition::interview::receipt::ReceiptLedger;
 
@@ -68,4 +73,42 @@ fn illegal_transition_out_of_created_is_refused_and_recorded() {
     assert_eq!(orchestrator.phase(), Phase::Created);
     assert_eq!(orchestrator.log().len(), 1);
     assert!(!orchestrator.log()[0].admitted);
+}
+
+#[test]
+fn fresh_semantic_graph_starts_empty_and_construct_derives_nothing_from_zero_facts() {
+    let graph = SemanticGraph::new();
+    assert!(graph.is_empty());
+
+    let obligations = construct_obligations(&graph, &[]);
+
+    // Bootstrap: zero admitted facts must never produce a fabricated
+    // default obligation.
+    assert!(obligations.is_empty());
+}
+
+#[test]
+fn accessibility_projector_picks_preferred_default_with_no_prior_projection() {
+    let profile = AccessibilityProfile {
+        unusable: vec![],
+        preferred_default: "high_contrast".to_string(),
+        urgency_threshold: 0.5,
+    };
+    let candidates = vec![
+        ProjectionOption {
+            id: "high_contrast".to_string(),
+            urgency: 0.1,
+        },
+        ProjectionOption {
+            id: "reduced_motion".to_string(),
+            urgency: 0.9,
+        },
+    ];
+
+    // Bootstrap: no `previous` turn to stay stable against yet, but the
+    // projector must still not pick arbitrarily — it honors the profile's
+    // declared preference, not whichever candidate happens to be most urgent.
+    let selected = select_projection(&profile, None, &candidates).expect("has a usable option");
+
+    assert_eq!(selected.id, "high_contrast");
 }

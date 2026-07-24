@@ -14,9 +14,17 @@
 //! [`crate::session::model`] — extracting it is a refactor, not new
 //! coverage).
 
+pub mod accessibility;
 pub mod admission;
 pub mod authority_broker;
 pub mod blackboard;
+pub mod capability;
+pub mod construct;
 pub mod event;
+pub mod graph;
+pub mod hypothesis;
 pub mod orchestrator;
 pub mod receipt;
+pub mod self_play;
+pub mod verification;
+pub mod workflow;

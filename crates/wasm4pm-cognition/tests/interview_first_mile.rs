@@ -4,8 +4,12 @@
 //! observation through, and a well-formed one must land at sequence 1 with
 //! exactly one receipt.
 
+use wasm4pm_cognition::interview::accessibility::{
+    select_projection, AccessibilityProfile, ProjectionOption,
+};
 use wasm4pm_cognition::interview::admission::{AdmissionEngine, RawObservation, RefusalReason};
 use wasm4pm_cognition::interview::blackboard::Blackboard;
+use wasm4pm_cognition::interview::hypothesis::{HypothesisManager, HypothesisOutcome};
 use wasm4pm_cognition::interview::receipt::ReceiptLedger;
 
 fn observation(id: &str, text: &str) -> RawObservation {
@@ -68,4 +72,63 @@ fn empty_admitted_set_does_not_excuse_below_floor_confidence() {
 
     assert_eq!(outcome, Err(RefusalReason::BelowConfidenceFloor));
     assert!(blackboard.admitted().is_empty());
+}
+
+#[test]
+fn hypothesis_manager_abstains_with_no_evidence_yet() {
+    let manager = HypothesisManager::new(
+        vec!["dynamic_programming".to_string(), "graph_search".to_string()],
+        0.5,
+        0.1,
+    );
+
+    // First mile: zero evidence admitted -> never a fabricated leader.
+    assert_eq!(manager.evaluate(), HypothesisOutcome::Abstain);
+}
+
+#[test]
+fn hypothesis_manager_commits_once_a_hypothesis_clears_floor_and_margin() {
+    let mut manager = HypothesisManager::new(
+        vec!["dynamic_programming".to_string(), "graph_search".to_string()],
+        0.5,
+        0.2,
+    );
+
+    manager.add_evidence("dynamic_programming", 0.8);
+
+    assert_eq!(
+        manager.evaluate(),
+        HypothesisOutcome::Committed {
+            id: "dynamic_programming".to_string(),
+            score: 0.8,
+        }
+    );
+}
+
+#[test]
+fn hypothesis_manager_abstains_below_confidence_floor_even_with_a_clear_margin() {
+    // Only one hypothesis, so margin (leader minus 0.0 runner-up) trivially
+    // clears a small threshold -- isolates the confidence-floor check itself.
+    let mut manager = HypothesisManager::new(vec!["only_hypothesis".to_string()], 0.9, 0.05);
+
+    manager.add_evidence("only_hypothesis", 0.3);
+
+    assert_eq!(manager.evaluate(), HypothesisOutcome::Abstain);
+}
+
+#[test]
+fn accessibility_projector_first_projection_has_no_previous_turn_to_stay_stable_against() {
+    let profile = AccessibilityProfile {
+        unusable: vec![],
+        preferred_default: "screen_reader".to_string(),
+        urgency_threshold: 0.5,
+    };
+    let candidates = vec![ProjectionOption {
+        id: "screen_reader".to_string(),
+        urgency: 0.2,
+    }];
+
+    let selected = select_projection(&profile, None, &candidates).expect("has a usable option");
+
+    assert_eq!(selected.id, "screen_reader");
 }
