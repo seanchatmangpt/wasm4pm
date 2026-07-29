@@ -1,8 +1,9 @@
+use crate::discovery_determinism_guards::create_deterministic_rng;
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::{evaluate_edges_fitness, to_js_str};
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::BTreeSet;
@@ -130,7 +131,7 @@ pub fn discover_genetic_algorithm_from_log(
     }
     let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
     let vocab_len = edge_vocab.len();
-    let mut rng = StdRng::seed_from_u64(42);
+    let mut rng = create_deterministic_rng();
 
     let mut population: Vec<(EdgeSet, f64)> = (0..population_size)
         .map(|_| {
@@ -247,7 +248,7 @@ pub fn discover_pso_algorithm_from_log(
     }
     let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
     let vocab_len = edge_vocab.len();
-    let mut rng = StdRng::seed_from_u64(42);
+    let mut rng = create_deterministic_rng();
 
     // Particle layout: (current_position, current_fitness, pbest_position, pbest_fitness).
     // Initial pBest is the spawn position (NOT empty) so that the first pBest blend
@@ -500,7 +501,7 @@ pub fn discover_aco_algorithm_from_log(
     let beta = 2.0;
     let evaporation_rate = 0.1;
     let q = 100.0;
-    let mut rng = StdRng::seed_from_u64(42);
+    let mut rng = create_deterministic_rng();
     let mut best_solution: Option<(EdgeSet, f64)> = None;
 
     // Fix (PR #54 SPC NaN class + classical MMAS bounds): pheromone is bounded into

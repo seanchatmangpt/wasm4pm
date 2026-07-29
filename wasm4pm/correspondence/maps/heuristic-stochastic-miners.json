@@ -9,7 +9,7 @@
       "rust_side": {
         "file": "wasm4pm/src/genetic_discovery.rs",
         "symbol": "discover_genetic_algorithm_from_log (lines 91-170)",
-        "rng": "locally constructed StdRng::seed_from_u64(42) -- reproducible, but diverges architecturally from the documented support::rng::seeded_rng() single-source convention (a flagged inconsistency, not fixed this checkpoint).",
+        "rng": "W4PM-LEAN-GALL-034: migrated to the crate-local wasm4pm::discovery_determinism_guards::create_deterministic_rng() (returns StdRng::seed_from_u64(STOCHASTIC_ALGORITHM_SEED), STOCHASTIC_ALGORITHM_SEED == 42) instead of constructing StdRng::seed_from_u64(42) locally. Drop-in swap, no signature change: the cognition crate's support::rng::seeded_rng() (crates/wasm4pm-cognition/src/breeds/support/rng.rs) returns rand::rngs::SmallRng, a different type from the StdRng this file's helper functions are typed against, and lives in a different crate -- not usable here without a cross-crate dependency and a type-incompatible refactor. discovery_determinism_guards::create_deterministic_rng() is the actual in-crate single-RNG-source function (doc comment: 'All algorithms must use this function to ensure consistency') and is what was migrated to.",
         "tests": "wasm4pm/tests/algorithm_correctness.rs:94-161 -- ga_fitness_in_range, ga_convergence_more_generations_never_worse, ga_deterministic_same_seed, ga_output_structure_valid: real structural/behavioral properties, not just 'did not panic'."
       }
     },
@@ -25,7 +25,7 @@
       "rust_side": {
         "file": "wasm4pm/src/genetic_discovery.rs",
         "symbol": "discover_aco_algorithm_from_log (lines 442-590ish, post-fix)",
-        "rng": "locally constructed StdRng::seed_from_u64(42) -- same architectural inconsistency noted for genetic-algorithm."
+        "rng": "W4PM-LEAN-GALL-034: migrated to discovery_determinism_guards::create_deterministic_rng(), same drop-in swap as genetic-algorithm."
       }
     },
     {
@@ -35,8 +35,8 @@
       "rust_side": {
         "file": "wasm4pm/src/genetic_discovery.rs",
         "symbol": "discover_pso_algorithm_from_log (lines 208-298)",
-        "rng": "locally constructed StdRng::seed_from_u64(42), same architectural inconsistency.",
-        "degenerate_result_risk": "only the input-empty guard exists in core (same shape as ACO pre-fix); no equivalent 'nontrivial input converged to empty result' fallback was added this checkpoint -- flagged, not fixed, since no live test failure demonstrated it as an active (not merely theoretical) risk the way ACO's was.",
+        "rng": "W4PM-LEAN-GALL-034: migrated to discovery_determinism_guards::create_deterministic_rng(), same drop-in swap as genetic-algorithm and ACO.",
+        "degenerate_result_risk": "W4PM-LEAN-GALL-034: checked live via a new parameter-sweep regression test (pso_degenerate_result_sweep, wasm4pm/tests/algorithm_correctness.rs) across swarm_size in 1..=10 and iterations in 1..=10 (100 combinations) on controlled_log() -- discover_pso_algorithm_from_log returned zero degenerate (empty-edge) results across the full sweep. This is a genuine negative finding: PSO's core function was NOT given the ACO-style fallback-to-full-edge-vocabulary fix, because no live failure was found to fix. The input-empty-only guard remains unchanged. The sweep test is kept permanently as regression coverage.",
         "tests": "algorithm_correctness.rs:168-210 -- pso_fitness_in_range, pso_convergence_more_iterations_never_worse, pso_deterministic_same_seed: real numeric/structural properties."
       }
     },
@@ -76,12 +76,12 @@
     }
   ],
   "flagged_defects_out_of_scope": [
-    "genetic-algorithm, ACO, and PSO each construct their own StdRng::seed_from_u64(42) locally in genetic_discovery.rs rather than using the documented support::rng::seeded_rng() single-RNG-source convention -- reproducible today, but architecturally inconsistent; a future refactor to centralize seed control would need to touch 3 call sites.",
-    "PSO's core discover_pso_algorithm_from_log has the same core-level-only-input-empty-guard shape ACO had before this checkpoint's fix -- not demonstrated as a LIVE failure the way ACO's was (no existing test broke), so not fixed here; worth a follow-up check with a wider ant/iteration parameter sweep.",
-    "ILP discovery's name is a terminology mismatch with its implementation (deterministic threshold-sweep + greedy set-cover, not a true ILP solver) -- not a correctness defect, but worth a doc clarification."
+    "RESOLVED this checkpoint (W4PM-LEAN-GALL-034): genetic-algorithm, ACO, and PSO's locally-constructed StdRng::seed_from_u64(42) calls in genetic_discovery.rs were migrated to the crate-local discovery_determinism_guards::create_deterministic_rng() single-RNG-source function. See each algorithm's ledger_entries.*.rust_side.rng field above for the exact rationale (the cognition crate's support::rng::seeded_rng() is a different type, SmallRng, in a different crate, and was not a drop-in fit).",
+    "RESOLVED this checkpoint (W4PM-LEAN-GALL-034), negative finding: PSO's core discover_pso_algorithm_from_log was checked live via a 100-combination parameter sweep (pso_degenerate_result_sweep) and found to NEVER produce an empty-edge result on the nontrivial controlled_log() fixture across swarm_size/iterations in 1..=10 x 1..=10. No fix was applied to the PSO algorithm itself -- this is a confirmed non-defect, not an unverified flag.",
+    "ILP discovery's name is a terminology mismatch with its implementation (deterministic threshold-sweep + greedy set-cover, not a true ILP solver) -- not a correctness defect, but worth a doc clarification. Still flagged, not addressed this checkpoint."
   ],
   "comparison_mode": "receipted_formula_with_cited_proof",
-  "comparison_mode_note": "N/A this checkpoint -- no Lean-side formula exists for any of the 6 algorithms to cite or compare against. This checkpoint's evidence is a confirmed-live defect fix with before/after test results, not a Rust<->Lean differential.",
-  "achieved_evidence_class_summary": "All 6: UNMAPPED (no_lean_coverage), independently re-confirmed. One concrete, test-verified defect fix (ACO core-level degenerate-result guard) delivered as this checkpoint's real contribution.",
-  "not_claimed": "Any Lean correspondence for any of the 6 algorithms (none possible -- no Lean coverage exists); that PSO's analogous risk has been verified live (flagged, not confirmed-live, not fixed); that the RNG-source inconsistency has been resolved (flagged only)."
+  "comparison_mode_note": "N/A this checkpoint -- no Lean-side formula exists for any of the 6 algorithms to cite or compare against. This checkpoint's evidence is a confirmed-live defect fix (018) plus a confirmed-live non-defect and an RNG centralization (034), both with before/after test results, not a Rust<->Lean differential.",
+  "achieved_evidence_class_summary": "All 6: UNMAPPED (no_lean_coverage), independently re-confirmed. 018 delivered one concrete, test-verified defect fix (ACO core-level degenerate-result guard). 034 delivered: (a) a 100-combination PSO parameter sweep confirming no analogous degenerate-result defect exists (negative finding, no algorithm change), kept as permanent regression coverage, and (b) an RNG centralization migrating GA/ACO/PSO to a shared in-crate seeded-RNG constructor, verified as a drop-in swap by unchanged before/after test counts.",
+  "not_claimed": "Any Lean correspondence for any of the 6 algorithms (none possible -- no Lean coverage exists); that PSO's core algorithm was modified (it was not -- the sweep found nothing to fix); that discovery_determinism_guards::create_deterministic_rng() is the same function referenced by the cognition crate's support::rng::seeded_rng() naming convention (it is a distinct, crate-local function with the same role, not that literal symbol)."
 }
