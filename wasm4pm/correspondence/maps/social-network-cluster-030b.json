@@ -1,0 +1,88 @@
+{
+  "algorithm_id": "social-network-cluster-030b",
+  "scope_note": "Re-investigation of 4 W4PM-LEAN-GALL-009 rows marked no_lean_coverage: handover-network, working-together-network, community-detection, correlation-miner. Independently re-searched wasm4pm/src, mfact, and mfw fresh (not by citing 009). 2 of 4 (handover-network, working-together-network) had genuinely tractable graph-construction properties and got new proven Lean theorems + a Rust correspondence harness this checkpoint. The other 2 (community-detection, correlation-miner) remain no_lean_coverage, re-confirmed with re-read source evidence, not merely repeated from 009.",
+  "predecessor": "W4PM-LEAN-GALL-009 (receipts/W4PM-LEAN-GALL-009-lean-coverage-ledger.md), W4PM-LEAN-GALL-020 (receipts/W4PM-LEAN-GALL-020-algorithm-crown.md)",
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "ledger_entries": [
+    {
+      "algorithm": "handover-network",
+      "lean_coverage": "new_harness_built",
+      "verdict": "TRACTABLE -- new Lean theorem written and proven this checkpoint, plus a Rust correspondence harness",
+      "rust_side": {
+        "file": "wasm4pm/wasm4pm/src/social_network.rs",
+        "symbol": "discover_handover_network_from_log (lines 15-58)",
+        "determinism": "fully deterministic -- for each trace, walks consecutive event pairs (resources[i], resources[i+1]) and records a handover edge iff the two resources are present and NOT equal (`if r1 != r2`). No optimization, no search, no RNG."
+      },
+      "lean_carrier": {
+        "file": "mfact/procint/ProcInt/Models/SocialNetwork.lean (new this checkpoint)",
+        "theorem": "handoverEdges_iff: (a, b) ∈ handoverEdges rs ↔ (a, b) ∈ rs.zip rs.tail ∧ a ≠ b",
+        "supporting_lemmas": "handoverEdges_nil, handoverEdges_singleton (no edges below length 2), handoverEdges_irrefl ((a,a) is never an edge -- the a ≠ b guard is load-bearing)",
+        "definitions": "handoverEdges [DecidableEq α] (rs : List α) : List (α × α) := (rs.zip rs.tail).filter (fun p => decide (p.1 ≠ p.2))",
+        "build_verification": "`lake env lean ProcInt/Models/SocialNetwork.lean` from /Users/sac/mfact/procint: exit clean, zero errors, zero warnings. Verified `.lake/packages/mathlib` is present locally (266M) so this is a real typecheck against Mathlib, not a stub.",
+        "no_sorry_no_axiom": "grep for 'sorry'/'axiom' in the file: zero hits. Only standard Lean tactics (unfold, simp, rw) used.",
+        "mfact_commit": "68fb4b393f527ecac178facb565e70b58fd4390a",
+        "file_sha256": "76b1ebbc2a5373ba2266a05e3d7e8e4e49b7f31a440d314a1365fce0a3edea10"
+      },
+      "rust_harness": {
+        "file": "wasm4pm/wasm4pm/src/correspondence/social_network_semantics.rs",
+        "comparison_mode": "receipted_formula_with_cited_proof -- lean_handover_edge is a hand-transcribed copy of handoverEdges_iff, differentially checked against the REAL discover_handover_network_from_log for every ordered pair in the resource universe (full edge-set equivalence, not a spot check)",
+        "tests": "handover_linear_chain, handover_self_loop_never_emitted, handover_empty, handover_singleton, handover_repeated_alternation, wrong_predicate_is_caught (negative falsifier), lean_file_hash_matches_citation"
+      },
+      "not_claimed": "That the network-metrics computed downstream (degree/betweenness/closeness centrality in network_metrics.rs) are covered -- only edge-set construction is proven; centrality formulas are a separate, unformalized concern."
+    },
+    {
+      "algorithm": "working-together-network",
+      "lean_coverage": "new_harness_built",
+      "verdict": "TRACTABLE -- new Lean theorem written and proven this checkpoint, plus a Rust correspondence harness",
+      "rust_side": {
+        "file": "wasm4pm/wasm4pm/src/social_network.rs",
+        "symbol": "discover_working_together_network_from_log (lines 73-116)",
+        "determinism": "fully deterministic -- for each trace, collects the distinct resource set (BTreeSet), then emits an edge for every unordered pair {a,b} of two distinct resources both present in that set (`for i in 0..sorted.len() { for j in i+1..sorted.len() { ... } }`). No optimization, no search, no RNG."
+      },
+      "lean_carrier": {
+        "file": "mfact/procint/ProcInt/Models/SocialNetwork.lean (new this checkpoint, same file as handover-network)",
+        "theorem": "workingTogetherEdges_iff: (a, b) ∈ workingTogetherEdges rs ↔ a ∈ rs ∧ b ∈ rs ∧ a ≠ b",
+        "supporting_lemmas": "workingTogetherEdges_nil (empty trace -> no edges), workingTogetherEdges_irrefl ((a,a) never an edge), workingTogetherEdges_constant (a trace with only one distinct resource, however repeated, has no edges)",
+        "definitions": "workingTogetherEdges [DecidableEq α] (rs : List α) : List (α × α) := (rs.dedup ×ˢ rs.dedup).filter (fun p => decide (p.1 ≠ p.2))",
+        "build_verification": "`lake env lean ProcInt/Models/SocialNetwork.lean` from /Users/sac/mfact/procint: exit clean, zero errors, zero warnings (same single-file build as handover-network, both theorems in one file).",
+        "no_sorry_no_axiom": "grep for 'sorry'/'axiom' in the file: zero hits.",
+        "mfact_commit": "68fb4b393f527ecac178facb565e70b58fd4390a",
+        "file_sha256": "76b1ebbc2a5373ba2266a05e3d7e8e4e49b7f31a440d314a1365fce0a3edea10"
+      },
+      "rust_harness": {
+        "file": "wasm4pm/wasm4pm/src/correspondence/social_network_semantics.rs",
+        "comparison_mode": "receipted_formula_with_cited_proof -- lean_working_together_edge is a hand-transcribed copy of workingTogetherEdges_iff, differentially checked against the REAL discover_working_together_network_from_log for every ordered pair in the resource universe, checking both edge directions since the Lean law is symmetric but the Rust function only emits one direction per unordered pair (sorted i<j)",
+        "tests": "working_together_triangle, working_together_duplicates_collapse, working_together_single_resource, working_together_empty, wrong_predicate_is_caught (shared with handover), lean_file_hash_matches_citation (shared with handover)"
+      },
+      "not_claimed": "That community_detection (network_metrics.rs) or clustering_coefficient, both built ON TOP of this working-together graph, are covered -- only edge-set construction is proven here; community-detection is a separate ledger entry below, re-confirmed no_lean_coverage."
+    },
+    {
+      "algorithm": "community-detection",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed by direct re-read of the current implementation -- 009's NP-hard-modularity argument is CORRECT, not merely repeated: this is real greedy modularity optimization, not connected-components or any other decidable algorithm",
+      "rust_side": {
+        "file": "wasm4pm/wasm4pm/src/network_metrics.rs",
+        "symbol": "SocialNetwork::community_detection (function body cites itself: \"Detect communities using Louvain algorithm (simplified greedy version)\"), helper SocialNetwork::modularity_gain",
+        "algorithm_confirmed": "NOT connected components. Every node starts in its OWN singleton community (communities.insert(node.id, idx)). Then a bounded (MAX_ITERATIONS = 10) greedy local-search loop repeatedly tries moving each node to a neighboring community and accepts the move iff modularity_gain(...) > best_gain, i.e. it is hill-climbing on a modularity-style objective, exactly the Louvain local-moving phase (without the aggregation/coarsening phase Louvain normally repeats). modularity_gain computes (new_comm_edge_weight - old_comm_edge_weight) for the moving node -- a real (simplified, degree-normalization omitted) modularity delta, not a connectivity test.",
+        "why_this_matters": "Confirms this is genuinely an optimization procedure over a combinatorial partition space (set-partition of nodes into communities), which is exactly the NP-hard-in-general problem class (modularity maximization is NP-hard, Brandes et al. 2008) -- not a trivially decidable structural query like connected-components would be."
+      },
+      "lean_search": "grep/semantic search across mfact and mfw for 'modularity', 'community detection', 'Louvain', 'graph partition' style names: zero hits. No modularity-optimization or graph-partitioning Lean module exists in either repo.",
+      "note": "009's conclusion stands after independent re-verification: no modularity-optimality proof is possible without first resolving NP-hardness, and even a hypothetical optimality proof would not apply to this Rust implementation specifically, since it is a bounded-iteration GREEDY heuristic (accepts only strictly-improving local moves, capped at 10 passes) with no convergence-to-global-optimum guarantee by construction, independent of whether modularity maximization itself had a Lean theorem."
+    },
+    {
+      "algorithm": "correlation-miner",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed by direct re-read of the current implementation -- computes a DFG via a GREEDY min-cost edge-resolution heuristic over precede-succeed and duration statistics, not a simple decidable iff-property and not an exact optimal-assignment algorithm either",
+      "rust_side": {
+        "file": "wasm4pm/wasm4pm/src/correlation_miner.rs",
+        "symbol": "mine_correlation (lines 115-232), compute_ps_matrix (precede-succeed matrix, lines ~280-308), compute_duration_matrix (lines ~310-338), resolve_edges (greedy cost-minimisation, lines 396-440+)",
+        "algorithm_confirmed": "This performs CASE-ID-FREE correlation mining: flattens all events (ignoring case IDs), sorts by timestamp, then for each pair of distinct activities (i, j) computes a precede-succeed fraction PS[i][j] (fraction of i's end-times that precede some j start-time) and a duration statistic dur[i][j] (greedy FIFO/LIFO-matched average gap, capped by a threshold). resolve_edges then builds a cost = dur[i][j] / ps[i][j] / min(count_i, count_j) for every candidate (i,j) pair with ps[i][j] > 0, SORTS candidates by ascending cost, and greedily assigns edge frequency by consuming remaining in/out degree budget per activity (out_rem[i], in_rem[j]), skipping a direction if the reverse precede-succeed fraction is comparably strong (cycle-avoidance heuristic, ps[j][i] >= ps[i][j] * 0.8).",
+        "why_this_matters": "This is a greedy heuristic assignment over a real-valued cost function with a cycle-avoidance tie-break threshold (the 0.8 constant) -- not a closed-form decidable predicate like handover/working-together, and not provably optimal (greedy min-cost matching with degree-budget consumption is not guaranteed to find a global-min-cost assignment in general, and no optimality claim is made anywhere in the Rust code or its doc comments). There is no simple 'edge (a,b) exists iff <predicate over the trace>' law to state, because edge existence depends on the RELATIVE ranking of candidate costs across the WHOLE activity universe, not a local, position-based fact about any one pair."
+      },
+      "lean_search": "grep/semantic search across mfact and mfw for 'correlation', 'precede-succeed', 'PS matrix', 'case-free', 'unlabeled DFG' style names: zero hits. No correlation-mining or case-ID-free-DFG-discovery Lean module exists in either repo.",
+      "note": "Distinct from the plain multi-trace dfg carrier (ProcInt.Dfg, Models/Dfg.lean) already assigned adjacent_theorem_requiring_carrier_mapping in 009/030a's dfg-multi-trace work -- that carrier models an already-segmented, already-case-labeled event log; correlation-miner's entire distinguishing contribution is inferring trace boundaries AND edge weights from an unlabeled, case-ID-free event stream via the greedy heuristic above, which has no Lean counterpart at any granularity."
+    }
+  ],
+  "achieved_evidence_class_summary": "2 of 4 (handover-network, working-together-network): new proven Lean theorems (zero sorry/axiom, verified via `lake env lean` against a real local Mathlib build) plus passing Rust correspondence harnesses -- this checkpoint's genuine new contribution. 2 of 4 (community-detection, correlation-miner): no_lean_coverage, independently re-confirmed with fresh source reads that go beyond 009's original notes (community-detection's greedy-Louvain mechanics and correlation-miner's greedy min-cost edge-resolution mechanics are both traced to specific line ranges this checkpoint, not merely asserted).",
+  "not_claimed": "Any Lean correspondence for community-detection or correlation-miner (none possible with current mfact/mfw coverage, and none would apply even if found, given both are heuristic procedures without optimality guarantees); that the handover/working-together harness covers anything downstream of raw edge-set construction (centrality metrics, clustering coefficients, community detection built on top of the working-together graph are all separate, unproven concerns); that mfact's ProcInt.lean umbrella file was confirmed to build end-to-end (it does NOT currently -- `lake env lean ProcInt.lean` fails on a pre-existing, unrelated missing .olean for ProcInt.Foundations.Metric, confirmed present before this checkpoint's changes via `git stash`; only the new SocialNetwork.lean file was verified standalone via `lake env lean ProcInt/Models/SocialNetwork.lean`, which succeeds cleanly)."
+}
