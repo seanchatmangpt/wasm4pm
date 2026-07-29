@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-013
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: Conformance/fitness correspondence, split per-formula (proof-dependency program, checkpoint 013/020)
 git_revision: 7a61ce95f
 predecessor: W4PM-LEAN-GALL-012 (receipts/W4PM-LEAN-GALL-012-wf-net-soundness-correspondence.md)
@@ -134,8 +134,51 @@ inconsistency found on the Rust side (both flagged as new follow-up items, not a
 here); or claim `direct_theorem`/`EXACT_CORRESPONDENCE` for alignment cost (no live Lean
 re-verification, same constraint as every prior checkpoint).
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Performed in `/Users/sac/mfact` (mfact `HEAD` = `cf5e047264ccd117b49c97b0effb392a5e478e6b`,
+ahead of the `mfact_revision` cited above; `git log --oneline -- Conformance/Moves.lean`
+confirms the most recent commit touching the file is still `801abf7933d` — no drift).
+
+**Hash re-check** — `shasum -a 256 Conformance/Moves.lean`:
+```
+ab98579026f3e35450d92a2c8bd0034180149a19c1bb906ab7e31aec22237b0a  Conformance/Moves.lean
+```
+**MATCH** against `LEAN_MOVES_FILE_SHA256` in `wasm4pm/src/correspondence/alignment_cost.rs`.
+
+**Build**:
+```
+$ cd /Users/sac/mfact/procint && lake build ProcInt.Conformance.Moves
+✔ [8558/8558] Built ProcInt.Conformance.Moves (14s)
+Build completed successfully (8558 jobs).
+```
+
+**Axiom check** — `#print axioms` on the two lemmas this checkpoint cites (`Move.cost_le_one`,
+`Move.cost_eq_zero_iff`), via a scratch file removed after the run:
+```
+'ProcInt.Move.cost_le_one' depends on axioms: [propext]
+'ProcInt.Move.cost_eq_zero_iff' depends on axioms: [propext]
+```
+Only `propext`, no `sorryAx`, no custom axiom. `grep -n sorry Conformance/Moves.lean` also
+returns no match (exit 1).
+
+**Standing upgrade rationale**: hash matched, build succeeded, no sorry/axiom found for the
+one Lean file this checkpoint cites (`Moves.lean`). This closes the Lean-side re-verification
+gap named in the prior `PARTIAL_ALIVE` standing for the **alignment-cost metric only** — the
+scope this receipt's harness (`alignment_cost.rs`) actually targets.
+
+**Unchanged, still out of scope**: the other 4 metrics (precision, generalization, simplicity,
+aggregate verdict) remain `RUST_ALIVE / FORMALIZATION_UNSUPPORTED` unconditionally — no Lean
+declarations exist for them (`Quality.lean`'s fields are still uncomputed struct fields, not
+re-checked this round since there is nothing to build), so this re-verification pass does not
+change their standing. `Conformance/Alignment.lean` (`alignmentCost`/`alignmentCost_append`/
+`alignmentCost_zero_iff_all_costfree`), mentioned in the original 013 pass but not cited by a
+hash constant in `alignment_cost.rs`, was **not** re-verified this round — out of the stated
+FILES TO VERIFY scope for this checkpoint.
+
 ## Standing
-`PARTIAL_ALIVE` — one real, tested correspondence harness (alignment cost) plus an honest,
-evidence-complete ledger for the other 4 metrics. Not `ALIVE` until either a live
-`lake build` closes the Lean-side re-verification gap for alignment cost, or citation-by-hash
-is explicitly accepted as sufficient standing evidence.
+`ALIVE` — for the alignment-cost metric specifically: hash-matched, kernel-rebuilt
+(`lake build`, this session), and axiom-clean (`#print axioms`, only `propext`) for
+`Conformance/Moves.lean`, per the Live Re-verification section above. The other 4 metrics'
+standing (`RUST_ALIVE / FORMALIZATION_UNSUPPORTED`, unconditional `no_lean_coverage`) is
+unaffected and unchanged by this pass.

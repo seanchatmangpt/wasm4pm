@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-012
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: WF-net admission and soundness correspondence (proof-dependency program, checkpoint 012/020)
 git_revision: ba04893c3
 predecessor: W4PM-LEAN-GALL-011 (receipts/W4PM-LEAN-GALL-011-petri-firing-correspondence.md)
@@ -112,9 +112,57 @@ Lean's `Sound` predicate's clauses" over 6 curated fixtures, honestly bounded by
 - Live re-verification of `Soundness.lean`'s own proof state (cited by content hash only,
   same constraint as 010/011 — mfact's `.lake` build directory does not exist).
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Performed in `/Users/sac/mfact` (mfact `HEAD` = `cf5e047264ccd117b49c97b0effb392a5e478e6b`,
+ahead of the `mfact_revision` cited above; `git log --oneline -- Workflow/WfNet.lean
+Workflow/Soundness.lean` confirms the most recent commit touching either file is still
+`801abf7933d`, i.e. no drift since the cited revision despite `HEAD` moving on).
+
+**Hash re-check** — `shasum -a 256` on both files, current working tree:
+```
+a02d75b375037a620d327146f87459e1574dc43b8b1a09b242a62386700be736  Workflow/WfNet.lean
+327a6b80989ab824fc4de2a375c8f93341e915825d350921014e9141660964cf  Workflow/Soundness.lean
+```
+**MATCH** against `LEAN_WFNET_FILE_SHA256`/`LEAN_SOUNDNESS_FILE_SHA256` in
+`wasm4pm/src/correspondence/wf_net_soundness.rs`.
+
+**Build** — `cache get` already warm (8542 files already decompressed, 0 downloaded), then:
+```
+$ cd /Users/sac/mfact/procint && lake build ProcInt.Workflow.WfNet ProcInt.Workflow.Soundness
+✔ [8561/8566] Built ProcInt.Workflow.WfNet (14s)
+✔ [8566/8566] Built ProcInt.Workflow.Soundness (14s)
+Build completed successfully (8566 jobs).
+```
+
+**Axiom check** — `#print axioms` on the crown-jewel theorem and its three lemmas, via a
+scratch file imported and removed after the run (not committed to mfact):
+```
+'ProcInt.WfNet.sound_iff_shortCircuit_live_bounded' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.WfNet.sound_of_live_bounded' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.WfNet.live_of_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.WfNet.bounded_of_sound' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+Only the three standard Lean/Mathlib axioms (`propext`, `Classical.choice`, `Quot.sound`) —
+no `sorryAx`, no custom axiom. `grep -n sorry WfNet.lean Soundness.lean` also returns no match
+(exit 1).
+
+**Standing upgrade rationale**: hash matched, build succeeded, no sorry/axiom found — the
+Lean-side re-verification gap named in the prior `PARTIAL_ALIVE` standing (both the "not
+`ALIVE` until a live `lake build` closes the gap" clause and the file-level sorry/axiom
+claim) is now closed with a real, this-session command run, not citation-by-hash alone.
+
+**What remains out of scope, unchanged from the prior round** — this upgrade covers file-level
+kernel verification only. It does **not** newly verify: the Rust/Lean *correspondence* itself
+(the decision-procedure-vs-`Sound`-predicate agreement over the 6 curated fixtures was already
+checked by `cargo test` in the original 012 pass, not re-run here); the crown-jewel theorem's
+*semantic* applicability to `StructuralNet` (still deferred to 012B, per the "Explicit scope
+boundary" section above — proving the theorem type-checks with clean axioms is not the same
+claim as proving it applies to wasm4pm's unweighted carrier); or weighted-arc WF-nets.
+
 ## Standing
-`PARTIAL_ALIVE` — same reasoning as 010/011: real harness, genuine falsifier coverage
-(including two fixtures that required real debugging to construct correctly, surfacing a
-genuine `push_unique` deduplication finding along the way), not `ALIVE` until either a live
-`lake build` closes the Lean-side re-verification gap, or citation-by-hash is explicitly
-accepted as sufficient standing evidence for this class of claim.
+`ALIVE` — hash-matched, kernel-rebuilt (`lake build`, this session), and axiom-clean
+(`#print axioms`, only `propext`/`Classical.choice`/`Quot.sound`) for both cited Lean files,
+per the Live Re-verification section above. Scope is unchanged from the original pass: this
+is file-level Lean re-verification, not a re-run of the Rust/Lean correspondence harness or
+proof of the crown-jewel theorem's applicability to `StructuralNet` (still 012B).
