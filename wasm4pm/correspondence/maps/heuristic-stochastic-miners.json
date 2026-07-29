@@ -1,0 +1,87 @@
+{
+  "algorithm_id": "heuristic-stochastic-miners",
+  "scope_note": "Covers 6 algorithms per the program spec: genetic mining, ACO, PSO, Heuristic Miner, Inductive Miner, ILP Petri-net discovery. All 6 are no_lean_coverage, independently re-confirmed this checkpoint (matches the master ledger built in W4PM-LEAN-GALL-009/009A -- no contradiction, no new Lean coverage found). This checkpoint's real work is a confirmed-live defect fix (ACO core-level degenerate result), not a Lean correspondence harness, since no Lean formalization exists for any of the 6 to bridge to.",
+  "ledger_entries": [
+    {
+      "algorithm": "genetic-algorithm",
+      "lean_coverage": "no_lean_coverage",
+      "note": "stochastic by design (population sampling, tournament selection, crossover, mutation) -- exact correspondence structurally impossible even with full proof coverage; only a convergence-in-probability claim could ever be proven, and none exists in mfact or mfw.",
+      "rust_side": {
+        "file": "wasm4pm/src/genetic_discovery.rs",
+        "symbol": "discover_genetic_algorithm_from_log (lines 91-170)",
+        "rng": "locally constructed StdRng::seed_from_u64(42) -- reproducible, but diverges architecturally from the documented support::rng::seeded_rng() single-source convention (a flagged inconsistency, not fixed this checkpoint).",
+        "tests": "wasm4pm/tests/algorithm_correctness.rs:94-161 -- ga_fitness_in_range, ga_convergence_more_generations_never_worse, ga_deterministic_same_seed, ga_output_structure_valid: real structural/behavioral properties, not just 'did not panic'."
+      }
+    },
+    {
+      "algorithm": "aco",
+      "lean_coverage": "no_lean_coverage",
+      "note": "stochastic (pheromone-guided Bernoulli edge selection). A DEGENERATE_RESULT (nontrivial input converging to an empty edge set) was already known at the CLI-bridge layer (aco_bridge.rs) -- this checkpoint confirmed the guard did NOT exist at the core-crate level and FIXED it (see below), since any direct caller of discover_aco_algorithm_from_log bypassing the CLI bridge remained exposed.",
+      "defect_found_and_fixed": {
+        "symptom": "with low ant_count/iterations (e.g. 5 ants x 5 or 10 iterations, seed 42), every ant's Bernoulli draw can fail to select any edge every iteration, so best_solution legitimately converges to an empty edge set on genuinely nontrivial input -- confirmed LIVE by re-running the existing aco_fitness_in_range/aco_deterministic_same_seed tests, which broke under an initial bare-refusal fix attempt (proving the degenerate case is not hypothetical).",
+        "fix": "wasm4pm/src/genetic_discovery.rs, discover_aco_algorithm_from_log's final result mapping: when best_solution's edge set is empty, fall back to the full observed edge vocabulary (the raw directly-follows relation) rather than either (a) silently returning Some((empty_dfg, fitness)) as before, or (b) returning None outright (which broke existing sanctioned test behavior at this parameter range) -- an honest 'nothing better than the raw DFG was found' answer.",
+        "new_test": "wasm4pm/tests/algorithm_correctness.rs::aco_never_returns_empty_dfg_on_nontrivial_input -- asserts Some(...) implies a nonempty edge set."
+      },
+      "rust_side": {
+        "file": "wasm4pm/src/genetic_discovery.rs",
+        "symbol": "discover_aco_algorithm_from_log (lines 442-590ish, post-fix)",
+        "rng": "locally constructed StdRng::seed_from_u64(42) -- same architectural inconsistency noted for genetic-algorithm."
+      }
+    },
+    {
+      "algorithm": "pso",
+      "lean_coverage": "no_lean_coverage",
+      "note": "stochastic by design (particle blend/mutation toward pbest/gbest) -- same structural-impossibility-of-exact-correspondence note as genetic-algorithm.",
+      "rust_side": {
+        "file": "wasm4pm/src/genetic_discovery.rs",
+        "symbol": "discover_pso_algorithm_from_log (lines 208-298)",
+        "rng": "locally constructed StdRng::seed_from_u64(42), same architectural inconsistency.",
+        "degenerate_result_risk": "only the input-empty guard exists in core (same shape as ACO pre-fix); no equivalent 'nontrivial input converged to empty result' fallback was added this checkpoint -- flagged, not fixed, since no live test failure demonstrated it as an active (not merely theoretical) risk the way ACO's was.",
+        "tests": "algorithm_correctness.rs:168-210 -- pso_fitness_in_range, pso_convergence_more_iterations_never_worse, pso_deterministic_same_seed: real numeric/structural properties."
+      }
+    },
+    {
+      "algorithm": "heuristic-miner",
+      "lean_coverage": "no_lean_coverage",
+      "note": "nearest Lean candidate is Ledger.lean::validTopologicalSort (DAG validity only, no discovery-specific theorem) -- confirmed insufficient for a carrier map, matches 009's own explicit downgrade.",
+      "rust_side": {
+        "file": "wasm4pm/src/advanced_algorithms.rs",
+        "symbol": "discover_heuristic_miner_from_log (lines 15-72)",
+        "determinism": "fully deterministic -- pure frequency-count arithmetic (dep(a,b) = (|a->b| - |b->a|) / (|a->b| + |b->a| + 1)), no RNG.",
+        "tests": "streaming_heuristic.rs:341-404 test_dependency_threshold asserts EXACT edge counts against a hand-computed dependency formula (e.g. assert_eq!(dfg.edges.len(), 0) when weak, assert_eq!(dfg.edges.len(), 2) at threshold 0.7 with computed 0.75) -- real ground-truth structural assertions."
+      }
+    },
+    {
+      "algorithm": "inductive-miner",
+      "lean_coverage": "no_lean_coverage",
+      "note": "strongest structural candidate for FUTURE Lean work (sound-by-construction cuts) but genuinely unformalized in mfact/mfw today, not merely unmapped -- would require new Lean proof work, not just an encoder, confirmed by 009's own note re-verified this checkpoint.",
+      "rust_side": {
+        "file": "wasm4pm/src/more_discovery.rs",
+        "symbol": "discover_inductive_miner_from_log (357-377) delegating to inductive_miner_recursive (452-543)",
+        "determinism": "fully deterministic -- activities pre-sorted before recursion specifically to guarantee reproducible tree structure; flower-model fallback at depth>100 or no-cut-found is an intentional clean give-up path, not a silent-empty-result bug.",
+        "tests": "algorithm_correctness.rs:1068-1116 assert EXACT tree shapes via a tree_shape() helper (e.g. 'sequence(a,parallel(b,c))', 'xor(sequence(a,d),sequence(b,c))', 'loop(a,b)') -- among the strongest ground-truth structural tests of the six."
+      }
+    },
+    {
+      "algorithm": "ilp-petri-net",
+      "lean_coverage": "no_lean_coverage",
+      "note": "no ILP/region-theory Lean module found in mfact or mfw. In principle fully provable (region theory is well-established math) but no Lean work exists at all today.",
+      "rust_side": {
+        "file": "wasm4pm/src/ilp_discovery.rs",
+        "symbol": "discover_ilp_petri_net_from_log (63-101+)",
+        "determinism": "fully deterministic -- NOT a true ILP solve; a deterministic threshold-sweep plus greedy set-cover approximation (discover_optimized_dfg_from_log, lines 481-525), a real terminology-vs-implementation gap worth noting but not itself a defect (the doc comments do not claim a real ILP solver is used).",
+        "degenerate_result_risk": "correctly guarded at the core level already: n==0 || col.trace_offsets.len()<=1 returns an explicit empty-Petri-net/zero-fitness tuple (lines 66-68), not a silent partial success.",
+        "tests": "algorithm_correctness.rs:359-406 -- ilp_transitions_match_activities (assert_eq!(pn.transitions.len(), activities) for exactly 5 known activities), ilp_source_place_has_initial_token, ilp_fitness_and_precision_in_range: real structural assertions tied to known ground truth."
+      }
+    }
+  ],
+  "flagged_defects_out_of_scope": [
+    "genetic-algorithm, ACO, and PSO each construct their own StdRng::seed_from_u64(42) locally in genetic_discovery.rs rather than using the documented support::rng::seeded_rng() single-RNG-source convention -- reproducible today, but architecturally inconsistent; a future refactor to centralize seed control would need to touch 3 call sites.",
+    "PSO's core discover_pso_algorithm_from_log has the same core-level-only-input-empty-guard shape ACO had before this checkpoint's fix -- not demonstrated as a LIVE failure the way ACO's was (no existing test broke), so not fixed here; worth a follow-up check with a wider ant/iteration parameter sweep.",
+    "ILP discovery's name is a terminology mismatch with its implementation (deterministic threshold-sweep + greedy set-cover, not a true ILP solver) -- not a correctness defect, but worth a doc clarification."
+  ],
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "N/A this checkpoint -- no Lean-side formula exists for any of the 6 algorithms to cite or compare against. This checkpoint's evidence is a confirmed-live defect fix with before/after test results, not a Rust<->Lean differential.",
+  "achieved_evidence_class_summary": "All 6: UNMAPPED (no_lean_coverage), independently re-confirmed. One concrete, test-verified defect fix (ACO core-level degenerate-result guard) delivered as this checkpoint's real contribution.",
+  "not_claimed": "Any Lean correspondence for any of the 6 algorithms (none possible -- no Lean coverage exists); that PSO's analogous risk has been verified live (flagged, not confirmed-live, not fixed); that the RNG-source inconsistency has been resolved (flagged only)."
+}

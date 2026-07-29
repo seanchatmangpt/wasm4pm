@@ -619,6 +619,24 @@ fn aco_fitness_in_range() {
     assert!(!dfg.nodes.is_empty(), "ACO DFG must have nodes");
 }
 
+/// W4PM-LEAN-GALL-018: the core discover_aco_algorithm_from_log must never
+/// silently return Some((empty_dfg, fitness)) on nontrivial input — this was
+/// previously guarded only at the CLI bridge layer (aco_bridge.rs), leaving
+/// any direct caller of the core function exposed to a DEGENERATE_RESULT.
+/// Whenever this function returns Some, the DFG must have at least one edge.
+#[test]
+fn aco_never_returns_empty_dfg_on_nontrivial_input() {
+    let log = controlled_log();
+    let result = discover_aco_algorithm_from_log(&log, "concept:name", 5, 10);
+    if let Some((dfg, _fitness)) = result {
+        assert!(
+            !dfg.edges.is_empty(),
+            "ACO returned Some(...) on nontrivial input but with an empty edge set — \
+             this is the DEGENERATE_RESULT the core-level guard must refuse, not silently succeed on"
+        );
+    }
+}
+
 /// Two ACO runs with same seed must produce bit-identical fitness.
 #[test]
 fn aco_deterministic_same_seed() {
