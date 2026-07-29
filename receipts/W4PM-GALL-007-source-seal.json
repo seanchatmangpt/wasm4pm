@@ -1,0 +1,89 @@
+{
+  "checkpoint": "W4PM-GALL-007",
+  "title": "Tranche source seal + independent clean-worktree replay",
+  "date": "2026-07-29",
+  "status": "PARTIAL_ALIVE",
+  "seal_commit": "a7a1ecb96a906ed4b11f38d47beddeacd8a75963",
+  "predecessor_commit": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+  "files_sealed": [
+    "crates/wasm4pm-cognition/src/session/tests.rs",
+    "package.json",
+    "examples/.gitignore",
+    "examples/web-dashboard/src/main.js",
+    "receipts/GALL_CHECKPOINT_2026-07-29.md",
+    "receipts/GGEN-GALL-006-investigation.json",
+    "receipts/W4PM-GALL-000-baseline.json",
+    "receipts/W4PM-GALL-001-native-core.json",
+    "receipts/W4PM-GALL-002-wasm32.json",
+    "receipts/W4PM-GALL-003-cognition-integrity.json",
+    "receipts/W4PM-GALL-004-ts-build.json",
+    "receipts/W4PM-GALL-005-ts-test.json",
+    "scripts/verify-gall-baseline.sh"
+  ],
+  "deliberately_excluded": "pre-existing uncommitted work from other in-progress fleets (CLI mining bridges, .claude/settings.json, mining.rs, oc_petri_net.rs, breeds/frame.rs, Cargo.lock, pnpm-lock.yaml, CLAUDE.md) — left untouched per CLAUDE.md's multi-agent warning, not bundled into this seal",
+
+  "method": "EnterWorktree, then git checkout <seal_commit> directly (the default worktree base branched from origin/main, the wrong ref — corrected by checking out the exact sealed SHA). All commands below ran in that isolated, clean worktree — a separate process, separate filesystem state, independent of the original session that produced the receipts being verified.",
+
+  "positive_witness_results": [
+    {
+      "check": "001 native — cargo test",
+      "cwd": "wasm4pm (crate root)",
+      "result": "REPRODUCED WITH A NEW FINDING: full parallel `cargo test --lib` (default) showed 1 flaky failure — cache::tests::test_columnar_cache_roundtrip, panic 'should be cached' at cache.rs:469. Re-ran cache:: tests alone with --test-threads=1: 18/18 pass. Root cause identified: cache_clear() (cache.rs:177-184) unconditionally clears the entire process-global COLUMNAR_CACHE, not scoped to any test's own keys — test_cache_clear and test_columnar_cache_roundtrip share that global Mutex<FxHashMap>, and under cargo test's default parallel execution, test_cache_clear's clear() can race between test_columnar_cache_roundtrip's insert and its read-back. This is a genuine, pre-existing test-isolation bug independent of anything in this tranche — not introduced by the seal or replay, but newly surfaced by it.",
+      "verdict": "PARTIAL_ALIVE — the tranche's own changes (nowhere near cache.rs) are not implicated; the underlying cargo test suite has a real, separate flake this checkpoint did not claim to fix"
+    },
+    {
+      "check": "002 wasm32 — cargo check --target wasm32-unknown-unknown",
+      "result": "REPRODUCED CLEAN: exit 0, same static_mut_refs warning at wasm_bindings.rs:33, 1m06s (cold, uncached target dir)",
+      "verdict": "PARTIAL_ALIVE (unchanged from original — no equivalence fixture, but compile result reproduces exactly)"
+    },
+    {
+      "check": "003 cognition — cargo test --lib -p wasm4pm-cognition",
+      "result": "REPRODUCED EXACTLY: 441 passed; 0 failed; 0 ignored; finished in 0.24s — matches the original session's result bit-for-bit",
+      "verdict": "ALIVE — this is the one checkpoint that fully satisfies the promotion law: exact revision, clean checkout, positive witness (441/441), negative falsifier (old commit lacks the fix, confirmed below), deterministic result, replayed outside the originating session"
+    },
+    {
+      "check": "004A dashboard build",
+      "result": "REPRODUCED: wasm-pack build succeeded fresh (27.33s) in the clean worktree's crates/wasm4pm-cognition/pkg-web; `npx vite build` (direct, bypassing a pre-existing unrelated pnpm install failure — see below) succeeded, same output shape (2.23MB wasm, 8.51kB js)",
+      "verdict": "PARTIAL_ALIVE — build reproduces, but see the two new findings below about pnpm install itself"
+    },
+    {
+      "check": "005A test dispatcher",
+      "result": "Not independently re-run in the worktree due to the pnpm install failure below blocking a full workspace install; the fix itself (script diff) was confirmed present via git show at the sealed commit, and its logic was already validated live in the original session",
+      "verdict": "PARTIAL_ALIVE — script content verified present at the sealed commit; full workspace re-run deferred, not a regression in the fix itself"
+    },
+    {
+      "check": "000 baseline — scripts/verify-gall-baseline.sh",
+      "result": "Ran in the worktree: 6/6 commands_run entries matched their recorded exit codes exactly (cargo test, cargo check wasm32, cognition tests, pnpm test, dashboard build, ggen sync dry-run). Revision fields correctly flagged as drifted (baseline still cites the pre-seal commit; bcinr moved independently mid-session) — this is expected, not a script bug, since W4PM-GALL-000's revision field is a historical record of what was tested, not a live pointer.",
+      "verdict": "PARTIAL_ALIVE — the command-replay half of the script's job is proven; revision-binding needs the follow-up noted in 008"
+    }
+  ],
+
+  "negative_falsifier_result": {
+    "check": "git show 9ca674c91...:<changed-file> for each of the 4 source/config files this tranche touched",
+    "results": [
+      "crates/wasm4pm-cognition/src/session/tests.rs at old commit: 0 occurrences of refuses_tampered_turn_number (fix absent, as expected)",
+      "package.json at old commit: \"test\": \"pnpm run test:integration\" (recursive script still present, as expected)",
+      "examples/web-dashboard/src/main.js at old commit: does not exist (git cat-file -e exit 128, as expected)",
+      "scripts/verify-gall-baseline.sh at old commit: does not exist (git cat-file -e exit 128, as expected)"
+    ],
+    "verdict": "CONFIRMED — verification correctly refuses to find these fixes at the predecessor commit, proving the seal binds a real, meaningful difference, not a no-op"
+  },
+
+  "new_findings_from_replay_not_previously_known": [
+    {
+      "finding": "cache::tests::test_columnar_cache_roundtrip is flaky under cargo test's default parallel execution — cache_clear() clears global state unscoped, racing against concurrent inserts from other tests in the same binary",
+      "location": "wasm4pm/src/cache.rs:177-184 (cache_clear), :448-469 (the racing test)",
+      "status": "NOT FIXED in this checkpoint — newly discovered, out of scope for GALL-007's own job (sealing the tranche), tracked as a new follow-up"
+    },
+    {
+      "finding": "pnpm-lock.yaml is stale relative to examples/interview-assist/package.json (10 missing dependency specifiers) — pnpm install --frozen-lockfile fails on a completely clean checkout",
+      "status": "NOT FIXED — pre-existing, unrelated to this tranche, discovered only because the clean-worktree replay does a real install where the original session's already-populated node_modules never surfaced it"
+    },
+    {
+      "finding": "examples/interview-assist's postinstall script fails with MODULE_NOT_FOUND on a fresh install (unrelated to the wasm-lockfile issue above)",
+      "status": "NOT FIXED — pre-existing, discovered the same way; blocks a full clean pnpm install for the whole workspace, though individual package builds (like web-dashboard, via direct vite build) still work around it"
+    }
+  ],
+
+  "conclusion": "The seal is real and the replay caught genuine issues a same-session receipt could not: two pre-existing bugs (a flaky cache test, a stale lockfile) that were invisible until tested from a truly clean, independent checkout. Per the promotion law, only W4PM-GALL-003 fully qualifies for ALIVE from this replay — its result reproduced bit-for-bit with a valid negative falsifier. 001, 002, 004A, 005A, 000 remain PARTIAL_ALIVE: their core fixes and mechanisms reproduced, but each has an open item (a discovered flake, an unrelated install failure, or a deferred full re-run) that must be resolved or explicitly scoped-out before full promotion — consistent with the user's corrected standing, not a full clearance of it."
+}

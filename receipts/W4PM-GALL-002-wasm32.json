@@ -15,9 +15,11 @@
     "path": "wasm4pm/pkg/wasm4pm_bg.wasm",
     "sha256": "e45ff8a1aa472f488b7684900f4e4f2e0dc8964485bc49b2d6bee98ea9af2570"
   },
-  "must_not_claim": "that all algorithms behave identically under WASM — this checkpoint proves compilation only, not behavioral equivalence",
+  "must_not_claim": "that all algorithms behave identically under WASM \u2014 this checkpoint proves compilation only, not behavioral equivalence",
   "promotion_blockers": [
     "no native/WASM equivalence fixture exists yet",
     "static_mut_refs warning not yet resolved (non-fatal, tracked separately)"
-  ]
+  ],
+  "sealed_at_commit": "a7a1ecb96a906ed4b11f38d47beddeacd8a75963",
+  "sealed_at_commit_note": "git_revision above is the pre-seal revision the fix was tested against while the working tree was still dirty. This receipt is promoted from ALIVE to PARTIAL_ALIVE pending an independent clean-worktree replay at sealed_at_commit (see W4PM-GALL-007)."
 }

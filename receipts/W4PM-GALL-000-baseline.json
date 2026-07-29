@@ -6,8 +6,9 @@
   "repos": {
     "wasm4pm": {
       "path": "/Users/sac/wasm4pm", "revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+      "sealed_at_commit": "a7a1ecb96a906ed4b11f38d47beddeacd8a75963",
       "uncommitted_files": 30, "last_commit_date": "2026-07-24T09:12:46-07:00",
-      "uncommitted_note": "includes this session's own GALL-001..005 fixes and receipts, not yet committed",
+      "uncommitted_note": "commands below were run against the mutable working tree at revision 9ca674c91 before GALL-007 sealed the tranche into commit a7a1ecb96. See W4PM-GALL-007 for the clean-worktree replay that independently reproduces these results at the sealed commit.",
       "commands_run": [
         {"command": "cargo test", "cwd": "wasm4pm/wasm4pm", "exit_code": 0, "summary": "ALIVE: 2212 tests passed, 0 failed, exit 0 — see receipts/W4PM-GALL-001-native-core.json"},
         {"command": "cargo check --target wasm32-unknown-unknown", "cwd": "wasm4pm/wasm4pm", "exit_code": 0, "summary": "ALIVE: exit 0, 1 non-fatal static_mut_refs warning — see receipts/W4PM-GALL-002-wasm32.json"},
@@ -30,13 +31,17 @@
     "aco mining bridge produces degenerate empty-DFG on at least one real log — NOT fixed in this tranche",
     "packages/observability has a real pre-existing test failure (missing apps/wasm4pm/src/commands/drift-watch.ts) now visible because GALL-005 makes pnpm test actually run"
   ],
-  "verdicts": {
-    "W4PM-GALL-000": "PARTIAL_ALIVE — this receipt exists and is populated with real command results, but replay-without-this-session has not yet been independently exercised",
-    "W4PM-GALL-001": "ALIVE",
-    "W4PM-GALL-002": "PARTIAL_ALIVE — compiles clean, but no native/wasm32 equivalence fixture exists yet (documented gap, not a blocker for this checkpoint's own scope)",
-    "W4PM-GALL-003": "ALIVE",
-    "W4PM-GALL-004": "ALIVE — build succeeds and bundle sanity-checked; e2e Playwright claim in the README is UNVERIFIED (no spec file exists in the repo)",
-    "W4PM-GALL-005": "ALIVE — real test execution confirmed, though it surfaces a pre-existing unrelated bug in packages/observability",
-    "GGEN-GALL-006": "investigation complete, fix deferred to a separately-authorized ~/ggen session"
+  "verdicts_corrected_2026-07-29": {
+    "note": "Corrected per user review: every receipt below originally bound git_revision=9ca674c91, but the tested tree included uncommitted changes (the fixes these receipts document). A receipt that doesn't identify the source tree it actually tested is session evidence, not release evidence — none of 001-005 could lawfully be ALIVE until sealed. GALL-007 seals the tranche into commit a7a1ecb96; promotion to ALIVE requires an independent clean-worktree replay at that commit, not just re-stating the same session's results.",
+    "W4PM-GALL-000": "PARTIAL_ALIVE — replay works against the current mutable machine via scripts/verify-gall-baseline.sh, not yet from a clean checkout",
+    "W4PM-GALL-001": "PARTIAL_ALIVE — 2212 tests passed with witness+falsifier, but tree not bound to a clean commit until GALL-007 replay",
+    "W4PM-GALL-002": "PARTIAL_ALIVE — compiles clean, but no native/wasm32 equivalence fixture exists yet, and worktree not sealed until GALL-007 replay",
+    "W4PM-GALL-003": "ALIVE — independently replayed in a clean worktree at the sealed commit: 441/441 reproduced bit-for-bit, negative falsifier confirmed (fix absent at predecessor commit). See W4PM-GALL-007.",
+    "W4PM-GALL-004A": "PARTIAL_ALIVE pending clean-commit replay — dashboard package compiles",
+    "W4PM-GALL-004B": "UNSUPPORTED — no Playwright spec file exists despite the README's claim",
+    "W4PM-GALL-004C": "UNKNOWN — full root workspace build with a real captured exit code (pipefail-safe) not yet run",
+    "W4PM-GALL-005A": "PARTIAL_ALIVE — test dispatcher terminates, reaches real runners, doesn't yet prove full workspace traversal",
+    "W4PM-GALL-005B": "BUILD_BROKEN — packages/observability has a real failing suite (missing drift-watch.ts); pnpm -r bails at first failure",
+    "GGEN-GALL-006": "OBSERVED / NOT A CHECKPOINT — investigation only, never tested wasm4pm's own tree; two of three original claims were historical, not live"
   }
 }

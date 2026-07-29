@@ -3,34 +3,61 @@
   "title": "TypeScript test floor",
   "git_revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
   "date": "2026-07-29",
-  "status": "ALIVE",
+  "status": "PARTIAL_ALIVE",
   "script_diff": {
-    "test": {"before": "pnpm run test:integration", "after": "pnpm -r --if-present run test"},
-    "test:integration": {"before": "pnpm run test --workspaces --if-present", "after": "pnpm -r --if-present run test:e2e"}
+    "test": {
+      "before": "pnpm run test:integration",
+      "after": "pnpm -r --if-present run test"
+    },
+    "test:integration": {
+      "before": "pnpm run test --workspaces --if-present",
+      "after": "pnpm -r --if-present run test:e2e"
+    }
   },
   "root_cause_confirmed": "test and test:integration were mutually recursive at the root level (test:integration's 'pnpm run test --workspaces' re-triggered the root test script), appending --workspaces --if-present indefinitely. Before fix: 300s timeout, ~1600 repeated invocations, zero test-framework output.",
-  "before": {"cmd": "pnpm test", "timeout_s": 300, "invocation_count_observed": 1600, "test_framework_output_lines": 0, "verdict": "refusal, not success — zero tests ever executed"},
+  "before": {
+    "cmd": "pnpm test",
+    "timeout_s": 300,
+    "invocation_count_observed": 1600,
+    "test_framework_output_lines": 0,
+    "verdict": "refusal, not success \u2014 zero tests ever executed"
+  },
   "after": {
     "cmd": "pnpm test",
     "exit_code": 1,
     "terminated_normally": true,
     "packages_completed_before_bail": [
-      {"package": "packages/noun-verb", "test_files": "8 passed (8)"},
-      {"package": "packages/contracts", "test_files": "38 passed (38)"},
-      {"package": "packages/ml", "test_files": "43 passed (43)"},
-      {"package": "packages/observability", "test_files": "1 failed | 35 passed | 1 skipped (37)", "tests": "5 failed | 851 passed | 1 skipped (857)"}
+      {
+        "package": "packages/noun-verb",
+        "test_files": "8 passed (8)"
+      },
+      {
+        "package": "packages/contracts",
+        "test_files": "38 passed (38)"
+      },
+      {
+        "package": "packages/ml",
+        "test_files": "43 passed (43)"
+      },
+      {
+        "package": "packages/observability",
+        "test_files": "1 failed | 35 passed | 1 skipped (37)",
+        "tests": "5 failed | 851 passed | 1 skipped (857)"
+      }
     ],
-    "verdict": "real execution — pnpm -r bails at the first package with a genuine failure, this is correct pnpm default behavior, not a defect in this fix"
+    "verdict": "real execution \u2014 pnpm -r bails at the first package with a genuine failure, this is correct pnpm default behavior, not a defect in this fix"
   },
   "unrelated_pre_existing_bug_surfaced": {
     "package": "packages/observability",
     "test_file": "src/__tests__/command-spans.test.ts",
     "error": "ENOENT: no such file or directory, open '/Users/sac/wasm4pm/apps/wasm4pm/src/commands/drift-watch.ts'",
-    "note": "the test suite expects a command file that doesn't exist on disk — 5 failing assertions all stem from this one missing file. Not fixed as part of GALL-005 (out of scope — this checkpoint's job was to make pnpm test execute real tests, which it now does; it correctly surfaced a real bug rather than hiding it)"
+    "note": "the test suite expects a command file that doesn't exist on disk \u2014 5 failing assertions all stem from this one missing file. Not fixed as part of GALL-005 (out of scope \u2014 this checkpoint's job was to make pnpm test execute real tests, which it now does; it correctly surfaced a real bug rather than hiding it)"
   },
   "workspace_packages_with_test_script": 15,
   "total_test_files_repo_wide": 670,
-  "ci_impact": "none — .github/workflows/{test,wasm-build}.yml already scope test:integration to cwd=wasm4pm/, a separate npm sub-project unaffected by the root-level cycle this fix addresses",
+  "ci_impact": "none \u2014 .github/workflows/{test,wasm-build}.yml already scope test:integration to cwd=wasm4pm/, a separate npm sub-project unaffected by the root-level cycle this fix addresses",
   "known_non_target": "examples/zoe-la has a deliberate exit-1 stub test, expected to fail, not in scope to fix here",
-  "test_integration_after_fix": "repointed at test:e2e, which only examples/web-dashboard and examples/interview-assist define today — becomes a fast no-op for everything else via --if-present, which is the honest fix rather than pretending it does more"
+  "test_integration_after_fix": "repointed at test:e2e, which only examples/web-dashboard and examples/interview-assist define today \u2014 becomes a fast no-op for everything else via --if-present, which is the honest fix rather than pretending it does more",
+  "sealed_at_commit": "a7a1ecb96a906ed4b11f38d47beddeacd8a75963",
+  "sealed_at_commit_note": "git_revision above is the pre-seal revision the fix was tested against while the working tree was still dirty. This receipt is promoted from ALIVE to PARTIAL_ALIVE pending an independent clean-worktree replay at sealed_at_commit (see W4PM-GALL-007)."
 }
