@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-015
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: POWL/process-tree semantics correspondence (proof-dependency program, checkpoint 015/020)
 git_revision: 8d11cbd60
 predecessor: W4PM-LEAN-GALL-014 (receipts/W4PM-LEAN-GALL-014-declare-semantics-correspondence.md)
@@ -116,9 +116,46 @@ proven with a trace semantics in mfact at all, let alone bridged); `mfw`'s POWLB
 from wasm4pm's real `ProcessTree` type to this checkpoint's `RestrictedTree` carrier (not
 built — this harness exercises the restricted carrier directly, not real discovery output).
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Performed against the now-working mfact toolchain (checkpoint 023 confirmed `lake exe cache
+get` fetches prebuilt Mathlib oleans).
+
+**Hash check** — `shasum -a 256 procint/ProcInt/Models/ProcessTree.lean` in `/Users/sac/mfact`:
+```
+00c76db7a3391ccf0dc5eb1346f29dd6e2e097564e8f549d22453348839935e0  procint/ProcInt/Models/ProcessTree.lean
+```
+Matches `LEAN_PROCESS_TREE_FILE_SHA256` in
+`wasm4pm/wasm4pm/src/correspondence/process_tree_semantics.rs` exactly — **MATCH**, file
+untouched since original citation.
+
+**Cache**: `cd /Users/sac/mfact && lake exe cache get` → `Completed successfully in 32296 ms!`
+(8538 already-cached files decompressed, no downloads needed; shared run with checkpoint 014).
+
+**Build**: `cd /Users/sac/mfact/procint && lake build ProcInt.Models.ProcessTree`:
+```
+Build completed successfully (8558 jobs).
+```
+(no new files rebuilt — already up to date from the Declare.lean build moments earlier, both
+under the same `ProcInt` root).
+
+**Axiom check** on the theorems this checkpoint's bridge cites (`ProcessTree.language`'s
+defining equations plus the concrete lemmas about it; actual namespace is `ProcInt`, e.g.
+`ProcInt.ProcessTree.language_leaf_silent`, confirmed via `namespace ProcInt` at line 10 of
+the Lean file):
+```
+'ProcInt.ProcessTree.language_leaf_silent' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.ProcessTree.mem_language_seq_leaf' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.ProcessTree.language_seq_assoc' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.length_of_mem_interleavings' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+No `sorryAx` on any of the four — only standard Lean/Mathlib axioms (`propext`,
+`Classical.choice`, `Quot.sound`, expected for `Set`-valued definitions). `grep -n
+"sorry\|axiom" ProcessTree.lean` also returns no matches.
+
 ## Standing
-`PARTIAL_ALIVE` — the narrowest, most heavily-scoped checkpoint in the program so far, but
-genuinely real: exhaustive language-equality evidence over 158 trees, not a fabricated
-unification of the mfw/mfact disagreement. Not `ALIVE` until either a live `lake build`
-closes the Lean-side re-verification gap, or citation-by-hash is explicitly accepted as
-sufficient standing evidence.
+`ALIVE` — hash matched, `lake build ProcInt.Models.ProcessTree` succeeded from a real working
+toolchain, and `#print axioms` on `ProcessTree.language`'s key lemmas shows no `sorryAx`
+dependency. The POWL-vs-ProcessTree scoping decision and all explicit-scope-boundary
+exclusions above remain unchanged by this gate — this closes only the "is the Lean side
+kernel-checked" question, not the scope questions.

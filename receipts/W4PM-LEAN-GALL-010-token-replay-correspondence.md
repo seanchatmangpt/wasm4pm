@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-010
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: Correspondence harness (proof-dependency program, checkpoint 010/020)
 git_revision: 6be4abd27c247421679f46285d491076dfbb1ec3
 predecessor: W4PM-LEAN-GALL-009A (receipts/W4PM-LEAN-GALL-009A-ledger-closure.md)
@@ -91,11 +91,59 @@ Lean proof itself was not live-reverified this checkpoint) — claiming `direct_
 would require either a live Lean re-verification or independent kernel checking
 (leanchecker/nanoda), neither performed here.
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Performed as part of the W4PM-LEAN-GALL-022 program (checkpoint 023 first proved the
+Lean toolchain works end to end: `lake exe cache get` fetched prebuilt Mathlib oleans, and
+`lake build ProcInt.Models.Dfg` succeeded). This closes the "not re-verified" gap this
+receipt's original Standing section flagged.
+
+**Working directory**: `/Users/sac/mfact/procint` (the actual Lake package root — not
+`/Users/sac/mfact`).
+
+**Cache check**: `.lake/build/lib` already populated from checkpoint 023's earlier fetch.
+Ran `lake exe cache get` anyway to confirm — completed in ~7.4s wall time with `No files to
+download / Already decompressed 8542 file(s)`, i.e. no re-download needed.
+
+**Hash re-check** (`shasum -a 256`), current file vs. this receipt's pinned citation:
+```
+0e33d099ad863eecade929d2242f0eaf18265b8e6b32fbccf7dd0bc82ee83185  ProcInt/Conformance/TokenReplay.lean
+```
+**MATCH** — identical to the citation above. The file has not been touched since this
+receipt was written.
+
+**Build**:
+```
+$ lake build ProcInt.Conformance.TokenReplay
+✔ [8558/8558] Built ProcInt.Conformance.TokenReplay (58s)
+Build completed successfully (8558 jobs).
+```
+Succeeded, real time ~62s.
+
+**Axiom check** — `lake env lean` on a throwaway script (`#print axioms`) importing the
+built module, for the two declarations this correspondence harness cites:
+```
+'ProcInt.fitness' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.fitness_perfect' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+Both depend only on the three standard classical/quotient axioms Mathlib itself is built
+on — no `sorryAx`, no custom/ad-hoc axiom. Corroborating `grep -n "sorry\|admit\|axiom "` on
+the file itself: the only match is a header comment (`-- Candidate Lean: admitted only by
+\`lake build\`...`), not a `sorry`/`axiom` keyword in any declaration body.
+
+**Outcome**: hash match + successful `lake build` + clean axiom list together constitute a
+live kernel re-verification of `ProcInt.fitness`/`fitness_perfect` at the exact cited
+revision. This closes this receipt's own stated gap (a) directly — no product-decision
+fallback (b) was needed. Status upgraded `PARTIAL_ALIVE` → `ALIVE` for this checkpoint's
+specific claim (formula-identity correspondence between `trace_fitness` and the now
+live-verified `ProcInt.fitness`). This does not retroactively change the standing of any
+*other* checkpoint's Lean citations (010's own exclusions — `simd_token_replay.rs` and the
+other 6 `adjacent_theorem_requiring_carrier_mapping` candidates — remain unaddressed).
+
 ## Standing
 
-`PARTIAL_ALIVE` — the harness is real, runs, and has genuine falsifier coverage, but per
-this checkpoint's own honesty discipline it cannot be `ALIVE` until either (a) a real
-`lake build` is run against the cited `TokenReplay.lean` revision to close the "not
-re-verified" gap, or (b) an explicit, accepted decision is recorded that citation-by-hash
-is sufficient standing evidence for this class of claim going forward. Recommend the latter
-be an explicit product decision, not assumed silently in a future checkpoint.
+`ALIVE` — the harness is real, runs, has genuine falsifier coverage, and — as of
+W4PM-LEAN-GALL-022 — the cited `TokenReplay.lean` has been independently re-hashed
+(matches), rebuilt from source via `lake build`, and kernel-checked via `#print axioms`
+with no `sorry`/custom axioms found. The live-verification gap this receipt originally
+flagged is closed for this checkpoint.

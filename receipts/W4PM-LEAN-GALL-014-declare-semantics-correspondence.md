@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-014
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: DECLARE semantics correspondence, one constraint at a time (proof-dependency program, checkpoint 014/020)
 git_revision: dc3f1f96d
 predecessor: W4PM-LEAN-GALL-013 (receipts/W4PM-LEAN-GALL-013-conformance-metrics-ledger.md)
@@ -104,8 +104,40 @@ AlternateResponse/exactlyOne (missing on one side each); live Lean re-verificati
 `check_declare_conformance` wrapper directly (tests call the pure core it delegates to,
 already confirmed to be the same logic).
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Performed against the now-working mfact toolchain (checkpoint 023 confirmed `lake exe cache
+get` fetches prebuilt Mathlib oleans).
+
+**Hash check** — `shasum -a 256 procint/ProcInt/Models/Declare.lean` in `/Users/sac/mfact`:
+```
+d83c5410833ce8d013d1fb03d14da7d3ae44a4aab953ace307148179b32724ae  procint/ProcInt/Models/Declare.lean
+```
+Matches `LEAN_DECLARE_FILE_SHA256` in `wasm4pm/wasm4pm/src/correspondence/declare_semantics.rs`
+exactly — **MATCH**, file untouched since original citation.
+
+**Cache**: `cd /Users/sac/mfact && lake exe cache get` → `Completed successfully in 32296 ms!`
+(8538 already-cached files decompressed, no downloads needed).
+
+**Build**: `cd /Users/sac/mfact/procint && lake build ProcInt.Models.Declare`:
+```
+✔ [8558/8558] Built ProcInt.Models.Declare (12s)
+Build completed successfully (8558 jobs).
+```
+
+**Axiom check** on the two concrete kernel-decided theorems cited in this file's own
+transcription section (`response_concrete`, `precedence_concrete`; actual namespace is
+`ProcInt`, not `ProcInt.Models.Declare` — confirmed via `namespace ProcInt` at line 10 of the
+Lean file):
+```
+'ProcInt.response_concrete' depends on axioms: [propext, Quot.sound]
+'ProcInt.precedence_concrete' depends on axioms: [propext, Quot.sound]
+```
+No `sorryAx` — both are genuine kernel proofs, only standard Lean/Mathlib axioms.
+`grep -n "sorry\|axiom" Declare.lean` also returns no matches.
+
 ## Standing
-`PARTIAL_ALIVE` — real harness calling real production code, genuine 6-template coverage
-with honest gaps documented for the other 6 (4 no-Lean, 2 asymmetric-implementation). Not
-`ALIVE` until either a live `lake build` closes the Lean-side re-verification gap, or
-citation-by-hash is explicitly accepted as sufficient standing evidence.
+`ALIVE` — hash matched, `lake build ProcInt.Models.Declare` succeeded from a real working
+toolchain, and `#print axioms` on the cited concrete theorems shows no `sorryAx` dependency.
+Scope remains as documented above (6 of 10 templates bridged; the rest out of scope by
+design, not by this gate).

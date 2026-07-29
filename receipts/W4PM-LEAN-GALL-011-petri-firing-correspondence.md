@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-011
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: Petri enabling and firing correspondence (proof-dependency program, checkpoint 011/020)
 git_revision: 022ae7c54
 predecessor: W4PM-LEAN-GALL-010 (receipts/W4PM-LEAN-GALL-010-token-replay-correspondence.md)
@@ -114,8 +114,60 @@ There is also no `models::PetriNet → BoundedNet` encoder yet — this checkpoi
 bounded domain directly, not real net instances from the codebase; building that encoder is
 future work for extending this checkpoint's coverage to actual discovery-algorithm output.
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Performed as part of the W4PM-LEAN-GALL-022 program, alongside 010's re-verification
+(checkpoint 023 first proved the toolchain works: `lake exe cache get` + `lake build
+ProcInt.Models.Dfg` succeeded). This closes the "not re-verified" gap this receipt's
+original Standing section flagged.
+
+**Working directory**: `/Users/sac/mfact/procint`. Cache already populated from checkpoint
+023 — `lake exe cache get` re-run for confirmation, ~7.4s, `No files to download`.
+
+**Hash re-check** (`shasum -a 256`), current files vs. this receipt's pinned citations:
+```
+6159dc44c0e700b335d86ca7960dfba79351040400e428cc694fd104f1ca83e1  ProcInt/Petri/Net.lean
+d2402ca5605ab17a15d66d1207915a1e0cdeddf7c594274319e61c2a9973cebd  ProcInt/Petri/Firing.lean
+```
+**MATCH** for both files — identical to this receipt's citations. Neither file has been
+touched since this receipt was written.
+
+**Build**:
+```
+$ lake build ProcInt.Petri.Net ProcInt.Petri.Firing
+✔ [8559/8559] Built ProcInt.Petri.Firing (19s)
+Build completed successfully (8559 jobs).
+```
+Succeeded, real time ~24s.
+
+**Axiom check** — `lake env lean` on a throwaway script (`#print axioms`) importing both
+built modules, for the key declarations this correspondence harness's Lean side relies on:
+```
+'ProcInt.PetriNet.Step' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.PetriNet.step_deterministic' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.PetriNet.fire_add_pre' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.PetriNet.enabled_mono' depends on axioms: [propext, Quot.sound]
+```
+All four depend only on the standard classical/quotient axioms Mathlib itself is built on
+— no `sorryAx`, no custom axiom. This corroborates the receipt's earlier `grep`-based claim
+("Confirmed no `sorry`/`axiom` in either file"): a direct grep for `sorry\|admit\|axiom ` on
+both files today matches only the shared header comment (`-- Candidate Lean: admitted only
+by \`lake build\`...`), not a keyword inside any declaration body.
+
+**Outcome**: hash match on both files + successful `lake build` of both modules + clean
+axiom lists on the declarations this harness's correspondence claim depends on together
+constitute a live kernel re-verification. This closes this receipt's own stated gap
+directly. Status upgraded `PARTIAL_ALIVE` → `ALIVE` for this checkpoint's specific claim
+(weighted/saturating enabled-fire semantics correspondence, exhaustive-domain-checked
+against the now live-verified `Net.lean`/`Firing.lean`). This does not change the standing
+of this receipt's own explicitly-stated exclusions (unweighted `token_replay.rs::fire`,
+unbounded-domain claims, WF-net soundness, mining/discovery correctness) — those remain
+exactly as scoped in the "Explicit scope boundary" section above.
+
 ## Standing
-`PARTIAL_ALIVE` — same reasoning as 010: real, exhaustive-domain-verified harness with
-genuine falsifier coverage, but not `ALIVE` until either a live `lake build` closes the
-Lean-side re-verification gap, or citation-by-hash is explicitly accepted as sufficient
-standing evidence for this class of claim.
+`ALIVE` — real, exhaustive-domain-verified harness with genuine falsifier coverage, and —
+as of W4PM-LEAN-GALL-022 — both cited Lean files have been independently re-hashed (match),
+rebuilt from source via `lake build`, and kernel-checked via `#print axioms` with no
+`sorry`/custom axioms found on the relied-upon declarations. The live-verification gap this
+receipt originally flagged is closed for this checkpoint; the explicit scope exclusions
+above are unaffected and remain open work.
