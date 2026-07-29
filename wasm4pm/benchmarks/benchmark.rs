@@ -397,17 +397,37 @@ fn compute_etconformance_precision(log: &MiniEventLog, net: &MiniPetriNet) -> f6
     }
 }
 
-/// Structural simplicity score (mirrors `ilp_discovery.rs::compute_simplicity`).
+/// Structural simplicity score.
 ///
-/// Uses the new 3-argument signature: `compute_simplicity(places, transitions, arcs)`.
+/// W4PM-LEAN-GALL-031 finding: this function's doc comment previously claimed to "mirror
+/// `ilp_discovery.rs::compute_simplicity`" but implemented a different formula
+/// (`1.0 / (1.0 + ln(1 + places + transitions + arcs))`) that silently diverged from the
+/// real one. This standalone benchmark file has no crate dependency on `wasm4pm` (it is not
+/// registered as a `[[bin]]`/`[[example]]` in `Cargo.toml` and is not built by `cargo test`
+/// or `cargo check` today), so it cannot literally call `ilp_discovery::compute_simplicity`
+/// — the fix here is to inline the identical formula so the two agree by construction
+/// instead of by an unchecked comment. Keep this in sync by hand if
+/// `ilp_discovery::compute_simplicity` ever changes; there is no compiler-enforced link
+/// between the two copies.
 ///
-/// Formula: `1.0 / (1.0 + ln(1 + places + transitions + arcs))`
-///
-/// Returns a value in (0.0, 1.0] where 1.0 means an empty model (maximally simple)
-/// and values approach 0.0 as model size grows.
+/// Formula (copied verbatim from `src/ilp_discovery.rs::compute_simplicity`): geometric mean
+/// of place/transition/arc ratios against the theoretical minimum for a linear sequence of
+/// `N` visible activities (`N+1` places, `N` transitions, `2N` arcs).
 pub fn compute_simplicity(places: usize, transitions: usize, arcs: usize) -> f64 {
-    let total = (places + transitions + arcs) as f64;
-    1.0 / (1.0 + (1.0 + total).ln())
+    if places == 0 || transitions == 0 || arcs == 0 {
+        return 1.0; // Empty model is trivially simple
+    }
+
+    let n = transitions.saturating_sub(1).max(1); // visible activities
+    let min_places = n + 1;
+    let min_transitions = n;
+    let min_arcs = 2 * n;
+
+    let place_ratio = (min_places as f64 / places as f64).min(1.0);
+    let transition_ratio = (min_transitions as f64 / transitions as f64).min(1.0);
+    let arc_ratio = (min_arcs as f64 / arcs as f64).min(1.0);
+
+    (place_ratio * transition_ratio * arc_ratio).cbrt()
 }
 
 // ---------------------------------------------------------------------------
