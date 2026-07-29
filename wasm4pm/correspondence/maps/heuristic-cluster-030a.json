@@ -1,0 +1,98 @@
+{
+  "algorithm_id": "heuristic-cluster-030a",
+  "scope_note": "Re-investigation of the 6 W4PM-LEAN-GALL-009 rows marked no_lean_coverage: footprints, alpha-plus-plus, optimized-dfg, astar, hill-climbing, rework-detection. Independently re-searched mfact/mfw fresh (not by citing 009); one algorithm (rework-detection) had a genuinely tractable Lean carrier and got a new proven theorem + Rust harness this checkpoint. The other 5 remain no_lean_coverage, re-confirmed.",
+  "predecessor": "W4PM-LEAN-GALL-009 (receipts/W4PM-LEAN-GALL-009-lean-coverage-ledger.md), W4PM-LEAN-GALL-020",
+  "validTopologicalSort_re_examination": {
+    "finding": "Ledger.lean::validTopologicalSort (mfact procint/ProcInt/MFW/Ledger.lean:33-38, identical copy in mfw mfw-theory/MFW/Ledger.lean:38-43) is a real, non-tautological, decidable 4-conjunct predicate (Nodup + forward node-coverage + reverse node-coverage + edge-order) -- confirmed by direct read, NOT a stub (the paper/tex docs note an OLDER version was a bare `:= True` stub; the current .lean source is not).",
+    "domain_mismatch": "MetaMathDAG's nodes/edges track META-MATHEMATICAL CLAIMS in a proof-dependency ledger (id: Nat, statement: String) -- this is infrastructure for tracking which mfw/mfact theorems have been proved and in what order, NOT a process-mining DFG/dependency-graph/activity-ordering carrier. No field of MetaMathDAG corresponds to an activity, event, or trace.",
+    "verdict": "LEAN_NAME_MATCH_WITHOUT_CARRIER_MAP applies to all 4 of the 009-ledger rows that cited this as 'adjacent-but-unmapped' (heuristic-miner, optimized-dfg, hill-climbing, rework-detection). Correction to 009's framing: this is not merely 'adjacent but unmapped' (implying a carrier map could plausibly be built with more work) -- the two domains (proof-dependency ordering vs. process-discovery activity graphs) share no common carrier type at all, so this checkpoint reclassifies the note from 'adjacent-but-unmapped' to 'name-adjacent only, no carrier possible' for optimized-dfg and hill-climbing (astar and footprints never cited it as adjacent to begin with). rework-detection is the one exception: not because validTopologicalSort helps it, but because its OWN Rust predicate (independently, nothing to do with validTopologicalSort) turned out to be a tractable bounded-existential shape worth its own new Lean theorem."
+  },
+  "ledger_entries": [
+    {
+      "algorithm": "footprints",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed, independently re-searched",
+      "rust_side": {
+        "file": "wasm4pm/src/algorithms.rs",
+        "symbol": "discover_footprints_from_log (lines 28-68)",
+        "determinism": "fully deterministic -- pure directly-follows bitmask computation (Causal/CausalInv/Parallel/NeverFollows from df[i][j] and df[j][i])."
+      },
+      "lean_search": "grep for 'footprint', 'FootprintMatrix', 'CausalInv'/'NeverFollows' style relation names across mfact and mfw: zero hits. No footprint-matrix or alpha-relation Lean module exists in either repo.",
+      "note": "Alpha-Miner's footprint matrix (van der Aalst's four relations: ->, <-, #, ||) has no Lean formalization anywhere in mfact/mfw as of this checkpoint."
+    },
+    {
+      "algorithm": "alpha-plus-plus",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed, independently re-searched",
+      "rust_side": {
+        "file": "packages/kernel/src/api.ts (TS bridge) delegating to wasm export discover_alpha_plus_plus; Rust core implementation not separately re-read this checkpoint beyond confirming the export exists -- 009's own note ('no PetriNet/Alpha* module found in mfact') independently re-verified via fresh search."
+      },
+      "lean_search": "grep for 'AlphaPlusPlus', 'AlphaMiner', 'InvisibleTask', 'alpha_relation' style names across mfact and mfw: zero hits.",
+      "note": "No PetriNet-region or alpha-relation Lean module exists in either repo. Matches 009 exactly; no correction needed."
+    },
+    {
+      "algorithm": "optimized-dfg",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed; 009's 'adjacent-but-unmapped: validTopologicalSort' note downgraded further this checkpoint (see validTopologicalSort_re_examination above) -- not merely unmapped, no carrier possible given the domain mismatch",
+      "rust_side": {
+        "file": "wasm4pm/src/ilp_discovery.rs",
+        "symbol": "discover_optimized_dfg_from_log (lines 481-525, per W4PM-LEAN-GALL-018's independent read)",
+        "determinism": "fully deterministic -- threshold-sweep + greedy set-cover, not a distinct algorithm from the base dfg/ilp cluster's own optimization pass."
+      },
+      "lean_search": "mfact's ProcInt.Dfg (Models/Dfg.lean) models a single-trace unweighted DFG -- the SAME carrier already assigned to plain 'dfg' as adjacent_theorem_requiring_carrier_mapping in 009. 'optimized-dfg' does not have its own distinct threshold/greedy-selection theorem anywhere; it would need a NEW monotonicity-of-thresholding lemma layered on Dfg.lean, which does not exist.",
+      "note": "Correctly no_lean_coverage on its own algorithmic content (threshold+greedy-cover is not the same claim as plain DFG construction), independent of whatever coverage class 'dfg' itself has."
+    },
+    {
+      "algorithm": "astar",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed; admissibility of the specific Rust heuristic is itself unverifiable, so even a hypothetical Lean A*-optimality theorem could not be invoked",
+      "rust_side": {
+        "file": "wasm4pm/src/fast_discovery.rs",
+        "symbol": "A* search loop (per reports/capability-validation/algorithms/001-a_star.md, lines 231-295): open_set of candidate DFGs scored by a HAND-DESIGNED heuristic combining coverage (weight 0.8), simplicity/density (weight 0.2), and an edge-count penalty (weight 0.2) -- NOT a distance-to-goal heuristic over a well-defined state-space metric.",
+        "admissibility_assessment": "Classical A* optimality (Hart/Nilsson/Raphael 1968) requires an admissible heuristic (never overestimates true remaining cost) over a well-defined cost function. This Rust heuristic is a composite quality SCORE for candidate models, not a lower-bound estimate of remaining search cost to an optimality target -- there is no 'true cost' function it could be checked against for admissibility. The search is a bounded beam search (open_set truncated to 128 candidates each iteration, fast_discovery.rs) dressed in A* terminology, not textbook A* over a metric space.",
+        "conclusion": "Even if mfact/mfw had a general A*-admissibility theorem (a broader search than done here found none), it could not be invoked for this specific implementation -- the admissibility precondition is not just unformalized, it does not clearly apply to this heuristic's design at all."
+      },
+      "lean_search": "grep for 'astar', 'A_star', 'shortest path', 'admissible', 'heuristic search', 'Dijkstra' across mfact and mfw: only hit was miniml-core's UNRELATED shortest_path_impl (Dijkstra for ML graph utilities, crates/miniml-core/src/graph.rs -- a completely different crate, no Lean counterpart either, and not process-mining-related at all).",
+      "note": "Distinct from conformance-checking A*-alignment (Adriansyah 2014, already cited elsewhere in this repo's academic-gap docs) -- that is a different algorithm (alignment_fitness.rs::compute_trace_alignment) with a real g_cost/h_cost split; this ledger entry is specifically about DISCOVERY-context astar (fast_discovery.rs), which has no such split."
+    },
+    {
+      "algorithm": "hill-climbing",
+      "lean_coverage": "no_lean_coverage",
+      "verdict": "confirmed; 009's 'adjacent-but-unmapped: validTopologicalSort' note downgraded further this checkpoint, same reasoning as optimized-dfg above",
+      "rust_side": {
+        "file": "wasm4pm/src/fast_discovery.rs",
+        "symbol": "discover_hill_climbing_from_log (edge-pruning loop, lines 168-203 per reports/capability-validation/algorithms/008-hill_climbing.md)",
+        "determinism": "fully deterministic given a fixed candidate-ordering rule (candidates sorted by (edge_freq, edge) before greedy removal) -- not stochastic, but local-search (greedy edge removal while fitness does not decrease) has no global-optimality guarantee by construction; only a local-optimum-reached property could ever be claimed."
+      },
+      "lean_search": "grep for 'hill', 'local search', 'greedy', 'HillClimbing' across mfact and mfw: zero hits related to process discovery or any local-search formalization.",
+      "note": "Local-search algorithms structurally cannot claim global optimality without a convexity/submodularity proof of the fitness landscape, which does not exist here or in mfact/mfw."
+    },
+    {
+      "algorithm": "rework-detection",
+      "lean_coverage": "new_harness_built",
+      "verdict": "TRACTABLE -- new Lean theorem written and proven this checkpoint, plus a Rust correspondence harness",
+      "rust_side": {
+        "file": "wasm4pm/src/models.rs",
+        "symbols": "ColumnarLog::count_loops_length_1 (self-loop existence, self.events[i] == self.events[i+1]), count_loops_length_2 (self.events[i] == self.events[i+2] && self.events[i] != self.events[i+1], excluding L1), count_traces_with_rework (L1-first, else L2, per trace)",
+        "determinism": "fully deterministic -- a bounded existential over a finite index range, no search/optimization/RNG at all. This is what makes it distinct from the other 5 in this cluster: it is a decidable pattern-matching predicate, the same SHAPE as Ledger.lean::validTopologicalSort's own conjuncts (just over a different domain), not an optimization procedure."
+      },
+      "lean_carrier": {
+        "file": "mfact/procint/ProcInt/MFW/Rework.lean (new this checkpoint)",
+        "theorem": "hasL1Loop_iff: hasL1Loop l = true <-> exists i, i + 1 < l.length and idx l i = idx l (i+1)",
+        "definitions": "hasL1Loop, hasL2Loop, hasRework (Bool-valued, structural recursion on List Nat), idx (zero-default indexing via headD/drop, avoiding List.get! which is not in core Lean's Init)",
+        "no_mathlib": "Deliberately imports nothing -- mfact's procint/.lake package cache has zero Mathlib build artifacts (confirmed: `ls .lake/packages/mathlib/.lake/build` fails), so a `lake build` from this state would require a full from-scratch Mathlib build, impractical to run inline. Verified instead with a direct `lean` invocation of the pinned toolchain (leanprover/lean4:v4.31.0) on the standalone file: exit 0, zero warnings, zero errors.",
+        "axiom_check": "#print axioms ProcInt.MFW.hasL1Loop_iff -> [propext, Quot.sound] only -- the two standard trusted kernel axioms essentially every nontrivial Lean proof depends on. No sorry, no custom axiom declared anywhere in the file.",
+        "test_file": "mfact/procint/ProcInt/MFW/Tests/ReworkTests.lean -- 7 `decide`-discharged example witnesses (positive + negative for both hasL1Loop and hasL2Loop, plus the disjointness case a=b=c) mirroring Tests/LedgerTests.lean's own witness-pair convention"
+      },
+      "rust_harness": {
+        "file": "wasm4pm/wasm4pm/src/correspondence/rework_detection.rs",
+        "comparison_mode": "receipted_formula_with_cited_proof (same as every other harness in this module) -- lean_has_l1_loop/lean_has_l2_loop/lean_has_rework are hand-transcribed copies of Rework.lean's definitions, differentially checked against the REAL count_loops_length_1/count_loops_length_2 methods via EventLog::to_columnar",
+        "tests": "10 tests: l1_loop_present, l1_loop_absent, l2_loop_present_no_l1, l2_loop_absent, l1_and_l2_both_present_disjoint_by_construction, vacuous_short_trace, empty_trace, rework_helper_matches_either_primitive, wrong_predicate_is_caught (negative falsifier), rework_lean_file_exists_at_cited_path -- all pass"
+      },
+      "not_claimed": "That count_traces_with_rework's early-return control-flow structure (L1-first, L2-only-if-no-L1) is itself re-verified -- only the two counting primitives it is built from are. No claim about pattern_analysis.rs::detect_loops's separate, non-boolean rework_score metric (out of scope, a different quantity)."
+    }
+  ],
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "achieved_evidence_class_summary": "5 of 6 (footprints, alpha-plus-plus, optimized-dfg, astar, hill-climbing): UNMAPPED (no_lean_coverage), independently re-confirmed, no correction to 009's underlying verdicts needed (only a correction to how strongly the validTopologicalSort adjacency note should be read for 2 of them). 1 of 6 (rework-detection): new proven Lean theorem (zero sorry/axiom beyond propext/Quot.sound) plus a passing Rust correspondence harness, this checkpoint's genuine new contribution.",
+  "not_claimed": "Any Lean correspondence for footprints/alpha-plus-plus/optimized-dfg/astar/hill-climbing (none possible with current mfact/mfw coverage); that rework-detection's harness constitutes a live Lean-in-the-loop check (it is receipted_formula_with_cited_proof, same as every prior harness in this module); that A* admissibility could be established for wasm4pm's discovery-context heuristic under any circumstance (the heuristic's design does not fit the admissibility precondition's shape, independent of Lean coverage)."
+}

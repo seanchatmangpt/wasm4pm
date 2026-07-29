@@ -17,5 +17,6 @@ pub mod declare_semantics;
 pub mod ocel_semantics;
 pub mod petri_firing;
 pub mod process_tree_semantics;
+pub mod rework_detection;
 pub mod token_replay;
 pub mod wf_net_soundness;
