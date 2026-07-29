@@ -1,11 +1,11 @@
 ---
 receipt: W4PM-LEAN-GALL-024
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: causal-heuristic clamp closure (proof-dependency program, checkpoint 024)
 git_revision: PENDING_COMMIT
 predecessor: W4PM-LEAN-GALL-020
-mfact_revision: d7e28424f36c2c9974a01a49f99c3a6ca3e7a3ee (new commit this checkpoint, on top of 801abf7933dabf5c95f9fb18ff21a7a8a1f6a564 cited by 016)
+mfact_revision: fcf8adbb5e82ff2a5a60b20c1b30e990ba3f21df (build-fix commit, on top of d7e28424f36c2c9974a01a49f99c3a6ca3e7a3ee cited by this checkpoint, itself on top of 801abf7933dabf5c95f9fb18ff21a7a8a1f6a564 cited by 016)
 ---
 
 # 024 — Causal-Heuristic Closure: What Survives the Clamp
@@ -224,3 +224,83 @@ require replacing `le_or_lt` with whatever this Mathlib revision's current name 
 lemma is (e.g. `le_or_lt` may have been renamed or requires an explicit `LinearOrder`/`ℚ`
 instance argument this call site no longer infers) — out of scope for this re-verification
 pass, which does not modify Lean files.
+
+## Build Fix (follow-up to W4PM-LEAN-GALL-022's verification)
+
+Reproduced the exact failure W4PM-LEAN-GALL-022 reported before touching anything:
+
+```
+$ cd /Users/sac/mfact/procint && lake build ProcInt.Models.CausalNetClamp
+error: ProcInt/Models/CausalNetClamp.lean:53:9: Unknown identifier `le_or_lt`
+error: ProcInt/Models/CausalNetClamp.lean:53:51: Tactic `rcases` failed: `x✝ : ?m.17` is not an inductive datatype
+error: ProcInt/Models/CausalNetClamp.lean:74:9: Unknown identifier `le_or_lt`
+error: ProcInt/Models/CausalNetClamp.lean:74:51: Tactic `rcases` failed: `x✝ : ?m.16` is not an inductive datatype
+error: build failed
+```
+
+**Root cause:** `le_or_lt` is not in scope under this session's pinned Mathlib revision
+(`fabf563a7c95a166b8d7b6efca11c8b4dc9d911f` per `lakefile.toml`). It is not a rename issue
+inside a namespace that would resolve with a longer name — the identifier is genuinely
+unresolved, so `rcases` receives an unresolved metavariable instead of a decidable
+disjunction, exactly as 022 diagnosed.
+
+**Fix:** replaced both occurrences (lines 53 and 74) with `le_total 0 (dependencyMeasure ab
+ba)`, which gives the non-strict disjunction `0 ≤ x ∨ x ≤ 0` (still exhaustive over `ℚ`,
+still exactly what each proof needs to pick which side of `max` is `x` vs `0`). Adjusted the
+two proof branches accordingly:
+
+- `clampedMeasure_add_swap_eq_abs`: second branch's `abs_of_neg h` (which required `h : x <
+  0`) became `abs_of_nonpos h` (which accepts `h : x ≤ 0`, matching `le_total`'s weaker
+  disjunct); the `max_eq_right`/`max_eq_left` calls needed no change beyond taking `h`
+  directly instead of `le_of_lt h`.
+- `clampedMeasure_mul_swap_eq_zero`: second branch's `max_eq_right (le_of_lt h)` became
+  `max_eq_right h` for the same reason.
+
+No `sorry`, no `axiom`, no change to the theorem statements or to `dependencyMeasure_antisymm`
+— only the case-split tactic and the two downstream lemma calls that depended on strict vs.
+non-strict inequality.
+
+**Build now succeeds:**
+
+```
+$ lake build ProcInt.Models.CausalNetClamp
+✔ [8559/8559] Built ProcInt.Models.CausalNetClamp (12s)
+Build completed successfully (8559 jobs).
+```
+
+**Kernel verification** (scratch import file, same pattern as prior checkpoints, removed
+after use):
+
+```
+'ProcInt.clampedMeasure_add_swap_eq_abs' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.clampedMeasure_mul_swap_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+Only standard Mathlib axioms — no `sorryAx`. Both theorems are now genuinely kernel-verified,
+not merely hand-reviewed.
+
+**New file hash:** `bffcb0cedeb1089f1d7872a357bee7856d217460f445684bebe40dd8db8138cb`
+(was `18bead5734a2d326f855daa6107fdb5965a7d46f7dd09a5e0e406ec4fb4247ad`). Updated
+`LEAN_CAUSALNET_CLAMP_FILE_SHA256` in
+`wasm4pm/wasm4pm/src/correspondence/causal_dependency_measure.rs:74-75` to match.
+
+**New mfact commit:** `fcf8adbb5e82ff2a5a60b20c1b30e990ba3f21df` (main branch) — the repo's
+generated-output guard hook again required `MFACT_SOURCE_CHANGED=1` (not `--no-verify`),
+same remediation path 024 itself used, since `CausalNetClamp.lean` is hand-written but
+imported by a ggen-adjacent file.
+
+**`cargo test --lib` (from `wasm4pm/wasm4pm/`):**
+
+- **Before this fix:** `1046 passed; 1 failed; 12 ignored` — the one failure was
+  `correspondence::causal_dependency_measure::tests::causal_net_clamp_lean_file_hash_matches_citation`,
+  reproducing the stale-citation state exactly (`left` = new file hash, `right` = old cited
+  hash), confirming the constant needed updating before anything else.
+- **After updating the constant:** `1047 passed; 0 failed; 12 ignored`.
+
+## Standing (superseded)
+
+`ALIVE` — `clampedMeasure_add_swap_eq_abs` and `clampedMeasure_mul_swap_eq_zero` are now
+kernel-verified by a completed `lake build` (not merely hand-reviewed), citation hash is
+current, and the full crate test suite passes with zero failures. The scope boundary noted
+above (rescale/truncation and threshold-filter steps remain uncharacterized) still stands —
+this fix closes the build-failure gap only, not that separate open scope.

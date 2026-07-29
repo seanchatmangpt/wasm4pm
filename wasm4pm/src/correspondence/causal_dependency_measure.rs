@@ -72,7 +72,7 @@
 pub const LEAN_CAUSALNET_FILE_SHA256: &str =
     "a889f4d19f6e2314b810ca5315e06912278c974732e89686e4367158f66bcbe0";
 pub const LEAN_CAUSALNET_CLAMP_FILE_SHA256: &str =
-    "18bead5734a2d326f855daa6107fdb5965a7d46f7dd09a5e0e406ec4fb4247ad";
+    "bffcb0cedeb1089f1d7872a357bee7856d217460f445684bebe40dd8db8138cb";
 pub const MFACT_REVISION: &str = "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564";
 
 /// Exact-rational transcription of the clamp `mfact/procint/ProcInt/Models/
