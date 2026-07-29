@@ -11,4 +11,5 @@
 //! real wasm4pm implementation. See `token_replay`'s module doc for the
 //! full scope boundary of what this proves and does not prove.
 
+pub mod petri_firing;
 pub mod token_replay;
