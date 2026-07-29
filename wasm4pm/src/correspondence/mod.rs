@@ -12,6 +12,7 @@
 //! full scope boundary of what this proves and does not prove.
 
 pub mod alignment_cost;
+pub mod causal_dependency_measure;
 pub mod declare_semantics;
 pub mod petri_firing;
 pub mod process_tree_semantics;
