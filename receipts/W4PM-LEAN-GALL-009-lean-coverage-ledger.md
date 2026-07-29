@@ -24,20 +24,25 @@ coverage).
 
 ## Summary tally
 
+**Corrected by `W4PM-LEAN-GALL-009A`** (receipts/W4PM-LEAN-GALL-009A-ledger-closure.md):
+this table originally miscounted `adjacent_theorem_requiring_carrier_mapping` as 8 by
+including `soundness`, a bonus entry not in the 46-algorithm count, and left `ocel-dfg`
+as an unresolved open gap. Both are fixed below; the full 46-row ledger table further down
+this file required no changes — it was correct all along, only this summary was wrong.
+
 | class | count | algorithm_ids |
 |---|---|---|
 | `direct_theorem` | **0** | none — every candidate that name-matched was downgraded on carrier-map or clause-mapping grounds |
-| `adjacent_theorem_requiring_carrier_mapping` | 8 | dfg, causal-heuristic, soundness (StructuralNet::check_soundness), token-replay, powl, powl-from-partial-orders, ocel-powl, simple-process-tree |
+| `adjacent_theorem_requiring_carrier_mapping` | 7 | dfg, causal-heuristic, token-replay, powl, powl-from-partial-orders, ocel-powl, simple-process-tree |
 | `property_level_theorem` | 1 (bonus, not in the 46) | declare_conformance (checking side, distinct from declare/mining) |
 | `formal_specification_only` | 1 (bonus, not in the 46) | ProcessTree/ProcessTreeOperator type itself |
-| `no_lean_coverage` | 34 | see full table |
+| `no_lean_coverage` | 35 | see full table (includes `ocel-dfg`, independently confirmed by 009A — mfact has the OCEL and DFG pieces separately but never combined) |
 | `refinement_of:dfg` | 3 | dfg-filtered, dfg-simd, dfg-hierarchical |
-| `refinement_of:ocel-dfg` | 1 | ocel-dfg-per-type (base itself is an open gap, see below) |
-| **UNASSIGNED (open gap)** | 1 | **ocel-dfg** — no agent independently analyzed this against a Lean carrier; cluster 5 incorrectly assumed cluster 1 covered it. Flagged honestly rather than silently backfilled. |
+| `refinement_of:ocel-dfg` | 1 | ocel-dfg-per-type (base is now a confirmed `no_lean_coverage` entry, not an open gap) |
 
-`8 + 34 + 3 + 1(gap) = 46` ✓ (the 1-refinement-of-ocel-dfg entry is contingent on the gap
-being closed, not double-counted separately). 2 bonus entries (declare_conformance,
-ProcessTree type) are outside the original 46-algorithm count — noted, not folded in.
+`7 + 35 + 4(refinement) = 46` ✓. `soundness` (`StructuralNet::check_soundness`) and 2
+other bonus entries (declare_conformance, ProcessTree type) are outside the original
+46-algorithm count — noted, not folded into this tally.
 
 **Zero `direct_theorem` classifications is itself the headline finding of this checkpoint.**
 A prior, less rigorous audit round claimed real Petri/WfNet-soundness and conformance-fitness
@@ -126,11 +131,10 @@ specifically) the Lean theorem's clause structure doesn't textually match wasm4p
 
 ## Open items before 010 (correspondence harness) can begin
 
-1. **`ocel-dfg` has no ledger entry** — an oversight in agent dispatch (cluster 5 assumed
-   cluster 1 covered it; neither did). Needs one targeted follow-up before the ledger can be
-   called complete. `ocel-dfg-per-type`'s `refinement_of:ocel-dfg` entry is contingent on
-   this being closed.
-2. The 8 `adjacent_theorem_requiring_carrier_mapping` entries are the natural starting
+1. ~~`ocel-dfg` has no ledger entry~~ — **CLOSED by `W4PM-LEAN-GALL-009A`**
+   (receipts/W4PM-LEAN-GALL-009A-ledger-closure.md): confirmed `no_lean_coverage`, mfact's
+   OCEL and DFG formalizations exist separately but are never combined.
+2. The 7 `adjacent_theorem_requiring_carrier_mapping` entries are the natural starting
    candidates for 010 (correspondence harness) — they have a real Lean theorem, proven,
    sorry/axiom-free, and only need the encoding/decoding functions built, not new math.
    Recommend starting the harness with `token-replay`'s carrier map (mfact's `TokenReplay.lean`
