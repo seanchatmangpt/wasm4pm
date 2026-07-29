@@ -197,3 +197,79 @@ this checkpoint's own file); the failure did not recur in later runs.
 Rust discovery functions (not reimplementations), with exact test counts and an honest
 accounting of a concurrently-added, unrelated test-count delta from another fleet's parallel
 work in the same repository this session.
+
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Confirmed `lake exe cache get` already fetched (checkpoint 023's finding holds):
+
+```
+$ cd /Users/sac/mfact/procint && lake exe cache get
+Current branch: HEAD
+Using cache (Azure) from origin: (some leanprover-community/mathlib4)
+No files to download
+Already decompressed 8542 file(s)
+```
+
+Hash check against this receipt's citation — MATCH for both files:
+
+```
+$ shasum -a 256 ProcInt/HeuristicMiner.lean ProcInt/InductiveMinerSoundness.lean
+0da065c24c6c942bb542a2826f268e517e1b6370ffeb1a7b6706a87ce1804b4b  ProcInt/HeuristicMiner.lean
+736a78cc9187b1c1836477780b6550aab084ecdc670bfdccf4c90a07845b12c1  ProcInt/InductiveMinerSoundness.lean
+```
+
+Both identical to the receipt's cited SHA-256 values — files are unmodified since the
+original checkpoint.
+
+Standard module-path build (NOT the `GallCheckpoint026` lean_lib target this checkpoint
+added to `lakefile.toml`):
+
+```
+$ lake build ProcInt.HeuristicMiner
+⚠ [8559/8559] Replayed ProcInt.HeuristicMiner
+warning: ... automatically included section variable(s) unused ... [DecidableEq α]  (x3, linter-only, pre-existing)
+Build completed successfully (8559 jobs).
+
+$ lake build ProcInt.InductiveMinerSoundness
+Build completed successfully (8559 jobs).
+```
+
+Both build cleanly via the standard per-module `lake build <module.path>` invocation,
+with no dependency on the `GallCheckpoint026` lean_lib target. Confirmed via `grep` that
+neither module is imported by the ggen-rendered `ProcInt.lean` root import index (grep for
+`HeuristicMiner|InductiveMinerSoundness` in `ProcInt.lean` returns nothing) — the
+`GallCheckpoint026` target remains useful as a one-shot "build both at once" convenience
+target and is still present in `lakefile.toml`, but is NOT required for either file to
+build; standard module-path `lake build` reaches both directly regardless.
+
+Axiom check on both exact theorems (via a scratch file importing both modules, `lake env
+lean`, then discarded):
+
+```
+#print axioms ProcInt.edgeSetAt_antitone
+'ProcInt.edgeSetAt_antitone' depends on axioms: [propext, Classical.choice, Quot.sound]
+
+#print axioms ProcInt.seqCutHolds_traceSet_eq_language
+'ProcInt.seqCutHolds_traceSet_eq_language' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+Both `sorry`-free, no custom axioms — standard Lean/Mathlib axiom set only. Identical in
+kind to the original checkpoint's claim (that checkpoint's own receipt body did not print
+the axiom set inline for comparison, but this result is consistent with a `sorry`-free,
+axiom-clean claim).
+
+Also ran `cd /Users/sac/wasm4pm/wasm4pm && cargo test --lib`: **1047 passed; 0 failed; 12
+ignored** — real current baseline, matching the high end of the previously reported
+1004-1047 range.
+
+## Standing (re-affirmed)
+
+`PARTIAL_ALIVE` stands, confirmed ALIVE at the Lean-kernel level: both theorems rebuild
+cleanly under the standard `lake build` mechanism, hashes match, axioms clean. One
+clarification for the record (not a discrepancy, a documentation gap): the
+`GallCheckpoint026` lean_lib target is not actually required for these two files to build
+individually — it was added as a convenience batch-build target, and its presence or
+absence does not change whether `lake build ProcInt.HeuristicMiner` /
+`lake build ProcInt.InductiveMinerSoundness` succeed.
+
+Claude-Session: https://claude.ai/code/session_01Aoh5eSrPUcs6CL76okykRo

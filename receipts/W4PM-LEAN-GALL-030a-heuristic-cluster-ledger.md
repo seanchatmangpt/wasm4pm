@@ -193,3 +193,60 @@ independently-re-verified `no_lean_coverage` ledger for the other 5, including a
 strengthened (not weaker) rejection of the `validTopologicalSort` name-adjacency for 2 of
 them; and an honestly flagged, out-of-scope, pre-existing concurrent-edit test failure
 (`ocel_semantics`) that this checkpoint did not cause and does not fix.
+
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Independent re-verification of `hasL1Loop_iff` via the STANDARD `lake build` mechanism
+(not the ad-hoc direct `lean` invocation this checkpoint originally used, since at the
+time the lake build cache lacked Mathlib artifacts). Checkpoint 023 has since confirmed
+`lake exe cache get` succeeds; re-ran it here first to confirm currency:
+
+```
+$ cd /Users/sac/mfact/procint && lake exe cache get
+Current branch: HEAD
+Using cache (Azure) from origin: (some leanprover-community/mathlib4)
+No files to download
+Already decompressed 8542 file(s)
+```
+
+Hash check: this receipt's original body cited no SHA-256 for `Rework.lean` (unlike 026's
+receipt) — nothing to compare against. Current file hash for the record:
+
+```
+$ shasum -a 256 ProcInt/MFW/Rework.lean
+ef46e234bff3e0818121dd9e1c3716d0f12aa826ce0b886ae91a733911f69d84  ProcInt/MFW/Rework.lean
+```
+
+Standard module-path build (not the ad-hoc `lean Rework.lean` invocation):
+
+```
+$ lake build ProcInt.MFW.Rework
+✔ [2/2] Built ProcInt.MFW.Rework (402ms)
+Build completed successfully (2 jobs).
+```
+
+Axiom check on the exact theorem:
+
+```
+$ lake env lean <file importing ProcInt.MFW.Rework>
+#print axioms ProcInt.MFW.hasL1Loop_iff
+'ProcInt.MFW.hasL1Loop_iff' depends on axioms: [propext, Quot.sound]
+```
+
+Matches the original checkpoint's axiom-set claim exactly (`propext, Quot.sound`, no
+`sorry`, no custom axioms). No discrepancy found: the standard `lake build` mechanism now
+builds this file cleanly, superseding the original ad-hoc `lean` invocation as the
+verification path, with an identical result.
+
+Also ran, while in `/Users/sac/wasm4pm`, `cd wasm4pm && cargo test --lib`: **1047 passed;
+0 failed; 12 ignored** — the real current baseline (matches the high end of the
+1004-1047 range prior sessions reported).
+
+## Standing (re-affirmed)
+
+`PARTIAL_ALIVE` stands, unchanged. The live re-verification via standard `lake build`
+strengthens rather than alters this: the rework-detection theorem is confirmed buildable
+through the ordinary module-path mechanism, not merely via the standalone `lean`
+workaround.
+
+Claude-Session: https://claude.ai/code/session_01Aoh5eSrPUcs6CL76okykRo
