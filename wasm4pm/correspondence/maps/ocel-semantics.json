@@ -1,0 +1,116 @@
+{
+  "algorithm_id": "ocel-semantics",
+  "scope_note": "This checkpoint covers 2 of 7 program sub-claims with a real correspondence harness (lifecycle ordering, single-trace DFG). The other 5 (well-formedness, flattening, OC-DFG per object type, OC-Petri-net projection, object-centric conformance) are honest no_lean_coverage ledger entries -- confirmed by direct file read this checkpoint, not inferred.",
+  "ledger_entries": [
+    {
+      "claim": "well-formedness (structural validity invariant for an OCEL log)",
+      "lean_side": {
+        "file": "mfact/procint/ProcInt/Ocel/Core.lean",
+        "content_sha256": "ede40efa8f96d544cf8a6594a2d5b0a6cdf71cd6091bb9e4bc5b30ef52e611e2",
+        "finding": "structure OCEL(E,O,ET,OT,Q,V) has fields evtype/time/objtype/e2o/o2o/eaval/oaval, unconstrained by any WellFormed invariant."
+      },
+      "rust_side": {
+        "file": "wasm4pm/src/ocel_io.rs",
+        "symbol": "validate_ocel_inner (lines 58-175)",
+        "finding": "real referential-integrity/duplicate-ID/type-consistency/timestamp-monotonicity checks exist, but with no Lean-side formal counterpart to compare against."
+      },
+      "status": "UNMAPPED (no_lean_coverage)",
+      "evidence_items_status": "N/A -- no shared invariant exists to differentially test"
+    },
+    {
+      "claim": "flattening (OCEL -> single-case-notion classical event log)",
+      "lean_side": { "finding": "no OCEL-to-classical-log projection function exists anywhere in mfact." },
+      "rust_side": {
+        "file": "wasm4pm/src/oc_petri_net.rs",
+        "symbol": "flatten_ocel_to_eventlog_for_type (lines 214-300)",
+        "finding": "real, reused-by-oc_conformance.rs implementation; no Lean-side function to diff against."
+      },
+      "status": "UNMAPPED (no_lean_coverage)"
+    },
+    {
+      "claim": "OC-DFG (per object type)",
+      "lean_side": { "finding": "Models/Dfg.lean's Dfg type is untyped over object types; no per-type partition function exists." },
+      "rust_side": {
+        "finding": "TWO independent unreconciled implementations exist: discovery.rs::discover_ocel_dfg_pure/discover_ocel_dfg_per_type, and advanced/ocdfg.rs::OCDFG::discover (used by the CLI ocdfg_bridge). Flagged separately as a consolidation task, out of scope for this correspondence claim."
+      },
+      "status": "UNMAPPED (no_lean_coverage)"
+    },
+    {
+      "claim": "OC-Petri-net projection",
+      "lean_side": {
+        "file": "mfact/procint/ProcInt/Petri/OCPN.lean",
+        "content_sha256": "33a0bd6fbe22930a55bc59c97b4a485a0426e5fc0809df0ff06b23c83407e764",
+        "finding": "defines only the TARGET structure -- OCPN(P,T,OT), OCPN.WellFormed, ColoredMarking := Multiset(P x Obj), OCPN.Conforms, and theorems conforms_add/conforms_of_le. No projection function from an OCEL log into an OCPN exists."
+      },
+      "rust_side": {
+        "file": "wasm4pm/src/oc_petri_net.rs",
+        "symbol": "discover_oc_petri_net_pure (lines 105-128)",
+        "finding": "real projection logic (flatten per type, discover via alpha++, compute shared-transition/variable-arc annotations); no Lean-side projection to compare against. Note: 'heuristic' algorithm silently falls back to alpha++, documented in a code comment but not tested here -- out of scope."
+      },
+      "status": "UNMAPPED (no_lean_coverage)"
+    },
+    {
+      "claim": "object-centric conformance projection (fitness/replay against an OC model)",
+      "lean_side": { "finding": "existing token-replay/alignment Lean modules (already bridged in checkpoints 010 and 013) operate on classical single-case logs/nets only -- never OCEL/OCPN." },
+      "rust_side": {
+        "file": "wasm4pm/src/oc_conformance.rs",
+        "symbol": "oc_conformance_check_inner (lines 26-127)",
+        "finding": "real code, but computes activity-SET membership per trace, not ordered token replay -- despite a docstring (line 21) claiming 'token-replay each trace'. This doc/implementation mismatch is flagged as a separate defect task, not fixed as part of this checkpoint's correspondence claim."
+      },
+      "status": "UNMAPPED (no_lean_coverage)"
+    }
+  ],
+  "harness_entries": [
+    {
+      "claim": "lifecycle ordering (per-object non-decreasing timestamp sequence)",
+      "lean_side": {
+        "file": "mfact/procint/ProcInt/Ocel/Core.lean",
+        "definitions": ["OCEL.TimeOrdered", "OCEL.IsLifecycle"],
+        "quoted": "def OCEL.TimeOrdered ... := es.Pairwise (fun a b => L.time a <= L.time b)",
+        "content_sha256": "ede40efa8f96d544cf8a6594a2d5b0a6cdf71cd6091bb9e4bc5b30ef52e611e2",
+        "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564",
+        "sorry_or_axiom_present": false
+      },
+      "rust_side": {
+        "file": "wasm4pm/src/ocel_io.rs",
+        "symbol": "validate_ocel_object_lifecycles (lines 441-500)",
+        "note": "the harness reproduces this function's exact violation-detection windows check (rust_has_violation in causal_dependency_measure-sibling ocel_semantics.rs) rather than depending on the ocel cargo feature or a full OCEL fixture, since the violation logic operates purely on (arrival_index, timestamp) pairs per object."
+      },
+      "decoder": "wasm4pm::correspondence::ocel_semantics::lean_time_ordered",
+      "comparison": "wasm4pm::correspondence::ocel_semantics::compare_time_ordered",
+      "method": "curated_fixture_domain",
+      "method_note": "6 fixtures: well-ordered, out-of-order, duplicate-timestamp, single-event, empty, plus a negative falsifier (flipped predicate). Not exhaustive -- object timelines are unbounded-length sequences, same rigor tier as checkpoint 012.",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (curated_fixture_domain)"
+    },
+    {
+      "claim": "single-trace DFG (dfgOfTrace restricted to one case, per Dfg.lean's own module comment)",
+      "lean_side": {
+        "file": "mfact/procint/ProcInt/Models/Dfg.lean",
+        "definitions": ["Dfg", "dfgOfTrace"],
+        "quoted": "def dfgOfTrace (t : List a) : Dfg a := <(t.zip t.tail).map (fun p => (p.1, p.2, 1))>",
+        "theorems": ["dfgOfTrace_edges_length", "dfgOfTrace_nil", "dfgOfTrace_freq_one"],
+        "content_sha256": "d2717c4f83082092dc1105e3a325ef15bd99629faae19de6aede10d069694407",
+        "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564",
+        "sorry_or_axiom_present": false
+      },
+      "rust_side": {
+        "file": "wasm4pm/src/discovery.rs",
+        "symbol": "discover_dfg_from_log (lines 28-75, real production code, not OCEL-specific)",
+        "note": "compared given a single-trace AdmittedEventLog"
+      },
+      "decoder": "wasm4pm::correspondence::ocel_semantics::lean_dfg_of_trace_exact",
+      "comparison": "wasm4pm::correspondence::ocel_semantics::compare_dfg_of_trace",
+      "normalization": "the literal Lean def assigns freq=1 per pair occurrence with no aggregation; the real DFG structure aggregates repeated directly-follows pairs within a trace. compare_dfg_of_trace explicitly aggregates the Lean edges into a frequency multiset before comparing -- a documented, deliberate normalization step, not an unstated assumption.",
+      "method": "bounded_property_check",
+      "method_note": "50 deterministic pseudo-random traces up to length 10 (fixed LCG seed, no Math.random/Date.now dependency), plus direct assertions of the three cited theorems and 2 negative falsifiers.",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (bounded_property_check_domain)"
+    }
+  ],
+  "flagged_defects_out_of_scope": [
+    "oc_conformance.rs docstring claims 'token-replay each trace' but oc_conformance_check_inner does activity-set membership, not ordered replay -- doc/implementation mismatch",
+    "two unreconciled OC-DFG implementations: discovery.rs::discover_ocel_dfg_pure/_per_type vs advanced/ocdfg.rs::OCDFG::discover (CLI-bridge-facing) -- consolidation/tech-debt finding"
+  ],
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation -- same constraint as every prior harness (mfact .lake build directory does not exist).",
+  "not_claimed": "EXACT_CORRESPONDENCE/direct_theorem for either harness claim; any correspondence for the 5 no_lean_coverage claims; that oc_conformance_check_inner's docstring is accurate (flagged as a defect, not claimed fixed); that the two OC-DFG implementations are equivalent to each other (flagged as unreconciled, not tested for equivalence)."
+}

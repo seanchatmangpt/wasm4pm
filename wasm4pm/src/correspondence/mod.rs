@@ -14,6 +14,7 @@
 pub mod alignment_cost;
 pub mod causal_dependency_measure;
 pub mod declare_semantics;
+pub mod ocel_semantics;
 pub mod petri_firing;
 pub mod process_tree_semantics;
 pub mod token_replay;
