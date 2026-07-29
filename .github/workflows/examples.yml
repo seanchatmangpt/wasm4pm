@@ -97,6 +97,14 @@ jobs:
       - name: Install workspace and materialize cognition WASM
         run: pnpm install --no-frozen-lockfile
 
+      - name: Retain regenerated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: regenerated-pnpm-lock-${{ github.sha }}
+          path: pnpm-lock.yaml
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Build wpm runtime dependency closure
         run: pnpm --filter @wasm4pm/cli... build
 
