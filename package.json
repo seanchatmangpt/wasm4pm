@@ -21,10 +21,10 @@
   "packageManager": "pnpm@11.5.2",
   "scripts": {
     "build": "pnpm -r --if-present run build",
-    "test": "pnpm run test:integration",
+    "test": "pnpm -r --if-present run test",
     "test:proof": "pnpm run test --workspace=@wasm4pm/test-proof",
     "test:contract": "pnpm run test --workspace=@wasm4pm/contracts --workspace=@wasm4pm/config --workspace=@wasm4pm/engine --workspace=wasm4pm --workspace=@wasm4pm/observability --workspace=@wasm4pm/ml --workspace=@wasm4pm/planner --workspace=@wasm4pm/testing --if-present",
-    "test:integration": "pnpm run test --workspaces --if-present",
+    "test:integration": "pnpm -r --if-present run test:e2e",
     "test:archive": "pnpm run test:lane --workspace=@wasm4pm/test-archive",
     "test:coverage": "pnpm -r --if-present run test:coverage && cd wasm4pm && pnpm run test:coverage",
     "lint": "pnpm -r --if-present run lint",

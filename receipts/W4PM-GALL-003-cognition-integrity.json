@@ -1,0 +1,34 @@
+{
+  "checkpoint": "W4PM-GALL-003",
+  "title": "Cognition registry integrity",
+  "git_revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+  "date": "2026-07-29",
+  "status": "ALIVE",
+  "fix": {
+    "file": "crates/wasm4pm-cognition/src/session/tests.rs",
+    "test_renamed": {
+      "from": "refuses_tampered_state_hash",
+      "to": "refuses_tampered_turn_number"
+    },
+    "change": "assertion corrected from SessionError::StateHashMismatch to SessionError::InvalidState{reason:\"persisted turn number must equal the non-empty turn ledger length\"}. Root cause: the test mutates state.turn without extending state.turns or re-signing state_hash, which trips the turn/ledger-length structural invariant (checked in verify_previous_state, session/turn.rs, before the hash check) rather than the hash check itself. The validation code's check ordering is correct by design (structural invariants before trusting the hash); the test's original expectation was wrong, not the code."
+  },
+  "commands_run": [
+    {"command": "cargo test --lib", "cwd": "crates/wasm4pm-cognition", "exit_code": 0, "result": "441 passed; 0 failed; 0 ignored; finished in 0.24s"},
+    {"command": "cargo test --test anti_fraud_gate", "cwd": "crates/wasm4pm-cognition", "exit_code": 0, "result": "55 passed; 0 failed; 0 ignored; finished in 1.27s"}
+  ],
+  "cross_checks_unaffected": [
+    "session/tests.rs::refuses_semantically_forged_state_with_recomputed_hash (still passes, still exercises StateHashMismatch via a different tamper path)",
+    "tests/session_verify.rs (not touched by this fix)",
+    "tests/session_history.rs (not touched by this fix)"
+  ],
+  "registry_cross_check": {
+    "registry_entries": 55,
+    "breed_id_variants": 55,
+    "ocel_reports": 55,
+    "anti_fraud_gate": "55/55 PASS"
+  },
+  "negative_falsifier": {
+    "status": "not yet added — no compile-fail harness (e.g. trybuild) exists in this crate today",
+    "recommendation": "duplicate one BreedId in registration.rs::ALL and confirm compile fails; requires a trybuild-style fixture or a documented manual/CI-level check, follow-up not done in this pass"
+  }
+}

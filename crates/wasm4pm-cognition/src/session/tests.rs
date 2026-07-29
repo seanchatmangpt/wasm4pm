@@ -247,7 +247,7 @@ fn later_contradiction_reopens_a_committed_track() {
 }
 
 #[test]
-fn refuses_tampered_state_hash() {
+fn refuses_tampered_turn_number() {
     let mut first = run_session_turn(&turn(None, Some(("o1", "x and y")), None))
         .expect("first turn");
     first.state.turn = 99;
@@ -257,7 +257,17 @@ fn refuses_tampered_state_hash() {
         None,
     ))
     .expect_err("tamper must refuse");
-    assert_eq!(error, SessionError::StateHashMismatch);
+    // Setting `turn` without extending `turns` violates the turn/ledger-length
+    // invariant, which is checked before the hash — so this is InvalidState,
+    // not StateHashMismatch (that variant is exercised by
+    // refuses_semantically_forged_state_with_recomputed_hash below).
+    assert_eq!(
+        error,
+        SessionError::InvalidState {
+            reason: "persisted turn number must equal the non-empty turn ledger length"
+                .to_string(),
+        }
+    );
 }
 
 #[test]

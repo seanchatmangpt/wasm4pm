@@ -1,0 +1,42 @@
+{
+  "receipt_id": "W4PM-GALL-000",
+  "receipt_type": "gall_checkpoint_baseline",
+  "receipt_schema": "1.0.0",
+  "created_at": "2026-07-29T17:00:00Z",
+  "repos": {
+    "wasm4pm": {
+      "path": "/Users/sac/wasm4pm", "revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+      "uncommitted_files": 30, "last_commit_date": "2026-07-24T09:12:46-07:00",
+      "uncommitted_note": "includes this session's own GALL-001..005 fixes and receipts, not yet committed",
+      "commands_run": [
+        {"command": "cargo test", "cwd": "wasm4pm/wasm4pm", "exit_code": 0, "summary": "ALIVE: 2212 tests passed, 0 failed, exit 0 — see receipts/W4PM-GALL-001-native-core.json"},
+        {"command": "cargo check --target wasm32-unknown-unknown", "cwd": "wasm4pm/wasm4pm", "exit_code": 0, "summary": "ALIVE: exit 0, 1 non-fatal static_mut_refs warning — see receipts/W4PM-GALL-002-wasm32.json"},
+        {"command": "cargo test --lib && cargo test --test anti_fraud_gate", "cwd": "crates/wasm4pm-cognition", "exit_code": 0, "summary": "ALIVE: 441/441 lib tests, 55/55 anti-fraud gate — see receipts/W4PM-GALL-003-cognition-integrity.json"},
+        {"command": "pnpm test", "cwd": ".", "exit_code": 1, "summary": "ALIVE (real execution): terminates normally, real per-package counts, bails at a genuine pre-existing bug in packages/observability (missing drift-watch.ts) — see receipts/W4PM-GALL-005-ts-test.json"},
+        {"command": "pnpm --filter @wasm4pm/example-web-dashboard build", "cwd": ".", "exit_code": 0, "summary": "ALIVE: vite build succeeds after wasm-pack prerequisite + main.js — see receipts/W4PM-GALL-004-ts-build.json"}
+      ]
+    },
+    "wasm4pm-compat": {"path": "/Users/sac/wasm4pm-compat", "revision": "ef334c9f575078774c192c30318606616b4e1fbf", "uncommitted_files": 0, "last_commit_date": "2026-07-28T11:12:11-07:00", "commands_run": []},
+    "ggen": {"path": "/Users/sac/ggen", "revision": "ba6c069bc68a8dd8c1e2555d1048ef3fa1912a8c", "uncommitted_files": 6, "last_commit_date": "2026-07-28T12:31:16-07:00", "commands_run": [
+      {"command": "ggen sync run --dry-run", "cwd": "wasm4pm (targeting wasm4pm's ggen.toml)", "exit_code": 1, "summary": "BLOCKED: FM-GEN-006: QuerySource::Pack not implemented; installed 26.7.59 vs ggen HEAD 26.15.2 — out of scope for this tranche, see receipts/GGEN-GALL-006-investigation.json for related but distinct findings"}
+    ]},
+    "mfact": {"path": "/Users/sac/mfact", "revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564", "uncommitted_files": 134, "last_commit_date": "2026-07-16T17:02:41-07:00", "commands_run": []},
+    "mfw": {"path": "/Users/sac/mfw", "revision": "95f29e8fa1b60770ac2399f83fb4f99abc18e34d", "uncommitted_files": 9, "last_commit_date": "2026-07-29T06:49:04-07:00", "commands_run": []},
+    "bcinr": {"path": "/Users/sac/bcinr", "revision": "5628c8d5e1506464e15838910531b84ee4dfba4a", "uncommitted_files": 0, "last_commit_date": "moved since prior research snapshot (was 8455dd7, 30 uncommitted) — bcinr had independent activity during this session, not caused by this work", "commands_run": []}
+  },
+  "known_falsifiers": [
+    "declare_conformance.rs silently reports Succession/NotCoExistence as always-satisfied (reachable via discover_declare) — NOT fixed in this tranche, tracked separately (task #8)",
+    "ggen sync blocked by QuerySource::Pack version drift — out of scope for wasm4pm's own tranche",
+    "aco mining bridge produces degenerate empty-DFG on at least one real log — NOT fixed in this tranche",
+    "packages/observability has a real pre-existing test failure (missing apps/wasm4pm/src/commands/drift-watch.ts) now visible because GALL-005 makes pnpm test actually run"
+  ],
+  "verdicts": {
+    "W4PM-GALL-000": "PARTIAL_ALIVE — this receipt exists and is populated with real command results, but replay-without-this-session has not yet been independently exercised",
+    "W4PM-GALL-001": "ALIVE",
+    "W4PM-GALL-002": "PARTIAL_ALIVE — compiles clean, but no native/wasm32 equivalence fixture exists yet (documented gap, not a blocker for this checkpoint's own scope)",
+    "W4PM-GALL-003": "ALIVE",
+    "W4PM-GALL-004": "ALIVE — build succeeds and bundle sanity-checked; e2e Playwright claim in the README is UNVERIFIED (no spec file exists in the repo)",
+    "W4PM-GALL-005": "ALIVE — real test execution confirmed, though it surfaces a pre-existing unrelated bug in packages/observability",
+    "GGEN-GALL-006": "investigation complete, fix deferred to a separately-authorized ~/ggen session"
+  }
+}

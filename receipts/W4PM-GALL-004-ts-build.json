@@ -1,0 +1,26 @@
+{
+  "checkpoint": "W4PM-GALL-004",
+  "title": "TypeScript build floor",
+  "git_revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+  "date": "2026-07-29",
+  "status": "ALIVE",
+  "decision": "A: implemented examples/web-dashboard/src/main.js (Option B, deleting the example, was rejected — it's a documented proof artifact referenced by pnpm-lock.yaml, docs/explanation/breeds_typescript_thesis.md, and CLAUDE.md)",
+  "correction_found_during_implementation": "the root script interview:wasm:web builds pkg-web to packages/cognition/pkg-web, but examples/web-dashboard/package.json declares its dependency as ../../crates/wasm4pm-cognition/pkg-web — a real path mismatch between two parts of the repo. Built directly to crates/wasm4pm-cognition/pkg-web (the location the example's own package.json already expects) rather than editing the dependency path, since that's the minimal correct fix.",
+  "api_verified_before_landing": {
+    "cognition_run_signature": "pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> — single JSON string argument, not (breed, input) as an earlier draft assumed",
+    "input_wrapper_shape": "{ breed: string, contract: BreedInput, options?: { profile } } — field is 'contract', not 'input'; fixture files use {breed, input} so main.js maps fixture.input -> contract",
+    "output_shape_confirmed": "{status, breed, run_id, input_hash, output_hash, ocel_hash, wasm_hash, model_hash, replay_pointer, options_profile, output, conformance, signature, public_key_id, signature_algorithm} — no 'kpis' field exists on the real output; main.js derives its KPI display from conformance.fitness/model_id and options_profile instead of a nonexistent kpis object"
+  },
+  "commands_run": [
+    {"cmd": "wasm-pack build --target web --out-dir pkg-web --out-name wasm4pm_cognition --release --features wasm", "cwd": "crates/wasm4pm-cognition", "exit_code": 0, "result": "pkg ready at crates/wasm4pm-cognition/pkg-web"},
+    {"cmd": "pnpm --filter @wasm4pm/example-web-dashboard build", "cwd": ".", "exit_code": 0, "result": "vite build succeeded in 83ms; dist/assets includes wasm4pm_cognition_bg-*.wasm (2.23MB), index-*.js (8.51kB)"}
+  ],
+  "files_changed": ["examples/web-dashboard/src/main.js"],
+  "before_error": "Rollup failed to resolve import \"./src/main.js\" from examples/web-dashboard/index.html",
+  "after_verification": {
+    "bundle_sanity_check": "grep -c cognition_run in built JS bundle: 1 (real reference present)",
+    "fixture_catalog_check": "both 'mycin' and 'bayesian_network' breed IDs confirmed present in breed-catalog.json"
+  },
+  "e2e_test_gap_honestly_noted": "examples/web-dashboard/package.json declares a test:e2e script (playwright test), and the README describes a previously-recorded Playwright pass, but no playwright.config or *.spec.* file currently exists anywhere in the example directory. This claim could not be verified — it is UNVERIFIED, not confirmed, and should not be cited as evidence this checkpoint is fully proven until a real e2e spec is added and run.",
+  "must_not_claim": "full end-to-end proof via Playwright — only that the build succeeds and the bundle references the real WASM API correctly"
+}
