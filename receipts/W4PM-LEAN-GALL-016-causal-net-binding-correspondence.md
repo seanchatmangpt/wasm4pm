@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-016
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: causal-net binding semantics correspondence (proof-dependency program, checkpoint 016/020)
 git_revision: PENDING_COMMIT
 predecessor: W4PM-LEAN-GALL-015 (receipts/W4PM-LEAN-GALL-015-process-tree-semantics-correspondence.md)
@@ -104,10 +104,53 @@ live Lean re-verification (`mfact`'s `.lake` build directory remains empty, same
 as every prior harness in this program — citation is by content hash instead, with a
 staleness-detection test).
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Run independently in this session, `cd /Users/sac/mfact/procint`:
+
+```
+$ shasum -a 256 ProcInt/Models/CausalNet.lean
+a889f4d19f6e2314b810ca5315e06912278c974732e89686e4367158f66bcbe0  ProcInt/Models/CausalNet.lean
+```
+
+MATCH against `LEAN_CAUSALNET_FILE_SHA256` in
+`wasm4pm/src/correspondence/causal_dependency_measure.rs:72-73`. File unchanged since this
+checkpoint's original citation.
+
+```
+$ lake exe cache get
+Using cache (Azure) from origin: (some leanprover-community/mathlib4)
+No files to download
+Already decompressed 8542 file(s)
+
+$ lake build ProcInt.Models.CausalNet
+Build completed successfully (8558 jobs).
+```
+
+Axiom check (`#print axioms`, run via a scratch import file, `open ProcInt`):
+
+```
+'ProcInt.dependencyMeasure' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.dependencyMeasure_lt_one' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.neg_one_lt_dependencyMeasure' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.dependencyMeasure_antisymm' depends on axioms: [propext, Classical.choice, Quot.sound]
+'ProcInt.dependencyMeasure_self' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+Only the three standard Lean/Mathlib axioms — no `sorryAx`, no custom axiom. `grep -n
+"sorry\|^axiom "` over `CausalNet.lean` also returns nothing.
+
+Note (non-blocking): `MFACT_REVISION`/`mfact_revision` cited above is
+`801abf7933dabf5c95f9fb18ff21a7a8a1f6a564`; current `mfact` HEAD is
+`cf5e047264ccd117b49c97b0effb392a5e478e6b` — the repo has advanced past the cited commit.
+This does not affect the citation's validity: citation here is by file content hash, not by
+revision, and the content hash still matches exactly.
+
 ## Standing
 
-`PARTIAL_ALIVE` — two of three claims are honest ledger entries documenting a genuine gap,
-not a correspondence; the third is real but deliberately narrow, isolated formula-property
-evidence with an explicit non-claim about production wiring. Not `ALIVE` until either a
-live `lake build` closes the Lean-side re-verification gap, or citation-by-hash is
-explicitly accepted as sufficient standing evidence (same open condition as 010-015).
+`ALIVE` — the Lean-side re-verification gap this receipt's own "not ALIVE until" clause named
+is now closed: file hash matches the citation, `lake build ProcInt.Models.CausalNet` succeeds
+independently in this session, and `dependencyMeasure` plus its 4 theorems carry no axioms
+beyond `propext`/`Classical.choice`/`Quot.sound` and no `sorry`. The scope boundary above is
+unchanged — two of three claims remain honest ledger entries about a genuine correspondence
+gap, not newly closed by this re-verification, which only concerns the Lean file itself.

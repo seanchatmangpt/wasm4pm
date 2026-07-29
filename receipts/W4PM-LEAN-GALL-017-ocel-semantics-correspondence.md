@@ -1,7 +1,7 @@
 ---
 receipt: W4PM-LEAN-GALL-017
 date: 2026-07-29
-status: PARTIAL_ALIVE
+status: ALIVE
 gate: OCEL semantics correspondence (proof-dependency program, checkpoint 017/020)
 git_revision: PENDING_COMMIT
 predecessor: W4PM-LEAN-GALL-016 (receipts/W4PM-LEAN-GALL-016-causal-net-binding-correspondence.md)
@@ -112,9 +112,63 @@ corrected here); live Lean re-verification (`mfact`'s `.lake` build directory re
 same constraint as every prior harness — citation is by content hash with a
 staleness-detection test instead).
 
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Run independently in this session, `cd /Users/sac/mfact/procint`:
+
+```
+$ shasum -a 256 ProcInt/Ocel/Core.lean ProcInt/Ocel/Lifecycle.lean ProcInt/Petri/OCPN.lean
+ede40efa8f96d544cf8a6594a2d5b0a6cdf71cd6091bb9e4bc5b30ef52e611e2  ProcInt/Ocel/Core.lean
+ee1528342d61956b19b9425ed83179c0513380e4ca2dccb2bb676121cb25c1e3  ProcInt/Ocel/Lifecycle.lean
+33a0bd6fbe22930a55bc59c97b4a485a0426e5fc0809df0ff06b23c83407e764  ProcInt/Petri/OCPN.lean
+
+$ shasum -a 256 ProcInt/Models/Dfg.lean
+0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e  ProcInt/Models/Dfg.lean
+```
+
+`Ocel/Core.lean`'s hash MATCHes `LEAN_CORE_FILE_SHA256` in
+`wasm4pm/src/correspondence/ocel_semantics.rs:65-66`. `Models/Dfg.lean`'s hash MATCHes
+`LEAN_DFG_FILE_SHA256` (`ocel_semantics.rs:74-75`), confirming checkpoint 023's citation
+update to that constant is internally consistent with the file actually on disk.
+`Ocel/Lifecycle.lean` and `Petri/OCPN.lean` are not separately hash-pinned as Rust constants
+in this file (only hand-transcribed) — re-verified here by build + axiom check instead.
+
+```
+$ lake build ProcInt.Ocel.Core
+✔ [8558/8558] Built ProcInt.Ocel.Core (13s)
+Build completed successfully (8558 jobs).
+
+$ lake build ProcInt.Ocel.Lifecycle
+✔ [8559/8559] Built ProcInt.Ocel.Lifecycle (14s)
+Build completed successfully (8559 jobs).
+
+$ lake build ProcInt.Petri.OCPN
+✔ [8559/8559] Built ProcInt.Petri.OCPN (14s)
+Build completed successfully (8559 jobs).
+```
+
+Axiom check (`#print axioms`, `open ProcInt`):
+
+```
+'ProcInt.OCEL.TimeOrdered' does not depend on any axioms
+'ProcInt.OCEL.IsLifecycle' does not depend on any axioms
+'ProcInt.OCPN.WellFormed' depends on axioms: [propext, Quot.sound]
+'ProcInt.OCPN.Conforms' depends on axioms: [propext, Quot.sound]
+```
+
+No `sorryAx`, no custom axiom. `grep -n "sorry\|^axiom "` over all three files also returns
+nothing.
+
+Note (non-blocking): cited `mfact_revision` (`801abf7933dabf5c95f9fb18ff21a7a8a1f6a564`)
+predates current `mfact` HEAD (`cf5e047264ccd117b49c97b0effb392a5e478e6b`); citation here is
+by content hash, which still matches, so this does not invalidate the citation.
+
 ## Standing
-`PARTIAL_ALIVE` — 2 real, narrowly-scoped correspondence claims with curated/bounded
-evidence, plus 5 honestly-documented gaps and 2 flagged-but-unfixed defects, none silently
-glossed over. Not `ALIVE` until either a live `lake build` closes the Lean-side
-re-verification gap, or citation-by-hash is explicitly accepted as sufficient standing
-evidence (same open condition as 010–016).
+`ALIVE` for the Lean-side re-verification specifically — the "not ALIVE until a live `lake
+build` closes the Lean-side re-verification gap" condition is now satisfied: hashes match
+citations (`Core.lean`, `Dfg.lean`), all three Ocel/Petri modules build successfully, and the
+cited declarations (`OCEL.TimeOrdered`, `OCEL.IsLifecycle`, `OCPN.WellFormed`,
+`OCPN.Conforms`) carry no axioms beyond standard ones and no `sorry`. This does not newly
+close the 5 honestly-documented correspondence gaps or the 2 flagged-but-unfixed defects
+noted above — those remain exactly as scoped; only the Lean-file-freshness/build/axiom
+standing improves.

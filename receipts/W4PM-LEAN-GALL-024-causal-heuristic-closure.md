@@ -165,3 +165,62 @@ separate rescale/threshold steps remain uncharacterized). Not `ALIVE`: the Lean 
 did not complete this session (citation-by-hash + hand-reviewed proof structure only,
 same open condition as every prior checkpoint), and the rescale/threshold steps are
 still open for a future checkpoint.
+
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Attempted to close this checkpoint's own stated gap ("the Lean build did not complete this
+session") now that a fully-populated Mathlib cache exists. `cd /Users/sac/mfact/procint`:
+
+```
+$ shasum -a 256 ProcInt/Models/CausalNetClamp.lean
+18bead5734a2d326f855daa6107fdb5965a7d46f7dd09a5e0e406ec4fb4247ad  ProcInt/Models/CausalNetClamp.lean
+```
+
+MATCH against `LEAN_CAUSALNET_CLAMP_FILE_SHA256` in
+`wasm4pm/src/correspondence/causal_dependency_measure.rs:74-75` — the file is still the exact
+one this checkpoint cited; the hash-currency question this checkpoint's own receipt raised is
+resolved. But the file does not build:
+
+```
+$ lake exe cache get
+Using cache (Azure) from origin: (some leanprover-community/mathlib4)
+No files to download
+Already decompressed 8542 file(s)
+
+$ lake build ProcInt.Models.CausalNetClamp
+✖ [8559/8559] Building ProcInt.Models.CausalNetClamp (13s)
+error: ProcInt/Models/CausalNetClamp.lean:53:9: Unknown identifier `le_or_lt`
+error: ProcInt/Models/CausalNetClamp.lean:53:51: Tactic `rcases` failed: `x✝ : ?m.17` is not an inductive datatype
+error: ProcInt/Models/CausalNetClamp.lean:74:9: Unknown identifier `le_or_lt`
+error: ProcInt/Models/CausalNetClamp.lean:74:51: Tactic `rcases` failed: `x✝ : ?m.16` is not an inductive datatype
+error: Lean exited with code 1
+Some required targets logged failures:
+- ProcInt.Models.CausalNetClamp
+error: build failed
+```
+
+Both failures are in the two theorems this checkpoint's own summary names as its central
+result: `clampedMeasure_add_swap_eq_abs` (line 47) and `clampedMeasure_mul_swap_eq_zero`
+(line 68), each calling `rcases le_or_lt 0 (dependencyMeasure ab ba) with h | h` (lines 53,
+74). `le_or_lt` does not resolve under this session's pinned Mathlib (`rev
+fabf563a7c95a166b8d7b6efca11c8b4dc9d911f` per `lakefile.toml`), so `rcases` receives an
+unresolved metavariable instead of a decidable disjunction and fails. `ProcInt.Models.
+CausalNet` (the sibling file this checkpoint depends on) builds cleanly under the same
+Mathlib pin, so this is specific to `CausalNetClamp.lean`'s own tactic script, not a
+cache/toolchain-wide problem — every other target listed for this task
+(`CausalNet`, `Ocel.Core`, `Ocel.Lifecycle`, `Petri.OCPN`, `Models.Dfg`) built successfully
+in the same session with the same cache.
+
+This is a genuinely new finding, not a re-confirmation of "hasn't been tried yet": the build
+was tried, with cache present, and it fails on a real Mathlib API mismatch. The
+hand-reviewed proof structure this checkpoint described may well be mathematically sound
+(the intended lemma — `dependencyMeasure ab ba` is either `≥ 0` or `< 0` — is a true
+totality fact), but as written it does not compile, so `#print axioms` cannot be run on
+`clampedMeasure_add_swap_eq_abs`/`clampedMeasure_mul_swap_eq_zero` and no kernel-verification
+claim can be made for them. Standing remains `PARTIAL_ALIVE`, not `ALIVE` — but the specific
+reason changes from "not attempted this session" (024's original claim) to "attempted and
+failed with an identifiable, narrow compile error" (this session's finding). Fixing it would
+require replacing `le_or_lt` with whatever this Mathlib revision's current name for that
+lemma is (e.g. `le_or_lt` may have been renamed or requires an explicit `LinearOrder`/`ℚ`
+instance argument this call site no longer infers) — out of scope for this re-verification
+pass, which does not modify Lean files.

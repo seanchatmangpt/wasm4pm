@@ -180,3 +180,36 @@ real differential Rust harness with 10 passing tests including a negative falsif
 upgrades the program's standard evidence tier for this specific claim beyond the
 citation-by-hash pattern used by checkpoints 010–020 (their Lean sides remain unverified in this
 session; this receipt does not re-verify them).
+
+## Live Re-verification (W4PM-LEAN-GALL-022)
+
+Independently reproduced this checkpoint's own claimed kernel-verification in a separate
+session, `cd /Users/sac/mfact/procint`:
+
+```
+$ shasum -a 256 ProcInt/Models/Dfg.lean
+0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e  ProcInt/Models/Dfg.lean
+```
+
+MATCH against `LEAN_DFG_FILE_SHA256` in `wasm4pm/src/correspondence/ocel_semantics.rs:74-75`
+— confirms the citation this checkpoint updated is still current and internally consistent
+(the file on disk has not drifted since).
+
+```
+$ lake exe cache get
+Using cache (Azure) from origin: (some leanprover-community/mathlib4)
+No files to download
+Already decompressed 8542 file(s)
+
+$ lake build ProcInt.Models.Dfg
+Build completed successfully (8563 jobs).
+```
+
+(Job count differs from the 8558 originally reported because this run also built
+`ProcInt.Ocel.{Core,Lifecycle}` and `ProcInt.Petri.OCPN` in the same invocation, not because
+of any change to `Dfg.lean` itself — its content hash above is byte-identical to the cited
+one.)
+
+`grep -n "sorry\|^axiom "` over `Dfg.lean` returns nothing. This reproduces checkpoint 023's
+own claimed result independently, in a fresh session, from a fully-populated Mathlib cache —
+the result is confirmed, not merely re-asserted.
