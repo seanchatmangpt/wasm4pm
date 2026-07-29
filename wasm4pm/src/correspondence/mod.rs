@@ -12,6 +12,7 @@
 //! full scope boundary of what this proves and does not prove.
 
 pub mod alignment_cost;
+pub mod declare_semantics;
 pub mod petri_firing;
 pub mod token_replay;
 pub mod wf_net_soundness;
