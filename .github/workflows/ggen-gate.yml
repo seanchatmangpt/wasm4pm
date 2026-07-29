@@ -134,5 +134,6 @@ jobs:
           path: |
             ggen-build.log
             ggen-sync.log
+            wasm4pm/.ggen/receipts/latest.json
           if-no-files-found: error
           retention-days: 7
