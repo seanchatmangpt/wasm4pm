@@ -107,10 +107,10 @@
     }
   ],
   "flagged_defects_out_of_scope": [
-    "oc_conformance.rs docstring claims 'token-replay each trace' but oc_conformance_check_inner does activity-set membership, not ordered replay -- doc/implementation mismatch",
-    "two unreconciled OC-DFG implementations: discovery.rs::discover_ocel_dfg_pure/_per_type vs advanced/ocdfg.rs::OCDFG::discover (CLI-bridge-facing) -- consolidation/tech-debt finding"
+    "FIXED (W4PM-LEAN-GALL-033): oc_conformance.rs docstring claimed 'token-replay each trace' but oc_conformance_check_inner does activity-set membership, not ordered replay -- docstring corrected to describe the actual activity-coverage/set-membership check; computation logic unchanged.",
+    "FIXED (W4PM-LEAN-GALL-033): the two unreconciled OC-DFG implementations (discovery.rs::discover_ocel_dfg_pure/_per_type vs advanced/ocdfg.rs::OCDFG::discover, CLI-bridge-facing) are now unified -- the per-type logic was extracted into a new pure function discovery.rs::discover_ocel_dfg_per_type_pure, discover_ocel_dfg_per_type (wasm export) now calls it, and OCDFG::discover (crates/wasm4pm-cli's ocdfg_bridge caller) is now a thin wrapper delegating to the same function instead of its own independent HashMap-ordered reimplementation. Public signatures of both discover_ocel_dfg_per_type and OCDFG::discover are unchanged. A golden test (crates/wasm4pm-cli/src/commands/ocdfg_bridge.rs::ocdfg_discover_matches_canonical_per_type_pure) asserts OCDFG::discover's output equals discover_ocel_dfg_per_type_pure's output exactly on the shared fixture."
   ],
   "comparison_mode": "receipted_formula_with_cited_proof",
   "comparison_mode_note": "NOT a live Lean invocation -- same constraint as every prior harness (mfact .lake build directory does not exist).",
-  "not_claimed": "EXACT_CORRESPONDENCE/direct_theorem for either harness claim; any correspondence for the 5 no_lean_coverage claims; that oc_conformance_check_inner's docstring is accurate (flagged as a defect, not claimed fixed); that the two OC-DFG implementations are equivalent to each other (flagged as unreconciled, not tested for equivalence)."
+  "not_claimed": "EXACT_CORRESPONDENCE/direct_theorem for either harness claim; any correspondence for the 5 no_lean_coverage claims; that the OC-DFG unification changes anything about the no_lean_coverage status of the OC-DFG-per-type or OC conformance rows above (still UNMAPPED/no_lean_coverage -- W4PM-LEAN-GALL-033 fixed the flagged Rust-internal defects, it did not add Lean-side coverage)."
 }

@@ -18,7 +18,10 @@ use wasm_bindgen::prelude::*;
 /// For each object type:
 /// 1. Flatten OCEL → EventLog
 /// 2. Discover reference Petri Net
-/// 3. Token-replay each trace
+/// 3. Check activity-set membership per trace (a trace "fits" iff every one of its
+///    activities appears as a transition label in the discovered net — this is a
+///    coverage check, not ordered token replay: it does not verify that activities
+///    occur in an order the net's control-flow actually permits)
 /// 4. Compute fitness (fraction of perfectly-fitting traces)
 ///
 /// Returns: JSON `{ "Order": { "fitness": 0.95, … }, "Item": { … }, "overall": { … } }`
