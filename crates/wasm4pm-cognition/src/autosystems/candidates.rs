@@ -5,7 +5,7 @@
 //! replaces that arrangement with an open [`Candidate`] type whose dimensions
 //! are validated against a manifest of [`DimensionSpec`] declarations.
 //!
-//! The  `ArchitectureFamily` enum is kept as a `#[removed]` bridge so
+//! The legacy `ArchitectureFamily` enum is retained as a compatibility bridge so
 //! existing call sites continue to compile while migrations land.
 
 use crate::autosystems::dimension::DimensionSpec;
@@ -30,7 +30,7 @@ pub enum RuntimeBoundary {
     CustomerNode,
     /// Peer node.
     Peer,
-    /// Atomvm coordinator.
+    /// AtomVM coordinator.
     AtomvmCoord,
     /// Cloud residual services.
     CloudResidual,
@@ -38,11 +38,10 @@ pub enum RuntimeBoundary {
     ForbiddenCentralWork,
 }
 
-///  architecture family enumeration.
+/// Legacy architecture-family enumeration.
 ///
 /// Retained for compile-time compatibility with prior dependents. Manifest-driven
 /// discovery uses [`Candidate::family_id`] (free-form string) instead.
-#[allow(removed)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArchitectureFamily {
     /// Centralized cloud service.
@@ -133,15 +132,16 @@ impl CandidateManifest {
         let by_key: IndexMap<&str, &DimensionSpec> = self
             .dimensions
             .iter()
-            .map(|d| (d.key.as_str(), d))
+            .map(|dimension| (dimension.key.as_str(), dimension))
             .collect();
 
-        for c in &self.candidates {
-            for (k, v) in &c.dimensions {
-                let spec = by_key
-                    .get(k.as_str())
-                    .ok_or_else(|| format!("candidate {}: undeclared dimension {}", c.id, k))?;
-                spec.validate(*v).map_err(|e| format!("{}: {}", c.id, e))?;
+        for candidate in &self.candidates {
+            for (key, value) in &candidate.dimensions {
+                let spec = by_key.get(key.as_str()).ok_or_else(|| {
+                    format!("candidate {}: undeclared dimension {}", candidate.id, key)
+                })?;
+                spec.validate(*value)
+                    .map_err(|error| format!("{}: {}", candidate.id, error))?;
             }
         }
         Ok(())
@@ -155,7 +155,7 @@ pub trait CandidateDiscovery {
     fn discover(&self) -> Result<CandidateManifest, String>;
 }
 
-/// **Removed.** Returns an empty list.
+/// Compatibility function returning no built-in candidates.
 ///
 /// The previous implementation hardcoded nine candidates with poisoned baseline
 /// scores. Use [`ManifestDiscovery::from_path`] or [`FilesystemDiscovery`] with
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn manifest_validates_known_dimensions() {
-        let m = CandidateManifest {
+        let manifest = CandidateManifest {
             version: "1".into(),
             dimensions: vec![DimensionSpec {
                 key: "latency_ms".into(),
@@ -190,19 +190,19 @@ mod tests {
                 family_id: "demo".into(),
                 runtime_boundaries: vec![RuntimeBoundary::ClientWasm],
                 dimensions: {
-                    let mut m = IndexMap::new();
-                    m.insert("latency_ms".into(), 50.0);
-                    m
+                    let mut dimensions = IndexMap::new();
+                    dimensions.insert("latency_ms".into(), 50.0);
+                    dimensions
                 },
                 provenance: None,
             }],
         };
-        assert!(m.validate().is_ok());
+        assert!(manifest.validate().is_ok());
     }
 
     #[test]
     fn manifest_rejects_undeclared_dimensions() {
-        let m = CandidateManifest {
+        let manifest = CandidateManifest {
             version: "1".into(),
             dimensions: vec![],
             candidates: vec![Candidate {
@@ -210,19 +210,18 @@ mod tests {
                 family_id: "demo".into(),
                 runtime_boundaries: vec![],
                 dimensions: {
-                    let mut m = IndexMap::new();
-                    m.insert("undeclared".into(), 1.0);
-                    m
+                    let mut dimensions = IndexMap::new();
+                    dimensions.insert("undeclared".into(), 1.0);
+                    dimensions
                 },
                 provenance: None,
             }],
         };
-        assert!(m.validate().is_err());
+        assert!(manifest.validate().is_err());
     }
 
     #[test]
-    #[allow(removed)]
-    fn removed_all_candidates_returns_empty() {
+    fn compatibility_all_candidates_returns_empty() {
         assert!(all_candidates().is_empty());
     }
 }
