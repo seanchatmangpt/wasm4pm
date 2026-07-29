@@ -346,6 +346,15 @@ mod tests {
     #[cfg(feature = "streaming_basic")]
     use crate::streaming::ActivityInterner;
 
+    /// `cache_clear()` wipes the process-global PARSE_CACHE/COLUMNAR_CACHE/
+    /// INTERNER_CACHE unconditionally and unscoped — correct behavior for the
+    /// real API (a full clear must clear everything), but it races against
+    /// any other test that inserts-then-reads from those same statics under
+    /// `cargo test`'s default parallel execution. Any test that either calls
+    /// `cache_clear()` or depends on reading back something it just inserted
+    /// into a shared static must hold this guard for its whole body.
+    static SHARED_CACHE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
     #[test]
     fn test_lru_cache_basic() {
         let mut cache: LruCache<String> = LruCache::new(5);
@@ -417,6 +426,7 @@ mod tests {
 
     #[test]
     fn test_cache_clear() {
+        let _guard = SHARED_CACHE_TEST_LOCK.lock().expect("mutex poisoned");
         let k = unique_key("tcc");
         let lk = unique_key("tcc-log");
 
@@ -448,6 +458,7 @@ mod tests {
 
     #[test]
     fn test_columnar_cache_roundtrip() {
+        let _guard = SHARED_CACHE_TEST_LOCK.lock().expect("mutex poisoned");
         let k = unique_key("ccr");
 
         let col = OwnedColumnarLog {
@@ -475,6 +486,7 @@ mod tests {
     #[cfg(feature = "streaming_basic")]
     #[test]
     fn test_interner_cache_shared() {
+        let _guard = SHARED_CACHE_TEST_LOCK.lock().expect("mutex poisoned");
         let k = unique_key("ics");
 
         let mut interner = Interner::new();
