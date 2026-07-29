@@ -1,0 +1,47 @@
+{
+  "algorithm_id": "native-wasm-simd-refinement",
+  "scope_note": "This checkpoint is Rust-internal (native vs wasm32 vs SIMD-vs-scalar) -- there is no Lean side to this claim, unlike checkpoints 010-018. Evidence is direct command execution (both wasm32 gates, existing SIMD-vs-scalar equivalence tests), not a Rust<->Lean differential.",
+  "verification_entries": [
+    {
+      "claim": "wasm4pm crate compiles cleanly for wasm32-unknown-unknown",
+      "command": "cd wasm4pm/wasm4pm && cargo check --target wasm32-unknown-unknown",
+      "result": "PASS -- Finished dev profile, 1 warning (mutable-static-reference lint in probabilistic/wasm_bindings.rs:33, rust_2024_compatibility category, not an error), 0 errors."
+    },
+    {
+      "claim": "wasm4pm-cognition crate compiles cleanly for wasm32-unknown-unknown with the wasm feature",
+      "command": "cd crates/wasm4pm-cognition && cargo check --target wasm32-unknown-unknown --features wasm",
+      "result": "PASS -- Finished dev profile, 1 warning (unknown lint 'removed' in autosystems/candidates.rs:45), 0 errors."
+    },
+    {
+      "claim": "SIMD code paths exist and have scalar fallbacks",
+      "finding": "simd_streaming_dfg.rs:137-174,231-261 uses std::arch::wasm32 v128 intrinsics, cfg-gated to target_arch=wasm32, with an explicit scalar fallback for other targets. simd_inner_loops.rs has x86 target_feature-gated tiers (avx512f/avx2/sse4.2) with scalar fallback -- these tiers do not actually use vector intrinsics (scalar loops behind cfg guards), so they are bit-identical to scalar by construction, not merely tested-equivalent. lib.rs:14 declares #![feature(portable_simd)] (nightly) but no std::simd usage was found beyond the flag itself."
+    },
+    {
+      "claim": "SIMD-vs-scalar output equivalence (same compile target)",
+      "tests": [
+        "simd_streaming_dfg::tests::test_parity_with_scalar_dfg",
+        "simd_streaming_dfg::tests::test_columnar_parity_with_discovery_dfg",
+        "simd_streaming_dfg::tests::test_simd_detection"
+      ],
+      "result": "PASS -- 23/23 simd-prefixed tests pass (cargo test --lib simd), re-run this checkpoint, 0 failures.",
+      "scope_note": "these compare SIMD-code-path vs scalar-code-path output within ONE compilation target -- not a cross-target (native vs wasm32) execution comparison."
+    }
+  ],
+  "ledger_entries": [
+    {
+      "claim": "native-vs-wasm32 cross-target execution output equivalence (running the SAME compiled algorithm on both a native target and an actual wasm32 runtime, diffing results)",
+      "status": "NOT ESTABLISHED",
+      "reason": "no test harness exists that builds for wasm32-unknown-unknown, executes it under a wasm runtime (wasmtime/node), and diffs its output against a native run of the same input. Building this infrastructure was judged out of scope for this checkpoint's effort level -- confirmed absent by direct search, not silently assumed to exist.",
+      "known_divergences_already_documented": [
+        "to_js(&json!({...})) returns {} on wasm32 -- must use to_js_str() instead (CLAUDE.md gotcha, confirmed still relevant)",
+        "OcelLog field names differ on wasm32 (CLAUDE.md gotcha -- note checkpoint 017's Explore agent found THREE distinct OcelLog types across crates, clarifying this gotcha refers specifically to bcinr_powl::ocel::OcelLog, not wasm4pm::models::OCEL)",
+        "ActorId::as_bytes() fails on wasm32 -- use .public_key instead (CLAUDE.md gotcha, confirmed still relevant)"
+      ],
+      "conclusion": "given these known, already-documented divergences, this checkpoint explicitly does NOT claim full native/wasm32 output equivalence for any algorithm -- only that both wasm32 compilation gates pass cleanly and that SIMD-vs-scalar equivalence holds within a single compile target."
+    }
+  ],
+  "comparison_mode": "direct_command_execution",
+  "comparison_mode_note": "No Lean citation applies to this checkpoint -- it verifies a Rust-internal (native/wasm32/SIMD) claim, not a Rust<->Lean correspondence.",
+  "achieved_evidence_class_summary": "2 wasm32 compilation gates: PASS (real command execution, re-run this checkpoint). SIMD-vs-scalar in-target equivalence: PASS (23 existing tests re-run, 0 failures). Native-vs-wasm32 cross-target equivalence: UNESTABLISHED, honestly ledgered with known divergences listed, not glossed over.",
+  "not_claimed": "full native/wasm32 output equivalence for any algorithm; that the 3 documented CLAUDE.md gotchas have been fixed (they are pre-existing, known, and unaddressed this checkpoint); that any new SIMD equivalence test was added this checkpoint (the 23 tests found were pre-existing, re-run and re-verified, not newly written)."
+}
