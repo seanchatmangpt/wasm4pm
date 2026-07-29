@@ -2,7 +2,7 @@ name: WIP Limit Check
 
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize]
+    types: [opened, ready_for_review, converted_to_draft, synchronize]
 
 permissions:
   pull-requests: write
@@ -20,7 +20,7 @@ jobs:
         id: config
         run: |
           MAX_PRS=$(jq -r '.max_concurrent_prs' .wasm4pm/wip-config.json)
-          echo "max_prs=$MAX_PRS" >> $GITHUB_OUTPUT
+          echo "max_prs=$MAX_PRS" >> "$GITHUB_OUTPUT"
           echo "Loaded WIP config: max_concurrent_prs=$MAX_PRS"
 
       - name: Check PR author concurrent PRs
@@ -31,24 +31,20 @@ jobs:
           AUTHOR="${{ github.event.pull_request.user.login }}"
           CURRENT_PR="${{ github.event.pull_request.number }}"
 
-          # Query open PRs by author (exclude current PR, exclude drafts)
+          # Draft PRs are staging work and do not consume review WIP. Query the
+          # structured isDraft field instead of relying on fragile search syntax.
           OPEN_PRS=$(gh pr list \
             --author "$AUTHOR" \
             --state open \
-            --search "is:pr -draft" \
             --repo "${{ github.repository }}" \
             --limit 100 \
-            --json number \
-            --jq 'length')
+            --json number,isDraft \
+            --jq '[.[] | select(.isDraft == false)] | length')
 
-          echo "open_prs=$OPEN_PRS" >> $GITHUB_OUTPUT
-          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
-
-          # Count including current PR (not yet merged)
-          TOTAL_PRS=$OPEN_PRS
-          echo "total_prs=$TOTAL_PRS" >> $GITHUB_OUTPUT
-
-          echo "User '$AUTHOR' has $OPEN_PRS open PRs (including current PR #$CURRENT_PR)"
+          echo "open_prs=$OPEN_PRS" >> "$GITHUB_OUTPUT"
+          echo "author=$AUTHOR" >> "$GITHUB_OUTPUT"
+          echo "total_prs=$OPEN_PRS" >> "$GITHUB_OUTPUT"
+          echo "User '$AUTHOR' has $OPEN_PRS open non-draft PRs while evaluating #$CURRENT_PR"
 
       - name: Comment on excessive WIP
         if: steps.check_prs.outputs.total_prs > steps.config.outputs.max_prs
@@ -62,18 +58,18 @@ jobs:
             const comment = [
               '⚠️ WIP Limit Exceeded',
               '',
-              'You currently have ' + openPrs + ' open PRs (limit: ' + maxPrs + ').',
+              'You currently have ' + openPrs + ' open non-draft PRs (limit: ' + maxPrs + ').',
               '',
-              'Per Toyota Production System principles, we enforce WIP (work-in-progress) limits to prevent context thrashing and ensure serial task completion.',
+              'Per Toyota Production System principles, review-active work is limited to prevent context thrashing. Draft PRs are excluded.',
               '',
               'Action Required:',
-              '1. Merge or close an existing PR to bring open count down to ' + maxPrs,
-              '2. Then you can proceed with this PR',
+              '1. Merge, close, or convert an existing review-active PR to draft',
+              '2. Then proceed with this PR',
               '',
-              'Open PRs:',
+              'Open review-active PRs:',
               (openPrs > maxPrs ? '⚠️ Exceeds limit by ' + (openPrs - maxPrs) : '✅ Within limit'),
               '',
-              'See configuration file (.wasm4pm/wip-config.json) for details.'
+              'See .wasm4pm/wip-config.json for the configured limit.'
             ].join('\n');
 
             github.rest.issues.createComment({
@@ -86,7 +82,7 @@ jobs:
       - name: Fail if WIP limit exceeded
         if: steps.check_prs.outputs.total_prs > steps.config.outputs.max_prs
         run: |
-          echo "❌ WIP limit exceeded: ${{ steps.check_prs.outputs.total_prs }} open PRs (max: ${{ steps.config.outputs.max_prs }})"
+          echo "❌ WIP limit exceeded: ${{ steps.check_prs.outputs.total_prs }} open non-draft PRs (max: ${{ steps.config.outputs.max_prs }})"
           echo ""
           echo "See: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
           exit 1
@@ -94,4 +90,4 @@ jobs:
       - name: Success - WIP limit OK
         if: steps.check_prs.outputs.total_prs <= steps.config.outputs.max_prs
         run: |
-          echo "✅ WIP limit check passed: ${{ steps.check_prs.outputs.total_prs }}/${{ steps.config.outputs.max_prs }} PRs"
+          echo "✅ WIP limit check passed: ${{ steps.check_prs.outputs.total_prs }}/${{ steps.config.outputs.max_prs }} non-draft PRs"
