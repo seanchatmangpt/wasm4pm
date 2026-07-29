@@ -64,8 +64,15 @@ use crate::models::{AdmittedEventLog, EventLog};
 
 pub const LEAN_CORE_FILE_SHA256: &str =
     "ede40efa8f96d544cf8a6594a2d5b0a6cdf71cd6091bb9e4bc5b30ef52e611e2";
+// Updated by W4PM-LEAN-GALL-023: Dfg.lean gained new multi-trace
+// aggregation definitions/theorems (dfgOfLog et al.), so its content hash
+// changed. The dfgOfTrace-specific claims transcribed below are unaffected
+// (dfgOfTrace itself was not modified), but the citation must track the
+// real file's current hash regardless — see
+// correspondence::dfg_multi_trace for the new multi-trace harness this
+// checkpoint added, which cites the same file at the same hash.
 pub const LEAN_DFG_FILE_SHA256: &str =
-    "d2717c4f83082092dc1105e3a325ef15bd99629faae19de6aede10d069694407";
+    "0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e";
 pub const MFACT_REVISION: &str = "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564";
 
 /// Hand-transcription of `Ocel/Core.lean`'s `OCEL.TimeOrdered`:
