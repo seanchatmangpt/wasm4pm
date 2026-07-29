@@ -1,0 +1,55 @@
+{
+  "algorithm_id": "wf-net-soundness",
+  "scope_note": "covers wasm4pm::soundness::analyze_petri_net's decision-procedure output (3-clause SoundnessReport + is_wf_net admission) only. Does NOT cover the crown-jewel theorem WfNet.sound_iff_shortCircuit_live_bounded (deferred to a future 012B — see receipt) or the short-circuit construction.",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/correspondence/wf_net_soundness.rs",
+    "type": "WfNetCarrier { num_places, num_transitions, source, sink, t_pre: Vec<Vec<usize>>, t_post: Vec<Vec<usize>> } -- unweighted, set-based (StructuralNet::from_petri_net deduplicates parallel arcs via push_unique)"
+  },
+  "encoder": {
+    "fn": "wasm4pm::correspondence::wf_net_soundness::WfNetCarrier::to_petri_net",
+    "path": "wasm4pm/src/correspondence/wf_net_soundness.rs",
+    "target": "canonical_carrier",
+    "note": "builds a real models::PetriNet, so the Rust side of the comparison exercises the actual shipped soundness::analyze_petri_net entrypoint, not a reimplementation"
+  },
+  "canonical_carrier": {
+    "name": "WfNetCarrier",
+    "fields": { "num_places": "usize", "num_transitions": "usize", "source": "usize", "sink": "usize", "t_pre": "Vec<Vec<usize>>", "t_post": "Vec<Vec<usize>>" },
+    "invariants": ["exactly one source place (no incoming structural arcs)", "exactly one sink place (no outgoing structural arcs)", "every place/transition structurally on a source->sink path"]
+  },
+  "lean_input_type": {
+    "files": [
+      { "path": "mfact/procint/ProcInt/Workflow/WfNet.lean", "content_sha256": "a02d75b375037a620d327146f87459e1574dc43b8b1a09b242a62386700be736" },
+      { "path": "mfact/procint/ProcInt/Workflow/Soundness.lean", "content_sha256": "327a6b80989ab824fc4de2a375c8f93341e915825d350921014e9141660964cf" }
+    ],
+    "type": "WfNet.Sound (3-clause structure: option_to_complete, proper_completion, no_dead_transitions)",
+    "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::wf_net_soundness::lean_sound_exact",
+    "path": "wasm4pm/src/correspondence/wf_net_soundness.rs",
+    "source": "canonical_result",
+    "note": "independent, from-scratch reachability + 3-clause check, hand-transcribed from WfNet.Sound's literal definition -- does NOT call into StructuralNet internals, so the differential comparison is meaningful"
+  },
+  "canonical_result": {
+    "name": "WfSoundnessResult",
+    "type": "struct",
+    "representation": "{ no_dead_transitions, option_to_complete, proper_completion, is_sound: bool, reachable_marking_count: usize, explored_truncated: bool }"
+  },
+  "rust_output_type": {
+    "path": "wasm4pm/src/soundness.rs",
+    "field": "SoundnessReport (via analyze_petri_net)",
+    "type": "struct, same 6 fields extracted for comparison"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation -- same constraint as W4PM-LEAN-GALL-010/011 (mfact .lake build directory does not exist).",
+  "lean_theorem_ref": {
+    "definitions": ["WfNet.Sound", "PetriNet.Reaches (via Petri/Firing.lean)"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read during W4PM-LEAN-GALL-012 (re-confirmed, not just cited from a prior round)"
+  },
+  "method": "curated_fixtures",
+  "method_note": "NOT exhaustive enumeration, unlike W4PM-LEAN-GALL-011. Full exhaustion over even a small (3-place/2-transition) unweighted-net space requires a full bounded-BFS reachability graph per candidate net (not an O(1) firing check), several orders of magnitude more expensive per item than 011's cost, and most arbitrary small arc-index-list combinations fail WF-net structural admission before soundness is even meaningful. 6 hand-constructed, individually justified fixture nets used instead.",
+  "achieved_evidence_class": "carrier_mapped_formula_correspondence (curated-fixture domain, decision-procedure scope only)",
+  "not_claimed": "direct_theorem/EXACT_CORRESPONDENCE (no live Lean re-verification); exhaustive-domain coverage (unlike 011); the crown-jewel sound_iff_shortCircuit_live_bounded theorem (deferred, needs independent liveness/boundedness checkers and the short-circuit construction -- a separate, larger harness); an infinite-transition countermodel (not constructible as a finite Rust test by definition -- only meaningful as a Lean-side existence proof about the theorem, not the decision procedure)"
+}

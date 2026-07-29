@@ -13,3 +13,4 @@
 
 pub mod petri_firing;
 pub mod token_replay;
+pub mod wf_net_soundness;
