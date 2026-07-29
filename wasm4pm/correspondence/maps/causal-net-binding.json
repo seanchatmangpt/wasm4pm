@@ -56,10 +56,46 @@
       "method": "exhaustive_bounded_property_check",
       "method_note": "bounds/antisymmetry/self-zero checked exactly (integer cross-multiplication, not float epsilon-tolerance) over ab,ba in [0,50] -- an honest finite check, not a proof of the universally-quantified ℕ statement.",
       "status": "carrier_mapped_formula_correspondence (formula_property_reproduction_only, no_production_wiring_claimed)"
+    },
+    {
+      "claim": "W4PM-LEAN-GALL-024: what IS true of the clamp/rescale that separates dependencyMeasure from CausalRelation.strength (closing the 016 gap by characterizing the lossy transformation itself, not by re-claiming the original antisymmetry)",
+      "lean_side": {
+        "file": "mfact/procint/ProcInt/Models/CausalNetClamp.lean",
+        "note": "NEW hand-written file (not ggen-rendered -- CausalNet.lean is ggen-rendered and per repo rule was not hand-edited; a companion file was added instead), imports CausalNet.lean, adds no changes to dependencyMeasure or its existing theorems",
+        "content_sha256": "18bead5734a2d326f855daa6107fdb5965a7d46f7dd09a5e0e406ec4fb4247ad",
+        "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564 (base; new file added on top, not yet a new revision at time of writing -- see receipt for the commit actually created)",
+        "definitions": ["clampedMeasure"],
+        "theorems": [
+          "clampedMeasure_nonneg",
+          "clampedMeasure_lt_one",
+          "clampedMeasure_add_swap_eq_abs",
+          "clampedMeasure_mul_swap_eq_zero",
+          "clampedMeasure_self"
+        ],
+        "sorry_or_axiom_present": false,
+        "central_theorems_meaning": {
+          "clampedMeasure_add_swap_eq_abs": "clampedMeasure(ab,ba) + clampedMeasure(ba,ab) = |dependencyMeasure(ab,ba)| -- the magnitude of the original signed measure survives the clamp IF both directions are kept; this is the precise sense in which the clamp is lossy-but-not-destructive-of-everything.",
+          "clampedMeasure_mul_swap_eq_zero": "clampedMeasure(ab,ba) * clampedMeasure(ba,ab) = 0 -- the two clamped directions can never both be positive, formalizing that wasm4pm's real output (post-threshold) contains at most one of the (a,b)/(b,a) CausalRelation entries for any pair, never both."
+        }
+      },
+      "rust_side": {
+        "file": "wasm4pm/wasm4pm/src/correspondence/causal_dependency_measure.rs",
+        "symbol": "clamped_measure_exact",
+        "note": "exact-rational transcription of the PRE-rescale clamp only (max(dependencyMeasure(ab,ba), 0)), matching causal_graph.rs build_causal_heuristic line 177's `.max(0.0)`. Does NOT transcribe the subsequent `* 1000.0` cast to usize or the `>= threshold` filter -- those are separate, still-uncharacterized lossy steps (see scope boundary below).",
+        "tests": [
+          "clamped_add_swap_equals_abs_over_bounded_range",
+          "clamped_mul_swap_is_zero_over_bounded_range",
+          "unclamped_pair_violates_mul_swap_zero_property (negative falsifier)",
+          "causal_net_clamp_lean_file_hash_matches_citation"
+        ]
+      },
+      "still_not_claimed": "This does NOT restore or approximate dependencyMeasure_antisymm for CausalRelation.strength -- the sign is still genuinely lost per-direction; only the PAIR of both directions together recovers the magnitude, and wasm4pm's real output structure (a flat Vec<CausalRelation>, threshold-filtered) does not guarantee both directions are retained or even computed together downstream. This also does NOT characterize the `* 1000.0` -> usize rescale/cast step (a second, separate lossy transformation -- rounding via `as usize` truncation) or the `>= threshold` filter, both of which remain uncharacterized in Lean. A future checkpoint would need to formalize those two steps to close the gap fully to the literal `CausalRelation.strength` field.",
+      "method": "exhaustive_bounded_property_check (same ab,ba in [0,50] range as the pre-existing dependencyMeasure tests) plus a Lean proof for all naturals",
+      "status": "carrier_mapped_formula_correspondence (clamp_transformation_characterized, rescale_and_threshold_steps_still_uncharacterized)"
     }
   ],
   "comparison_mode": "receipted_formula_with_cited_proof",
-  "comparison_mode_note": "NOT a live Lean invocation -- same constraint as every prior harness (mfact .lake build directory does not exist).",
-  "achieved_evidence_class_summary": "2 of 3 claims are UNMAPPED/UNSUPPORTED (both sides genuinely absent, an honest scope gap not a defect); 1 claim achieves carrier_mapped_formula_correspondence restricted explicitly to formula-property reproduction, with an explicit non-claim about wasm4pm's real strength field.",
-  "not_claimed": "EXACT_CORRESPONDENCE/direct_theorem for any of the 3 claims; any correspondence between dependencyMeasure and wasm4pm::causal_graph::CausalRelation.strength; any binding-set or execution-semantics correspondence (neither side has the structure to compare)."
+  "comparison_mode_note": "NOT a live Lean invocation for claims 1-3 (mfact .lake build directory does not exist at session start). Claim 4 (024's new theorems) was submitted to `lake build` this session -- see receipt for build outcome (kernel-verified vs. syntactically-written-only).",
+  "achieved_evidence_class_summary": "2 of 4 claims are UNMAPPED/UNSUPPORTED (both sides genuinely absent, an honest scope gap not a defect); 1 claim achieves carrier_mapped_formula_correspondence restricted explicitly to formula-property reproduction, with an explicit non-claim about wasm4pm's real strength field; 1 claim (024, new) characterizes precisely what the clamp preserves (magnitude via both directions) and destroys (per-direction sign, and the separate rescale/threshold steps remain open).",
+  "not_claimed": "EXACT_CORRESPONDENCE/direct_theorem for any of the 4 claims; any correspondence between dependencyMeasure (or clampedMeasure) and the literal wasm4pm::causal_graph::CausalRelation.strength usize field (the rescale-to-usize and threshold-filter steps are still uncharacterized); any binding-set or execution-semantics correspondence (neither side has the structure to compare)."
 }

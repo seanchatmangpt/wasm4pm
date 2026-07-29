@@ -48,10 +48,48 @@
 //! transcription — a specification-reproduction check, useful if this
 //! formula is ever wired into a real wasm4pm implementation later, but
 //! explicitly not evidence about any current wasm4pm code path.
+//!
+//! ## W4PM-LEAN-GALL-024 addendum: a real theorem about the clamp itself
+//! Checkpoint 016 refused to claim `dependencyMeasure` corresponds to
+//! `CausalRelation.strength` because `build_causal_heuristic`'s `.max(0.0)`
+//! clamp (confirmed again this checkpoint, `causal_graph.rs:175-180`)
+//! destroys `dependencyMeasure_antisymm`. Rather than leave that as a bare
+//! non-claim, `mfact/procint/ProcInt/Models/CausalNetClamp.lean` (new file,
+//! hand-written, not ggen-rendered) proves what IS still true of the clamped
+//! pair `(clampedMeasure ab ba, clampedMeasure ba ab)`:
+//! - `clampedMeasure_add_swap_eq_abs`: the two clamped directions still sum
+//!   to `|dependencyMeasure ab ba|` — the magnitude survives if you keep
+//!   both directions.
+//! - `clampedMeasure_mul_swap_eq_zero`: the two clamped directions can never
+//!   both be positive — formalizing that wasm4pm's real output (which
+//!   applies a positive `threshold` after the clamp) can contain at most
+//!   one of `(a,b)`/`(b,a)` as a `CausalRelation`, never both.
+//! `clamped_measure_exact` below is the Rust transcription of `clampedMeasure`
+//! (pre-rescale, i.e. before wasm4pm's separate `* 1000.0` cast to `usize`),
+//! and the new tests check the same two properties over the same bounded
+//! range as the pre-existing bounds/antisymmetry/self-zero tests.
 
 pub const LEAN_CAUSALNET_FILE_SHA256: &str =
     "a889f4d19f6e2314b810ca5315e06912278c974732e89686e4367158f66bcbe0";
+pub const LEAN_CAUSALNET_CLAMP_FILE_SHA256: &str =
+    "18bead5734a2d326f855daa6107fdb5965a7d46f7dd09a5e0e406ec4fb4247ad";
 pub const MFACT_REVISION: &str = "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564";
+
+/// Exact-rational transcription of the clamp `mfact/procint/ProcInt/Models/
+/// CausalNetClamp.lean`'s `clampedMeasure` applies to `dependencyMeasure`
+/// before wasm4pm's own separate rescale: `max(dependencyMeasure(ab,ba), 0)`.
+/// Mirrors the `.max(0.0)` call in `causal_graph.rs`'s `build_causal_heuristic`
+/// (line 177), operating on the exact-rational `dependency_measure_exact`
+/// result instead of `f64`. Returns `(numerator, denominator)`, `denominator > 0`,
+/// `numerator >= 0`.
+pub fn clamped_measure_exact(ab: u64, ba: u64) -> (i64, i64) {
+    let (num, den) = dependency_measure_exact(ab, ba);
+    if num < 0 {
+        (0, 1)
+    } else {
+        (num, den)
+    }
+}
 
 /// Exact-rational transcription of `mfact/procint/ProcInt/Models/
 /// CausalNet.lean:31-32`:
@@ -163,6 +201,84 @@ mod tests {
         assert_eq!(
             digest, LEAN_CAUSALNET_FILE_SHA256,
             "CausalNet.lean content hash has changed since this harness was built \
+             (mfact revision {MFACT_REVISION}) — the citation is stale"
+        );
+    }
+
+    /// Mirrors `clampedMeasure_add_swap_eq_abs`
+    /// (`CausalNetClamp.lean`): `clampedMeasure(ab,ba) + clampedMeasure(ba,ab)
+    /// == |dependencyMeasure(ab,ba)|`, exact rational equality.
+    #[test]
+    fn clamped_add_swap_equals_abs_over_bounded_range() {
+        for ab in 0..=50u64 {
+            for ba in 0..=50u64 {
+                let (cn1, cd1) = clamped_measure_exact(ab, ba);
+                let (cn2, cd2) = clamped_measure_exact(ba, ab);
+                // sum = cn1/cd1 + cn2/cd2 = (cn1*cd2 + cn2*cd1) / (cd1*cd2)
+                let sum_num = cn1 * cd2 + cn2 * cd1;
+                let sum_den = cd1 * cd2;
+                let (n, d) = dependency_measure_exact(ab, ba);
+                let abs_num = n.abs();
+                // sum_num/sum_den == abs_num/d  <=>  sum_num*d == abs_num*sum_den
+                assert_eq!(
+                    sum_num * d,
+                    abs_num * sum_den,
+                    "clampedMeasure({ab},{ba}) + clampedMeasure({ba},{ab}) must equal |dependencyMeasure({ab},{ba})|"
+                );
+            }
+        }
+    }
+
+    /// Mirrors `clampedMeasure_mul_swap_eq_zero` (`CausalNetClamp.lean`): the
+    /// two clamped directions can never both be strictly positive — at most
+    /// one of `(a,b)`/`(b,a)` can ever appear as a positive-strength
+    /// `CausalRelation` in wasm4pm's real output.
+    #[test]
+    fn clamped_mul_swap_is_zero_over_bounded_range() {
+        for ab in 0..=50u64 {
+            for ba in 0..=50u64 {
+                let (n1, _) = clamped_measure_exact(ab, ba);
+                let (n2, _) = clamped_measure_exact(ba, ab);
+                assert!(
+                    n1 == 0 || n2 == 0,
+                    "clampedMeasure({ab},{ba})={n1} and clampedMeasure({ba},{ab})={n2} \
+                     must not both be positive"
+                );
+            }
+        }
+    }
+
+    /// Negative falsifier for the clamp tests: an unclamped transcription
+    /// (using signed `dependency_measure_exact` directly) does NOT satisfy
+    /// `clamped_mul_swap_is_zero` for asymmetric inputs — proving the clamp
+    /// tests above have teeth and aren't vacuously true of any pair formula.
+    #[test]
+    fn unclamped_pair_violates_mul_swap_zero_property() {
+        let (n1, _) = dependency_measure_exact(10, 3); // positive
+        let (n2, _) = dependency_measure_exact(3, 10); // negative, unclamped
+        assert!(
+            n1 != 0 && n2 != 0,
+            "sanity: unclamped dependency_measure_exact(10,3) and (3,10) must both be nonzero \
+             to demonstrate the clamp is what makes clamped_mul_swap_is_zero true"
+        );
+    }
+
+    #[test]
+    fn causal_net_clamp_lean_file_hash_matches_citation() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../mfact/procint/ProcInt/Models/CausalNetClamp.lean"
+        );
+        let Ok(contents) = std::fs::read(path) else {
+            eprintln!(
+                "causal_net_clamp_lean_file_hash_matches_citation: SKIPPED — {path} not found (mfact not checked out)"
+            );
+            return;
+        };
+        let digest = sha256_hex(&contents);
+        assert_eq!(
+            digest, LEAN_CAUSALNET_CLAMP_FILE_SHA256,
+            "CausalNetClamp.lean content hash has changed since this harness was built \
              (mfact revision {MFACT_REVISION}) — the citation is stale"
         );
     }
