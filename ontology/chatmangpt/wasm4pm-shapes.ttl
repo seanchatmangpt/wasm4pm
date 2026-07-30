@@ -1,0 +1,120 @@
+@prefix sh:        <http://www.w3.org/ns/shacl#> .
+@prefix xsd:       <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:       <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix wpm:       <https://chatmangpt.com/ns/wasm4pm#> .
+@prefix pi:        <https://chatmangpt.com/ns/wasm4pm/pi#> .
+@prefix cognition: <https://chatmangpt.com/ns/wasm4pm/cognition#> .
+
+# Canonical process-intelligence algorithm contract.
+pi:ProcessIntelligenceAlgorithmShape
+    a sh:NodeShape ;
+    sh:targetClass pi:ProcessIntelligenceAlgorithm ;
+    sh:closed false ;
+    sh:property [
+        sh:path pi:algorithmId ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-z][a-z0-9_]*$" ;
+        sh:message "algorithmId must be one canonical snake_case identifier."@en
+    ] ;
+    sh:property [
+        sh:path pi:algorithmLabel ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string
+    ] ;
+    sh:property [
+        sh:path pi:citation ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string
+    ] ;
+    sh:property [
+        sh:path pi:inputFormat ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string
+    ] ;
+    sh:property [
+        sh:path pi:speedTier ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ;
+        sh:maxInclusive 100
+    ] ;
+    sh:property [
+        sh:path pi:qualityTier ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 0 ;
+        sh:maxInclusive 100
+    ] .
+
+# Canonical cognition-breed contract.
+cognition:CognitionBreedShape
+    a sh:NodeShape ;
+    sh:targetClass cognition:CognitionBreed ;
+    sh:closed false ;
+    sh:property [
+        sh:path cognition:breedId ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[a-z][a-z0-9_]*$" ;
+        sh:message "breedId must be one canonical snake_case identifier."@en
+    ] ;
+    sh:property [
+        sh:path cognition:breedLabel ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string
+    ] ;
+    sh:property [
+        sh:path cognition:citation ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string
+    ] .
+
+# Gall checkpoint evidence contract.
+wpm:GallCheckpointShape
+    a sh:NodeShape ;
+    sh:targetClass wpm:GallCheckpoint ;
+    sh:closed false ;
+    sh:property [
+        sh:path wpm:positiveWitness ;
+        sh:minCount 1 ;
+        sh:class wpm:EvidenceArtifact
+    ] ;
+    sh:property [
+        sh:path wpm:negativeFalsifier ;
+        sh:minCount 1 ;
+        sh:class wpm:EvidenceArtifact
+    ] ;
+    sh:property [
+        sh:path wpm:producedReceipt ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class wpm:Receipt
+    ] .
+
+wpm:EvidenceArtifactShape
+    a sh:NodeShape ;
+    sh:targetClass wpm:EvidenceArtifact ;
+    sh:property [
+        sh:path wpm:sourceRevision ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^[0-9a-f]{40}$" ;
+        sh:message "sourceRevision must be an exact 40-character Git SHA."@en
+    ] ;
+    sh:property [
+        sh:path wpm:contentDigest ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:pattern "^(blake3|sha256):[0-9a-f]{64}$" ;
+        sh:message "contentDigest must identify its digest algorithm and contain 64 lowercase hex characters."@en
+    ] .
