@@ -1,0 +1,56 @@
+{
+  "receipt_id": "W4PM-ONTOLOGY-CHATMANGPT-NAMESPACE",
+  "receipt_type": "ontology_namespace_enhancement",
+  "schema_version": "1.0.0",
+  "repository": "seanchatmangpt/wasm4pm",
+  "base_commit": "f1d4d7ac8b2f9a0265be82991487766eb35b4675",
+  "branch": "agent/chatmangpt-ontology-namespace",
+  "canonical_ontology": "https://chatmangpt.com/ontology/wasm4pm",
+  "canonical_namespaces": [
+    "https://chatmangpt.com/ns/wasm4pm#",
+    "https://chatmangpt.com/ns/wasm4pm/pi#",
+    "https://chatmangpt.com/ns/wasm4pm/cognition#",
+    "https://chatmangpt.com/ns/wasm4pm/trace#",
+    "https://chatmangpt.com/ns/wasm4pm/interview#",
+    "https://chatmangpt.com/id/wasm4pm/"
+  ],
+  "legacy_namespaces": {
+    "https://wasm4pm.dev/pi#": "supported_compatibility",
+    "https://wasm4pm.dev/ns#": "supported_compatibility",
+    "urn:wasm4pm:": "migration_required"
+  },
+  "public_vocabularies_preserved": [
+    "RDF",
+    "RDFS",
+    "OWL",
+    "SHACL",
+    "PROV-O",
+    "DCAT",
+    "DCTERMS",
+    "SKOS",
+    "Schema.org",
+    "W3C MLS"
+  ],
+  "strategy": "additive_non_breaking_bridge",
+  "claims": {
+    "existing_iris_rewritten": false,
+    "ggen_bridge_imported": true,
+    "jsonld_context_added": true,
+    "shacl_shapes_added": true,
+    "migration_construct_added": true,
+    "namespace_verifier_added": true,
+    "ci_gate_added": true
+  },
+  "must_not_claim": [
+    "that all legacy instances have already been rewritten",
+    "that chatmangpt.com currently performs content negotiation for these IRIs",
+    "that every ontology-bearing file in repository history has been migrated"
+  ],
+  "standing": "PARTIAL_ALIVE",
+  "promotion_requirements": [
+    "pull-request CI executes the namespace verifier successfully",
+    "Turtle and SHACL files are parsed by an RDF implementation",
+    "one generated surface is migrated and replayed against its receipts",
+    "chatmangpt.com publishes stable ontology and namespace representations"
+  ]
+}
