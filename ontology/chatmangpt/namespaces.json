@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "canonical": {
+    "ontology": "https://chatmangpt.com/ontology/wasm4pm",
+    "core": "https://chatmangpt.com/ns/wasm4pm#",
+    "process_intelligence": "https://chatmangpt.com/ns/wasm4pm/pi#",
+    "cognition": "https://chatmangpt.com/ns/wasm4pm/cognition#",
+    "trace": "https://chatmangpt.com/ns/wasm4pm/trace#",
+    "interview": "https://chatmangpt.com/ns/wasm4pm/interview#",
+    "instances": "https://chatmangpt.com/id/wasm4pm/"
+  },
+  "legacy": {
+    "https://wasm4pm.dev/pi#": {
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/pi#",
+      "status": "supported_compatibility"
+    },
+    "https://wasm4pm.dev/ns#": {
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/cognition#",
+      "status": "supported_compatibility"
+    },
+    "urn:wasm4pm:": {
+      "replacement": "https://chatmangpt.com/id/wasm4pm/",
+      "status": "migration_required"
+    }
+  },
+  "external_vocabularies": [
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "http://www.w3.org/2000/01/rdf-schema#",
+    "http://www.w3.org/2001/XMLSchema#",
+    "http://www.w3.org/2002/07/owl#",
+    "http://www.w3.org/2004/02/skos/core#",
+    "http://www.w3.org/ns/prov#",
+    "http://www.w3.org/ns/dcat#",
+    "http://www.w3.org/ns/mls#",
+    "http://www.w3.org/ns/shacl#",
+    "http://purl.org/dc/terms/",
+    "https://schema.org/"
+  ],
+  "policy": {
+    "new_repo_owned_terms_must_use_chatmangpt_com": true,
+    "legacy_iris_may_remain_only_with_declared_mapping": true,
+    "external_standard_iris_must_not_be_rewritten": true,
+    "instance_iris_must_not_use_blank_or_example_domains": true
+  }
+}
