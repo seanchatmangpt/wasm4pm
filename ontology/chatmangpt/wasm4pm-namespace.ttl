@@ -10,11 +10,11 @@
 @prefix dcat:     <http://www.w3.org/ns/dcat#> .
 @prefix mls:      <http://www.w3.org/ns/mls#> .
 
-@prefix wpm:      <https://chatmangpt.com/ns/wasm4pm#> .
-@prefix pi:       <https://chatmangpt.com/ns/wasm4pm/pi#> .
-@prefix cognition:<https://chatmangpt.com/ns/wasm4pm/cognition#> .
-@prefix trace:    <https://chatmangpt.com/ns/wasm4pm/trace#> .
-@prefix interview:<https://chatmangpt.com/ns/wasm4pm/interview#> .
+@prefix wpm:       <https://chatmangpt.com/ns/wasm4pm#> .
+@prefix pi:        <https://chatmangpt.com/ns/wasm4pm/pi#> .
+@prefix cognition: <https://chatmangpt.com/ns/wasm4pm/cognition#> .
+@prefix trace:     <https://chatmangpt.com/ns/wasm4pm/trace#> .
+@prefix interview: <https://chatmangpt.com/ns/wasm4pm/interview#> .
 
 @prefix legacyPi:     <https://wasm4pm.dev/pi#> .
 @prefix legacyCompat: <https://wasm4pm.dev/ns#> .
