@@ -87,8 +87,9 @@ def extract_iris(line: str) -> set[str]:
     for pattern in PREFIX_PATTERNS:
         iris.update(pattern.findall(line))
     iris.update(ANGLE_IRI_PATTERN.findall(line))
-    if "@context" in line or "CONSTRUCT" in line or "WHERE" in line or "namespace" in line.lower():
-        iris.update(JSON_IRI_PATTERN.findall(line))
+    # JSON-LD context values commonly appear one per line, so inspect every
+    # string literal rather than only the line containing the @context key.
+    iris.update(JSON_IRI_PATTERN.findall(line))
     return iris
 
 
