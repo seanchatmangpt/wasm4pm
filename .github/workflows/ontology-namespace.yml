@@ -1,0 +1,41 @@
+name: Ontology namespace policy
+
+on:
+  pull_request:
+    paths:
+      - "ontology/**"
+      - "ggen/ontology/**"
+      - "ggen/ontology-*/**"
+      - "lifecycle/**"
+      - "ocel/reports/**"
+      - "ggen.toml"
+      - "scripts/verify-ontology-namespaces.py"
+      - ".github/workflows/ontology-namespace.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ontology/**"
+      - "ggen/ontology/**"
+      - "ggen/ontology-*/**"
+      - "lifecycle/**"
+      - "ocel/reports/**"
+      - "ggen.toml"
+      - "scripts/verify-ontology-namespaces.py"
+
+permissions:
+  contents: read
+
+jobs:
+  namespace-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify namespace registry and semantic sources
+        run: python3 scripts/verify-ontology-namespaces.py --json
+
+      - name: Validate JSON-LD context syntax
+        run: python3 -m json.tool ontology/chatmangpt/context.jsonld >/dev/null
+
+      - name: Validate namespace registry syntax
+        run: python3 -m json.tool ontology/chatmangpt/namespaces.json >/dev/null
