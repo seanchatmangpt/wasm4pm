@@ -13,19 +13,23 @@
 @prefix wpm:       <https://chatmangpt.com/ns/wasm4pm#> .
 @prefix pi:        <https://chatmangpt.com/ns/wasm4pm/pi#> .
 @prefix cognition: <https://chatmangpt.com/ns/wasm4pm/cognition#> .
+@prefix compat:    <https://chatmangpt.com/ns/wasm4pm/compat#> .
+@prefix zod:       <https://chatmangpt.com/ns/wasm4pm/zod#> .
 @prefix trace:     <https://chatmangpt.com/ns/wasm4pm/trace#> .
 @prefix interview: <https://chatmangpt.com/ns/wasm4pm/interview#> .
 
-@prefix legacyPi:     <https://wasm4pm.dev/pi#> .
-@prefix legacyCompat: <https://wasm4pm.dev/ns#> .
+@prefix legacyPi:           <https://wasm4pm.dev/pi#> .
+@prefix legacyCognition:    <https://wasm4pm.dev/ns#> .
+@prefix legacyCompatSchema: <https://wasm4pm-compat.rs/ontology#> .
+@prefix legacyZod:          <https://wasm4pm-compat.rs/zod#> .
 
 <https://chatmangpt.com/ontology/wasm4pm>
     a owl:Ontology ;
     dcterms:title "ChatmanGPT wasm4pm Ontology"@en ;
-    dcterms:description "Canonical namespace and compatibility bridge for wasm4pm process-intelligence algorithms, cognition breeds, evidence, receipts, trace graphs, and Gall checkpoints."@en ;
+    dcterms:description "Canonical namespace and compatibility bridge for wasm4pm process intelligence, cognition, compatibility schemas, Zod projections, evidence, receipts, trace graphs, semantic-conformance fixtures, interview concepts, and Gall checkpoints."@en ;
     dcterms:creator <https://chatmangpt.com/id/person/sean-chatman> ;
     dcterms:license <https://spdx.org/licenses/MIT> ;
-    owl:versionInfo "1.0.0" ;
+    owl:versionInfo "1.1.0" ;
     vann:preferredNamespacePrefix "wpm" ;
     vann:preferredNamespaceUri "https://chatmangpt.com/ns/wasm4pm#" ;
     rdfs:seeAlso <https://github.com/seanchatmangpt/wasm4pm> .
@@ -60,6 +64,12 @@ wpm:TypedRefusal
     a owl:Class ;
     rdfs:subClassOf skos:Concept ;
     rdfs:label "Typed refusal"@en .
+
+wpm:NamespaceAuthority
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Namespace authority"@en ;
+    rdfs:comment "A declared IRI authority with an explicit canonical or legacy standing."@en .
 
 wpm:standing
     a owl:DatatypeProperty ;
@@ -152,19 +162,51 @@ legacyPi:AlgorithmPointer dcterms:isReplacedBy pi:AlgorithmPointer .
 cognition:CognitionBreed
     a owl:Class ;
     rdfs:subClassOf wpm:Capability, mls:Algorithm ;
-    owl:equivalentClass legacyCompat:CognitionBreed ;
+    owl:equivalentClass legacyCognition:CognitionBreed ;
     rdfs:label "Cognition breed"@en .
 
-cognition:breedId         a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:breedId .
-cognition:breedLabel      a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:breedLabel .
-cognition:breedDoc        a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:breedDoc .
-cognition:citation        a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:citation .
-cognition:modulePath      a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:modulePath .
-cognition:breedStatus     a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:breedStatus ; rdfs:subPropertyOf wpm:standing .
-cognition:measuredFitness a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:measuredFitness .
-cognition:ocelAdmitted    a owl:DatatypeProperty ; owl:equivalentProperty legacyCompat:ocelAdmitted .
+cognition:breedId         a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedId .
+cognition:breedLabel      a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedLabel .
+cognition:breedDoc        a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedDoc .
+cognition:citation        a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:citation .
+cognition:modulePath      a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:modulePath .
+cognition:breedStatus     a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedStatus ; rdfs:subPropertyOf wpm:standing .
+cognition:measuredFitness a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:measuredFitness .
+cognition:ocelAdmitted    a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:ocelAdmitted .
 
-legacyCompat:CognitionBreed dcterms:isReplacedBy cognition:CognitionBreed .
+legacyCognition:CognitionBreed dcterms:isReplacedBy cognition:CognitionBreed .
+
+# ---------------------------------------------------------------------------
+# Compatibility and Zod projection namespaces
+# ---------------------------------------------------------------------------
+
+compat:DomainSchema
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Compatibility domain schema"@en ;
+    rdfs:comment "A domain contract represented in the wasm4pm compatibility ontology."@en .
+
+zod:RuntimeSchema
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Zod runtime schema"@en ;
+    rdfs:comment "A runtime-validation schema projected from an admitted compatibility-domain definition."@en .
+
+<https://wasm4pm-compat.rs/ontology#>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/ns/wasm4pm/compat#> .
+
+<https://wasm4pm-compat.rs/zod#>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/ns/wasm4pm/zod#> .
+
+<http://wasm4pm.org/>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/id/wasm4pm/semconv/> .
+
+<urn:wasm4pm:>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/id/wasm4pm/> .
 
 # ---------------------------------------------------------------------------
 # Additional owned namespaces
