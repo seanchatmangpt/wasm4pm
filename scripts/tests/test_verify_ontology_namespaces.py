@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,13 +17,16 @@ SPEC = importlib.util.spec_from_file_location("verify_ontology_namespaces", MODU
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError(f"cannot load verifier module from {MODULE_PATH}")
 VERIFIER = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = VERIFIER
 SPEC.loader.exec_module(VERIFIER)
 
 
 class NamespaceVerifierTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.policy = VERIFIER.load_policy(ROOT / "ontology" / "chatmangpt" / "namespaces.json")
+        cls.policy = VERIFIER.load_policy(
+            ROOT / "ontology" / "chatmangpt" / "namespaces.json"
+        )
 
     def assert_classification(self, iri: str, expected: str) -> None:
         classification, _namespace, _detail = VERIFIER.classify_iri(iri, self.policy)
