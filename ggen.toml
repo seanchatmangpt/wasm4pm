@@ -22,6 +22,7 @@ imports = [
   "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl",
   "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl",
   "ggen/ontology/breeds.ttl",
+  "ontology/chatmangpt/wasm4pm-namespace.ttl",
   "ocel/reports/evidence.ttl",
 ]
 standard_only = false
