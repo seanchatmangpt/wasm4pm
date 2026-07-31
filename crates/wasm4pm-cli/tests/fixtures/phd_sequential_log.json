@@ -1,0 +1,15 @@
+{
+  "attributes": {
+    "source": { "tag": "String", "value": "phd-sequential-log" }
+  },
+  "traces": [
+    {
+      "attributes": { "concept:name": { "tag": "String", "value": "case-1" } },
+      "events": [
+        { "attributes": { "concept:name": { "tag": "String", "value": "A" }, "time:timestamp": { "tag": "String", "value": "2026-01-01T00:00:00Z" } } },
+        { "attributes": { "concept:name": { "tag": "String", "value": "B" }, "time:timestamp": { "tag": "String", "value": "2026-01-01T00:01:00Z" } } },
+        { "attributes": { "concept:name": { "tag": "String", "value": "C" }, "time:timestamp": { "tag": "String", "value": "2026-01-01T00:02:00Z" } } }
+      ]
+    }
+  ]
+}
