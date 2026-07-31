@@ -1,0 +1,11 @@
+# MESSAGE: DOCTORAL_MINING_CONTRACT_INCOMPLETE — every canonical mining implementation must carry every ontology-declared required field.
+PREFIX phd: <https://wasm4pm.dev/phd#>
+
+SELECT ?implementation ?canonical_id ?missing_predicate
+WHERE {
+  ?implementation a phd:MiningImplementation .
+  OPTIONAL { ?implementation phd:canonicalId ?canonical_id }
+  ?missing_predicate phd:requiredOnMining true .
+  FILTER NOT EXISTS { ?implementation ?missing_predicate ?value }
+}
+ORDER BY ?canonical_id ?missing_predicate
