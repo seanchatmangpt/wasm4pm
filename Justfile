@@ -89,18 +89,19 @@ ggen-gate:
 
 # Full doctoral gate. A source declaration is not enough: native, wasm32,
 # lifecycle, paper oracle, falsifier, anti-cheat, real CLI run, receipt, and span all run.
+# `--locked` is mandatory: verification may not mutate the tested source tree.
 phd-gate: ggen-gate
-    cargo check -p wasm4pm-cognition
-    cargo check -p wasm4pm-cognition --target wasm32-unknown-unknown --features wasm
-    cargo test -p wasm4pm-cognition \
+    cargo check --locked -p wasm4pm-cognition
+    cargo check --locked -p wasm4pm-cognition --target wasm32-unknown-unknown --features wasm
+    cargo test --locked -p wasm4pm-cognition \
         --test phd_lifecycle_generated \
         --test phd_paper_oracles_generated \
         --test paper_grounded \
         --test anti_fraud_gate \
         --test universal_anticheat_generated
-    cargo check -p wasm4pm-cli
-    cargo test -p wasm4pm-cli --test phd_mining_contracts_generated
-    cargo test -p wasm4pm-cli --test phd_cli_cases_generated
+    cargo check --locked -p wasm4pm-cli
+    cargo test --locked -p wasm4pm-cli --test phd_mining_contracts_generated
+    cargo test --locked -p wasm4pm-cli --test phd_cli_cases_generated
 
 # Cryptographic receipt verification. Current ggen resolves .ggen-v2/receipt.json
 # and its verifying key from the project root; JSON `valid` is the admission bit.
