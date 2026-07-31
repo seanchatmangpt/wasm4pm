@@ -71,7 +71,7 @@ project-evidence:
 
 # Conformance gate: sync and fail on modified OR untracked generated surfaces.
 ggen-gate:
-    ggen sync
+    ggen sync run
     test -z "$(git status --porcelain -- \
         crates/wasm4pm-cognition/src/breeds/registration.rs \
         crates/wasm4pm-cognition/breeds/registry.json \
@@ -99,11 +99,11 @@ phd-gate: ggen-gate
     cargo check -p wasm4pm-cli
     cargo test -p wasm4pm-cli --test phd_mining_contracts_generated
 
-# Cryptographic receipt verification (Ed25519 chain; ggen >= 26.6.9).
-# The CLI exits 0 even on invalid receipts, so gate on the is_valid field.
+# Cryptographic receipt verification. Current ggen resolves .ggen-v2/receipt.json
+# and its verifying key from the project root; JSON `valid` is the admission bit.
 ggen-verify:
-    ggen receipt verify --receipt-path .ggen/receipts/latest.json --public-key .ggen/keys/verifying.key 2>/dev/null \
-        | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['is_valid'], d['message']; print('receipt verified:', d['message'])"
+    ggen receipt verify \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); assert d.get('valid') is True, d; print('receipt verified:', d.get('chain_hash', 'no-chain-hash'))"
 
 ggen-bridge:
     python3 scripts/ggen_receipt_bridge.py
