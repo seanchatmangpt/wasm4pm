@@ -93,9 +93,12 @@ packages/agents/src/**/*.d.ts.map
 # orphan dir from unset test tmpDir
 undefined/
 
-# ggen Ed25519 receipt-signing keys: private key NEVER committed (auto-regenerated
-# by ggen sync). The public verifying.key IS committed so CI can verify signatures.
+# ggen Ed25519 receipt keys are run-scoped evidence, never repository authority.
+# ggen creates both files atomically on the first real sync. The private seed
+# remains runner-local; the public key is copied into the BLAKE3 bridge receipt
+# so the exact run can be independently reverified without committing a key.
 .ggen/keys/signing.key
+.ggen/keys/verifying.key
 
 # ggen local sync receipts and CMD observation evidence (not release provenance)
 .ggen/receipts/
