@@ -1,0 +1,57 @@
+# MESSAGE: CMD_G0_CONTRACT_INCOMPLETE — exact-tree observation contract is missing a constitutional obligation.
+PREFIX cmd: <https://wasm4pm.dev/cmd#>
+
+SELECT ?finding ?value
+WHERE {
+  {
+    VALUES ?value {
+      "repository.json"
+      "surfaces.json"
+      "load-paths.json"
+      "unknowns.json"
+    }
+    BIND("missing-required-artifact" AS ?finding)
+    FILTER NOT EXISTS {
+      cmd:G0ExactTreeObservation cmd:requiredArtifactsJson ?json .
+      FILTER(CONTAINS(STR(?json), ?value))
+    }
+  }
+  UNION
+  {
+    VALUES ?value {
+      "CMD-G0-EXACT-SET"
+      "CMD-G0-BASE-CHANGED"
+      "CMD-G0-INDEX-TREE-DIVERGENCE"
+      "CMD-G0-RECEIPT-TAMPER"
+    }
+    BIND("missing-refusal-code" AS ?finding)
+    FILTER NOT EXISTS {
+      cmd:G0ExactTreeObservation cmd:refusalCodesJson ?json .
+      FILTER(CONTAINS(STR(?json), ?value))
+    }
+  }
+  UNION
+  {
+    VALUES ?value {
+      "authored constitution"
+      "domain source"
+      "implementation"
+      "generated consequence"
+      "template"
+      "fixture"
+      "evidence"
+      "workflow"
+      "configuration"
+      "documentation"
+      "archive"
+      "asset"
+      "unknown"
+    }
+    BIND("missing-path-classification" AS ?finding)
+    FILTER NOT EXISTS {
+      ?rule a cmd:PathRule ;
+        cmd:classification ?value .
+    }
+  }
+}
+ORDER BY ?finding ?value
