@@ -1,0 +1,38 @@
+# MESSAGE: CMD_PROGRAM_LATTICE_INCOMPLETE
+PREFIX cmd: <https://wasm4pm.dev/cmd#>
+
+SELECT ?subject ?missing
+WHERE {
+  {
+    ?subject a cmd:Dimension .
+    VALUES (?predicate ?missing) {
+      (cmd:checkpoint "checkpoint")
+      (cmd:dimensionId "dimensionId")
+      (cmd:scope "scope")
+      (cmd:selectionCardinality "selectionCardinality")
+      (cmd:riskClass "riskClass")
+      (cmd:coverageMode "coverageMode")
+      (cmd:resourceCeiling "resourceCeiling")
+    }
+    FILTER NOT EXISTS { ?subject ?predicate ?value }
+  }
+  UNION
+  {
+    ?subject a cmd:Dimension .
+    FILTER NOT EXISTS { ?option a cmd:Option ; cmd:dimension ?subject }
+    BIND("option" AS ?missing)
+  }
+  UNION
+  {
+    ?subject a cmd:Option .
+    VALUES (?predicate ?missing) {
+      (cmd:checkpoint "checkpoint")
+      (cmd:dimension "dimension")
+      (cmd:optionId "optionId")
+      (cmd:reversibility "reversibility")
+      (cmd:authorityCeiling "authorityCeiling")
+    }
+    FILTER NOT EXISTS { ?subject ?predicate ?value }
+  }
+}
+ORDER BY ?subject ?missing
