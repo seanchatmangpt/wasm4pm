@@ -1,0 +1,26 @@
+# MESSAGE: DOCTORAL_STANDING_OVERCLAIM_REFUSED — ALIVE requires every evidence kind, verified and bound to a commit.
+PREFIX compat: <https://wasm4pm.dev/ns#>
+PREFIX phd:    <https://wasm4pm.dev/phd#>
+
+SELECT ?implementation ?missing_evidence
+WHERE {
+  {
+    ?implementation a phd:MiningImplementation ;
+                    phd:evidenceProfile ?profile ;
+                    phd:admissionState "ALIVE" .
+  }
+  UNION
+  {
+    ?implementation a compat:CognitionBreed ;
+                    compat:breedStatus "ALIVE" .
+    BIND(phd:DoctoralCognitionProfile AS ?profile)
+  }
+  ?profile phd:requiresEvidence ?missing_evidence .
+  FILTER NOT EXISTS {
+    ?evidence phd:evidenceFor ?implementation ;
+              phd:evidenceKind ?missing_evidence ;
+              phd:verified true ;
+              phd:observedAtCommit ?commit .
+  }
+}
+ORDER BY ?implementation ?missing_evidence
