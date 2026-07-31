@@ -1,0 +1,9 @@
+[
+{% for row in sparql_results %}  {
+    "breed_id": "{{ row.breed_id }}",
+    "breed_name": "{{ row.breed_label }}",
+    "historical_ancestor": {{ row.citation | json_encode }},
+    "status": "{{ row.breed_status | default(value="UNSUPPORTED") }}",
+    "standing": "{% if row.breed_status is defined and row.breed_status == "PARTIAL_ALIVE" %}DISPATCHABLE{% else %}REGISTERED{% endif %}"
+  }{% if not loop.last %},{% endif %}
+{% endfor %}]
