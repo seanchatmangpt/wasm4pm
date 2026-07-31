@@ -69,17 +69,35 @@ ci: polish test-full anticheat
 project-evidence:
     python3 scripts/project_evidence.py
 
-# Conformance gate: lsp-check, sync, and fail on any drift in generated surfaces.
+# Conformance gate: sync and fail on modified OR untracked generated surfaces.
 ggen-gate:
     ggen sync
-    git diff --exit-code -- \
+    test -z "$(git status --porcelain -- \
         crates/wasm4pm-cognition/src/breeds/registration.rs \
         crates/wasm4pm-cognition/breeds/registry.json \
         packages/cognition/src/breed-ids.ts \
         crates/wasm4pm-cognition/tests/paper_pointers_generated.rs \
-        crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
+        crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs \
+        crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs \
+        crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs \
+        crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs \
+        wasm4pm/algorithm-registry.json)"
     just ggen-verify
     just ggen-bridge
+
+# Full doctoral gate. A source declaration is not enough: native, wasm32,
+# lifecycle, paper oracle, falsifier, anti-cheat, and source reachability all run.
+phd-gate: ggen-gate
+    cargo check -p wasm4pm-cognition
+    cargo check -p wasm4pm-cognition --target wasm32-unknown-unknown --features wasm
+    cargo test -p wasm4pm-cognition \
+        --test phd_lifecycle_generated \
+        --test phd_paper_oracles_generated \
+        --test paper_grounded \
+        --test anti_fraud_gate \
+        --test universal_anticheat_generated
+    cargo check -p wasm4pm-cli
+    cargo test -p wasm4pm-cli --test phd_mining_contracts_generated
 
 # Cryptographic receipt verification (Ed25519 chain; ggen >= 26.6.9).
 # The CLI exits 0 even on invalid receipts, so gate on the is_valid field.
