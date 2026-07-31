@@ -10,24 +10,38 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-path-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   inventory:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: fix/windows-portable-tree-057d5
+          fetch-depth: 0
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.12'
-      - name: Refuse Windows-invalid tracked paths
-        run: python3 tools/windows_path_gate.py
+      - name: Refuse Windows-invalid tracked paths on exact dependency head
+        run: |
+          test "$(git branch --show-current)" = "fix/windows-portable-tree-057d5"
+          python3 tools/windows_path_gate.py
 
   windows-checkout:
     needs: inventory
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Prove exact tree is representable on Windows
+        with:
+          ref: fix/windows-portable-tree-057d5
+          fetch-depth: 0
+      - name: Prove exact dependency head is representable on Windows
         shell: pwsh
         run: |
+          $branch = git branch --show-current
+          if ($branch -ne "fix/windows-portable-tree-057d5") { throw "unexpected branch: $branch" }
           git status --short
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
