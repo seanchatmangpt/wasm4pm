@@ -1,0 +1,11 @@
+PREFIX phd: <https://wasm4pm.dev/phd#>
+
+SELECT ?case_id ?operation_name ?arguments ?expected_token
+WHERE {
+  ?case a phd:CliCase ;
+        phd:caseId ?case_id ;
+        phd:operationName ?operation_name ;
+        phd:arguments ?arguments ;
+        phd:expectedToken ?expected_token .
+}
+ORDER BY ?case_id
