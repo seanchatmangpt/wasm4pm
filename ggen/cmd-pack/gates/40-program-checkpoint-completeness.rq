@@ -1,0 +1,17 @@
+# MESSAGE: CMD_PROGRAM_CHECKPOINT_INCOMPLETE
+PREFIX cmd: <https://wasm4pm.dev/cmd#>
+
+SELECT ?checkpoint ?missing
+WHERE {
+  ?checkpoint a cmd:Checkpoint ; cmd:sequence ?sequence .
+  VALUES (?predicate ?missing) {
+    (cmd:checkpointId "checkpointId")
+    (cmd:sequence "sequence")
+    (cmd:objective "objective")
+    (cmd:standingCeiling "standingCeiling")
+    (cmd:requiredArtifact "requiredArtifact")
+    (cmd:refusalCode "refusalCode")
+  }
+  FILTER NOT EXISTS { ?checkpoint ?predicate ?value }
+}
+ORDER BY ?checkpoint ?missing
