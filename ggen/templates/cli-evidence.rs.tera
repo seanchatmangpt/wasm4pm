@@ -101,6 +101,24 @@ pub fn emit_evidence(
     });
     atomic_write(&span_path, &serde_json::to_vec_pretty(&span)?)?;
 
+    let operation_span = tracing::info_span!(
+        target: "wasm4pm.cli.evidence",
+        "wasm4pm.operation",
+        service_name = SERVICE_NAME,
+        operation = %operation,
+        status = %status,
+        input_hash = %input_hash,
+        output_hash = %output_hash,
+        receipt_hash = %receipt_hash,
+    );
+    let _entered = operation_span.enter();
+    tracing::info!(
+        target: "wasm4pm.cli.evidence",
+        service_name = SERVICE_NAME,
+        status = %status,
+        "operation receipt and OTEL span emitted"
+    );
+
     Ok(EvidenceEnvelope {
         service_name: SERVICE_NAME,
         operation: operation.to_string(),
