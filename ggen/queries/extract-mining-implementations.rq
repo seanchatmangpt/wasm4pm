@@ -1,0 +1,15 @@
+PREFIX phd: <https://wasm4pm.dev/phd#>
+
+SELECT ?canonical_id ?implementation_symbol ?source_path ?bridge_path ?determinism_class ?method_class ?domain ?admission_state
+WHERE {
+  ?algorithm a phd:MiningImplementation ;
+             phd:canonicalId ?canonical_id ;
+             phd:implementationSymbol ?implementation_symbol ;
+             phd:sourcePath ?source_path ;
+             phd:determinismClass ?determinism_class ;
+             phd:methodClass ?method_class ;
+             phd:domain ?domain ;
+             phd:admissionState ?admission_state .
+  OPTIONAL { ?algorithm phd:bridgePath ?bridge_path }
+}
+ORDER BY ?canonical_id
