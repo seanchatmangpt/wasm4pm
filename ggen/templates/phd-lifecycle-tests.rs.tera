@@ -3,7 +3,9 @@
 
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use wasm4pm_cognition::breeds::{compute_receipt, dispatch_breed, BreedInput};
+use wasm4pm_cognition::breeds::{
+    compute_receipt, dispatch_breed, BreedInput, BreedOutput,
+};
 
 fn fixture_field<T>(input: &Value, key: &str, path: &str) -> T
 where
@@ -62,21 +64,13 @@ fn canonicalize(value: Value) -> Value {
     }
 }
 
-fn assert_doctoral_lifecycle(breed_id: &str) {
-    let input = load_fixture(breed_id);
-    let first = dispatch_breed(breed_id, &input)
+/// Shared A11 harness. Every generated breed test routes through this exact
+/// function; per-breed hand-rolled determinism checks are forbidden.
+fn assert_deterministic(breed_id: &str, input: &BreedInput) -> BreedOutput {
+    let first = dispatch_breed(breed_id, input)
         .unwrap_or_else(|error| panic!("{breed_id} real fixture refused: {error}"));
-    let second = dispatch_breed(breed_id, &input)
+    let second = dispatch_breed(breed_id, input)
         .unwrap_or_else(|error| panic!("{breed_id} deterministic replay refused: {error}"));
-
-    assert!(
-        !first.inference_trace.is_empty(),
-        "{breed_id}: empty inference trace is not doctoral evidence"
-    );
-    assert!(
-        first.ocel_log.is_some(),
-        "{breed_id}: full dispatch must attach OCEL evidence"
-    );
 
     let first_value = canonicalize(serde_json::to_value(&first).expect("serialize first output"));
     let second_value = canonicalize(serde_json::to_value(&second).expect("serialize replay output"));
@@ -85,7 +79,23 @@ fn assert_doctoral_lifecycle(breed_id: &str) {
         "{breed_id}: same admitted input produced different canonical output"
     );
 
-    let receipt = compute_receipt(first.breed, &input, &first);
+    first
+}
+
+fn assert_doctoral_lifecycle(breed_id: &str) {
+    let input = load_fixture(breed_id);
+    let output = assert_deterministic(breed_id, &input);
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "{breed_id}: empty inference trace is not doctoral evidence"
+    );
+    assert!(
+        output.ocel_log.is_some(),
+        "{breed_id}: full dispatch must attach OCEL evidence"
+    );
+
+    let receipt = compute_receipt(output.breed, &input, &output);
     for (name, hash) in [
         ("input_hash", receipt.input_hash.as_str()),
         ("output_hash", receipt.output_hash.as_str()),
