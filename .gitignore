@@ -97,8 +97,9 @@ undefined/
 # by ggen sync). The public verifying.key IS committed so CI can verify signatures.
 .ggen/keys/signing.key
 
-# ggen local sync receipts (not release provenance)
+# ggen local sync receipts and CMD observation evidence (not release provenance)
 .ggen/receipts/
+.ggen/cmd/
 
 # Temporary test artifacts
 .gc_test*.txt
