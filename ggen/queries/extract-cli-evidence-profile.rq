@@ -1,0 +1,9 @@
+PREFIX phd: <https://wasm4pm.dev/phd#>
+
+SELECT ?service_name ?receipt_path ?span_path
+WHERE {
+  ?profile a phd:CliEvidenceProfile ;
+           phd:serviceName ?service_name ;
+           phd:receiptPath ?receipt_path ;
+           phd:spanPath ?span_path .
+}
