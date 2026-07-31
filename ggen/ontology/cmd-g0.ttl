@@ -1,0 +1,57 @@
+@prefix cmd: <https://wasm4pm.dev/cmd#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# G0 is deliberately observation-only. It cannot authorize runtime mutation.
+cmd:G0ExactTreeObservation a cmd:Checkpoint ;
+  cmd:checkpointId "G0" ;
+  cmd:label "Orient and admit the exact repository tree" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:requiredArtifactsJson "[\"repository.json\",\"surfaces.json\",\"load-paths.json\",\"unknowns.json\"]" ;
+  cmd:refusalCodesJson "[\"CMD-G0-EXACT-SET\",\"CMD-G0-BASE-CHANGED\",\"CMD-G0-INDEX-TREE-DIVERGENCE\",\"CMD-G0-RECEIPT-TAMPER\"]" ;
+  cmd:allowedMutationScope ".ggen/cmd/**" ;
+  cmd:forbiddenMutationScope "production/**" ;
+  cmd:forbiddenMutationScope "generated/**" ;
+  cmd:requiredCommand "python3 scripts/cmd_g0.py crown --base HEAD" ;
+  cmd:requiredFalsifier "tracked-path-omission" ;
+  cmd:generatedContract "schemas/cmd-g0-contract.json" .
+
+# Ordered rules form a bounded classification lattice. First matching rule wins.
+cmd:G0Rule001 a cmd:PathRule ; cmd:classification "authored constitution" ; cmd:precedence 10 ; cmd:pathPattern "AGENTS.md" .
+cmd:G0Rule002 a cmd:PathRule ; cmd:classification "authored constitution" ; cmd:precedence 10 ; cmd:pathPattern "CLAUDE.md" .
+cmd:G0Rule003 a cmd:PathRule ; cmd:classification "authored constitution" ; cmd:precedence 10 ; cmd:pathPattern ".claude/rules/*" .
+cmd:G0Rule004 a cmd:PathRule ; cmd:classification "workflow" ; cmd:precedence 20 ; cmd:pathPattern ".github/workflows/*" .
+cmd:G0Rule005 a cmd:PathRule ; cmd:classification "generated consequence" ; cmd:precedence 30 ; cmd:pathPattern "schemas/cmd-g0-contract.json" .
+cmd:G0Rule006 a cmd:PathRule ; cmd:classification "generated consequence" ; cmd:precedence 30 ; cmd:pathPattern "*_generated.rs" .
+cmd:G0Rule007 a cmd:PathRule ; cmd:classification "generated consequence" ; cmd:precedence 30 ; cmd:pathPattern "*/generated/*" .
+cmd:G0Rule008 a cmd:PathRule ; cmd:classification "generated consequence" ; cmd:precedence 30 ; cmd:pathPattern "wasm4pm/algorithm-registry.json" .
+cmd:G0Rule009 a cmd:PathRule ; cmd:classification "generated consequence" ; cmd:precedence 30 ; cmd:pathPattern "crates/wasm4pm-cognition/breeds/registry.json" .
+cmd:G0Rule010 a cmd:PathRule ; cmd:classification "template" ; cmd:precedence 40 ; cmd:pathPattern "*.tera" .
+cmd:G0Rule011 a cmd:PathRule ; cmd:classification "template" ; cmd:precedence 40 ; cmd:pathPattern "*/templates/*" .
+cmd:G0Rule012 a cmd:PathRule ; cmd:classification "fixture" ; cmd:precedence 50 ; cmd:pathPattern "*/fixtures/*" .
+cmd:G0Rule013 a cmd:PathRule ; cmd:classification "fixture" ; cmd:precedence 50 ; cmd:pathPattern "*fixture*" .
+cmd:G0Rule014 a cmd:PathRule ; cmd:classification "evidence" ; cmd:precedence 60 ; cmd:pathPattern "receipts/*" .
+cmd:G0Rule015 a cmd:PathRule ; cmd:classification "evidence" ; cmd:precedence 60 ; cmd:pathPattern "ocel/reports/*" .
+cmd:G0Rule016 a cmd:PathRule ; cmd:classification "evidence" ; cmd:precedence 60 ; cmd:pathPattern "docs/benchmarks/*" .
+cmd:G0Rule017 a cmd:PathRule ; cmd:classification "domain source" ; cmd:precedence 70 ; cmd:pathPattern "*/ontology/*" .
+cmd:G0Rule018 a cmd:PathRule ; cmd:classification "domain source" ; cmd:precedence 70 ; cmd:pathPattern "*.ttl" .
+cmd:G0Rule019 a cmd:PathRule ; cmd:classification "domain source" ; cmd:precedence 70 ; cmd:pathPattern "*.rdf" .
+cmd:G0Rule020 a cmd:PathRule ; cmd:classification "domain source" ; cmd:precedence 70 ; cmd:pathPattern "*.rq" .
+cmd:G0Rule021 a cmd:PathRule ; cmd:classification "configuration" ; cmd:precedence 80 ; cmd:pathPattern "*.toml" .
+cmd:G0Rule022 a cmd:PathRule ; cmd:classification "configuration" ; cmd:precedence 80 ; cmd:pathPattern "*.yaml" .
+cmd:G0Rule023 a cmd:PathRule ; cmd:classification "configuration" ; cmd:precedence 80 ; cmd:pathPattern "*.yml" .
+cmd:G0Rule024 a cmd:PathRule ; cmd:classification "configuration" ; cmd:precedence 80 ; cmd:pathPattern "*.json" .
+cmd:G0Rule025 a cmd:PathRule ; cmd:classification "configuration" ; cmd:precedence 80 ; cmd:pathPattern ".gitignore" .
+cmd:G0Rule026 a cmd:PathRule ; cmd:classification "implementation" ; cmd:precedence 90 ; cmd:pathPattern "*.rs" .
+cmd:G0Rule027 a cmd:PathRule ; cmd:classification "implementation" ; cmd:precedence 90 ; cmd:pathPattern "*.py" .
+cmd:G0Rule028 a cmd:PathRule ; cmd:classification "implementation" ; cmd:precedence 90 ; cmd:pathPattern "*.ts" .
+cmd:G0Rule029 a cmd:PathRule ; cmd:classification "implementation" ; cmd:precedence 90 ; cmd:pathPattern "*.tsx" .
+cmd:G0Rule030 a cmd:PathRule ; cmd:classification "implementation" ; cmd:precedence 90 ; cmd:pathPattern "*.js" .
+cmd:G0Rule031 a cmd:PathRule ; cmd:classification "implementation" ; cmd:precedence 90 ; cmd:pathPattern "*.sh" .
+cmd:G0Rule032 a cmd:PathRule ; cmd:classification "documentation" ; cmd:precedence 100 ; cmd:pathPattern "docs/*" .
+cmd:G0Rule033 a cmd:PathRule ; cmd:classification "documentation" ; cmd:precedence 100 ; cmd:pathPattern "*.md" .
+cmd:G0Rule034 a cmd:PathRule ; cmd:classification "archive" ; cmd:precedence 110 ; cmd:pathPattern "archive/*" .
+cmd:G0Rule035 a cmd:PathRule ; cmd:classification "archive" ; cmd:precedence 110 ; cmd:pathPattern "archived/*" .
+cmd:G0Rule036 a cmd:PathRule ; cmd:classification "asset" ; cmd:precedence 120 ; cmd:pathPattern "*.png" .
+cmd:G0Rule037 a cmd:PathRule ; cmd:classification "asset" ; cmd:precedence 120 ; cmd:pathPattern "*.jpg" .
+cmd:G0Rule038 a cmd:PathRule ; cmd:classification "asset" ; cmd:precedence 120 ; cmd:pathPattern "*.svg" .
+cmd:G0Rule999 a cmd:PathRule ; cmd:classification "unknown" ; cmd:precedence 1000 ; cmd:pathPattern "*" .
