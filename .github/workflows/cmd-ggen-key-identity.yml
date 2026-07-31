@@ -1,0 +1,135 @@
+name: ggen run-scoped key identity
+
+on:
+  pull_request:
+    branches:
+      - agent/cmd-g1-g10-combinatorial-maximalism-v26.7.30
+    paths:
+      - .github/workflows/cmd-ggen-key-identity.yml
+      - .gitignore
+      - ggen.toml
+      - ggen/**
+      - scripts/ggen_receipt_bridge.py
+      - tests/cmd/test_ggen_key_identity.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cmd-ggen-key-identity-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GGEN_SHA: 68952593c40214ac1a681073d65f3902a9cdfce4
+  RUST_BACKTRACE: "1"
+  RUSTC_WRAPPER: ""
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  verify-key-identity:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@v4
+        with:
+          path: wasm4pm
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Checkout pinned ggen compiler
+        uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/ggen
+          ref: ${{ env.GGEN_SHA }}
+          path: ggen
+          fetch-depth: 1
+
+      - name: Install admitted toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-06-22 --profile minimal
+          rustup default nightly-2026-06-22
+          python3 -m pip install --disable-pip-version-check blake3
+
+      - name: Build pinned ggen
+        working-directory: ggen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build -p ggen-cli-lib --bin ggen
+          ./target/debug/ggen --version
+          echo "$GITHUB_WORKSPACE/ggen/target/debug" >> "$GITHUB_PATH"
+
+      - name: Manufacture and verify run-scoped identity
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+
+          test -z "$(git ls-files -- .ggen/keys/signing.key .ggen/keys/verifying.key)"
+          git check-ignore -q .ggen/keys/signing.key
+          git check-ignore -q .ggen/keys/verifying.key
+
+          ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-sync.log"
+          ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json"
+
+          GGEN_VERIFY="$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json" \
+            python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          receipt = json.loads(Path(os.environ["GGEN_VERIFY"]).read_text())
+          assert receipt.get("valid") is True, receipt
+          PY
+
+          projected=(
+            schemas/cmd-g0-contract.json
+            crates/wasm4pm-cognition/src/breeds/registration.rs
+            crates/wasm4pm-cognition/breeds/registry.json
+            packages/cognition/src/breed-ids.ts
+            crates/wasm4pm-cognition/tests/paper_pointers_generated.rs
+            crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
+            crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs
+            crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs
+            crates/wasm4pm-cli/src/commands/evidence.rs
+            crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs
+            crates/wasm4pm-cli/tests/phd_cli_cases_generated.rs
+            wasm4pm/algorithm-registry.json
+          )
+          git add -- "${projected[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "test(ggen): admit generated identity fixture"
+
+          python3 -m py_compile \
+            scripts/ggen_receipt_bridge.py \
+            tests/cmd/test_ggen_key_identity.py
+          python3 scripts/ggen_receipt_bridge.py \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-bridge.log"
+          python3 tests/cmd/test_ggen_key_identity.py \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-key-identity.json"
+
+          ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-resync.log"
+          ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-reverify.json"
+          python3 tests/cmd/test_ggen_key_identity.py \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-key-identity-replay.json"
+
+          test -z "$(git status --porcelain --untracked-files=no)"
+
+      - name: Preserve key-identity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmd-ggen-key-identity-${{ github.event.pull_request.head.sha }}
+          path: |
+            evidence/
+            wasm4pm/.ggen/receipts/
+            wasm4pm/.ggen/keys/verifying.key
+            wasm4pm/.wasm4pm/receipts/ggen-bridge-latest.json
+          if-no-files-found: warn
+          retention-days: 30
