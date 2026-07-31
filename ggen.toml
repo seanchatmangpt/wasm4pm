@@ -24,6 +24,7 @@ imports = [
   "ggen/ontology/breeds.ttl",
   "ggen/ontology/phd-contracts.ttl",
   "ggen/ontology/phd-cli-cases.ttl",
+  "ggen/ontology/cmd-g0.ttl",
   "ocel/reports/evidence.ttl",
 ]
 standard_only = false
@@ -45,6 +46,11 @@ path     = "../wasm4pm-compat/ggen"
 name     = "wasm4pm-phd-admission"
 registry = "local"
 path     = "ggen/phd-pack"
+
+[[packs]]
+name     = "wasm4pm-cmd-g0"
+registry = "local"
+path     = "ggen/cmd-pack"
 
 # ---------------------------------------------------------------------------
 # Rule: witness-markers
@@ -136,6 +142,18 @@ name        = "ts-breed-ids"
 query       = { file = "ggen/queries/extract-breeds.rq" }
 template    = { file = "ggen/templates/breed-ids.ts.tera" }
 output_file = "packages/cognition/src/breed-ids.ts"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Combinatorial maximalism G0 projection.
+# The observer consumes this generated contract; it does not embed a competing
+# classification or refusal vocabulary.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "cmd-g0-contract"
+query       = { file = "ggen/queries/extract-cmd-g0-contract.rq" }
+template    = { file = "ggen/templates/cmd-g0-contract.json.tera" }
+output_file = "schemas/cmd-g0-contract.json"
 mode        = "Overwrite"
 
 # ---------------------------------------------------------------------------
