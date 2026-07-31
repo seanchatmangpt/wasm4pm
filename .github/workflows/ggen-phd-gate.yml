@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: ggen-phd-${{ github.head_ref }}
+  group: ggen-phd-${{ github.ref }}
   cancel-in-progress: true
 
 env:
