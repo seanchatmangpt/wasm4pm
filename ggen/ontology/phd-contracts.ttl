@@ -1,0 +1,582 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix compat: <https://wasm4pm.dev/ns#> .
+@prefix phd:    <https://wasm4pm.dev/phd#> .
+
+# This graph declares obligations, never successful evidence.  A implementation
+# may enter ALIVE only through measured evidence joined by the admission rules.
+
+phd:MiningImplementation a rdf:Class .
+phd:ImplementationProfile a rdf:Class .
+phd:EvidenceKind a rdf:Class .
+
+phd:canonicalId a rdf:Property ; phd:requiredOnMining true .
+phd:implementationSymbol a rdf:Property ; phd:requiredOnMining true .
+phd:sourcePath a rdf:Property ; phd:requiredOnMining true .
+phd:determinismClass a rdf:Property ; phd:requiredOnMining true .
+phd:methodClass a rdf:Property ; phd:requiredOnMining true .
+phd:domain a rdf:Property ; phd:requiredOnMining true .
+phd:evidenceProfile a rdf:Property ; phd:requiredOnMining true .
+phd:admissionState a rdf:Property ; phd:requiredOnMining true .
+phd:bridgePath a rdf:Property .
+phd:appliesToClass a rdf:Property .
+phd:requiresEvidence a rdf:Property .
+phd:requiredOnMining a rdf:Property .
+phd:evidenceFor a rdf:Property .
+phd:evidenceKind a rdf:Property .
+phd:observedAtCommit a rdf:Property .
+phd:verified a rdf:Property .
+
+phd:NativeBuild a phd:EvidenceKind .
+phd:WasmBuild a phd:EvidenceKind .
+phd:DedicatedTest a phd:EvidenceKind .
+phd:RealInputRun a phd:EvidenceKind .
+phd:PaperOracle a phd:EvidenceKind .
+phd:NegativeFixture a phd:EvidenceKind .
+phd:InvariantFixture a phd:EvidenceKind .
+phd:DeterminismReplay a phd:EvidenceKind .
+phd:AntiCheat a phd:EvidenceKind .
+phd:Blake3Receipt a phd:EvidenceKind .
+phd:OtelSpan a phd:EvidenceKind .
+phd:IndependentReplay a phd:EvidenceKind .
+
+phd:DoctoralAlgorithmProfile a phd:ImplementationProfile ;
+  phd:requiresEvidence phd:NativeBuild,
+    phd:WasmBuild,
+    phd:DedicatedTest,
+    phd:RealInputRun,
+    phd:PaperOracle,
+    phd:NegativeFixture,
+    phd:InvariantFixture,
+    phd:DeterminismReplay,
+    phd:AntiCheat,
+    phd:Blake3Receipt,
+    phd:OtelSpan,
+    phd:IndependentReplay .
+
+phd:DoctoralCognitionProfile a phd:ImplementationProfile ;
+  phd:appliesToClass compat:CognitionBreed ;
+  phd:requiresEvidence phd:NativeBuild,
+    phd:WasmBuild,
+    phd:DedicatedTest,
+    phd:RealInputRun,
+    phd:PaperOracle,
+    phd:NegativeFixture,
+    phd:InvariantFixture,
+    phd:DeterminismReplay,
+    phd:AntiCheat,
+    phd:Blake3Receipt,
+    phd:OtelSpan,
+    phd:IndependentReplay .
+
+# Canonical process-mining census.  IDs, symbols, and classifications are data;
+# algorithm bodies remain handwritten mathematical kernels.
+
+phd:Algorithm_dfg a phd:MiningImplementation ;
+  phd:canonicalId "dfg" ;
+  phd:implementationSymbol "discover_dfg_from_log" ;
+  phd:sourcePath "wasm4pm/src/discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_dfg_filtered a phd:MiningImplementation ;
+  phd:canonicalId "dfg-filtered" ;
+  phd:implementationSymbol "discover_dfg_filtered_from_log" ;
+  phd:sourcePath "wasm4pm/src/algorithms.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "frequency-filtered directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_dfg_simd a phd:MiningImplementation ;
+  phd:canonicalId "dfg-simd" ;
+  phd:implementationSymbol "discover_dfg_simd_handle" ;
+  phd:sourcePath "wasm4pm/src/simd_streaming_dfg.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "SIMD columnar directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_dfg_hierarchical a phd:MiningImplementation ;
+  phd:canonicalId "dfg-hierarchical" ;
+  phd:implementationSymbol "discover_hierarchical" ;
+  phd:sourcePath "wasm4pm/src/hierarchical.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "hierarchical directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_ocel_dfg a phd:MiningImplementation ;
+  phd:canonicalId "ocel-dfg" ;
+  phd:implementationSymbol "discover_ocel_dfg_pure" ;
+  phd:sourcePath "wasm4pm/src/discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "object-centric directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_ocel_dfg_per_type a phd:MiningImplementation ;
+  phd:canonicalId "ocel-dfg-per-type" ;
+  phd:implementationSymbol "discover_ocel_dfg_per_type" ;
+  phd:sourcePath "wasm4pm/src/discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "object-centric DFG per object type" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_footprints a phd:MiningImplementation ;
+  phd:canonicalId "footprints" ;
+  phd:implementationSymbol "discover_footprints_from_log" ;
+  phd:sourcePath "wasm4pm/src/algorithms.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "footprint matrix" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_alpha_plus_plus a phd:MiningImplementation ;
+  phd:canonicalId "alpha-plus-plus" ;
+  phd:implementationSymbol "discover_alpha_plus_plus_from_log" ;
+  phd:sourcePath "wasm4pm/src/algorithms.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "alpha-plus-plus Petri-net discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_declare a phd:MiningImplementation ;
+  phd:canonicalId "declare" ;
+  phd:implementationSymbol "discover_declare" ;
+  phd:sourcePath "wasm4pm/src/discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "DECLARE constraint mining" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_heuristic_miner a phd:MiningImplementation ;
+  phd:canonicalId "heuristic-miner" ;
+  phd:implementationSymbol "discover_heuristic_miner_from_log" ;
+  phd:sourcePath "wasm4pm/src/advanced_algorithms.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/heuristic_bridge.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "heuristic-net discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_inductive_miner a phd:MiningImplementation ;
+  phd:canonicalId "inductive-miner" ;
+  phd:implementationSymbol "InductiveMiner::discover" ;
+  phd:sourcePath "wasm4pm/src/more_discovery.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/inductive_bridge.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "sound-by-construction" ;
+  phd:domain "process-tree cut discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_ilp_petri_net a phd:MiningImplementation ;
+  phd:canonicalId "ilp-petri-net" ;
+  phd:implementationSymbol "discover_ilp_petri_net_from_log" ;
+  phd:sourcePath "wasm4pm/src/ilp_discovery.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/ilp_bridge.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact-optimization" ;
+  phd:domain "integer-linear-programming Petri-net discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_optimized_dfg a phd:MiningImplementation ;
+  phd:canonicalId "optimized-dfg" ;
+  phd:implementationSymbol "discover_optimized_dfg_from_log" ;
+  phd:sourcePath "wasm4pm/src/ilp_discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "locally optimized directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_astar a phd:MiningImplementation ;
+  phd:canonicalId "astar" ;
+  phd:implementationSymbol "discover_astar_from_log" ;
+  phd:sourcePath "wasm4pm/src/fast_discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact-search" ;
+  phd:domain "A-star informed-search discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_hill_climbing a phd:MiningImplementation ;
+  phd:canonicalId "hill-climbing" ;
+  phd:implementationSymbol "discover_hill_climbing_from_log" ;
+  phd:sourcePath "wasm4pm/src/fast_discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "local-search process discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_genetic a phd:MiningImplementation ;
+  phd:canonicalId "genetic-algorithm" ;
+  phd:implementationSymbol "discover_genetic_algorithm_from_log" ;
+  phd:sourcePath "wasm4pm/src/genetic_discovery.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/genetic_bridge.rs" ;
+  phd:determinismClass "seeded-stochastic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "evolutionary process discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_pso a phd:MiningImplementation ;
+  phd:canonicalId "pso" ;
+  phd:implementationSymbol "discover_pso_algorithm_from_log" ;
+  phd:sourcePath "wasm4pm/src/genetic_discovery.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/pso_bridge.rs" ;
+  phd:determinismClass "seeded-stochastic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "particle-swarm process discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_aco a phd:MiningImplementation ;
+  phd:canonicalId "aco" ;
+  phd:implementationSymbol "discover_aco_algorithm_from_log" ;
+  phd:sourcePath "wasm4pm/src/genetic_discovery.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/aco_bridge.rs" ;
+  phd:determinismClass "seeded-stochastic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "ant-colony process discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_simulated_annealing a phd:MiningImplementation ;
+  phd:canonicalId "simulated-annealing" ;
+  phd:implementationSymbol "discover_simulated_annealing_from_log" ;
+  phd:sourcePath "wasm4pm/src/more_discovery.rs" ;
+  phd:determinismClass "seeded-stochastic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "simulated-annealing process discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_oc_petri_net a phd:MiningImplementation ;
+  phd:canonicalId "oc-petri-net" ;
+  phd:implementationSymbol "discover_oc_petri_net_pure" ;
+  phd:sourcePath "wasm4pm/src/oc_petri_net.rs" ;
+  phd:determinismClass "dispatch-dependent" ;
+  phd:methodClass "exact-or-heuristic" ;
+  phd:domain "object-centric Petri-net discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_powl a phd:MiningImplementation ;
+  phd:canonicalId "powl" ;
+  phd:implementationSymbol "discover_powl_from_log" ;
+  phd:sourcePath "wasm4pm/src/powl_api.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "POWL discovery from event logs" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_powl_partial_orders a phd:MiningImplementation ;
+  phd:canonicalId "powl-from-partial-orders" ;
+  phd:implementationSymbol "discover_powl_from_partial_orders" ;
+  phd:sourcePath "wasm4pm/src/powl_api.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "POWL discovery from partial orders" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_ocel_powl a phd:MiningImplementation ;
+  phd:canonicalId "ocel-powl" ;
+  phd:implementationSymbol "discover_ocel_powl" ;
+  phd:sourcePath "wasm4pm/src/powl_api.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "object-centric POWL discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_performance_dfg a phd:MiningImplementation ;
+  phd:canonicalId "performance-dfg" ;
+  phd:implementationSymbol "discover_performance_dfg_from_log" ;
+  phd:sourcePath "wasm4pm/src/performance_dfg.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "performance-annotated directly-follows graph" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_performance_spectrum a phd:MiningImplementation ;
+  phd:canonicalId "performance-spectrum" ;
+  phd:implementationSymbol "discover_performance_spectrum" ;
+  phd:sourcePath "wasm4pm/src/performance_spectrum.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "performance-spectrum analysis" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_simple_process_tree a phd:MiningImplementation ;
+  phd:canonicalId "simple-process-tree" ;
+  phd:implementationSymbol "discover_simple_process_tree_from_log" ;
+  phd:sourcePath "wasm4pm/src/process_tree.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "lightweight process-tree discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_temporal_profile a phd:MiningImplementation ;
+  phd:canonicalId "temporal-profile" ;
+  phd:implementationSymbol "discover_temporal_profile_from_log" ;
+  phd:sourcePath "wasm4pm/src/temporal_profile.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "temporal conformance profile" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_transition_system a phd:MiningImplementation ;
+  phd:canonicalId "transition-system" ;
+  phd:implementationSymbol "discover_transition_system" ;
+  phd:sourcePath "wasm4pm/src/transition_system.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "state-based transition-system discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_prefix_tree a phd:MiningImplementation ;
+  phd:canonicalId "prefix-tree" ;
+  phd:implementationSymbol "discover_prefix_tree_inner" ;
+  phd:sourcePath "wasm4pm/src/log_to_trie.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "trace prefix-tree construction" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_causal_alpha a phd:MiningImplementation ;
+  phd:canonicalId "causal-alpha" ;
+  phd:implementationSymbol "discover_causal_alpha" ;
+  phd:sourcePath "wasm4pm/src/causal_graph.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "alpha-style causal-net discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_causal_heuristic a phd:MiningImplementation ;
+  phd:canonicalId "causal-heuristic" ;
+  phd:implementationSymbol "discover_causal_heuristic" ;
+  phd:sourcePath "wasm4pm/src/causal_graph.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "dependency-measure causal-net discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_handover_network a phd:MiningImplementation ;
+  phd:canonicalId "handover-network" ;
+  phd:implementationSymbol "discover_handover_network_from_log" ;
+  phd:sourcePath "wasm4pm/src/social_network.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/social_network_bridge.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "handover-of-work social network" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_working_together_network a phd:MiningImplementation ;
+  phd:canonicalId "working-together-network" ;
+  phd:implementationSymbol "discover_working_together_network_from_log" ;
+  phd:sourcePath "wasm4pm/src/social_network.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "working-together social network" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_community_detection a phd:MiningImplementation ;
+  phd:canonicalId "community-detection" ;
+  phd:implementationSymbol "detect_communities" ;
+  phd:sourcePath "wasm4pm/src/social_network.rs" ;
+  phd:determinismClass "unconfirmed" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "social-network community detection" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_correlation_miner a phd:MiningImplementation ;
+  phd:canonicalId "correlation-miner" ;
+  phd:implementationSymbol "mine_correlation" ;
+  phd:sourcePath "wasm4pm/src/correlation_miner.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "event-correlation mining" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_batches a phd:MiningImplementation ;
+  phd:canonicalId "batches" ;
+  phd:implementationSymbol "discover_batches" ;
+  phd:sourcePath "wasm4pm/src/batches.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "batch-activity discovery" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_ml_anomaly a phd:MiningImplementation ;
+  phd:canonicalId "ml-anomaly" ;
+  phd:implementationSymbol "discover_ml_anomaly" ;
+  phd:sourcePath "wasm4pm/src/anomaly.rs" ;
+  phd:determinismClass "unconfirmed" ;
+  phd:methodClass "approximate" ;
+  phd:domain "machine-learning anomaly detection" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_align_etconformance a phd:MiningImplementation ;
+  phd:canonicalId "align-etconformance" ;
+  phd:implementationSymbol "compute_align_etconformance_precision" ;
+  phd:sourcePath "wasm4pm/src/align_etconformance.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/conformance_bridge.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "alignment-based ET precision" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_rework_detection a phd:MiningImplementation ;
+  phd:canonicalId "rework-detection" ;
+  phd:implementationSymbol "detect_rework" ;
+  phd:sourcePath "wasm4pm/src/advanced_algorithms.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "rework and loop detection" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_bottleneck_detection a phd:MiningImplementation ;
+  phd:canonicalId "bottleneck-detection" ;
+  phd:implementationSymbol "detect_bottlenecks" ;
+  phd:sourcePath "wasm4pm/src/advanced_algorithms.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "threshold-heuristic" ;
+  phd:domain "process bottleneck detection" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_sequential_patterns a phd:MiningImplementation ;
+  phd:canonicalId "sequential-pattern-mining" ;
+  phd:implementationSymbol "mine_sequential_patterns" ;
+  phd:sourcePath "wasm4pm/src/fast_discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "sequential-pattern mining" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_concept_drift_structural a phd:MiningImplementation ;
+  phd:canonicalId "concept-drift-structural" ;
+  phd:implementationSymbol "detect_concept_drift" ;
+  phd:sourcePath "wasm4pm/src/fast_discovery.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "threshold-heuristic" ;
+  phd:domain "structural concept-drift detection" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_concept_drift_statistical a phd:MiningImplementation ;
+  phd:canonicalId "concept-drift-statistical" ;
+  phd:implementationSymbol "detect_drift" ;
+  phd:sourcePath "wasm4pm/src/prediction_drift.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "statistical-heuristic" ;
+  phd:domain "frequency-distribution concept-drift detection" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_trace_clustering a phd:MiningImplementation ;
+  phd:canonicalId "trace-clustering" ;
+  phd:implementationSymbol "cluster_traces" ;
+  phd:sourcePath "wasm4pm/src/fast_discovery.rs" ;
+  phd:determinismClass "unconfirmed" ;
+  phd:methodClass "heuristic" ;
+  phd:domain "trace clustering" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_token_replay a phd:MiningImplementation ;
+  phd:canonicalId "token-replay" ;
+  phd:implementationSymbol "replay_log" ;
+  phd:sourcePath "wasm4pm/src/simd_token_replay.rs" ;
+  phd:bridgePath "crates/wasm4pm-cli/src/commands/conformance_bridge.rs" ;
+  phd:determinismClass "deterministic" ;
+  phd:methodClass "exact" ;
+  phd:domain "token-based conformance replay" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_predict_next_activity a phd:MiningImplementation ;
+  phd:canonicalId "predict-next-activity" ;
+  phd:implementationSymbol "predict_next_activity" ;
+  phd:sourcePath "wasm4pm/src/prediction.rs" ;
+  phd:determinismClass "deterministic-given-model" ;
+  phd:methodClass "approximate" ;
+  phd:domain "next-activity prediction" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_predict_next_activity_rf a phd:MiningImplementation ;
+  phd:canonicalId "predict-next-activity-rf" ;
+  phd:implementationSymbol "predict_next_activity_rf" ;
+  phd:sourcePath "wasm4pm/src/prediction_rf.rs" ;
+  phd:determinismClass "deterministic-given-model" ;
+  phd:methodClass "approximate" ;
+  phd:domain "random-forest next-activity prediction" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_predict_outcome a phd:MiningImplementation ;
+  phd:canonicalId "predict-outcome" ;
+  phd:implementationSymbol "predict_outcome_from_log" ;
+  phd:sourcePath "wasm4pm/src/prediction_outcome.rs" ;
+  phd:determinismClass "deterministic-given-model" ;
+  phd:methodClass "approximate" ;
+  phd:domain "case-outcome prediction" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_predict_remaining_time a phd:MiningImplementation ;
+  phd:canonicalId "predict-remaining-time" ;
+  phd:implementationSymbol "predict_case_duration" ;
+  phd:sourcePath "wasm4pm/src/prediction_remaining_time.rs" ;
+  phd:determinismClass "deterministic-given-model" ;
+  phd:methodClass "approximate" ;
+  phd:domain "remaining-time prediction" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
+
+phd:Algorithm_predict_hazard_rate a phd:MiningImplementation ;
+  phd:canonicalId "predict-hazard-rate" ;
+  phd:implementationSymbol "predict_hazard_rate" ;
+  phd:sourcePath "wasm4pm/src/prediction_remaining_time.rs" ;
+  phd:determinismClass "deterministic-given-model" ;
+  phd:methodClass "approximate" ;
+  phd:domain "survival and hazard-rate prediction" ;
+  phd:evidenceProfile phd:DoctoralAlgorithmProfile ;
+  phd:admissionState "UNVERIFIED" .
