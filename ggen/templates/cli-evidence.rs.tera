@@ -2,7 +2,6 @@
 // Do not edit: change ggen/ontology/phd-cli-cases.ttl.
 
 use anyhow::{bail, Context, Result};
-use serde::Serialize;
 use serde_json::json;
 use std::path::{Path, PathBuf};
 
@@ -11,7 +10,7 @@ const RECEIPT_PATH: &str = "{{ row.receipt_path }}";
 const SPAN_PATH: &str = "{{ row.span_path }}";
 {% endfor %}
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct EvidenceEnvelope {
     pub service_name: &'static str,
     pub operation: String,
