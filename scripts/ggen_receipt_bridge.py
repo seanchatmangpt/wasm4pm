@@ -23,7 +23,9 @@ GENERATED_FILES = [
     "crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs",
     "crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs",
     "crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs",
+    "crates/wasm4pm-cli/src/commands/evidence.rs",
     "crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs",
+    "crates/wasm4pm-cli/tests/phd_cli_cases_generated.rs",
     "wasm4pm/algorithm-registry.json",
 ]
 
