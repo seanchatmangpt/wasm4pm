@@ -1,0 +1,24 @@
+# MESSAGE: DOCTORAL_POINTER_PROVENANCE_REFUSED — every true pointer needs a derivation and every decoy needs a falsifier rationale.
+PREFIX compat: <https://wasm4pm.dev/ns#>
+
+SELECT ?breed_id ?pointer ?kind ?missing
+WHERE {
+  ?pointer a compat:PaperPointer ;
+           compat:forBreed ?breed ;
+           compat:pointerKind ?kind ;
+           compat:pointerValue ?value ;
+           compat:pointerLocus ?locus .
+  ?breed compat:breedId ?breed_id .
+  {
+    FILTER (?kind = "true")
+    FILTER NOT EXISTS { ?pointer compat:pointerDerivation ?derivation }
+    BIND("pointerDerivation" AS ?missing)
+  }
+  UNION
+  {
+    FILTER (?kind = "decoy")
+    FILTER NOT EXISTS { ?pointer compat:decoyReason ?reason }
+    BIND("decoyReason" AS ?missing)
+  }
+}
+ORDER BY ?breed_id ?kind
