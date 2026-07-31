@@ -16,6 +16,7 @@ OUT_DIR = ROOT / ".wasm4pm/receipts"
 OUT_FILE = OUT_DIR / "ggen-bridge-latest.json"
 
 GENERATED_FILES = [
+    "schemas/cmd-g0-contract.json",
     "crates/wasm4pm-cognition/src/breeds/registration.rs",
     "crates/wasm4pm-cognition/breeds/registry.json",
     "packages/cognition/src/breed-ids.ts",
