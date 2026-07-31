@@ -13,6 +13,7 @@ use wasm4pm_compat::models::DFG;
 
 use crate::commands::aco_bridge::discover_aco_real;
 use crate::commands::conformance_bridge::check_conformance_real;
+use crate::commands::evidence::emit_evidence;
 use crate::commands::genetic_bridge::discover_genetic_real;
 use crate::commands::heuristic_bridge::discover_heuristic_real;
 use crate::commands::ilp_bridge::discover_ilp_real;
@@ -35,10 +36,7 @@ pub enum MiningCommands {
         /// Path to the event log file (.xes or .json)
         input: PathBuf,
         /// Algorithm to use: heuristic, inductive, ocel_dfg, ilp, genetic,
-        /// aco, pso, ocdfg. heuristic/ocel_dfg print a DFG; inductive prints
-        /// a process tree; ilp prints a Petri net + fitness/precision;
-        /// genetic/aco/pso print an evolved DFG + fitness; ocdfg prints one
-        /// DFG per object type (OCEL input only).
+        /// aco, pso, ocdfg.
         #[arg(long, default_value = "heuristic")]
         algo: String,
         /// Activity key to use (e.g. "concept:name")
@@ -65,7 +63,50 @@ pub enum MiningCommands {
     },
 }
 
+fn operation_name(args: &MiningArgs) -> String {
+    match &args.command {
+        MiningCommands::Discover { algo, .. } => format!("mining.discover.{algo}"),
+        MiningCommands::Conformance { .. } => "mining.conformance".to_string(),
+        MiningCommands::SocialNetwork { .. } => "mining.social_network".to_string(),
+    }
+}
+
+fn evidence_input(args: &MiningArgs) -> Vec<u8> {
+    match &args.command {
+        MiningCommands::Discover { input, .. } | MiningCommands::SocialNetwork { input, .. } => {
+            fs::read(input).unwrap_or_else(|_| input.to_string_lossy().as_bytes().to_vec())
+        }
+        MiningCommands::Conformance { log, model, .. } => {
+            let mut bytes = fs::read(log)
+                .unwrap_or_else(|_| log.to_string_lossy().as_bytes().to_vec());
+            bytes.push(0);
+            bytes.extend(
+                fs::read(model).unwrap_or_else(|_| model.to_string_lossy().as_bytes().to_vec()),
+            );
+            bytes
+        }
+    }
+}
+
 pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
+    let operation = operation_name(args);
+    let input_bytes = evidence_input(args);
+
+    match run_inner(args, verbose) {
+        Ok(output_bytes) => {
+            emit_evidence(&operation, &input_bytes, &output_bytes, "ok")?;
+            Ok(())
+        }
+        Err(error) => {
+            let error_text = format!("{error:#}");
+            emit_evidence(&operation, &input_bytes, error_text.as_bytes(), "error")
+                .context("failed to emit mining error evidence")?;
+            Err(error)
+        }
+    }
+}
+
+fn run_inner(args: &MiningArgs, verbose: bool) -> Result<Vec<u8>> {
     let io = Io::new(verbose);
     match &args.command {
         MiningCommands::Discover {
@@ -82,7 +123,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 let ocel = load_ocel(input)?;
                 let dfg = discover_ocel_dfg_pure(&ocel);
                 print_native_dfg(&dfg);
-                return Ok(());
+                return Ok(format!("{dfg:#?}").into_bytes());
             }
 
             if algo == "ocdfg" {
@@ -98,7 +139,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                     println!("\n{}", object_type.clone().underline());
                     print_native_dfg(dfg);
                 }
-                return Ok(());
+                return Ok(format!("{ocdfg:#?}").into_bytes());
             }
 
             let log = load_log(input)?;
@@ -107,6 +148,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 let dfg = discover_heuristic_real(&log, activity_key)
                     .context("Heuristic discovery failed")?;
                 print_native_dfg(&dfg);
+                Ok(format!("{dfg:#?}").into_bytes())
             } else if algo == "inductive" {
                 let tree = discover_inductive(&log, activity_key)
                     .context("Inductive Miner discovery failed")?;
@@ -117,6 +159,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                         .bright_cyan()
                 );
                 println!("{tree:#?}");
+                Ok(format!("{tree:#?}").into_bytes())
             } else if algo == "ilp" {
                 let result = discover_ilp_real(&log, activity_key)
                     .context("ILP-inspired discovery failed")?;
@@ -131,21 +174,29 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                     "\nFitness: {:.4}  Precision: {:.4}",
                     result.fitness, result.precision
                 );
+                Ok(format!(
+                    "petri_net={:#?}\nfitness={:.8}\nprecision={:.8}",
+                    result.petri_net, result.fitness, result.precision
+                )
+                .into_bytes())
             } else if algo == "genetic" {
                 let (dfg, fitness) = discover_genetic_real(&log, activity_key)
                     .context("Genetic algorithm discovery failed")?;
                 print_native_dfg(&dfg);
                 println!("\nFinal fitness: {fitness:.4}");
+                Ok(format!("dfg={dfg:#?}\nfitness={fitness:.8}").into_bytes())
             } else if algo == "aco" {
                 let (dfg, fitness) = discover_aco_real(&log, activity_key)
                     .context("ACO discovery failed")?;
                 print_native_dfg(&dfg);
                 println!("\nFinal fitness: {fitness:.4}");
+                Ok(format!("dfg={dfg:#?}\nfitness={fitness:.8}").into_bytes())
             } else if algo == "pso" {
                 let (dfg, fitness) = discover_pso_real(&log, activity_key)
                     .context("PSO discovery failed")?;
                 print_native_dfg(&dfg);
                 println!("\nFinal fitness: {fitness:.4}");
+                Ok(format!("dfg={dfg:#?}\nfitness={fitness:.8}").into_bytes())
             } else {
                 anyhow::bail!("Algorithm '{}' not yet supported in CLI", algo);
             }
@@ -170,10 +221,11 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             table.add_row(vec![
                 "Precision".to_string(),
                 precision
-                    .map(|v| format!("{v:.4}"))
+                    .map(|value| format!("{value:.4}"))
                     .unwrap_or_else(|| "N/A".to_string()),
             ]);
             table.print();
+            Ok(format!("fitness={fitness:.8}\nprecision={precision:?}").into_bytes())
         }
         MiningCommands::SocialNetwork {
             input,
@@ -211,31 +263,34 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 ]);
             }
             table.print();
+
+            let mut evidence_resources: Vec<_> = metrics.degree.keys().cloned().collect();
+            evidence_resources.sort();
+            let mut evidence = String::new();
+            for resource in evidence_resources {
+                evidence.push_str(&format!(
+                    "{resource}:degree={:.8},betweenness={:.8},closeness={:.8}\n",
+                    metrics.degree.get(&resource).copied().unwrap_or(0.0),
+                    metrics.betweenness.get(&resource).copied().unwrap_or(0.0),
+                    metrics.closeness.get(&resource).copied().unwrap_or(0.0),
+                ));
+            }
+            Ok(evidence.into_bytes())
         }
     }
-    Ok(())
 }
 
-/// Load a real OCEL 1.0/2.0 JSON log. Tries the native shape first
-/// (`wasm4pm::models::OCEL`'s own serde aliases handle both 1.0 and 2.0 field
-/// names at the root), then falls back to unwrapping common receipt/envelope
-/// wrappers and `ocel:`-prefixed export keys via
-/// [`crate::commands::ocel_envelope::parse_ocel_tolerant`] — the input format
-/// `EventLog`'s own JSON deserializer rejects OCEL entirely, since it expects
-/// wasm4pm's native XES-JSON shape instead.
+/// Load a real OCEL 1.0/2.0 JSON log.
 fn load_ocel(path: &PathBuf) -> Result<OCEL> {
-    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
-    if ext != "json" {
-        anyhow::bail!("OCEL input must be a .json file, got '{}'", ext);
+    let extension = path.extension().and_then(|value| value.to_str()).unwrap_or("");
+    if extension != "json" {
+        anyhow::bail!("OCEL input must be a .json file, got '{}'", extension);
     }
     let content = fs::read_to_string(path)
         .with_context(|| format!("Failed to read log file: {:?}", path))?;
     parse_ocel_tolerant(&content)
 }
 
-/// Print a `wasm4pm::models::DFG` (native `from`/`to` edge shape) —
-/// distinct from `wasm4pm_compat`'s `DFG` (`source`/`target`), which
-/// `print_dfg` below handles instead.
 fn print_native_dfg(dfg: &wasm4pm::models::DFG) {
     let mut table = Table::new(vec!["Source", "Target", "Frequency"]);
     for edge in &dfg.edges {
@@ -255,8 +310,8 @@ fn print_native_dfg(dfg: &wasm4pm::models::DFG) {
 }
 
 fn load_log(path: &PathBuf) -> Result<EventLog> {
-    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
-    match ext {
+    let extension = path.extension().and_then(|value| value.to_str()).unwrap_or("");
+    match extension {
         "json" => {
             let content = fs::read_to_string(path)
                 .with_context(|| format!("Failed to read log file: {:?}", path))?;
@@ -267,21 +322,17 @@ fn load_log(path: &PathBuf) -> Result<EventLog> {
                 .with_context(|| format!("Failed to open XES file: {:?}", path))?;
             let reader = BufReader::new(file);
             import_xes(reader, XESImportOptions::default())
-                .map_err(|e| anyhow::anyhow!("Failed to parse XES: {:?}", e))
+                .map_err(|error| anyhow::anyhow!("Failed to parse XES: {:?}", error))
         }
         other => anyhow::bail!("Unsupported log format '{}'. Supported: .xes, .json", other),
     }
 }
 
-/// Load a process model (DFG) from a file.
-/// Supports:
-/// - `.json` — JSON-serialized DFG (wasm4pm native format)
-/// - `.dfg.json` — same as .json
 fn load_dfg_model(path: &PathBuf) -> Result<DFG> {
     let content = fs::read_to_string(path)
         .with_context(|| format!("Failed to read model file: {:?}", path))?;
-    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
-    match ext {
+    let extension = path.extension().and_then(|value| value.to_str()).unwrap_or("");
+    match extension {
         "json" => serde_json::from_str(&content)
             .with_context(|| format!("Failed to deserialize DFG from {:?}", path)),
         "pnml" => {
@@ -293,4 +344,3 @@ fn load_dfg_model(path: &PathBuf) -> Result<DFG> {
         ),
     }
 }
-
