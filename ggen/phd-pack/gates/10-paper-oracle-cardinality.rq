@@ -1,0 +1,16 @@
+# MESSAGE: DOCTORAL_PAPER_ORACLE_CARDINALITY_REFUSED — every cognition breed must have exactly one true paper pointer.
+PREFIX compat: <https://wasm4pm.dev/ns#>
+
+SELECT ?breed ?breed_id (COUNT(?pointer) AS ?true_pointer_count)
+WHERE {
+  ?breed a compat:CognitionBreed ;
+         compat:breedId ?breed_id .
+  OPTIONAL {
+    ?pointer a compat:PaperPointer ;
+             compat:forBreed ?breed ;
+             compat:pointerKind "true" .
+  }
+}
+GROUP BY ?breed ?breed_id
+HAVING (COUNT(?pointer) != 1)
+ORDER BY ?breed_id
