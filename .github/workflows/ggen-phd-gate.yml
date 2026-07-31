@@ -99,7 +99,7 @@ jobs:
           ./target/debug/ggen --version
           echo "$GITHUB_WORKSPACE/ggen/target/debug" >> "$GITHUB_PATH"
 
-      - name: Project doctoral surfaces
+      - name: Project doctoral surfaces and bind remote tree
         id: projection
         working-directory: wasm4pm
         shell: bash
@@ -108,7 +108,6 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/evidence"
           ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-sync.log"
           ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json"
-          python3 scripts/ggen_receipt_bridge.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-bridge.log"
 
           generated=(
             crates/wasm4pm-cognition/src/breeds/registration.rs
@@ -137,6 +136,18 @@ jobs:
             git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
           fi
 
+          tested_sha="$(git rev-parse HEAD)"
+          tested_tree="$(git rev-parse 'HEAD^{tree}')"
+          remote_sha="$(git ls-remote origin "refs/heads/${{ github.event.pull_request.head.ref }}" | cut -f1)"
+          test -n "$remote_sha"
+          test "$tested_sha" = "$remote_sha"
+          printf '%s\n' "$tested_sha" > "$GITHUB_WORKSPACE/evidence/tested-sha.txt"
+          printf '%s\n' "$tested_tree" > "$GITHUB_WORKSPACE/evidence/tested-tree.txt"
+          echo "tested_sha=$tested_sha" >> "$GITHUB_OUTPUT"
+          echo "tested_tree=$tested_tree" >> "$GITHUB_OUTPUT"
+
+          python3 scripts/ggen_receipt_bridge.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-bridge.log"
+
       - name: Verify projection idempotence
         working-directory: wasm4pm
         shell: bash
@@ -156,18 +167,23 @@ jobs:
             crates/wasm4pm-cli/tests/phd_cli_cases_generated.rs \
             wasm4pm/algorithm-registry.json)"
 
-      - name: Execute doctoral gate
+      - name: Execute doctoral gate at bound SHA
         working-directory: wasm4pm
+        env:
+          WASM4PM_TESTED_SHA: ${{ steps.projection.outputs.tested_sha }}
+          WASM4PM_TESTED_TREE: ${{ steps.projection.outputs.tested_tree }}
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$WASM4PM_TESTED_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$WASM4PM_TESTED_TREE"
           just phd-gate 2>&1 | tee "$GITHUB_WORKSPACE/evidence/phd-gate.log"
 
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ggen-phd-evidence-${{ github.event.pull_request.head.sha }}
+          name: ggen-phd-evidence-${{ steps.projection.outputs.tested_sha || github.event.pull_request.head.sha }}
           path: |
             evidence/
             wasm4pm/.ggen-v2/receipt.json
