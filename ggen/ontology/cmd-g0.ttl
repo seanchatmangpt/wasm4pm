@@ -55,3 +55,299 @@ cmd:G0Rule036 a cmd:PathRule ; cmd:classification "asset" ; cmd:precedence 120 ;
 cmd:G0Rule037 a cmd:PathRule ; cmd:classification "asset" ; cmd:precedence 120 ; cmd:pathPattern "*.jpg" .
 cmd:G0Rule038 a cmd:PathRule ; cmd:classification "asset" ; cmd:precedence 120 ; cmd:pathPattern "*.svg" .
 cmd:G0Rule999 a cmd:PathRule ; cmd:classification "unknown" ; cmd:precedence 1000 ; cmd:pathPattern "*" .
+
+# G1-G10 dependency-closed program authority.
+cmd:Program a cmd:RefactorProgram ;
+  cmd:programId "wasm4pm-combinatorial-maximalism-v1" ;
+  cmd:calculus "O→O*→I→G→A→R→O-prime" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:externalProductionStanding "UNKNOWN" .
+
+cmd:G1 a cmd:Checkpoint ;
+  cmd:checkpointId "G1" ;
+  cmd:sequence 1 ;
+  cmd:objective "Build Chesterton fences and ownership graph" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G0 ;
+  cmd:requiredArtifact "authority/ownership.json" ;
+  cmd:requiredArtifact "authority/fences.json" ;
+  cmd:requiredArtifact "authority/collisions.json" ;
+  cmd:requiredArtifact "authority/retirement-candidates.json" ;
+  cmd:refusalCode "CMD-G1-OWNER-MISSING" ;
+  cmd:refusalCode "CMD-G1-DUPLICATE-AUTHORITY" .
+
+cmd:G2 a cmd:Checkpoint ;
+  cmd:checkpointId "G2" ;
+  cmd:sequence 2 ;
+  cmd:objective "Establish canonical semantic authority" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G1 ;
+  cmd:requiredArtifact "authority/semantic-model.json" ;
+  cmd:requiredArtifact "authority/projection-index.json" ;
+  cmd:requiredArtifact "authority/roundtrip.json" ;
+  cmd:refusalCode "CMD-G2-PROJECTION-DRIFT" ;
+  cmd:refusalCode "CMD-G2-REFERENCE-OPEN" ;
+  cmd:refusalCode "CMD-G2-STANDING-LIFECYCLE-COLLAPSE" .
+
+cmd:G3 a cmd:Checkpoint ;
+  cmd:checkpointId "G3" ;
+  cmd:sequence 3 ;
+  cmd:objective "Model internal combinatorial maximalism" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G2 ;
+  cmd:requiredArtifact "candidates/dimensions.json" ;
+  cmd:requiredArtifact "candidates/options.json" ;
+  cmd:requiredArtifact "candidates/internal-candidates.json" ;
+  cmd:requiredArtifact "candidates/coverage.json" ;
+  cmd:refusalCode "CMD-G3-DIMENSION-MISSING" ;
+  cmd:refusalCode "CMD-G3-DUPLICATE-CANDIDATE" ;
+  cmd:refusalCode "CMD-G3-INCOMPATIBLE" ;
+  cmd:refusalCode "CMD-G3-COUNT-TAMPER" ;
+  cmd:refusalCode "CMD-G3-RESOURCE-OVERFLOW" ;
+  cmd:refusalCode "CMD-G3-PREMATURE-AUTHORITY" .
+
+cmd:G4 a cmd:Checkpoint ;
+  cmd:checkpointId "G4" ;
+  cmd:sequence 4 ;
+  cmd:objective "Model external combinatorial maximalism" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G3 ;
+  cmd:requiredArtifact "candidates/external-candidates.json" ;
+  cmd:requiredArtifact "authority/consent.json" ;
+  cmd:requiredArtifact "authority/trust.json" ;
+  cmd:requiredArtifact "authority/jurisdiction.json" ;
+  cmd:requiredArtifact "authority/passports.json" ;
+  cmd:refusalCode "CMD-G4-CONSENT-MISSING" ;
+  cmd:refusalCode "CMD-G4-CONSENT-SCOPE" ;
+  cmd:refusalCode "CMD-G4-JURISDICTION" ;
+  cmd:refusalCode "CMD-G4-TRUST-FLOOR" ;
+  cmd:refusalCode "CMD-G4-IDENTITY-REVOKED" ;
+  cmd:refusalCode "CMD-G4-DIRECT-ACTUATION" ;
+  cmd:refusalCode "CMD-G4-POSTCONDITION-MISSING" ;
+  cmd:refusalCode "CMD-G4-BROKER-RECEIPT-MISSING" .
+
+cmd:G5 a cmd:Checkpoint ;
+  cmd:checkpointId "G5" ;
+  cmd:sequence 5 ;
+  cmd:objective "Refactor capabilities into atomic packs and Building Blocks" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G4 ;
+  cmd:requiredArtifact "packs/atomic-packs.json" ;
+  cmd:requiredArtifact "packs/bblocks.json" ;
+  cmd:requiredArtifact "packs/cmd.lock.json" ;
+  cmd:requiredArtifact "packs/compatibility-matrix.json" ;
+  cmd:refusalCode "CMD-G5-SEMANTIC-DIVERGENCE" ;
+  cmd:refusalCode "CMD-G5-CAPABILITY-OPEN" ;
+  cmd:refusalCode "CMD-G5-OUTPUT-OWNER-COLLISION" .
+
+cmd:G6 a cmd:Checkpoint ;
+  cmd:checkpointId "G6" ;
+  cmd:sequence 6 ;
+  cmd:objective "Implement one deterministic IO-free shared kernel" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G5 ;
+  cmd:requiredArtifact "plans/kernel-plan.json" ;
+  cmd:requiredArtifact "verifier/kernel-report.json" ;
+  cmd:refusalCode "CMD-G6-CYCLE" ;
+  cmd:refusalCode "CMD-G6-OWNERSHIP-COLLISION" ;
+  cmd:refusalCode "CMD-G6-UNKNOWN-CAPABILITY" ;
+  cmd:refusalCode "CMD-G6-PROFILE-CONFLICT" ;
+  cmd:refusalCode "CMD-G6-ACTUATOR-IMPORT" .
+
+cmd:G7 a cmd:Checkpoint ;
+  cmd:checkpointId "G7" ;
+  cmd:sequence 7 ;
+  cmd:objective "Implement transactional local materialization" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G6 ;
+  cmd:requiredArtifact "plans/materialization-plan.json" ;
+  cmd:requiredArtifact "receipts/materializer-intent.json" ;
+  cmd:requiredArtifact "receipts/materializer-result.json" ;
+  cmd:requiredArtifact "replay/materializer.json" ;
+  cmd:refusalCode "CMD-G7-PATH-ESCAPE" ;
+  cmd:refusalCode "CMD-G7-SYMLINK-ESCAPE" ;
+  cmd:refusalCode "CMD-G7-UNOWNED-WRITE" ;
+  cmd:refusalCode "CMD-G7-RESOURCE-OVERFLOW" ;
+  cmd:refusalCode "CMD-G7-CHAOS-PARTIAL" .
+
+cmd:G8 a cmd:Checkpoint ;
+  cmd:checkpointId "G8" ;
+  cmd:sequence 8 ;
+  cmd:objective "Implement brokered external actuation" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G7 ;
+  cmd:requiredArtifact "plans/broker-intent.json" ;
+  cmd:requiredArtifact "authority/broker-grant.json" ;
+  cmd:requiredArtifact "receipts/broker-intent.json" ;
+  cmd:requiredArtifact "receipts/broker-result.json" ;
+  cmd:requiredArtifact "replay/broker.json" ;
+  cmd:refusalCode "CMD-G8-GRANT-EXPIRED" ;
+  cmd:refusalCode "CMD-G8-SUBJECT-MISMATCH" ;
+  cmd:refusalCode "CMD-G8-IDEMPOTENCY" ;
+  cmd:refusalCode "CMD-G8-RETRY-EXHAUSTED" ;
+  cmd:refusalCode "CMD-G8-CIRCUIT-OPEN" ;
+  cmd:refusalCode "CMD-G8-ANDON-RED" ;
+  cmd:refusalCode "CMD-G8-CONSENT" ;
+  cmd:refusalCode "CMD-G8-JURISDICTION" ;
+  cmd:refusalCode "CMD-G8-POSTCONDITION" ;
+  cmd:refusalCode "CMD-G8-CYCLE-LIMIT" ;
+  cmd:refusalCode "CMD-G8-DIRECT-PROVIDER" .
+
+cmd:G9 a cmd:Checkpoint ;
+  cmd:checkpointId "G9" ;
+  cmd:sequence 9 ;
+  cmd:objective "Execute crown verification and self-host the repository" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G8 ;
+  cmd:requiredArtifact "verifier/report.json" ;
+  cmd:requiredArtifact "replay/crown.json" ;
+  cmd:requiredArtifact "ocel/crown.json" ;
+  cmd:requiredArtifact "gall/crown.json" ;
+  cmd:refusalCode "CMD-G9-CANONICAL-TAMPER" ;
+  cmd:refusalCode "CMD-G9-GENERATED-TAMPER" ;
+  cmd:refusalCode "CMD-G9-CANDIDATE-TAMPER" ;
+  cmd:refusalCode "CMD-G9-OWNER-TAMPER" ;
+  cmd:refusalCode "CMD-G9-GRANT-TAMPER" ;
+  cmd:refusalCode "CMD-G9-RECEIPT-TAMPER" ;
+  cmd:refusalCode "CMD-G9-REPLAY-TAMPER" ;
+  cmd:refusalCode "CMD-G9-DIRECT-ACTUATION" ;
+  cmd:refusalCode "CMD-G9-CONSENT-TAMPER" ;
+  cmd:refusalCode "CMD-G9-HEAD-MISMATCH" .
+
+cmd:G10 a cmd:Checkpoint ;
+  cmd:checkpointId "G10" ;
+  cmd:sequence 10 ;
+  cmd:objective "Integrate the dependency-closed combinatorial-maximalism program" ;
+  cmd:standingCeiling "PARTIAL_ALIVE" ;
+  cmd:dependsOn cmd:G9 ;
+  cmd:requiredArtifact "gall/program.json" ;
+  cmd:requiredArtifact "gall/work-orders.json" ;
+  cmd:requiredArtifact "verifier/aggregate.json" ;
+  cmd:requiredArtifact "gall/crown-g10.json" ;
+  cmd:refusalCode "CMD-G10-DEPENDENCY-OPEN" ;
+  cmd:refusalCode "CMD-G10-STANDING-AVERAGED" ;
+  cmd:refusalCode "CMD-G10-RETIREMENT-WITHOUT-EQUIVALENCE" ;
+  cmd:refusalCode "CMD-G10-UNRECEIPTED-PROMOTION" .
+
+cmd:G3_runtime a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "runtime" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "HIGH" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G3_runtime_native_rust a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_runtime ; cmd:optionId "native-rust" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_runtime_wasm32 a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_runtime ; cmd:optionId "wasm32" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_storage a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "storage" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "HIGH" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G3_storage_memory a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_storage ; cmd:optionId "memory" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_storage_filesystem_evidence a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_storage ; cmd:optionId "filesystem-evidence" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_invocation_protocol a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "invocation-protocol" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "MEDIUM" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G3_invocation_protocol_cli a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_invocation_protocol ; cmd:optionId "cli" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_invocation_protocol_stdio_json a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_invocation_protocol ; cmd:optionId "stdio-json" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_invocation_protocol_http a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_invocation_protocol ; cmd:optionId "http" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_serialization a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "serialization" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "HIGH" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G3_serialization_json a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_serialization ; cmd:optionId "json" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_serialization_ocel2_json a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_serialization ; cmd:optionId "ocel2-json" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_scheduling a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "scheduling" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "MEDIUM" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G3_scheduling_synchronous a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_scheduling ; cmd:optionId "synchronous" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_scheduling_bounded_parallel a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_scheduling ; cmd:optionId "bounded-parallel" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_error_model a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "error-model" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "HIGH" ; cmd:coverageMode "exhaustive" ; cmd:resourceCeiling 64 .
+cmd:G3_error_model_typed_refusal a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_error_model ; cmd:optionId "typed-refusal" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_error_model_result_envelope a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_error_model ; cmd:optionId "result-envelope" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_verification a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "verification" ; cmd:scope "internal" ; cmd:selectionCardinality "one-or-more" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 256 .
+cmd:G3_verification_unit a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_verification ; cmd:optionId "unit" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_verification_property a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_verification ; cmd:optionId "property" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_verification_integration a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_verification ; cmd:optionId "integration" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_verification_e2e a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_verification ; cmd:optionId "e2e" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_verification_replay a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_verification ; cmd:optionId "replay" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_recovery a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "recovery" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 128 .
+cmd:G3_recovery_reversible a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_recovery ; cmd:optionId "reversible" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_recovery_snapshot a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_recovery ; cmd:optionId "snapshot" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_recovery_compensatable a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_recovery ; cmd:optionId "compensatable" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_ownership a cmd:Dimension ; cmd:checkpoint cmd:G3 ; cmd:dimensionId "ownership" ; cmd:scope "internal" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 64 .
+cmd:G3_ownership_exclusive_owner a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_ownership ; cmd:optionId "exclusive-owner" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+cmd:G3_ownership_declared_merge_law a cmd:Option ; cmd:checkpoint cmd:G3 ; cmd:dimension cmd:G3_ownership ; cmd:optionId "declared-merge-law" ; cmd:reversibility "REVERSIBLE" ; cmd:authorityCeiling "PLAN_ONLY" .
+
+cmd:G4_provider a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "provider" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 192 .
+cmd:G4_provider_github a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_provider ; cmd:optionId "github" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_provider_crates_io a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_provider ; cmd:optionId "crates-io" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_provider_npm a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_provider ; cmd:optionId "npm" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_provider_oci a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_provider ; cmd:optionId "oci" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_provider_local_test_service a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_provider ; cmd:optionId "local-test-service" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_protocol a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "protocol" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "HIGH" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G4_protocol_git a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_protocol ; cmd:optionId "git" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_protocol_rest a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_protocol ; cmd:optionId "rest" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_protocol_registry a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_protocol ; cmd:optionId "registry" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_protocol_stdio a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_protocol ; cmd:optionId "stdio" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_identity a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "identity" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 128 .
+cmd:G4_identity_github_app a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_identity ; cmd:optionId "github-app" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_identity_oidc_subject a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_identity ; cmd:optionId "oidc-subject" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_identity_scoped_token a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_identity ; cmd:optionId "scoped-token" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_identity_local_process a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_identity ; cmd:optionId "local-process" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_authentication a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "authentication" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 128 .
+cmd:G4_authentication_signed_token a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_authentication ; cmd:optionId "signed-token" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_authentication_oidc a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_authentication ; cmd:optionId "oidc" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_authentication_local_none a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_authentication ; cmd:optionId "local-none" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_consent a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "consent" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 32 .
+cmd:G4_consent_explicit_evidence a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_consent ; cmd:optionId "explicit-evidence" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_trust a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "trust" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 64 .
+cmd:G4_trust_locally_admitted a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_trust ; cmd:optionId "locally-admitted" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_trust_signed a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_trust ; cmd:optionId "signed" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_trust_independently_verified a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_trust ; cmd:optionId "independently-verified" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_jurisdiction a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "jurisdiction" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 64 .
+cmd:G4_jurisdiction_local a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_jurisdiction ; cmd:optionId "local" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_jurisdiction_us_declared a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_jurisdiction ; cmd:optionId "us-declared" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_jurisdiction_explicit_other a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_jurisdiction ; cmd:optionId "explicit-other" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_runtime_target a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "runtime-target" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "HIGH" ; cmd:coverageMode "pairwise" ; cmd:resourceCeiling 128 .
+cmd:G4_runtime_target_github_actions a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_runtime_target ; cmd:optionId "github-actions" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_runtime_target_registry a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_runtime_target ; cmd:optionId "registry" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_runtime_target_browser_wasm a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_runtime_target ; cmd:optionId "browser-wasm" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_runtime_target_wasi a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_runtime_target ; cmd:optionId "wasi" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_consequence a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "consequence" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 128 .
+cmd:G4_consequence_git_ref a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_consequence ; cmd:optionId "git-ref" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_consequence_package_version a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_consequence ; cmd:optionId "package-version" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_consequence_immutable_artifact a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_consequence ; cmd:optionId "immutable-artifact" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_consequence_serving_version a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_consequence ; cmd:optionId "serving-version" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_evidence_source a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "evidence-source" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 128 .
+cmd:G4_evidence_source_git_observer a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_evidence_source ; cmd:optionId "git-observer" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_evidence_source_api_observer a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_evidence_source ; cmd:optionId "api-observer" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_evidence_source_registry_observer a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_evidence_source ; cmd:optionId "registry-observer" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_evidence_source_filesystem_observer a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_evidence_source ; cmd:optionId "filesystem-observer" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_compensation a cmd:Dimension ; cmd:checkpoint cmd:G4 ; cmd:dimensionId "compensation" ; cmd:scope "external" ; cmd:selectionCardinality "exactly-one" ; cmd:riskClass "CRITICAL" ; cmd:coverageMode "risk-exhaustive" ; cmd:resourceCeiling 128 .
+cmd:G4_compensation_revert_commit a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_compensation ; cmd:optionId "revert-commit" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_compensation_new_immutable_version a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_compensation ; cmd:optionId "new-immutable-version" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_compensation_yank a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_compensation ; cmd:optionId "yank" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+cmd:G4_compensation_unsupported a cmd:Option ; cmd:checkpoint cmd:G4 ; cmd:dimension cmd:G4_compensation ; cmd:optionId "unsupported" ; cmd:reversibility "COMPENSATABLE" ; cmd:authorityCeiling "INTENT_ONLY" .
+
+cmd:PackRole_surface a cmd:PackRole ; cmd:roleId "surface" ; cmd:namePattern "surface-*" ; cmd:description "User-facing and protocol surfaces" .
+cmd:PackRole_contract a cmd:PackRole ; cmd:roleId "contract" ; cmd:namePattern "contract-*" ; cmd:description "Semantic contracts and schemas" .
+cmd:PackRole_projection a cmd:PackRole ; cmd:roleId "projection" ; cmd:namePattern "projection-*" ; cmd:description "Generated consequences" .
+cmd:PackRole_runtime a cmd:PackRole ; cmd:roleId "runtime" ; cmd:namePattern "runtime-*" ; cmd:description "Execution runtimes" .
+cmd:PackRole_policy a cmd:PackRole ; cmd:roleId "policy" ; cmd:namePattern "policy-*" ; cmd:description "Admission and authority policy" .
+cmd:PackRole_validator a cmd:PackRole ; cmd:roleId "validator" ; cmd:namePattern "validator-*" ; cmd:description "Independent verification" .
+cmd:PackRole_receipt a cmd:PackRole ; cmd:roleId "receipt" ; cmd:namePattern "receipt-*" ; cmd:description "Receipt and replay machinery" .
+cmd:PackRole_consequence a cmd:PackRole ; cmd:roleId "consequence" ; cmd:namePattern "consequence-*" ; cmd:description "Consequence observers" .
+cmd:PackRole_core a cmd:PackRole ; cmd:roleId "core" ; cmd:namePattern "core-*" ; cmd:description "Pure combinatorial kernel" .
+
+cmd:Suite_protocol_unit a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "protocol-unit" ; cmd:sequence 1 ; cmd:realBoundary true .
+cmd:Suite_property_fuzz a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "property-fuzz" ; cmd:sequence 2 ; cmd:realBoundary true .
+cmd:Suite_stdio_http_integration a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "stdio-http-integration" ; cmd:sequence 3 ; cmd:realBoundary true .
+cmd:Suite_cli_e2e a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "cli-e2e" ; cmd:sequence 4 ; cmd:realBoundary true .
+cmd:Suite_security a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "security" ; cmd:sequence 5 ; cmd:realBoundary true .
+cmd:Suite_chaos a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "chaos" ; cmd:sequence 6 ; cmd:realBoundary true .
+cmd:Suite_stress a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "stress" ; cmd:sequence 7 ; cmd:realBoundary true .
+cmd:Suite_benchmark a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "benchmark" ; cmd:sequence 8 ; cmd:realBoundary true .
+cmd:Suite_replay a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "replay" ; cmd:sequence 9 ; cmd:realBoundary true .
+cmd:Suite_external_verifier a cmd:TestSuite ; cmd:checkpoint cmd:G9 ; cmd:suiteId "external-verifier" ; cmd:sequence 10 ; cmd:realBoundary true .
+
+cmd:BrokerRequirement_intent_schema a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "intent-schema" .
+cmd:BrokerRequirement_subject_identity a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "subject-identity" .
+cmd:BrokerRequirement_current_state_precondition a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "current-state-precondition" .
+cmd:BrokerRequirement_grant_scope a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "grant-scope" .
+cmd:BrokerRequirement_grant_expiry a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "grant-expiry" .
+cmd:BrokerRequirement_consent a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "consent" .
+cmd:BrokerRequirement_trust a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "trust" .
+cmd:BrokerRequirement_jurisdiction a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "jurisdiction" .
+cmd:BrokerRequirement_secrets_capability a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "secrets-capability" .
+cmd:BrokerRequirement_resource_budget a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "resource-budget" .
+cmd:BrokerRequirement_retry_budget a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "retry-budget" .
+cmd:BrokerRequirement_circuit_state a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "circuit-state" .
+cmd:BrokerRequirement_error_budget a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "error-budget" .
+cmd:BrokerRequirement_idempotency a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "idempotency" .
+cmd:BrokerRequirement_expected_postcondition a cmd:BrokerRequirement ; cmd:checkpoint cmd:G8 ; cmd:requirementId "expected-postcondition" .
+
+cmd:Program cmd:programJson """{"calculus":"O→O*→I→G→A→R→O-prime","external_production_standing":"UNKNOWN","items":[],"program_id":"wasm4pm-combinatorial-maximalism-v1","schema":"wasm4pm.cmd-program.v1","standing_ceiling":"PARTIAL_ALIVE"}""" .
