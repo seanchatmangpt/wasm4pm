@@ -1,0 +1,190 @@
+name: CMD G0 exact-tree admission
+
+on:
+  pull_request:
+    branches:
+      - agent/ggen-phd-implementation-contracts-v26.7.30
+    paths:
+      - .github/workflows/cmd-g0.yml
+      - .gitignore
+      - Justfile
+      - ggen.toml
+      - ggen/ontology/cmd-g0.ttl
+      - ggen/queries/extract-cmd-g0-contract.rq
+      - ggen/templates/cmd-g0-contract.json.tera
+      - ggen/cmd-pack/**
+      - scripts/cmd_g0.py
+      - scripts/ggen_receipt_bridge.py
+      - tests/cmd/test_cmd_g0.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cmd-g0-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GGEN_SHA: 68952593c40214ac1a681073d65f3902a9cdfce4
+  WASM4PM_COMPAT_SHA: 9f3dd794a5a074d4e379dfadf8b856e555327c12
+  RUST_BACKTRACE: "1"
+  RUSTC_WRAPPER: ""
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  observe-and-admit:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout exact checkpoint head
+        uses: actions/checkout@v4
+        with:
+          path: wasm4pm
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Checkout wasm4pm-compat authority
+        uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          ref: ${{ env.WASM4PM_COMPAT_SHA }}
+          path: wasm4pm-compat
+          fetch-depth: 1
+
+      - name: Checkout pinned ggen compiler
+        uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/ggen
+          ref: ${{ env.GGEN_SHA }}
+          path: ggen
+          fetch-depth: 1
+
+      - name: Install admitted toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-06-22 --profile minimal
+          rustup default nightly-2026-06-22
+          python3 -m pip install --disable-pip-version-check blake3
+          command -v just >/dev/null || cargo install just --locked
+          git --version
+          python3 --version
+          just --version
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ggen/target
+            wasm4pm/target
+          key: cmd-g0-${{ runner.os }}-${{ hashFiles('ggen/Cargo.lock', 'wasm4pm/Cargo.lock') }}
+          restore-keys: |
+            cmd-g0-${{ runner.os }}-
+
+      - name: Build pinned ggen
+        working-directory: ggen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build -p ggen-cli-lib --bin ggen
+          ./target/debug/ggen --version
+          echo "$GITHUB_WORKSPACE/ggen/target/debug" >> "$GITHUB_PATH"
+
+      - name: Project contract and bind exact remote tree
+        id: projection
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+          ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-sync.log"
+          ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path("$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json").read_text())
+          assert receipt.get("valid") is True, receipt
+          PY
+          cargo metadata --format-version 1 --no-deps > "$GITHUB_WORKSPACE/evidence/cargo-metadata.json"
+
+          projected=(
+            Cargo.lock
+            schemas/cmd-g0-contract.json
+            crates/wasm4pm-cognition/src/breeds/registration.rs
+            crates/wasm4pm-cognition/breeds/registry.json
+            packages/cognition/src/breed-ids.ts
+            crates/wasm4pm-cognition/tests/paper_pointers_generated.rs
+            crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
+            crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs
+            crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs
+            crates/wasm4pm-cli/src/commands/evidence.rs
+            crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs
+            crates/wasm4pm-cli/tests/phd_cli_cases_generated.rs
+            wasm4pm/algorithm-registry.json
+          )
+
+          git add -- "${projected[@]}"
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --cached --stat | tee "$GITHUB_WORKSPACE/evidence/projected-stat.txt"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(ggen): project CMD G0 contract"
+            git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+          fi
+
+          tested_sha="$(git rev-parse HEAD)"
+          tested_tree="$(git rev-parse 'HEAD^{tree}')"
+          remote_sha="$(git ls-remote origin "refs/heads/${{ github.event.pull_request.head.ref }}" | cut -f1)"
+          test -n "$remote_sha"
+          test "$tested_sha" = "$remote_sha"
+          printf '%s\n' "$tested_sha" > "$GITHUB_WORKSPACE/evidence/tested-sha.txt"
+          printf '%s\n' "$tested_tree" > "$GITHUB_WORKSPACE/evidence/tested-tree.txt"
+          echo "tested_sha=$tested_sha" >> "$GITHUB_OUTPUT"
+          echo "tested_tree=$tested_tree" >> "$GITHUB_OUTPUT"
+
+          python3 scripts/ggen_receipt_bridge.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-bridge.log"
+
+      - name: Execute G0 unit witnesses
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/cmd/test_cmd_g0.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cmd-g0-unit.log"
+
+      - name: Execute exact-tree observer and omission sabotage
+        working-directory: wasm4pm
+        env:
+          CMD_G0_TESTED_SHA: ${{ steps.projection.outputs.tested_sha }}
+          CMD_G0_TESTED_TREE: ${{ steps.projection.outputs.tested_tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CMD_G0_TESTED_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$CMD_G0_TESTED_TREE"
+          python3 scripts/cmd_g0.py crown --base HEAD \
+            2>&1 | tee "$GITHUB_WORKSPACE/evidence/cmd-g0-crown.json"
+          git diff --exit-code
+          git diff --cached --exit-code
+          test "$(git rev-parse HEAD)" = "$CMD_G0_TESTED_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$CMD_G0_TESTED_TREE"
+
+      - name: Preserve G0 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmd-g0-evidence-${{ steps.projection.outputs.tested_sha || github.event.pull_request.head.sha }}
+          path: |
+            evidence/
+            wasm4pm/.ggen/cmd/
+            wasm4pm/.ggen-v2/receipt.json
+            wasm4pm/.wasm4pm/receipts/ggen-bridge-latest.json
+            wasm4pm/schemas/cmd-g0-contract.json
+          if-no-files-found: warn
+          retention-days: 30
