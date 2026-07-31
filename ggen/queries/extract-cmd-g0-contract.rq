@@ -1,13 +1,39 @@
 PREFIX cmd: <https://wasm4pm.dev/cmd#>
 
 SELECT
+  ?kind
   ?checkpoint
   ?standing_ceiling
   ?required_artifacts_json
   ?refusal_codes_json
+  ?program_id
+  ?calculus
+  ?program_standing
+  ?external_standing
   ?classification
   ?precedence
   ?pattern
+  ?id
+  ?item_checkpoint
+  ?sequence
+  ?objective
+  ?item_standing_ceiling
+  (GROUP_CONCAT(DISTINCT STR(?dep); separator="|") AS ?depends_on)
+  (GROUP_CONCAT(DISTINCT STR(?artifact); separator="|") AS ?required_artifacts)
+  (GROUP_CONCAT(DISTINCT STR(?refusal); separator="|") AS ?refusal_codes)
+  ?scope
+  ?cardinality
+  ?risk_class
+  ?coverage_mode
+  ?resource_ceiling
+  ?dimension_id
+  ?option_id
+  ?reversibility
+  ?authority_ceiling
+  ?name_pattern
+  ?description
+  ?real_boundary
+  ?requirement_id
 WHERE {
   cmd:G0ExactTreeObservation
     cmd:checkpointId ?checkpoint ;
@@ -15,9 +41,89 @@ WHERE {
     cmd:requiredArtifactsJson ?required_artifacts_json ;
     cmd:refusalCodesJson ?refusal_codes_json .
 
-  ?rule a cmd:PathRule ;
-    cmd:classification ?classification ;
-    cmd:precedence ?precedence ;
-    cmd:pathPattern ?pattern .
+  cmd:Program
+    cmd:programId ?program_id ;
+    cmd:calculus ?calculus ;
+    cmd:standingCeiling ?program_standing ;
+    cmd:externalProductionStanding ?external_standing .
+
+  {
+    ?rule a cmd:PathRule ;
+      cmd:classification ?classification ;
+      cmd:precedence ?precedence ;
+      cmd:pathPattern ?pattern .
+    BIND("classification" AS ?kind)
+  }
+  UNION
+  {
+    ?s a cmd:Checkpoint ;
+       cmd:checkpointId ?id ;
+       cmd:sequence ?sequence ;
+       cmd:objective ?objective ;
+       cmd:standingCeiling ?item_standing_ceiling .
+    OPTIONAL { ?s cmd:dependsOn/cmd:checkpointId ?dep }
+    OPTIONAL { ?s cmd:requiredArtifact ?artifact }
+    OPTIONAL { ?s cmd:refusalCode ?refusal }
+    BIND("checkpoint" AS ?kind)
+    BIND(?id AS ?item_checkpoint)
+  }
+  UNION
+  {
+    ?s a cmd:Dimension ;
+       cmd:checkpoint/cmd:checkpointId ?item_checkpoint ;
+       cmd:dimensionId ?id ;
+       cmd:scope ?scope ;
+       cmd:selectionCardinality ?cardinality ;
+       cmd:riskClass ?risk_class ;
+       cmd:coverageMode ?coverage_mode ;
+       cmd:resourceCeiling ?resource_ceiling .
+    BIND("dimension" AS ?kind)
+    BIND(?id AS ?dimension_id)
+  }
+  UNION
+  {
+    ?s a cmd:Option ;
+       cmd:checkpoint/cmd:checkpointId ?item_checkpoint ;
+       cmd:dimension/cmd:dimensionId ?dimension_id ;
+       cmd:optionId ?id ;
+       cmd:reversibility ?reversibility ;
+       cmd:authorityCeiling ?authority_ceiling .
+    BIND("option" AS ?kind)
+    BIND(?id AS ?option_id)
+  }
+  UNION
+  {
+    ?s a cmd:PackRole ;
+       cmd:roleId ?id ;
+       cmd:namePattern ?name_pattern ;
+       cmd:description ?description .
+    BIND("pack-role" AS ?kind)
+    BIND("G5" AS ?item_checkpoint)
+  }
+  UNION
+  {
+    ?s a cmd:TestSuite ;
+       cmd:checkpoint/cmd:checkpointId ?item_checkpoint ;
+       cmd:suiteId ?id ;
+       cmd:sequence ?sequence ;
+       cmd:realBoundary ?real_boundary .
+    BIND("test-suite" AS ?kind)
+  }
+  UNION
+  {
+    ?s a cmd:BrokerRequirement ;
+       cmd:checkpoint/cmd:checkpointId ?item_checkpoint ;
+       cmd:requirementId ?id .
+    BIND("broker-requirement" AS ?kind)
+    BIND(?id AS ?requirement_id)
+  }
 }
-ORDER BY ?precedence ?classification ?pattern
+GROUP BY
+  ?kind ?checkpoint ?standing_ceiling ?required_artifacts_json ?refusal_codes_json
+  ?program_id ?calculus ?program_standing ?external_standing
+  ?classification ?precedence ?pattern
+  ?id ?item_checkpoint ?sequence ?objective ?item_standing_ceiling
+  ?scope ?cardinality ?risk_class ?coverage_mode ?resource_ceiling
+  ?dimension_id ?option_id ?reversibility ?authority_ceiling
+  ?name_pattern ?description ?real_boundary ?requirement_id
+ORDER BY ?kind ?sequence ?item_checkpoint ?dimension_id ?id ?precedence
