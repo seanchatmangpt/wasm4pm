@@ -1,0 +1,45 @@
+// Paper-pointer meta-gate — generated from wasm4pm-compat ontology
+// (ggen rule: paper-pointers, Overwrite mode — hand edits are reverted by sync).
+//
+// For every breed with a TRUE paper pointer, the fixture on disk must exist and
+// carry a real asserted value + provenance. This closes the graceful-skip
+// loophole structurally: a missing or skeleton fixture is a hard failure here,
+// regardless of how tests/paper_grounded.rs reads it.
+
+fn fixture_json(breed_id: &str) -> serde_json::Value {
+    let path = format!(
+        "{}/tests/fixtures/papers/{}.json",
+        env!("CARGO_MANIFEST_DIR"),
+        breed_id
+    );
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — breeds with paper pointers must have fixtures", path));
+    serde_json::from_str(&raw).unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e))
+}
+
+fn assert_real_fixture(breed_id: &str) {
+    let v = fixture_json(breed_id);
+    let raw = v.to_string();
+    assert!(
+        !raw.contains("REPLACE_WITH_PAPER_VALUE"),
+        "SKELETON FIXTURE: {} still carries the generated placeholder — fill it from the paper",
+        breed_id
+    );
+    let has_provenance = v.get("provenance").is_some()
+        || v.get("paper").is_some()
+        || v.get("expected")
+            .and_then(|e| e.get("provenance"))
+            .is_some();
+    assert!(
+        has_provenance,
+        "NO PROVENANCE: fixture for {} has no structural provenance key (top-level \"provenance\" or expected.provenance) — A12 citation-without-assertion",
+        breed_id
+    );
+}
+{% for row in sparql_results %}{% if row.pointer_kind == "true" %}
+#[test]
+fn pointer_fixture_{{ row.breed_id }}_{{ loop.index }}_is_real() {
+    // True pointer: "{{ row.pointer_value }}" — {{ row.pointer_locus }}
+    assert_real_fixture("{{ row.breed_id }}");
+}
+{% endif %}{% endfor %}
