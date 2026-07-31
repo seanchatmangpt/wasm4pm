@@ -1,0 +1,4 @@
+[pack]
+name = "wasm4pm-cmd-g0"
+version = "26.7.30"
+description = "G0 exact-tree observation and admission contract for combinatorial maximalism. Gates require the complete path-classification lattice, exact-set refusal, and bounded observation artifacts."
