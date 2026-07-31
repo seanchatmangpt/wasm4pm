@@ -60,8 +60,8 @@ path     = "../wasm4pm-compat/ggen"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "breed-registration"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-registration.rs.tera" }
+query       = { file = "ggen/queries/extract-breeds.rq" }
+template    = { file = "ggen/templates/breed-registration.rs.tera" }
 output_file = "crates/wasm4pm-cognition/src/breeds/registration.rs"
 mode        = "Overwrite"
 
@@ -73,8 +73,8 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 # [[generation.rules]]
 # name        = "breed-stubs"
-# query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-# template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-stub.rs.tera" }
+# query       = { file = "ggen/queries/extract-breeds.rq" }
+# template    = { file = "ggen/templates/breed-stub.rs.tera" }
 # output_file = "crates/wasm4pm-cognition/src/breeds/{{ module_file }}.rs"
 # mode        = "Create"
 
@@ -83,8 +83,8 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "paper-pointers"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "paper-pointers-test.tera" }
+query       = { file = "ggen/queries/extract-paper-pointers.rq" }
+template    = { file = "ggen/templates/paper-pointers-test.tera" }
 output_file = "crates/wasm4pm-cognition/tests/paper_pointers_generated.rs"
 mode        = "Overwrite"
 
@@ -95,8 +95,8 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 # [[generation.rules]]
 # name        = "breed-fixtures"
-# query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-# template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-fixture.json.tera" }
+# query       = { file = "ggen/queries/extract-breeds.rq" }
+# template    = { file = "ggen/templates/breed-fixture.json.tera" }
 # output_file = "crates/wasm4pm-cognition/tests/fixtures/papers/{{ breed_id }}.json"
 # mode        = "Create"
 
@@ -106,8 +106,8 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "universal-anticheat"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "universal-anticheat.tera" }
+query       = { file = "ggen/queries/extract-paper-pointers.rq" }
+template    = { file = "ggen/templates/universal-anticheat.tera" }
 output_file = "crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs"
 mode        = "Overwrite"
 
@@ -116,8 +116,8 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "registry-json"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "registry.json.tera" }
+query       = { file = "ggen/queries/extract-breeds.rq" }
+template    = { file = "ggen/templates/registry.json.tera" }
 output_file = "crates/wasm4pm-cognition/breeds/registry.json"
 mode        = "Overwrite"
 
@@ -126,7 +126,7 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "ts-breed-ids"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-ids.ts.tera" }
+query       = { file = "ggen/queries/extract-breeds.rq" }
+template    = { file = "ggen/templates/breed-ids.ts.tera" }
 output_file = "packages/cognition/src/breed-ids.ts"
 mode        = "Overwrite"
