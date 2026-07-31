@@ -1,0 +1,23 @@
+PREFIX cmd: <https://wasm4pm.dev/cmd#>
+
+SELECT
+  ?checkpoint
+  ?standing_ceiling
+  ?required_artifacts_json
+  ?refusal_codes_json
+  ?classification
+  ?precedence
+  ?pattern
+WHERE {
+  cmd:G0ExactTreeObservation
+    cmd:checkpointId ?checkpoint ;
+    cmd:standingCeiling ?standing_ceiling ;
+    cmd:requiredArtifactsJson ?required_artifacts_json ;
+    cmd:refusalCodesJson ?refusal_codes_json .
+
+  ?rule a cmd:PathRule ;
+    cmd:classification ?classification ;
+    cmd:precedence ?precedence ;
+    cmd:pathPattern ?pattern .
+}
+ORDER BY ?precedence ?classification ?pattern
