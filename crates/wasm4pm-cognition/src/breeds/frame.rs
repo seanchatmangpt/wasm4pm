@@ -467,7 +467,17 @@ impl CognitionBreed for Eliza {
                     retained_cases: vec![],
                 });
             }
-            // No keyword matched — emit NONE response
+            // No keyword matched — emit NONE response. Record the scan as a
+            // trace step: the engine did real work (scanned every token
+            // against the keyword table) and legitimately found nothing, so
+            // this is a genuine (if empty) result, not a fraud signal.
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "no-keyword-match".to_string(),
+                detail: "NONE".to_string(),
+                depth: 0,
+                objects: vec![],
+            });
             return Ok(BreedOutput {
                 breed: BreedId::Eliza,
                 candidates: input.candidates.clone(),
