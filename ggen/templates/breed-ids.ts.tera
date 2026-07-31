@@ -1,0 +1,14 @@
+// Breed IDs — generated from wasm4pm-compat ontology. Source of truth for TypeScript consumers.
+// import from this file; schemas.ts uses z.enum(BREED_IDS).
+
+export const BREED_IDS = [
+{% for row in sparql_results %}  "{{ row.breed_id }}",
+{% endfor %}] as const;
+
+export type BreedId = typeof BREED_IDS[number];
+
+export const PARTIAL_ALIVE_BREED_IDS = [
+{% for row in sparql_results %}{% if row.breed_status is defined and row.breed_status == "PARTIAL_ALIVE" %}  "{{ row.breed_id }}",
+{% endif %}{% endfor %}] as const;
+
+export type PartialAliveBreedId = typeof PARTIAL_ALIVE_BREED_IDS[number];
