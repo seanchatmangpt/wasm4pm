@@ -1,0 +1,176 @@
+name: ggen doctoral implementation gate
+
+on:
+  push:
+    branches:
+      - agent/ggen-phd-implementation-contracts-v26.7.30
+  pull_request:
+    paths:
+      - ggen.toml
+      - ggen/**
+      - Justfile
+      - scripts/ggen_receipt_bridge.py
+      - crates/wasm4pm-cognition/src/breeds/**
+      - crates/wasm4pm-cognition/tests/**
+      - crates/wasm4pm-cli/src/commands/**
+      - crates/wasm4pm-cli/tests/**
+      - wasm4pm/src/**
+      - wasm4pm/wasm-equivalence-tests/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ggen-phd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GGEN_SHA: 68952593c40214ac1a681073d65f3902a9cdfce4
+  WASM4PM_COMPAT_SHA: 9f3dd794a5a074d4e379dfadf8b856e555327c12
+  RUST_BACKTRACE: "1"
+  RUSTC_WRAPPER: ""
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  project-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout wasm4pm exact ref
+        uses: actions/checkout@v4
+        with:
+          path: wasm4pm
+          fetch-depth: 0
+
+      - name: Checkout wasm4pm-compat authority
+        uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          ref: ${{ env.WASM4PM_COMPAT_SHA }}
+          path: wasm4pm-compat
+          fetch-depth: 1
+
+      - name: Checkout pinned ggen compiler
+        uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/ggen
+          ref: ${{ env.GGEN_SHA }}
+          path: ggen
+          fetch-depth: 1
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-06-22 --profile minimal --component rustfmt --component clippy
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2026-06-22
+          rustup default nightly-2026-06-22
+          rustc --version
+          cargo --version
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ggen/target
+            wasm4pm/target
+          key: ggen-phd-${{ runner.os }}-${{ hashFiles('ggen/Cargo.lock', 'wasm4pm/Cargo.lock') }}
+          restore-keys: |
+            ggen-phd-${{ runner.os }}-
+
+      - name: Install execution prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check blake3
+          command -v just >/dev/null || cargo install just --locked
+          just --version
+
+      - name: Build pinned ggen CLI
+        working-directory: ggen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build -p ggen-cli-lib --bin ggen
+          ./target/debug/ggen --version
+          echo "$GITHUB_WORKSPACE/ggen/target/debug" >> "$GITHUB_PATH"
+
+      - name: Project doctoral surfaces
+        id: projection
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+          ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-sync.log"
+          ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json"
+          python3 scripts/ggen_receipt_bridge.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-bridge.log"
+
+          generated=(
+            crates/wasm4pm-cognition/src/breeds/registration.rs
+            crates/wasm4pm-cognition/breeds/registry.json
+            packages/cognition/src/breed-ids.ts
+            crates/wasm4pm-cognition/tests/paper_pointers_generated.rs
+            crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
+            crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs
+            crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs
+            crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs
+            wasm4pm/algorithm-registry.json
+          )
+
+          git add -- "${generated[@]}"
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "ggen projection is converged"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --cached --stat | tee "$GITHUB_WORKSPACE/evidence/generated-stat.txt"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(ggen): project doctoral evidence surfaces"
+            if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+              git push origin "HEAD:${GITHUB_REF_NAME}"
+            else
+              echo "pull_request event is read-only for projection push"
+            fi
+          fi
+
+      - name: Verify projection idempotence
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-resync.log"
+          test -z "$(git status --porcelain -- \
+            crates/wasm4pm-cognition/src/breeds/registration.rs \
+            crates/wasm4pm-cognition/breeds/registry.json \
+            packages/cognition/src/breed-ids.ts \
+            crates/wasm4pm-cognition/tests/paper_pointers_generated.rs \
+            crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs \
+            crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs \
+            crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs \
+            crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs \
+            wasm4pm/algorithm-registry.json)"
+
+      - name: Execute doctoral gate
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -o pipefail
+          just phd-gate 2>&1 | tee "$GITHUB_WORKSPACE/evidence/phd-gate.log"
+
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggen-phd-evidence-${{ github.sha }}
+          path: |
+            evidence/
+            wasm4pm/.ggen-v2/receipt.json
+            wasm4pm/.wasm4pm/receipts/ggen-bridge-latest.json
+            wasm4pm/wasm4pm/algorithm-registry.json
+          if-no-files-found: warn
+          retention-days: 30
