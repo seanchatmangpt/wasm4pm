@@ -3,7 +3,8 @@
 
 This file deliberately does not import the executor or pure kernel. It verifies
 the executor's artifacts from bytes, Git identity, receipt hashes, suite results,
-and refusal inventory, then emits a separate standing decision.
+real stdio/HTTP evidence, and refusal inventory, then emits a separate standing
+decision.
 """
 
 from __future__ import annotations
@@ -39,12 +40,7 @@ class VerificationError(RuntimeError):
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    ).encode("utf-8")
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def digest(value: Any) -> str:
@@ -65,12 +61,8 @@ def write_json_atomic(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(value, indent=2, sort_keys=True) + "\n"
     with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        delete=False,
+        "w", encoding="utf-8", dir=path.parent,
+        prefix=f".{path.name}.", suffix=".tmp", delete=False,
     ) as handle:
         handle.write(payload)
         temporary = Path(handle.name)
@@ -78,17 +70,9 @@ def write_json_atomic(path: Path, value: Any) -> None:
 
 
 def git(repo: Path, *args: str) -> str:
-    process = subprocess.run(
-        ["git", *args],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    process = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=False)
     if process.returncode != 0:
-        raise VerificationError(
-            f"git {' '.join(args)} failed: {process.stderr.strip()}"
-        )
+        raise VerificationError(f"git {' '.join(args)} failed: {process.stderr.strip()}")
     return process.stdout.strip()
 
 
@@ -109,6 +93,21 @@ def verify_receipt(path: Path, commit: str, tree: str) -> dict[str, Any]:
         if actual_hash != expected_hash:
             raise VerificationError(f"artifact hash mismatch: {artifact}")
     return receipt
+
+
+def verify_http_probe(evidence: Path) -> dict[str, Any]:
+    probe = read_json(evidence / "verifier/http-probe.json")
+    if probe.get("schema") != "wasm4pm.cmd.http-probe.v1":
+        raise VerificationError("unexpected HTTP probe schema")
+    if probe.get("transport") != "HTTP/1.1":
+        raise VerificationError("HTTP probe did not cross the declared protocol")
+    if probe.get("address") != "127.0.0.1" or probe.get("path") != "/cmd/health":
+        raise VerificationError("HTTP probe crossed an undeclared boundary")
+    if probe.get("status") != 200 or probe.get("passed") is not True:
+        raise VerificationError("HTTP probe did not observe its postcondition")
+    if probe.get("response_digest") != probe.get("expected_digest"):
+        raise VerificationError("HTTP response bytes diverged")
+    return probe
 
 
 def verify(repo: Path, evidence: Path) -> dict[str, Any]:
@@ -133,18 +132,15 @@ def verify(repo: Path, evidence: Path) -> dict[str, Any]:
             f"extra={sorted(suites-REQUIRED_SUITES)}"
         )
     if report.get("failed_checks"):
-        raise VerificationError(
-            f"executor reported failed checks: {report['failed_checks']}"
-        )
+        raise VerificationError(f"executor reported failed checks: {report['failed_checks']}")
     if report.get("aggregate_standing") != "UNKNOWN":
-        raise VerificationError(
-            "executor attempted to set aggregate standing before independent verification"
-        )
+        raise VerificationError("executor attempted to set aggregate standing before independent verification")
     if report.get("replay_result") is not True:
         raise VerificationError("executor replay did not pass")
     refusal_codes = report.get("refusal_codes", [])
     if len(set(refusal_codes)) < 10:
         raise VerificationError("sabotage/refusal inventory is incomplete")
+    http_probe = verify_http_probe(evidence)
 
     receipt_hashes = {}
     for checkpoint in CHECKPOINTS:
@@ -166,14 +162,16 @@ def verify(repo: Path, evidence: Path) -> dict[str, Any]:
         "subject_commit": commit,
         "subject_tree": tree,
         "executor_report_digest": digest(report),
+        "http_probe_digest": digest(http_probe),
         "receipt_chain_head": chain["head"],
         "verified_checkpoints": list(CHECKPOINTS),
         "verified_suites": sorted(REQUIRED_SUITES),
+        "verified_boundaries": ["real process", "stdio", "HTTP/1.1", "real filesystem", "BLAKE3 replay"],
         "blocking_findings": [],
         "external_production_standing": "UNKNOWN",
         "aggregate_standing": "PARTIAL_ALIVE",
         "reason": (
-            "G0-G9 evidence, refusals, replay, and exact-head receipts verified; "
+            "G0-G9 evidence, stdio and HTTP boundaries, refusals, replay, and exact-head receipts verified; "
             "real external production actuation was intentionally not claimed"
         ),
     }
@@ -194,15 +192,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         result = verify(Path(args.repo), Path(args.evidence))
     except VerificationError as error:
-        print(
-            json.dumps(
-                {
-                    "aggregate_standing": "BUILD_BROKEN",
-                    "error": str(error),
-                },
-                sort_keys=True,
-            )
-        )
+        print(json.dumps({"aggregate_standing": "BUILD_BROKEN", "error": str(error)}, sort_keys=True))
         return 2
     print(json.dumps(result, sort_keys=True))
     return 0
