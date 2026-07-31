@@ -1,8 +1,11 @@
 {
   "breed": "default_logic",
   "provenance": {
-    "paper": "citation-only",
-    "citation": "Reiter 1980"
+    "paper": "Reiter-1980-Default-Logic.pdf",
+    "citation": "R. Reiter (1980). A Logic for Default Reasoning. Artificial Intelligence 13(1-2), 81-132.",
+    "locus": "Section 1.1 bird default with a specific penguin exception",
+    "extraction": "grounded",
+    "derivation": "The specific penguin rule derives not_flies. That conclusion defeats the less-specific normal default bird : flies / flies."
   },
   "input": {
     "intent": "does tweety fly",
@@ -15,26 +18,19 @@
     "rules": [
       {
         "id": "r_isa",
-        "premise": [
-          "penguin"
-        ],
+        "premise": ["penguin"],
         "conclusion": "bird",
         "certainty": 1.0
       },
       {
         "id": "r_penguin",
-        "premise": [
-          "penguin"
-        ],
+        "premise": ["penguin"],
         "conclusion": "not_flies",
         "certainty": 1.0
       },
       {
         "id": "r_birds_fly",
-        "premise": [
-          "bird",
-          "unless:not_flies"
-        ],
+        "premise": ["bird", "unless:not_flies"],
         "conclusion": "flies",
         "certainty": 0.9
       }
@@ -45,6 +41,6 @@
     "state": []
   },
   "expected": {
-    "extension": "flies"
+    "extension": "not_flies"
   }
 }
