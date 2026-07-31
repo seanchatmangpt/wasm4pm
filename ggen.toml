@@ -22,6 +22,7 @@ imports = [
   "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl",
   "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl",
   "ggen/ontology/breeds.ttl",
+  "ggen/ontology/phd-contracts.ttl",
   "ocel/reports/evidence.ttl",
 ]
 standard_only = false
@@ -38,6 +39,11 @@ rules = [
 name     = "wasm4pm-compat"
 registry = "local"
 path     = "../wasm4pm-compat/ggen"
+
+[[packs]]
+name     = "wasm4pm-phd-admission"
+registry = "local"
+path     = "ggen/phd-pack"
 
 # ---------------------------------------------------------------------------
 # Rule: witness-markers
@@ -129,4 +135,36 @@ name        = "ts-breed-ids"
 query       = { file = "ggen/queries/extract-breeds.rq" }
 template    = { file = "ggen/templates/breed-ids.ts.tera" }
 output_file = "packages/cognition/src/breed-ids.ts"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Doctoral projections — one ontology, all implementations.
+# These surfaces are evidence gates, not implementation bodies.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "phd-mining-registry"
+query       = { file = "ggen/queries/extract-mining-implementations.rq" }
+template    = { file = "ggen/templates/mining-registry.json.tera" }
+output_file = "wasm4pm/algorithm-registry.json"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "phd-mining-contracts"
+query       = { file = "ggen/queries/extract-mining-implementations.rq" }
+template    = { file = "ggen/templates/phd-mining-contracts.rs.tera" }
+output_file = "crates/wasm4pm-cli/tests/phd_mining_contracts_generated.rs"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "phd-cognition-lifecycle"
+query       = { file = "ggen/queries/extract-breeds.rq" }
+template    = { file = "ggen/templates/phd-lifecycle-tests.rs.tera" }
+output_file = "crates/wasm4pm-cognition/tests/phd_lifecycle_generated.rs"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "phd-cognition-paper-oracles"
+query       = { file = "ggen/queries/extract-paper-pointers.rq" }
+template    = { file = "ggen/templates/phd-paper-oracle-tests.rs.tera" }
+output_file = "crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs"
 mode        = "Overwrite"
