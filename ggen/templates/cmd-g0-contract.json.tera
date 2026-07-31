@@ -4,11 +4,48 @@
   "standing_ceiling": "{{ row.standing_ceiling }}",
   "required_artifacts": {{ row.required_artifacts_json }},
   "refusal_codes": {{ row.refusal_codes_json }},
-{% endif %}{% endfor %}  "classifications": [
-{% for row in sparql_results %}    {
+  "program": {
+    "schema": "wasm4pm.cmd-program.v1",
+    "program_id": {{ row.program_id | json_encode }},
+    "calculus": {{ row.calculus | json_encode }},
+    "standing_ceiling": {{ row.program_standing | json_encode }},
+    "external_production_standing": {{ row.external_standing | json_encode }},
+    "items": [
+{% set_global first_item = true %}{% endif %}{% endfor %}
+{% for row in sparql_results %}{% if row.kind != "classification" %}{% if not first_item %},{% endif %}
+      {
+        "kind": {{ row.kind | json_encode }},
+        "id": {{ row.id | json_encode }},
+        "checkpoint": {% if row.item_checkpoint is defined %}{{ row.item_checkpoint | json_encode }}{% else %}null{% endif %},
+        "sequence": {% if row.sequence is defined %}{{ row.sequence }}{% else %}null{% endif %},
+        "objective": {% if row.objective is defined %}{{ row.objective | json_encode }}{% else %}null{% endif %},
+        "standing_ceiling": {% if row.item_standing_ceiling is defined %}{{ row.item_standing_ceiling | json_encode }}{% else %}null{% endif %},
+        "depends_on": {% if row.depends_on is defined %}{{ row.depends_on | json_encode }}{% else %}""{% endif %},
+        "required_artifacts": {% if row.required_artifacts is defined %}{{ row.required_artifacts | json_encode }}{% else %}""{% endif %},
+        "refusal_codes": {% if row.refusal_codes is defined %}{{ row.refusal_codes | json_encode }}{% else %}""{% endif %},
+        "scope": {% if row.scope is defined %}{{ row.scope | json_encode }}{% else %}null{% endif %},
+        "cardinality": {% if row.cardinality is defined %}{{ row.cardinality | json_encode }}{% else %}null{% endif %},
+        "risk_class": {% if row.risk_class is defined %}{{ row.risk_class | json_encode }}{% else %}null{% endif %},
+        "coverage_mode": {% if row.coverage_mode is defined %}{{ row.coverage_mode | json_encode }}{% else %}null{% endif %},
+        "resource_ceiling": {% if row.resource_ceiling is defined %}{{ row.resource_ceiling }}{% else %}null{% endif %},
+        "dimension_id": {% if row.dimension_id is defined %}{{ row.dimension_id | json_encode }}{% else %}null{% endif %},
+        "option_id": {% if row.option_id is defined %}{{ row.option_id | json_encode }}{% else %}null{% endif %},
+        "reversibility": {% if row.reversibility is defined %}{{ row.reversibility | json_encode }}{% else %}null{% endif %},
+        "authority_ceiling": {% if row.authority_ceiling is defined %}{{ row.authority_ceiling | json_encode }}{% else %}null{% endif %},
+        "name_pattern": {% if row.name_pattern is defined %}{{ row.name_pattern | json_encode }}{% else %}null{% endif %},
+        "description": {% if row.description is defined %}{{ row.description | json_encode }}{% else %}null{% endif %},
+        "real_boundary": {% if row.real_boundary is defined %}{{ row.real_boundary }}{% else %}null{% endif %},
+        "requirement_id": {% if row.requirement_id is defined %}{{ row.requirement_id | json_encode }}{% else %}null{% endif %}
+      }{% set_global first_item = false %}{% endif %}{% endfor %}
+    ]
+  },
+  "classifications": [
+{% set_global first_classification = true %}
+{% for row in sparql_results %}{% if row.kind == "classification" %}{% if not first_classification %},{% endif %}
+    {
       "classification": "{{ row.classification }}",
       "precedence": {{ row.precedence }},
       "pattern": {{ row.pattern | json_encode }}
-    }{% if not loop.last %},{% endif %}
-{% endfor %}  ]
+    }{% set_global first_classification = false %}{% endif %}{% endfor %}
+  ]
 }
