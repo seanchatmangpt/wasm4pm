@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    { "activity": "A", "frequency": 1 },
+    { "activity": "B", "frequency": 1 },
+    { "activity": "C", "frequency": 1 }
+  ],
+  "edges": [
+    { "source": "A", "target": "B", "frequency": 1 },
+    { "source": "B", "target": "C", "frequency": 1 }
+  ],
+  "start_activities": ["A"],
+  "end_activities": ["C"]
+}
