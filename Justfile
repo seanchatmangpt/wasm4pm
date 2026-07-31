@@ -79,6 +79,27 @@ cmd-g0-falsify:
 cmd-g0: cmd-g0-unit
     python3 scripts/cmd_g0.py crown --base HEAD
 
+# G1-G10 consume the exact G0 observation. Evidence is isolated under ignored
+# .ggen/cmd; no runtime or external production mutation is authorized here.
+cmd-unit:
+    python3 tests/cmd/test_cmd_g1_g10.py
+
+cmd-run checkpoint="G10":
+    python3 scripts/cmd_g1_g10.py run --through {{checkpoint}}
+
+cmd-verify checkpoint="G10":
+    python3 scripts/cmd_g1_g10.py verify --through {{checkpoint}}
+
+cmd-sabotage checkpoint:
+    python3 scripts/cmd_g1_g10.py sabotage --checkpoint {{checkpoint}}
+
+cmd-status:
+    python3 scripts/cmd_g1_g10.py status
+
+cmd-crown: cmd-unit
+    python3 scripts/cmd_g1_g10.py crown
+    python3 scripts/cmd_g1_g10.py verify --through G10
+
 # ── ggen breed scaffold pipeline ────────────────────────────────────────────
 
 # Project ocel/reports/*.json admission evidence into evidence.ttl
