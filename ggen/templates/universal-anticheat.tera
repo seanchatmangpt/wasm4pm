@@ -1,0 +1,71 @@
+// Universal anti-cheat tests — generated from wasm4pm-compat ontology
+// (ggen rule: universal-anticheat, Overwrite mode — hand edits are reverted by sync).
+//
+// Two structural locks per breed:
+//   decoy: the plausible-miscitation value must NOT appear as a literal in the
+//          breed's source (an agent that hardcoded a wrong citation is exposed).
+//   true:  the published value must NOT appear as a literal either — the
+//          algorithm must DERIVE it (hardcoding the right answer is A8 fraud).
+
+fn breed_source(module: &str) -> String {
+    let src_path = format!("{}/src/breeds/{}.rs", env!("CARGO_MANIFEST_DIR"), module);
+    std::fs::read_to_string(&src_path)
+        .unwrap_or_else(|_| panic!("MISSING SOURCE: {} — every pointer-bearing breed must have its module on disk", src_path))
+}
+
+fn production_half(src: &str) -> String {
+    let mut out = String::new();
+    let mut lines = src.lines();
+    while let Some(line) = lines.next() {
+        if line.trim_start().starts_with("#[cfg(test)]") {
+            let mut depth: i32 = 0;
+            let mut opened = false;
+            while let Some(cur) = lines.next() {
+                for ch in cur.chars() {
+                    if ch == '{' {
+                        depth += 1;
+                        opened = true;
+                    } else if ch == '}' {
+                        depth -= 1;
+                    }
+                }
+                if opened && depth <= 0 {
+                    break;
+                }
+            }
+            continue;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+{% for row in sparql_results %}{% if row.pointer_kind == "decoy" %}
+#[test]
+fn anticheat_{{ row.breed_id }}_decoy_{{ loop.index }}_not_in_source() {
+    // {{ row.pointer_locus }}{% if row.decoy_reason %}
+    // Why this is a decoy: {{ row.decoy_reason }}{% endif %}
+    let src = breed_source("{{ row.module_file }}");
+    let needle = r#"{{ row.pointer_value }}"#;
+    assert!(
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
+        needle,
+        "{{ row.module_file }}"
+    );
+}
+{% endif %}{% if row.pointer_kind == "true" and row.hardcode_lockable == "true" %}
+#[test]
+fn anticheat_{{ row.breed_id }}_true_{{ loop.index }}_not_hardcoded() {
+    // {{ row.pointer_locus }}{% if row.pointer_derivation %}
+    // Derivation: {{ row.pointer_derivation }}{% endif %}
+    let src = breed_source("{{ row.module_file }}");
+    let needle = r#"{{ row.pointer_value }}"#;
+    assert!(
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        needle,
+        "{{ row.module_file }}"
+    );
+}
+{% endif %}{% endfor %}
