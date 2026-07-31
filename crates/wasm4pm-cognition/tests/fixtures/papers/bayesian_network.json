@@ -3,73 +3,89 @@
   "provenance": {
     "paper": "Pearl-1988-Bayesian-Networks.pdf",
     "citation": "J. Pearl (1988). Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference. Morgan Kaufmann.",
-    "locus": "\u00a74.1 Exact Inference by Enumeration",
+    "locus": "Chapter 2 burglary/earthquake/alarm network; canonical JohnCalls and MaryCalls posterior",
     "extraction": "grounded",
-    "derivation": "P(Burglary=true | Alarm=true) by exact enumeration over the Pearl (1988) alarm network CPTs in input.rules: P(B=t,A=t)=P(B)*[P(E)*P(A|B,E)+P(~E)*P(A|B,~E)] = 0.001*(0.002*0.95+0.998*0.94)=0.00094002; P(B=f,A=t)=0.999*(0.002*0.29+0.998*0.001)=0.001576422; posterior=0.00094002/0.002516442=0.373551228281836. Pearl 1988 \u00a74.1."
+    "derivation": "P(Burglary=true | JohnCalls=true, MaryCalls=true) by exact enumeration over Burglary, Earthquake, Alarm, JohnCalls, and MaryCalls equals 0.284171835 (tolerance 1e-6)."
   },
   "input": {
     "intent": "Bayesian network exact query",
     "candidates": [],
     "facts": [
       {
-        "key": "Alarm",
+        "key": "JohnCalls",
+        "value": "true"
+      },
+      {
+        "key": "MaryCalls",
         "value": "true"
       }
     ],
     "cases": [],
     "rules": [
       {
-        "id": "r-burg",
+        "id": "prior-burglary",
         "premise": [],
         "conclusion": "Burglary=true",
         "certainty": 0.001
       },
       {
-        "id": "r-eq",
+        "id": "prior-earthquake",
         "premise": [],
         "conclusion": "Earthquake=true",
         "certainty": 0.002
       },
       {
-        "id": "r-alarm1",
-        "premise": [
-          "Burglary=true",
-          "Earthquake=true"
-        ],
+        "id": "alarm-b-e",
+        "premise": ["Burglary=true", "Earthquake=true"],
         "conclusion": "Alarm=true",
         "certainty": 0.95
       },
       {
-        "id": "r-alarm2",
-        "premise": [
-          "Burglary=true",
-          "Earthquake=false"
-        ],
+        "id": "alarm-b-not-e",
+        "premise": ["Burglary=true", "Earthquake=false"],
         "conclusion": "Alarm=true",
         "certainty": 0.94
       },
       {
-        "id": "r-alarm3",
-        "premise": [
-          "Burglary=false",
-          "Earthquake=true"
-        ],
+        "id": "alarm-not-b-e",
+        "premise": ["Burglary=false", "Earthquake=true"],
         "conclusion": "Alarm=true",
         "certainty": 0.29
       },
       {
-        "id": "r-alarm4",
-        "premise": [
-          "Burglary=false",
-          "Earthquake=false"
-        ],
+        "id": "alarm-not-b-not-e",
+        "premise": ["Burglary=false", "Earthquake=false"],
         "conclusion": "Alarm=true",
         "certainty": 0.001
+      },
+      {
+        "id": "john-alarm",
+        "premise": ["Alarm=true"],
+        "conclusion": "JohnCalls=true",
+        "certainty": 0.9
+      },
+      {
+        "id": "john-no-alarm",
+        "premise": ["Alarm=false"],
+        "conclusion": "JohnCalls=true",
+        "certainty": 0.05
+      },
+      {
+        "id": "mary-alarm",
+        "premise": ["Alarm=true"],
+        "conclusion": "MaryCalls=true",
+        "certainty": 0.7
+      },
+      {
+        "id": "mary-no-alarm",
+        "premise": ["Alarm=false"],
+        "conclusion": "MaryCalls=true",
+        "certainty": 0.01
       }
     ],
     "goals": [
       {
-        "id": "g1",
+        "id": "query-burglary",
         "predicate": "query",
         "value": "Burglary"
       }
@@ -78,8 +94,8 @@
   },
   "expected": {
     "query": "Burglary",
-    "value": 0.373551228281836,
-    "posterior_burglary_given_alarm": 0.373551228281836,
-    "tolerance": 0.0001
+    "value": 0.284171835,
+    "posterior_burglary_given_john_and_mary": 0.284171835,
+    "tolerance": 0.000001
   }
 }
