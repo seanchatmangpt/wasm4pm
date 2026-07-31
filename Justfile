@@ -61,6 +61,24 @@ publish:
 
 ci: polish test-full anticheat
 
+# ── combinatorial maximalism checkpoints ─────────────────────────────────────
+
+# G0 observes only the exact tracked Git tree. It does not change runtime behavior.
+cmd-g0-unit:
+    python3 tests/cmd/test_cmd_g0.py
+
+cmd-g0-observe:
+    python3 scripts/cmd_g0.py observe --base HEAD
+
+cmd-g0-verify:
+    python3 scripts/cmd_g0.py verify
+
+cmd-g0-falsify:
+    python3 scripts/cmd_g0.py falsify-omission
+
+cmd-g0: cmd-g0-unit
+    python3 scripts/cmd_g0.py crown --base HEAD
+
 # ── ggen breed scaffold pipeline ────────────────────────────────────────────
 
 # Project ocel/reports/*.json admission evidence into evidence.ttl
@@ -73,6 +91,7 @@ project-evidence:
 ggen-gate:
     ggen sync run
     test -z "$(git status --porcelain -- \
+        schemas/cmd-g0-contract.json \
         crates/wasm4pm-cognition/src/breeds/registration.rs \
         crates/wasm4pm-cognition/breeds/registry.json \
         packages/cognition/src/breed-ids.ts \
