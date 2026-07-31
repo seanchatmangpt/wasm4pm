@@ -1,0 +1,14 @@
+breeds! {
+{% for row in sparql_results %}    /// {{ row.breed_doc }}
+    {{ row.breed_label }} = "{{ row.breed_id }}" => crate::breeds::{{ row.module_path | default(value=row.breed_id) }}::{{ row.breed_label }};
+{% endfor %}}
+
+{% set_global alive = 0 %}{% for row in sparql_results %}{% if row.breed_status is defined and row.breed_status == "PARTIAL_ALIVE" %}{% set_global alive = alive + 1 %}{% endif %}{% endfor %}impl BreedId {
+    /// Legally-admitted PARTIAL_ALIVE subset — derived from evidence.ttl via
+    /// the alive-gate CONSTRUCT (measured fitness 1.0 + OCEL admission).
+    /// A breed enters this list only through an ocel/reports/ entry; the
+    /// hand-flip path no longer exists.
+    pub const ALL: [BreedId; {{ alive }}] = [
+{% for row in sparql_results %}{% if row.breed_status is defined and row.breed_status == "PARTIAL_ALIVE" %}        BreedId::{{ row.breed_label }},
+{% endif %}{% endfor %}    ];
+}
