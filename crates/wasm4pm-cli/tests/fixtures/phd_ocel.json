@@ -1,0 +1,56 @@
+{
+  "eventTypes": ["Create", "Pay", "Ship"],
+  "objectTypes": ["Order", "Item"],
+  "events": [
+    {
+      "id": "e-create",
+      "type": "Create",
+      "time": "2026-01-01T00:00:00Z",
+      "attributes": {},
+      "object_ids": [],
+      "relationships": [
+        { "objectId": "o-1", "qualifier": "order" },
+        { "objectId": "i-1", "qualifier": "item" }
+      ]
+    },
+    {
+      "id": "e-pay",
+      "type": "Pay",
+      "time": "2026-01-01T00:01:00Z",
+      "attributes": {},
+      "object_ids": [],
+      "relationships": [
+        { "objectId": "o-1", "qualifier": "order" }
+      ]
+    },
+    {
+      "id": "e-ship",
+      "type": "Ship",
+      "time": "2026-01-01T00:02:00Z",
+      "attributes": {},
+      "object_ids": [],
+      "relationships": [
+        { "objectId": "i-1", "qualifier": "item" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "o-1",
+      "type": "Order",
+      "attributes": {},
+      "changes": [],
+      "relationships": [
+        { "objectId": "i-1", "qualifier": "contains" }
+      ]
+    },
+    {
+      "id": "i-1",
+      "type": "Item",
+      "attributes": {},
+      "changes": [],
+      "relationships": []
+    }
+  ],
+  "object_relations": []
+}
