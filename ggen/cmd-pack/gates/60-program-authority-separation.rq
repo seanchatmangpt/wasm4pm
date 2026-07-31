@@ -1,0 +1,36 @@
+# MESSAGE: CMD_PROGRAM_AUTHORITY_COLLAPSE
+PREFIX cmd: <https://wasm4pm.dev/cmd#>
+
+SELECT ?subject ?reason
+WHERE {
+  {
+    ?subject a cmd:Option ;
+      cmd:dimension/cmd:scope "internal" ;
+      cmd:authorityCeiling ?ceiling .
+    FILTER(?ceiling != "PLAN_ONLY")
+    BIND("internal option exceeded PLAN_ONLY" AS ?reason)
+  }
+  UNION
+  {
+    ?subject a cmd:Option ;
+      cmd:dimension/cmd:scope "external" ;
+      cmd:authorityCeiling ?ceiling .
+    FILTER(?ceiling != "INTENT_ONLY")
+    BIND("external option exceeded INTENT_ONLY" AS ?reason)
+  }
+  UNION
+  {
+    ?subject a cmd:Checkpoint ;
+      cmd:standingCeiling ?standing .
+    FILTER(?standing = "ALIVE")
+    BIND("checkpoint self-promoted ALIVE" AS ?reason)
+  }
+  UNION
+  {
+    cmd:Program cmd:externalProductionStanding ?standing .
+    FILTER(?standing != "UNKNOWN")
+    BIND(cmd:Program AS ?subject)
+    BIND("external production standing must remain UNKNOWN" AS ?reason)
+  }
+}
+ORDER BY ?subject ?reason
