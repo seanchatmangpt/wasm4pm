@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Independent unit/property witnesses for CMD G1-G10."""
+"""Independent unit/property and real-boundary witnesses for CMD G1-G10."""
 
 from __future__ import annotations
 
+from http.client import HTTPConnection
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import json
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import unittest
+
+from blake3 import blake3
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"
@@ -51,12 +57,10 @@ class KernelTests(unittest.TestCase):
 
     def test_ownership_collision_refuses(self) -> None:
         with self.assertRaises(TypedRefusal) as raised:
-            analyze_ownership(
-                [
-                    {"output": "same", "semantic_owner": "one", "ownership_mode": "exclusive"},
-                    {"output": "same", "semantic_owner": "two", "ownership_mode": "exclusive"},
-                ]
-            )
+            analyze_ownership([
+                {"output": "same", "semantic_owner": "one", "ownership_mode": "exclusive"},
+                {"output": "same", "semantic_owner": "two", "ownership_mode": "exclusive"},
+            ])
         self.assertEqual(raised.exception.refusal.code, "CMD-G1-DUPLICATE-AUTHORITY")
 
     def test_internal_candidate_identity_and_pairwise_coverage(self) -> None:
@@ -79,14 +83,9 @@ class KernelTests(unittest.TestCase):
 
     def test_plan_identity_changes_with_tree(self) -> None:
         kwargs = {
-            "semantic_inputs": {"x": 1},
-            "source_revisions": {"repo": "abc"},
-            "resolved_closure": ["a"],
-            "parameters": {},
-            "policy": {},
-            "ownership_graph": {},
-            "consequence_graph": {},
-            "compiler_identity": "ggen@test",
+            "semantic_inputs": {"x": 1}, "source_revisions": {"repo": "abc"},
+            "resolved_closure": ["a"], "parameters": {}, "policy": {},
+            "ownership_graph": {}, "consequence_graph": {}, "compiler_identity": "ggen@test",
         }
         one = deterministic_plan(project_tree="tree-one", **kwargs)
         two = deterministic_plan(project_tree="tree-two", **kwargs)
@@ -101,8 +100,7 @@ class KernelTests(unittest.TestCase):
                 "runtime-target": "github-actions", "consequence": "git-ref",
                 "evidence-source": "git-observer", "compensation": "revert-commit",
             },
-            "resource_scope": "repo",
-            "authority": "INTENT_ONLY",
+            "resource_scope": "repo", "authority": "INTENT_ONLY",
         }
         with self.assertRaises(TypedRefusal) as raised:
             validate_external_candidate(candidate, consent={}, trust_rank=TRUST_RANK, required_trust="signed", current_jurisdiction="us-declared")
@@ -143,6 +141,53 @@ class BoundaryTests(unittest.TestCase):
                 transactional_materialize(root, {"version": 2}, fail_at="commit")
             self.assertEqual(raised.exception.refusal.code, "CMD-G7-CHAOS-PARTIAL")
             self.assertEqual(read_json(root / "live" / "candidate.json")["version"], 1)
+
+    def test_real_loopback_http_boundary(self) -> None:
+        body = b'{"status":"ok"}'
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def do_GET(self) -> None:  # noqa: N802
+                if self.path != "/cmd/health":
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, _format: str, *_args: object) -> None:
+                return
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            connection = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+            connection.request("GET", "/cmd/health")
+            response = connection.getresponse()
+            observed = response.read()
+            connection.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(observed, body)
+        report = {
+            "schema": "wasm4pm.cmd.http-probe.v1",
+            "transport": "HTTP/1.1", "address": "127.0.0.1", "path": "/cmd/health",
+            "status": response.status, "response_digest": blake3(observed).hexdigest(),
+            "expected_digest": blake3(body).hexdigest(),
+            "passed": response.status == 200 and observed == body,
+        }
+        path = ROOT / ".ggen/cmd/verifier/http-probe.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        self.assertTrue(report["passed"])
 
     def test_broker_enforces_idempotency(self) -> None:
         consent = {"resource_scope": "scope", "revocation_status": "ACTIVE"}
