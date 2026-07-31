@@ -1,0 +1,11 @@
+# MESSAGE: DOCTORAL_CANONICAL_ID_COLLISION_REFUSED — a canonical algorithm ID may identify exactly one implementation.
+PREFIX phd: <https://wasm4pm.dev/phd#>
+
+SELECT ?canonical_id (COUNT(?implementation) AS ?implementation_count)
+WHERE {
+  ?implementation a phd:MiningImplementation ;
+                  phd:canonicalId ?canonical_id .
+}
+GROUP BY ?canonical_id
+HAVING (COUNT(?implementation) != 1)
+ORDER BY ?canonical_id
