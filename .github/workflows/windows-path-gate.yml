@@ -1,0 +1,33 @@
+name: Windows Path Portability
+
+on:
+  pull_request:
+    paths:
+      - '**'
+      - '.github/workflows/windows-path-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Refuse Windows-invalid tracked paths
+        run: python3 tools/windows_path_gate.py
+
+  windows-checkout:
+    needs: inventory
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Prove exact tree is representable on Windows
+        shell: pwsh
+        run: |
+          git status --short
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
