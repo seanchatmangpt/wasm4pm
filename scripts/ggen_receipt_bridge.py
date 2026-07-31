@@ -58,6 +58,17 @@ def make_hasher() -> Tuple[str, Callable[[bytes], str]]:
         ) from error
 
 
+def git_output(*args: str) -> str:
+    process = subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return process.stdout.strip()
+
+
 def resolve_source_receipt() -> Path:
     for candidate in GGEN_RECEIPT_CANDIDATES:
         if candidate.exists():
@@ -70,8 +81,19 @@ def main() -> int:
     try:
         source_receipt = resolve_source_receipt()
         algorithm, hash_bytes = make_hasher()
-    except (FileNotFoundError, RuntimeError) as error:
+        git_revision = git_output("rev-parse", "HEAD")
+        git_tree = git_output("rev-parse", "HEAD^{tree}")
+        generated_status = git_output("status", "--porcelain", "--", *GENERATED_FILES)
+    except (FileNotFoundError, RuntimeError, subprocess.CalledProcessError) as error:
         print(f"error: {error}", file=sys.stderr)
+        return 2
+
+    if generated_status:
+        print(
+            "error: GENERATED_DRIFT_REFUSED — generated evidence surfaces are not clean:\n"
+            + generated_status,
+            file=sys.stderr,
+        )
         return 2
 
     receipt_bytes = source_receipt.read_bytes()
@@ -102,19 +124,35 @@ def main() -> int:
         print("error: BLAKE3 hashes must be 64 hexadecimal characters", file=sys.stderr)
         return 2
 
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    previous_receipt_hash = None
+    if OUT_FILE.exists():
+        previous_receipt_hash = hash_bytes(OUT_FILE.read_bytes())
+
     payload = {
         "kind": "ggen-bridge",
+        "schema": "wasm4pm.ggen-bridge-receipt.v1",
+        "service_name": "ggen",
+        "status": "ok",
         "algorithm": algorithm,
+        "git_revision": git_revision,
+        "git_tree": git_tree,
         "source_receipt": str(source_receipt.relative_to(ROOT)),
         "input_hash": input_hash,
         "output_hash": output_hash,
+        "previous_receipt_hash": previous_receipt_hash,
         "files": file_hashes,
     }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    payload["receipt_hash"] = hash_bytes(canonical)
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    print(f"input_hash:  {input_hash}")
-    print(f"output_hash: {output_hash}")
-    print(f"receipt:     {OUT_FILE.relative_to(ROOT)}")
+    print(f"git_revision: {git_revision}")
+    print(f"git_tree:     {git_tree}")
+    print(f"input_hash:   {input_hash}")
+    print(f"output_hash:  {output_hash}")
+    print(f"receipt_hash: {payload['receipt_hash']}")
+    print(f"receipt:      {OUT_FILE.relative_to(ROOT)}")
     return 0
 
 
