@@ -4,25 +4,13 @@ on:
   push:
     branches:
       - agent/ggen-phd-implementation-contracts-v26.7.30
-  pull_request:
-    paths:
-      - ggen.toml
-      - ggen/**
-      - Justfile
-      - scripts/ggen_receipt_bridge.py
-      - crates/wasm4pm-cognition/src/breeds/**
-      - crates/wasm4pm-cognition/tests/**
-      - crates/wasm4pm-cli/src/commands/**
-      - crates/wasm4pm-cli/tests/**
-      - wasm4pm/src/**
-      - wasm4pm/wasm-equivalence-tests/**
 
 permissions:
   contents: write
 
 concurrency:
   group: ggen-phd-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   GGEN_SHA: 68952593c40214ac1a681073d65f3902a9cdfce4
@@ -133,11 +121,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "chore(ggen): project doctoral evidence surfaces"
-            if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-              git push origin "HEAD:${GITHUB_REF_NAME}"
-            else
-              echo "pull_request event is read-only for projection push"
-            fi
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
       - name: Verify projection idempotence
