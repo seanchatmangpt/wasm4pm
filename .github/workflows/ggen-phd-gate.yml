@@ -5,6 +5,8 @@ on:
     branches:
       - docs/v26.7.24-planning-diagramming
     paths:
+      - Cargo.lock
+      - crates/wasm4pm-cli/Cargo.toml
       - ggen.toml
       - ggen/**
       - Justfile
@@ -109,7 +111,13 @@ jobs:
           ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-sync.log"
           ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json"
 
-          generated=(
+          # Resolve the workspace dependency graph before sealing the tested tree.
+          # Every later Cargo command uses --locked, so verification cannot mutate it.
+          cargo metadata --format-version 1 --no-deps \
+            > "$GITHUB_WORKSPACE/evidence/cargo-metadata.json"
+
+          projected=(
+            Cargo.lock
             crates/wasm4pm-cognition/src/breeds/registration.rs
             crates/wasm4pm-cognition/breeds/registry.json
             packages/cognition/src/breed-ids.ts
@@ -123,13 +131,13 @@ jobs:
             wasm4pm/algorithm-registry.json
           )
 
-          git add -- "${generated[@]}"
+          git add -- "${projected[@]}"
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "ggen projection is converged"
+            echo "ggen projection and Cargo lock are converged"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git diff --cached --stat | tee "$GITHUB_WORKSPACE/evidence/generated-stat.txt"
+            git diff --cached --stat | tee "$GITHUB_WORKSPACE/evidence/projected-stat.txt"
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "chore(ggen): project doctoral evidence surfaces"
@@ -155,6 +163,7 @@ jobs:
           set -euo pipefail
           ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-resync.log"
           test -z "$(git status --porcelain -- \
+            Cargo.lock \
             crates/wasm4pm-cognition/src/breeds/registration.rs \
             crates/wasm4pm-cognition/breeds/registry.json \
             packages/cognition/src/breed-ids.ts \
@@ -178,6 +187,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$WASM4PM_TESTED_SHA"
           test "$(git rev-parse 'HEAD^{tree}')" = "$WASM4PM_TESTED_TREE"
           just phd-gate 2>&1 | tee "$GITHUB_WORKSPACE/evidence/phd-gate.log"
+          test -z "$(git status --porcelain -- Cargo.lock)"
+          test "$(git rev-parse HEAD)" = "$WASM4PM_TESTED_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$WASM4PM_TESTED_TREE"
 
       - name: Preserve evidence
         if: always()
