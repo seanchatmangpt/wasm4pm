@@ -102,13 +102,13 @@ jobs:
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/evidence"
           ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-sync.log"
-          ggen receipt verify 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json"
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          receipt = json.loads(Path("$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json").read_text())
-          assert receipt.get("valid") is True, receipt
-          PY
+          ggen receipt verify \
+            | tee "$GITHUB_WORKSPACE/evidence/ggen-receipt-verify.json" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); assert d.get('valid') is True, d"
+          test -f .ggen-v2/receipt.json
+          cp .ggen-v2/receipt.json "$GITHUB_WORKSPACE/evidence/ggen-first-receipt.json"
+          first_contract_hash="$(python3 -c 'import blake3,pathlib; print(blake3.blake3(pathlib.Path("schemas/cmd-g0-contract.json").read_bytes()).hexdigest())')"
+
           cargo metadata --format-version 1 --no-deps > "$GITHUB_WORKSPACE/evidence/cargo-metadata.json"
 
           projected=(
@@ -149,6 +149,16 @@ jobs:
           echo "tested_sha=$tested_sha" >> "$GITHUB_OUTPUT"
           echo "tested_tree=$tested_tree" >> "$GITHUB_OUTPUT"
 
+          ggen sync run 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-resync.log"
+          ggen receipt verify \
+            | tee "$GITHUB_WORKSPACE/evidence/ggen-resync-receipt-verify.json" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); assert d.get('valid') is True, d"
+          cp .ggen-v2/receipt.json "$GITHUB_WORKSPACE/evidence/ggen-second-receipt.json"
+          second_contract_hash="$(python3 -c 'import blake3,pathlib; print(blake3.blake3(pathlib.Path("schemas/cmd-g0-contract.json").read_bytes()).hexdigest())')"
+          test "$first_contract_hash" = "$second_contract_hash"
+          test -z "$(git status --porcelain -- "${projected[@]}")"
+          printf '%s\n' "$first_contract_hash" > "$GITHUB_WORKSPACE/evidence/contract-blake3.txt"
+
           python3 scripts/ggen_receipt_bridge.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/ggen-bridge.log"
 
       - name: Execute G0 unit witnesses
@@ -156,6 +166,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 -m py_compile scripts/cmd_g0.py tests/cmd/test_cmd_g0.py
           python3 tests/cmd/test_cmd_g0.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cmd-g0-unit.log"
 
       - name: Execute exact-tree observer and omission sabotage
