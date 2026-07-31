@@ -1,0 +1,14 @@
+{
+  "schema": "wasm4pm.cmd.g0.contract.v1",
+{% for row in sparql_results %}{% if loop.first %}  "checkpoint": "{{ row.checkpoint }}",
+  "standing_ceiling": "{{ row.standing_ceiling }}",
+  "required_artifacts": {{ row.required_artifacts_json }},
+  "refusal_codes": {{ row.refusal_codes_json }},
+{% endif %}{% endfor %}  "classifications": [
+{% for row in sparql_results %}    {
+      "classification": "{{ row.classification }}",
+      "precedence": {{ row.precedence }},
+      "pattern": {{ row.pattern | json_encode }}
+    }{% if not loop.last %},{% endif %}
+{% endfor %}  ]
+}
