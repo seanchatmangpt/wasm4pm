@@ -1,0 +1,12 @@
+[
+{% for row in sparql_results %}  {
+    "canonical_id": "{{ row.canonical_id }}",
+    "implementation_symbol": "{{ row.implementation_symbol }}",
+    "source_path": "{{ row.source_path }}",
+    "bridge_path": {% if row.bridge_path is defined %}"{{ row.bridge_path }}"{% else %}null{% endif %},
+    "determinism_class": "{{ row.determinism_class }}",
+    "method_class": "{{ row.method_class }}",
+    "domain": {{ row.domain | json_encode }},
+    "admission_state": "{{ row.admission_state }}"
+  }{% if not loop.last %},{% endif %}
+{% endfor %}]
