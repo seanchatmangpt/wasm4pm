@@ -23,6 +23,7 @@ imports = [
   "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl",
   "ggen/ontology/breeds.ttl",
   "ggen/ontology/phd-contracts.ttl",
+  "ggen/ontology/phd-cli-cases.ttl",
   "ocel/reports/evidence.ttl",
 ]
 standard_only = false
@@ -167,4 +168,18 @@ name        = "phd-cognition-paper-oracles"
 query       = { file = "ggen/queries/extract-paper-pointers.rq" }
 template    = { file = "ggen/templates/phd-paper-oracle-tests.rs.tera" }
 output_file = "crates/wasm4pm-cognition/tests/phd_paper_oracles_generated.rs"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "cli-evidence"
+query       = { file = "ggen/queries/extract-cli-evidence-profile.rq" }
+template    = { file = "ggen/templates/cli-evidence.rs.tera" }
+output_file = "crates/wasm4pm-cli/src/commands/evidence.rs"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "phd-cli-cases"
+query       = { file = "ggen/queries/extract-cli-cases.rq" }
+template    = { file = "ggen/templates/phd-cli-cases.rs.tera" }
+output_file = "crates/wasm4pm-cli/tests/phd_cli_cases_generated.rs"
 mode        = "Overwrite"
