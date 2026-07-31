@@ -1,0 +1,83 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix phd: <https://wasm4pm.dev/phd#> .
+
+phd:CliEvidenceProfile a rdf:Class .
+phd:CliCase a rdf:Class .
+phd:serviceName a rdf:Property .
+phd:receiptPath a rdf:Property .
+phd:spanPath a rdf:Property .
+phd:caseId a rdf:Property .
+phd:operationName a rdf:Property .
+phd:arguments a rdf:Property .
+phd:expectedToken a rdf:Property .
+
+phd:WpmCliEvidence a phd:CliEvidenceProfile ;
+  phd:serviceName "wasm4pm-cli" ;
+  phd:receiptPath ".wasm4pm/receipts/latest.json" ;
+  phd:spanPath ".wasm4pm/otel/latest.json" .
+
+phd:Cli_heuristic a phd:CliCase ;
+  phd:caseId "heuristic" ;
+  phd:operationName "mining.discover.heuristic" ;
+  phd:arguments "mining discover wasm4pm/wasm-equivalence-tests/fixture_log.json --algo heuristic" ;
+  phd:expectedToken "Discovered Directly-Follows Graph" .
+
+phd:Cli_inductive a phd:CliCase ;
+  phd:caseId "inductive" ;
+  phd:operationName "mining.discover.inductive" ;
+  phd:arguments "mining discover wasm4pm/wasm-equivalence-tests/fixture_log.json --algo inductive" ;
+  phd:expectedToken "Discovered Process Tree" .
+
+phd:Cli_ilp a phd:CliCase ;
+  phd:caseId "ilp" ;
+  phd:operationName "mining.discover.ilp" ;
+  phd:arguments "mining discover wasm4pm/wasm-equivalence-tests/fixture_log.json --algo ilp" ;
+  phd:expectedToken "Discovered Petri Net" .
+
+phd:Cli_genetic a phd:CliCase ;
+  phd:caseId "genetic" ;
+  phd:operationName "mining.discover.genetic" ;
+  phd:arguments "mining discover wasm4pm/wasm-equivalence-tests/fixture_log.json --algo genetic" ;
+  phd:expectedToken "Final fitness" .
+
+phd:Cli_aco a phd:CliCase ;
+  phd:caseId "aco" ;
+  phd:operationName "mining.discover.aco" ;
+  phd:arguments "mining discover wasm4pm/wasm-equivalence-tests/fixture_log.json --algo aco" ;
+  phd:expectedToken "Final fitness" .
+
+phd:Cli_pso a phd:CliCase ;
+  phd:caseId "pso" ;
+  phd:operationName "mining.discover.pso" ;
+  phd:arguments "mining discover wasm4pm/wasm-equivalence-tests/fixture_log.json --algo pso" ;
+  phd:expectedToken "Final fitness" .
+
+phd:Cli_ocel_dfg a phd:CliCase ;
+  phd:caseId "ocel_dfg" ;
+  phd:operationName "mining.discover.ocel_dfg" ;
+  phd:arguments "mining discover crates/wasm4pm-cli/tests/fixtures/phd_ocel.json --algo ocel_dfg" ;
+  phd:expectedToken "Discovered Directly-Follows Graph" .
+
+phd:Cli_ocdfg a phd:CliCase ;
+  phd:caseId "ocdfg" ;
+  phd:operationName "mining.discover.ocdfg" ;
+  phd:arguments "mining discover crates/wasm4pm-cli/tests/fixtures/phd_ocel.json --algo ocdfg" ;
+  phd:expectedToken "Discovered per-object-type DFGs" .
+
+phd:Cli_conformance a phd:CliCase ;
+  phd:caseId "conformance" ;
+  phd:operationName "mining.conformance" ;
+  phd:arguments "mining conformance crates/wasm4pm-cli/tests/fixtures/phd_sequential_log.json crates/wasm4pm-cli/tests/fixtures/phd_dfg.json" ;
+  phd:expectedToken "Fitness" .
+
+phd:Cli_social_network a phd:CliCase ;
+  phd:caseId "social_network" ;
+  phd:operationName "mining.social_network" ;
+  phd:arguments "mining social-network crates/wasm4pm-cli/tests/fixtures/phd_resource_log.json" ;
+  phd:expectedToken "Handover-of-Work Social Network Centrality" .
+
+phd:Cli_cognition_mycin a phd:CliCase ;
+  phd:caseId "cognition_mycin" ;
+  phd:operationName "cognition.run.mycin" ;
+  phd:arguments "cognition run mycin crates/wasm4pm-cognition/tests/fixtures/papers/mycin.json" ;
+  phd:expectedToken "mycin" .
