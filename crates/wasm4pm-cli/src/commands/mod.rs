@@ -6,6 +6,7 @@ pub mod cognition;
 pub mod config;
 pub mod conformance_bridge;
 pub mod doctor;
+pub mod evidence;
 pub mod genetic_bridge;
 pub mod heuristic_bridge;
 pub mod ilp_bridge;
