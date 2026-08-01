@@ -1,0 +1,79 @@
+name: Ecosystem ALIVE Format Closure
+
+on:
+  pull_request:
+    paths:
+      - "crates/wasm4pm-cognition/tests/full_interview_text_screen.rs"
+      - "crates/wasm4pm-cognition/tests/interview_chicken_and_egg.rs"
+      - "crates/wasm4pm-cognition/tests/interview_first_mile.rs"
+      - "crates/wasm4pm-cognition/tests/interview_last_mile.rs"
+      - "crates/wasm4pm-cognition/tests/session_adversarial.rs"
+      - ".github/workflows/ecosystem-alive-format-closure.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ecosystem-alive-format-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  RUSTC_WRAPPER: ""
+
+jobs:
+  repair-and-prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Install exact toolchain
+        run: rustup toolchain install nightly-2026-06-22 --profile minimal --component rustfmt
+
+      - name: Format and enforce handwritten allowlist
+        run: |
+          cargo +nightly-2026-06-22 fmt --all
+          python3 - <<'PY'
+          import subprocess
+          allowed = {
+              'crates/wasm4pm-cognition/tests/full_interview_text_screen.rs',
+              'crates/wasm4pm-cognition/tests/interview_chicken_and_egg.rs',
+              'crates/wasm4pm-cognition/tests/interview_first_mile.rs',
+              'crates/wasm4pm-cognition/tests/interview_last_mile.rs',
+              'crates/wasm4pm-cognition/tests/session_adversarial.rs',
+          }
+          changed = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
+          unexpected = sorted(changed - allowed)
+          if unexpected:
+              raise SystemExit(f'FORMAT_PATH_ESCAPE_REFUSED: {unexpected}')
+          print({'changed': sorted(changed), 'generated_paths_changed': False})
+          PY
+
+      - name: Commit exact formatter consequence
+        run: |
+          git config user.name "wasm4pm-alive-controller"
+          git config user.email "wasm4pm-alive-controller@users.noreply.github.com"
+          git add \
+            crates/wasm4pm-cognition/tests/full_interview_text_screen.rs \
+            crates/wasm4pm-cognition/tests/interview_chicken_and_egg.rs \
+            crates/wasm4pm-cognition/tests/interview_first_mile.rs \
+            crates/wasm4pm-cognition/tests/interview_last_mile.rs \
+            crates/wasm4pm-cognition/tests/session_adversarial.rs
+          if ! git diff --cached --quiet; then
+            git commit -m "style(cognition): close rustfmt drift"
+          fi
+
+      - name: Execute repository validation ladder
+        run: |
+          cargo +nightly-2026-06-22 fmt --all -- --check
+          cargo +nightly-2026-06-22 check --workspace --all-targets --locked
+          cargo +nightly-2026-06-22 test -p wasm4pm-cognition --tests --locked
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+      - name: Publish verified repair
+        run: git push origin "HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}"
