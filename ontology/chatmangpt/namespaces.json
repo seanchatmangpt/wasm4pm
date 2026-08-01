@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.1.0",
+  "canonical": {
+    "ontology": "https://chatmangpt.com/ontology/wasm4pm",
+    "core": "https://chatmangpt.com/ns/wasm4pm#",
+    "process_intelligence": "https://chatmangpt.com/ns/wasm4pm/pi#",
+    "cognition": "https://chatmangpt.com/ns/wasm4pm/cognition#",
+    "compatibility": "https://chatmangpt.com/ns/wasm4pm/compat#",
+    "zod_projection": "https://chatmangpt.com/ns/wasm4pm/zod#",
+    "trace": "https://chatmangpt.com/ns/wasm4pm/trace#",
+    "interview": "https://chatmangpt.com/ns/wasm4pm/interview#",
+    "instances": "https://chatmangpt.com/id/wasm4pm/",
+    "semconv_fixtures": "https://chatmangpt.com/id/wasm4pm/semconv/",
+    "people": "https://chatmangpt.com/id/person/"
+  },
+  "legacy": {
+    "https://wasm4pm.dev/pi#": {
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/pi#",
+      "status": "supported_compatibility",
+      "role": "process_intelligence_vocabulary"
+    },
+    "https://wasm4pm.dev/ns#": {
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/cognition#",
+      "status": "supported_compatibility",
+      "role": "cognition_vocabulary"
+    },
+    "https://wasm4pm-compat.rs/ontology#": {
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/compat#",
+      "status": "migration_required",
+      "role": "compatibility_domain_vocabulary"
+    },
+    "https://wasm4pm-compat.rs/zod#": {
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/zod#",
+      "status": "migration_required",
+      "role": "zod_projection_vocabulary"
+    },
+    "http://wasm4pm.org/": {
+      "replacement": "https://chatmangpt.com/id/wasm4pm/semconv/",
+      "status": "fixture_migration_required",
+      "role": "semantic_conformance_fixture_identifiers"
+    },
+    "urn:wasm4pm:": {
+      "replacement": "https://chatmangpt.com/id/wasm4pm/",
+      "status": "migration_required",
+      "role": "lifecycle_and_runtime_instances"
+    }
+  },
+  "external_vocabularies": [
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "http://www.w3.org/2000/01/rdf-schema#",
+    "http://www.w3.org/2001/XMLSchema#",
+    "http://www.w3.org/2002/07/owl#",
+    "http://www.w3.org/2004/02/skos/core#",
+    "http://www.w3.org/ns/prov#",
+    "http://www.w3.org/ns/dcat#",
+    "http://www.w3.org/ns/mls#",
+    "http://www.w3.org/ns/shacl#",
+    "http://purl.org/dc/terms/",
+    "http://purl.org/vocab/vann/",
+    "https://schema.org/",
+    "https://spdx.org/",
+    "https://github.com/"
+  ],
+  "owned_hosts": [
+    "chatmangpt.com",
+    "wasm4pm.dev",
+    "wasm4pm-compat.rs",
+    "wasm4pm.org"
+  ],
+  "owned_urn_prefixes": [
+    "urn:wasm4pm:"
+  ],
+  "policy": {
+    "new_repo_owned_terms_must_use_chatmangpt_com": true,
+    "legacy_iris_may_remain_only_with_declared_mapping": true,
+    "external_standard_iris_must_not_be_rewritten": true,
+    "instance_iris_must_not_use_blank_or_example_domains": true,
+    "repository_metadata_links_are_external_not_namespace_terms": true,
+    "legacy_fixture_iris_are_reported_until_replayed_under_canonical_ids": true
+  }
+}

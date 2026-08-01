@@ -1,0 +1,127 @@
+{
+  "receipt_id": "W4PM-ONTOLOGY-CHATMANGPT-NAMESPACE",
+  "receipt_type": "ontology_namespace_enhancement",
+  "schema_version": "1.1.0",
+  "repository": "seanchatmangpt/wasm4pm",
+  "base_commit": "f1d4d7ac8b2f9a0265be82991487766eb35b4675",
+  "branch": "agent/chatmangpt-ontology-namespace",
+  "pull_request": 519,
+  "canonical_ontology": "https://chatmangpt.com/ontology/wasm4pm",
+  "canonical_namespaces": {
+    "core": "https://chatmangpt.com/ns/wasm4pm#",
+    "process_intelligence": "https://chatmangpt.com/ns/wasm4pm/pi#",
+    "cognition": "https://chatmangpt.com/ns/wasm4pm/cognition#",
+    "compatibility": "https://chatmangpt.com/ns/wasm4pm/compat#",
+    "zod_projection": "https://chatmangpt.com/ns/wasm4pm/zod#",
+    "trace": "https://chatmangpt.com/ns/wasm4pm/trace#",
+    "interview": "https://chatmangpt.com/ns/wasm4pm/interview#",
+    "instances": "https://chatmangpt.com/id/wasm4pm/",
+    "semconv_fixtures": "https://chatmangpt.com/id/wasm4pm/semconv/",
+    "people": "https://chatmangpt.com/id/person/"
+  },
+  "legacy_namespaces": {
+    "https://wasm4pm.dev/pi#": {
+      "standing": "supported_compatibility",
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/pi#"
+    },
+    "https://wasm4pm.dev/ns#": {
+      "standing": "supported_compatibility",
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/cognition#"
+    },
+    "https://wasm4pm-compat.rs/ontology#": {
+      "standing": "migration_required",
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/compat#"
+    },
+    "https://wasm4pm-compat.rs/zod#": {
+      "standing": "migration_required",
+      "replacement": "https://chatmangpt.com/ns/wasm4pm/zod#"
+    },
+    "http://wasm4pm.org/": {
+      "standing": "fixture_migration_required",
+      "replacement": "https://chatmangpt.com/id/wasm4pm/semconv/"
+    },
+    "urn:wasm4pm:": {
+      "standing": "migration_required",
+      "replacement": "https://chatmangpt.com/id/wasm4pm/"
+    }
+  },
+  "public_vocabularies_preserved": [
+    "RDF",
+    "RDFS",
+    "OWL",
+    "SHACL",
+    "PROV-O",
+    "DCAT",
+    "DCTERMS",
+    "SKOS",
+    "Schema.org",
+    "W3C MLS",
+    "SPDX"
+  ],
+  "strategy": "additive_non_breaking_bridge",
+  "audit": {
+    "initial_known_legacy_families": 3,
+    "legacy_families_after_first_ci_falsifier": 6,
+    "first_ci_run_id": 30502181933,
+    "first_ci_result": "failure",
+    "first_ci_error_count": 45,
+    "first_ci_discoveries": [
+      "https://wasm4pm-compat.rs/ontology#",
+      "https://wasm4pm-compat.rs/zod#",
+      "http://wasm4pm.org/"
+    ],
+    "first_ci_false_positives_corrected": [
+      "https://chatmangpt.com/id/person/sean-chatman",
+      "https://github.com/seanchatmangpt/wasm4pm"
+    ],
+    "classifier_correction": "replaced substring matching with explicit canonical, legacy, external, owned-host, and owned-URN registries"
+  },
+  "claims": {
+    "existing_iris_rewritten": false,
+    "ggen_bridge_imported": true,
+    "jsonld_context_added": true,
+    "shacl_shapes_added": true,
+    "migration_construct_added": true,
+    "namespace_verifier_added": true,
+    "classifier_regression_tests_added": true,
+    "rdf_parser_gate_added": true,
+    "shacl_validation_gate_added": true,
+    "ci_gate_added": true,
+    "publication_live": false,
+    "generated_surface_migrated": false
+  },
+  "adjacent_evidence": {
+    "ggen_output_hash_gate": {
+      "standing": "BUILD_BROKEN_PREEXISTING_OR_CONCURRENT",
+      "mismatched_outputs": [
+        "crates/wasm4pm-cognition/src/breeds/registration.rs",
+        "crates/wasm4pm-cognition/tests/paper_pointers_generated.rs",
+        "crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs"
+      ],
+      "interpretation": "the current ggen receipt does not identify the checked-in generated cognition outputs; this blocks a claim that the ontology import has been fully replayed"
+    },
+    "algorithm_count_drift": {
+      "historical_pi_individuals": 60,
+      "source_derived_canonical_process_mining_algorithms": 46,
+      "standing": "UNRECONCILED",
+      "interpretation": "the ontology census and executable census must be reconciled before algorithm-instance migration"
+    }
+  },
+  "must_not_claim": [
+    "that all legacy instances have already been rewritten",
+    "that chatmangpt.com currently performs content negotiation for these IRIs",
+    "that every ontology-bearing file in repository history has been migrated",
+    "that the 60 historical PI individuals are identical to the 46 canonical executable algorithms",
+    "that importing the bridge into ggen proves generated outputs are current",
+    "that broader repository CI failures are caused by or resolved by the namespace bridge"
+  ],
+  "standing": "PARTIAL_ALIVE",
+  "promotion_requirements": [
+    "corrected pull-request CI executes the namespace classifier tests and repository audit successfully",
+    "Turtle and SHACL files parse and the SHACL shape graph validates in CI",
+    "the ggen receipt/output mismatch is resolved or explicitly isolated from this tranche",
+    "one complete generated surface is migrated and replayed against exact receipts",
+    "the 60-versus-46 algorithm census is reconciled before process-intelligence instance migration",
+    "chatmangpt.com publishes stable ontology and namespace representations with content negotiation"
+  ]
+}

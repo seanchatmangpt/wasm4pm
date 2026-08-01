@@ -1,0 +1,56 @@
+PREFIX owl:       <http://www.w3.org/2002/07/owl#>
+PREFIX dcterms:   <http://purl.org/dc/terms/>
+PREFIX legacyPi:  <https://wasm4pm.dev/pi#>
+PREFIX legacyCog: <https://wasm4pm.dev/ns#>
+PREFIX pi:        <https://chatmangpt.com/ns/wasm4pm/pi#>
+PREFIX cognition: <https://chatmangpt.com/ns/wasm4pm/cognition#>
+
+# Non-destructive migration projection.
+#
+# Existing legacy individuals remain valid. This CONSTRUCT manufactures canonical
+# chatmangpt.com identifiers and connects both identities with owl:sameAs and
+# dcterms:isReplacedBy. Consumers can load the projection during a staged migration
+# without rewriting the source ontology or breaking current ggen queries.
+
+CONSTRUCT {
+  ?canonicalAlgorithm
+      a pi:ProcessIntelligenceAlgorithm ;
+      owl:sameAs ?legacyAlgorithm ;
+      pi:algorithmId ?algorithmId .
+
+  ?legacyAlgorithm dcterms:isReplacedBy ?canonicalAlgorithm .
+
+  ?canonicalBreed
+      a cognition:CognitionBreed ;
+      owl:sameAs ?legacyBreed ;
+      cognition:breedId ?breedId .
+
+  ?legacyBreed dcterms:isReplacedBy ?canonicalBreed .
+}
+WHERE {
+  {
+    ?legacyAlgorithm
+        a legacyPi:ProcessIntelligenceAlgorithm ;
+        legacyPi:algorithmId ?algorithmId .
+
+    BIND(
+      IRI(CONCAT(
+        "https://chatmangpt.com/id/wasm4pm/algorithm/",
+        ENCODE_FOR_URI(STR(?algorithmId))
+      )) AS ?canonicalAlgorithm
+    )
+  }
+  UNION
+  {
+    ?legacyBreed
+        a legacyCog:CognitionBreed ;
+        legacyCog:breedId ?breedId .
+
+    BIND(
+      IRI(CONCAT(
+        "https://chatmangpt.com/id/wasm4pm/cognition-breed/",
+        ENCODE_FOR_URI(STR(?breedId))
+      )) AS ?canonicalBreed
+    )
+  }
+}

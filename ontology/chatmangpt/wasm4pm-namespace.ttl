@@ -1,0 +1,244 @@
+@prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:      <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms:  <http://purl.org/dc/terms/> .
+@prefix vann:     <http://purl.org/vocab/vann/> .
+@prefix skos:     <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema:   <https://schema.org/> .
+@prefix prov:     <http://www.w3.org/ns/prov#> .
+@prefix dcat:     <http://www.w3.org/ns/dcat#> .
+@prefix mls:      <http://www.w3.org/ns/mls#> .
+
+@prefix wpm:       <https://chatmangpt.com/ns/wasm4pm#> .
+@prefix pi:        <https://chatmangpt.com/ns/wasm4pm/pi#> .
+@prefix cognition: <https://chatmangpt.com/ns/wasm4pm/cognition#> .
+@prefix compat:    <https://chatmangpt.com/ns/wasm4pm/compat#> .
+@prefix zod:       <https://chatmangpt.com/ns/wasm4pm/zod#> .
+@prefix trace:     <https://chatmangpt.com/ns/wasm4pm/trace#> .
+@prefix interview: <https://chatmangpt.com/ns/wasm4pm/interview#> .
+
+@prefix legacyPi:           <https://wasm4pm.dev/pi#> .
+@prefix legacyCognition:    <https://wasm4pm.dev/ns#> .
+@prefix legacyCompatSchema: <https://wasm4pm-compat.rs/ontology#> .
+@prefix legacyZod:          <https://wasm4pm-compat.rs/zod#> .
+
+<https://chatmangpt.com/ontology/wasm4pm>
+    a owl:Ontology ;
+    dcterms:title "ChatmanGPT wasm4pm Ontology"@en ;
+    dcterms:description "Canonical namespace and compatibility bridge for wasm4pm process intelligence, cognition, compatibility schemas, Zod projections, evidence, receipts, trace graphs, semantic-conformance fixtures, interview concepts, and Gall checkpoints."@en ;
+    dcterms:creator <https://chatmangpt.com/id/person/sean-chatman> ;
+    dcterms:license <https://spdx.org/licenses/MIT> ;
+    owl:versionInfo "1.1.0" ;
+    vann:preferredNamespacePrefix "wpm" ;
+    vann:preferredNamespaceUri "https://chatmangpt.com/ns/wasm4pm#" ;
+    rdfs:seeAlso <https://github.com/seanchatmangpt/wasm4pm> .
+
+# ---------------------------------------------------------------------------
+# Canonical core
+# ---------------------------------------------------------------------------
+
+wpm:Capability
+    a owl:Class ;
+    rdfs:label "Capability"@en ;
+    rdfs:comment "An executable or reasoned capability admitted to the wasm4pm surface."@en .
+
+wpm:EvidenceArtifact
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Evidence artifact"@en ;
+    rdfs:comment "An immutable artifact used to establish or falsify a capability claim."@en .
+
+wpm:Receipt
+    a owl:Class ;
+    rdfs:subClassOf wpm:EvidenceArtifact ;
+    rdfs:label "Receipt"@en .
+
+wpm:GallCheckpoint
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Gall checkpoint"@en ;
+    rdfs:comment "A smallest-working-system checkpoint with a positive witness, negative falsifier, deterministic receipt, and replay boundary."@en .
+
+wpm:TypedRefusal
+    a owl:Class ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:label "Typed refusal"@en .
+
+wpm:NamespaceAuthority
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Namespace authority"@en ;
+    rdfs:comment "A declared IRI authority with an explicit canonical or legacy standing."@en .
+
+wpm:standing
+    a owl:DatatypeProperty ;
+    rdfs:domain wpm:Capability ;
+    rdfs:range xsd:string ;
+    rdfs:label "standing"@en .
+
+wpm:sourceRevision
+    a owl:DatatypeProperty ;
+    rdfs:domain wpm:EvidenceArtifact ;
+    rdfs:range xsd:string ;
+    rdfs:label "source revision"@en .
+
+wpm:contentDigest
+    a owl:DatatypeProperty ;
+    rdfs:domain wpm:EvidenceArtifact ;
+    rdfs:range xsd:string ;
+    rdfs:label "content digest"@en .
+
+wpm:positiveWitness
+    a owl:ObjectProperty ;
+    rdfs:domain wpm:GallCheckpoint ;
+    rdfs:range wpm:EvidenceArtifact ;
+    rdfs:label "positive witness"@en .
+
+wpm:negativeFalsifier
+    a owl:ObjectProperty ;
+    rdfs:domain wpm:GallCheckpoint ;
+    rdfs:range wpm:EvidenceArtifact ;
+    rdfs:label "negative falsifier"@en .
+
+wpm:producedReceipt
+    a owl:ObjectProperty ;
+    rdfs:domain wpm:GallCheckpoint ;
+    rdfs:range wpm:Receipt ;
+    rdfs:subPropertyOf prov:generated ;
+    rdfs:label "produced receipt"@en .
+
+# ---------------------------------------------------------------------------
+# Process-intelligence namespace
+# ---------------------------------------------------------------------------
+
+pi:ProcessIntelligenceAlgorithm
+    a owl:Class ;
+    rdfs:subClassOf wpm:Capability, mls:Algorithm ;
+    owl:equivalentClass legacyPi:ProcessIntelligenceAlgorithm ;
+    rdfs:label "Process intelligence algorithm"@en .
+
+pi:AlgorithmPointer
+    a owl:Class ;
+    rdfs:subClassOf wpm:EvidenceArtifact ;
+    owl:equivalentClass legacyPi:AlgorithmPointer ;
+    rdfs:label "Algorithm pointer"@en .
+
+pi:algorithmId       a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:algorithmId .
+pi:algorithmLabel    a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:algorithmLabel .
+pi:algorithmDoc      a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:algorithmDoc .
+pi:citation          a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:citation .
+pi:outputType        a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:outputType .
+pi:category          a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:category .
+pi:speedTier         a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:speedTier .
+pi:qualityTier       a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:qualityTier .
+pi:wasmExport        a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:wasmExport .
+pi:cliAlias          a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:cliAlias .
+pi:inputFormat       a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:inputFormat .
+pi:algorithmStatus   a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:algorithmStatus .
+pi:standing          a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:standing ; rdfs:subPropertyOf wpm:standing .
+pi:measuredFitness   a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:measuredFitness .
+pi:piAdmitted        a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:piAdmitted .
+pi:fitnessProvenance a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:fitnessProvenance .
+pi:vdaFitness        a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:vdaFitness .
+pi:vdaPrecision      a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:vdaPrecision .
+pi:vdaGeneralization a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:vdaGeneralization .
+pi:vdaSimplicity     a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:vdaSimplicity .
+pi:forAlgorithm      a owl:ObjectProperty ; owl:equivalentProperty legacyPi:forAlgorithm .
+pi:pointerKind       a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:pointerKind .
+pi:pointerValue      a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:pointerValue .
+pi:pointerLocus      a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:pointerLocus .
+pi:pointerDerivation a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:pointerDerivation .
+pi:decoyReason       a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:decoyReason .
+pi:hardcodeLockable  a owl:DatatypeProperty ; owl:equivalentProperty legacyPi:hardcodeLockable .
+
+legacyPi:ProcessIntelligenceAlgorithm dcterms:isReplacedBy pi:ProcessIntelligenceAlgorithm .
+legacyPi:AlgorithmPointer dcterms:isReplacedBy pi:AlgorithmPointer .
+
+# ---------------------------------------------------------------------------
+# Cognition namespace
+# ---------------------------------------------------------------------------
+
+cognition:CognitionBreed
+    a owl:Class ;
+    rdfs:subClassOf wpm:Capability, mls:Algorithm ;
+    owl:equivalentClass legacyCognition:CognitionBreed ;
+    rdfs:label "Cognition breed"@en .
+
+cognition:breedId         a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedId .
+cognition:breedLabel      a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedLabel .
+cognition:breedDoc        a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedDoc .
+cognition:citation        a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:citation .
+cognition:modulePath      a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:modulePath .
+cognition:breedStatus     a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:breedStatus ; rdfs:subPropertyOf wpm:standing .
+cognition:measuredFitness a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:measuredFitness .
+cognition:ocelAdmitted    a owl:DatatypeProperty ; owl:equivalentProperty legacyCognition:ocelAdmitted .
+
+legacyCognition:CognitionBreed dcterms:isReplacedBy cognition:CognitionBreed .
+
+# ---------------------------------------------------------------------------
+# Compatibility and Zod projection namespaces
+# ---------------------------------------------------------------------------
+
+compat:DomainSchema
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Compatibility domain schema"@en ;
+    rdfs:comment "A domain contract represented in the wasm4pm compatibility ontology."@en .
+
+zod:RuntimeSchema
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Zod runtime schema"@en ;
+    rdfs:comment "A runtime-validation schema projected from an admitted compatibility-domain definition."@en .
+
+<https://wasm4pm-compat.rs/ontology#>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/ns/wasm4pm/compat#> .
+
+<https://wasm4pm-compat.rs/zod#>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/ns/wasm4pm/zod#> .
+
+<http://wasm4pm.org/>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/id/wasm4pm/semconv/> .
+
+<urn:wasm4pm:>
+    a wpm:NamespaceAuthority ;
+    dcterms:isReplacedBy <https://chatmangpt.com/id/wasm4pm/> .
+
+# ---------------------------------------------------------------------------
+# Additional owned namespaces
+# ---------------------------------------------------------------------------
+
+trace:TraceRun
+    a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Trace run"@en .
+
+trace:TraceFrame
+    a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Trace frame"@en .
+
+interview:InterviewOntology
+    a owl:Class ;
+    rdfs:subClassOf dcat:Dataset ;
+    rdfs:label "Interview ontology"@en .
+
+interview:Track
+    a owl:Class ;
+    rdfs:label "Interview track"@en .
+
+interview:Concept
+    a owl:Class ;
+    rdfs:label "Interview concept"@en .
+
+interview:Pattern
+    a owl:Class ;
+    rdfs:label "Interview evidence pattern"@en .
+
+interview:Rule
+    a owl:Class ;
+    rdfs:label "Interview inference rule"@en .
