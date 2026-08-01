@@ -26,7 +26,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "citty": "^0.1.6"
+    "citty": "^0.2.2"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
