@@ -5,6 +5,7 @@ on:
     paths:
       - "crates/wasm4pm-cognition/src/**"
       - "crates/wasm4pm-cognition/tests/**"
+      - "wasm4pm/benches/native_api_bench.rs"
       - ".github/workflows/ecosystem-alive-format-closure.yml"
   workflow_dispatch:
 
@@ -32,20 +33,30 @@ jobs:
       - name: Install exact toolchain
         run: rustup toolchain install nightly-2026-06-22 --profile minimal --component rustfmt
 
+      - name: Repair deterministic benchmark maps
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('wasm4pm/benches/native_api_bench.rs')
+          text = path.read_text()
+          text = text.replace('use std::{collections::HashMap, fs, path::Path, time::Duration};', 'use std::{collections::BTreeMap, fs, path::Path, time::Duration};')
+          text = text.replace('attributes: HashMap::new()', 'attributes: BTreeMap::new()')
+          path.write_text(text)
+          PY
+
       - name: Format and enforce handwritten ownership
         run: |
           cargo +nightly-2026-06-22 fmt --all
           python3 - <<'PY'
           import subprocess
           changed = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
-          generated = {
-              'crates/wasm4pm-cognition/tests/universal_anticheat_tests.rs',
-          }
+          generated = {'crates/wasm4pm-cognition/tests/universal_anticheat_tests.rs'}
           unexpected = sorted(
               path for path in changed
               if not (
                   path.startswith('crates/wasm4pm-cognition/src/')
                   or path.startswith('crates/wasm4pm-cognition/tests/')
+                  or path == 'wasm4pm/benches/native_api_bench.rs'
               )
               or path.startswith('crates/wasm4pm-cognition/src/generated/')
               or path in generated
@@ -55,13 +66,13 @@ jobs:
           print({'changed': sorted(changed), 'generated_paths_changed': False})
           PY
 
-      - name: Commit exact formatter consequence
+      - name: Commit exact consequence
         run: |
           git config user.name "wasm4pm-alive-controller"
           git config user.email "wasm4pm-alive-controller@users.noreply.github.com"
-          git add crates/wasm4pm-cognition/src crates/wasm4pm-cognition/tests
+          git add crates/wasm4pm-cognition/src crates/wasm4pm-cognition/tests wasm4pm/benches/native_api_bench.rs
           if ! git diff --cached --quiet; then
-            git commit -m "style(cognition): close rustfmt drift"
+            git commit -m "fix(cognition): close deterministic workspace compilation"
           fi
 
       - name: Execute repository validation ladder
