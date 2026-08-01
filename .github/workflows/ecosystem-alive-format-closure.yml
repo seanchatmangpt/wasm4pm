@@ -3,11 +3,8 @@ name: Ecosystem ALIVE Format Closure
 on:
   pull_request:
     paths:
-      - "crates/wasm4pm-cognition/tests/full_interview_text_screen.rs"
-      - "crates/wasm4pm-cognition/tests/interview_chicken_and_egg.rs"
-      - "crates/wasm4pm-cognition/tests/interview_first_mile.rs"
-      - "crates/wasm4pm-cognition/tests/interview_last_mile.rs"
-      - "crates/wasm4pm-cognition/tests/session_adversarial.rs"
+      - "crates/wasm4pm-cognition/src/**"
+      - "crates/wasm4pm-cognition/tests/**"
       - ".github/workflows/ecosystem-alive-format-closure.yml"
   workflow_dispatch:
 
@@ -35,20 +32,24 @@ jobs:
       - name: Install exact toolchain
         run: rustup toolchain install nightly-2026-06-22 --profile minimal --component rustfmt
 
-      - name: Format and enforce handwritten allowlist
+      - name: Format and enforce handwritten ownership
         run: |
           cargo +nightly-2026-06-22 fmt --all
           python3 - <<'PY'
           import subprocess
-          allowed = {
-              'crates/wasm4pm-cognition/tests/full_interview_text_screen.rs',
-              'crates/wasm4pm-cognition/tests/interview_chicken_and_egg.rs',
-              'crates/wasm4pm-cognition/tests/interview_first_mile.rs',
-              'crates/wasm4pm-cognition/tests/interview_last_mile.rs',
-              'crates/wasm4pm-cognition/tests/session_adversarial.rs',
-          }
           changed = set(subprocess.check_output(['git','diff','--name-only'], text=True).splitlines())
-          unexpected = sorted(changed - allowed)
+          generated = {
+              'crates/wasm4pm-cognition/tests/universal_anticheat_tests.rs',
+          }
+          unexpected = sorted(
+              path for path in changed
+              if not (
+                  path.startswith('crates/wasm4pm-cognition/src/')
+                  or path.startswith('crates/wasm4pm-cognition/tests/')
+              )
+              or path.startswith('crates/wasm4pm-cognition/src/generated/')
+              or path in generated
+          )
           if unexpected:
               raise SystemExit(f'FORMAT_PATH_ESCAPE_REFUSED: {unexpected}')
           print({'changed': sorted(changed), 'generated_paths_changed': False})
@@ -58,12 +59,7 @@ jobs:
         run: |
           git config user.name "wasm4pm-alive-controller"
           git config user.email "wasm4pm-alive-controller@users.noreply.github.com"
-          git add \
-            crates/wasm4pm-cognition/tests/full_interview_text_screen.rs \
-            crates/wasm4pm-cognition/tests/interview_chicken_and_egg.rs \
-            crates/wasm4pm-cognition/tests/interview_first_mile.rs \
-            crates/wasm4pm-cognition/tests/interview_last_mile.rs \
-            crates/wasm4pm-cognition/tests/session_adversarial.rs
+          git add crates/wasm4pm-cognition/src crates/wasm4pm-cognition/tests
           if ! git diff --cached --quiet; then
             git commit -m "style(cognition): close rustfmt drift"
           fi
