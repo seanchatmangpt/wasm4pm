@@ -20,7 +20,7 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.16", features = ["v4", "serde", "js"] }
 hashbrown = { version = "0.17", features = ["inline-more"] }
 smallvec = { version = "1.13", features = ["serde"] }
-itertools = "0.14.0"
+itertools = "0.15.0"
 rustc-hash = "2"
 blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
