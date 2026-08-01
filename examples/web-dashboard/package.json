@@ -14,7 +14,7 @@
     "wasm4pm-cognition-web": "../../crates/wasm4pm-cognition/pkg-web"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
+    "@playwright/test": "^1.62.0",
     "vite": "^5.4.0"
   }
 }
