@@ -6,17 +6,28 @@ on:
     paths:
       - 'examples/**'
       - 'packages/**'
+      - 'crates/wasm4pm-cognition/**'
       - 'wasm4pm/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'scripts/bootstrap-cognition-wasm.sh'
+      - '.github/workflows/examples.yml'
   pull_request:
     paths:
       - 'examples/**'
       - 'packages/**'
+      - 'crates/wasm4pm-cognition/**'
       - 'wasm4pm/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'scripts/bootstrap-cognition-wasm.sh'
+      - '.github/workflows/examples.yml'
 
 jobs:
   validate:
     name: Validate examples
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +44,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
+          cache: pnpm
+
+      - name: Bootstrap cognition WASM packages
+        run: bash scripts/bootstrap-cognition-wasm.sh
 
       - name: Install monorepo dependencies
         run: pnpm install --frozen-lockfile
@@ -42,7 +56,9 @@ jobs:
         run: pnpm build
 
       - name: Install examples dependencies
-        run: cd examples && npm install
+        working-directory: ./examples
+        run: npm install
 
       - name: Validate all examples
-        run: cd examples && npm run validate
+        working-directory: ./examples
+        run: npm run validate

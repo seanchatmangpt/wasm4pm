@@ -5,8 +5,8 @@
 //! replaces that arrangement with an open [`Candidate`] type whose dimensions
 //! are validated against a manifest of [`DimensionSpec`] declarations.
 //!
-//! The  `ArchitectureFamily` enum is kept as a `#[removed]` bridge so
-//! existing call sites continue to compile while migrations land.
+//! The `ArchitectureFamily` enum is kept as a compatibility bridge so existing
+//! call sites continue to compile while migrations land.
 
 use crate::autosystems::dimension::DimensionSpec;
 use indexmap::IndexMap;
@@ -38,11 +38,10 @@ pub enum RuntimeBoundary {
     ForbiddenCentralWork,
 }
 
-///  architecture family enumeration.
+/// Architecture family enumeration.
 ///
 /// Retained for compile-time compatibility with prior dependents. Manifest-driven
 /// discovery uses [`Candidate::family_id`] (free-form string) instead.
-#[allow(removed)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArchitectureFamily {
     /// Centralized cloud service.
@@ -221,7 +220,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(removed)]
     fn removed_all_candidates_returns_empty() {
         assert!(all_candidates().is_empty());
     }
