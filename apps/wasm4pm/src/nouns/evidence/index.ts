@@ -5,9 +5,11 @@ import { chainVerb } from './chain.js';
 import { keygenVerb } from './keygen.js';
 import { reportVerb } from './report.js';
 import { replayVerb } from './replay.js';
+import { sessionVerb } from './session.js';
 
 export const evidenceNoun = defineNoun({
   name: 'evidence',
-  description: 'Inspect, verify, and generate keys for BLAKE3 receipt-chain evidence',
-  verbs: [showVerb, verifyVerb, chainVerb, keygenVerb, reportVerb, replayVerb],
+  description:
+    'Inspect, verify, replay, and manufacture BLAKE3-bound process evidence',
+  verbs: [showVerb, verifyVerb, chainVerb, keygenVerb, reportVerb, replayVerb, sessionVerb],
 });
