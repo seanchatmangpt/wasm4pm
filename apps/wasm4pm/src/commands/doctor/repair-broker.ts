@@ -104,7 +104,7 @@ export const REPAIR_INTENTS: readonly RepairIntent[] = [
   {
     id: 'install-workspace',
     title: 'Install the exact workspace dependency graph',
-    diagnoses: ['TypeScript compilation', 'Workspace integrity'],
+    diagnoses: ['Workspace integrity'],
     action: {
       kind: 'spawn',
       program: 'pnpm',
@@ -369,7 +369,7 @@ export function executeRepairPlan(
     return {
       schema_version: 'wasm4pm.doctor-repair.v1',
       run_id: runId,
-      standing: 'ALIVE',
+      standing: plan.length === 0 ? 'ALIVE' : 'PARTIAL_ALIVE',
       authorized: options.authorized,
       dry_run: true,
       plan,
