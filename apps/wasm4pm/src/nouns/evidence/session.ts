@@ -211,11 +211,10 @@ export const sessionVerb = defineVerb({
       );
     }
 
-    const loader = WasmLoader.getInstance();
-    await loader.init();
-    const wasm = loader.get() as unknown as OcelPowlWasmModule;
-
     try {
+      const loader = WasmLoader.getInstance();
+      await loader.init();
+      const wasm = loader.get() as unknown as OcelPowlWasmModule;
       const observed = await executeVisionSession(wasm, content, options);
       if (mode === 'replay' && expected) {
         const replay = replayVisionSession(expected, observed);
