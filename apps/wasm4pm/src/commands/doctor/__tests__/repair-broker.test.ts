@@ -56,6 +56,20 @@ describe('doctor repair broker', () => {
     expect(fs.existsSync(path.join(root, '.wasm4pm', 'results'))).toBe(false);
   });
 
+  it('does not crown a non-empty dry-run as ALIVE', () => {
+    const root = workspace();
+    const plan = planRepairs([warning('Results directory')]);
+    const report = executeRepairPlan(plan, {
+      workspaceRoot: root,
+      authorized: true,
+      dryRun: true,
+      runId: 'dry-run',
+    });
+
+    expect(report.standing).toBe('PARTIAL_ALIVE');
+    expect(fs.existsSync(path.join(root, '.wasm4pm'))).toBe(false);
+  });
+
   it('persists the pending receipt before an admitted filesystem repair', () => {
     const root = workspace();
     const plan = planRepairs([warning('Results directory')]);
