@@ -4,7 +4,7 @@ import {
   replayAatLive,
   type AatLiveInput,
   type AatLiveVerdict,
-} from './aat-live.js';
+} from './aat-live-admitted.js';
 import { canonicalVisionJson } from './session-v2.js';
 
 export interface AatLiveBundle {
