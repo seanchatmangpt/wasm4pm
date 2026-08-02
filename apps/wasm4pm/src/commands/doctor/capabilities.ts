@@ -13,6 +13,7 @@ import {
   checkDoctorRepairBroker,
   checkReleaseCertificateClosure,
 } from './safe-checks.js';
+import { checkOcelPowlWasmSession } from './session-check.js';
 import {
   evaluateVision2030,
   type CapabilityDefinition,
@@ -89,9 +90,7 @@ export const VISION_2030_CAPABILITIES: readonly CapabilityDefinition[] = [
     id: 'ocel-powl-wasm-session',
     label: 'OCEL → POWL → WASM session',
     description: 'One admitted runtime session composes object-centric input, process semantics, WASM execution, and replay.',
-    checks: [],
-    unsupportedReason:
-      'No single executable doctor boundary currently proves the complete OCEL → POWL → WASM → receipt → replay composition.',
+    checks: [checkOcelPowlWasmSession],
   },
   {
     id: 'aat-live-runtime',
