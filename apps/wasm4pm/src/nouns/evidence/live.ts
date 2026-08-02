@@ -11,10 +11,12 @@ import {
   AAT_LIVE_SCHEMA,
   evaluateAatLive,
   replayAatLive,
+  type AatLiveInput,
   type AatLiveVerdict,
   type McpPlusProof,
   type WeaverAdmission,
 } from '../../vision/aat-live.js';
+import { buildAatLiveBundle } from '../../vision/aat-live-bundle.js';
 import type { VisionSessionEvidence } from '../../vision/session-v2.js';
 
 function workspaceRoot(start: string): string {
@@ -73,7 +75,7 @@ export const liveVerb = defineVerb({
     expected: { type: 'string', description: 'Expected AAT-Live verdict for replay mode' },
     'no-save': {
       type: 'boolean',
-      description: 'Do not persist verdict/passport artifacts; receipts remain mandatory',
+      description: 'Do not persist verdict/passport/bundle artifacts; receipts remain mandatory',
     },
   } as const,
   handler: async (args, ctx) => {
@@ -106,6 +108,14 @@ export const liveVerb = defineVerb({
       );
     }
 
+    const input: AatLiveInput = {
+      trace_text: traceText,
+      session,
+      weaver,
+      proof,
+      release,
+      release_verification: releaseVerification,
+    };
     const runId = blake3Hex(
       JSON.stringify({
         mode,
@@ -123,6 +133,7 @@ export const liveVerb = defineVerb({
     const outcomePath = path.join(receiptDir, `${runId}.outcome.json`);
     const verdictPath = path.join(artifactDir, `${runId}.verdict.json`);
     const passportPath = path.join(artifactDir, `${runId}.passport.json`);
+    const bundlePath = path.join(artifactDir, `${runId}.bundle.json`);
 
     try {
       writeJson(pendingPath, {
@@ -140,23 +151,20 @@ export const liveVerb = defineVerb({
       );
     }
 
-    const verdict = evaluateAatLive({
-      trace_text: traceText,
-      session,
-      weaver,
-      proof,
-      release,
-      release_verification: releaseVerification,
-    });
+    const verdict = evaluateAatLive(input);
     const replay = expected ? replayAatLive(expected, verdict) : undefined;
     const standing = replay?.standing === 'BLOCKED' ? 'BLOCKED' : verdict.standing;
     const accepted = verdict.verdict === 'Accepted' && standing === 'ALIVE';
 
     let savedVerdict: string | undefined;
     let savedPassport: string | undefined;
+    let savedBundle: string | undefined;
     if (!args['no-save']) {
       writeJson(verdictPath, verdict);
       savedVerdict = relativeUnix(root, verdictPath);
+      const bundle = buildAatLiveBundle(input, verdict);
+      writeJson(bundlePath, bundle);
+      savedBundle = relativeUnix(root, bundlePath);
       if (verdict.passport) {
         writeJson(passportPath, verdict.passport);
         savedPassport = relativeUnix(root, passportPath);
@@ -175,6 +183,7 @@ export const liveVerb = defineVerb({
       refusals: verdict.refusals,
       verdict_path: savedVerdict,
       passport_path: savedPassport,
+      bundle_path: savedBundle,
     });
 
     return {
@@ -184,6 +193,7 @@ export const liveVerb = defineVerb({
       replay,
       verdict_path: savedVerdict,
       passport_path: savedPassport,
+      bundle_path: savedBundle,
       pending_receipt: relativeUnix(root, pendingPath),
       outcome_receipt: relativeUnix(root, outcomePath),
       exitCode: accepted ? EXIT_CODES.success : EXIT_CODES.conformance_fail,
