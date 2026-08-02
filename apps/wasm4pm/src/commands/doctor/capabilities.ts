@@ -14,6 +14,7 @@ import {
   checkReleaseCertificateClosure,
 } from './safe-checks.js';
 import { checkOcelPowlWasmSession } from './session-check.js';
+import { checkAatLiveRuntime } from './aat-live-check.js';
 import {
   evaluateVision2030,
   type CapabilityDefinition,
@@ -94,11 +95,9 @@ export const VISION_2030_CAPABILITIES: readonly CapabilityDefinition[] = [
   },
   {
     id: 'aat-live-runtime',
-    label: 'AAT-Live runtime launch',
-    description: 'A live adaptive runtime can be launched, observed, stopped, and replayed through the public CLI.',
-    checks: [],
-    unsupportedReason:
-      'The public doctor surface has no exact AAT-Live launch-and-replay verifier at this ref.',
+    label: 'AAT-Live admission runtime',
+    description: 'Signed AAT observations, Weaver vocabulary evidence, POWL route, wasm4pm release identity, MCP+ proof, passport, and replay.',
+    checks: [checkAatLiveRuntime],
   },
   {
     id: 'release-certificate-closure',
