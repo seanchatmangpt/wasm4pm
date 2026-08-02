@@ -9,7 +9,10 @@ import {
   OUTPUT_CONTRACT_CHECKS,
   TPS_CHECKS,
 } from './checks-arrays.js';
-import { checkDoctorRepairBroker } from './safe-checks.js';
+import {
+  checkDoctorRepairBroker,
+  checkReleaseCertificateClosure,
+} from './safe-checks.js';
 import {
   evaluateVision2030,
   type CapabilityDefinition,
@@ -102,9 +105,7 @@ export const VISION_2030_CAPABILITIES: readonly CapabilityDefinition[] = [
     id: 'release-certificate-closure',
     label: 'Release certificate closure',
     description: 'Package, WASM bundle, examples, behavior evidence, and certificate hashes recompute against one commit.',
-    checks: [],
-    unsupportedReason:
-      'Release evidence exists elsewhere, but doctor does not yet recompute the complete exact-commit certificate chain.',
+    checks: [checkReleaseCertificateClosure],
   },
 ] as const;
 
