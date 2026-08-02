@@ -50,11 +50,6 @@ function substituteArgs(args: Readonly<Record<string, unknown>>, doneResults: re
   return substituteValue(args, doneResults) as Record<string, unknown>;
 }
 
-function receiptRunId(planHash: string, stepIndex: number, stepId: string, kind: 'pending' | 'outcome'): string {
-  const safeStep = stepId.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 48);
-  return `${planHash.slice(0, 20)}-${String(stepIndex).padStart(3, '0')}-${safeStep}-${kind}`;
-}
-
 function saveStepReceipt(
   plan: OrchestratorPlan,
   step: OrchestratorStep,
@@ -68,7 +63,6 @@ function saveStepReceipt(
 ): string {
   const receipt: CommandReceipt = {
     ...newReceipt(`pipeline.step.${step.noun}.${step.verb}`),
-    run_id: receiptRunId(plan.planHash, stepIndex, step.id, kind),
     input_hash: inputHash,
     output_hash: outputHash,
     status,
