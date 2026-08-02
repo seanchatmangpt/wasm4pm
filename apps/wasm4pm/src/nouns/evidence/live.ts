@@ -15,7 +15,7 @@ import {
   type AatLiveVerdict,
   type McpPlusProof,
   type WeaverAdmission,
-} from '../../vision/aat-live.js';
+} from '../../vision/aat-live-admitted.js';
 import { buildAatLiveBundle } from '../../vision/aat-live-bundle.js';
 import type { VisionSessionEvidence } from '../../vision/session-v2.js';
 
