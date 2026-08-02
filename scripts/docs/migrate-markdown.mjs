@@ -20,6 +20,10 @@ const ACTIVE_ROOT = new Set([
   'TESTING.md',
   'WASM_API.md',
 ]);
+const GENERATED_MARKDOWN = new Set([
+  'docs/reference/cli_commands.md',
+  'docs/reference/algorithms.md',
+]);
 const ACTIVE_DOC_PREFIXES = [
   'docs/tutorials/',
   'docs/how-to/',
@@ -60,8 +64,17 @@ function walk(root, directory = root, output = []) {
 
 function classify(filePath) {
   const base = path.posix.basename(filePath);
-  if (filePath.startsWith('docs/archive/') || filePath.startsWith('docs_quarantine/')) {
+  if (
+    filePath.startsWith('docs/archive/') ||
+    filePath.startsWith('docs_quarantine/')
+  ) {
     return { status: 'archived', reason: 'already in an archive surface' };
+  }
+  if (GENERATED_MARKDOWN.has(filePath)) {
+    return {
+      status: 'generated',
+      reason: 'generated projection; regenerate from owning source',
+    };
   }
   if (base === 'AGENTS.md' || base.toLowerCase() === 'readme.md') {
     return { status: 'active', reason: 'path-local authority or entrypoint' };
@@ -190,7 +203,9 @@ function main() {
     let target = filePath;
     let next = current;
 
-    if (classification.status === 'archive-pointer') {
+    if (classification.status === 'generated') {
+      next = current;
+    } else if (classification.status === 'archive-pointer') {
       target = `${ARCHIVE_ROOT}/${filePath}`;
     } else if (classification.status === 'archive') {
       target = `${ARCHIVE_ROOT}/${filePath}`;
