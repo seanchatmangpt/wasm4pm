@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/DOCUMENTATION_MANIFEST.md; source-sha256: 79e2878bc1835e6c84703a08e1deb21f9b4ddfbd90420b8e1b9abf210f1d7af3; reason: partial connector-backed migration manifest pending exact-checkout generation -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/DOCUMENTATION_MANIFEST.md; source-sha256: 0cd3cd1aa5b026cd4aa74ce7406f73994a9512349dc9b07a90cc33241d686603; reason: partial connector-backed migration manifest pending exact-checkout generation -->
 
 # Documentation migration manifest
 
@@ -27,10 +27,23 @@ This manifest records documentation changed or positively observed through the G
 | `docs/VISION_2030.md` | active | Added as the capability contract and crown condition. |
 | `docs/DOCUMENTATION_POLICY.md` | active | Added active/archive classification and lineage law. |
 | `docs/explanation/architecture_overview.md` | active | Rewritten around admission, BRCE, receipts, replay, session, AAT-Live, and release closure. |
+| `docs/tutorials/getting_started.md` | active | Rewritten as an exact-checkout tutorial with typed standing and replay. |
+| `docs/ENTERPRISE.md` | active | Rewritten as an artifact, authority, deployment, and rollback evidence contract. |
 | `TESTING.md` | active | Rewritten as an evidence ladder without fixed pass counts. |
 | `WASM_API.md` | active | Rewritten as a build-specific boundary contract instead of a dated hand-counted export list. |
 | `CONTRIBUTING.md` | active | Rewritten to align with repository doctrine and generated-surface law. |
 | `SECURITY.md` | active | Rewritten with bounded trust, disclosure, signature, release, and telemetry claims. |
+| `CLAUDE.md` | active | Reduced to a compatibility pointer to the canonical agent doctrine. |
+| `GEMINI.md` | active | Reduced to a compatibility pointer to the canonical agent doctrine. |
+
+## Generated projections preserved
+
+| Path | State | Owner |
+|---|---|---|
+| `docs/reference/cli_commands.md` | generated | `apps/wasm4pm/scripts/gen-cli-docs.ts` and the live noun/verb registry. |
+| `docs/reference/algorithms.md` | generated | The repository algorithm-documentation generator. |
+
+Generated Markdown is not rewritten by the migration engine. It must be regenerated from its owning source and checked for drift.
 
 ## Documents archived
 
@@ -38,28 +51,37 @@ This manifest records documentation changed or positively observed through the G
 |---|---|---|
 | `ALGORITHM_AND_BREED_STATUS.md` | `docs/archive/2026-08-02/ALGORITHM_AND_BREED_STATUS.md` | Source commit and Git blob retained; active path replaced by pointer. |
 
-The repository-owned `GEMBA-FILES.txt` referenced several April 2026 Markdown files, but the connector returned `404` for the sampled root files. The inventory itself is stale and is not evidence that those Markdown paths remain in the target tree.
+The repository-owned `GEMBA-FILES.txt` referenced several April 2026 Markdown files, but the connector returned `404` for sampled root files. The inventory itself is stale and is not evidence that those Markdown paths remain in the target tree.
 
 ## Migration mechanism
 
 `scripts/docs/migrate-markdown.mjs` traverses an exact checkout and:
 
-- classifies every `.md` as active, archive pointer, or archived;
-- excludes build/dependency directories;
+- classifies every `.md` as active, generated, archive pointer, or archived;
+- excludes build and dependency directories;
 - adds status, review date, original path, reason, and source digest metadata;
 - copies stale documents to `docs/archive/2026-08-02/<original-path>`;
 - replaces original paths with stable archive pointers;
-- preserves legal, governance, agent, README, Diátaxis, and ADR surfaces;
+- preserves legal, governance, agent, README, Diátaxis, ADR, and generator-owned surfaces;
 - generates the exhaustive `docs/DOCUMENTATION_MANIFEST.md`;
 - returns non-zero in `--check` mode when another migration would change files.
 
-The migration engine was validated in a synthetic repository:
+The migration engine is covered by `scripts/docs/test-migrate-markdown.mjs`.
+
+## Validation executed
 
 ```text
-initial plan: inspected=5 changed=5
-apply:        inspected=5 changed=5
-second check: inspected=6 changed=0
+node scripts/docs/test-migrate-markdown.mjs
+{"status":"PASS","assertions":14,"fixture":"synthetic"}
+
+node --check scripts/docs/migrate-markdown.mjs
+exit 0
+
+node --check scripts/docs/test-migrate-markdown.mjs
+exit 0
 ```
+
+The synthetic test proves active rewrite, historical archive copy, stable archive pointer, generated projection preservation, manifest generation, and a zero-change second pass.
 
 ## Completion command
 
@@ -70,17 +92,19 @@ pnpm run docs:inventory
 pnpm run docs:migrate
 pnpm run docs:governance
 pnpm run docs:check
+pnpm --filter @wasm4pm/cli run gen:docs -- --check
 ```
 
-The resulting generated manifest supersedes this partial connector manifest only when the second pass reports zero changes and lint/link checks pass against the same exact commit.
+The resulting generated manifest supersedes this partial connector manifest only when the second migration pass reports zero changes and lint, link, and generated-reference checks pass against the same exact commit.
 
 ## Falsifiers
 
 The documentation migration is not globally `ALIVE` while any of these remain true:
 
 - a Markdown file is absent from the generated full-tree manifest;
-- a stale status/audit/report document remains active without justification;
+- a stale status, audit, report, or completion document remains active without justification;
 - an archive pointer lacks immutable lineage;
 - an active document contains a fixed count or success claim that does not recompute at the same ref;
-- `docs:governance`, Markdown lint, or link verification exits non-zero;
+- a generated reference drifts from its owning source;
+- `docs:governance`, Markdown lint, link verification, or generator drift checks exit non-zero;
 - the exact-head workflow has not executed successfully.
