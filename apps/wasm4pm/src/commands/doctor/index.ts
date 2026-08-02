@@ -15,10 +15,10 @@ import {
   ALL_CHECKS,
 } from './checks-arrays.js';
 import {
-  doctorCheck,
+  doctorCheck as legacyDoctorCheck,
   doctorPublish,
-  doctorEnv,
-  doctorTps,
+  doctorEnv as legacyDoctorEnv,
+  doctorTps as legacyDoctorTps,
   doctorPerf,
   doctorWatch,
   doctorReport,
@@ -27,6 +27,33 @@ import { doctorHooks } from './hooks-jtbd.js';
 import { doctorCapabilities } from './capabilities-command.js';
 import { doctorRepairCommand, runDoctorRepair } from './repair-command.js';
 import { exitWithFlush } from '../../otel/exit.js';
+
+export const doctorCheck = defineCommand({
+  ...legacyDoctorCheck,
+  meta: {
+    ...legacyDoctorCheck.meta,
+    name: 'check',
+    description: `Run all ${ALL_CHECKS.length} registered health checks or an admitted filtered subset`,
+  },
+});
+
+export const doctorEnv = defineCommand({
+  ...legacyDoctorEnv,
+  meta: {
+    ...legacyDoctorEnv.meta,
+    name: 'env',
+    description: `Run the ${ENV_CHECKS.length} registered environment checks`,
+  },
+});
+
+export const doctorTps = defineCommand({
+  ...legacyDoctorTps,
+  meta: {
+    ...legacyDoctorTps.meta,
+    name: 'tps',
+    description: `Run the ${TPS_CHECKS.length} registered process-route integrity checks`,
+  },
+});
 
 // Re-export types
 export type { DoctorOptions, Pathology, Severity, RepairMode, Diagnosis, DoctorReport } from './types.js';
@@ -129,9 +156,6 @@ export type { JtbdProbe } from './hooks-jtbd.js';
 export { runHook, probeHooks, doctorHooks } from './hooks-jtbd.js';
 
 export {
-  doctorCheck,
-  doctorEnv,
-  doctorTps,
   doctorPerf,
   doctorWatch,
   doctorReport,
