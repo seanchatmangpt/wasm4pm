@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import type { Diagnosis } from './types.js';
 import { resolveWorkspaceRoot } from './checks-env.js';
 import { REPAIR_INTENTS, validateRepairRegistry } from './repair-broker.js';
+import { verifyReleaseCertificate } from '../../release/certificate.js';
 
 /**
  * Inspection-only replacement for the legacy results-directory check.
@@ -97,5 +98,59 @@ export async function checkDoctorRepairBroker(): Promise<Diagnosis> {
     pathology: 'ANTI_LIE_TRUTH_FAULT',
     severity: 'INFO',
     message: `${REPAIR_INTENTS.length} structured repair intents admitted; shell execution disabled; pre-actuation receipts required`,
+  };
+}
+
+/**
+ * Recompute the complete release certificate graph without writing artifacts.
+ * Missing evidence is PARTIAL_ALIVE; present but inconsistent evidence stops the line.
+ */
+export async function checkReleaseCertificateClosure(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return {
+      name: 'Release certificate closure',
+      pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'WARNING',
+      message: 'Workspace root not found; release-certificate standing is UNKNOWN',
+      repairMode: 'MANUAL_INTERVENTION',
+      fixGuide: 'Run from an admitted wasm4pm checkout.',
+    };
+  }
+
+  const verification = verifyReleaseCertificate(rootDir);
+  if (verification.valid) {
+    return {
+      name: 'Release certificate closure',
+      pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: `${verification.certificate_path} recomputes against exact package, commit, evidence, examples, tarball, and WASM artifacts (${verification.certificate_hash})`,
+    };
+  }
+
+  const missingOnly = verification.issues.every((issue) =>
+    [
+      'RELEASE_CERTIFICATE_MISSING',
+      'REACHABILITY_EVIDENCE_MISSING',
+      'BEHAVIOR_EVIDENCE_MISSING',
+      'EXAMPLE_EVIDENCE_MISSING',
+      'NPM_TARBALL_MISSING',
+      'WASM_BUNDLE_MISSING',
+    ].includes(issue.code)
+  );
+  const message = verification.issues
+    .slice(0, 4)
+    .map((issue) => `${issue.code}: ${issue.message}`)
+    .join('; ');
+
+  return {
+    name: 'Release certificate closure',
+    pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+    severity: missingOnly ? 'WARNING' : 'STOP_THE_LINE',
+    message,
+    repairMode: 'MANUAL_INTERVENTION',
+    fixGuide: missingOnly
+      ? 'Execute the full release evidence ladder, then run pnpm run release:certificate and replay the audit.'
+      : 'Repair the mismatched artifact or evidence producer; never edit the certificate by hand.',
   };
 }
