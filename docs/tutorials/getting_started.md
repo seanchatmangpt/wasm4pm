@@ -1,139 +1,98 @@
-# Getting Started
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/tutorials/getting_started.md; source-sha256: f24514d34f60537457da0a53e62fa00b4b4f4deb0d723ca8f1f2970363bbcf27; reason: canonical source-checkout tutorial -->
 
-## 1. Install
+# Getting started
 
-`@wasm4pm/cli` is not yet published to npmjs.org. Install from source:
+This tutorial runs the public TypeScript CLI from an exact repository checkout and distinguishes declared commands from executed standing.
 
-```bash
-git clone https://github.com/seanchatmangpt/wasm4pm
-cd wasm4pm
-# Build the Node.js WASM target (required once per clone)
-wasm-pack build wasm4pm --target nodejs --out-dir pkg -- --features wasm
-pnpm install
-```
+## Prerequisites
 
-Verify the install:
+Use the Node and pnpm versions admitted by the current root `package.json`. Rust, the `wasm32-unknown-unknown` target, and `wasm-pack` are required when the Node-target WASM package must be rebuilt.
 
 ```bash
-node apps/wasm4pm/dist/bin/wpm.js --version
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run build:wasm
+pnpm run build:cli
 ```
 
-For convenience, add a shell alias:
+Use the workspace command during development so another `wpm` binary on `PATH` cannot silently shadow the public CLI:
 
 ```bash
-alias wpm='node /path/to/wasm4pm/apps/wasm4pm/dist/bin/wpm.js'
+pnpm --filter @wasm4pm/cli exec wpm --help
 ```
 
-## 2. Process Mining
-
-The bundled sample log is [`data/small-example.xes`](../../data/small-example.xes).
-
-**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json` in the current directory, else the first algorithm for your execution profile, else `simd_streaming_dfg`. The repo root ships a streaming preset (`wasm4pm.toml`) that sets `algorithm.name = "simd_streaming_dfg"`.
+## Diagnose the checkout
 
 ```bash
-wpm run data/small-example.xes
+pnpm --filter @wasm4pm/cli exec wpm \
+  system doctor capabilities --format json
 ```
 
-Run a specific algorithm by alias or registry ID:
+Read the per-capability standing, diagnoses, evidence hash, and exit code. A `PARTIAL_ALIVE`, `BLOCKED`, `BUILD_BROKEN`, or `UNSUPPORTED` rail must remain distinct from `ALIVE`.
+
+Preview available structured repairs without changing state:
 
 ```bash
-wpm run data/small-example.xes -a dfg
-wpm run data/small-example.xes -a inductive
-wpm run data/small-example.xes -a heuristic_miner
-wpm run data/small-example.xes -a ocel_dfg   # requires OCEL input
+pnpm --filter @wasm4pm/cli exec wpm \
+  system doctor fix --dry-run
 ```
 
-Browse all 60 registered algorithms:
+A non-empty dry-run is a plan, not completed actuation.
+
+## Discover a process model
+
+The repository sample log is [`data/small-example.xes`](../../data/small-example.xes).
 
 ```bash
-wpm algorithms
-wpm algorithms --format json
+pnpm --filter @wasm4pm/cli exec wpm \
+  run data/small-example.xes -a dfg
 ```
 
-Compare algorithms side-by-side:
+Inspect the current algorithm registry through the CLI rather than relying on a count in documentation:
 
 ```bash
-wpm compare dfg,heuristic,genetic -i data/small-example.xes
+pnpm --filter @wasm4pm/cli exec wpm algorithms --format json
 ```
 
-## 3. Health Checks
+If an algorithm is listed but execution fails, preserve the exact refusal or failure. Registry enumeration does not prove WASM export or dispatcher reachability.
+
+## Execute an OCEL-v2 session
+
+Choose an OCEL-v2 fixture and an object type that exists in that fixture:
 
 ```bash
-wpm doctor check
-wpm status --format json
+pnpm --filter @wasm4pm/cli exec wpm \
+  evidence session <ocel-v2.json> \
+  --object-type <object-type>
 ```
 
-## 4. End-to-End Workflow Example
+A successful run produces:
 
-`examples/full-workflow.ts` chains discovery → quality → prediction → ML in a single script:
+- a pending receipt;
+- an outcome receipt;
+- a session evidence file unless `--no-save` is used;
+- hashes for input, normalized OCEL, projected event log, POWL model, execution output, and complete evidence.
+
+Replay the same subject:
 
 ```bash
-tsx examples/full-workflow.ts data/small-example.xes
+pnpm --filter @wasm4pm/cli exec wpm \
+  evidence session <ocel-v2.json> \
+  --object-type <object-type> \
+  --mode replay \
+  --session .wasm4pm/sessions/<run-id>.json
 ```
 
-RL autonomic monitoring (5 agents, convergence analysis):
+`REPLAY_MATCH` requires all identity hashes to agree. OCEL-v1 and OCEL NDJSON are typed unsupported on this exact composition route.
 
-```bash
-tsx examples/rl-monitoring.ts 100
-```
+## Inspect receipts
 
-Watch mode — re-run on file change:
+Use the receipt paths emitted by the command. Do not infer receipt validity from the filename or status field alone. Verify that the recorded hashes recompute and that the receipt refers to the same subject and run.
 
-```bash
-bash examples/watch-mode.sh data/small-example.xes
-```
+## Next steps
 
-## 5. Programmatic Usage
-
-```typescript
-import { readFileSync } from 'fs';
-import { Kernel } from 'wasm4pm';
-import * as wasm from 'wasm4pm';
-
-const logHandle = wasm.load_eventlog_from_xes(
-  readFileSync('data/small-example.xes', 'utf8')
-);
-const kernel = new Kernel(wasm);
-await kernel.init();
-
-const { handle, metadata } = await kernel.discover('dfg', logHandle, {
-  activity_key: 'concept:name',
-});
-console.log(output);
-```
-
-Low-level WASM without the Kernel wrapper:
-
-```typescript
-import * as wasm from 'wasm4pm';
-import { readFileSync } from 'fs';
-
-const xes = readFileSync('data/small-example.xes', 'utf8');
-const logHandle = wasm.load_eventlog_from_xes(xes);
-const dfgJson = wasm.discover_dfg(logHandle, 'concept:name');
-console.log(JSON.parse(dfgJson));
-```
-
-## 5. Cognition
-
-```bash
-wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
-```
-
-## 6. Truex — OCEL 2.0 Receipts
-
-Verify object-centric execution envelopes with cryptographic admission control:
-
-```bash
-wpm truex verify examples/out/truex_ocel2_valid.json
-```
-
-See [Truex Receipt Verification](truex_receipts.md) for admitted/refused examples and the canonical profile.
-
-## Next Steps
-
-- [Predictive Monitoring](predictive_monitoring.md) — `wpm predict` for next-activity, remaining-time, drift
-- [Truex Receipt Verification](truex_receipts.md) — OCEL 2.0 envelope verification
-- [CLI Reference](../reference/cli_commands.md) — full command catalog
-- [Examples](../../examples/README.md) — runnable ML, prediction, Truex, and cognition examples
-- [README](../../README.md) — algorithm domains and deployment profiles
+- [`../VISION_2030.md`](../VISION_2030.md) — capability contract and crown conditions.
+- [`../explanation/architecture_overview.md`](../explanation/architecture_overview.md) — implemented architecture.
+- [`../reference/cli_commands.md`](../reference/cli_commands.md) — command reference; confirm it against `wpm --help` at your ref.
+- [`../../TESTING.md`](../../TESTING.md) — validation ladder and evidence vocabulary.
+- [`../../WASM_API.md`](../../WASM_API.md) — exact WASM boundary verification.
