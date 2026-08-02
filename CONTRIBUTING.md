@@ -1,241 +1,133 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CONTRIBUTING.md; source-sha256: 945ba13e9b79cad6687cd3d497e25c68a0af5b1be36dc757ec66a233ba0a2cf7; reason: canonical contribution workflow -->
+
 # Contributing to wasm4pm
 
-## Quick summary
+Contributions are accepted when the smallest coherent change executes at its owning boundary and the resulting claim is bounded by evidence.
 
-- Process mining contributions: follow the standard PR flow.
-- Cognition contributions: read the cognition rules section carefully — they are stricter and enforced by CI.
-- All contributions: three-layer evidence, no silent fallbacks, conventional commits.
+Read [`AGENTS.md`](AGENTS.md) and any nearer path-specific `AGENTS.md` before editing.
 
-## General rules
+## Workflow
 
-### Commit format
+1. Resolve the target repository, base ref, and exact base SHA.
+2. Inspect the current source, manifests, task runners, tests, generation policy, and CI commands.
+3. Create or use a purpose branch; do not silently move the base.
+4. Make the smallest coherent diff. Preserve unrelated changes.
+5. Run the narrowest owning verifier, then expand the validation ladder.
+6. Update active documentation or archive superseded narratives.
+7. Inspect the final diff and generated status.
+8. Commit intentionally, push without rewriting shared history, and open a draft PR.
+9. Report exact commands, exits, artifacts, receipts, exclusions, and falsifiers.
+
+Do not merge unless the repository owner explicitly requests it.
+
+## Commit messages
 
 Use conventional commits:
 
-```
-type(scope): description
-
-feat(cognition): add SOAR impasse resolution
-fix(kernel): handle empty XES traces without panicking
-test(mycin): seed-deterministic forward chain verification
-refactor(receipt): length-prefixed v2 encoding
+```text
+feat(session): execute OCEL-v2 POWL replay
+fix(release): reject stale certificate identity
+docs(vision): align architecture with BRCE
 ```
 
-Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`.
+Common types are `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, and `perf`.
 
-### Git workflow
+## Change law
 
-- Never rebase — only merge.
-- Pull before push.
-- Force-push to feature branches is allowed. Force-push to `main` is blocked.
-- Large changesets: use heredoc for multi-line commit messages.
+- No silent fallback from a real boundary to a substitute implementation.
+- No arbitrary shell-string actuation.
+- No unreceipted DO path.
+- No hardcoded generated output when an ontology or generator owns it.
+- No fixed counts or readiness claims unless generated and verified at the current ref.
+- No weakened tests, fabricated evidence, or acceptance mocks.
+- No new dependency unless the existing graph cannot lawfully express the requirement.
+- No force push to shared branches.
 
-### Fail fast
+Correct typed refusal is valid behavior when the real boundary produced it and the receipt/replay contract is satisfied.
 
-No silent fallbacks. No `|| null`. No `catch { return undefined }`. Errors propagate visibly or the CI gate rejects the PR.
+## Generated cognition surfaces
 
-```typescript
-// WRONG
-const wasm = await loadWasm().catch(() => null);
+Do not hand-edit generated breed registration, registry, TypeScript IDs, paper pointers, or anti-cheat projections identified by `AGENTS.md` and path-local doctrine.
 
-// RIGHT
-const wasm = await loadWasm(); // throws if unavailable
+The lawful route is:
+
+```text
+ontology
+  → generator
+  → generated projections
+  → formal/runtime admission
+  → receipt
+  → replay
 ```
 
-### Three-layer evidence
+Run the repository generation command and `just ggen-gate` when those surfaces are in scope.
 
-Every claim that "this works" requires all three of:
+## Process-mining and WASM changes
 
-1. **OTEL span** — the operation emits a span visible in Jaeger (service name + operation name + status field)
-2. **Test assertion** — a test that passes in CI and would fail if the behavior changed
-3. **Schema conformance** — where applicable, `weaver registry check` exits 0
+A new or changed runtime capability should include:
 
-OR logic is not accepted. "The test passes" alone is not evidence. "The span was emitted" alone is not evidence.
+- an implemented Rust/WASM path or an explicit unsupported boundary;
+- a stable TypeScript/API/CLI route where the feature is public;
+- valid input and typed invalid-input tests;
+- determinism or explicitly bounded stochastic behavior;
+- no panic or false success across WASM;
+- exact target build and generated declaration inspection;
+- receipt and replay evidence when the claim requires them.
 
----
+Measure fitness, precision, generalization, simplicity, latency, or memory only where the contribution claims those properties. Record the fixture, configuration, toolchain, and command.
 
-## Cognition contribution rules
+## BRCE and external effects
 
-The cognition kernel (`crates/wasm4pm-cognition/`, `apps/wasm4pm/src/commands/cognition*`, `packages/cognition/`) has additional mandatory rules. These rules are enforced by CI and cannot be bypassed.
+Features that modify files, launch processes, publish artifacts, call networks, or otherwise actuate must:
 
-### 1. No stub law
+1. Construct a structured intent.
+2. Validate subject, authority, path, and cost bounds.
+3. Persist a pending receipt.
+4. Execute without ambient shell authority.
+5. Persist an outcome receipt containing real results or hashes.
+6. Support deterministic replay or explicit non-replayable classification.
 
-Any PR that adds the following patterns to cognition source paths will be rejected by CI:
+If the pending receipt cannot be persisted, DO is blocked.
 
-| Forbidden pattern | Why |
-|------------------|-----|
-| `pub struct Stub` | Stub structs are not implementations |
-| `todo!()` | Unimplemented hot paths are not cognition |
-| `unimplemented!()` | Same |
-| `placeholder` | Placeholder code is not real inference |
-| `mock` | Mocks are not breeds |
-| `fake` | Fake implementations are not implementations |
+## Tests
 
-Cognition source paths subject to this rule:
-- `crates/wasm4pm-cognition/src/**`
-- `apps/wasm4pm/src/commands/cognition*`
-- `packages/cognition/src/**`
+Follow [`TESTING.md`](TESTING.md). At minimum:
 
-### 2. Forbidden lexicon
+- run the owning package/type check;
+- run focused positive and adversarial tests;
+- execute real WASM when WASM behavior is claimed;
+- run public CLI behavior when CLI behavior is claimed;
+- recompute receipts and evidence;
+- run broader workspace/CI gates appropriate to impact.
 
-Cognition source files must not use these words (except in the noted exceptions):
+A mocked boundary proves only the adapter calculus. Skipped, conditional, failed, blocked, and unsupported results must remain distinct.
 
-| Forbidden | Reason | Safe synonym |
-|-----------|--------|-------------|
-| `cache` | Implies transient storage outside the knowledge base | `working memory`, `agenda` |
-| `heap` | Memory layout term, not domain term | `goal stack`, `candidate registry` |
-| `buffer` | Except `.as_bytes()` calls | `blackboard`, `ledger` |
-| `byte` | Except `.as_bytes()` calls | (use specific type) |
-| `store` | Except `.store()` method calls | `ledger`, `clause database` |
-| `load` | Except `.load()` method calls | `retrieve`, `consult` |
+## Documentation
 
-### 3. Real cognition only
-
-The TypeScript boundary has zero decision logic. Rust is the authority. Concretely:
-
-- TS may parse CLI arguments, format output, save receipts, marshal requests
-- TS must not choose an action, validate evidence, run an inference step, or self-certify output
-- Any TS code that does these things is a violation and the PR will be rejected
-
-### 4. Breed definition of done
-
-A breed is done when ALL of the following are true. Partial implementations are not merged:
-
-1. Rust implementation: no `unsafe`, no stubs, no `todo!()`
-2. `wasm-bindgen` export in `wasm.rs` with correct signatures
-3. TypeScript type binding in `packages/cognition/src/`
-4. CLI verb: `wpm cognition run --contract <name>` works
-5. Inference trace: actual reasoning steps in the output (not just a result value)
-6. BLAKE3 receipt: the breed appends a link to the receipt ledger
-7. V1-V8 adversarial gates: all 8 pass, exit code 0
-8. Replay: `wpm cognition replay` produces byte-identical hash
-9. Unit tests: seeded RNG, deterministic assertions (not statistical)
-10. OTEL span: operation name + breed attribute + duration
-
-### 5. Receipt chain integrity
-
-Every breed output must produce a receipt that:
-
-- Uses BLAKE3 v2 encoding (length-prefixed, not string-concat)
-- Chains to the previous link via `prev_hash`
-- Includes `ihash` (input hash) and `ohash` (output hash)
-- Binds to an actor identity (`actor-ed25519` or `actor-mac-fallback`)
-
-The integration test `tests/autosystems_receipt_v2_collision.rs` must continue to pass. It proves that the v2 encoding is not vulnerable to the canonicalization attack present in v1.
-
-### 6. Receipt-Replay-Verify cycle
-
-Every cognition output must pass this cycle before merge:
+Every Markdown file is active, an archive pointer, or archived. See [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md).
 
 ```bash
-wpm cognition run --contract <breed> --input <input>   # emits receipt
-wpm cognition replay --receipt-id <id>                 # reproduces byte-identical hash
-wpm cognition verify --receipt-id <id>                 # V1-V8 all pass, exit 0
+pnpm run docs:inventory
+pnpm run docs:migrate
+pnpm run docs:governance
+pnpm run docs:check
 ```
 
-All three commands must succeed. If replay produces a different hash, the breed is non-deterministic and is not ready.
+Update canonical documentation for current behavior. Archive dated audits, completion reports, status ledgers, handoffs, and superseded designs rather than leaving them adjacent to current truth.
 
-### 7. Seeded RNG
+## Pull request receipt
 
-All breeds that have any stochastic component (e.g. CBR tie-breaking, SOAR impasse resolution) must accept a seed parameter and produce deterministic output given the same seed:
+A draft PR should state:
 
-```rust
-pub fn new_with_seed(config: BreedConfig, seed: u64) -> Self { ... }
+```text
+repository / base / head
+observed inputs and doctrine
+files and generated surfaces changed
+commands and exit codes
+receipts and replay commands
+standing of each claimed boundary
+blocked or unsupported edges
+falsifiers
 ```
 
-Tests must use seeded construction. Do not assert statistical properties in unit tests; assert exact values.
-
----
-
-## Process mining contribution rules
-
-### Algorithm correctness
-
-New algorithms must demonstrate correctness on the standard fixtures in `wasm4pm/tests/fixtures/`. The four quality dimensions must all be measured and reported:
-
-- Fitness (token replay): must exceed 0.85 for conforming logs
-- Precision: must be reported (no underfitting)
-- Generalization: must be reported (no overfitting)
-- Simplicity: model size must be reported
-
-### WASM interop
-
-Follow the known-good patterns in `wasm4pm/src/discovery.rs`:
-
-- Use `String` not `&str` for exported function parameters
-- Use `JsValue` for error returns, never panic across the WASM boundary
-- Use `serde_json::to_string()` + `JsValue::from_str()` for serialization (not `serde_wasm_bindgen::to_value` — see the known serialization bug in CLAUDE.md)
-
-### Deployment profiles
-
-If your algorithm should not be in all profiles, add the appropriate feature flag:
-
-```rust
-#[cfg(feature = "feature-discovery-advanced")]
-pub fn discover_my_algorithm(...) { ... }
-```
-
-And update `packages/kernel/src/registry.ts` with the correct `deploymentProfiles` field.
-
----
-
-## Testing guidelines
-
-### Unit tests (`packages/*/src/__tests__/`)
-
-- Inline mocks are allowed
-- Fast: under 100ms per test
-- Test public APIs in isolation
-- `WasmLoader.reset()` between tests that need clean state
-
-### Behavioral tests (`playground/`)
-
-- No mocks — real local source
-- Run before publishing
-
-### Integration tests (`wasm4pm/tests/*.rs`)
-
-- No mocks — real WASM
-- Must pass on CI
-- `pub` visibility required (not `pub(crate)`) for items used across test boundaries
-
-### Rust unit tests
-
-`cargo test --lib` exits with SIGABRT on some platforms (wasm-bindgen thread cleanup, pre-existing). Verify pass count with:
-
-```bash
-cargo test --lib 2>&1 | grep -c "^test .* ok$"
-```
-
----
-
-## Pull request checklist
-
-### Process mining PR
-
-- [ ] Algorithm produces correct output on standard fixtures
-- [ ] Four quality dimensions measured and reported
-- [ ] WASM interop follows known-good patterns
-- [ ] Feature flag set if algorithm is not in all profiles
-- [ ] Unit tests pass
-- [ ] `tsc --noEmit` exits 0 (zero type errors)
-
-### Cognition PR
-
-- [ ] No stubs, no `todo!()`, no `unimplemented!()`
-- [ ] No forbidden lexicon in source
-- [ ] Breed meets all 10 definition-of-done criteria
-- [ ] Receipt chain integrity test passes (`autosystems_receipt_v2_collision.rs`)
-- [ ] Receipt-Replay-Verify cycle passes (all three commands succeed)
-- [ ] V1-V8 adversarial gates: all pass, exit code 0
-- [ ] Seeded RNG: deterministic under fixed seed
-- [ ] OTEL span emitted with correct attributes
-- [ ] Three-layer evidence for every behavioral claim
-
-### All PRs
-
-- [ ] Conventional commit message
-- [ ] `tsc --noEmit` exits 0
-- [ ] CI passes (all test suites)
-- [ ] No new `// TODO` in hot paths
-- [ ] No `console.log` left in production code
+CI supplements local proof. Check metadata alone is not a test log, and queued CI is not successful CI.
