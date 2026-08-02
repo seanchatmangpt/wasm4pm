@@ -6,7 +6,7 @@ import {
   type ReleaseCertificateV2,
   type ReleaseCertificateVerification,
 } from '../../release/certificate.js';
-import type { VisionSessionEvidence } from '../session-v2.js';
+import { canonicalVisionJson, type VisionSessionEvidence } from '../session-v2.js';
 import {
   MCP_PLUS_PROOF_SCHEMA,
   WEAVER_ADMISSION_SCHEMA,
@@ -59,7 +59,10 @@ function session(): VisionSessionEvidence {
       output: { completed: true },
     },
   };
-  return { ...unsigned, evidence_hash: blake3Hex(JSON.stringify(unsigned, Object.keys(unsigned).sort())) } as VisionSessionEvidence;
+  return {
+    ...unsigned,
+    evidence_hash: blake3Hex(canonicalVisionJson(unsigned)),
+  };
 }
 
 function release(): ReleaseCertificateV2 {
