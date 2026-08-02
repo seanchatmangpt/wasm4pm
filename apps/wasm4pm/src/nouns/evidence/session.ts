@@ -13,7 +13,7 @@ import {
   type OcelPowlWasmModule,
   type VisionSessionEvidence,
   type VisionSessionOptions,
-} from '../../vision/session.js';
+} from '../../vision/session-v2.js';
 
 type SessionMode = 'run' | 'replay';
 
@@ -120,11 +120,11 @@ export const sessionVerb = defineVerb({
   noun: 'evidence',
   verb: 'session',
   summary:
-    'Manufacture or replay one exact OCEL → POWL → WASM evidence session with pre-actuation and outcome receipts',
+    'Manufacture or replay one exact OCEL-v2 → POWL → WASM evidence session with pre-actuation and outcome receipts',
   args: {
     input: {
       type: 'positional',
-      description: 'Path to an OCEL v1/v2 JSON subject',
+      description: 'Path to an OCEL-v2 JSON subject',
       required: true,
     },
     mode: {
@@ -162,7 +162,7 @@ export const sessionVerb = defineVerb({
     },
     'no-save': {
       type: 'boolean',
-      description: 'Do not persist the session evidence artifact (receipts are still mandatory)',
+      description: 'Do not persist session evidence; pending/outcome receipts remain mandatory',
     },
   } as const,
   handler: async (args, ctx) => {
@@ -182,17 +182,11 @@ export const sessionVerb = defineVerb({
     const options = sessionOptions(args as unknown as Record<string, unknown>);
     const inputHash = blake3Hex(content);
     const root = workspaceRoot(ctx.cwd);
-    const expected =
-      mode === 'replay'
-        ? readExpectedSession(
-            path.resolve(
-              ctx.cwd,
-              String(args.session ?? (() => {
-                throw NounVerbError.invalidInput('--session is required for --mode replay');
-              })())
-            )
-          )
-        : undefined;
+    let expected: VisionSessionEvidence | undefined;
+    if (mode === 'replay') {
+      if (!args.session) throw NounVerbError.invalidInput('--session is required for --mode replay');
+      expected = readExpectedSession(path.resolve(ctx.cwd, String(args.session)));
+    }
     const runId = makeRunId(inputHash, mode, options, expected?.evidence_hash);
     const receiptDir = path.join(root, '.wasm4pm/receipts/vision-session');
     const pendingPath = path.join(receiptDir, `${runId}.pending.json`);
@@ -293,11 +287,7 @@ export const sessionVerb = defineVerb({
         return {
           standing: 'REFUSED',
           run_id: runId,
-          refusal: {
-            code: error.code,
-            message: error.message,
-            details: error.details,
-          },
+          refusal: { code: error.code, message: error.message, details: error.details },
           pending_receipt: relativeUnix(root, pendingPath),
           outcome_receipt: relativeUnix(root, outcomePath),
           exitCode: EXIT_CODES.source_error,
