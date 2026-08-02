@@ -151,53 +151,75 @@ export const liveVerb = defineVerb({
       );
     }
 
-    const verdict = evaluateAatLive(input);
-    const replay = expected ? replayAatLive(expected, verdict) : undefined;
-    const standing = replay?.standing === 'BLOCKED' ? 'BLOCKED' : verdict.standing;
-    const accepted = verdict.verdict === 'Accepted' && standing === 'ALIVE';
+    try {
+      const verdict = evaluateAatLive(input);
+      const replay = expected ? replayAatLive(expected, verdict) : undefined;
+      const standing = replay?.standing === 'BLOCKED' ? 'BLOCKED' : verdict.standing;
+      const accepted = verdict.verdict === 'Accepted' && standing === 'ALIVE';
 
-    let savedVerdict: string | undefined;
-    let savedPassport: string | undefined;
-    let savedBundle: string | undefined;
-    if (!args['no-save']) {
-      writeJson(verdictPath, verdict);
-      savedVerdict = relativeUnix(root, verdictPath);
-      const bundle = buildAatLiveBundle(input, verdict);
-      writeJson(bundlePath, bundle);
-      savedBundle = relativeUnix(root, bundlePath);
-      if (verdict.passport) {
-        writeJson(passportPath, verdict.passport);
-        savedPassport = relativeUnix(root, passportPath);
+      let savedVerdict: string | undefined;
+      let savedPassport: string | undefined;
+      let savedBundle: string | undefined;
+      if (!args['no-save']) {
+        writeJson(verdictPath, verdict);
+        savedVerdict = relativeUnix(root, verdictPath);
+        const bundle = buildAatLiveBundle(input, verdict);
+        writeJson(bundlePath, bundle);
+        savedBundle = relativeUnix(root, bundlePath);
+        if (verdict.passport) {
+          writeJson(passportPath, verdict.passport);
+          savedPassport = relativeUnix(root, passportPath);
+        }
       }
-    }
-    writeJson(outcomePath, {
-      schema_version: 'wasm4pm.aat-live-actuation.v1',
-      receipt_kind: 'outcome',
-      run_id: runId,
-      mode,
-      status: accepted ? 'ALIVE' : 'BLOCKED',
-      verdict: verdict.verdict,
-      evidence_hash: verdict.evidence_hash,
-      passport_hash: verdict.passport?.passport_hash,
-      replay_standing: replay?.standing,
-      refusals: verdict.refusals,
-      verdict_path: savedVerdict,
-      passport_path: savedPassport,
-      bundle_path: savedBundle,
-    });
+      writeJson(outcomePath, {
+        schema_version: 'wasm4pm.aat-live-actuation.v1',
+        receipt_kind: 'outcome',
+        run_id: runId,
+        mode,
+        status: accepted ? 'ALIVE' : 'BLOCKED',
+        verdict: verdict.verdict,
+        evidence_hash: verdict.evidence_hash,
+        passport_hash: verdict.passport?.passport_hash,
+        replay_standing: replay?.standing,
+        refusals: verdict.refusals,
+        verdict_path: savedVerdict,
+        passport_path: savedPassport,
+        bundle_path: savedBundle,
+      });
 
-    return {
-      standing: accepted ? 'ALIVE' : 'BLOCKED',
-      run_id: runId,
-      verdict,
-      replay,
-      verdict_path: savedVerdict,
-      passport_path: savedPassport,
-      bundle_path: savedBundle,
-      pending_receipt: relativeUnix(root, pendingPath),
-      outcome_receipt: relativeUnix(root, outcomePath),
-      exitCode: accepted ? EXIT_CODES.success : EXIT_CODES.conformance_fail,
-    };
+      return {
+        standing: accepted ? 'ALIVE' : 'BLOCKED',
+        run_id: runId,
+        verdict,
+        replay,
+        verdict_path: savedVerdict,
+        passport_path: savedPassport,
+        bundle_path: savedBundle,
+        pending_receipt: relativeUnix(root, pendingPath),
+        outcome_receipt: relativeUnix(root, outcomePath),
+        exitCode: accepted ? EXIT_CODES.success : EXIT_CODES.conformance_fail,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      try {
+        writeJson(outcomePath, {
+          schema_version: 'wasm4pm.aat-live-actuation.v1',
+          receipt_kind: 'outcome',
+          run_id: runId,
+          mode,
+          status: 'BLOCKED',
+          message,
+        });
+      } catch (receiptError) {
+        throw NounVerbError.executionError(
+          `OUTCOME_RECEIPT_BLOCKED after AAT-Live failure: ${
+            receiptError instanceof Error ? receiptError.message : String(receiptError)
+          }`,
+          error
+        );
+      }
+      throw NounVerbError.executionError(message, error);
+    }
   },
   human: (result: Record<string, unknown>) => {
     const verdict = result.verdict as Record<string, unknown> | undefined;
