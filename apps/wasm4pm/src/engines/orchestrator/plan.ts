@@ -1,53 +1,22 @@
-/**
- * Orchestrator planner — builds a typed `OrchestratorStep` DAG from a
- * built-in preset name, a custom plan file, or `--auto` (a fixed
- * validate -> discover -> check pipeline over one input).
- *
- * Scoping note: `@wasm4pm/planner`'s `plan()` (used by the legacy
- * `commands/run.ts` auto-select path) builds a DAG of raw execution phases
- * (`init_wasm`, `load_source`, ...) for a single discovery run. This
- * orchestrator instead builds a DAG of noun/verb steps — the unit `execute.ts`
- * actually knows how to dispatch — because that is what `wpm pipeline`
- * chains across the new CLI surface. The two are complementary, not
- * duplicates: `wpm model discover --auto-select` still goes through
- * `@wasm4pm/planner` internally (unchanged); `wpm pipeline plan` is about
- * sequencing multiple *verbs*.
- */
-import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import { NounVerbError } from '@wasm4pm/noun-verb';
+import { hashCanonical } from './canonical.js';
 import type { OrchestratorPlan, OrchestratorStep } from './types.js';
 
 export type PresetName = 'full' | 'quick' | 'compliance';
-
 export const PRESET_NAMES: readonly PresetName[] = ['full', 'quick', 'compliance'];
 
-function step(
-  id: string,
-  noun: string,
-  verb: string,
-  args: Record<string, unknown>,
-  dependsOn: string[] = []
-): OrchestratorStep {
+function step(id: string, noun: string, verb: string, args: Record<string, unknown>, dependsOn: string[] = []): OrchestratorStep {
   return { id, noun, verb, args, dependsOn };
 }
 
 function buildPreset(name: PresetName, input: string): OrchestratorStep[] {
   switch (name) {
     case 'quick':
-      return [
-        step('validate', 'log', 'validate', { input }),
-        step('discover', 'model', 'discover', { input }, ['validate']),
-      ];
+      return [step('validate', 'log', 'validate', { input }), step('discover', 'model', 'discover', { input }, ['validate'])];
     case 'compliance':
       return [
         step('validate', 'log', 'validate', { input }),
-        // 'model check --mode replay' requires a real PetriNet handle. The
-        // discover verb's own default algorithm (heuristic_miner) currently
-        // returns a DFG-shaped handle at runtime despite the algorithm
-        // registry's declared 'petrinet' outputType, so a preset that chains
-        // discover -> check must pin an algorithm that actually produces one
-        // (alpha_plus_plus, verified live).
         step('discover', 'model', 'discover', { input, algorithm: 'alpha_plus_plus' }, ['validate']),
         step('check', 'model', 'check', { input, mode: 'replay', model: '@{discover.handle}' }, ['discover']),
       ];
@@ -63,125 +32,122 @@ function buildPreset(name: PresetName, input: string): OrchestratorStep[] {
   }
 }
 
-export interface BuildPlanOptions {
-  preset?: string;
-  planFile?: string;
-  auto?: boolean;
-  input?: string;
+export interface BuildPlanOptions { preset?: string; planFile?: string; auto?: boolean; input?: string; }
+interface RawFileStep { id?: string; noun: string; verb: string; args?: Record<string, unknown>; dependsOn?: string[]; }
+
+function planProjection(plan: Pick<OrchestratorPlan, 'source' | 'presetName' | 'steps'>): Record<string, unknown> {
+  return {
+    schema_version: 'wasm4pm.orchestrator-plan.v2',
+    source: plan.source,
+    ...(plan.presetName ? { presetName: plan.presetName } : {}),
+    steps: plan.steps.map((candidate) => ({
+      id: candidate.id,
+      noun: candidate.noun,
+      verb: candidate.verb,
+      args: candidate.args,
+      dependsOn: [...candidate.dependsOn].sort(),
+    })),
+  };
 }
 
-function newPlanId(): string {
-  return randomUUID();
+export function computePlanHash(plan: Pick<OrchestratorPlan, 'source' | 'presetName' | 'steps'>): string {
+  return hashCanonical(planProjection(plan));
 }
 
-interface RawFileStep {
-  id?: string;
-  noun: string;
-  verb: string;
-  args?: Record<string, unknown>;
-  dependsOn?: string[];
+function finalizePlan(
+  source: OrchestratorPlan['source'],
+  steps: readonly OrchestratorStep[],
+  presetName?: string
+): OrchestratorPlan {
+  topoSort(steps);
+  const identity = { source, presetName, steps };
+  const planHash = computePlanHash(identity);
+  return {
+    planId: `plan-${planHash.slice(0, 24)}`,
+    planHash,
+    createdAt: new Date().toISOString(),
+    source,
+    ...(presetName ? { presetName } : {}),
+    steps,
+  };
+}
+
+export function assertPlanIdentity(plan: OrchestratorPlan): void {
+  const expected = computePlanHash(plan);
+  if (expected !== plan.planHash) {
+    throw NounVerbError.invalidInput(`Pipeline plan hash mismatch: expected ${expected}, received ${plan.planHash}`);
+  }
+  const expectedId = `plan-${expected.slice(0, 24)}`;
+  if (plan.planId !== expectedId) {
+    throw NounVerbError.invalidInput(`Pipeline plan id mismatch: expected ${expectedId}, received ${plan.planId}`);
+  }
+  topoSort(plan.steps);
 }
 
 async function loadPlanFile(planFile: string): Promise<OrchestratorStep[]> {
   let content: string;
-  try {
-    content = await fs.readFile(planFile, 'utf-8');
-  } catch (e) {
-    throw NounVerbError.invalidInput(`Cannot read plan file '${planFile}': ${e instanceof Error ? e.message : String(e)}`);
-  }
+  try { content = await fs.readFile(planFile, 'utf-8'); }
+  catch (e) { throw NounVerbError.invalidInput(`Cannot read plan file '${planFile}': ${e instanceof Error ? e.message : String(e)}`); }
   let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch (e) {
-    throw NounVerbError.invalidInput(`Plan file '${planFile}' is not valid JSON: ${e instanceof Error ? e.message : String(e)}`);
-  }
-  const rawSteps: RawFileStep[] = Array.isArray(parsed)
-    ? (parsed as RawFileStep[])
-    : (parsed as { steps?: RawFileStep[] })?.steps ?? [];
+  try { parsed = JSON.parse(content); }
+  catch (e) { throw NounVerbError.invalidInput(`Plan file '${planFile}' is not valid JSON: ${e instanceof Error ? e.message : String(e)}`); }
+  const rawSteps: RawFileStep[] = Array.isArray(parsed) ? parsed as RawFileStep[] : (parsed as { steps?: RawFileStep[] })?.steps ?? [];
   if (!Array.isArray(rawSteps) || rawSteps.length === 0) {
     throw NounVerbError.invalidInput(`Plan file '${planFile}' must contain a non-empty 'steps' array (or be one)`);
   }
-  return rawSteps.map((s, i) => {
-    if (!s.noun || !s.verb) {
-      throw NounVerbError.invalidInput(`Plan file step ${i} is missing 'noun'/'verb'`);
-    }
-    return step(s.id ?? `step-${i}`, s.noun, s.verb, s.args ?? {}, s.dependsOn ?? []);
+  return rawSteps.map((candidate, index) => {
+    if (!candidate.noun || !candidate.verb) throw NounVerbError.invalidInput(`Plan file step ${index} is missing 'noun'/'verb'`);
+    return step(candidate.id ?? `step-${index}`, candidate.noun, candidate.verb, candidate.args ?? {}, candidate.dependsOn ?? []);
   });
 }
 
-/** Build an `OrchestratorPlan`. Exactly one of `preset`/`planFile`/`auto` should be set; `preset` wins if several are. */
 export async function buildPlan(options: BuildPlanOptions): Promise<OrchestratorPlan> {
   if (options.preset) {
     if (!PRESET_NAMES.includes(options.preset as PresetName)) {
-      throw NounVerbError.invalidInput(
-        `Unknown pipeline preset '${options.preset}'. Available: ${PRESET_NAMES.join(', ')}`
-      );
+      throw NounVerbError.invalidInput(`Unknown pipeline preset '${options.preset}'. Available: ${PRESET_NAMES.join(', ')}`);
     }
-    if (!options.input) {
-      throw NounVerbError.invalidInput(`Preset '${options.preset}' requires --input <log>`);
-    }
-    return {
-      planId: newPlanId(),
-      createdAt: new Date().toISOString(),
-      source: 'preset',
-      presetName: options.preset,
-      steps: buildPreset(options.preset as PresetName, options.input),
-    };
+    if (!options.input) throw NounVerbError.invalidInput(`Preset '${options.preset}' requires --input <log>`);
+    return finalizePlan('preset', buildPreset(options.preset as PresetName, options.input), options.preset);
   }
-
-  if (options.planFile) {
-    return {
-      planId: newPlanId(),
-      createdAt: new Date().toISOString(),
-      source: 'file',
-      steps: await loadPlanFile(options.planFile),
-    };
-  }
-
+  if (options.planFile) return finalizePlan('file', await loadPlanFile(options.planFile));
   if (options.auto) {
-    if (!options.input) {
-      throw NounVerbError.invalidInput('--auto requires --input <log>');
-    }
-    return {
-      planId: newPlanId(),
-      createdAt: new Date().toISOString(),
-      source: 'auto',
-      steps: buildPreset('quick', options.input),
-    };
+    if (!options.input) throw NounVerbError.invalidInput('--auto requires --input <log>');
+    return finalizePlan('auto', buildPreset('quick', options.input));
   }
-
   throw NounVerbError.invalidInput('Specify one of: a preset name, --plan-file <path>, or --auto');
 }
 
-/** Topologically order `steps` by `dependsOn`. Throws on a cycle or a dangling dependency. */
 export function topoSort(steps: readonly OrchestratorStep[]): OrchestratorStep[] {
-  const byId = new Map(steps.map((s) => [s.id, s] as const));
-  for (const s of steps) {
-    for (const dep of s.dependsOn) {
-      if (!byId.has(dep)) {
-        throw NounVerbError.invalidInput(`Step '${s.id}' depends on unknown step '${dep}'`);
-      }
+  const byId = new Map<string, OrchestratorStep>();
+  for (const candidate of steps) {
+    if (!candidate.id.trim()) throw NounVerbError.invalidInput('Pipeline step id cannot be empty');
+    if (byId.has(candidate.id)) throw NounVerbError.invalidInput(`Duplicate pipeline step id '${candidate.id}'`);
+    if (new Set(candidate.dependsOn).size !== candidate.dependsOn.length) {
+      throw NounVerbError.invalidInput(`Step '${candidate.id}' declares a dependency more than once`);
+    }
+    if (candidate.dependsOn.includes(candidate.id)) throw NounVerbError.invalidInput(`Step '${candidate.id}' cannot depend on itself`);
+    byId.set(candidate.id, candidate);
+  }
+  for (const candidate of steps) {
+    for (const dep of candidate.dependsOn) {
+      if (!byId.has(dep)) throw NounVerbError.invalidInput(`Step '${candidate.id}' depends on unknown step '${dep}'`);
     }
   }
   const visited = new Set<string>();
   const inProgress = new Set<string>();
   const ordered: OrchestratorStep[] = [];
-
   function visit(id: string): void {
     if (visited.has(id)) return;
-    if (inProgress.has(id)) {
-      throw NounVerbError.invalidInput(`Cycle detected in pipeline plan at step '${id}'`);
-    }
+    if (inProgress.has(id)) throw NounVerbError.invalidInput(`Cycle detected in pipeline plan at step '${id}'`);
     inProgress.add(id);
-    const s = byId.get(id);
-    if (s) {
-      for (const dep of s.dependsOn) visit(dep);
-      ordered.push(s);
+    const candidate = byId.get(id);
+    if (candidate) {
+      for (const dep of candidate.dependsOn) visit(dep);
+      ordered.push(candidate);
     }
     inProgress.delete(id);
     visited.add(id);
   }
-
-  for (const s of steps) visit(s.id);
+  for (const candidate of steps) visit(candidate.id);
   return ordered;
 }

@@ -1,129 +1,210 @@
-/**
- * Orchestrator executor — runs an `OrchestratorPlan` in topological order,
- * dispatching each step through a host-supplied `StepDispatcher` (the wpm
- * noun/verb registry itself — see `nouns/pipeline/run.ts`), with a per-step
- * OTEL span and a BLAKE3 receipt chained to the previous step's output hash
- * (Absolute Rule 6/7: every op gets a receipt + span).
- *
- * Chaining: step N's receipt `input_hash` IS step N-1's receipt
- * `output_hash` (the first step's input is a fixed genesis hash). Each
- * step's receipt is persisted via `saveCommandReceipt` to
- * `.wasm4pm/receipts/<run_id>.json` (plus the rolling `latest.json`), so the
- * chain is inspectable on disk after a run, not just in the in-memory
- * `ExecutionReport`.
- */
+import * as path from 'node:path';
 import { blake3Hex, newReceipt, saveCommandReceipt, type CommandReceipt } from '../../receipts/_shared.js';
 import { withSpanRaw } from '../../commands/_otel.js';
-import { topoSort } from './plan.js';
-import type { ExecutionReport, OrchestratorPlan, OrchestratorStep, StepDispatcher, StepResult } from './types.js';
+import { hashCanonical } from './canonical.js';
+import {
+  computeStepOutputHash,
+  defaultPipelineBundlePath,
+  makePipelineBundle,
+  pipelineGenesisHash,
+  verifyPipelineBundle,
+  writePipelineBundle,
+} from './bundle.js';
+import { assertPlanIdentity, topoSort } from './plan.js';
+import type {
+  ExecutePlanOptions,
+  ExecutionReport,
+  OrchestratorPlan,
+  OrchestratorStep,
+  PipelineBundle,
+  StepDispatcher,
+  StepResult,
+} from './types.js';
 
-const GENESIS_HASH = blake3Hex('wpm.pipeline.genesis');
-
-/** `@{stepId.dot.path}` — the orchestrator's own step-output reference syntax
- * (parallel to `packages/noun-verb/src/chain.ts`'s `@{n.path}` chain refs,
- * but keyed by step id rather than 1-based position, since orchestrator
- * steps form a DAG rather than a linear `++` chain). Kept local — `engines/`
- * must not depend on `packages/noun-verb`. */
 const STEP_REF_PATTERN = /^@\{([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_.]+)\}$/;
 
-/** Resolve a single `@{stepId.path}` token against already-completed step results. */
 function resolveStepRef(token: string, doneResults: readonly StepResult[]): unknown {
   const match = STEP_REF_PATTERN.exec(token);
-  if (!match) {
-    return token;
-  }
-  const [, stepId, path] = match;
-  const source = doneResults.find((r) => r.stepId === stepId);
-  if (!source) {
-    throw new Error(`Step reference '${token}' points to step '${stepId}', which has not completed (or does not exist).`);
-  }
-  const value = path.split('.').reduce<unknown>((acc, key) => {
-    if (acc === null || acc === undefined || typeof acc !== 'object') {
-      return undefined;
-    }
-    return (acc as Record<string, unknown>)[key];
+  if (!match) return token;
+  const [, stepId, fieldPath] = match;
+  const source = doneResults.find((result) => result.stepId === stepId && result.status === 'ok');
+  if (!source) throw new Error(`Step reference '${token}' points to step '${stepId}', which has not completed successfully.`);
+  const value = fieldPath.split('.').reduce<unknown>((accumulator, key) => {
+    if (accumulator === null || accumulator === undefined || typeof accumulator !== 'object') return undefined;
+    return (accumulator as Record<string, unknown>)[key];
   }, source.result);
-  if (value === undefined) {
-    throw new Error(`Step reference '${token}' — path '${path}' not found in step '${stepId}'s result.`);
+  if (value === undefined) throw new Error(`Step reference '${token}' — path '${fieldPath}' not found in step '${stepId}'s result.`);
+  return value;
+}
+
+function substituteValue(value: unknown, doneResults: readonly StepResult[]): unknown {
+  if (typeof value === 'string') return resolveStepRef(value, doneResults);
+  if (Array.isArray(value)) return value.map((entry) => substituteValue(entry, doneResults));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, substituteValue(entry, doneResults)]));
   }
   return value;
 }
 
-/** Substitute `@{stepId.path}` references in top-level string args against completed step results. */
 function substituteArgs(args: Readonly<Record<string, unknown>>, doneResults: readonly StepResult[]): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(args)) {
-    out[key] = typeof value === 'string' ? resolveStepRef(value, doneResults) : value;
-  }
-  return out;
+  return substituteValue(args, doneResults) as Record<string, unknown>;
 }
 
-/** Persist one step's chained receipt. Best-effort: never fail a step over a receipt write. */
 function saveStepReceipt(
   plan: OrchestratorPlan,
   step: OrchestratorStep,
+  stepIndex: number,
+  kind: 'pending' | 'outcome',
   inputHash: string,
   outputHash: string,
   status: CommandReceipt['status'],
-  durationMs: number,
-  errorMessage?: string
-): void {
-  try {
-    saveCommandReceipt({
-      ...newReceipt(`pipeline.step.${step.noun}.${step.verb}`),
-      input_hash: inputHash,
-      output_hash: outputHash,
-      status,
-      summary: {
-        planId: plan.planId,
-        stepId: step.id,
-        durationMs,
-        ...(errorMessage ? { error: errorMessage } : {}),
-      },
-    });
-  } catch {
-    /* receipts are best-effort — never fail a pipeline step over one */
-  }
+  receiptsDir: string,
+  summary: Record<string, unknown>
+): string {
+  const receipt: CommandReceipt = {
+    ...newReceipt(`pipeline.step.${step.noun}.${step.verb}`),
+    input_hash: inputHash,
+    output_hash: outputHash,
+    status,
+    summary: {
+      schema_version: 'wasm4pm.pipeline-step-receipt.v2',
+      receipt_kind: kind,
+      planId: plan.planId,
+      planHash: plan.planHash,
+      stepIndex,
+      stepId: step.id,
+      ...summary,
+    },
+  };
+  return saveCommandReceipt(receipt, receiptsDir);
 }
 
-export async function executePlan(plan: OrchestratorPlan, dispatch: StepDispatcher): Promise<ExecutionReport> {
-  const ordered = topoSort(plan.steps);
-  const results: StepResult[] = [];
-  let previousHash = GENESIS_HASH;
-  let sawError = false;
+function successfulPrefix(bundle: PipelineBundle, ordered: readonly OrchestratorStep[]): StepResult[] {
+  verifyPipelineBundle(bundle);
+  const prefix: StepResult[] = [];
+  for (let index = 0; index < bundle.steps.length; index += 1) {
+    const result = bundle.steps[index];
+    const planned = ordered[index];
+    if (!planned || result.stepId !== planned.id || result.status !== 'ok') break;
+    prefix.push(result);
+  }
+  return prefix;
+}
 
-  for (const s of ordered) {
-    const start = performance.now();
-    // This step's receipt `input_hash` chains to the previous step's
-    // `output_hash` (or the genesis hash for the first step).
+function statusFor(results: readonly StepResult[], orderedLength: number): Pick<ExecutionReport, 'status' | 'standing'> {
+  const hasError = results.some((result) => result.status === 'error');
+  const hasSuccess = results.some((result) => result.status === 'ok');
+  const allRan = results.length === orderedLength;
+  const status: ExecutionReport['status'] = !hasError && allRan
+    ? 'ok'
+    : results.length === 0 || hasSuccess
+      ? 'partial'
+      : 'failed';
+  return { status, standing: status === 'ok' ? 'ALIVE' : status === 'partial' ? 'PARTIAL_ALIVE' : 'BLOCKED' };
+}
+
+function checkpoint(
+  plan: OrchestratorPlan,
+  results: readonly StepResult[],
+  orderedLength: number,
+  chainHash: string,
+  bundlePath: string,
+  previous?: PipelineBundle
+): PipelineBundle {
+  const state = statusFor(results, orderedLength);
+  const bundle = makePipelineBundle(plan, { ...state, steps: results, chainHash }, previous);
+  writePipelineBundle(bundlePath, bundle);
+  return bundle;
+}
+
+export async function executePlan(plan: OrchestratorPlan, dispatch: StepDispatcher, options: ExecutePlanOptions = {}): Promise<ExecutionReport> {
+  assertPlanIdentity(plan);
+  const ordered = topoSort(plan.steps);
+  const receiptsDir = options.receiptsDir ?? '.wasm4pm/receipts';
+  const bundlePath = path.resolve(options.bundlePath ?? defaultPipelineBundlePath(plan));
+  const previousBundle = options.resumeFrom;
+  if (previousBundle && previousBundle.plan.planHash !== plan.planHash) {
+    throw new Error(`Cannot resume plan ${plan.planHash} from checkpoint for ${previousBundle.plan.planHash}`);
+  }
+
+  const results: StepResult[] = previousBundle ? successfulPrefix(previousBundle, ordered) : [];
+  let previousHash = results.length > 0 ? results[results.length - 1].outputHash : pipelineGenesisHash(plan.planHash);
+  let currentBundle = checkpoint(plan, results, ordered.length, previousHash, bundlePath, previousBundle);
+
+  for (let stepIndex = results.length; stepIndex < ordered.length; stepIndex += 1) {
+    const candidate = ordered[stepIndex];
     const inputHash = previousHash;
+    let resolvedArgs: Record<string, unknown>;
+    let argsHash: string;
     try {
-      const resolvedArgs = substituteArgs(s.args, results);
+      resolvedArgs = substituteArgs(candidate.args, results);
+      argsHash = hashCanonical(resolvedArgs);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const errorHash = hashCanonical(message);
+      const pendingReceipt = saveStepReceipt(plan, candidate, stepIndex, 'pending', inputHash, errorHash, 'partial', receiptsDir, {
+        admission: 'refused',
+        errorHash,
+      });
+      const outputHash = computeStepOutputHash({ planHash: plan.planHash, stepIndex, step: candidate, argsHash: blake3Hex('unresolved'), inputHash, status: 'error', errorHash });
+      const outcomeReceipt = saveStepReceipt(plan, candidate, stepIndex, 'outcome', inputHash, outputHash, 'failed', receiptsDir, { errorHash });
+      results.push({ stepIndex, stepId: candidate.id, noun: candidate.noun, verb: candidate.verb, status: 'error', durationMs: 0, argsHash: blake3Hex('unresolved'), inputHash, error: message, errorHash, outputHash, pendingReceipt, outcomeReceipt });
+      previousHash = outputHash;
+      currentBundle = checkpoint(plan, results, ordered.length, previousHash, bundlePath, currentBundle);
+      break;
+    }
+
+    const pendingHash = hashCanonical({ schema_version: 'wasm4pm.pipeline-pending.v1', plan_hash: plan.planHash, step_index: stepIndex, step_id: candidate.id, args_hash: argsHash, input_hash: inputHash });
+    const pendingReceipt = saveStepReceipt(plan, candidate, stepIndex, 'pending', inputHash, pendingHash, 'partial', receiptsDir, { argsHash });
+    const started = performance.now();
+
+    try {
       const result = await withSpanRaw(
-        `pipeline.step.${s.noun}.${s.verb}`,
-        { 'pipeline.plan_id': plan.planId, 'pipeline.step_id': s.id },
-        () => dispatch(s.noun, s.verb, resolvedArgs)
+        `pipeline.step.${candidate.noun}.${candidate.verb}`,
+        { 'pipeline.plan_id': plan.planId, 'pipeline.plan_hash': plan.planHash, 'pipeline.step_id': candidate.id },
+        () => dispatch(candidate.noun, candidate.verb, resolvedArgs)
       );
-      const durationMs = performance.now() - start;
-      const outputHash = blake3Hex(`${inputHash}:${JSON.stringify(result)}`);
+      const durationMs = performance.now() - started;
+      const resultHash = hashCanonical(result);
+      const outputHash = computeStepOutputHash({ planHash: plan.planHash, stepIndex, step: candidate, argsHash, inputHash, status: 'ok', resultHash });
+      let outcomeReceipt: string;
+      try {
+        outcomeReceipt = saveStepReceipt(plan, candidate, stepIndex, 'outcome', inputHash, outputHash, 'success', receiptsDir, { argsHash, resultHash, durationMs });
+      } catch (receiptError) {
+        const message = `OUTCOME_RECEIPT_BLOCKED after '${candidate.id}' executed: ${receiptError instanceof Error ? receiptError.message : String(receiptError)}`;
+        const errorHash = hashCanonical(message);
+        const blockedHash = computeStepOutputHash({ planHash: plan.planHash, stepIndex, step: candidate, argsHash, inputHash, status: 'error', errorHash });
+        results.push({ stepIndex, stepId: candidate.id, noun: candidate.noun, verb: candidate.verb, status: 'error', durationMs, argsHash, inputHash, error: message, errorHash, outputHash: blockedHash, pendingReceipt });
+        previousHash = blockedHash;
+        currentBundle = checkpoint(plan, results, ordered.length, previousHash, bundlePath, currentBundle);
+        break;
+      }
+      results.push({ stepIndex, stepId: candidate.id, noun: candidate.noun, verb: candidate.verb, status: 'ok', durationMs, argsHash, inputHash, result, resultHash, outputHash, pendingReceipt, outcomeReceipt });
       previousHash = outputHash;
-      results.push({ stepId: s.id, noun: s.noun, verb: s.verb, status: 'ok', durationMs, result, outputHash });
-      saveStepReceipt(plan, s, inputHash, outputHash, 'success', durationMs);
-    } catch (err) {
-      sawError = true;
-      const durationMs = performance.now() - start;
-      const message = err instanceof Error ? err.message : String(err);
-      const outputHash = blake3Hex(`${inputHash}:ERROR:${message}`);
+      currentBundle = checkpoint(plan, results, ordered.length, previousHash, bundlePath, currentBundle);
+    } catch (error) {
+      const durationMs = performance.now() - started;
+      const message = error instanceof Error ? error.message : String(error);
+      const errorHash = hashCanonical(message);
+      const outputHash = computeStepOutputHash({ planHash: plan.planHash, stepIndex, step: candidate, argsHash, inputHash, status: 'error', errorHash });
+      const outcomeReceipt = saveStepReceipt(plan, candidate, stepIndex, 'outcome', inputHash, outputHash, 'failed', receiptsDir, { argsHash, errorHash, durationMs });
+      results.push({ stepIndex, stepId: candidate.id, noun: candidate.noun, verb: candidate.verb, status: 'error', durationMs, argsHash, inputHash, error: message, errorHash, outputHash, pendingReceipt, outcomeReceipt });
       previousHash = outputHash;
-      results.push({ stepId: s.id, noun: s.noun, verb: s.verb, status: 'error', durationMs, error: message, outputHash });
-      saveStepReceipt(plan, s, inputHash, outputHash, 'failed', durationMs, message);
-      // Fail-fast: a later step may depend on this one's output.
+      currentBundle = checkpoint(plan, results, ordered.length, previousHash, bundlePath, currentBundle);
       break;
     }
   }
 
-  const allRan = results.length === ordered.length;
-  const status: ExecutionReport['status'] = !sawError && allRan ? 'ok' : results.some((r) => r.status === 'ok') ? 'partial' : 'failed';
-
-  return { planId: plan.planId, status, steps: results, chainHash: previousHash };
+  verifyPipelineBundle(currentBundle);
+  return {
+    schema_version: 'wasm4pm.pipeline-execution.v2',
+    planId: plan.planId,
+    planHash: plan.planHash,
+    status: currentBundle.status,
+    standing: currentBundle.standing,
+    steps: currentBundle.steps,
+    chainHash: currentBundle.chainHash,
+    evidenceHash: currentBundle.evidenceHash,
+    bundlePath,
+  };
 }
