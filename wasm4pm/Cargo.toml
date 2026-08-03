@@ -48,7 +48,7 @@ hashbrown = { workspace = true }
 smallvec = { workspace = true }
 roxmltree = "0.21"
 flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] }
-quick-xml = { version = "0.37", features = ["serialize"] }
+quick-xml = { version = "0.41", features = ["serialize"] }
 csv = "1.3"
 fastrand = "2.1.0"
 rand = "0.8"
