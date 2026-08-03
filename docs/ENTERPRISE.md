@@ -1,138 +1,137 @@
-# Enterprise Deployment Guide
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/ENTERPRISE.md; source-sha256: 5108ec9b1568196bad8b206779054e6450064cc51cea4baa7fe81a145e9de369; reason: canonical enterprise deployment guidance -->
 
-## System Requirements
+# Enterprise deployment
 
-- Node.js 20.x or 22.x LTS
-- Memory: 512 MB minimum; 2 GB recommended; 4+ GB for logs >100K events
-- WebAssembly SIMD support (Node.js 16+, Chrome 91+, Firefox 89+)
+Enterprise deployment is an evidence and identity problem, not only an installation problem. Pin the exact source or package artifact, build target, configuration, release certificate, and operating authority used in production.
 
-## Installation
+## Supported deployment subject
 
-### Standard
+A deployment receipt should bind:
 
-> **Note:** Global npm publish is not yet available. Install from the monorepo:
+- repository commit or published package identity;
+- npm tarball integrity when installing from a package;
+- Node-target or browser-target WASM hash;
+- configuration hash and environment-variable policy;
+- deployment image or host identity;
+- telemetry and external-service configuration;
+- release-certificate hash;
+- operator or automation authority;
+- rollback subject and procedure.
+
+Do not reuse benchmark, memory, bundle-size, or compatibility claims from another build target or historical report.
+
+## Source deployment
 
 ```bash
-git clone https://github.com/seanchatmangpt/wasm4pm
-cd wasm4pm && pnpm install
-cd wasm4pm && pnpm build && cd ..
-node apps/wasm4pm/dist/bin/wpm.js --version
+git checkout <exact-commit>
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run build:wasm
+pnpm run build:cli
+pnpm --filter @wasm4pm/cli exec wpm \
+  system doctor capabilities --format json
 ```
 
-### Air-Gapped
+For production packaging, execute the release evidence ladder and retain the actual npm tarball:
 
-On internet-connected machine:
-  mkdir offline && cd offline
-  pnpm pack --filter @wasm4pm/cli
-  pnpm pack --filter wasm4pm
-  pnpm install --prefix bundle @wasm4pm/cli
-  tar czf wasm4pm-bundle.tar.gz bundle/
+```bash
+pnpm run release:algorithm-reachability
+pnpm run release:algorithm-behavior
+pnpm run release:verify-algorithm-behavior
+pnpm run examples:gate
+pnpm run prepublish:pack-smoke
+pnpm run release:certificate
+pnpm run release:cert-auth
+```
 
-Transfer tarball, then:
-  tar xzf wasm4pm-bundle.tar.gz
-  export PATH="./bundle/node_modules/.bin:$PATH"
-
-### Corporate npm Registry
-
-.npmrc:
-  @wasm4pm:registry=https://your-artifactory.internal/api/npm/npm-virtual/
+A certificate is accepted only when it recomputes against the same commit, package, tarball, WASM bytes, examples, and algorithm evidence that will be deployed.
 
 ## Configuration
 
-### Key Environment Variables
+Use the current configuration reference and schemas. Environment variables use the `WASM4PM_*` prefix where implemented. Treat configuration as admitted input:
 
-| Variable | Description |
-|----------|-------------|
-| WASM4PM_ALGORITHM | Default algorithm (e.g. dfg, inductive_miner) |
-| WASM4PM_PROFILE | Execution profile: fast/balanced/quality/stream |
-| WASM4PM_OTEL_ENABLED | Set to 1 to enable OTLP telemetry |
-| WASM4PM_OTEL_ENDPOINT | OTLP collector (e.g. http://jaeger:4318) |
-| NODE_OPTIONS | e.g. --max-old-space-size=4096 |
+- reject unknown or invalid values;
+- record precedence between defaults, files, environment, and CLI flags;
+- avoid secrets in configuration files committed to source;
+- hash non-secret effective configuration when it affects behavior;
+- record secret references, not secret values, in receipts.
 
-### Config File (wasm4pm.toml)
+## Filesystem and process authority
 
-[algorithm]
-name = "simd_streaming_dfg"
+The doctor repair broker demonstrates the required pattern for machine changes:
 
-[execution]
-profile = "quality"
-timeout = 120000
+1. Construct a registered intent.
+2. Constrain paths to the admitted workspace.
+3. Require explicit authority.
+4. Persist a pending receipt.
+5. Execute a structured action without shell strings.
+6. Persist an outcome receipt.
 
-[observability.otel]
-enabled = true
-endpoint = "http://otel-collector.internal:4318"
+Apply the same pattern to deployment, migration, package publication, and operational repair automation.
 
-## Telemetry Statement
+## Telemetry
 
-wasm4pm does NOT collect or transmit any telemetry by default.
-No phone-home, analytics, or crash reporting.
-OTLP telemetry is opt-in and only sent to YOUR configured endpoint.
+Telemetry is disabled unless configured by the deployment. Before enabling it:
 
-## Memory Guidelines
+- inventory emitted span names and attributes;
+- remove credentials, PII, and sensitive local paths;
+- validate the collector endpoint and transport security;
+- establish retention, access, and deletion policy;
+- test collector failure behavior;
+- record whether telemetry is required for a capability claim.
 
-| Log Size | Recommended Algorithm | Memory |
-|----------|----------------------|--------|
-| < 10K events | Any | 512 MB |
-| 10K-100K | dfg, streaming_dfg | 1-2 GB |
-| 100K-500K | dfg, streaming_dfg | 2-4 GB |
-| > 500K | simd_streaming_dfg | 4+ GB |
+A configured OTLP endpoint is an external network boundary and must be included in threat modeling.
 
-## HTTP Proxy
+## Object-centric and live evidence
 
-export HTTP_PROXY=http://proxy.company.com:8080
-export HTTPS_PROXY=http://proxy.company.com:8080
-npm config set proxy http://proxy.company.com:8080
+For object-centric production routes, execute and replay `wpm evidence session` against a representative admitted OCEL-v2 subject and the exact deployed WASM artifact.
 
-## Versioning
+For signed live admission, `wpm evidence live` requires:
 
-wasm4pm uses CalVer (YEAR.MONTH.DAY). Always pin exact versions:
-  "dependencies": { "@wasm4pm/cli": "26.6.12" }
+- ordered AAT observations;
+- signed zero-violation Weaver evidence;
+- exact POWL route identity;
+- exact WASM and release-certificate identity;
+- signed MCP+ proof;
+- Accepted passport and replayable bundle.
 
-## Known Limitations
+Authority public keys require a separate lifecycle: issuance, distribution, rotation, revocation, audit, and incident response.
 
-### CLI to WASM Trace Correlation (Deferred)
+## Air-gapped operation
 
-The TypeScript CLI and the Rust/WASM core currently generate independent OTEL trace IDs. Distributed tracing across the CLI-WASM boundary is not yet correlated — Jaeger will show disconnected spans for CLI and WASM operations.
+Prepare an air-gapped bundle outside the restricted environment and verify it inside:
 
-**Current behavior:** CLI span (e.g., trace_abc) and WASM span (e.g., trace_xyz) appear as separate traces.
-**Impact:** Cross-boundary latency attribution and critical-path analysis in APM tools are unavailable.
-**Workaround:** Correlate via cycle_count or timestamp proximity in Jaeger query results.
-**Resolution timeline:** Planned for a future release. Design is fully specified in `.claude/rules/_observability-audit-findings.md` (Pattern 1 — context parameter propagation). Estimated implementation effort: 4-6 hours.
+- source archive or package tarball;
+- lockfiles and required dependency cache;
+- Rust and Node toolchain identities if builds occur inside;
+- generated WASM and declaration files;
+- release evidence and certificate;
+- independent verification commands;
+- public authority keys and revocation material;
+- SBOM or dependency inventory required by policy.
 
-### Rust Toolchain Pin
+Do not describe an installation as air-gapped if dependency resolution or telemetry still reaches external services.
 
-The Rust toolchain is pinned to a specific nightly date in `rust-toolchain.toml` (required by `generic_const_exprs`). Do not change to unpinned `channel = "nightly"` — this would be non-reproducible on CI.
+## Scaling and resource limits
 
-### Stochastic Algorithm Reproducibility
+Measure the exact workload and artifact. Record at least:
 
-Algorithms using randomness (genetic, ACO, PSO, simulated annealing, A*) use a fixed seed (42). The seed is not currently configurable via CLI or API.
+- event and object counts;
+- trace/episode distribution;
+- parser and algorithm configuration;
+- concurrency;
+- elapsed time;
+- peak resident memory;
+- WASM size and target;
+- host runtime and architecture;
+- refusal or timeout thresholds.
 
-### WASM Binary Size (Browser Profile)
+Use bounded inputs and typed resource refusals. A larger process limit without evidence is not an enterprise capability.
 
-The WASM binary is approximately 5-8 MB depending on feature flags and profile. Profiles (mobile/iot/edge/fog/browser) differ by feature-gated algorithm subsets. Bundle size optimization is planned for a future release.
+## Security and operations
 
-## Support
+Follow [`../SECURITY.md`](../SECURITY.md). Protect signing keys, service credentials, event data, receipts, and release artifacts. Validate backup and restore, disaster recovery, key rotation, rollback, and evidence retention through executed drills rather than policy text alone.
 
-- Documentation: README.md, WASM_API.md, TESTING.md
-- Bugs: GitHub Issues
-- Security: See SECURITY.md
-- Commercial: xpointsh@gmail.com
+## Readiness
 
-## Domain Use Case Examples
-
-`examples/zoe-la/` demonstrates wasm4pm applied to a real-world service operations domain (community care coordination). Five end-to-end scripts show how the platform's process mining, autonomic monitoring, and cognition layers compose:
-
-| Example | Job-to-be-Done |
-|---------|---------------|
-| `01-prayer-request-pipeline.ts` | Process discovery over care request flow |
-| `02-connect-group-belonging.ts` | Conformance checking on community engagement |
-| `03-sunday-threshold-andon.ts` | ANDON gate: detect threshold violations in service log |
-| `04-autonomic-care-coordinator.ts` | Autonomic RL monitoring with convergence analysis |
-| `05-red-team-adversary.ts` | Adversarial probe: inject invalid logs, verify rejection |
-
-```bash
-tsx examples/zoe-la/01-prayer-request-pipeline.ts
-tsx examples/zoe-la/05-red-team-adversary.ts
-```
-
-These examples are instrumented with OTEL spans and emit BLAKE3 receipts — the same discipline as production deployments.
+A deployment is `ALIVE` only for the exact admitted environment after its required health checks, real workload probes, receipt verification, replay, and rollback test pass. Repository or package readiness does not automatically establish deployment readiness.

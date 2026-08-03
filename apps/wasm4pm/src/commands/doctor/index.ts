@@ -1,11 +1,7 @@
-// Doctor command module — re-exports all types, check arrays, and the main command
+// Doctor command module — executable diagnostics, Vision 2030 capability audit,
+// and receipt-gated structured repair.
 import { defineCommand } from 'citty';
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import * as path from 'path';
-import { ConsoleProjection } from '../../output.js';
-import { EXIT_CODES } from '../../exit-codes.js';
 import { runChecks } from './run.js';
-import { resolveWorkspaceRoot } from './checks-env.js';
 import {
   ENV_CHECKS,
   TPS_CHECKS,
@@ -15,11 +11,65 @@ import {
   OUTPUT_CONTRACT_CHECKS,
   OBSERVABILITY_CHECKS,
   CONFIG_SYSTEM_CHECKS,
+  BRCE_CHECKS,
   ALL_CHECKS,
 } from './checks-arrays.js';
+import {
+  doctorCheck as legacyDoctorCheck,
+  doctorPublish,
+  doctorEnv as legacyDoctorEnv,
+  doctorTps as legacyDoctorTps,
+  doctorPerf,
+  doctorWatch,
+  doctorReport,
+} from './subcommands.js';
+import { doctorHooks } from './hooks-jtbd.js';
+import { doctorCapabilities } from './capabilities-command.js';
+import { doctorRepairCommand, runDoctorRepair } from './repair-command.js';
+import { exitWithFlush } from '../../otel/exit.js';
+
+export const doctorCheck = defineCommand({
+  ...legacyDoctorCheck,
+  meta: {
+    ...legacyDoctorCheck.meta,
+    name: 'check',
+    description: `Run all ${ALL_CHECKS.length} registered health checks or an admitted filtered subset`,
+  },
+});
+
+export const doctorEnv = defineCommand({
+  ...legacyDoctorEnv,
+  meta: {
+    ...legacyDoctorEnv.meta,
+    name: 'env',
+    description: `Run the ${ENV_CHECKS.length} registered environment checks`,
+  },
+});
+
+export const doctorTps = defineCommand({
+  ...legacyDoctorTps,
+  meta: {
+    ...legacyDoctorTps.meta,
+    name: 'tps',
+    description: `Run the ${TPS_CHECKS.length} registered process-route integrity checks`,
+  },
+});
 
 // Re-export types
 export type { DoctorOptions, Pathology, Severity, RepairMode, Diagnosis, DoctorReport } from './types.js';
+export type {
+  CapabilityDefinition,
+  CapabilityEvidence,
+  CapabilityStanding,
+  Vision2030Report,
+} from './vision2030.js';
+export type {
+  PlannedRepair,
+  RepairExecutionReport,
+  RepairIntent,
+  RepairIntentId,
+  RepairOutcome,
+} from './repair-broker.js';
 
 // Re-export check arrays
 export {
@@ -31,6 +81,7 @@ export {
   OUTPUT_CONTRACT_CHECKS,
   OBSERVABILITY_CHECKS,
   CONFIG_SYSTEM_CHECKS,
+  BRCE_CHECKS,
   ALL_CHECKS,
 } from './checks-arrays.js';
 
@@ -52,11 +103,15 @@ export {
   checkTypeScriptCompilation,
   checkMicroMl,
   checkRustToolchain,
-  checkResultsDir,
   checkAlgorithmRegistry,
   checkWorkspaceIntegrity,
   checkBinaryShadow,
 } from './checks-env.js';
+export {
+  checkDoctorRepairBroker,
+  checkResultsDirNoActuation,
+  checkResultsDirNoActuation as checkResultsDir,
+} from './safe-checks.js';
 
 export {
   getCachedWorkspaceRoot,
@@ -101,32 +156,34 @@ export type { JtbdProbe } from './hooks-jtbd.js';
 export { runHook, probeHooks, doctorHooks } from './hooks-jtbd.js';
 
 export {
-  doctorCheck,
-  doctorEnv,
-  doctorTps,
-  doctorFix,
   doctorPerf,
   doctorWatch,
   doctorReport,
   doctorPublish,
 } from './subcommands.js';
+export { doctorCapabilities } from './capabilities-command.js';
+export { runVision2030Audit, VISION_2030_CAPABILITIES } from './capabilities.js';
+export {
+  executeRepairPlan,
+  planRepairs,
+  REPAIR_INTENTS,
+  validateRepairRegistry,
+} from './repair-broker.js';
+export { doctorRepairCommand, doctorRepairCommand as doctorFix, runDoctorRepair } from './repair-command.js';
 
 // ────────────────────────────────────────────────────────────────────────────
-// Main doctor command (with subcommands + backwards-compat fallback)
+// Main doctor command (with subcommands + backwards-compatible fallback)
 // ────────────────────────────────────────────────────────────────────────────
-
-import { doctorCheck, doctorFix, doctorPublish, doctorEnv, doctorTps, doctorPerf, doctorWatch, doctorReport } from './subcommands.js';
-import { doctorHooks } from './hooks-jtbd.js';
 
 export const doctor = defineCommand({
   meta: {
     name: 'doctor',
-    description:
-      'Check environment health (47 checks) and pipeline integrity. Subcommands: check, fix, publish, env, tps, perf, watch, report',
+    description: `Check environment and pipeline integrity (${ALL_CHECKS.length} checks), audit Vision 2030 capabilities, or execute receipt-gated repairs.`,
   },
   subCommands: {
     check: doctorCheck,
-    fix: doctorFix,
+    fix: doctorRepairCommand,
+    capabilities: doctorCapabilities,
     publish: doctorPublish,
     env: doctorEnv,
     tps: doctorTps,
@@ -153,7 +210,8 @@ export const doctor = defineCommand({
     },
     fix: {
       type: 'boolean',
-      description: 'Auto-fix safe issues: create missing .wasm4pm/results/ directory and scaffold wasm4pm.toml if absent',
+      description:
+        'Backwards-compatible safe repair: receipt-gated results-directory/config scaffolding only',
     },
     'no-color': {
       type: 'boolean',
@@ -168,43 +226,35 @@ export const doctor = defineCommand({
     if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
       const subCommands = Object.keys(ctx.cmd.subCommands);
       const hasSubcommand = ctx.rawArgs.some((arg) => subCommands.includes(arg));
-      if (hasSubcommand) {
-        return;
-      }
+      if (hasSubcommand) return;
     }
+
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
-    const doFix = Boolean(ctx.args.fix);
 
-    // --fix: apply safe auto-fixes before running checks
-    if (doFix) {
-      const rootDir = resolveWorkspaceRoot() ?? process.cwd();
-      const resultsDir = path.join(rootDir, '.wasm4pm', 'results');
-      const tomlPath = path.join(rootDir, 'wasm4pm.toml');
-
-      // Fix 1: Ensure .wasm4pm/results/ exists
-      try {
-        mkdirSync(resultsDir, { recursive: true });
-        if (format !== 'json') {
-          const p = new ConsoleProjection({ verbose, quiet });
-          p.log(`  [FIX] Created ${path.relative(rootDir, resultsDir) || '.wasm4pm/results'}`);
-        }
-      } catch { /* already exists or unwritable — check will surface it */ }
-
-      // Fix 2: Scaffold wasm4pm.toml if absent
-      if (!existsSync(tomlPath)) {
-        try {
-          writeFileSync(tomlPath, `# wasm4pm configuration — created by wpm doctor --fix\n[algorithm]\nname = "dfg"\n\n[execution]\nprofile = "balanced"\n`);
-          if (format !== 'json') {
-            const p = new ConsoleProjection({ verbose, quiet });
-            p.log(`  [FIX] Scaffolded wasm4pm.toml with default settings`);
-          }
-        } catch { /* write failed — check will surface it */ }
-      }
+    if (Boolean(ctx.args.fix)) {
+      const exitCode = await runDoctorRepair({
+        format,
+        verbose,
+        quiet,
+        dryRun: false,
+        authorized: true,
+        only: ['ensure-results-directory', 'scaffold-config'],
+        commandName: 'doctor --fix',
+      });
+      return await exitWithFlush(exitCode);
     }
 
-    await runChecks(ALL_CHECKS, format, verbose, quiet, { fix_applied: doFix }, undefined, 'doctor');
+    await runChecks(
+      ALL_CHECKS,
+      format,
+      verbose,
+      quiet,
+      { registered_check_count: ALL_CHECKS.length },
+      undefined,
+      'doctor'
+    );
   },
 });
 

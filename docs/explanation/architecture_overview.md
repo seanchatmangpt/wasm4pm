@@ -1,130 +1,125 @@
-# Architecture Overview
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/explanation/architecture_overview.md; source-sha256: 7d2c1bf91e2daf2d17e5a50e476f44176463b4ac5a7156fb1dfb2f2e89e29fb9; reason: canonical implemented architecture -->
 
-wasm4pm is a process mining platform with a real Rust cognition kernel. High-performance algorithms compile to WebAssembly. **55** cognition breeds (including abductive reasoning, temporal logic, Bayesian networks, Autoinstinct, and ILP variants) run natively in Rust, exposed through a thin TypeScript boundary, surfaced through a single CLI binary (`wpm`).
+# Architecture overview
 
-The doctrine: **Old AI is the factory. LLMs are the brochure.**
+wasm4pm is an evidence-oriented process-mining system with a Rust/WASM computational core and a TypeScript product surface. The architecture is organized around admission, lawful actuation, receipts, and replay—not around file proximity or optimistic status flags.
 
-## System Layers
-
-```mermaid
-graph TB
-  CLI[wpm CLI] --> Kernel[packages/kernel]
-  Kernel --> Engine[@wasm4pm/engine]
-  Engine --> WASM[wasm4pm/pkg WASM]
-  WASM --> Rust[crates/wasm4pm-algos]
-  CLI --> Cognition[cognition breeds Rust-native]
-  CLI --> Truex[truex verify BLAKE3]
-```
-
-| Layer | Responsibility |
-|-------|----------------|
-| **`apps/wasm4pm`** | CLI commands, OTEL spans, output formatting, config resolution |
-| **`packages/kernel`** | Versioned API boundary — `Kernel.discover()`, registry, receipt hashing |
-| **`packages/engine`** | WASM loader, init lifecycle, backend selection |
-| **`wasm4pm/` (Cargo)** | Algorithm implementations, Truex canonicalization, cognition kernel |
-| **`packages/contracts`** | Algorithm registry templates, alias resolution, typed failure codes |
-
-**Rule:** CLI logic must not import Rust directly. All algorithm dispatch goes through `packages/kernel/src/api.ts` so validation, OTEL, and error taxonomies apply uniformly.
-
-## Engine State Machine
-
-The `@wasm4pm/engine` lifecycle is governed by a state machine that handles bootstrapping, execution, and self-healing.
+## Governing path
 
 ```mermaid
 graph LR
-  uninitialized --> bootstrapping
-  bootstrapping --> ready
-  ready --> planning
-  planning --> running
-  running --> watching
-  watching --> ready
-  
-  bootstrapping --> failed
-  planning --> failed
-  running --> failed
-  
-  ready --> degraded
-  running --> degraded
-  watching --> degraded
-  degraded --> ready
-  failed --> bootstrapping
+  O[Raw observation] --> P[Parse]
+  P --> R[Route]
+  R --> A{Admit?}
+  A -->|Refuse| F[Typed refusal + evidence]
+  A -->|Admit| C[Construct]
+  C --> B[BRCE broker]
+  B --> D[DO / runtime actuation]
+  D --> E[Outcome receipt]
+  E --> Y[Replay / verify]
+  Y --> S[Bounded standing]
 ```
 
-**Key Transitions:**
-- **bootstrap()**: `uninitialized` → `ready`. Loads WASM, initializes registry.
-- **plan(config)**: `ready` → `planning` → `ready`. Validates config, selects algorithm.
-- **run(plan)**: `ready` → `running` → `ready`. Dispatches to WASM.
-- **watch(plan)**: `ready` → `watching`. Continuous execution on source change.
-- **degrade(error)**: Transitions to `degraded` state for soft recovery.
-- **recover()**: Attempts to return to `ready` from `failed` or `degraded`.
+SELECT chooses a lawful route. CONSTRUCT manufactures a reversible plan or artifact. DO changes machine or external state. Only the BRCE boundary may authorize DO, and it must persist a pending receipt before actuation and an outcome receipt after the attempt.
 
-## Verified Integrity
+## Implementation layers
 
-wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with a **Release Certificate** that binds to the current commit and recomputes all evidence hashes.
+| Layer | Primary paths | Responsibility |
+|---|---|---|
+| Rust/WASM core | `wasm4pm/`, selected `crates/` | Parsers, process algorithms, OCEL, POWL, conformance, runtime authority. |
+| WASM loading | `packages/engine/` | Build-specific module initialization and exact export access. |
+| Product kernel | `packages/kernel/` | Public algorithm dispatch, registry interpretation, validation, and typed results. |
+| Public CLI | `apps/wasm4pm/` | Noun/verb routing, configuration, human/JSON projection, receipts, evidence workflows. |
+| Development CLI | `crates/wasm4pm-cli/` | Rust development commands; not the complete public CLI contract. |
+| Evidence and release | `apps/wasm4pm/src/receipts/`, `apps/wasm4pm/src/release/`, `scripts/release/` | Canonical hashes, receipt persistence, artifact identity, release replay. |
+| Generated cognition surfaces | `ggen/`, `crates/wasm4pm-cognition/`, `packages/cognition/` | Ontology-derived breed registration and generated projections. |
 
-- **Zero Suppression:** The Rust kernel passes `cargo clippy --workspace -- -D warnings` with zero `allow` attributes or suppressions.
-- **Naturally Clean:** 100% of public items are documented to satisfy the `missing_docs` gate.
-- **Adversarial Gates:** 8 runtime detectors (Stub, Authority, Replay, etc.) prevent false-pass patterns.
-- **BLAKE3 Receipts:** CLI runs, cognition contracts, and Truex envelopes produce verifiable cryptographic receipts.
+A TypeScript wrapper cannot overturn a Rust/WASM refusal. A registry entry cannot prove dispatcher reachability. An emitted receipt cannot prove its own validity. Each claim must be verified at the real owning boundary.
 
-Evidence discipline: [AGENTS.md](../../AGENTS.md).
+## Capability calculus
 
-## Deployment Profiles
+`wpm system doctor capabilities` groups executable checks into twelve capability rails and returns one of:
 
-wasm4pm provides optimized WASM bundles for different deployment environments by gating features during compilation.
+- `UNKNOWN`
+- `PARTIAL_ALIVE`
+- `ALIVE`
+- `BLOCKED`
+- `BUILD_BROKEN`
+- `UNSUPPORTED`
 
-| Profile | Target | Actual Size | Use case |
-|---------|--------|-------------|----------|
-| `mobile` | Mobile devices | ~5.4MB | Mobile / low bandwidth |
-| `iot` | IoT devices, embedded | ~5.4MB | Embedded |
-| `edge` | CDN workers, edge servers | ~5.4MB | CDN / edge workers |
-| `fog` | Fog computing, gateways | ~5.4MB | IoT gateways |
-| `browser` | Web browsers (DEFAULT) | ~7.6MB | Web + Node.js (default) |
+A capability can impose a ceiling when checks prove only a route declaration rather than complete execution. The report excludes wall-clock time from its deterministic evidence hash.
 
-> Profiles differ by feature-gated algorithm subsets, not bundle size. Size optimization is planned for a future release.
+## Structured repair
 
-See [Deployment Profiles Reference](../reference/deployment_profiles.md) for feature flags and build commands.
+The doctor repair broker replaces arbitrary shell-string fixes with registered actions:
 
-## Core Capabilities
+- ensure a directory exists;
+- write a file only when absent;
+- spawn an executable with an explicit argument vector and `shell: false`.
 
-**Discovery:** Registered algorithms spanning DFG, heuristic/inductive miners, genetic/ILP, OCEL, ML, prediction, conformance, and simulation. List live: `wpm algorithms`.
+Unknown repair identities are refused. Dry-run constructs a plan but does not become `ALIVE` when work remains. Process actions preserve `changed: null` when the exact filesystem consequence is not knowable.
 
-**Truex:** OCEL 2.0 canonicalization + BLAKE3 receipt verification via `wpm truex verify`. Profile: [Truex OCEL 2.0 Canonical Profile](../truex-ocel2-canonical-profile.md).
+## OCEL-v2 session composition
 
-**Cognition:** 55 active breeds (all PARTIAL_ALIVE) via `wpm cognition run --contract <breed>`. Full list: `breeds/registry.json`.
+`wpm evidence session` is the executable composition root for object-centric process evidence:
 
-**Prediction:** Next-activity, remaining-time, drift via `wpm predict`.
-
-## CLI Surface
-
-| Category | Commands |
-|----------|----------|
-| **Core** | `run`, `compare`, `diff`, `watch`, `init`, `algorithms` |
-| **Prediction** | `predict`, `drift-watch` |
-| **Analysis** | `ml`, `powl`, `quality`, `conformance`, `validate`, `simulate`, `temporal`, `social` |
-| **Truex** | `truex verify` |
-| **Governance** | `receipts`, `cell`, `autoprocess`, `status`, `doctor`, `explain`, `results` |
-| **Cognition** | `cognition run`, `cognition verify`, `cognition replay`, `prolog8` |
-
-## Documentation Map
-
-We follow the [Diátaxis framework](https://diataxis.fr/).
-
-- **Tutorials:** [Getting Started](../tutorials/getting_started.md), [Truex Receipts](../tutorials/truex_receipts.md), [Predictive Monitoring](../tutorials/predictive_monitoring.md), [Cognition Contracts](../tutorials/cognition_contracts.md)
-- **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md), [Troubleshooting](../how-to/troubleshooting.md)
-- **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Glossary](../reference/glossary.md)
-- **Explanation:** [Old AI vs. LLM Doctrine](old_ai_vs_llms.md), [Receipt Truth Verification](prd_ard_receipt_truth_verification.md), [Process Mining Primer](process-mining-primer.md)
-
-Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
-
-## License
-
-BUSL-1.1. See [LICENSE](../../LICENSE).
-
-## Graph and Variant Analysis Example
-
-`examples/09-graph-and-variants.ts` demonstrates DFG graph construction, variant extraction, and footprint comparison — a good starting point for understanding how the WASM core transforms raw event logs into structured process models:
-
-```bash
-tsx examples/09-graph-and-variants.ts data/small-example.xes
+```mermaid
+graph LR
+  I[OCEL-v2 bytes] --> W1[WASM load_ocel_v2]
+  I --> W2[WASM flatten_ocel_v2]
+  I --> T[TypeScript OCEL reader]
+  W2 --> X{Flattening agrees?}
+  T --> X
+  X --> L[ModelsEventLog projection]
+  L --> P[POWL discovery]
+  P --> V[Parse + partial-order validation]
+  V --> E[Bounded WASM execution]
+  E --> H[Evidence hash]
+  H --> R[Exact replay]
 ```
+
+The session hashes input bytes, normalized OCEL, event-log projection, model, execution output, and the complete evidence envelope. Missing exact exports, ungrouped events, empty episodes, flatten disagreement, validation failure, and replay drift are typed failures.
+
+## AAT-Live admission
+
+`wpm evidence live` composes external authority evidence with wasm4pm identities:
+
+```mermaid
+graph LR
+  A[AAT observations] --> W[Signed Weaver admission]
+  W --> P[POWL route identity]
+  P --> M[WASM + release manifest]
+  M --> Q[Signed MCP+ proof]
+  Q --> V{Verdict}
+  V -->|Accepted| S[Passport + replayable bundle]
+  V -->|Refused| F[Typed refusals; no passport]
+```
+
+The five observation stages must be ordered. Weaver and MCP+ envelopes use canonical hashes and Ed25519 signatures. The admitted session, trace, POWL route, WASM bytes, release certificate, certificate verification, and Git commit must refer to the same subject graph.
+
+## Release certificate
+
+The release certificate verifier recomputes:
+
+1. Package manifest identity.
+2. Exact Git commit and deterministic commit timestamp.
+3. Reachability evidence hash and counts.
+4. Behavior evidence hash, case counts, and per-algorithm receipts.
+5. Example file manifest.
+6. Npm tarball identity, contents, SHA-1/SHA-256/SHA-512 integrity.
+7. Node-target WASM bundle hash.
+8. Canonical certificate self-hash.
+
+The generator writes pending and outcome receipts, retains the actual tarball, writes the certificate atomically, and immediately runs the independent verifier.
+
+## Generated surfaces
+
+Generated cognition files are projections, not editing surfaces. The ontology and generation policy identified by the nearest `AGENTS.md` remain authoritative. Changes flow from admitted graph to generator to generated source to formal/runtime verification to receipts.
+
+## Portability and deployment
+
+WASM build target and feature set are part of artifact identity. Browser, Node, edge, or constrained deployment labels do not prove size or capability equivalence. Measure the exact emitted bundle and test the exact host boundary.
+
+## Architecture standing
+
+This document describes implemented routes present in source. Repository-wide `ALIVE` still requires execution of the complete claimed boundaries against one immutable commit. The crown conditions and falsifiers are defined in [`../VISION_2030.md`](../VISION_2030.md).

@@ -16,11 +16,11 @@ import {
   checkTypeScriptCompilation,
   checkMicroMl,
   checkRustToolchain,
-  checkResultsDir,
   checkAlgorithmRegistry,
   checkWorkspaceIntegrity,
   checkBinaryShadow,
 } from './checks-env.js';
+import { checkDoctorRepairBroker, checkResultsDirNoActuation } from './safe-checks.js';
 
 import {
   checkStepTypeSync,
@@ -73,7 +73,7 @@ export const ENV_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkTypeScriptCompilation,
   checkMicroMl,
   checkRustToolchain,
-  checkResultsDir,
+  checkResultsDirNoActuation,
   checkAlgorithmRegistry,
   checkWorkspaceIntegrity,
   checkBinaryShadow,
@@ -130,6 +130,8 @@ export const CONFIG_SYSTEM_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkConfigPrecedence,
 ];
 
+export const BRCE_CHECKS: Array<() => Promise<Diagnosis>> = [checkDoctorRepairBroker];
+
 export const ALL_CHECKS = [
   ...ENV_CHECKS,
   ...TPS_CHECKS,
@@ -139,4 +141,5 @@ export const ALL_CHECKS = [
   ...OUTPUT_CONTRACT_CHECKS,
   ...OBSERVABILITY_CHECKS,
   ...CONFIG_SYSTEM_CHECKS,
+  ...BRCE_CHECKS,
 ];

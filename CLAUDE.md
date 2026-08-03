@@ -1,17 +1,11 @@
-# Claude Code Instructions
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CLAUDE.md; source-sha256: b92c8f4920cf7d292cd60b76f940bc94dd5e056f883e260d6db336ddc2fb4e32; reason: active compatibility pointer to AGENTS.md -->
 
-Read and follow `AGENTS.md` before working in this repository.
+# Claude Code instructions
 
-`AGENTS.md` is the sole normative agent contract for project architecture,
-commands, generated surfaces, testing, evidence, release discipline, git
-safety, and completion claims.
+Read and follow [`AGENTS.md`](AGENTS.md) before working in this repository. `AGENTS.md` is the sole normative root contract for architecture, generated surfaces, testing, evidence, release discipline, Git safety, and completion claims.
 
-Also read the nearest nested `AGENTS.md` when working below a directory that
-contains one.
+Read the nearest nested `AGENTS.md` for the subtree being changed.
 
-Claude Code may skip `CHATGPT-CLOUD-AGENTS.md`. That file documents constraints
-specific to hosted ChatGPT sessions using connectors or ephemeral cloud shells.
-Read it only when the current Claude runtime actually has those constraints.
+Claude Code may skip `CHATGPT-CLOUD-AGENTS.md` unless the current runtime uses connectors or an ephemeral cloud shell with equivalent constraints. Claude-specific sparse context may live under `.claude/`, but it cannot override `AGENTS.md`.
 
-Additional Claude-specific SPR context, when relevant, is stored at
-`.claude/spr-context.md`.
+Do not add project doctrine here. Update the owning `AGENTS.md` instead.

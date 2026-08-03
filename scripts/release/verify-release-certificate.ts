@@ -1,133 +1,178 @@
-import { packageVersion } from './lib/version.js';
-import fs from 'node:fs';
-import path from 'node:path';
-import { createHash } from 'node:crypto';
-import { execSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import {
+  atomicWriteJson,
+  buildReleaseCertificate,
+  sha256,
+  verifyReleaseCertificate,
+} from '../../apps/wasm4pm/src/release/certificate.js';
 
-/**
- * verify-release-certificate.ts
- *
- * Programmatic generator for the release certificate.
- * Computes actual WASM bundle hashes and binds the npm tarball metadata.
- */
-
-async function main() {
-  const version = packageVersion();
-  const rootDir = process.cwd();
-  const certPath = path.resolve(rootDir, `RELEASE_CERTIFICATE.v${version}.json`);
-
-  // Hash the examples receipts
-  let receiptsData = '';
-  const outDir = path.join(rootDir, 'examples/out');
-  if (fs.existsSync(outDir)) {
-    for (const file of fs.readdirSync(outDir).sort()) {
-      receiptsData += fs.readFileSync(path.join(outDir, file), 'utf8');
-    }
-  }
-  // The manifest hash should be recomputable. If no output exists, use a predictable empty state
-  const manifestHash = createHash('sha256').update(receiptsData || "empty_examples").digest('hex');
-
-  // Hash the WASM bundle
-  const wasmPath = path.join(rootDir, 'wasm4pm/pkg/wasm4pm_bg.wasm');
-  let bundleHash = 'wasm_not_found';
-  let bundleVerified = false;
-  if (fs.existsSync(wasmPath)) {
-    bundleHash = createHash('sha256').update(fs.readFileSync(wasmPath)).digest('hex');
-    bundleVerified = true;
-  }
-
-  // Get npm pack metadata from the kernel package
-  const kernelDir = path.join(rootDir, 'packages/kernel');
-  let packMeta: any = {};
-  try {
-    const packOutput = execSync('npm pack --dry-run --json', { cwd: kernelDir, encoding: 'utf8' });
-    const parsed = JSON.parse(packOutput);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      const meta = parsed[0];
-      packMeta = {
-        package_name: meta.name,
-        tarball_name: meta.filename,
-        tarball_shasum: meta.shasum,
-        tarball_integrity: meta.integrity,
-        file_count: meta.entryCount,
-        unpacked_size: meta.unpackedSize,
-        package_size: meta.size
-      };
-    }
-  } catch (err) {
-    console.warn("Could not retrieve npm pack metadata:", err);
-  }
-
-  // Read behavior evidence hash
-  const behaviorPath = path.join(rootDir, `artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${version}.json`);
-  let behaviorMeta: any = {
-    algorithm_count: 60,
-    positive_case_count: 0,
-    negative_case_count: 0,
-    invariant_case_count: 0,
-    behavior_evidence_hash: 'not_found',
-    all_failed_correctly: false
-  };
-  
-  if (fs.existsSync(behaviorPath)) {
-    try {
-      const bEvidence = JSON.parse(fs.readFileSync(behaviorPath, 'utf8'));
-      behaviorMeta = {
-        algorithm_count: bEvidence.algorithm_count,
-        positive_case_count: bEvidence.summary.positive_cases,
-        negative_case_count: bEvidence.summary.negative_cases,
-        invariant_case_count: bEvidence.summary.invariant_cases,
-        behavior_evidence_hash: bEvidence.behavior_evidence_hash,
-        all_failed_correctly: bEvidence.summary.all_negative_failed_correctly
-      };
-    } catch (e) {
-      console.warn("Could not read behavior evidence", e);
-    }
-  }
-
-  // Read reachability evidence hash
-  const reachabilityPath = path.join(rootDir, `artifacts/release/ALGORITHM_REACHABILITY_EVIDENCE.v${version}.json`);
-  let reachabilityHash = 'not_found';
-  if (fs.existsSync(reachabilityPath)) {
-    try {
-      const rEvidence = JSON.parse(fs.readFileSync(reachabilityPath, 'utf8'));
-      reachabilityHash = rEvidence.reachability_hash;
-    } catch (e) {
-      console.warn("Could not read reachability evidence", e);
-    }
-  }
-
-  const certificate = {
-    package: {
-      name: "wasm4pm",
-      version,
-      git_commit: execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
-    },
-    reachability: {
-      algorithm_count: 60,
-      algorithms_reachable: 60,
-      reachability_hash: reachabilityHash
-    },
-    behavior: behaviorMeta,
-    examples: {
-      example_count: 8,
-      examples_total_executions: 64,
-      manifest_hash: manifestHash
-    },
-    package_artifact: {
-      tarball_name: packMeta.tarball_name || `wasm4pm-${version}.tgz`,
-      tarball_integrity: packMeta.tarball_integrity || "integrity_not_found",
-      pack_smoke_tarball_path: `packages/kernel/wasm4pm-${version}.tgz`,
-      wasm_bundle_hash: bundleHash
-    },
-    timestamp: new Date().toISOString()
-  };
-
-  fs.writeFileSync(certPath, JSON.stringify(certificate, null, 2));
-  console.log(`[CERTIFICATE GENERATED] ${certPath}`);
+interface PackageJson {
+  readonly name: string;
+  readonly version: string;
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+interface NpmPackMetadata {
+  readonly filename?: string;
+  readonly name?: string;
+  readonly version?: string;
+}
+
+function readPackage(filePath: string): PackageJson {
+  const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as Partial<PackageJson>;
+  if (!parsed.name || !parsed.version) {
+    throw new Error(`${filePath} must declare name and version`);
+  }
+  return { name: parsed.name, version: parsed.version };
+}
+
+function gitIdentity(rootDir: string): { commit: string; timestamp: string } {
+  return {
+    commit: execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim(),
+    timestamp: execFileSync('git', ['show', '-s', '--format=%cI', 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim(),
+  };
+}
+
+function manufactureTarball(
+  rootDir: string,
+  kernelDir: string,
+  artifactDir: string,
+  pkg: PackageJson
+): string {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wasm4pm-pack-'));
+  try {
+    const output = execFileSync(
+      'npm',
+      ['pack', '--json', '--pack-destination', tempDir],
+      {
+        cwd: kernelDir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 8 * 1024 * 1024,
+      }
+    );
+    const metadata = JSON.parse(output) as NpmPackMetadata[];
+    const packed = metadata[0];
+    if (!packed?.filename) throw new Error('npm pack did not return a tarball filename');
+    if (packed.name && packed.name !== pkg.name) {
+      throw new Error(`npm pack returned ${packed.name}; expected ${pkg.name}`);
+    }
+    if (packed.version && packed.version !== pkg.version) {
+      throw new Error(`npm pack returned version ${packed.version}; expected ${pkg.version}`);
+    }
+
+    const source = path.join(tempDir, packed.filename);
+    if (!fs.existsSync(source)) throw new Error(`npm pack did not create ${source}`);
+    fs.mkdirSync(artifactDir, { recursive: true });
+    const destination = path.join(artifactDir, packed.filename);
+    fs.rmSync(destination, { force: true });
+    fs.renameSync(source, destination);
+    return path.relative(rootDir, destination).split(path.sep).join('/');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function main(): void {
+  const rootDir = process.cwd();
+  const kernelDir = path.join(rootDir, 'packages/kernel');
+  const pkg = readPackage(path.join(kernelDir, 'package.json'));
+  const git = gitIdentity(rootDir);
+  const artifactDir = path.join(rootDir, 'artifacts/release/npm');
+  const pendingPath = path.join(
+    rootDir,
+    `artifacts/release/RELEASE_CERTIFICATE.v${pkg.version}.pending.json`
+  );
+  const outcomePath = path.join(
+    rootDir,
+    `artifacts/release/RELEASE_CERTIFICATE.v${pkg.version}.outcome.json`
+  );
+  const certificatePath = path.join(rootDir, `RELEASE_CERTIFICATE.v${pkg.version}.json`);
+  const runId = sha256(`${pkg.name}@${pkg.version}\n${git.commit}`).slice(0, 32);
+
+  atomicWriteJson(pendingPath, {
+    schema_version: 'wasm4pm.release-certificate-actuation.v1',
+    receipt_kind: 'pending',
+    run_id: runId,
+    status: 'PENDING',
+    package: `${pkg.name}@${pkg.version}`,
+    git_commit: git.commit,
+    intended_outputs: [
+      `artifacts/release/npm/${pkg.name.replace(/^@/, '').replace(/\//g, '-')}-${pkg.version}.tgz`,
+      path.basename(certificatePath),
+    ],
+    timestamp: git.timestamp,
+  });
+
+  try {
+    const tarballPath = manufactureTarball(rootDir, kernelDir, artifactDir, pkg);
+    const certificate = buildReleaseCertificate(rootDir);
+    atomicWriteJson(certificatePath, certificate);
+
+    const verification = verifyReleaseCertificate(rootDir);
+    if (!verification.valid) {
+      throw new Error(
+        `Generated certificate failed replay: ${verification.issues
+          .map((issue) => `${issue.code}: ${issue.message}`)
+          .join('; ')}`
+      );
+    }
+
+    atomicWriteJson(outcomePath, {
+      schema_version: 'wasm4pm.release-certificate-actuation.v1',
+      receipt_kind: 'outcome',
+      run_id: runId,
+      status: 'ALIVE',
+      package: `${pkg.name}@${pkg.version}`,
+      git_commit: git.commit,
+      tarball_path: tarballPath,
+      tarball_sha256: certificate.package_artifact.tarball_sha256,
+      certificate_path: path.basename(certificatePath),
+      certificate_hash: certificate.certificate.hash,
+      timestamp: git.timestamp,
+    });
+
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          status: 'ALIVE',
+          certificate_path: path.basename(certificatePath),
+          certificate_hash: certificate.certificate.hash,
+          tarball_path: tarballPath,
+          git_commit: git.commit,
+        },
+        null,
+        2
+      )}\n`
+    );
+  } catch (error) {
+    atomicWriteJson(outcomePath, {
+      schema_version: 'wasm4pm.release-certificate-actuation.v1',
+      receipt_kind: 'outcome',
+      run_id: runId,
+      status: 'BLOCKED',
+      package: `${pkg.name}@${pkg.version}`,
+      git_commit: git.commit,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: git.timestamp,
+    });
+    throw error;
+  }
+}
+
+try {
+  main();
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+  process.exitCode = 1;
+}
