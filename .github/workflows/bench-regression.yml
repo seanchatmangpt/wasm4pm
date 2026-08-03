@@ -278,7 +278,7 @@ jobs:
             echo "update-baseline.sh failed or produced no output — skipping commit"
 
       - name: Commit updated baseline
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore(bench): auto-update baseline from main [skip ci]"
           file_pattern: ".wasm4pm/benchmarks/baselines/main-latest.json"
