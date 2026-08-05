@@ -1,14 +1,17 @@
 /**
- * wpm CLI entry — noun/verb tree built from `@wasm4pm/noun-verb`'s
- * `buildCli()`. The registry (`nouns/*`) is the single source of truth for
- * dispatch, `--help`, and (once wired) generated docs/introspection; this
- * file's only job is folding that registry into a citty `CommandDef` and
- * wiring the receipt/OTEL middleware hooks so every verb gets a BLAKE3
- * receipt + span automatically (Absolute Rules 6/7), without every verb
- * handler having to remember to do it itself.
+ * Published wpm CLI registry and lifecycle contract.
+ *
+ * The registry is the single source of truth for dispatch, help, generated
+ * documentation, and introspection. The published binary must call
+ * `admitCliInvocation()` before any verb handler or OTEL exporter can run.
  */
-import { randomBytes } from 'node:crypto';
-import { buildCli, type BuildCliOptions, type ErrorCodeMap } from '@wasm4pm/noun-verb';
+import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  buildCli,
+  NounVerbError,
+  type BuildCliOptions,
+  type ErrorCodeMap,
+} from '@wasm4pm/noun-verb';
 import type { OtelSpan } from '@wasm4pm/cognition';
 import { logNoun } from './nouns/log/index.js';
 import { modelNoun } from './nouns/model/index.js';
@@ -18,19 +21,28 @@ import { configNoun } from './nouns/config/index.js';
 import { systemNoun } from './nouns/system/index.js';
 import { labNoun } from './nouns/lab/index.js';
 import { helpNoun } from './nouns/help/index.js';
-import { saveCommandReceipt, blake3Hex, newReceipt } from './receipts/_shared.js';
+import {
+  blake3Hex,
+  canonicalJson,
+  newReceipt,
+  persistCommandReceipt,
+  type PersistedCommandReceipt,
+} from './receipts/_shared.js';
 import { getGlobalSpanSink } from './otel/sink.js';
 import { EXIT_CODES } from './exit-codes.js';
 import pkg from '../package.json' with { type: 'json' };
 
-/**
- * Exported so tooling (docs generation, introspection audits) can walk the
- * exact same registry `buildCli()` dispatches from — never a hand-maintained
- * copy that can drift. See `scripts/gen-cli-docs.ts`.
- */
-export const ALL_NOUNS = [logNoun, modelNoun, pipelineNoun, evidenceNoun, configNoun, systemNoun, labNoun, helpNoun];
+export const ALL_NOUNS = [
+  logNoun,
+  modelNoun,
+  pipelineNoun,
+  evidenceNoun,
+  configNoun,
+  systemNoun,
+  labNoun,
+  helpNoun,
+];
 
-/** Map the framework's generic ErrorCode contract onto wpm's existing 0-5 EXIT_CODES. */
 const ERROR_CODE_MAP: ErrorCodeMap = {
   INVALID_INPUT: EXIT_CODES.source_error,
   COMMAND_NOT_FOUND: EXIT_CODES.config_error,
@@ -42,6 +54,22 @@ const ERROR_CODE_MAP: ErrorCodeMap = {
   EXECUTION_ERROR: EXIT_CODES.execution_error,
   INTERNAL_ERROR: EXIT_CODES.system_error,
 };
+
+interface CliInvocationState {
+  invocationId: string;
+  receiptDirectory?: string;
+  admission: PersistedCommandReceipt;
+  chainHead: string;
+}
+
+export interface CliAdmissionOptions {
+  receiptDirectory?: string;
+  invocationId?: string;
+  runId?: string;
+  now?: () => Date;
+}
+
+let activeInvocation: CliInvocationState | undefined;
 
 function emitSpan(noun: string, verb: string, durationMs: number, status: OtelSpan['status']): void {
   try {
@@ -58,76 +86,209 @@ function emitSpan(noun: string, verb: string, durationMs: number, status: OtelSp
     };
     getGlobalSpanSink()(span);
   } catch {
-    /* never block on OTEL */
+    // Telemetry is observational and may not manufacture command success.
   }
 }
 
+function resultExitCode(result: unknown): number | undefined {
+  if (!result || typeof result !== 'object') return undefined;
+  const candidate = result as { exitCode?: unknown; exit_code?: unknown };
+  if (typeof candidate.exitCode === 'number') return candidate.exitCode;
+  if (typeof candidate.exit_code === 'number') return candidate.exit_code;
+  return undefined;
+}
+
+function failure(message: string, cause: unknown): NounVerbError {
+  return NounVerbError.internalError(message, cause);
+}
+
+function requireInvocation(): CliInvocationState {
+  if (!activeInvocation) {
+    throw failure(
+      'RECEIPT_ADMISSION_MISSING: the published wpm binary did not persist an admission receipt before dispatch',
+      undefined
+    );
+  }
+  return activeInvocation;
+}
+
 /**
- * Shared `buildCli()`/`runCli()` options — the single definition of wpm's
- * receipt/OTEL middleware and exit-code contracts. `main` (below, a plain
- * citty `CommandDef`) and the real binary's `runCli()` call (in
- * `bin/wpm.ts`, which additionally needs `++` chaining and `@-` stdin
- * extraction) must use the *same* options object so neither surface can
- * drift from the other.
+ * Persist the invocation-level admission receipt before OTEL initialization or
+ * noun/verb dispatch. Raw argv and cwd never enter evidence; only their hashes
+ * and bounded counts are retained.
  */
+export function admitCliInvocation(
+  argv: readonly string[],
+  options: CliAdmissionOptions = {}
+): PersistedCommandReceipt {
+  if (activeInvocation) {
+    throw failure('RECEIPT_SESSION_ALREADY_ACTIVE: wpm admits exactly one process invocation', undefined);
+  }
+
+  const invocationId = options.invocationId ?? randomUUID();
+  const subject = {
+    package: '@wasm4pm/cli',
+    version: pkg.version,
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+  };
+  const inputHash = blake3Hex(canonicalJson({ argv: [...argv] }));
+  const admissionProjection = {
+    admitted: true,
+    authority: 'published-wpm-binary',
+    subject,
+    input_hash: inputHash,
+  };
+
+  try {
+    const persisted = persistCommandReceipt(
+      {
+        ...newReceipt('wpm invocation', { runId: options.runId, now: options.now }),
+        session_id: invocationId,
+        phase: 'admission',
+        input_hash: inputHash,
+        output_hash: blake3Hex(canonicalJson(admissionProjection)),
+        status: 'pending',
+        summary: {
+          authority: 'published-wpm-binary',
+          subject,
+          argv_count: argv.length,
+        },
+      },
+      options.receiptDirectory
+    );
+
+    activeInvocation = {
+      invocationId,
+      receiptDirectory: options.receiptDirectory,
+      admission: persisted.receipt,
+      chainHead: persisted.receipt.receipt_hash,
+    };
+    return persisted.receipt;
+  } catch (error) {
+    throw failure(
+      `RECEIPT_ADMISSION_BLOCKED: no command handler was dispatched because admission evidence could not be persisted: ${(error as Error).message}`,
+      error
+    );
+  }
+}
+
+function appendOutcome(args: {
+  noun: string;
+  verb: string;
+  input: unknown;
+  output: unknown;
+  status: 'success' | 'partial' | 'failed';
+  durationMs: number;
+  exitCode?: number;
+  errorCode?: string;
+}): PersistedCommandReceipt {
+  const state = requireInvocation();
+  const command = `${args.noun} ${args.verb}`;
+
+  try {
+    const persisted = persistCommandReceipt(
+      {
+        ...newReceipt(command),
+        session_id: state.invocationId,
+        phase: 'outcome',
+        predecessor_hash: state.chainHead,
+        input_hash: blake3Hex(canonicalJson(args.input)),
+        output_hash: blake3Hex(canonicalJson(args.output)),
+        status: args.status,
+        summary: {
+          duration_ms: args.durationMs,
+          ...(args.exitCode !== undefined ? { exit_code: args.exitCode } : {}),
+          ...(args.errorCode ? { error_code: args.errorCode } : {}),
+        },
+      },
+      state.receiptDirectory
+    );
+    state.chainHead = persisted.receipt.receipt_hash;
+    return persisted.receipt;
+  } catch (error) {
+    throw failure(
+      `RECEIPT_OUTCOME_BLOCKED: ${command} executed but its outcome receipt could not be persisted; success is refused: ${(error as Error).message}`,
+      error
+    );
+  }
+}
+
+export function recordCliFatal(error: unknown): PersistedCommandReceipt {
+  const normalized = error instanceof NounVerbError ? error : NounVerbError.from(error);
+  return appendOutcome({
+    noun: 'system',
+    verb: 'fatal',
+    input: { admitted: true },
+    output: normalized.toEnvelope(),
+    status: 'failed',
+    durationMs: 0,
+    exitCode: EXIT_CODES.system_error,
+    errorCode: normalized.code,
+  });
+}
+
+export function hasActiveCliInvocation(): boolean {
+  return activeInvocation !== undefined;
+}
+
+/** Test-only reset for isolated process-lifecycle witnesses. */
+export function resetCliInvocationForTests(): void {
+  activeInvocation = undefined;
+}
+
 export const cliOptions: BuildCliOptions = {
   name: 'wpm',
   version: pkg.version,
   description: 'High-performance process mining and workflow discovery CLI (wasm4pm)',
   errorCodeMap: ERROR_CODE_MAP,
 
-  // Absolute Rule 6: every verb invocation gets a chained BLAKE3 receipt.
-  // Absolute Rule 7: every verb invocation gets an OTEL span with status ok|error.
   async onResult({ noun, verb, args, result, durationMs }) {
+    const exitCode = resultExitCode(result) ?? EXIT_CODES.success;
+    const status =
+      exitCode === EXIT_CODES.success
+        ? 'success'
+        : exitCode === EXIT_CODES.partial_failure
+          ? 'partial'
+          : 'failed';
     try {
-      saveCommandReceipt({
-        ...newReceipt(`${noun} ${verb}`),
-        input_hash: blake3Hex(JSON.stringify(args) ?? 'null'),
-        output_hash: blake3Hex(JSON.stringify(result) ?? 'null'),
-        status: 'success',
-        summary: { durationMs },
+      appendOutcome({
+        noun,
+        verb,
+        input: args,
+        output: result,
+        status,
+        durationMs,
+        exitCode,
       });
-    } catch {
-      /* receipts are best-effort — never fail a successful command over them */
+      emitSpan(noun, verb, durationMs, { code: exitCode === 0 ? 'OK' : 'ERROR' });
+    } catch (error) {
+      emitSpan(noun, verb, durationMs, { code: 'ERROR', message: (error as Error).message });
+      throw error;
     }
-    emitSpan(noun, verb, durationMs, { code: 'OK' });
   },
 
   async onError({ noun, verb, args, error, durationMs }) {
     try {
-      saveCommandReceipt({
-        ...newReceipt(`${noun} ${verb}`),
-        input_hash: blake3Hex(JSON.stringify(args) ?? 'null'),
-        output_hash: blake3Hex(error.message),
+      appendOutcome({
+        noun,
+        verb,
+        input: args,
+        output: error.toEnvelope(),
         status: 'failed',
-        summary: { durationMs, code: error.code },
+        durationMs,
+        exitCode: ERROR_CODE_MAP[error.code] ?? EXIT_CODES.system_error,
+        errorCode: error.code,
       });
-    } catch {
-      /* best-effort */
+      emitSpan(noun, verb, durationMs, { code: 'ERROR', message: error.message });
+    } catch (receiptError) {
+      emitSpan(noun, verb, durationMs, { code: 'ERROR', message: (receiptError as Error).message });
+      throw receiptError;
     }
-    emitSpan(noun, verb, durationMs, { code: 'ERROR', message: error.message });
   },
 
-  // Fail-closed exit-code propagation: a verb like `model check` can
-  // resolve normally (no throw) while still reporting a failed *outcome*
-  // (REJECTED/INDETERMINATE) via its own `exitCode` field. Surface that as
-  // the real process exit code instead of the framework's default 0.
-  //
-  // Bridged `lab`/legacy-command verbs (`nouns/_bridge.ts`) return the raw
-  // legacy `CommandResult` on success — which carries the same 0-6 exit
-  // code but under the snake_case `exit_code` key (see `output.ts`), not
-  // the camelCase `exitCode` key native verbs use. Both are checked here
-  // (camelCase first) so a bridged verb's own partial_failure/
-  // conformance_fail verdict propagates to `$?` exactly like a native
-  // verb's does, instead of always reporting 0 on the non-throwing path.
-  resolveResultExitCode(result) {
-    if (result && typeof result === 'object') {
-      const r = result as { exitCode?: unknown; exit_code?: unknown };
-      if (typeof r.exitCode === 'number') return r.exitCode;
-      if (typeof r.exit_code === 'number') return r.exit_code;
-    }
-    return undefined;
-  },
+  resolveResultExitCode: resultExitCode,
 };
 
 export const main = buildCli(ALL_NOUNS, cliOptions);

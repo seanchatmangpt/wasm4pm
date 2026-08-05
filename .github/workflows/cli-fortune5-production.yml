@@ -1,0 +1,130 @@
+name: CLI Fortune 5 Production
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/wasm4pm/**'
+      - 'packages/noun-verb/**'
+      - 'scripts/release/verify-cli-fortune5.ts'
+      - '.github/workflows/cli-fortune5-production.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/wasm4pm/**'
+      - 'packages/noun-verb/**'
+      - 'scripts/release/verify-cli-fortune5.ts'
+      - '.github/workflows/cli-fortune5-production.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-fortune5-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Contract (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.5.2 --activate
+          pnpm --version
+
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI dependency boundary
+        run: pnpm --filter @wasm4pm/noun-verb build
+
+      - name: Build published CLI
+        run: pnpm --filter @wasm4pm/cli build
+
+      - name: Execute CLI package tests
+        run: pnpm --filter @wasm4pm/cli test
+
+      - name: Execute noun-verb framework tests
+        run: pnpm --filter @wasm4pm/noun-verb test
+
+      - name: Execute packaged-binary adversarial verifier
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        env:
+          WASM4PM_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          WASM4PM_FORTUNE5_REPORT: artifacts/cli-fortune5/report.json
+        run: pnpm exec tsx scripts/release/verify-cli-fortune5.ts
+
+      - name: Upload exact-head verifier receipt
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-fortune5-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/cli-fortune5/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  package:
+    name: Package and parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Activate pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.5.2 --activate
+
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Build published surfaces
+        run: |
+          pnpm --filter @wasm4pm/noun-verb build
+          pnpm --filter @wasm4pm/cli build
+
+      - name: Verify registry and CLI parity
+        run: pnpm run cli:parity
+
+      - name: Verify clean tarball install and execution
+        run: pnpm run prepublish:pack-smoke

@@ -24,12 +24,25 @@ export type RepairMode =
   | 'REINSTALL_DEPENDENCIES'
   | 'AUTO_REPAIR';
 
+/** How a diagnosis obtained its evidence. ALIVE requires EXECUTED evidence. */
+export type ObservationKind = 'EXECUTED' | 'INSPECTED' | 'NOT_OBSERVED' | 'UNSUPPORTED';
+
+/** Optional structured proof pointer carried by a diagnosis. */
+export interface DiagnosisProof {
+  readonly kind: 'receipt' | 'artifact' | 'command' | 'source';
+  readonly subject: string;
+  readonly hash?: string;
+  readonly replay?: string;
+}
+
 /** Result of a single health diagnosis */
 export interface Diagnosis {
   name: string;
   pathology?: Pathology;
   severity: Severity;
   message: string;
+  observation?: ObservationKind;
+  proof?: DiagnosisProof;
   repairMode?: RepairMode;
   repairCommand?: string; // The smallest lawful repair
   fixGuide?: string; // For manual intervention
