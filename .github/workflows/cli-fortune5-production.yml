@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - 'agent/cli-fortune5-production-closure'
     paths:
       - 'apps/wasm4pm/**'
       - 'packages/noun-verb/**'
@@ -55,15 +56,20 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Activate pinned pnpm
+      - name: Activate Node-compatible pinned pnpm
         shell: bash
         run: |
+          set -euo pipefail
           corepack enable
-          corepack prepare pnpm@11.5.2 --activate
+          if [ "${{ matrix.node }}" = "20" ]; then
+            corepack prepare pnpm@10.15.0 --activate
+          else
+            corepack prepare pnpm@11.5.2 --activate
+          fi
           pnpm --version
 
-      - name: Install exact dependency graph
-        run: pnpm install --frozen-lockfile
+      - name: Install exact CLI dependency closure
+        run: pnpm install --frozen-lockfile --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
 
       - name: Build CLI dependency boundary
         run: pnpm --filter @wasm4pm/noun-verb build
@@ -105,6 +111,14 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
+      - name: Verify exact candidate identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -115,8 +129,8 @@ jobs:
           corepack enable
           corepack prepare pnpm@11.5.2 --activate
 
-      - name: Install exact dependency graph
-        run: pnpm install --frozen-lockfile
+      - name: Install exact CLI dependency closure
+        run: pnpm install --frozen-lockfile --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
 
       - name: Build published surfaces
         run: |
