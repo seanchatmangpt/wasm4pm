@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ../ggen/target/debug/ggen sync 2>&1 | tee ../ggen-sync.log
+          ../ggen/target/debug/ggen sync run 2>&1 | tee ../ggen-sync.log
 
       - name: Assert rendered sources unchanged
         working-directory: wasm4pm
