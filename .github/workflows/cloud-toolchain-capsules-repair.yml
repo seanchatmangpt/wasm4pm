@@ -1,0 +1,339 @@
+name: Cloud Toolchain Capsules Repair
+
+on:
+  push:
+    branches:
+      - agent/cloud-toolchain-capsules-20260804
+    paths:
+      - .github/workflows/cloud-toolchain-capsules-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-toolchain-capsules-repair-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  lean-direct:
+    name: Lean 4.31.0 direct toolchain transport
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Install and identify the exact Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.31.0
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --version
+          lake --version
+          elan which lean | tee /tmp/lean-path
+          test -x "$(cat /tmp/lean-path)"
+
+      - name: Manufacture, split, reconstruct, and replay direct toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          LEAN_BIN="$(elan which lean)"
+          TOOLCHAIN="$(dirname "$(dirname "$LEAN_BIN")")"
+          test -x "$TOOLCHAIN/bin/lean"
+          test -x "$TOOLCHAIN/bin/lake"
+
+          mkdir -p capsule/payload capsule/out capsule/replay
+          cp -a "$TOOLCHAIN" capsule/payload/toolchain
+          cat > capsule/payload/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export LEAN_SYSROOT="$ROOT/toolchain"
+          export PATH="$ROOT/toolchain/bin:$PATH"
+          EOF
+          chmod +x capsule/payload/activate.sh
+
+          source capsule/payload/activate.sh
+          lean --version | tee capsule/payload/LEAN_VERSION
+          lake --version | tee capsule/payload/LAKE_VERSION
+          cat > /tmp/Alive.lean <<'EOF'
+          theorem answer : 19 + 23 = 42 := by decide
+          #eval 19 + 23
+          EOF
+          lean /tmp/Alive.lean | tee capsule/payload/LEAN_SMOKE
+
+          tar --zstd -cf capsule/out/lean-v4.31.0-x86_64-linux.tar.zst -C capsule payload
+          split -b 250MiB -d -a 2 \
+            capsule/out/lean-v4.31.0-x86_64-linux.tar.zst \
+            capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-
+          rm capsule/out/lean-v4.31.0-x86_64-linux.tar.zst
+          (
+            cd capsule/out
+            sha256sum lean-v4.31.0-x86_64-linux.tar.zst.part-* > SHA256SUMS.parts
+          )
+          cat > capsule/out/RECONSTRUCT.sh <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          cd "$(dirname "$0")"
+          sha256sum -c SHA256SUMS.parts
+          cat lean-v4.31.0-x86_64-linux.tar.zst.part-* > lean-v4.31.0-x86_64-linux.tar.zst
+          EOF
+          chmod +x capsule/out/RECONSTRUCT.sh
+
+          capsule/out/RECONSTRUCT.sh
+          tar --zstd -xf capsule/out/lean-v4.31.0-x86_64-linux.tar.zst -C capsule/replay
+          source capsule/replay/payload/activate.sh
+          lean --version
+          lake --version
+          env -u ELAN_HOME -u ELAN_TOOLCHAIN \
+            PATH="$PWD/capsule/replay/payload/toolchain/bin:/usr/bin:/bin" \
+            LEAN_SYSROOT="$PWD/capsule/replay/payload/toolchain" \
+            lean /tmp/Alive.lean
+          rm capsule/out/lean-v4.31.0-x86_64-linux.tar.zst
+
+      - name: Upload Lean metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-lean-v4.31.0-direct-metadata
+          path: |
+            capsule/out/SHA256SUMS.parts
+            capsule/out/RECONSTRUCT.sh
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Lean part 00
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-lean-v4.31.0-direct-part-00
+          path: capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-00
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Lean part 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-lean-v4.31.0-direct-part-01
+          path: capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-01
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Lean part 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-lean-v4.31.0-direct-part-02
+          path: capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-02
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Lean part 03
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-lean-v4.31.0-direct-part-03
+          path: capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-03
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: ignore
+
+  erlang-elixir-direct:
+    name: Erlang and Elixir dependency-closed transport
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Install complete BEAM command surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            erlang-base erlang-dev erlang-tools erlang-dialyzer \
+            erlang-crypto erlang-ssl erlang-inets elixir libsctp1
+          for b in erl erlc escript dialyzer elixir elixirc iex mix; do
+            command -v "$b"
+          done
+
+      - name: Manufacture and replay BEAM capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capsule/payload/root/usr/lib capsule/payload/root/usr/bin \
+            capsule/payload/root/lib capsule/payload/root/lib64 capsule/out capsule/replay
+          cp -a /usr/lib/erlang capsule/payload/root/usr/lib/
+          if [ -d /usr/lib/elixir ]; then cp -a /usr/lib/elixir capsule/payload/root/usr/lib/; fi
+
+          for b in erl erlc escript dialyzer elixir elixirc iex mix; do
+            p="$(command -v "$b")"
+            cp -aL "$p" "capsule/payload/root/usr/bin/$b"
+          done
+
+          copy_deps() {
+            local p="$1"
+            while IFS= read -r lib; do
+              [ -n "$lib" ] || continue
+              cp -aL --parents "$lib" capsule/payload/root
+            done < <((ldd "$p" 2>/dev/null || true) | awk '/=> \/|^\// {for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort -u)
+          }
+          while IFS= read -r elf; do copy_deps "$elf"; done < <(
+            find /usr/lib/erlang -type f -exec file {} + | awk -F: '/ELF 64-bit/ {print $1}'
+          )
+          if [ -e /lib64/ld-linux-x86-64.so.2 ]; then
+            cp -aL --parents /lib64/ld-linux-x86-64.so.2 capsule/payload/root
+          fi
+
+          cat > capsule/payload/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/root"
+          export ERL_ROOTDIR="$ROOT/usr/lib/erlang"
+          export LD_LIBRARY_PATH="$ROOT/lib/x86_64-linux-gnu:$ROOT/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
+          export PATH="$ROOT/usr/bin:$ROOT/usr/lib/erlang/bin:$ROOT/usr/lib/elixir/bin:$PATH"
+          EOF
+          chmod +x capsule/payload/activate.sh
+          source capsule/payload/activate.sh
+          erl -noshell -eval '42 = 19 + 23, io:format("ERLANG_CAPSULE_ALIVE:42~n"), halt().' | tee capsule/payload/ERLANG_SMOKE
+          elixir -e '42 = 19 + 23; IO.puts("ELIXIR_CAPSULE_ALIVE:42")' | tee capsule/payload/ELIXIR_SMOKE
+          mix --version | tee capsule/payload/MIX_VERSION
+          dialyzer --version | tee capsule/payload/DIALYZER_VERSION
+
+          tar --zstd -cf capsule/out/erlang-elixir-x86_64-linux.tar.zst -C capsule payload
+          (cd capsule/out && sha256sum erlang-elixir-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf capsule/out/erlang-elixir-x86_64-linux.tar.zst -C capsule/replay
+          source capsule/replay/payload/activate.sh
+          erl -noshell -eval '42 = 19 + 23, io:format("ERLANG_REPLAY_ALIVE:42~n"), halt().'
+          elixir -e '42 = 19 + 23; IO.puts("ELIXIR_REPLAY_ALIVE:42")'
+          mix --version
+          dialyzer --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-erlang-elixir-direct
+          path: capsule/out/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+
+  native-tools-direct:
+    name: Native CLI dependency-closed transport
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Install packaged native tools and Souffle build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            z3 cvc5 openssh-client podman buildah skopeo \
+            git cmake ninja-build build-essential flex bison \
+            libsqlite3-dev libffi-dev libncurses-dev zlib1g-dev \
+            mcpp libmcpp-dev
+          command -v gh
+
+      - name: Build Souffle when the distribution has no package
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v souffle >/dev/null 2>&1; then
+            souffle --version
+            exit 0
+          fi
+          git clone --depth 1 --branch 2.5 https://github.com/souffle-lang/souffle.git /tmp/souffle \
+            || git clone --depth 1 https://github.com/souffle-lang/souffle.git /tmp/souffle
+          cmake -S /tmp/souffle -B /tmp/souffle/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSOUFFLE_USE_CURSES=OFF
+          cmake --build /tmp/souffle/build --parallel 2
+          sudo cmake --install /tmp/souffle/build
+          souffle --version
+
+      - name: Manufacture and replay native capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capsule/payload/root capsule/payload/bin capsule/out capsule/replay
+          : > capsule/payload/AVAILABLE
+          copy_one() {
+            local name="$1" p
+            p="$(command -v "$name")"
+            echo "$name=$p" >> capsule/payload/AVAILABLE
+            cp -aL --parents "$p" capsule/payload/root
+            while IFS= read -r lib; do
+              [ -n "$lib" ] || continue
+              cp -aL --parents "$lib" capsule/payload/root
+            done < <((ldd "$p" 2>/dev/null || true) | awk '/=> \/|^\// {for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort -u)
+            cat > "capsule/payload/bin/$name" <<EOF
+          #!/usr/bin/env bash
+          ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)/root"
+          export LD_LIBRARY_PATH="\$ROOT/lib/x86_64-linux-gnu:\$ROOT/usr/lib/x86_64-linux-gnu:\${LD_LIBRARY_PATH:-}"
+          exec "\$ROOT$p" "\$@"
+          EOF
+            chmod +x "capsule/payload/bin/$name"
+          }
+          for b in gh ssh ssh-keygen z3 cvc5 souffle podman buildah skopeo; do copy_one "$b"; done
+          if [ -e /lib64/ld-linux-x86-64.so.2 ]; then cp -aL --parents /lib64/ld-linux-x86-64.so.2 capsule/payload/root; fi
+          for d in /etc/containers /usr/share/containers /usr/libexec/podman /usr/libexec/cni /usr/lib/cni /usr/local/share/souffle; do
+            if [ -e "$d" ]; then cp -a --parents "$d" capsule/payload/root; fi
+          done
+          cat > capsule/payload/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export PATH="$ROOT/bin:$PATH"
+          EOF
+          chmod +x capsule/payload/activate.sh
+          source capsule/payload/activate.sh
+
+          gh --version | head -n 1 | tee capsule/payload/GH_VERSION
+          ssh -V 2>&1 | tee capsule/payload/SSH_VERSION
+          ssh-keygen -q -t ed25519 -N '' -f /tmp/cloud-capsule-key
+          z3 --version | tee capsule/payload/Z3_VERSION
+          cvc5 --version | head -n 1 | tee capsule/payload/CVC5_VERSION
+          souffle --version | tee capsule/payload/SOUFFLE_VERSION
+          podman --version | tee capsule/payload/PODMAN_VERSION
+          buildah --version | tee capsule/payload/BUILDAH_VERSION
+          skopeo --version | tee capsule/payload/SKOPEO_VERSION
+
+          cat > /tmp/alive.smt2 <<'EOF'
+          (set-logic QF_LIA)
+          (declare-const x Int)
+          (assert (= x 42))
+          (check-sat)
+          EOF
+          test "$(z3 /tmp/alive.smt2 | tail -n 1)" = sat
+          test "$(cvc5 /tmp/alive.smt2 | tail -n 1)" = sat
+          cat > /tmp/alive.dl <<'EOF'
+          .decl edge(x:number,y:number)
+          .decl path(x:number,y:number)
+          .output path
+          edge(1,2).
+          edge(2,3).
+          path(x,y) :- edge(x,y).
+          path(x,z) :- path(x,y), edge(y,z).
+          EOF
+          mkdir -p /tmp/souffle-out
+          souffle -D /tmp/souffle-out /tmp/alive.dl
+          grep -F $'1\t3' /tmp/souffle-out/path.csv
+
+          tar --zstd -cf capsule/out/native-tools-x86_64-linux.tar.zst -C capsule payload
+          (cd capsule/out && sha256sum native-tools-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf capsule/out/native-tools-x86_64-linux.tar.zst -C capsule/replay
+          source capsule/replay/payload/activate.sh
+          gh --version | head -n 1
+          ssh -V
+          z3 /tmp/alive.smt2 | grep -Fx sat
+          cvc5 /tmp/alive.smt2 | grep -Fx sat
+          rm -rf /tmp/souffle-replay && mkdir /tmp/souffle-replay
+          souffle -D /tmp/souffle-replay /tmp/alive.dl
+          grep -F $'1\t3' /tmp/souffle-replay/path.csv
+          podman --version
+          buildah --version
+          skopeo --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-native-tools-direct
+          path: capsule/out/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
