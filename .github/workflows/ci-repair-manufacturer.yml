@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/ci-repair-manufacturer.yml'
       - 'scripts/ci/manufacture_alive_repairs.py'
+      - 'scripts/ci/alive_repairs/**'
   workflow_dispatch:
 
 permissions:
@@ -19,7 +20,7 @@ jobs:
   manufacture:
     name: Construct tested unattached repair commit
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 60
     env:
       EXPECTED_PARENT: ${{ github.event.pull_request.head.sha || github.sha }}
 
@@ -44,14 +45,22 @@ jobs:
           rustup toolchain install nightly-2026-04-15 \
             --profile minimal \
             --component rustfmt \
+            --component clippy \
             --target wasm32-unknown-unknown
           rustup default nightly-2026-04-15
           rustc --version --verbose
           rustfmt --version
+          cargo clippy --version
 
       - name: Apply admitted deterministic repairs
         shell: bash
-        run: python3 scripts/ci/manufacture_alive_repairs.py
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/manufacture_alive_repairs.py
+          python3 scripts/ci/alive_repairs/pnml_whitespace.py
+          python3 scripts/ci/alive_repairs/branchless_bloom.py
+          python3 scripts/ci/alive_repairs/process_tree_serde.py
+          python3 scripts/ci/alive_repairs/membrane_registry.py
 
       - name: Verify wasm production compile
         shell: bash
@@ -64,6 +73,13 @@ jobs:
       - name: Execute cognition handoff witness
         shell: bash
         run: cargo test -p wasm4pm-cognition --all-features --test composed_pipeline_breed_handoff
+
+      - name: Enforce repaired crate clippy laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo clippy -p wasm4pm --all-targets --all-features -- -D warnings
+          cargo clippy -p wasm4pm-cognition --all-targets --all-features -- -D warnings
 
       - name: Construct unattached Git candidate and receipt
         shell: bash
@@ -93,16 +109,21 @@ jobs:
               )
 
           paths = [
-              'wasm4pm/src/pnml_io.rs',
-              'wasm4pm/src/automl_envelope.rs',
-              'wasm4pm/src/prediction_rf.rs',
-              'wasm4pm/src/statistical_analysis.rs',
               'crates/wasm4pm-cognition/tests/composed_pipeline_breed_handoff.rs',
+              'wasm4pm/src/automembrane.rs',
+              'wasm4pm/src/automl_envelope.rs',
+              'wasm4pm/src/branchless.rs',
+              'wasm4pm/src/pnml_io.rs',
+              'wasm4pm/src/prediction_rf.rs',
+              'wasm4pm/src/probabilistic/bloom.rs',
+              'wasm4pm/src/probabilistic/wasm_bindings.rs',
+              'wasm4pm/src/process_tree.rs',
+              'wasm4pm/src/statistical_analysis.rs',
           ]
           changed = subprocess.check_output(
               ['git', 'diff', '--name-only', '--', *paths], text=True
           ).splitlines()
-          if changed != paths:
+          if sorted(changed) != sorted(paths):
               raise SystemExit(
                   f'PATCH_SCOPE_REFUSED expected={paths!r} observed={changed!r}'
               )
@@ -155,30 +176,54 @@ jobs:
           })
           commit = post('/git/commits', {
               'message': (
-                  'fix(rust): close exact-head production compile gaps\n\n'
-                  'Migrate PNML parsing to quick-xml 0.41 events and repair '
-                  'stale test witnesses without weakening runtime contracts.'
+                  'fix(rust): close exact-head production law failures\n\n'
+                  'Repair quick-xml event handling, mask admission, Bloom indexing, '
+                  'process-tree serialization, membrane witnesses, unsafe registry '
+                  'state, and stale typed fixtures without weakening contracts.'
               ),
               'tree': tree['sha'],
               'parents': [parent],
           })
 
-          constructor = (root / 'scripts/ci/manufacture_alive_repairs.py').read_bytes()
+          constructor_files = [
+              root / 'scripts/ci/manufacture_alive_repairs.py',
+              *sorted((root / 'scripts/ci/alive_repairs').glob('*.py')),
+          ]
+          constructor_digest = hashlib.sha256()
+          constructors = []
+          for constructor_path in constructor_files:
+              content = constructor_path.read_bytes()
+              relative = constructor_path.relative_to(root).as_posix()
+              constructor_digest.update(relative.encode())
+              constructor_digest.update(b'\0')
+              constructor_digest.update(content)
+              constructors.append({
+                  'path': relative,
+                  'sha256': hashlib.sha256(content).hexdigest(),
+              })
+
           receipt = {
-              'schema': 'wasm4pm.ci-repair-candidate.v1',
+              'schema': 'wasm4pm.ci-repair-candidate.v2',
               'standing': 'ALIVE',
               'actuation': 'NONE_UNATTACHED_GIT_OBJECTS_ONLY',
               'parent': parent,
               'base_tree': base_tree,
               'candidate_tree': tree['sha'],
               'candidate_commit': commit['sha'],
-              'constructor_sha256': hashlib.sha256(constructor).hexdigest(),
+              'constructor_set_sha256': constructor_digest.hexdigest(),
+              'constructors': constructors,
               'blobs': blobs,
               'commands': [
                   'python3 scripts/ci/manufacture_alive_repairs.py',
+                  'python3 scripts/ci/alive_repairs/pnml_whitespace.py',
+                  'python3 scripts/ci/alive_repairs/branchless_bloom.py',
+                  'python3 scripts/ci/alive_repairs/process_tree_serde.py',
+                  'python3 scripts/ci/alive_repairs/membrane_registry.py',
                   'cargo check -p wasm4pm --all-features --target wasm32-unknown-unknown',
                   'cargo test -p wasm4pm --all-features --lib',
                   'cargo test -p wasm4pm-cognition --all-features --test composed_pipeline_breed_handoff',
+                  'cargo clippy -p wasm4pm --all-targets --all-features -- -D warnings',
+                  'cargo clippy -p wasm4pm-cognition --all-targets --all-features -- -D warnings',
               ],
           }
           target = root / 'artifacts/ci-repair-manufacturer/receipt.json'
