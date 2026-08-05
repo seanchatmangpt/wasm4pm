@@ -1,24 +1,14 @@
-name: Cloud Toolchain Capsules
+name: Cloud Toolchain Core Capsules
 
 on:
-  push:
-    branches:
-      - agent/cloud-toolchain-capsules-20260804
-    paths:
-      - .github/workflows/cloud-toolchain-capsules.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: cloud-toolchain-capsules-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   source-capsule:
-    name: Exact source capsule
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -28,35 +18,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p capsule-out
-          git rev-parse HEAD | tee capsule-out/HEAD
-          git archive --format=tar HEAD | zstd -19 -T0 -o capsule-out/wasm4pm-source.tar.zst
-          git bundle create capsule-out/wasm4pm.bundle HEAD
-          sha256sum capsule-out/* | tee capsule-out/SHA256SUMS
+          mkdir -p out
+          git rev-parse HEAD | tee out/HEAD
+          git archive --format=tar HEAD | zstd -19 -T0 -o out/wasm4pm-source.tar.zst
+          git bundle create out/wasm4pm.bundle HEAD
+          (cd out && sha256sum HEAD wasm4pm-source.tar.zst wasm4pm.bundle > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: cloud-source-capsule
-          path: capsule-out/
-          retention-days: 7
+          path: out/
+          compression-level: 0
+          retention-days: 14
 
   rust-nightly:
-    name: Rust nightly 2026-04-15
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
     steps:
-      - name: Install exact Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-04-15
           targets: wasm32-unknown-unknown
           components: rustfmt,clippy
-      - name: Manufacture relocatable Rust capsule
+      - name: Manufacture and replay exact Rust capsule
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p capsule/root capsule-out
+          mkdir -p capsule/root/.cargo out replay
           cp -a "$HOME/.rustup" capsule/root/.rustup
-          mkdir -p capsule/root/.cargo
           cp -a "$HOME/.cargo/bin" capsule/root/.cargo/bin
           cat > capsule/activate.sh <<'EOF'
           #!/usr/bin/env bash
@@ -67,122 +55,46 @@ jobs:
           export RUSTUP_TOOLCHAIN=nightly-2026-04-15-x86_64-unknown-linux-gnu
           EOF
           chmod +x capsule/activate.sh
+          source capsule/activate.sh
           rustc --version --verbose | tee capsule/RUSTC_VERSION
           cargo --version | tee capsule/CARGO_VERSION
-          rustup target list --installed | tee capsule/TARGETS
-          tar --zstd -cf capsule-out/rust-nightly-2026-04-15-x86_64-linux.tar.zst capsule
-          rm -rf replay && mkdir replay
-          tar --zstd -xf capsule-out/rust-nightly-2026-04-15-x86_64-linux.tar.zst -C replay
+          rustfmt --version | tee capsule/RUSTFMT_VERSION
+          cargo clippy --version | tee capsule/CLIPPY_VERSION
+          rustup target list --installed | grep -Fx wasm32-unknown-unknown | tee capsule/TARGETS
+          printf 'fn main(){println!("RUST_CAPSULE_ALIVE:{}",19+23);}\n' >/tmp/alive.rs
+          rustc /tmp/alive.rs -o /tmp/alive && /tmp/alive
+          tar --zstd -cf out/rust-nightly-2026-04-15-x86_64-linux.tar.zst capsule
+          (cd out && sha256sum rust-nightly-2026-04-15-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf out/rust-nightly-2026-04-15-x86_64-linux.tar.zst -C replay
           source replay/capsule/activate.sh
-          rustc --version
+          rustc --version --verbose
           cargo --version
+          rustfmt --version
+          cargo clippy --version
           rustup target list --installed | grep -Fx wasm32-unknown-unknown
-          sha256sum capsule-out/* | tee capsule-out/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: cloud-rust-nightly-2026-04-15
-          path: capsule-out/
-          retention-days: 7
-
-  lean:
-    name: Lean 4.31.0
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Install exact Lean toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
-          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.31.0
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Manufacture relocatable Lean capsule
-        shell: bash
-        run: |
-          set -euo pipefail
-          export PATH="$HOME/.elan/bin:$PATH"
-          mkdir -p capsule/root capsule-out
-          cp -a "$HOME/.elan" capsule/root/.elan
-          cat > capsule/activate.sh <<'EOF'
-          #!/usr/bin/env bash
-          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/root"
-          export ELAN_HOME="$ROOT/.elan"
-          export PATH="$ELAN_HOME/bin:$PATH"
-          EOF
-          chmod +x capsule/activate.sh
-          lean --version | tee capsule/LEAN_VERSION
-          lake --version | tee capsule/LAKE_VERSION
-          tar --zstd -cf capsule-out/lean-v4.31.0-x86_64-linux.tar.zst capsule
-          rm -rf replay && mkdir replay
-          tar --zstd -xf capsule-out/lean-v4.31.0-x86_64-linux.tar.zst -C replay
-          source replay/capsule/activate.sh
-          lean --version
-          lake --version
-          sha256sum capsule-out/* | tee capsule-out/SHA256SUMS
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cloud-lean-v4.31.0
-          path: capsule-out/
-          retention-days: 7
-
-  erlang-elixir:
-    name: Erlang and Elixir
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - name: Install Erlang and Elixir
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y erlang-base erlang-dev erlang-tools erlang-crypto erlang-ssl erlang-inets elixir
-      - name: Manufacture Erlang and Elixir capsule
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p capsule/root/usr/lib capsule/root/usr/bin capsule-out
-          cp -a /usr/lib/erlang capsule/root/usr/lib/
-          if [ -d /usr/lib/elixir ]; then cp -a /usr/lib/elixir capsule/root/usr/lib/; fi
-          for b in erl erlc escript dialyzer elixir elixirc iex mix; do
-            p="$(command -v "$b")"
-            cp -aL "$p" "capsule/root/usr/bin/$b"
-          done
-          cat > capsule/activate.sh <<'EOF'
-          #!/usr/bin/env bash
-          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/root"
-          export ERL_ROOTDIR="$ROOT/usr/lib/erlang"
-          export PATH="$ROOT/usr/bin:$ROOT/usr/lib/erlang/bin:${PATH}"
-          if [ -d "$ROOT/usr/lib/elixir/bin" ]; then export PATH="$ROOT/usr/lib/elixir/bin:$PATH"; fi
-          EOF
-          chmod +x capsule/activate.sh
-          erl -noshell -eval 'io:format("OTP ~s~n", [erlang:system_info(otp_release)]), halt().' | tee capsule/ERLANG_VERSION
-          elixir --version | tee capsule/ELIXIR_VERSION
-          tar --zstd -cf capsule-out/erlang-elixir-x86_64-linux.tar.zst capsule
-          sha256sum capsule-out/* | tee capsule-out/SHA256SUMS
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cloud-erlang-elixir
-          path: capsule-out/
-          retention-days: 7
+          path: out/
+          compression-level: 0
+          retention-days: 14
 
   wasm-runtimes:
-    name: WASM runtimes and tools
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
     steps:
-      - name: Install WASM tools through independent routes
+      - name: Install exact runtime surface
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.local/bin"
           curl -sSfL https://wasmtime.dev/install.sh | bash
           curl -sSfL https://get.wasmer.io | sh
           cargo install --locked wasm-tools
-      - name: Manufacture WASM capsule
+      - name: Manufacture and replay WASM capsule
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p capsule/bin capsule-out
+          mkdir -p capsule/bin out replay
           cp -aL "$HOME/.wasmtime/bin/wasmtime" capsule/bin/
           cp -aL "$HOME/.wasmer/bin/wasmer" capsule/bin/
           cp -aL "$HOME/.cargo/bin/wasm-tools" capsule/bin/
@@ -192,76 +104,24 @@ jobs:
           export PATH="$ROOT/bin:$PATH"
           EOF
           chmod +x capsule/activate.sh
-          capsule/bin/wasmtime --version | tee capsule/WASMTIME_VERSION
-          capsule/bin/wasmer --version | tee capsule/WASMER_VERSION
-          capsule/bin/wasm-tools --version | tee capsule/WASM_TOOLS_VERSION
-          tar --zstd -cf capsule-out/wasm-runtimes-x86_64-linux.tar.zst capsule
-          sha256sum capsule-out/* | tee capsule-out/SHA256SUMS
+          source capsule/activate.sh
+          wasmtime --version | tee capsule/WASMTIME_VERSION
+          wasmer --version | tee capsule/WASMER_VERSION
+          wasm-tools --version | tee capsule/WASM_TOOLS_VERSION
+          printf '(module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))\n' >/tmp/add.wat
+          wasm-tools parse /tmp/add.wat -o /tmp/add.wasm
+          wasm-tools validate /tmp/add.wasm
+          test "$(wasmtime run --invoke add /tmp/add.wasm 19 23 | tr -d '\r')" = 42
+          tar --zstd -cf out/wasm-runtimes-x86_64-linux.tar.zst capsule
+          (cd out && sha256sum wasm-runtimes-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf out/wasm-runtimes-x86_64-linux.tar.zst -C replay
+          source replay/capsule/activate.sh
+          wasmtime --version
+          wasmer --version
+          wasm-tools --version
       - uses: actions/upload-artifact@v4
         with:
           name: cloud-wasm-runtimes
-          path: capsule-out/
-          retention-days: 7
-
-  native-tools:
-    name: Solvers, GitHub, SSH, and OCI tools
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Install available native tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          for pkg in z3 cvc5 souffle openssh-client podman buildah skopeo; do
-            sudo apt-get install -y "$pkg" || echo "$pkg" >> /tmp/unavailable-packages
-          done
-          test -x "$(command -v gh)"
-      - name: Manufacture dependency-closed native capsule
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p capsule/root capsule/bin capsule-out
-          : > capsule/AVAILABLE
-          : > capsule/UNAVAILABLE
-          if [ -f /tmp/unavailable-packages ]; then sort -u /tmp/unavailable-packages > capsule/UNAVAILABLE; fi
-          copy_one() {
-            local name="$1" p
-            p="$(command -v "$name" 2>/dev/null || true)"
-            if [ -z "$p" ]; then echo "$name" >> capsule/UNAVAILABLE; return 0; fi
-            echo "$name=$p" >> capsule/AVAILABLE
-            cp -aL --parents "$p" capsule/root
-            if file "$p" | grep -q ELF; then
-              ldd "$p" | awk '/=> \/|^\// {for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort -u | while read -r lib; do
-                cp -aL --parents "$lib" capsule/root
-              done
-            fi
-            cat > "capsule/bin/$name" <<EOF
-          #!/usr/bin/env bash
-          ROOT="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)/root"
-          export LD_LIBRARY_PATH="\$ROOT/lib/x86_64-linux-gnu:\$ROOT/usr/lib/x86_64-linux-gnu:\${LD_LIBRARY_PATH:-}"
-          exec "\$ROOT$p" "\$@"
-          EOF
-            chmod +x "capsule/bin/$name"
-          }
-          for b in gh ssh ssh-keygen z3 cvc5 souffle podman buildah skopeo; do copy_one "$b"; done
-          for d in /etc/containers /usr/share/containers /usr/libexec/podman /usr/libexec/cni; do
-            if [ -e "$d" ]; then cp -a --parents "$d" capsule/root; fi
-          done
-          cat > capsule/activate.sh <<'EOF'
-          #!/usr/bin/env bash
-          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          export PATH="$ROOT/bin:$PATH"
-          EOF
-          chmod +x capsule/activate.sh
-          sort -u -o capsule/UNAVAILABLE capsule/UNAVAILABLE
-          for b in gh ssh z3 cvc5 souffle podman buildah skopeo; do
-            if [ -x "capsule/bin/$b" ]; then "capsule/bin/$b" --version 2>&1 | head -n 3 || true; fi
-          done | tee capsule/VERSIONS
-          tar --zstd -cf capsule-out/native-tools-x86_64-linux.tar.zst capsule
-          sha256sum capsule-out/* | tee capsule-out/SHA256SUMS
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cloud-native-tools
-          path: capsule-out/
-          retention-days: 7
+          path: out/
+          compression-level: 0
+          retention-days: 14
