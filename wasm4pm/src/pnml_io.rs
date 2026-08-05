@@ -318,7 +318,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
             }
 
             Ok(Event::Text(ref e)) => {
-                let text = e.unescape().unwrap_or_default().trim().to_string();
+                let text = e.decode().unwrap_or_default().trim().to_string();
                 if text.is_empty() {
                     buf.clear();
                     continue;
