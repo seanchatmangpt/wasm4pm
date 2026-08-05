@@ -99,6 +99,7 @@ undefined/
 
 # ggen local sync receipts (not release provenance)
 .ggen/receipts/
+.ggen-v2/
 
 # Temporary test artifacts
 .gc_test*.txt
