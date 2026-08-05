@@ -53,10 +53,10 @@ jobs:
         run: npm install -g wasm-pack@0.13.1
         shell: bash
 
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm

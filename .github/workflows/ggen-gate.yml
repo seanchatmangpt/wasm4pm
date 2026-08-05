@@ -48,7 +48,7 @@ jobs:
           exit $fail
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
@@ -89,7 +89,7 @@ jobs:
           toolchain: stable
 
       - name: Cache pinned ggen build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ggen/target
           key: ggen-source-${{ runner.os }}-${{ env.GGEN_REV }}-${{ hashFiles('ggen/Cargo.lock') }}
