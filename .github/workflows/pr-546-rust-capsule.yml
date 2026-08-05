@@ -60,7 +60,10 @@ jobs:
           }, indent=2, sort_keys=True))
           PY
           tar --zstd -cf out/rust-nightly-2026-04-15-x86_64-linux.tar.zst capsule
-          sha256sum out/rust-nightly-2026-04-15-x86_64-linux.tar.zst > out/SHA256SUMS
+          (
+            cd out
+            sha256sum rust-nightly-2026-04-15-x86_64-linux.tar.zst > SHA256SUMS
+          )
           mkdir -p replay
           tar --zstd -xf out/rust-nightly-2026-04-15-x86_64-linux.tar.zst -C replay
           source replay/capsule/activate.sh
