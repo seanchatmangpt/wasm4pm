@@ -11,41 +11,15 @@ env:
   CARGO_TERM_COLOR: always
   GGEN_REV: b82ea9ef848a5164dd6a09bb76539908fde41922
   COMPAT_REV: 9bffd6625b7e55ea2b5e25d3370fc33b797e6745
+  RUST_TOOLCHAIN: nightly-2026-08-04
 
 jobs:
-  # Verifies the latest ggen receipt without needing the ggen binary:
-  # every file listed in .ggen/receipts/latest.json output_hashes must
-  # hash (sha256) to the recorded value on disk.
-  receipt-check:
-    name: Receipt hash verification
+  evidence-check:
+    name: Project evidence freshness
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - name: Verify output_hashes in .ggen/receipts/latest.json
-        run: |
-          set -euo pipefail
-          receipt=.ggen/receipts/latest.json
-          test -f "$receipt" || { echo "::error::$receipt missing"; exit 1; }
-          fail=0
-          while IFS= read -r entry; do
-            file="${entry%:*}"
-            expected="${entry##*:}"
-            if [ ! -f "$file" ]; then
-              echo "::error::receipt references missing file: $file"
-              fail=1
-              continue
-            fi
-            actual=$(shasum -a 256 "$file" | awk '{print $1}')
-            if [ "$actual" != "$expected" ]; then
-              echo "::error::hash mismatch for $file (expected $expected, got $actual)"
-              fail=1
-            else
-              echo "ok: $file"
-            fi
-          done < <(jq -r '.output_hashes[]? // empty' "$receipt")
-          exit $fail
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -59,13 +33,14 @@ jobs:
           git diff --exit-code -- ocel/reports/evidence.ttl \
             || { echo "::error::ocel/reports/evidence.ttl is stale — regenerate via 'python3 scripts/project_evidence.py'"; exit 1; }
 
-  # Full sync conformance: build an immutable clean-checkout ggen revision,
-  # run `ggen sync` against the pinned sibling ontology pack, and assert every
-  # projected source remains byte-identical.
   ggen-sync:
     name: ggen sync conformance
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Public deterministic CI identity. This validates signing and verification
+    # plumbing only; it is not a production or release signing key.
+    env:
+      GGEN_SIGNING_KEY: 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,21 +58,21 @@ jobs:
           ref: ${{ env.GGEN_REV }}
           path: ggen
 
-      - name: Setup Rust
+      - name: Setup pinned Rust nightly
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
 
       - name: Cache pinned ggen build
         uses: actions/cache@v6
         with:
           path: ggen/target
-          key: ggen-source-${{ runner.os }}-${{ env.GGEN_REV }}-${{ hashFiles('ggen/Cargo.lock') }}
+          key: ggen-source-${{ runner.os }}-${{ env.RUST_TOOLCHAIN }}-${{ env.GGEN_REV }}-${{ hashFiles('ggen/Cargo.lock') }}
 
       - name: Build pinned ggen
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           cargo build \
             --manifest-path ggen/crates/ggen-cli/Cargo.toml \
             --bin ggen \
@@ -107,32 +82,46 @@ jobs:
         working-directory: wasm4pm
         shell: bash
         run: |
-          set -o pipefail
-          ../ggen/target/debug/ggen sync 2>&1 | tee ../ggen-sync.log
+          set -euo pipefail
+          ../ggen/target/debug/ggen sync run 2>&1 | tee ../ggen-sync.log
 
       - name: Assert rendered sources unchanged
         working-directory: wasm4pm
+        shell: bash
         run: |
-          # Receipts legitimately change on every sync; only projected source
-          # surfaces must be byte-identical.
-          git diff --exit-code -- ':!.ggen/receipts' \
-            || { echo "::error::ggen sync produced drift — rendered sources do not conform to the ontology pack"; exit 1; }
+          set -euo pipefail
+          # Receipts are run evidence. The committed source projections must
+          # remain byte-identical to a clean sync from the pinned ontology pack.
+          git diff --exit-code -- ':!.ggen/receipts' ':!.ggen-v2' \
+            || { echo "::error::ggen sync produced source drift — regenerate from the pinned ontology pack"; exit 1; }
 
-      - name: Verify Ed25519 receipt signature
+      - name: Verify fresh signed receipt
         working-directory: wasm4pm
+        shell: bash
         run: |
+          set -euo pipefail
           ../ggen/target/debug/ggen receipt verify \
-            --receipt-path .ggen/receipts/latest.json \
-            --public-key .ggen/keys/verifying.key 2>/dev/null \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['is_valid'], d['message']; print('receipt verified:', d['message'])"
+            | tee ../ggen-receipt-verify.json
 
-      - name: Upload ggen receipts
+      - name: Verify receipt outputs against disk
+        working-directory: wasm4pm
+        shell: bash
+        run: |
+          set -euo pipefail
+          ../ggen/target/debug/ggen doctor run \
+            | tee ../ggen-doctor.json
+
+      - name: Upload ggen conformance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ggen-conformance-receipt
+          name: ggen-conformance-evidence
           path: |
             ggen-build.log
             ggen-sync.log
-          if-no-files-found: error
+            ggen-receipt-verify.json
+            ggen-doctor.json
+            wasm4pm/.ggen-v2/receipt.json
+            wasm4pm/.ggen-v2/receipt-log.jsonl
+          if-no-files-found: warn
           retention-days: 7
