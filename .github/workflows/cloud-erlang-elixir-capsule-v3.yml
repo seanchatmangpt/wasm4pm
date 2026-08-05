@@ -1,0 +1,113 @@
+name: Cloud Erlang Elixir Capsule V3
+
+on:
+  push:
+    branches:
+      - agent/cloud-toolchain-capsules-20260804
+    paths:
+      - .github/workflows/cloud-erlang-elixir-capsule-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  erlang-elixir:
+    name: Direct erlexec with non-glibc compatibility closure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Install complete BEAM command surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            erlang-base erlang-dev erlang-tools erlang-dialyzer \
+            erlang-crypto erlang-ssl erlang-inets elixir libsctp1
+
+      - name: Manufacture and replay host-ABI-portable BEAM capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capsule/payload/root/usr/lib capsule/payload/root/usr/bin \
+            capsule/payload/bin capsule/payload/compat-lib capsule/out capsule/replay
+          cp -a /usr/lib/erlang capsule/payload/root/usr/lib/
+          cp -a /usr/lib/elixir capsule/payload/root/usr/lib/
+          for b in erl erlc escript dialyzer elixir elixirc iex mix; do
+            p="$(command -v "$b")"
+            cp -a "$p" "capsule/payload/root/usr/bin/$b"
+          done
+
+          # Ubuntu's erl launcher hardcodes /usr/lib/erlang. Route directly to
+          # the relocated erlexec instead, preserving ROOTDIR/BINDIR explicitly.
+          cat > capsule/payload/bin/erl <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          PAYLOAD="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+          ROOTDIR="$PAYLOAD/root/usr/lib/erlang"
+          BINDIR="$(find "$ROOTDIR" -maxdepth 1 -type d -name 'erts-*' | sort | tail -n1)/bin"
+          export ROOTDIR BINDIR EMU=beam PROGNAME=erl
+          exec "$BINDIR/erlexec" "$@"
+          EOF
+          chmod +x capsule/payload/bin/erl
+
+          # Carry non-core ABI dependencies only. Injecting another distro's
+          # glibc into the host shell causes GLIBC_PRIVATE symbol collisions.
+          while IFS= read -r elf; do
+            while IFS= read -r lib; do
+              [ -n "$lib" ] || continue
+              base="$(basename "$lib")"
+              case "$base" in
+                libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|libgcc_s.so.*|libstdc++.so.*|ld-linux-*) continue ;;
+              esac
+              cp -aL "$lib" "capsule/payload/compat-lib/$base"
+            done < <((ldd "$elf" 2>/dev/null || true) | awk '/=> \/|^\// {for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort -u)
+          done < <(find /usr/lib/erlang -type f -exec file {} + | awk -F: '/ELF 64-bit/ {print $1}')
+
+          cat > capsule/payload/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          PAYLOAD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export ERL_ROOTDIR="$PAYLOAD/root/usr/lib/erlang"
+          export LD_LIBRARY_PATH="$PAYLOAD/compat-lib:${LD_LIBRARY_PATH:-}"
+          export PATH="$PAYLOAD/bin:$PAYLOAD/root/usr/bin:$PAYLOAD/root/usr/lib/erlang/bin:$PAYLOAD/root/usr/lib/elixir/bin:$PATH"
+          EOF
+          chmod +x capsule/payload/activate.sh
+
+          verify_payload() {
+            local payload="$1"
+            env -i HOME=/tmp \
+              ERL_ROOTDIR="$payload/root/usr/lib/erlang" \
+              LD_LIBRARY_PATH="$payload/compat-lib" \
+              PATH="$payload/bin:$payload/root/usr/bin:$payload/root/usr/lib/erlang/bin:$payload/root/usr/lib/elixir/bin:/usr/bin:/bin" \
+              erl -noshell -eval '42 = 19 + 23, io:format("ERLANG_PORTABLE_ALIVE:42~n"), halt().'
+            env -i HOME=/tmp \
+              ERL_ROOTDIR="$payload/root/usr/lib/erlang" \
+              LD_LIBRARY_PATH="$payload/compat-lib" \
+              PATH="$payload/bin:$payload/root/usr/bin:$payload/root/usr/lib/erlang/bin:$payload/root/usr/lib/elixir/bin:/usr/bin:/bin" \
+              elixir -e '42 = 19 + 23; IO.puts("ELIXIR_PORTABLE_ALIVE:42")'
+            env -i HOME=/tmp \
+              ERL_ROOTDIR="$payload/root/usr/lib/erlang" \
+              LD_LIBRARY_PATH="$payload/compat-lib" \
+              PATH="$payload/bin:$payload/root/usr/bin:$payload/root/usr/lib/erlang/bin:$payload/root/usr/lib/elixir/bin:/usr/bin:/bin" \
+              mix --version
+            env -i HOME=/tmp \
+              ERL_ROOTDIR="$payload/root/usr/lib/erlang" \
+              LD_LIBRARY_PATH="$payload/compat-lib" \
+              PATH="$payload/bin:$payload/root/usr/bin:$payload/root/usr/lib/erlang/bin:$payload/root/usr/lib/elixir/bin:/usr/bin:/bin" \
+              dialyzer --version
+          }
+
+          verify_payload "$PWD/capsule/payload" | tee capsule/payload/REPLAY
+          tar --zstd -cf capsule/out/erlang-elixir-x86_64-linux.tar.zst -C capsule payload
+          (cd capsule/out && sha256sum erlang-elixir-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf capsule/out/erlang-elixir-x86_64-linux.tar.zst -C capsule/replay
+          verify_payload "$PWD/capsule/replay/payload"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-erlang-elixir-portable-v3
+          path: capsule/out/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
