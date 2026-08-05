@@ -61,6 +61,7 @@ jobs:
           python3 scripts/ci/alive_repairs/branchless_bloom.py
           python3 scripts/ci/alive_repairs/process_tree_serde.py
           python3 scripts/ci/alive_repairs/membrane_registry.py
+          python3 scripts/ci/alive_repairs/cache_test_fence.py
 
       - name: Verify wasm production compile
         shell: bash
@@ -113,6 +114,7 @@ jobs:
               'wasm4pm/src/automembrane.rs',
               'wasm4pm/src/automl_envelope.rs',
               'wasm4pm/src/branchless.rs',
+              'wasm4pm/src/cache.rs',
               'wasm4pm/src/pnml_io.rs',
               'wasm4pm/src/prediction_rf.rs',
               'wasm4pm/src/probabilistic/bloom.rs',
@@ -179,7 +181,8 @@ jobs:
                   'fix(rust): close exact-head production law failures\n\n'
                   'Repair quick-xml event handling, mask admission, Bloom indexing, '
                   'process-tree serialization, membrane witnesses, unsafe registry '
-                  'state, and stale typed fixtures without weakening contracts.'
+                  'state, cache witness isolation, and stale typed fixtures without '
+                  'weakening contracts.'
               ),
               'tree': tree['sha'],
               'parents': [parent],
@@ -203,7 +206,7 @@ jobs:
               })
 
           receipt = {
-              'schema': 'wasm4pm.ci-repair-candidate.v2',
+              'schema': 'wasm4pm.ci-repair-candidate.v3',
               'standing': 'ALIVE',
               'actuation': 'NONE_UNATTACHED_GIT_OBJECTS_ONLY',
               'parent': parent,
@@ -219,6 +222,7 @@ jobs:
                   'python3 scripts/ci/alive_repairs/branchless_bloom.py',
                   'python3 scripts/ci/alive_repairs/process_tree_serde.py',
                   'python3 scripts/ci/alive_repairs/membrane_registry.py',
+                  'python3 scripts/ci/alive_repairs/cache_test_fence.py',
                   'cargo check -p wasm4pm --all-features --target wasm32-unknown-unknown',
                   'cargo test -p wasm4pm --all-features --lib',
                   'cargo test -p wasm4pm-cognition --all-features --test composed_pipeline_breed_handoff',
