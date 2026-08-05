@@ -1,0 +1,93 @@
+name: Per-item algorithm and breed validation
+
+on:
+  push:
+    branches:
+      - codex/per-item-algorithm-breed-validation
+  pull_request:
+    paths:
+      - scripts/generate_per_item_validation.py
+      - packages/kernel/src/algorithm-contracts/**
+      - packages/kernel/src/__tests__/algorithm-contracts/**
+      - crates/wasm4pm-cognition/src/breeds/**
+      - crates/wasm4pm-cognition/tests/breed_contracts/**
+      - crates/wasm4pm-cognition/tests/breed_contracts.rs
+      - crates/wasm4pm-cognition/tests/paper_pointers_generated.rs
+      - crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  manufacture:
+    name: Manufacture deterministic per-item files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Generate exact files
+        run: python3 scripts/generate_per_item_validation.py
+
+      - name: Commit generated files on the purpose branch
+        if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo 'Generated files already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            packages/kernel/src/algorithm-contracts \
+            packages/kernel/src/__tests__/algorithm-contracts \
+            crates/wasm4pm-cognition/tests/breed_contracts \
+            crates/wasm4pm-cognition/tests/breed_contracts.rs \
+            artifacts/validation/per-item-validation.json
+          git commit -m 'test(validation): generate per-item algorithm and breed proofs'
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Assert generation closure
+        run: python3 scripts/generate_per_item_validation.py --check
+
+  algorithm-tests:
+    name: 60 focused algorithm tests
+    needs: manufacture
+    if: github.actor == 'github-actions[bot]' || github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter wasm4pm exec vitest run src/__tests__/algorithm-contracts
+
+  breed-tests:
+    name: 55 focused breed tests plus generated oracles
+    needs: manufacture
+    if: github.actor == 'github-actions[bot]' || github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-04
+      - run: cargo test -p wasm4pm-cognition --test breed_contracts
+      - run: cargo test -p wasm4pm-cognition --test paper_pointers_generated
+      - run: cargo test -p wasm4pm-cognition --test universal_anticheat_generated
