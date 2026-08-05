@@ -1,0 +1,98 @@
+name: Cloud Toolchain Workflow Receipt
+
+on:
+  push:
+    branches:
+      - agent/cloud-toolchain-capsules-20260804
+    paths:
+      - .github/workflows/cloud-toolchain-capsules.yml
+      - .github/workflows/cloud-lean-direct.yml
+      - .github/workflows/cloud-erlang-elixir-capsule-v3.yml
+      - .github/workflows/cloud-native-rootfs-v2.yml
+      - .github/workflows/cloud-toolchain-receipt.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admit:
+    name: Parse, fence, hash, and receipt canonical rails
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Parse every canonical workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e '
+            require "yaml"
+            files = %w[
+              .github/workflows/cloud-toolchain-capsules.yml
+              .github/workflows/cloud-lean-direct.yml
+              .github/workflows/cloud-erlang-elixir-capsule-v3.yml
+              .github/workflows/cloud-native-rootfs-v2.yml
+              .github/workflows/cloud-toolchain-receipt.yml
+            ]
+            files.each { |f| YAML.parse_file(f) or abort("empty YAML: #{f}") }
+            puts "YAML_PARSE_ALIVE:#{files.length}"
+          '
+
+      - name: Enforce permanent portability guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          core=.github/workflows/cloud-toolchain-capsules.yml
+          lean=.github/workflows/cloud-lean-direct.yml
+          beam=.github/workflows/cloud-erlang-elixir-capsule-v3.yml
+          native=.github/workflows/cloud-native-rootfs-v2.yml
+
+          grep -F 'nightly-2026-04-15' "$core"
+          grep -F 'wasm32-unknown-unknown' "$core"
+          grep -F 'leanprover/lean4:v4.31.0' "$lean"
+          grep -F 'cp -a "$TOOLCHAIN" capsule/payload/toolchain' "$lean"
+          ! grep -F 'cp -a "$HOME/.elan"' "$lean"
+          grep -F 'exec "$BINDIR/erlexec" "$@"' "$beam"
+          grep -F 'GLIBC_PRIVATE' "$beam"
+          grep -F 'sqlite3 python3' "$native"
+          grep -F 'FROM ubuntu:24.04' "$native"
+          grep -F 'docker.io containerd runc' "$native"
+          grep -F 'chroot capsule/rootfs /usr/local/bin/verify-native-surface' "$native"
+          echo PORTABILITY_GUARDS_ALIVE
+
+      - name: Manufacture exact-head receipt
+        shell: bash
+        env:
+          BASE_SHA: 44f1bca8ff8cb05b1d8f5561c20c827e33d2b5fd
+        run: |
+          set -euo pipefail
+          mkdir -p receipt
+          sha256sum \
+            .github/workflows/cloud-toolchain-capsules.yml \
+            .github/workflows/cloud-lean-direct.yml \
+            .github/workflows/cloud-erlang-elixir-capsule-v3.yml \
+            .github/workflows/cloud-native-rootfs-v2.yml \
+            .github/workflows/cloud-toolchain-receipt.yml \
+            | tee receipt/SHA256SUMS
+          jq -n \
+            --arg state ALIVE \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg ref "$GITHUB_REF" \
+            --arg base_sha "$BASE_SHA" \
+            --arg head_sha "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            '{state:$state,subject:{repository:$repository,ref:$ref,base_sha:$base_sha,head_sha:$head_sha},admission:{yaml_parsed:true,portability_guards:true,canonical_workflows:5},execution:{run_id:$run_id,runner:"ubuntu-22.04"},replay:["ruby YAML.parse_file over five workflows","grep permanent portability guards","sha256sum canonical workflows"]}' \
+            | tee receipt/receipt.json
+          jq -e '.state == "ALIVE" and .admission.canonical_workflows == 5' receipt/receipt.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-toolchain-workflow-receipt
+          path: receipt/
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
