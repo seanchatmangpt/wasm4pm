@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'apps/wasm4pm/**'
-      - 'packages/noun-verb/**'
+      - 'packages/**'
       - 'scripts/release/verify-cli-fortune5.ts'
       - '.github/workflows/cli-fortune5-production.yml'
   push:
@@ -14,7 +14,7 @@ on:
       - 'agent/cli-fortune5-production-closure'
     paths:
       - 'apps/wasm4pm/**'
-      - 'packages/noun-verb/**'
+      - 'packages/**'
       - 'scripts/release/verify-cli-fortune5.ts'
       - '.github/workflows/cli-fortune5-production.yml'
 
@@ -29,7 +29,7 @@ jobs:
   contract:
     name: Contract (${{ matrix.os }}, Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -56,37 +56,36 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Select Node-compatible pnpm
+      - name: Materialize exact Node-compatible pnpm
         shell: bash
         run: |
           set -euo pipefail
           if [ "${{ matrix.node }}" = "20" ]; then
-            echo "PNPM_VERSION=10.15.0" >> "$GITHUB_ENV"
-            npm exec --yes --package=pnpm@10.15.0 -- pnpm --version
+            version=10.15.0
           else
-            echo "PNPM_VERSION=11.5.2" >> "$GITHUB_ENV"
-            npm exec --yes --package=pnpm@11.5.2 -- pnpm --version
+            version=11.5.2
           fi
+          root="$RUNNER_TEMP/pnpm-$version"
+          npm install --prefix "$root" --no-audit --no-fund "pnpm@$version"
+          cli="$root/node_modules/pnpm/bin/pnpm.cjs"
+          node "$cli" --version
+          echo "PNPM_CLI=$cli" >> "$GITHUB_ENV"
 
       - name: Install exact CLI dependency closure without ambient lifecycle actuation
         shell: bash
-        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
+        run: node "$PNPM_CLI" install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli...
 
-      - name: Build CLI dependency boundary
+      - name: Build declared CLI workspace closure
         shell: bash
-        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/noun-verb build
-
-      - name: Build published CLI
-        shell: bash
-        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/cli build
+        run: node "$PNPM_CLI" --recursive --filter @wasm4pm/cli... --if-present build
 
       - name: Execute CLI package tests
         shell: bash
-        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/cli test
+        run: node "$PNPM_CLI" --filter @wasm4pm/cli test
 
       - name: Execute noun-verb framework tests
         shell: bash
-        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/noun-verb test
+        run: node "$PNPM_CLI" --filter @wasm4pm/noun-verb test
 
       - name: Execute packaged-binary adversarial verifier
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
@@ -94,7 +93,7 @@ jobs:
           WASM4PM_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           WASM4PM_FORTUNE5_REPORT: artifacts/cli-fortune5/report.json
         shell: bash
-        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm exec tsx scripts/release/verify-cli-fortune5.ts
+        run: node "$PNPM_CLI" exec tsx scripts/release/verify-cli-fortune5.ts
 
       - name: Upload exact-head verifier receipt
         if: success() && matrix.os == 'ubuntu-latest' && matrix.node == 22
@@ -108,9 +107,7 @@ jobs:
   package:
     name: Package and parity
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-    env:
-      PNPM_VERSION: 11.5.2
+    timeout-minutes: 45
 
     steps:
       - name: Checkout exact candidate
@@ -132,19 +129,24 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify pinned pnpm
-        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm --version
+      - name: Materialize exact pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/pnpm-11.5.2"
+          npm install --prefix "$root" --no-audit --no-fund pnpm@11.5.2
+          cli="$root/node_modules/pnpm/bin/pnpm.cjs"
+          node "$cli" --version
+          echo "PNPM_CLI=$cli" >> "$GITHUB_ENV"
 
       - name: Install exact CLI dependency closure without ambient lifecycle actuation
-        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
+        run: node "$PNPM_CLI" install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli...
 
-      - name: Build published surfaces
-        run: |
-          npm exec --yes --package=pnpm@11.5.2 -- pnpm --filter @wasm4pm/noun-verb build
-          npm exec --yes --package=pnpm@11.5.2 -- pnpm --filter @wasm4pm/cli build
+      - name: Build declared CLI workspace closure
+        run: node "$PNPM_CLI" --recursive --filter @wasm4pm/cli... --if-present build
 
       - name: Verify registry and CLI parity
-        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm run cli:parity
+        run: node "$PNPM_CLI" run cli:parity
 
       - name: Verify clean tarball install and execution
-        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm run prepublish:pack-smoke
+        run: node "$PNPM_CLI" run prepublish:pack-smoke
