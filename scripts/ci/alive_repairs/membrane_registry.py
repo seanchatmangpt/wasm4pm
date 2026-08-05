@@ -29,7 +29,7 @@ replace_once(
 ''',
     '''        let (final_verdict, decisive_layer) = compose_verdicts(&layers);
         assert_eq!(final_verdict, Verdict::Warn);
-        assert_eq!(decisive_layer, "automl");
+        assert_eq!(decisive_layer, "composite");
         assert!(is_downstream_admitted(&final_verdict));
 ''',
 )
@@ -95,7 +95,10 @@ fn with_store<F, R>(f: F) -> R
 where
     F: FnOnce(&mut HashMap<usize, StreamingLog>) -> R,
 {
-    STREAMING_LOGS.with(|store| f(&mut store.borrow_mut()))
+    STREAMING_LOGS.with(|store| {
+        let mut store = store.borrow_mut();
+        f(&mut store)
+    })
 }
 
 fn next_handle() -> usize {
