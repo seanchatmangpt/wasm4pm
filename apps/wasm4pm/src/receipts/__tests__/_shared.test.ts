@@ -123,6 +123,50 @@ describe('command receipt persistence', () => {
     );
   });
 
+
+it('refuses unknown receipt fields and multiple admission nodes', () => {
+  const directory = path.join(workspace(), 'receipts');
+  expect(() =>
+    persistCommandReceipt(
+      {
+        ...newReceipt('unknown-field', { runId: 'unknown-field' }),
+        input_hash: '9'.repeat(64),
+        output_hash: 'a'.repeat(64),
+        status: 'success',
+        ambient_authority: true,
+      } as never,
+      directory
+    )
+  ).toThrow(/unknown field/);
+
+  const first = persistCommandReceipt(
+    {
+      ...newReceipt('first', { runId: 'first-admission' }),
+      session_id: 'session-multiple',
+      phase: 'admission',
+      input_hash: 'b'.repeat(64),
+      output_hash: 'c'.repeat(64),
+      status: 'pending',
+    },
+    directory
+  );
+  const second = persistCommandReceipt(
+    {
+      ...newReceipt('second', { runId: 'second-admission' }),
+      session_id: 'session-multiple',
+      phase: 'admission',
+      predecessor_hash: first.receipt.receipt_hash,
+      input_hash: 'd'.repeat(64),
+      output_hash: 'e'.repeat(64),
+      status: 'pending',
+    },
+    directory
+  );
+  expect(verifyCommandReceiptChain([first.receipt, second.receipt]).issues).toContain(
+    'RECEIPT_CHAIN_MULTIPLE_ADMISSIONS:1'
+  );
+});
+
   it('refuses run-id collisions instead of overwriting evidence', () => {
     const directory = path.join(workspace(), 'receipts');
     const receipt = {

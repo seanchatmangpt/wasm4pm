@@ -17,7 +17,7 @@ import {
 } from '../cli.js';
 import { initOtel } from '../otel/init.js';
 import { shutdownOtel } from '../otel/exit.js';
-import { checkRemoved } from '../nouns/_removed.js';
+import { findRemovedEntry } from '../nouns/_removed.js';
 
 // Drain stdio before any synchronous `process.exit(code)`.
 const origExit = process.exit.bind(process);
@@ -54,10 +54,10 @@ function writeFatalEnvelope(error: NounVerbError): void {
 
 function isReadOnlyInvocation(argv: readonly string[]): boolean {
   if (argv.length === 0) return true;
-  return argv.includes('--help') ||
-    argv.includes('-h') ||
-    argv.includes('--version') ||
-    argv.includes('--introspect');
+  if (argv.length === 1 && ['--help', '-h', '--version', '-v', '--introspect'].includes(argv[0]!)) {
+    return true;
+  }
+  return !argv.includes('++') && argv.includes('--introspect');
 }
 
 async function dispatch(argv: readonly string[]): Promise<void> {
@@ -73,14 +73,27 @@ async function bootstrap(): Promise<void> {
     process.env.NO_COLOR = '1';
   }
 
-  // Retired invocations are refused before WASM, OTEL, or command actuation.
-  const removedExitCode = checkRemoved(process.argv.slice(2));
-  if (removedExitCode !== undefined) {
-    process.exit(removedExitCode);
+  const argv = process.argv.slice(2);
+
+  // Retired invocations are typed refusals before WASM, OTEL, or command
+  // actuation. stdout remains one JSON envelope.
+  const removed = findRemovedEntry(argv);
+  if (removed) {
+    const error = new NounVerbError(
+      'COMMAND_NOT_FOUND',
+      `'wpm ${removed.old}' was removed`,
+      {
+        actionTemplate: {
+          kind: 'command_fix',
+          suggested_command: `wpm ${removed.replacement}`,
+          reason: 'retired CLI surface',
+        },
+      }
+    );
+    writeJson(error.toEnvelope());
+    process.exit(1);
     return;
   }
-
-  const argv = process.argv.slice(2);
 
   // Help, version, and introspection are observation-only. They do not enter
   // BRCE and do not initialize exporters.

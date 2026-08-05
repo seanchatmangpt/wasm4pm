@@ -1,11 +1,5 @@
 /**
  * @wasm4pm/noun-verb — declarative noun-verb CLI framework on citty.
- *
- * TS port of ~/clap-noun-verb: nouns/verbs are declared with
- * `defineVerb`/`defineNoun`, folded into a citty command tree with
- * `buildCli`, JSON is the default stdout contract, and every failure
- * normalizes to a structured `{ error: { code, message, action_template } }`
- * envelope with a pluggable exit-code mapping.
  */
 
 export type {
@@ -48,8 +42,18 @@ export {
   needsStdin,
   substituteStdinToken,
   resolveStdinRefs,
+  readBoundedStdin,
   readProcessStdin,
+  stdinReadLimitsFromEnv,
+  type StdinReadLimits,
 } from './stdin.js';
+
+export {
+  DEFAULT_STDIN_MAX_BYTES,
+  DEFAULT_STDIN_TIMEOUT_MS,
+  DEFAULT_OUTPUT_MAX_BYTES,
+  boundedIntegerFromEnv,
+} from './limits.js';
 
 export { getByPath, stringifyExtractedValue } from './path.js';
 
@@ -64,4 +68,10 @@ export {
   type ErrorEnvelope,
 } from './errors.js';
 
-export { writeJson, writeHumanToStderr, defaultHumanFormat } from './output.js';
+export {
+  writeJson,
+  serializeJson,
+  outputMaxBytesFromEnv,
+  writeHumanToStderr,
+  defaultHumanFormat,
+} from './output.js';

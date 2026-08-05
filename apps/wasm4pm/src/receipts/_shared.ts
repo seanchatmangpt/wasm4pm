@@ -47,6 +47,20 @@ export interface ReceiptVerification {
 const HEX64 = /^[0-9a-f]{64}$/;
 const SAFE_ID = /^[A-Za-z0-9._-]+$/;
 const RECEIPT_SCHEMA = 'wasm4pm.command-receipt.v2' as const;
+const COMMAND_RECEIPT_FIELDS = new Set([
+  'schema',
+  'run_id',
+  'session_id',
+  'command',
+  'phase',
+  'predecessor_hash',
+  'input_hash',
+  'output_hash',
+  'status',
+  'timestamp',
+  'summary',
+  'receipt_hash',
+]);
 
 function canonicalValue(value: unknown, seen: Set<object>): unknown {
   if (
@@ -173,6 +187,11 @@ export function validateCommandReceipt(receipt: unknown): asserts receipt is Com
     throw new Error('receipt must be an object');
   }
   const value = receipt as Record<string, unknown>;
+  for (const key of Object.keys(value)) {
+    if (!COMMAND_RECEIPT_FIELDS.has(key)) {
+      throw new Error(`receipt contains unknown field: ${key}`);
+    }
+  }
   assertNonEmpty(value.run_id, 'receipt.run_id', 128);
   if (!SAFE_ID.test(value.run_id as string) || value.run_id === 'latest') {
     throw new Error('receipt.run_id contains unsafe path characters');
@@ -267,7 +286,10 @@ export function persistCommandReceipt(receipt: CommandReceipt, dirRel?: string):
     const file = path.join(directory, `${persisted.run_id}.json`);
     const json = `${JSON.stringify(persisted, null, 2)}\n`;
     atomicWriteSync(file, json, { exclusiveTarget: true });
-    atomicWriteSync(path.join(directory, 'latest.json'), json);
+    // latest.json is a convenience projection, not receipt authority. The
+    // immutable unique receipt already exists, so a concurrent projection
+    // race may not manufacture command failure.
+    try { atomicWriteSync(path.join(directory, 'latest.json'), json); } catch { /* projection only */ }
     return { path: file, receipt: persisted };
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
@@ -333,10 +355,14 @@ export function verifyCommandReceiptChain(receipts: readonly unknown[]): Receipt
   }
   if (verified.length !== receipts.length) return { valid: false, issues };
   if (verified[0]?.phase !== 'admission') issues.push('RECEIPT_CHAIN_MISSING_ADMISSION');
+  if (verified[0]?.predecessor_hash !== undefined) issues.push('RECEIPT_CHAIN_ADMISSION_HAS_PREDECESSOR');
   const session = verified[0]?.session_id;
   for (let index = 0; index < verified.length; index += 1) {
     const current = verified[index]!;
     if (current.session_id !== session) issues.push(`RECEIPT_CHAIN_SESSION_MISMATCH:${index}`);
+    if (index > 0 && current.phase === 'admission') {
+      issues.push(`RECEIPT_CHAIN_MULTIPLE_ADMISSIONS:${index}`);
+    }
     if (index > 0 && current.predecessor_hash !== verified[index - 1]!.receipt_hash) {
       issues.push(`RECEIPT_CHAIN_PREDECESSOR_MISMATCH:${index}`);
     }

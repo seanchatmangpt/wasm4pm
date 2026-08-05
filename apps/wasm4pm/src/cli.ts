@@ -5,6 +5,7 @@
  * documentation, and introspection. The published binary must call
  * `admitCliInvocation()` before any verb handler or OTEL exporter can run.
  */
+import * as fs from 'node:fs';
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   buildCli,
@@ -67,6 +68,7 @@ export interface CliAdmissionOptions {
   invocationId?: string;
   runId?: string;
   now?: () => Date;
+  entrypointHash?: string;
 }
 
 let activeInvocation: CliInvocationState | undefined;
@@ -126,12 +128,28 @@ export function admitCliInvocation(
   }
 
   const invocationId = options.invocationId ?? randomUUID();
+  let entrypointHash = options.entrypointHash;
+  if (!entrypointHash) {
+    const entrypoint = process.argv[1];
+    if (!entrypoint) {
+      throw failure('RECEIPT_SUBJECT_BLOCKED: published CLI entrypoint is unavailable', undefined);
+    }
+    try {
+      entrypointHash = blake3Hex(fs.readFileSync(entrypoint));
+    } catch (error) {
+      throw failure(
+        `RECEIPT_SUBJECT_BLOCKED: published CLI entrypoint could not be hashed: ${(error as Error).message}`,
+        error
+      );
+    }
+  }
   const subject = {
     package: '@wasm4pm/cli',
     version: pkg.version,
     node: process.version,
     platform: process.platform,
     arch: process.arch,
+    entrypoint_hash: entrypointHash,
   };
   const inputHash = blake3Hex(canonicalJson({ argv: [...argv] }));
   const admissionProjection = {
@@ -215,7 +233,10 @@ function appendOutcome(args: {
   }
 }
 
-export function recordCliFatal(error: unknown): PersistedCommandReceipt {
+export function recordCliFatal(
+  error: unknown,
+  exitCode = EXIT_CODES.system_error
+): PersistedCommandReceipt {
   const normalized = error instanceof NounVerbError ? error : NounVerbError.from(error);
   return appendOutcome({
     noun: 'system',
@@ -224,7 +245,7 @@ export function recordCliFatal(error: unknown): PersistedCommandReceipt {
     output: normalized.toEnvelope(),
     status: 'failed',
     durationMs: 0,
-    exitCode: EXIT_CODES.system_error,
+    exitCode,
     errorCode: normalized.code,
   });
 }

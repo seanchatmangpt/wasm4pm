@@ -60,6 +60,7 @@ describe('published CLI receipt lifecycle', () => {
       invocationId: 'invocation-success',
       runId: 'admission-success',
       now: () => new Date('2030-01-01T00:00:00.000Z'),
+      entrypointHash: 'a'.repeat(64),
     });
 
     await cliOptions.onResult?.({
@@ -73,6 +74,9 @@ describe('published CLI receipt lifecycle', () => {
     const receipts = persistedReceipts(directory);
     expect(receipts).toHaveLength(2);
     expect(receipts[0]).toEqual(admission);
+    expect(receipts[0]?.summary).toMatchObject({
+      subject: { entrypoint_hash: 'a'.repeat(64) },
+    });
     expect(receipts[1]).toMatchObject({
       session_id: 'invocation-success',
       phase: 'outcome',
@@ -88,6 +92,7 @@ describe('published CLI receipt lifecycle', () => {
       receiptDirectory: directory,
       invocationId: 'invocation-failure',
       runId: 'admission-failure',
+      entrypointHash: 'b'.repeat(64),
     });
 
     await cliOptions.onError?.({
@@ -116,6 +121,7 @@ describe('published CLI receipt lifecycle', () => {
         receiptDirectory: path.join(blocked, 'receipts'),
         invocationId: 'blocked',
         runId: 'blocked-admission',
+        entrypointHash: 'c'.repeat(64),
       })
     ).toThrow(/RECEIPT_ADMISSION_BLOCKED/);
   });
