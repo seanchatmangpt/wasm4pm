@@ -67,6 +67,7 @@ jobs:
           python3 scripts/ci/alive_repairs/membrane_registry.py
           python3 scripts/ci/alive_repairs/cache_test_fence.py
           python3 scripts/ci/alive_repairs/scalability_btree.py
+          python3 scripts/ci/alive_repairs/streaming_vs_batch_btree.py
 
       - name: Verify wasm production compile
         shell: bash
@@ -117,6 +118,7 @@ jobs:
           paths = [
               'crates/wasm4pm-cognition/tests/composed_pipeline_breed_handoff.rs',
               'wasm4pm/benches/scalability_benchmark.rs',
+              'wasm4pm/benches/streaming_vs_batch.rs',
               'wasm4pm/src/automembrane.rs',
               'wasm4pm/src/automl_envelope.rs',
               'wasm4pm/src/branchless.rs',
@@ -212,7 +214,7 @@ jobs:
               })
 
           receipt = {
-              'schema': 'wasm4pm.ci-repair-candidate.v4',
+              'schema': 'wasm4pm.ci-repair-candidate.v5',
               'standing': 'ALIVE',
               'actuation': 'NONE_UNATTACHED_GIT_OBJECTS_ONLY',
               'parent': parent,
@@ -230,6 +232,7 @@ jobs:
                   'python3 scripts/ci/alive_repairs/membrane_registry.py',
                   'python3 scripts/ci/alive_repairs/cache_test_fence.py',
                   'python3 scripts/ci/alive_repairs/scalability_btree.py',
+                  'python3 scripts/ci/alive_repairs/streaming_vs_batch_btree.py',
                   'cargo check -p wasm4pm --all-features --target wasm32-unknown-unknown',
                   'cargo test -p wasm4pm --all-features --lib',
                   'cargo test -p wasm4pm-cognition --all-features --test composed_pipeline_breed_handoff',
