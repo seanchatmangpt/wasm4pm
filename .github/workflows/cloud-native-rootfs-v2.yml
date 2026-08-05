@@ -14,7 +14,7 @@ permissions:
 jobs:
   native-rootfs:
     name: Native tools with preserved Ubuntu runtime closure
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
       - name: Build self-contained execution image
