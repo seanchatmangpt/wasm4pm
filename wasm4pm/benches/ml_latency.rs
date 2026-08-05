@@ -14,11 +14,9 @@ use wasm4pm::state::{get_or_init_state, StoredObject};
 
 fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
     let mut log = EventLog {
-        attributes: std::collections::HashMap::new(),
+        attributes: std::collections::BTreeMap::new(),
         traces: Vec::with_capacity(num_traces),
     };
-
-    let start_time = "2024-01-01T10:00:00Z";
 
     for i in 0..num_traces {
         let mut trace = Trace::new();
@@ -42,10 +40,9 @@ fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
         log.traces.push(trace);
     }
 
-    let handle = get_or_init_state()
+    get_or_init_state()
         .store_object(StoredObject::EventLog(log))
-        .unwrap();
-    handle
+        .unwrap()
 }
 
 /// Representative log sizes (trace count) the ML families are exercised over.

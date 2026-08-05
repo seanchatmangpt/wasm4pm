@@ -7,17 +7,17 @@
 //! size-parameterized throughput sweep.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::path::Path;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
     let traces: Vec<Trace> = (0..num_traces)
         .map(|_| Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: (0..events_per_trace)
                 .map(|i| {
-                    let mut attrs = HashMap::new();
+                    let mut attrs = BTreeMap::new();
                     let activity = format!("activity_{}", i % 10);
                     attrs.insert("concept:name".to_string(), AttributeValue::String(activity));
                     Event { attributes: attrs }
@@ -26,7 +26,7 @@ fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
         })
         .collect();
     EventLog {
-        attributes: HashMap::new(),
+        attributes: BTreeMap::new(),
         traces,
     }
 }
