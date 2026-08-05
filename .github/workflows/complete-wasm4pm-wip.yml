@@ -1,0 +1,165 @@
+name: Complete wasm4pm WIP
+
+on:
+  push:
+    branches:
+      - complete-wasm4pm-wip
+
+permissions:
+  contents: write
+
+jobs:
+  complete-wip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Apply admitted dependency versions
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          const updates = {
+            'apps/playground-web/package.json': {
+              dependencies: {
+                '@iconify-json/lucide': '^1.2.121',
+                '@iconify-json/simple-icons': '^1.2.92',
+                '@internationalized/date': '^3.12.3',
+                '@nuxt/content': '^3.15.2',
+                '@nuxt/ui': '^4.10.0',
+                '@unovis/ts': '^1.6.7',
+                '@unovis/vue': '^1.6.7',
+                '@vueuse/core': '^14.4.0',
+                '@vueuse/nuxt': '^14.4.0',
+                'better-sqlite3': '^12.11.1',
+                'elkjs': '^0.12.0',
+                'monaco-editor': '^0.56.0',
+                'nuxt': '^4.5.1',
+                'tailwindcss': '^4.3.3',
+                'vue': '^3.5.40',
+                '@oxc-parser/binding-darwin-arm64': '^0.142.0',
+                '@oxc-transform/binding-darwin-arm64': '^0.142.0',
+                '@oxc-minify/binding-darwin-arm64': '^0.142.0',
+                'oxc-parser': '^0.142.0'
+              }
+            },
+            'apps/wasm4pm/package.json': {
+              dependencies: {
+                'citty': '^0.2.2'
+              }
+            },
+            'examples/interview-assist/package.json': {
+              dependencies: {
+                'next': '16.2.12',
+                'react': '19.2.8',
+                'react-dom': '19.2.8'
+              },
+              devDependencies: {
+                '@types/react': '^19.2.18',
+                '@types/react-dom': '^19.2.4'
+              }
+            },
+            'package.json': {
+              dependencies: {
+                '@oxc-minify/binding-darwin-arm64': '^0.142.0',
+                '@oxc-parser/binding-darwin-arm64': '^0.142.0',
+                '@oxc-transform/binding-darwin-arm64': '^0.142.0'
+              }
+            },
+            'packages/noun-verb/package.json': {
+              dependencies: {
+                'citty': '^0.2.2'
+              }
+            },
+            'packages/supabase/package.json': {
+              dependencies: {
+                '@supabase/supabase-js': '^2.111.0'
+              }
+            }
+          }
+
+          for (const [file, sections] of Object.entries(updates)) {
+            const json = JSON.parse(fs.readFileSync(file, 'utf8'))
+            for (const [section, entries] of Object.entries(sections)) {
+              if (!json[section]) throw new Error(`${file}: missing ${section}`)
+              for (const [name, version] of Object.entries(entries)) {
+                if (!(name in json[section])) throw new Error(`${file}: missing ${section}.${name}`)
+                json[section][name] = version
+              }
+            }
+            fs.writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`)
+          }
+          NODE
+
+      - name: Upgrade pnpm setup action everywhere
+        shell: bash
+        run: |
+          mapfile -d '' files < <(grep -RIlZ 'pnpm/action-setup@v4' .github/workflows --include='*.yml' --include='*.yaml' || true)
+          printf 'Updating %s workflow files\n' "${#files[@]}"
+          if (( ${#files[@]} > 0 )); then
+            sed -i 's#pnpm/action-setup@v4#pnpm/action-setup@v6.0.9#g' "${files[@]}"
+          fi
+          if grep -RIn 'pnpm/action-setup@v4' .github/workflows --include='*.yml' --include='*.yaml'; then
+            echo 'pnpm/action-setup@v4 remains after replacement' >&2
+            exit 1
+          fi
+
+      - name: Regenerate and verify lockfile
+        shell: bash
+        run: |
+          pnpm install --lockfile-only --no-frozen-lockfile
+          pnpm install --frozen-lockfile
+
+      - name: Verify admitted versions and bounded diff
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const checks = [
+            ['apps/playground-web/package.json', 'dependencies', '@nuxt/ui', '^4.10.0'],
+            ['apps/playground-web/package.json', 'dependencies', 'oxc-parser', '^0.142.0'],
+            ['apps/wasm4pm/package.json', 'dependencies', 'citty', '^0.2.2'],
+            ['examples/interview-assist/package.json', 'dependencies', 'next', '16.2.12'],
+            ['examples/interview-assist/package.json', 'devDependencies', '@playwright/test', '^1.62.1'],
+            ['package.json', 'dependencies', '@oxc-minify/binding-darwin-arm64', '^0.142.0'],
+            ['packages/noun-verb/package.json', 'dependencies', 'citty', '^0.2.2'],
+            ['packages/supabase/package.json', 'dependencies', '@supabase/supabase-js', '^2.111.0']
+          ]
+          for (const [file, section, key, expected] of checks) {
+            const json = JSON.parse(fs.readFileSync(file, 'utf8'))
+            const actual = json[section]?.[key]
+            if (actual !== expected) throw new Error(`${file}:${section}.${key}: expected ${expected}, got ${actual}`)
+          }
+          NODE
+          git diff --check
+
+      - name: Commit completed WIP and self-remove
+        shell: bash
+        run: |
+          rm .github/workflows/complete-wasm4pm-wip.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          test -n "$(git diff --cached --name-only)"
+          unexpected=$(git diff --cached --name-only | grep -Ev '^(.github/workflows/.*\.(yml|yaml)|apps/playground-web/package.json|apps/wasm4pm/package.json|examples/interview-assist/package.json|package.json|packages/noun-verb/package.json|packages/supabase/package.json|pnpm-lock.yaml)$' || true)
+          if [ -n "$unexpected" ]; then
+            echo 'Unexpected changed paths:' >&2
+            echo "$unexpected" >&2
+            exit 1
+          fi
+          git commit -m 'chore(deps): complete wasm4pm dependency WIP'
+          git push origin HEAD:complete-wasm4pm-wip
