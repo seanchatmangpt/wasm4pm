@@ -109,9 +109,13 @@ jobs:
               binary.chmod(binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
           with open(os.environ["GITHUB_PATH"], "a", encoding="utf-8") as target:
               target.write(str(binary.parent) + os.linesep)
+          with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "wasm-pack-bin", "w", encoding="utf-8") as target:
+              target.write(str(binary))
           print(f"wasm-pack archive sha256:{observed}")
           PY
-          wasm-pack --version
+          WASM_PACK_BIN="$(cat "$RUNNER_TEMP/wasm-pack-bin")"
+          test -x "$WASM_PACK_BIN"
+          "$WASM_PACK_BIN" --version
           rustc --version --verbose
           rustup target list --installed | grep -Fx wasm32-unknown-unknown
 
@@ -213,9 +217,13 @@ jobs:
           binary.chmod(binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
           with open(os.environ["GITHUB_PATH"], "a", encoding="utf-8") as target:
               target.write(str(binary.parent) + os.linesep)
+          with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "wasm-pack-bin", "w", encoding="utf-8") as target:
+              target.write(str(binary))
           print(f"wasm-pack archive sha256:{observed}")
           PY
-          wasm-pack --version
+          WASM_PACK_BIN="$(cat "$RUNNER_TEMP/wasm-pack-bin")"
+          test -x "$WASM_PACK_BIN"
+          "$WASM_PACK_BIN" --version
 
       - name: Install exact CLI dependency closure without ambient lifecycle actuation
         run: node "$PNPM_CLI" install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli...
