@@ -56,42 +56,48 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Activate Node-compatible pinned pnpm
+      - name: Select Node-compatible pnpm
         shell: bash
         run: |
           set -euo pipefail
-          corepack enable
           if [ "${{ matrix.node }}" = "20" ]; then
-            corepack prepare pnpm@10.15.0 --activate
+            echo "PNPM_VERSION=10.15.0" >> "$GITHUB_ENV"
+            npm exec --yes --package=pnpm@10.15.0 -- pnpm --version
           else
-            corepack prepare pnpm@11.5.2 --activate
+            echo "PNPM_VERSION=11.5.2" >> "$GITHUB_ENV"
+            npm exec --yes --package=pnpm@11.5.2 -- pnpm --version
           fi
-          pnpm --version
 
-      - name: Install exact CLI dependency closure
-        run: pnpm install --frozen-lockfile --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
+      - name: Install exact CLI dependency closure without ambient lifecycle actuation
+        shell: bash
+        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
 
       - name: Build CLI dependency boundary
-        run: pnpm --filter @wasm4pm/noun-verb build
+        shell: bash
+        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/noun-verb build
 
       - name: Build published CLI
-        run: pnpm --filter @wasm4pm/cli build
+        shell: bash
+        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/cli build
 
       - name: Execute CLI package tests
-        run: pnpm --filter @wasm4pm/cli test
+        shell: bash
+        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/cli test
 
       - name: Execute noun-verb framework tests
-        run: pnpm --filter @wasm4pm/noun-verb test
+        shell: bash
+        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm --filter @wasm4pm/noun-verb test
 
       - name: Execute packaged-binary adversarial verifier
         if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         env:
           WASM4PM_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           WASM4PM_FORTUNE5_REPORT: artifacts/cli-fortune5/report.json
-        run: pnpm exec tsx scripts/release/verify-cli-fortune5.ts
+        shell: bash
+        run: npm exec --yes --package="pnpm@$PNPM_VERSION" -- pnpm exec tsx scripts/release/verify-cli-fortune5.ts
 
       - name: Upload exact-head verifier receipt
-        if: always() && matrix.os == 'ubuntu-latest' && matrix.node == 22
+        if: success() && matrix.os == 'ubuntu-latest' && matrix.node == 22
         uses: actions/upload-artifact@v4
         with:
           name: cli-fortune5-${{ github.event.pull_request.head.sha || github.sha }}
@@ -103,6 +109,8 @@ jobs:
     name: Package and parity
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    env:
+      PNPM_VERSION: 11.5.2
 
     steps:
       - name: Checkout exact candidate
@@ -124,21 +132,19 @@ jobs:
         with:
           node-version: 22
 
-      - name: Activate pinned pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@11.5.2 --activate
+      - name: Verify pinned pnpm
+        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm --version
 
-      - name: Install exact CLI dependency closure
-        run: pnpm install --frozen-lockfile --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
+      - name: Install exact CLI dependency closure without ambient lifecycle actuation
+        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli... --filter @wasm4pm/noun-verb...
 
       - name: Build published surfaces
         run: |
-          pnpm --filter @wasm4pm/noun-verb build
-          pnpm --filter @wasm4pm/cli build
+          npm exec --yes --package=pnpm@11.5.2 -- pnpm --filter @wasm4pm/noun-verb build
+          npm exec --yes --package=pnpm@11.5.2 -- pnpm --filter @wasm4pm/cli build
 
       - name: Verify registry and CLI parity
-        run: pnpm run cli:parity
+        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm run cli:parity
 
       - name: Verify clean tarball install and execution
-        run: pnpm run prepublish:pack-smoke
+        run: npm exec --yes --package=pnpm@11.5.2 -- pnpm run prepublish:pack-smoke
