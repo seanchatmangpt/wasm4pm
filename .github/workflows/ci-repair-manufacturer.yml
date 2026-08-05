@@ -5,8 +5,12 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/ci-repair-manufacturer.yml'
+      - '.github/workflows/gall-checkpoint.yml'
+      - 'scripts/ci/gall_checkpoint.py'
+      - 'scripts/ci/test_gall_checkpoint.py'
       - 'scripts/ci/manufacture_alive_repairs.py'
       - 'scripts/ci/alive_repairs/**'
+      - 'wasm4pm/benches/**'
   workflow_dispatch:
 
 permissions:
