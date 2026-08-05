@@ -52,39 +52,37 @@ const HEX64 = /^[0-9a-f]{64}$/;
 
 /**
  * Schema validator for CommandReceipt. Asserts shape + that input/output
- * hashes are blake3-hex-64 (no path strings, no shorthand). Throws on
- * violation; saveCommandReceipt downgrades to warn-only.
+ * hashes are blake3-hex-64 (no path strings, no shorthand). Invalid receipts
+ * are refused and are never persisted.
  */
 export function validateCommandReceipt(r: unknown): asserts r is CommandReceipt {
+  if (!r || typeof r !== 'object' || Array.isArray(r)) throw new Error('receipt must be an object');
   const o = r as Record<string, unknown>;
-  if (typeof o?.run_id !== 'string') throw new Error('receipt.run_id missing');
-  if (typeof o.command !== 'string') throw new Error('receipt.command missing');
+  if (typeof o.run_id !== 'string' || o.run_id.length === 0) throw new Error('receipt.run_id missing');
+  if (typeof o.command !== 'string' || o.command.length === 0) throw new Error('receipt.command missing');
   if (typeof o.input_hash !== 'string' || !HEX64.test(o.input_hash))
     throw new Error(`receipt.input_hash not blake3-hex: ${String(o.input_hash).slice(0, 16)}`);
   if (typeof o.output_hash !== 'string' || !HEX64.test(o.output_hash))
     throw new Error('receipt.output_hash not blake3-hex');
   if (!['success', 'partial', 'failed'].includes(o.status as string))
     throw new Error('receipt.status invalid');
-  if (typeof o.timestamp !== 'string') throw new Error('receipt.timestamp missing');
+  if (typeof o.timestamp !== 'string' || Number.isNaN(Date.parse(o.timestamp)))
+    throw new Error('receipt.timestamp missing or invalid');
 }
 
 export function saveCommandReceipt(receipt: CommandReceipt, dirRel = '.wasm4pm/receipts'): string {
-  // Warn-only validation: surface schema violations without breaking commands.
-  try {
-    validateCommandReceipt(receipt);
-  } catch (e) {
-    console.warn('[receipt] schema violation:', (e as Error).message);
-  }
+  validateCommandReceipt(receipt);
   const dir = path.resolve(dirRel);
   try {
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${receipt.run_id}.json`);
     const json = JSON.stringify(receipt, null, 2) + '\n';
-    fs.writeFileSync(file, json);
+    atomicWriteSync(file, json);
     atomicWriteSync(path.join(dir, 'latest.json'), json);
     return file;
-  } catch (err: any) {
-    if (err.code === 'EACCES' || err.code === 'EROFS') {
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'EACCES' || code === 'EROFS') {
       const msg = `Permission denied when writing to ${dir}. ` +
                   `You are running in a restricted filesystem (e.g. read-only container or Docker). ` +
                   `Please set WASM4PM_HOME or PMC_CONFIG_PATH to a writable directory. ` +
@@ -125,8 +123,9 @@ export function emitPiReceipt(
     const json = JSON.stringify(receipt, null, 2) + '\n';
     atomicWriteSync(path.join(dir, 'latest.json'), json);
     atomicWriteSync(path.join(dir, `pi-${algoId}-latest.json`), json);
-  } catch (err: any) {
-    if (err.code === 'EACCES' || err.code === 'EROFS') {
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'EACCES' || code === 'EROFS') {
       throw new Error(`Permission denied writing receipt to ${dir}`);
     }
     throw err;

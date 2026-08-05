@@ -23,7 +23,7 @@ export const doctorCapabilities = defineCommand({
   meta: {
     name: 'capabilities',
     description:
-      'Execute the Vision 2030 capability audit with evidence ceilings and explicit unsupported boundaries',
+      'Execute the Vision 2030 capability audit with exact subject identity, evidence ceilings, replay hashes, and explicit unsupported boundaries',
   },
   args: {
     format: {
@@ -64,20 +64,28 @@ export const doctorCapabilities = defineCommand({
         report,
         Date.now() - start,
         exitCode,
-        `Vision 2030 standing: ${report.overall_standing}`
+        `Vision 2030 standing: ${report.overall_standing} (${report.scope.mode.toLowerCase()} scope; selected ${report.scope_standing})`
       );
       emitResult(result, { format, verbose, quiet }, (_result, projection) => {
         projection.log(`Vision 2030: ${report.overall_standing}`);
+        projection.log(`Selected scope: ${report.scope_standing} (${report.scope.mode})`);
+        projection.log(`Subject: ${report.subject.git_commit ?? 'UNADMITTED'}`);
+        if (report.subject.limitation) projection.log(`Subject limitation: ${report.subject.limitation}`);
+        projection.log(`Catalog: ${report.catalog_hash}`);
         projection.log(`Evidence: ${report.evidence_hash}`);
         projection.log('');
         for (const capability of report.capabilities) {
           projection.log(
-            `  [${capability.standing}] ${capability.id} — ${capability.counts.pass} pass, ${capability.counts.warn} warn, ${capability.counts.fail} fail`
+            `  [${capability.standing}] ${capability.id} — ${capability.counts.pass} pass, ${capability.counts.warn} warn, ${capability.counts.fail} fail, ${capability.counts.not_observed} not observed`
           );
           if (capability.limitation) projection.log(`      ${capability.limitation}`);
           if (verbose) {
-            for (const diagnosis of capability.diagnoses) {
-              projection.log(`      ${diagnosis.severity}: ${diagnosis.name} — ${diagnosis.message}`);
+            for (const [index, diagnosis] of capability.diagnoses.entries()) {
+              const evidence = capability.evidence[index];
+              projection.log(
+                `      ${diagnosis.severity}/${evidence?.observation ?? 'UNKNOWN'}: ${diagnosis.name} — ${diagnosis.message}`
+              );
+              if (evidence) projection.log(`        proof: ${evidence.diagnosis_hash}`);
             }
           }
         }

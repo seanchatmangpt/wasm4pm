@@ -56,20 +56,37 @@ export const doctorTps = defineCommand({
 });
 
 // Re-export types
-export type { DoctorOptions, Pathology, Severity, RepairMode, Diagnosis, DoctorReport } from './types.js';
+export type {
+  DoctorOptions,
+  Pathology,
+  Severity,
+  RepairMode,
+  Diagnosis,
+  DoctorReport,
+  ObservationKind,
+  DiagnosisProof,
+} from './types.js';
 export type {
   CapabilityDefinition,
   CapabilityEvidence,
   CapabilityStanding,
+  DiagnosisEvidence,
   Vision2030Report,
+  Vision2030Subject,
+  Vision2030Verification,
 } from './vision2030.js';
 export type {
   PlannedRepair,
-  RepairExecutionReport,
   RepairIntent,
   RepairIntentId,
   RepairOutcome,
 } from './repair-broker.js';
+export type {
+  HardenedRepairExecutionReport as RepairExecutionReport,
+  HardenedRepairExecutionReport,
+  RepairReceiptChain,
+  RepairReceiptChainVerification,
+} from './repair-execution.js';
 
 // Re-export check arrays
 export {
@@ -162,13 +179,21 @@ export {
   doctorPublish,
 } from './subcommands.js';
 export { doctorCapabilities } from './capabilities-command.js';
-export { runVision2030Audit, VISION_2030_CAPABILITIES } from './capabilities.js';
 export {
-  executeRepairPlan,
+  runVision2030Audit,
+  VISION_2030_CAPABILITIES,
+  resolveVision2030Subject,
+} from './capabilities.js';
+export { verifyVision2030Report } from './vision2030.js';
+export {
   planRepairs,
   REPAIR_INTENTS,
   validateRepairRegistry,
 } from './repair-broker.js';
+export {
+  executeRepairPlan,
+  verifyRepairReceiptChain,
+} from './repair-execution.js';
 export { doctorRepairCommand, doctorRepairCommand as doctorFix, runDoctorRepair } from './repair-command.js';
 
 // ────────────────────────────────────────────────────────────────────────────
