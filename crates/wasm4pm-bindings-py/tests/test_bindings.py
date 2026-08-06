@@ -104,3 +104,52 @@ def test_powl_execute():
     model = "X (A, B)"
     result = wasm4pm.powl_execute(model)
     assert "receipt" in result or "ocel" in result
+
+
+def test_list_exports():
+    exports = wasm4pm.list_exports()
+    assert isinstance(exports, list)
+    assert len(exports) >= 300
+    assert "discover_dfg" in exports
+    assert "get_capabilities" in exports
+
+
+def test_get_capabilities():
+    caps = wasm4pm.get_capabilities()
+    assert isinstance(caps, dict)
+
+
+def test_invoke_version():
+    ver = wasm4pm.invoke("get_version", [])
+    assert isinstance(ver, str)
+    assert ver
+
+
+def test_session_and_dfg():
+    running_example = (FIXTURES / "running-example.json").read_text(encoding="utf-8")
+    handle = wasm4pm.load_eventlog_from_json(running_example)
+    assert isinstance(handle, str)
+    assert wasm4pm.object_count() >= 1
+
+    dfg = wasm4pm.invoke("discover_dfg", [handle, "concept:name"])
+    assert isinstance(dfg, dict)
+
+    exported = wasm4pm.export_eventlog_to_json(handle)
+    assert "traces" in exported
+
+    wasm4pm.delete_object(handle)
+    wasm4pm.clear_all_objects()
+
+
+def test_list_algorithms():
+    algorithms = wasm4pm.list_algorithms()
+    assert "dfg" in algorithms
+    assert "ilp" in algorithms
+
+
+def test_run_algorithm_dfg():
+    running_example = (FIXTURES / "running-example.json").read_text(encoding="utf-8")
+    handle = wasm4pm.load_eventlog_from_json(running_example)
+    result = wasm4pm.run_algorithm("dfg", handle, "concept:name")
+    assert isinstance(result, dict)
+    wasm4pm.clear_all_objects()

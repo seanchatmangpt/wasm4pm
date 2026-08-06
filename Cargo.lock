@@ -3422,6 +3422,7 @@ dependencies = [
  "pyo3",
  "serde",
  "serde_json",
+ "wasm-bindgen",
  "wasm4pm",
  "wasm4pm-compat",
 ]

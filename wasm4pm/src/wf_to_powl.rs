@@ -1397,7 +1397,6 @@ pub fn wf_net_language(net: &PetriNet) -> Option<BTreeSet<Vec<String>>> {
 // WASM-reachable surface
 // ===========================================================================
 
-#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 /// Build the deterministic JSON summary of a WF-net → POWL conversion, shared by
@@ -1425,7 +1424,6 @@ pub fn wf_net_to_powl_native(net: &PetriNet) -> String {
 /// WASM export: convert a stored Petri-net handle into a POWL 2.0 model
 /// (Section 4 of arXiv:2602.15739v3). Returns a JSON summary
 /// `{ is_wf_net, converted, powl, repr, reason }` as a `JsValue` string.
-#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn wf_net_to_powl(petri_net_handle: &str) -> Result<JsValue, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};

@@ -129,7 +129,7 @@ pub fn js_val(s: &str) -> JsValue {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let _ = s;
+        crate::native_bridge::store_native_json(s);
         JsValue::null()
     }
 }

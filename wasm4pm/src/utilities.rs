@@ -59,11 +59,13 @@ pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        // On native targets (criterion benchmarks) js_val is not callable.
-        // Benchmarks only call .unwrap() and discard the value, so return null value.
-        // Serialization is validated but the output is discarded.
-        let _ = serde_json::to_string(val);
-        Ok(JsValue::null())
+        match serde_json::to_string(val) {
+            Ok(s) => {
+                crate::native_bridge::store_native_json(s);
+                Ok(JsValue::null())
+            }
+            Err(e) => Err(js_val(&e.to_string())),
+        }
     }
 }
 

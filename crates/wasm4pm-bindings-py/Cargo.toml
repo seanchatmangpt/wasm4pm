@@ -15,7 +15,8 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.23", features = ["extension-module"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
-wasm4pm = { workspace = true, features = ["cloud", "ocel", "powl-engine"] }
+wasm-bindgen = "=0.2.100"
+wasm4pm = { workspace = true, features = ["cloud", "ocel", "powl", "feature-powl", "powl-engine", "ml", "conformance_full", "streaming_full", "montecarlo", "petri_net_playout", "extensive_playout", "align_etconformance", "alignment_fitness"] }
 wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 
 [dev-dependencies]

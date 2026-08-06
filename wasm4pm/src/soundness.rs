@@ -719,7 +719,6 @@ pub fn analyze_petri_net(net: &PetriNet) -> SoundnessReport {
 // WASM-reachable surface
 // ---------------------------------------------------------------------------
 
-#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 /// Build a deterministic JSON summary of the soundness + structural analysis of
@@ -773,7 +772,6 @@ pub fn check_wf_net_soundness_native(net: &PetriNet) -> String {
 /// WASM export: analyse a stored Petri net handle for soundness (Def 3.5),
 /// safeness, free-choice (Def 3.4), state-machine (Def 3.10) and marked-graph
 /// (Def 3.11) structure. Returns the JSON summary as a `JsValue` string.
-#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn check_wf_net_soundness(petri_net_handle: &str) -> Result<JsValue, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};

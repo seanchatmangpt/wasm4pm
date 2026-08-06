@@ -1,10 +1,9 @@
 //! Native Python bindings for wasm4pm.
-//!
-//! These call the same Rust algorithms as the WASM exports but serialize results
-//! directly to JSON for Python, avoiding the wasm_bindgen JsValue stubs used on
-//! native targets.
 
-use pyo3::exceptions::PyValueError;
+mod invoke;
+mod kernel;
+mod session;
+
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use std::collections::HashMap;
@@ -16,16 +15,8 @@ use wasm4pm::powl_parser::parse_powl_model_string;
 use wasm4pm_compat::ocel::validate::validate;
 use wasm4pm_compat::ocel::{ObjectTypeCardinality, OCEL};
 
-fn py_value_err(msg: impl Into<String>) -> PyErr {
-    PyValueError::new_err(msg.into())
-}
-
-fn json_to_py(py: Python<'_>, value: &serde_json::Value) -> PyResult<PyObject> {
-    let json_mod = PyModule::import(py, "json")?;
-    let dumped = serde_json::to_string(value).map_err(|e| py_value_err(e.to_string()))?;
-    let obj = json_mod.call_method1("loads", (dumped,))?;
-    Ok(obj.into())
-}
+use crate::invoke::py_value_err;
+use crate::invoke::json_to_py;
 
 fn parse_ocel(json: &str) -> Result<OCEL, PyErr> {
     serde_json::from_str::<OCEL>(json)
@@ -196,5 +187,8 @@ fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(validate_partial_orders, m)?)?;
     m.add_function(wrap_pyfunction!(discover_powl_from_log, m)?)?;
     m.add_function(wrap_pyfunction!(powl_execute, m)?)?;
+    invoke::register(m)?;
+    kernel::register(m)?;
+    session::register(m)?;
     Ok(())
 }
