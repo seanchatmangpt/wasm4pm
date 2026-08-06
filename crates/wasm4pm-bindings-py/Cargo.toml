@@ -1,0 +1,22 @@
+[package]
+name = "wasm4pm-bindings-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Python bindings for wasm4pm process mining algorithms"
+
+[lib]
+name = "wasm4pm_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+wasm4pm = { workspace = true, features = ["cloud", "ocel", "powl-engine"] }
+wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
+
+[dev-dependencies]
+pyo3 = { version = "0.23", features = ["auto-initialize"] }

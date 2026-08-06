@@ -1,0 +1,80 @@
+"""Validation tests for wasm4pm Python bindings."""
+
+import json
+from pathlib import Path
+
+import pytest
+
+import wasm4pm
+
+FIXTURES = Path(__file__).resolve().parents[3] / "wasm4pm" / "tests" / "fixtures"
+
+ORDER_TO_CASH = """
+{
+  "eventTypes": [{"name": "place_order"}, {"name": "ship"}],
+  "objectTypes": [{"name": "Order"}, {"name": "Customer"}],
+  "objects": [
+    {"id": "c1", "type": "Customer", "attributes": [], "relationships": []},
+    {"id": "o1", "type": "Order", "attributes": [], "relationships": [{"objectId": "c1", "qualifier": "placed_by"}]}
+  ],
+  "events": [
+    {"id": "ev1", "type": "place_order", "time": "2024-01-02T09:00:00Z", "attributes": [],
+     "relationships": [{"objectId": "o1", "qualifier": "order"}, {"objectId": "c1", "qualifier": "customer"}]},
+    {"id": "ev2", "type": "ship", "time": "2024-01-03T10:00:00Z", "attributes": [],
+     "relationships": [{"objectId": "o1", "qualifier": "order"}]}
+  ]
+}
+"""
+
+
+def test_version():
+    assert wasm4pm.version()
+    assert wasm4pm.__version__
+
+
+def test_load_ocel_v2():
+    loaded = wasm4pm.load_ocel_v2(ORDER_TO_CASH)
+    assert isinstance(loaded, dict)
+    assert "events" in loaded
+    assert len(loaded["events"]) == 2
+
+
+def test_flatten_ocel_v2():
+    flat = wasm4pm.flatten_ocel_v2(ORDER_TO_CASH, "Order")
+    assert flat["object_type"] == "Order"
+    assert len(flat["cases"]) == 1
+    assert flat["cases"][0]["trace"] == ["place_order", "ship"]
+
+
+def test_flatten_ocel_v2_unknown_type():
+    with pytest.raises(ValueError, match="not found"):
+        wasm4pm.flatten_ocel_v2(ORDER_TO_CASH, "Nope")
+
+
+def test_load_ocel_v2_malformed():
+    with pytest.raises(ValueError):
+        wasm4pm.load_ocel_v2("{ not json")
+
+
+def test_parse_powl():
+    parsed = wasm4pm.parse_powl("X (A, B)")
+    assert parsed["node_count"] >= 1
+    assert "repr" in parsed
+
+
+def test_validate_partial_orders_valid():
+    result = wasm4pm.validate_partial_orders("X (A, B)")
+    assert result["valid"] is True
+
+
+def test_discover_powl_from_log():
+    running_example = (FIXTURES / "running-example.json").read_text(encoding="utf-8")
+    discovered = wasm4pm.discover_powl_from_log(running_example)
+    assert "repr" in discovered
+    assert discovered["node_count"] >= 1
+
+
+def test_powl_execute():
+    model = "X (A, B)"
+    result = wasm4pm.powl_execute(model)
+    assert "receipt" in result or "ocel" in result
