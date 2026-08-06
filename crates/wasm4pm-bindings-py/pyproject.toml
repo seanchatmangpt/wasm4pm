@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "wasm4pm"
-version = "26.7.23"
+dynamic = ["version"]
 description = "Python bindings for wasm4pm process mining algorithms"
 requires-python = ">=3.10"
 classifiers = [
