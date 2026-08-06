@@ -77,12 +77,7 @@ fn exact_sha(value: &str) -> bool {
 fn valid_standing(value: &str) -> bool {
     matches!(
         value,
-        "UNKNOWN"
-            | "PARTIAL_ALIVE"
-            | "ALIVE"
-            | "BLOCKED"
-            | "BUILD_BROKEN"
-            | "UNSUPPORTED"
+        "UNKNOWN" | "PARTIAL_ALIVE" | "ALIVE" | "BLOCKED" | "BUILD_BROKEN" | "UNSUPPORTED"
     ) || value
         .strip_prefix("REFUSED:")
         .is_some_and(|reason| !reason.is_empty())
