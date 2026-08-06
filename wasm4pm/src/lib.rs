@@ -107,6 +107,8 @@ pub mod compat_api_probe;
 pub mod conformance_authority;
 /// Structured error types and JS interop helpers.
 pub mod error;
+/// Native host JSON bridge for Python bindings and integration tests.
+pub mod native_bridge;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
@@ -767,7 +769,7 @@ pub fn get_capabilities() -> Result<JsValue, JsValue> {
             montecarlo: cfg!(feature = "montecarlo"),
         },
     };
-    serde_wasm_bindgen::to_value(&caps).map_err(|e| crate::error::js_val(&e.to_string()))
+    crate::utilities::to_js(&caps)
 }
 
 /// Clear all caches (parse, columnar, interner).
@@ -795,7 +797,7 @@ pub fn get_cache_stats() -> Result<JsValue, JsValue> {
         columnar_entries: raw.columnar_entries,
         interner_entries: raw.interner_entries,
     };
-    serde_wasm_bindgen::to_value(&stats).map_err(|e| crate::error::js_val(&e.to_string()))
+    crate::utilities::to_js(&stats)
 }
 
 /// Set drift detection thresholds for RL state feature quantization.

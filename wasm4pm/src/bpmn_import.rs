@@ -1,3 +1,6 @@
+#[cfg(feature = "powl")]
+use wasm_bindgen::prelude::*;
+
 /// BPMN 2.0 XML to POWL conversion.
 ///
 /// Parses a BPMN 2.0 XML document and converts it to a POWL model string.
@@ -498,7 +501,7 @@ pub fn bpmn_to_powl_string(bpmn_xml: &str) -> Result<String, String> {
 #[cfg(all(target_arch = "wasm32", feature = "powl"))]
 use wasm_bindgen::prelude::*;
 
-#[cfg(all(target_arch = "wasm32", feature = "powl"))]
+#[cfg(feature = "powl")]
 #[wasm_bindgen]
 /// WASM entry point: parse BPMN 2.0 XML and return a POWL model string.
 ///

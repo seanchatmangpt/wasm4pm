@@ -19,7 +19,21 @@
 
 #![cfg(feature = "ocel")]
 
-use wasm4pm::ocel_v2::{flatten_ocel_v2, load_ocel_v2, validate_ocel_v2};
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+use wasm4pm::ocel_v2::{flatten_ocel_v2, load_ocel_v2, validate_ocel_v2, validate_ocel_v2_report};
+use wasm4pm_compat::ocel::OCEL;
+
+fn negative_fixture(name: &str) -> String {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("workspace root")
+        .join("fixtures")
+        .join("negative")
+        .join(name);
+    std::fs::read_to_string(path).expect("read negative fixture")
+}
 
 const ORDER_TO_CASH: &str = r#"
 {
@@ -65,6 +79,42 @@ fn validate_ocel_v2_accepts_cardinality_window() {
 #[test]
 fn validate_ocel_v2_rejects_bad_cardinality_json() {
     assert!(validate_ocel_v2(ORDER_TO_CASH, "{ not json").is_err());
+}
+
+#[test]
+fn validate_ocel_v2_report_accepts_lawful_log() {
+    let ocel: OCEL = serde_json::from_str(ORDER_TO_CASH).expect("parse fixture");
+    let report = validate_ocel_v2_report(&ocel, &HashMap::new());
+    assert!(report.valid, "lawful log must validate; errors: {:?}", report.errors);
+}
+
+#[test]
+fn validate_ocel_v2_report_rejects_e2o_empty() {
+    let raw = negative_fixture("n12-e2o-empty.ocel.json");
+    let ocel: OCEL = serde_json::from_str(&raw).expect("parse fixture");
+    let report = validate_ocel_v2_report(&ocel, &HashMap::new());
+    assert!(!report.valid, "E2O_EMPTY fixture must be invalid");
+    assert!(
+        report.errors.iter().any(|e| e.code == "E2O_EMPTY"),
+        "expected E2O_EMPTY; got {:?}",
+        report.errors.iter().map(|e| &e.code).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn validate_ocel_v2_report_enforces_cardinality_max() {
+    let raw = negative_fixture("n10-cardinality-max.ocel.json");
+    let v: serde_json::Value = serde_json::from_str(&raw).expect("parse fixture");
+    let ocel: OCEL = serde_json::from_value(v.clone()).expect("parse ocel");
+    let card: HashMap<_, _> = serde_json::from_value(
+        v.get("cardinality")
+            .cloned()
+            .expect("fixture declares cardinality"),
+    )
+    .expect("parse cardinality");
+    let report = validate_ocel_v2_report(&ocel, &card);
+    assert!(!report.valid);
+    assert!(report.errors.iter().any(|e| e.code == "CARDINALITY_MAX"));
 }
 
 #[test]
