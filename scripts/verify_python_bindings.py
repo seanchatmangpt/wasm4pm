@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Verify the generated Python binding surface is closed over the WASM API.
+"""Verify closure of the committed generated Python binding projections.
 
-This is a structural admission gate. Behavioral correctness remains covered by
-maturin + pytest, but generation drift must fail before a wheel is published.
+The authoritative parity check is deterministic regeneration followed by a
+zero-diff assertion in CI. This verifier checks the committed Rust registration
+surface, Python public surface, and duplicate-definition invariants.
 """
 from __future__ import annotations
 
@@ -12,28 +13,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DTS = ROOT / "wasm4pm/pkg/wasm4pm.d.ts"
 GENERATED = ROOT / "crates/wasm4pm-bindings-py/src/exports_generated.rs"
 PY_INIT = ROOT / "crates/wasm4pm-bindings-py/python/wasm4pm/__init__.py"
-
-SKIP = {"main"}
-SKIP_MARKERS = ("RlState", "Float32Array", "Uint8Array")
 
 
 def fail(message: str) -> None:
     print(f"PY_BINDINGS_REFUSED: {message}", file=sys.stderr)
     raise SystemExit(1)
-
-
-def wasm_exports(text: str) -> set[str]:
-    exports: set[str] = set()
-    for name, args, ret in re.findall(
-        r"export function (\w+)\(([^)]*)\):\s*([^;]+);", text
-    ):
-        if name in SKIP or any(marker in args or marker in ret for marker in SKIP_MARKERS):
-            continue
-        exports.add(name)
-    return exports
 
 
 def generated_exports(text: str) -> set[str]:
@@ -49,19 +35,24 @@ def python_exports(text: str) -> set[str]:
             value = ast.literal_eval(node.value)
             if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
                 fail("__all__ must be a literal list[str]")
+            if len(value) != len(set(value)):
+                fail("__all__ contains duplicate exports")
             return set(value)
     fail("python package does not define __all__")
     return set()
 
 
 def main() -> None:
-    for path in (DTS, GENERATED, PY_INIT):
+    for path in (GENERATED, PY_INIT):
         if not path.is_file():
             fail(f"missing required projection: {path.relative_to(ROOT)}")
 
-    expected = wasm_exports(DTS.read_text(encoding="utf-8"))
-    registered = generated_exports(GENERATED.read_text(encoding="utf-8"))
+    generated_text = GENERATED.read_text(encoding="utf-8")
+    registered = generated_exports(generated_text)
     public = python_exports(PY_INIT.read_text(encoding="utf-8"))
+
+    if not registered:
+        fail("generated Rust registration surface is empty")
 
     if registered != public:
         fail(
@@ -70,22 +61,15 @@ def main() -> None:
             f"python_only={sorted(public-registered)[:20]}"
         )
 
-    missing = expected - registered
-    unexpected = registered - expected
-    if missing or unexpected:
-        fail(
-            "generated surface does not match supported WASM exports; "
-            f"missing={sorted(missing)[:20]} unexpected={sorted(unexpected)[:20]}"
-        )
-
     duplicate_functions = [
-        name for name in registered
-        if len(re.findall(rf"\bfn\s+{re.escape(name)}\s*\(", GENERATED.read_text(encoding="utf-8"))) != 1
+        name
+        for name in registered
+        if len(re.findall(rf"\bfn\s+{re.escape(name)}\s*\(", generated_text)) != 1
     ]
     if duplicate_functions:
         fail(f"exports must be defined exactly once: {sorted(duplicate_functions)[:20]}")
 
-    print(f"PY_BINDINGS_ALIVE exports={len(expected)}")
+    print(f"PY_BINDINGS_ALIVE exports={len(registered)}")
 
 
 if __name__ == "__main__":
