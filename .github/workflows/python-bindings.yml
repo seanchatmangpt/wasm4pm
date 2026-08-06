@@ -7,7 +7,6 @@ on:
       - 'scripts/generate_python_dispatch.py'
       - 'scripts/verify_python_bindings.py'
       - 'wasm4pm/src/**'
-      - 'wasm4pm/pkg/wasm4pm.d.ts'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/python-bindings.yml'
@@ -20,7 +19,6 @@ on:
       - 'scripts/generate_python_dispatch.py'
       - 'scripts/verify_python_bindings.py'
       - 'wasm4pm/src/**'
-      - 'wasm4pm/pkg/wasm4pm.d.ts'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/python-bindings.yml'
@@ -40,14 +38,25 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-04-15
+          targets: wasm32-unknown-unknown
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-      - name: Install build and test tools
-        run: python -m pip install --upgrade 'maturin>=1.7,<2.0' pytest
-      - name: Verify generated surface
-        run: python scripts/verify_python_bindings.py
+      - name: Install exact build and test tools
+        run: |
+          cargo install wasm-pack --version 0.13.1 --locked
+          python -m pip install --upgrade 'maturin>=1.7,<2.0' pytest
+      - name: Manufacture WASM API projection
+        working-directory: wasm4pm
+        run: wasm-pack build --target nodejs --mode no-install --release --features cloud
+      - name: Verify deterministic generated projections
+        run: |
+          python scripts/generate_python_dispatch.py
+          git diff --exit-code -- \
+            crates/wasm4pm-bindings-py/src/exports_generated.rs \
+            crates/wasm4pm-bindings-py/python/wasm4pm/__init__.py
+          python scripts/verify_python_bindings.py
       - name: Build wheel
         working-directory: crates/wasm4pm-bindings-py
         run: python -m maturin build --release --out dist
