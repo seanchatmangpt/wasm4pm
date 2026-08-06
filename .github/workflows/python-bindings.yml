@@ -1,0 +1,65 @@
+name: Python bindings
+
+on:
+  pull_request:
+    paths:
+      - 'crates/wasm4pm-bindings-py/**'
+      - 'scripts/generate_python_dispatch.py'
+      - 'scripts/verify_python_bindings.py'
+      - 'wasm4pm/src/**'
+      - 'wasm4pm/pkg/wasm4pm.d.ts'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/python-bindings.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crates/wasm4pm-bindings-py/**'
+      - 'scripts/generate_python_dispatch.py'
+      - 'scripts/verify_python_bindings.py'
+      - 'wasm4pm/src/**'
+      - 'wasm4pm/pkg/wasm4pm.d.ts'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/python-bindings.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bindings:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install build and test tools
+        run: python -m pip install --upgrade 'maturin>=1.7,<2.0' pytest
+      - name: Verify generated surface
+        run: python scripts/verify_python_bindings.py
+      - name: Build wheel
+        working-directory: crates/wasm4pm-bindings-py
+        run: python -m maturin build --release --out dist
+      - name: Install exact wheel
+        working-directory: crates/wasm4pm-bindings-py
+        run: python -m pip install --force-reinstall dist/*.whl
+      - name: Execute binding tests
+        working-directory: crates/wasm4pm-bindings-py
+        run: pytest -q tests/test_bindings.py
+      - name: Verify public imports
+        run: |
+          python - <<'PY'
+          import wasm4pm
+          missing = [name for name in wasm4pm.__all__ if not hasattr(wasm4pm, name)]
+          assert not missing, missing
+          print(f'PY_IMPORTS_ALIVE exports={len(wasm4pm.__all__)}')
+          PY
