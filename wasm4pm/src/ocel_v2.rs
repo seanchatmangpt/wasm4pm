@@ -20,6 +20,7 @@
 
 use std::collections::HashMap;
 
+use wasm4pm_compat::ocel::validate::{validate, ValidationReport};
 use wasm4pm_compat::ocel::{ObjectTypeCardinality, OCEL};
 use wasm_bindgen::prelude::*;
 
@@ -36,6 +37,16 @@ fn parse_cardinality(json: &str) -> Result<HashMap<String, ObjectTypeCardinality
     }
     serde_json::from_str::<HashMap<String, ObjectTypeCardinality>>(json)
         .map_err(|e| js_val(&format!("Invalid object_types cardinality JSON: {e}")))
+}
+
+/// Validate an OCEL-v2 log against OCEDO/OCPQ invariants and optional cardinality.
+///
+/// Shared by WASM exports and native callers (Python bindings, tests).
+pub fn validate_ocel_v2_report(
+    ocel: &OCEL,
+    cardinality: &HashMap<String, ObjectTypeCardinality>,
+) -> ValidationReport {
+    validate(ocel, cardinality)
 }
 
 /// Parse and normalize an OCEL-v2 log. Validates JSON structure (events,
@@ -59,7 +70,7 @@ pub fn load_ocel_v2(json: &str) -> Result<JsValue, JsValue> {
 pub fn validate_ocel_v2(json: &str, cardinality_json: &str) -> Result<JsValue, JsValue> {
     let ocel = parse_ocel(json)?;
     let card = parse_cardinality(cardinality_json)?;
-    let report = "Not implemented";
+    let report = validate_ocel_v2_report(&ocel, &card);
     to_js_str(&report)
 }
 

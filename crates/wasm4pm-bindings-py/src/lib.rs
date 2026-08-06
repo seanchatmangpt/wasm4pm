@@ -13,6 +13,7 @@ use wasm4pm::powl::discovery::{discover_powl, DiscoveryConfig, DiscoveryVariant}
 use wasm4pm::powl_arena::PowlArena;
 use wasm4pm::powl_execution::execute_powl_string;
 use wasm4pm::powl_parser::parse_powl_model_string;
+use wasm4pm_compat::ocel::validate::validate;
 use wasm4pm_compat::ocel::{ObjectTypeCardinality, OCEL};
 
 fn py_value_err(msg: impl Into<String>) -> PyErr {
@@ -180,9 +181,9 @@ fn validate_ocel_v2(py: Python<'_>, json: &str, cardinality_json: &str) -> PyRes
         serde_json::from_str(cardinality_json)
             .map_err(|e| py_value_err(format!("Invalid object_types cardinality JSON: {e}")))?
     };
-    let _ = (ocel, card);
-    // Mirrors the wasm export surface; full validation oracle lives in ocel-core tests.
-    json_to_py(py, &serde_json::json!({ "valid": true, "errors": [] }))
+    let report = validate(&ocel, &card);
+    let value = serde_json::to_value(&report).map_err(|e| py_value_err(e.to_string()))?;
+    json_to_py(py, &value)
 }
 
 #[pymodule]

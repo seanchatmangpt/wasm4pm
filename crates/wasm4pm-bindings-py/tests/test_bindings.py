@@ -8,6 +8,7 @@ import pytest
 import wasm4pm
 
 FIXTURES = Path(__file__).resolve().parents[3] / "wasm4pm" / "tests" / "fixtures"
+NEGATIVE = Path(__file__).resolve().parents[3] / "fixtures" / "negative"
 
 ORDER_TO_CASH = """
 {
@@ -54,6 +55,31 @@ def test_flatten_ocel_v2_unknown_type():
 def test_load_ocel_v2_malformed():
     with pytest.raises(ValueError):
         wasm4pm.load_ocel_v2("{ not json")
+
+
+def test_validate_ocel_v2_accepts_lawful_log():
+    report = wasm4pm.validate_ocel_v2(ORDER_TO_CASH)
+    assert report["valid"] is True
+    assert report["errors"] == []
+
+
+def test_validate_ocel_v2_with_cardinality():
+    card = json.dumps({"Order": {"min_count": 1, "max_count": 1}})
+    report = wasm4pm.validate_ocel_v2(ORDER_TO_CASH, card)
+    assert report["valid"] is True
+
+
+def test_validate_ocel_v2_rejects_e2o_empty():
+    raw = (NEGATIVE / "n12-e2o-empty.ocel.json").read_text(encoding="utf-8")
+    report = wasm4pm.validate_ocel_v2(raw)
+    assert report["valid"] is False
+    codes = {err["code"] for err in report["errors"]}
+    assert "E2O_EMPTY" in codes
+
+
+def test_validate_ocel_v2_rejects_bad_cardinality_json():
+    with pytest.raises(ValueError, match="cardinality"):
+        wasm4pm.validate_ocel_v2(ORDER_TO_CASH, "{ not json")
 
 
 def test_parse_powl():

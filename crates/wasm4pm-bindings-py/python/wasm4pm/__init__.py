@@ -6,6 +6,7 @@ from wasm4pm._native import (
     load_ocel_v2,
     parse_powl,
     powl_execute,
+    validate_ocel_v2,
     validate_partial_orders,
     version,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "load_ocel_v2",
     "parse_powl",
     "powl_execute",
+    "validate_ocel_v2",
     "validate_partial_orders",
     "version",
 ]
