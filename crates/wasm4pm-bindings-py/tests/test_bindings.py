@@ -29,8 +29,8 @@ ORDER_TO_CASH = """
 
 
 def test_version():
-    assert wasm4pm.version()
-    assert wasm4pm.__version__
+    assert wasm4pm.get_version()
+    assert "get_version" in wasm4pm.__all__
 
 
 def test_load_ocel_v2():
@@ -106,50 +106,37 @@ def test_powl_execute():
     assert "receipt" in result or "ocel" in result
 
 
-def test_list_exports():
-    exports = wasm4pm.list_exports()
-    assert isinstance(exports, list)
-    assert len(exports) >= 300
-    assert "discover_dfg" in exports
-    assert "get_capabilities" in exports
-
-
 def test_get_capabilities():
     caps = wasm4pm.get_capabilities()
     assert isinstance(caps, dict)
-
-
-def test_invoke_version():
-    ver = wasm4pm.invoke("get_version", [])
-    assert isinstance(ver, str)
-    assert ver
+    assert "version" in caps
+    assert "features" in caps
 
 
 def test_session_and_dfg():
+    """Mirror Rust/WASM handle lifecycle from lib.rs quick start."""
     running_example = (FIXTURES / "running-example.json").read_text(encoding="utf-8")
     handle = wasm4pm.load_eventlog_from_json(running_example)
     assert isinstance(handle, str)
-    assert wasm4pm.object_count() >= 1
 
-    dfg = wasm4pm.invoke("discover_dfg", [handle, "concept:name"])
+    dfg = wasm4pm.discover_dfg(handle, "concept:name")
     assert isinstance(dfg, dict)
 
     exported = wasm4pm.export_eventlog_to_json(handle)
-    assert "traces" in exported
+    assert "traces" in json.loads(exported)
 
+    assert wasm4pm.object_count() >= 1
     wasm4pm.delete_object(handle)
     wasm4pm.clear_all_objects()
 
 
-def test_list_algorithms():
-    algorithms = wasm4pm.list_algorithms()
-    assert "dfg" in algorithms
-    assert "ilp" in algorithms
-
-
-def test_run_algorithm_dfg():
+def test_discover_powl_from_log_config():
     running_example = (FIXTURES / "running-example.json").read_text(encoding="utf-8")
-    handle = wasm4pm.load_eventlog_from_json(running_example)
-    result = wasm4pm.run_algorithm("dfg", handle, "concept:name")
-    assert isinstance(result, dict)
-    wasm4pm.clear_all_objects()
+    discovered = wasm4pm.discover_powl_from_log_config(
+        running_example,
+        "concept:name",
+        "decision_graph_cyclic",
+        1,
+        0.0,
+    )
+    assert "repr" in discovered

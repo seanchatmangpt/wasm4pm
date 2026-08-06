@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Rust dispatch table for wasm4pm Python bindings from wasm4pm.d.ts + Rust sources."""
+"""Generate typed PyO3 exports mirroring wasm4pm Rust/WASM function signatures."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DTS = ROOT / "wasm4pm" / "pkg" / "wasm4pm.d.ts"
 SRC = ROOT / "wasm4pm" / "src"
-OUT = ROOT / "crates" / "wasm4pm-bindings-py" / "src" / "dispatch_generated.rs"
+OUT_RS = ROOT / "crates" / "wasm4pm-bindings-py" / "src" / "exports_generated.rs"
+OUT_PY = ROOT / "crates" / "wasm4pm-bindings-py" / "python" / "wasm4pm" / "__init__.py"
 
 SKIP_FUNCTIONS = {"main"}
 SKIP_TYPE_MARKERS = ("RlState", "Float32Array", "Uint8Array")
 SKIP_PATH_MARKERS = ("wasm_bindings", "wasm_testing_utils")
 
-# Prefer crate-root or utility modules over struct impl duplicates.
 PREFERRED_FILES = (
     "lib.rs",
     "utilities.rs",
@@ -26,6 +26,8 @@ PREFERRED_FILES = (
     "prediction_remaining_time.rs",
     "prediction_outcome.rs",
     "prediction_drift.rs",
+    "ocel_v2.rs",
+    "powl_api.rs",
 )
 
 MANUAL_PATH_OVERRIDES: dict[str, str] = {
@@ -40,20 +42,28 @@ MANUAL_PATH_OVERRIDES: dict[str, str] = {
     "wf_net_to_powl": "wasm4pm::wf_to_powl::wf_net_to_powl",
     "read_bpmn": "wasm4pm::bpmn_import::read_bpmn",
     "check_wf_net_soundness": "wasm4pm::soundness::check_wf_net_soundness",
-    "build_ngram_predictor": "wasm4pm::prediction::build_ngram_predictor",
-    "build_remaining_time_model": "wasm4pm::prediction_remaining_time::build_remaining_time_model",
+    "load_ocel_v2": "wasm4pm::ocel_v2::load_ocel_v2",
+    "flatten_ocel_v2": "wasm4pm::ocel_v2::flatten_ocel_v2",
+    "validate_ocel_v2": "wasm4pm::ocel_v2::validate_ocel_v2",
+    "discover_powl_from_log": "wasm4pm::powl_api::discover_powl_from_log",
+    "discover_powl_from_log_config": "wasm4pm::powl_api::discover_powl_from_log_config",
+    "parse_powl": "wasm4pm::powl_api::parse_powl",
+    "validate_partial_orders": "wasm4pm::powl_api::validate_partial_orders",
+    "powl_execute": "wasm4pm::powl_execution::powl_execute",
+}
+
+# Python default arguments mirroring common Rust/WASM optional parameters.
+PY_SIGNATURE_DEFAULTS: dict[str, dict[str, str]] = {
+    "validate_ocel_v2": {"cardinality_json": '""'},
+    "powl_execute": {"config_json": '""'},
+    "discover_powl_from_log": {"variant": '"decision_graph_cyclic"'},
 }
 
 _PATH_CACHE: dict[str, tuple[str, Path] | None] = {}
 
 
 def is_inside_impl(text: str, pos: int) -> bool:
-    """Return True when `pos` sits inside an `impl ... { ... }` block."""
     before = text[:pos]
-    impl_starts = [m.start() for m in re.finditer(r"\bimpl\b", before)]
-    if not impl_starts:
-        return False
-    # Walk backward through impl blocks; if we're inside one whose brace depth > 0, skip.
     depth = 0
     for i in range(len(before) - 1, -1, -1):
         ch = before[i]
@@ -61,7 +71,6 @@ def is_inside_impl(text: str, pos: int) -> bool:
             depth += 1
         elif ch == "{":
             if depth == 0:
-                # Found a block start — check if it's an impl.
                 prefix = before[: i + 1]
                 if re.search(r"\bimpl\b[^{]*\{", prefix[-200:]):
                     return True
@@ -142,9 +151,7 @@ def parse_rust_signature(fn_name: str, path: Path) -> tuple[list[tuple[str, str]
     args: list[tuple[str, str]] = []
     for part in raw_args.split(","):
         part = part.strip()
-        if not part or part.startswith("//"):
-            continue
-        if ":" not in part:
+        if not part or ":" not in part:
             continue
         name, typ = part.rsplit(":", 1)
         name = name.strip().strip("_")
@@ -153,30 +160,26 @@ def parse_rust_signature(fn_name: str, path: Path) -> tuple[list[tuple[str, str]
     return args, ret
 
 
-def rust_arg_extract(name: str, typ: str, idx: int) -> str:
-    if "bool" in typ:
-        return f"let {name} = arg_bool(&args, {idx})?;"
+def py_param_type(typ: str) -> str:
+    if typ == "bool":
+        return "bool"
     if typ == "u8":
-        return f"let {name} = arg_u8(&args, {idx})?;"
-    if typ in {"usize", "u32", "u64", "u16"} or "usize" in typ:
-        return f"let {name} = arg_usize(&args, {idx})?;"
+        return "u8"
+    if typ in {"usize", "u32", "u64", "u16"}:
+        return "usize"
     if typ == "i64":
-        return f"let {name} = arg_i64(&args, {idx})?;"
+        return "i64"
     if "f64" in typ or "f32" in typ:
-        return f"let {name} = arg_f64(&args, {idx})?;"
-    if "&str" in typ or "String" in typ:
-        return f"let {name} = arg_string(&args, {idx})?;"
+        return "f64"
     if "&JsValue" in typ:
-        return f"let {name} = arg_js_value(&args, {idx})?;"
-    if "&mut " in typ:
-        return f"let {name} = arg_string(&args, {idx})?;"
-    return f"let {name} = arg_string(&args, {idx})?;"
+        return "&str"
+    return "&str"
 
 
 def format_call_arg(name: str, typ: str) -> str:
-    if "&str" in typ:
-        return f"&{name}"
     if "&JsValue" in typ:
+        return f"&wasm_bindgen::JsValue::from_str(&{name})"
+    if "&str" in typ:
         return f"&{name}"
     if typ == "f32":
         return f"{name} as f32"
@@ -184,12 +187,8 @@ def format_call_arg(name: str, typ: str) -> str:
         return f"{name} as u32"
     if typ == "u64":
         return f"{name} as u64"
-    if typ == "i64":
-        return name
     if typ == "u8":
         return name
-    if "&mut " in typ:
-        return f"&mut {name}"
     return name
 
 
@@ -197,49 +196,127 @@ def format_call(args: list[tuple[str, str]]) -> str:
     return ", ".join(format_call_arg(n, t) for n, t in args)
 
 
-def generate_body(rust_path: str, args: list[tuple[str, str]], ret: str) -> str:
+def py_signature(fn_name: str, args: list[tuple[str, str]]) -> str | None:
+    defaults = PY_SIGNATURE_DEFAULTS.get(fn_name)
+    if not defaults:
+        return None
+    parts = []
+    for name, _typ in args:
+        if name in defaults:
+            parts.append(f"{name}={defaults[name]}")
+        else:
+            parts.append(name)
+    return f"#[pyfunction(signature = ({', '.join(parts)}))]"
+
+
+def generate_body(rust_path: str, args: list[tuple[str, str]], ret: str) -> tuple[str, str, bool]:
+    """Return (body, return_type, needs_py)."""
     call = format_call(args)
     call_expr = f"{rust_path}({call})" if call else f"{rust_path}()"
 
     if ret == "()":
-        return f"wrap_void(|| {{ {call_expr}; }})"
+        return (
+            f"    prepare_call();\n    {call_expr};\n    Ok(())",
+            "()",
+            False,
+        )
     if ret == "String":
-        return f"Ok(InvokeResult::String({call_expr}))"
+        return (f"    Ok({call_expr})", "String", False)
     if ret == "bool":
-        return f"Ok(InvokeResult::Bool({call_expr}))"
+        return (f"    Ok({call_expr})", "bool", False)
     if ret in {"f64", "f32"}:
-        return f"Ok(InvokeResult::Number({call_expr} as f64))"
+        return (f"    Ok({call_expr})", "f64", False)
     if ret in {"usize", "u32", "u64", "u16", "u8", "i64"}:
-        return f"Ok(InvokeResult::Number({call_expr} as f64))"
-    if ret == "JsValue":
-        return f"wrap_js_value(|| {call_expr})"
+        return (f"    Ok({call_expr} as f64)", "f64", False)
 
     if ret == "Result<String, JsValue>":
-        return f"wrap_string_result(|| {call_expr})"
-    if ret == "Result<JsValue, JsValue>":
-        return f"wrap_js_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    {call_expr}.map_err(js_error).map_err(py_err)",
+            "String",
+            False,
+        )
     if ret == "Result<usize, JsValue>":
-        return f"wrap_usize_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    Ok({call_expr}.map_err(js_error).map_err(py_err)? as f64)",
+            "f64",
+            False,
+        )
     if ret == "Result<u8, JsValue>":
-        return f"wrap_u8_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    Ok({call_expr}.map_err(js_error).map_err(py_err)? as f64)",
+            "f64",
+            False,
+        )
     if ret == "Result<u32, JsValue>":
-        return f"wrap_u32_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    Ok({call_expr}.map_err(js_error).map_err(py_err)? as f64)",
+            "f64",
+            False,
+        )
     if ret == "Result<bool, JsValue>":
-        return f"wrap_bool_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    {call_expr}.map_err(js_error).map_err(py_err)",
+            "bool",
+            False,
+        )
     if ret == "Result<(), JsValue>":
-        return f"wrap_void_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    {call_expr}.map_err(js_error).map_err(py_err)?;\n    Ok(())",
+            "()",
+            False,
+        )
     if ret == "Result<f64, JsValue>":
-        return f"wrap_f64_result(|| {call_expr})"
+        return (
+            f"    prepare_call();\n    {call_expr}.map_err(js_error).map_err(py_err)",
+            "f64",
+            False,
+        )
+    if ret == "JsValue":
+        return (
+            f"    prepare_call();\n    let _ = {call_expr};\n    json_result_to_py(py)",
+            "PyObject",
+            True,
+        )
 
-    # Tuple / custom Result types — serialize through JsValue path when possible.
-    if ret.startswith("Result<") and ret.endswith(", JsValue>"):
-        return f"wrap_js_result(|| {call_expr}.map(|v| wasm_bindgen::JsValue::from_str(&serde_json::to_string(&v).map_err(|e| wasm4pm::error::js_val(&e.to_string()))?)))"
-    if ret.startswith("Result<") and ", String>" in ret:
-        inner = ret[len("Result<") : ret.rfind(", String>")]
-        if inner in {"usize", "u32"}:
-            return f"wrap_string_result(|| {call_expr}.map(|v| v.to_string()))"
+    return (
+        f"    prepare_call();\n    {call_expr}.map_err(js_error).map_err(py_err)?;\n    json_result_to_py(py)",
+        "PyObject",
+        True,
+    )
 
-    return f"wrap_js_result(|| {call_expr})"
+
+def generate_pyfunction(fn_name: str, rust_path: str, args: list[tuple[str, str]], ret: str) -> str:
+    py_params = ", ".join(f"{name}: {py_param_type(typ)}" for name, typ in args)
+    sig_attr = py_signature(fn_name, args)
+    sig_line = f"{sig_attr}\n" if sig_attr else "#[pyfunction]\n"
+    if sig_attr:
+        sig_line = f"{sig_attr}\n"
+    else:
+        sig_line = "#[pyfunction]\n"
+    body, return_type, needs_py = generate_body(rust_path, args, ret)
+
+    if needs_py:
+        params = f"py: Python<'_>, {py_params}" if py_params else "py: Python<'_>"
+    else:
+        params = py_params
+
+    if return_type == "PyObject":
+        ret_clause = "PyResult<PyObject>"
+    elif return_type == "()":
+        ret_clause = "PyResult<()>"
+    else:
+        ret_clause = f"PyResult<{return_type}>"
+
+    if sig_attr:
+        return f"""{sig_line}fn {fn_name}({params}) -> {ret_clause} {{
+{body}
+}}
+"""
+    return f"""#[pyfunction]
+fn {fn_name}({params}) -> {ret_clause} {{
+{body}
+}}
+"""
 
 
 def generate() -> None:
@@ -250,7 +327,8 @@ def generate() -> None:
     text = DTS.read_text(encoding="utf-8")
     funcs = re.findall(r"export function (\w+)\(([^)]*)\):\s*([^;]+);", text)
 
-    arms: list[str] = []
+    pyfunctions: list[str] = []
+    registrations: list[str] = []
     listed: list[str] = []
     skipped: list[str] = []
 
@@ -274,38 +352,52 @@ def generate() -> None:
         args, rust_ret = sig
 
         listed.append(fn_name)
-        extracts = [rust_arg_extract(n, t, i) for i, (n, t) in enumerate(args)]
-        body = generate_body(rust_path, args, rust_ret)
-        block = "\n            ".join(extracts)
-        arms.append(f'        "{fn_name}" => {{\n            {block}\n            {body}\n        }}')
+        pyfunctions.append(generate_pyfunction(fn_name, rust_path, args, rust_ret))
+        registrations.append(f"    m.add_function(wrap_pyfunction!({fn_name}, m)?)?;")
 
-    header = """// AUTO-GENERATED by scripts/generate_python_dispatch.py — do not edit.
+    rs_header = """// AUTO-GENERATED by scripts/generate_python_dispatch.py — do not edit.
 
-use crate::invoke::{
-    arg_bool, arg_f64, arg_i64, arg_js_value, arg_string, arg_u8, arg_usize, wrap_bool_result,
-    wrap_f64_result, wrap_js_result, wrap_js_value, wrap_string_result, wrap_u32_result,
-    wrap_u8_result, wrap_usize_result, wrap_void, wrap_void_result, InvokeResult,
-};
+use pyo3::prelude::*;
+use wasm_bindgen::JsValue;
+use crate::bridge::{js_error, json_result_to_py, prepare_call, py_err};
 
-pub fn dispatch_export(name: &str, args: &[serde_json::Value]) -> Result<InvokeResult, String> {
-    match name {
 """
 
-    list_lines = "\n".join(f'        "{n}",' for n in listed)
-    footer = f"""
-        other => Err(format!("unknown export: {{other}}")),
-    }}
-}}
-
-pub fn list_export_names() -> &'static [&'static str] {{
-    &[
-{list_lines}
-    ]
+    rs_footer = f"""
+pub fn register_exports(m: &Bound<'_, PyModule>) -> PyResult<()> {{
+{chr(10).join(registrations)}
+    Ok(())
 }}
 """
 
-    OUT.write_text(header + "\n".join(arms) + footer, encoding="utf-8")
-    print(f"generated {OUT} with {len(arms)} exports, skipped {len(skipped)}")
+    OUT_RS.write_text(rs_header + "\n".join(pyfunctions) + rs_footer, encoding="utf-8")
+
+    py_names = ",\n    ".join(listed)
+    py_init = f'''"""Python bindings for wasm4pm — mirrors the Rust/WASM export surface."""
+
+from wasm4pm._native import (
+    {py_names},
+)
+
+__all__ = [
+    {", ".join(f'"{n}"' for n in listed)}
+]
+
+def parse_wasm_result(value):
+    """Parse JSON string results the same way TypeScript callers do."""
+    import json
+
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
+
+
+__version__ = get_version()
+'''
+
+    OUT_PY.write_text(py_init, encoding="utf-8")
+    print(f"generated {OUT_RS} with {len(listed)} exports, skipped {len(skipped)}")
+    print(f"generated {OUT_PY}")
     if skipped:
         print("skipped:", ", ".join(skipped[:20]), ("..." if len(skipped) > 20 else ""))
 
