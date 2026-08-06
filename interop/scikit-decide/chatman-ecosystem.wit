@@ -1,0 +1,21 @@
+package chatman:ecosystem@1.1.0;
+
+interface library {
+  record invocation {
+    operation: string,
+    payload-json: list<u8>,
+    authority-json: list<u8>,
+  }
+
+  record receipt-bound-result {
+    status: string,
+    output-json: list<u8>,
+    receipt-json: list<u8>,
+  }
+
+  invoke: func(request: invocation) -> result<receipt-bound-result, string>;
+}
+
+world chatman-library {
+  export library;
+}
