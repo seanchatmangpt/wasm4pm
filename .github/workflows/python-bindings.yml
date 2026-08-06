@@ -12,7 +12,9 @@ on:
       - 'Cargo.lock'
       - '.github/workflows/python-bindings.yml'
   push:
-    branches: [main]
+    branches:
+      - main
+      - cursor/wasm-py-bindings-2ae0
     paths:
       - 'crates/wasm4pm-bindings-py/**'
       - 'scripts/generate_python_dispatch.py'
