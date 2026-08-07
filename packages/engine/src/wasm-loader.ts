@@ -156,7 +156,7 @@ export class WasmLoader {
 
     try {
       this.observability.emitCli({
-        level: 'info',
+        level: 'debug',
         message: 'Initializing WASM module',
       });
 
@@ -198,7 +198,7 @@ export class WasmLoader {
       this.initialized = true;
 
       this.observability.emitCli({
-        level: 'info',
+        level: 'debug',
         message: 'WASM module initialized successfully',
       });
     } catch (err) {
@@ -504,8 +504,11 @@ export class WasmLoader {
         });
       }
     } else {
+      // The Node-target build intentionally omits set_panic_hook; this is a
+      // known, permanent condition for that target, not an actionable warning,
+      // so keep it at debug rather than warning on every single command.
       this.observability.emitCli({
-        level: 'warn',
+        level: 'debug',
         message:
           'WASM module does not export set_panic_hook. Continuing without custom panic hook.',
       });
