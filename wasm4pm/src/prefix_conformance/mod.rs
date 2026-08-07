@@ -68,7 +68,7 @@ pub struct PrefixFinding {
 
 /// Per-case incremental cursor (the online state). One per open episode
 /// (spec §7.1).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CaseCursor {
     pub case_id: String,
     /// Current state in the [`CompiledLaw`] automaton.
@@ -474,7 +474,7 @@ impl BoundedPrefixRouter {
         if cursor.verdict == PrefixVerdict::Alive {
             return Err(BoundedPrefixError::CaseStillAlive { key: key.clone() });
         }
-        self.cases.remove(key);
+        let _ = self.cases.remove(key);
         Ok(cursor)
     }
 }
