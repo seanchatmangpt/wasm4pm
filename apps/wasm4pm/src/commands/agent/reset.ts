@@ -37,17 +37,16 @@ export const reset = defineCommand({
       const quiet = Boolean(ctx.args.quiet);
 
       try {
-        let resetResult = 'RL orchestrator reset (WASM not loaded — will apply fresh on next autonomic cycle)';
-
-        // Attempt WASM reset
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
-          if (wasm && typeof wasm['rl_orchestrator_reset'] === 'function') {
-            resetResult = (wasm['rl_orchestrator_reset'] as () => string)();
-          }
-        } catch {
-          // WASM not available — record the intent but continue gracefully
+        // Attempt WASM reset. A thrown Err from a present export must fail this
+        // command, not be swallowed into a fake success — only fall back to the
+        // degraded-mode note when the module/export is genuinely absent.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
+        let resetResult: string;
+        if (wasm && typeof wasm['rl_orchestrator_reset'] === 'function') {
+          resetResult = (wasm['rl_orchestrator_reset'] as () => string)();
+        } else {
+          resetResult = 'RL orchestrator reset (WASM not loaded — will apply fresh on next autonomic cycle)';
         }
 
         const result = makeResult(

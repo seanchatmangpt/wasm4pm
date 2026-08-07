@@ -66,16 +66,19 @@ export const switchAgent = defineCommand({
 
         const agentIdx = RL_AGENTS[normalized];
 
-        // Attempt to load WASM and call rl_orchestrator_switch_agent
-        let switchResult = `switched to ${normalized} (WASM not loaded — state will apply on next autonomic cycle)`;
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
-          if (wasm && typeof wasm['rl_orchestrator_switch_agent'] === 'function') {
-            switchResult = (wasm['rl_orchestrator_switch_agent'] as (idx: number) => string)(agentIdx);
-          }
-        } catch {
-          // WASM not available — record the intent but continue gracefully
+        // Attempt to load WASM and call rl_orchestrator_switch_agent.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
+        let switchResult: string;
+        if (wasm && typeof wasm['rl_orchestrator_switch_agent'] === 'function') {
+          // Real export present — a thrown Err (e.g. invalid agent type) must fail this
+          // command, not be swallowed into a fake success. Let it propagate to the
+          // outer catch below.
+          switchResult = (wasm['rl_orchestrator_switch_agent'] as (idx: number) => string)(agentIdx);
+        } else {
+          // WASM module or export genuinely absent (e.g. built without the "cloud"
+          // feature) — this is a legitimate degraded-mode note, not an error.
+          switchResult = `switched to ${normalized} (WASM not loaded — state will apply on next autonomic cycle)`;
         }
 
         const result = makeResult(
