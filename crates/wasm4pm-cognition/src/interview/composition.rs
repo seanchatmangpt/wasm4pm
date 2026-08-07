@@ -295,8 +295,19 @@ pub struct ClosureBreed<F> {
     evaluate: F,
 }
 
-impl<F> ClosureBreed<F> {
+impl<F> ClosureBreed<F>
+where
+    F: for<'a> Fn(BreedInput<'a>) -> Result<BreedProposal, BreedFailure>,
+{
     /// Wrap a closure as a cognitive breed.
+    ///
+    /// The `for<'a> Fn(...)` bound must live here, not only on the
+    /// `CognitiveBreed` impl below: rustc only infers a closure literal's
+    /// `Fn` impl as higher-ranked over `'a` when that bound is the expected
+    /// type at the point the closure is constructed. Without it here, the
+    /// closure gets pinned to one concrete lifetime and later fails
+    /// "implementation of `Fn` is not general enough" wherever
+    /// `CognitiveBreed` is required — this bit every caller of `new`.
     #[must_use]
     pub fn new(
         id: impl Into<String>,
