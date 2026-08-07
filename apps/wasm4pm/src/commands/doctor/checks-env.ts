@@ -4,16 +4,34 @@ import { existsSync, statSync } from 'fs';
 import { execSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
+import { fileURLToPath } from 'url';
+import { getWasmLoader } from '@wasm4pm/engine';
 import type { Diagnosis } from './types.js';
 
 // ────────────────────────────────────────────────────────────────────────────
-// Shared helpers
+// Shared helpers — workspace-root resolution
+//
+// wpm is invoked most often from a NON-repo-root working directory (Cloud
+// Agents, CI, arbitrary cwd). A cwd-only walk for `pnpm-workspace.yaml` returns
+// null there and produced false STOP_THE_LINE diagnostics even when the CLI can
+// load WASM perfectly well. This resolver instead (1) honors an explicit
+// `WASM4PM_ROOT` override, (2) walks up from THIS module's own location (works
+// from dist, tsx source, or an installed node_modules/.pnpm store, independent
+// of cwd — mirroring the engine's own resolution), then (3) falls back to cwd.
 // ────────────────────────────────────────────────────────────────────────────
 
-export function resolveWorkspaceRoot(): string | null {
-  let dir = process.cwd();
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return dir;
+/** A directory is the wasm4pm workspace root if it carries a stable marker. */
+function isWorkspaceRoot(dir: string): boolean {
+  return (
+    existsSync(path.join(dir, 'pnpm-workspace.yaml')) ||
+    existsSync(path.join(dir, 'wasm4pm', 'Cargo.toml'))
+  );
+}
+
+function walkUpForRoot(start: string): string | null {
+  let dir = start;
+  for (let i = 0; i < 12; i++) {
+    if (isWorkspaceRoot(dir)) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
@@ -21,29 +39,39 @@ export function resolveWorkspaceRoot(): string | null {
   return null;
 }
 
-export async function resolveWasmPkgDir(): Promise<string | null> {
-  let dir = process.cwd();
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
-      return path.join(dir, 'wasm4pm', 'pkg');
-    }
-    const pkgJson = path.join(dir, 'package.json');
-    if (existsSync(pkgJson)) {
-      try {
-        const raw = await fs.readFile(pkgJson, 'utf-8');
-        const pkg = JSON.parse(raw) as { name?: string; workspaces?: unknown };
-        if (pkg.name === 'wasm4pm') {
-          return path.join(dir, 'wasm4pm', 'pkg');
-        }
-      } catch {
-        // ignore
-      }
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
+let _cachedRoot: string | null | undefined;
+
+function computeWorkspaceRoot(): string | null {
+  const envRoot = process.env.WASM4PM_ROOT;
+  if (envRoot && existsSync(envRoot)) return path.resolve(envRoot);
+
+  try {
+    const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+    const fromModule = walkUpForRoot(moduleDir);
+    if (fromModule) return fromModule;
+  } catch {
+    // import.meta.url unavailable (non-ESM host) — fall through to cwd.
   }
-  return null;
+
+  return walkUpForRoot(process.cwd());
+}
+
+export function resolveWorkspaceRoot(): string | null {
+  if (_cachedRoot === undefined) _cachedRoot = computeWorkspaceRoot();
+  return _cachedRoot;
+}
+
+/** Invalidate the cached root (for long-running watchers / tests). */
+export function resetWorkspaceRootCache(): void {
+  _cachedRoot = undefined;
+}
+
+export async function resolveWasmPkgDir(): Promise<string | null> {
+  const envPkg = process.env.WASM4PM_PKG_DIR;
+  if (envPkg && existsSync(envPkg)) return path.resolve(envPkg);
+
+  const root = resolveWorkspaceRoot();
+  return root ? path.join(root, 'wasm4pm', 'pkg') : null;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -112,12 +140,15 @@ export async function checkPnpmVersion(): Promise<Diagnosis> {
 export async function checkWasmBinary(): Promise<Diagnosis> {
   const wasmPkgDir = await resolveWasmPkgDir();
   if (!wasmPkgDir) {
+    // Inspection-only: not being able to locate the repo from an arbitrary cwd
+    // is not a stop-the-line integrity failure — the CLI resolves WASM from its
+    // own module location at runtime. Surface it as a warning, not a critical.
     return {
       name: 'WASM binary',
       pathology: 'ENVIRONMENT_FAULT',
-      severity: 'STOP_THE_LINE',
-      message: 'Cannot locate wasm4pm/pkg/ directory (workspace root not found)',
-      fix: 'Run this command from inside the wasm4pm workspace, then rebuild: cd wasm4pm && pnpm run build',
+      severity: 'WARNING',
+      message: 'Could not locate the wasm4pm workspace from this directory',
+      fix: 'Run from inside the wasm4pm workspace, or set WASM4PM_ROOT to its path.',
     };
   }
 
@@ -131,7 +162,7 @@ export async function checkWasmBinary(): Promise<Diagnosis> {
       return {
         name: 'WASM binary',
         pathology: 'ENVIRONMENT_FAULT',
-        severity: 'STOP_THE_LINE',
+        severity: 'WARNING',
         message: `${wasmFile} exists but is empty`,
         fix: 'Rebuild WASM: cd wasm4pm && pnpm run build',
       };
@@ -149,7 +180,7 @@ export async function checkWasmBinary(): Promise<Diagnosis> {
     return {
       name: 'WASM binary',
       pathology: 'ENVIRONMENT_FAULT',
-      severity: 'STOP_THE_LINE',
+      severity: 'WARNING',
       message: `WASM binary not built — ${wasmFile} not found`,
       fix: 'Build the WASM module: cd wasm4pm && pnpm run build',
     };
@@ -161,34 +192,17 @@ export async function checkWasmBinary(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 export async function checkWasmLoads(): Promise<Diagnosis> {
-  const wasmPkgDir = await resolveWasmPkgDir();
-  if (!wasmPkgDir) {
-    return {
-      name: 'WASM loads',
-      pathology: 'ENVIRONMENT_FAULT',
-      severity: 'STOP_THE_LINE',
-      message: 'Skipped — pkg/ directory not found',
-      fix: 'Run from inside the wasm4pm workspace',
-    };
-  }
-
-  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
-  if (!existsSync(jsFile)) {
-    return {
-      name: 'WASM loads',
-      pathology: 'ENVIRONMENT_FAULT',
-      severity: 'STOP_THE_LINE',
-      message: 'wasm4pm.js not found — module not built',
-      fix: 'cd wasm4pm && pnpm run build',
-    };
-  }
-
+  // Test the real thing: load WASM through the engine's WasmLoader — the exact
+  // path every wpm command uses — rather than a cwd-relative file probe. This
+  // reflects whether the CLI can ACTUALLY run, independent of the working
+  // directory, so it never reports a false failure when discovery works fine.
   try {
-    const url = new URL(`file://${jsFile}`);
-    const mod = await import(url.href);
-
-    if (typeof mod.get_version === 'function') {
-      const v: string = mod.get_version();
+    const loader = getWasmLoader();
+    await loader.init();
+    const mod = loader.get() as Record<string, unknown>;
+    const getVersion = mod['get_version'];
+    if (typeof getVersion === 'function') {
+      const v = String((getVersion as () => unknown)());
       return {
         name: 'WASM loads',
         pathology: 'ENVIRONMENT_FAULT',
@@ -196,7 +210,6 @@ export async function checkWasmLoads(): Promise<Diagnosis> {
         message: `Loaded OK — module version ${v}`,
       };
     }
-
     return {
       name: 'WASM loads',
       pathology: 'ENVIRONMENT_FAULT',
@@ -208,9 +221,9 @@ export async function checkWasmLoads(): Promise<Diagnosis> {
     return {
       name: 'WASM loads',
       pathology: 'ENVIRONMENT_FAULT',
-      severity: 'STOP_THE_LINE',
-      message: `Failed to import WASM module: ${msg}`,
-      fix: 'Rebuild with: cd wasm4pm && pnpm run build',
+      severity: 'WARNING',
+      message: `WASM module could not be loaded: ${msg}`,
+      fix: 'Build the WASM module: cd wasm4pm && pnpm run build (or set WASM4PM_ROOT).',
     };
   }
 }

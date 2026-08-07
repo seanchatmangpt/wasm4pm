@@ -2,6 +2,7 @@
 // These validate cross-reference integrity across the Rust > WASM > TypeScript pipeline.
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
+import { resolveWorkspaceRoot } from './checks-env.js';
 import type { Diagnosis } from './types.js';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -26,22 +27,14 @@ export function readSourceFile(relativePath: string): string | null {
   return null;
 }
 
-let _cachedRoot: string | null | undefined;
-
+/**
+ * Resolve the workspace root. Delegates to the single robust resolver in
+ * checks-env.ts (honors WASM4PM_ROOT, walks from the CLI's own module location,
+ * then cwd) instead of a second cwd-only `pnpm-workspace.yaml` walk that
+ * returned null — and skipped every source-backed check — from a non-repo cwd.
+ */
 export function getCachedWorkspaceRoot(): string | null {
-  if (_cachedRoot !== undefined) return _cachedRoot;
-  _cachedRoot = null;
-  let dir = process.cwd();
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
-      _cachedRoot = dir;
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
+  return resolveWorkspaceRoot();
 }
 
 /**
