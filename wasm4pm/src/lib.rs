@@ -694,6 +694,7 @@ pub mod advanced;
 // Autonomic Audit Trail — Immutable append-only event log with Merkle chain (Gap-20)
 pub mod autonomic_audit_trail;
 pub mod oc_orchestrator;
+pub mod prefix_conformance;
 pub use autonomic_audit_trail::*;
 
 // Convenience re-exports for WASM API (Gap-1)

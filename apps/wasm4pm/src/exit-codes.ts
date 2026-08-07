@@ -1,3 +1,5 @@
+import type { ErrorCodeMap } from '@wasm4pm/noun-verb';
+
 /**
  * Exit codes for wasm4pm (wpm) CLI
  * Follows standard Unix/POSIX conventions
@@ -26,6 +28,25 @@ export const EXIT_CODES = {
 } as const;
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
+
+/**
+ * wpm's authoritative mapping from the noun-verb framework's `ErrorCode`
+ * vocabulary onto wpm's own 0-6 exit-code contract. This is the single
+ * source of truth: it is passed to the CLI as `errorCodeMap` (see `cli.ts`)
+ * AND surfaced by `wpm help exit-codes`, so the documented map and the
+ * runtime behavior can never drift.
+ */
+export const ERROR_CODE_MAP: ErrorCodeMap = {
+  INVALID_INPUT: EXIT_CODES.source_error,
+  COMMAND_NOT_FOUND: EXIT_CODES.config_error,
+  VERB_NOT_FOUND: EXIT_CODES.config_error,
+  PERMISSION_DENIED: EXIT_CODES.system_error,
+  INVARIANT_BREACH: EXIT_CODES.execution_error,
+  DEADLINE_EXCEEDED: EXIT_CODES.execution_error,
+  GUARD_EXCEEDED: EXIT_CODES.execution_error,
+  EXECUTION_ERROR: EXIT_CODES.execution_error,
+  INTERNAL_ERROR: EXIT_CODES.system_error,
+};
 
 /**
  * Translate contract error codes (200-700) to CLI exit codes (0-6).

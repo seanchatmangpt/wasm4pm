@@ -5,8 +5,7 @@
  * `wpm exit-codes`.
  */
 import { defineVerb } from '@wasm4pm/noun-verb';
-import { DEFAULT_ERROR_EXIT_CODES } from '@wasm4pm/noun-verb';
-import { EXIT_CODES } from '../../exit-codes.js';
+import { EXIT_CODES, ERROR_CODE_MAP } from '../../exit-codes.js';
 
 export const exitCodesVerb = defineVerb({
   noun: 'help',
@@ -15,11 +14,15 @@ export const exitCodesVerb = defineVerb({
   handler: async () => {
     return {
       legacyCommandExitCodes: EXIT_CODES,
-      nativeVerbErrorCodeExitCodes: DEFAULT_ERROR_EXIT_CODES,
+      // wpm's OWN ErrorCode -> exit-code map (the one actually wired into the
+      // CLI via cli.ts's `errorCodeMap`), NOT the framework default — e.g.
+      // INVALID_INPUT maps to source_error(2) here, which is what a native
+      // verb actually exits with.
+      nativeVerbErrorCodeExitCodes: ERROR_CODE_MAP,
       note:
         'Bridged verbs (wrapping a legacy commands/*.ts body) surface the legacy EXIT_CODES contract. ' +
         'Native verbs (e.g. model discover/check) throw a NounVerbError whose code maps through ' +
-        'nativeVerbErrorCodeExitCodes.',
+        'nativeVerbErrorCodeExitCodes (wpm\'s ERROR_CODE_MAP).',
     };
   },
 });

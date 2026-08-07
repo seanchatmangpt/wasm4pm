@@ -114,6 +114,31 @@ fn to_engine_ast<'a>(
     }
 }
 
+/// Render a deterministic UTC ISO-8601 timestamp at `secs` seconds past the
+/// Unix epoch. Used to overwrite the wall-clock event times the external OCEL
+/// serializer stamps in, so the emitted execution log stays byte-for-byte
+/// reproducible (the module contract promises "the same model + config always
+/// yields the same OCEL log"). Uses Howard Hinnant's civil-from-days algorithm
+/// so it needs no `chrono`/clock dependency and never depends on the host time.
+fn deterministic_iso(secs: u64) -> String {
+    let days = (secs / 86_400) as i64;
+    let rem = secs % 86_400;
+    let (hour, minute, second) = (rem / 3600, (rem % 3600) / 60, rem % 60);
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let year0 = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = if month <= 2 { year0 + 1 } else { year0 };
+    format!(
+        "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.000Z"
+    )
+}
+
 /// Pure core: execute a POWL model string, returning receipt + OCEL + conformance.
 ///
 /// Accepts both POWL v1 (`X (a, b)`, `PO=(...)`) and POWL v2 (`Activity(...)`,
@@ -247,12 +272,32 @@ pub fn execute_powl_string(powl_str: &str, max_iters: u8) -> Result<serde_json::
         })
         .collect();
 
-    let ocel_json: serde_json::Value = serde_json::from_str(
+    let mut ocel_json: serde_json::Value = serde_json::from_str(
         &ocel_log
             .to_ocel_json()
             .map_err(|e| format!("OCEL serialization failed: {e}"))?,
     )
     .map_err(|e| format!("OCEL JSON invalid: {e}"))?;
+
+    // The external `bcinr-powl` OCEL serializer stamps each event with the
+    // current wall clock, which is the ONLY non-deterministic field in the
+    // otherwise content-addressed output and breaks replay (identical model +
+    // config produced a different `output_hash` on every run). Replace those
+    // timestamps with a deterministic monotonic sequence so the emitted log,
+    // and any hash taken over it, replays identically. Firing order is already
+    // captured by `topo_order`/event ids, so this loses no information.
+    if let Some(events) = ocel_json.get_mut("events").and_then(|e| e.as_array_mut()) {
+        for (index, event) in events.iter_mut().enumerate() {
+            if let Some(obj) = event.as_object_mut() {
+                if obj.contains_key("time") {
+                    obj.insert(
+                        "time".to_string(),
+                        serde_json::Value::String(deterministic_iso(index as u64)),
+                    );
+                }
+            }
+        }
+    }
 
     Ok(json!({
         "algorithm": "powl_execute",

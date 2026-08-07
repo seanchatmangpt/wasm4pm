@@ -32,7 +32,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@wasm4pm/config": "workspace:*",
     "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/observability": "workspace:*",
+    "wasm4pm": "workspace:*",
     "zod": "^3.22.0"
   },
   "devDependencies": {

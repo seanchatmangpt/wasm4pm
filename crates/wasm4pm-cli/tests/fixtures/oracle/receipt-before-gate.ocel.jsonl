@@ -1,0 +1,8 @@
+{"id": "file_1", "type": "File", "attributes": {}}
+{"id": "diag_GGEN-TPL-002", "type": "DiagnosticCode", "attributes": {}}
+{"id": "ep_2", "type": "Episode", "attributes": {}}
+{"event_id": "e0", "activity": "DiagnosticRaised", "timestamp": "2026-05-15T12:00:00+00:00", "objects": [{"id": "file_1", "type": "File"}, {"id": "diag_GGEN-TPL-002", "type": "DiagnosticCode"}, {"id": "ep_2", "type": "Episode"}]}
+{"event_id": "e1", "activity": "RouteSelected", "timestamp": "2026-05-15T12:00:01+00:00", "objects": [{"id": "file_1", "type": "File"}, {"id": "diag_GGEN-TPL-002", "type": "DiagnosticCode"}, {"id": "ep_2", "type": "Episode"}]}
+{"event_id": "e2", "activity": "RepairSuggested", "timestamp": "2026-05-15T12:00:02+00:00", "objects": [{"id": "file_1", "type": "File"}, {"id": "diag_GGEN-TPL-002", "type": "DiagnosticCode"}, {"id": "ep_2", "type": "Episode"}]}
+{"event_id": "e3", "activity": "RepairApplied", "timestamp": "2026-05-15T12:00:03+00:00", "objects": [{"id": "file_1", "type": "File"}, {"id": "diag_GGEN-TPL-002", "type": "DiagnosticCode"}, {"id": "ep_2", "type": "Episode"}]}
+{"event_id": "e4", "activity": "ReceiptEmitted", "timestamp": "2026-05-15T12:00:04+00:00", "objects": [{"id": "file_1", "type": "File"}, {"id": "diag_GGEN-TPL-002", "type": "DiagnosticCode"}, {"id": "ep_2", "type": "Episode"}]}

@@ -35,33 +35,34 @@ interface RlAgentEntry {
   avg_reward: number;
 }
 
-/** Try to load RL telemetry from WASM. Returns null if WASM unavailable. */
+/**
+ * Try to load RL telemetry from WASM. Returns null only when the module/export is
+ * genuinely absent (legitimate degraded-mode display). A thrown Err from a present
+ * export propagates — it must fail the command, not render fabricated zeroed
+ * telemetry as if the orchestrator were healthy.
+ */
 async function tryLoadRlTelemetry(): Promise<RlTelemetry | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
-    if (!wasm) return null;
-    const fn = wasm['rl_orchestrator_telemetry'];
-    if (typeof fn !== 'function') return null;
-    const raw = (fn as () => string)();
-    return JSON.parse(raw) as RlTelemetry;
-  } catch {
-    return null;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
+  if (!wasm) return null;
+  const fn = wasm['rl_orchestrator_telemetry'];
+  if (typeof fn !== 'function') return null;
+  const raw = (fn as () => string)();
+  return JSON.parse(raw) as RlTelemetry;
 }
 
-/** Try to load active agent index from WASM. Returns null if WASM unavailable. */
+/**
+ * Try to load active agent index from WASM. Returns null only when the module/export
+ * is genuinely absent; a thrown Err from a present export propagates (see
+ * tryLoadRlTelemetry doc above).
+ */
 async function tryGetActiveAgentIdx(): Promise<number | null> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
-    if (!wasm) return null;
-    const fn = wasm['rl_orchestrator_active_agent'];
-    if (typeof fn !== 'function') return null;
-    return (fn as () => number)();
-  } catch {
-    return null;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const wasm = await (import('wasm4pm') as Promise<any>).catch(() => null);
+  if (!wasm) return null;
+  const fn = wasm['rl_orchestrator_active_agent'];
+  if (typeof fn !== 'function') return null;
+  return (fn as () => number)();
 }
 
 /** Pad a string to a minimum width. */
