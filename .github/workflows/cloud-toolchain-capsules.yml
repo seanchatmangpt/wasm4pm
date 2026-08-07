@@ -1,0 +1,127 @@
+name: Cloud Toolchain Core Capsules
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-capsule:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Manufacture exact source and Git bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          git rev-parse HEAD | tee out/HEAD
+          git archive --format=tar HEAD | zstd -19 -T0 -o out/wasm4pm-source.tar.zst
+          git bundle create out/wasm4pm.bundle HEAD
+          (cd out && sha256sum HEAD wasm4pm-source.tar.zst wasm4pm.bundle > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-source-capsule
+          path: out/
+          compression-level: 0
+          retention-days: 14
+
+  rust-nightly:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          targets: wasm32-unknown-unknown
+          components: rustfmt,clippy
+      - name: Manufacture and replay exact Rust capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capsule/root/.cargo out replay
+          cp -a "$HOME/.rustup" capsule/root/.rustup
+          cp -a "$HOME/.cargo/bin" capsule/root/.cargo/bin
+          cat > capsule/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/root"
+          export RUSTUP_HOME="$ROOT/.rustup"
+          export CARGO_HOME="$ROOT/.cargo"
+          export PATH="$CARGO_HOME/bin:$PATH"
+          export RUSTUP_TOOLCHAIN=nightly-2026-04-15-x86_64-unknown-linux-gnu
+          EOF
+          chmod +x capsule/activate.sh
+          source capsule/activate.sh
+          rustc --version --verbose | tee capsule/RUSTC_VERSION
+          cargo --version | tee capsule/CARGO_VERSION
+          rustfmt --version | tee capsule/RUSTFMT_VERSION
+          cargo clippy --version | tee capsule/CLIPPY_VERSION
+          rustup target list --installed | grep -Fx wasm32-unknown-unknown | tee capsule/TARGETS
+          printf 'fn main(){println!("RUST_CAPSULE_ALIVE:{}",19+23);}\n' >/tmp/alive.rs
+          rustc /tmp/alive.rs -o /tmp/alive && /tmp/alive
+          tar --zstd -cf out/rust-nightly-2026-04-15-x86_64-linux.tar.zst capsule
+          (cd out && sha256sum rust-nightly-2026-04-15-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf out/rust-nightly-2026-04-15-x86_64-linux.tar.zst -C replay
+          source replay/capsule/activate.sh
+          rustc --version --verbose
+          cargo --version
+          rustfmt --version
+          cargo clippy --version
+          rustup target list --installed | grep -Fx wasm32-unknown-unknown
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-rust-nightly-2026-04-15
+          path: out/
+          compression-level: 0
+          retention-days: 14
+
+  wasm-runtimes:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - name: Install exact runtime surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://wasmtime.dev/install.sh | bash
+          curl -sSfL https://get.wasmer.io | sh
+          cargo install --locked wasm-tools
+      - name: Manufacture and replay WASM capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p capsule/bin out replay
+          cp -aL "$HOME/.wasmtime/bin/wasmtime" capsule/bin/
+          cp -aL "$HOME/.wasmer/bin/wasmer" capsule/bin/
+          cp -aL "$HOME/.cargo/bin/wasm-tools" capsule/bin/
+          cat > capsule/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export PATH="$ROOT/bin:$PATH"
+          EOF
+          chmod +x capsule/activate.sh
+          source capsule/activate.sh
+          wasmtime --version | tee capsule/WASMTIME_VERSION
+          wasmer --version | tee capsule/WASMER_VERSION
+          wasm-tools --version | tee capsule/WASM_TOOLS_VERSION
+          printf '(module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))\n' >/tmp/add.wat
+          wasm-tools parse /tmp/add.wat -o /tmp/add.wasm
+          wasm-tools validate /tmp/add.wasm
+          test "$(wasmtime run --invoke add /tmp/add.wasm 19 23 | tr -d '\r')" = 42
+          tar --zstd -cf out/wasm-runtimes-x86_64-linux.tar.zst capsule
+          (cd out && sha256sum wasm-runtimes-x86_64-linux.tar.zst > SHA256SUMS)
+          tar --zstd -xf out/wasm-runtimes-x86_64-linux.tar.zst -C replay
+          source replay/capsule/activate.sh
+          wasmtime --version
+          wasmer --version
+          wasm-tools --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-wasm-runtimes
+          path: out/
+          compression-level: 0
+          retention-days: 14

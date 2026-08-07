@@ -1,0 +1,61 @@
+name: Cloud Lean Direct Capsule
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean-direct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Install exact Lean 4.31.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.31.0
+          export PATH="$HOME/.elan/bin:$PATH"
+          lean --version
+          lake --version
+      - name: Manufacture, split, reconstruct, and replay direct toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          TOOLCHAIN="$(dirname "$(dirname "$(elan which lean)")")"
+          test -x "$TOOLCHAIN/bin/lean"
+          test -x "$TOOLCHAIN/bin/lake"
+          mkdir -p capsule/payload capsule/out capsule/replay
+          cp -a "$TOOLCHAIN" capsule/payload/toolchain
+          cat > capsule/payload/activate.sh <<'EOF'
+          #!/usr/bin/env bash
+          ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export LEAN_SYSROOT="$ROOT/toolchain"
+          export PATH="$ROOT/toolchain/bin:$PATH"
+          EOF
+          chmod +x capsule/payload/activate.sh
+          source capsule/payload/activate.sh
+          lean --version | tee capsule/payload/LEAN_VERSION
+          lake --version | tee capsule/payload/LAKE_VERSION
+          printf 'theorem answer : 19 + 23 = 42 := by decide\n#eval 19 + 23\n' >/tmp/Alive.lean
+          lean /tmp/Alive.lean | tee capsule/payload/LEAN_SMOKE
+          tar --zstd -cf capsule/out/lean-v4.31.0-x86_64-linux.tar.zst -C capsule payload
+          split -b 250MiB -d -a 2 capsule/out/lean-v4.31.0-x86_64-linux.tar.zst capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-
+          rm capsule/out/lean-v4.31.0-x86_64-linux.tar.zst
+          (cd capsule/out && sha256sum lean-v4.31.0-x86_64-linux.tar.zst.part-* > SHA256SUMS.parts)
+          cat capsule/out/lean-v4.31.0-x86_64-linux.tar.zst.part-* > capsule/out/lean-v4.31.0-x86_64-linux.tar.zst
+          tar --zstd -xf capsule/out/lean-v4.31.0-x86_64-linux.tar.zst -C capsule/replay
+          env -u ELAN_HOME -u ELAN_TOOLCHAIN \
+            PATH="$PWD/capsule/replay/payload/toolchain/bin:/usr/bin:/bin" \
+            LEAN_SYSROOT="$PWD/capsule/replay/payload/toolchain" \
+            lean /tmp/Alive.lean
+          rm capsule/out/lean-v4.31.0-x86_64-linux.tar.zst
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-lean-v4.31.0-direct
+          path: capsule/out/
+          compression-level: 0
+          retention-days: 14
