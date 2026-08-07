@@ -1,0 +1,53 @@
+name: MFW interop admission
+
+on:
+  pull_request:
+    paths:
+      - "crates/wasm4pm-planner/**"
+      - ".github/workflows/mfw-interop.yml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  planner-interop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact subject
+        run: |
+          printf 'repository=%s\nhead_sha=%s\ntoolchain=%s\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$(sed -n 's/^channel = \"\(.*\)\"/\1/p' rust-toolchain.toml)" \
+            | tee mfw-interop-subject.txt
+      - name: Check focused formatting
+        run: rustfmt --check crates/wasm4pm-planner/src/mfw_interop.rs crates/wasm4pm-planner/src/lib.rs
+      - name: Compile and execute focused admission tests
+        run: |
+          set -o pipefail
+          cargo test -p wasm4pm-planner mfw_interop --lib -- --nocapture 2>&1 \
+            | tee mfw-interop-test.log
+      - name: Hash receipt inputs
+        if: always()
+        run: |
+          sha256sum \
+            crates/wasm4pm-planner/src/mfw_interop.rs \
+            crates/wasm4pm-planner/src/lib.rs \
+            crates/wasm4pm-planner/Cargo.toml \
+            rust-toolchain.toml \
+            mfw-interop-subject.txt \
+            > mfw-interop-sha256.txt
+      - name: Upload focused receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mfw-interop-admission-receipt
+          path: |
+            mfw-interop-subject.txt
+            mfw-interop-test.log
+            mfw-interop-sha256.txt
+          if-no-files-found: warn
