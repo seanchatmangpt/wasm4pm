@@ -170,7 +170,10 @@ export const explain = defineCommand({
             }
           }
 
-          // Accept positional <algorithm> as alias for --algorithm
+          // Accept positional <algorithm> as alias for --algorithm.
+          // ctx.args is typed readonly by citty, but aliasing the positional
+          // onto the named flag here is intentional so every downstream
+          // `ctx.args.algorithm` read sees it.
           if (
             !ctx.args.algorithm &&
             typeof ctx.args.target === 'string' &&
