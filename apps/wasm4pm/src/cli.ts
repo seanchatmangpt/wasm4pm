@@ -11,7 +11,6 @@ import {
   buildCli,
   NounVerbError,
   type BuildCliOptions,
-  type ErrorCodeMap,
 } from '@wasm4pm/noun-verb';
 import type { OtelSpan } from '@wasm4pm/cognition';
 import { logNoun } from './nouns/log/index.js';
@@ -30,7 +29,7 @@ import {
   type PersistedCommandReceipt,
 } from './receipts/_shared.js';
 import { getGlobalSpanSink } from './otel/sink.js';
-import { EXIT_CODES } from './exit-codes.js';
+import { EXIT_CODES, ERROR_CODE_MAP } from './exit-codes.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const ALL_NOUNS = [
@@ -43,18 +42,6 @@ export const ALL_NOUNS = [
   labNoun,
   helpNoun,
 ];
-
-const ERROR_CODE_MAP: ErrorCodeMap = {
-  INVALID_INPUT: EXIT_CODES.source_error,
-  COMMAND_NOT_FOUND: EXIT_CODES.config_error,
-  VERB_NOT_FOUND: EXIT_CODES.config_error,
-  PERMISSION_DENIED: EXIT_CODES.system_error,
-  INVARIANT_BREACH: EXIT_CODES.execution_error,
-  DEADLINE_EXCEEDED: EXIT_CODES.execution_error,
-  GUARD_EXCEEDED: EXIT_CODES.execution_error,
-  EXECUTION_ERROR: EXIT_CODES.execution_error,
-  INTERNAL_ERROR: EXIT_CODES.system_error,
-};
 
 interface CliInvocationState {
   invocationId: string;
