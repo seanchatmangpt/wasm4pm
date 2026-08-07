@@ -8,7 +8,6 @@ import { exitWithFlush } from '../../otel/exit.js';
 import { withSpan } from '../_otel.js';
 import type { Diagnosis, DoctorReport } from './types.js';
 import { printReportToProjection } from './render.js';
-import { resolveWorkspaceRoot } from './checks-env.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Shared check runner — builds CommandResult and emits via canonical path

@@ -90,6 +90,9 @@ export async function runDoctorRepair(options: RunDoctorRepairOptions): Promise<
     const exitCode = exitCodeFor(execution, remaining, options.dryRun);
     const payload = {
       schema_version: 'wasm4pm.doctor-fix.v1',
+      // Surface the dry-run flag at the top level (mirrors execution.dry_run)
+      // so callers don't have to reach into the nested execution report.
+      dry_run: execution.dry_run,
       execution,
       before: {
         pass: before.filter((diagnosis) => diagnosis.severity === 'INFO').length,
