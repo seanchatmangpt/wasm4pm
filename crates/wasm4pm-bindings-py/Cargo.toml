@@ -19,5 +19,12 @@ wasm-bindgen = "=0.2.100"
 wasm4pm = { workspace = true, features = ["cloud", "ocel", "powl", "feature-powl", "powl-engine", "ml", "conformance_full", "streaming_full", "montecarlo", "petri_net_playout", "extensive_playout", "align_etconformance", "alignment_fitness"] }
 wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 
-[dev-dependencies]
-pyo3 = { version = "0.23", features = ["auto-initialize"] }
+# No [dev-dependencies] pyo3 with "auto-initialize": it would unify onto the
+# same resolved pyo3 unit as "extension-module" above and pull in
+# embedding-only symbols this crate never needs.
+#
+# pyo3-build-config below is consumed by build.rs, which is the actual fix
+# for `cargo build`'s "symbol(s) not found for architecture arm64" — see
+# build.rs's doc comment for why.
+[build-dependencies]
+pyo3-build-config = "0.23"
