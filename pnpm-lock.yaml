@@ -693,9 +693,21 @@ importers:
 
   packages/testing:
     dependencies:
+      '@wasm4pm/config':
+        specifier: workspace:*
+        version: link:../config
       '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@wasm4pm/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@wasm4pm/observability':
+        specifier: workspace:*
+        version: link:../observability
+      wasm4pm:
+        specifier: workspace:*
+        version: link:../kernel
       zod:
         specifier: ^3.22.0
         version: 3.25.76
