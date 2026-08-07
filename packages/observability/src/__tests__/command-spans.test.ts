@@ -78,7 +78,6 @@ const LEAF_COMMANDS = [
   'autoprocess',
   'simulate',
   'temporal',
-  'drift-watch',
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -137,7 +136,6 @@ describe('Command OTEL span coverage — top-level handler span', () => {
     autoprocess: 'wasm4pm.command.autoprocess',
     simulate: 'wasm4pm.command.simulate',
     temporal: 'wasm4pm.command.temporal',
-    'drift-watch': 'wasm4pm.command.drift-watch',
   };
 
   for (const cmd of LEAF_COMMANDS) {
