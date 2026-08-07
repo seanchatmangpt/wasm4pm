@@ -20,7 +20,7 @@ use std::collections::{BTreeMap, HashMap};
 use wasm_bindgen::prelude::*;
 
 use crate::error::{codes, wasm_err};
-use crate::models::{parse_timestamp_ms, AttributeValue};
+use crate::models::{parse_timestamp_ms, AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
 
 // ---------------------------------------------------------------------------
@@ -29,32 +29,41 @@ use crate::state::{get_or_init_state, StoredObject};
 
 /// Per-bucket (last_activity, prefix_length) statistics.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct BucketStats {
-    mean_ms: f64,
-    std_ms: f64,
-    count: usize,
+pub struct BucketStats {
+    pub mean_ms: f64,
+    pub std_ms: f64,
+    pub count: usize,
 }
 
 /// Weibull distribution parameters fitted via method-of-moments.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct WeibullParams {
+pub struct WeibullParams {
     /// Shape parameter (k). k < 1 -> decreasing hazard, k > 1 -> increasing.
-    shape: f64,
+    pub shape: f64,
     /// Scale parameter (lambda) in milliseconds.
-    scale: f64,
+    pub scale: f64,
 }
 
 /// Serializable remaining-time model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct RemainingTimeModel {
+pub struct RemainingTimeModel {
     /// (last_activity, prefix_length) -> bucket statistics
-    buckets: BTreeMap<String, BucketStats>, // key = "activity|prefix_len"
+    pub buckets: BTreeMap<String, BucketStats>, // key = "activity|prefix_len"
     /// Fallback: global remaining-time stats (all prefixes combined)
-    global: BucketStats,
+    pub global: BucketStats,
     /// Weibull params fitted to complete case durations
-    weibull: WeibullParams,
+    pub weibull: WeibullParams,
     /// Median case duration in ms (used as fallback)
-    median_duration_ms: f64,
+    pub median_duration_ms: f64,
+}
+
+/// Point estimate of remaining case duration, returned by
+/// [`predict_case_duration_native`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DurationPrediction {
+    pub remaining_ms: f64,
+    pub confidence: f64,
+    pub method: String,
 }
 
 fn bucket_key(activity: &str, prefix_len: usize) -> String {
@@ -112,104 +121,91 @@ fn gamma_approx(x: f64) -> f64 {
 // Model building
 // ---------------------------------------------------------------------------
 
-/// Build a remaining-time prediction model from a completed event log.
-#[wasm_bindgen]
-pub fn build_remaining_time_model(
-    log_handle: &str,
+/// Build a remaining-time prediction model from a completed [`EventLog`].
+/// Pure Rust — callable natively (no `wasm_bindgen` boundary), unlike
+/// [`build_remaining_time_model`] which requires the `wasm32` target for its
+/// `JsValue` return type.
+///
+/// Returns `Err` (a plain message, not a `JsValue`) when no completed trace
+/// with valid timestamps for both `activity_key` and `timestamp_key` exists.
+pub fn build_remaining_time_model_native(
+    log: &EventLog,
     activity_key: &str,
     timestamp_key: &str,
-) -> Result<JsValue, JsValue> {
-    let state = get_or_init_state();
+) -> Result<RemainingTimeModel, String> {
+    // Fix A+B: FxHashMap with integer tuple keys eliminates ~190K String
+    // allocs on large logs. Activity names are interned to u32 IDs locally.
+    let mut activity_ids: FxHashMap<&str, u32> = FxHashMap::default();
+    let mut next_id = 0u32;
+    let mut id_to_activity: Vec<&str> = Vec::new();
+    let mut bucket_samples: FxHashMap<(u32, usize), Vec<f64>> = FxHashMap::default();
+    let mut case_durations: Vec<f64> = Vec::new();
 
-    let (bucket_samples, mut case_durations) = state.with_object(log_handle, |obj| {
-        match obj {
-            Some(StoredObject::EventLog(log)) => {
-                // Fix A+B: FxHashMap with integer tuple keys eliminates ~190K String
-                // allocs on large logs. Activity names are interned to u32 IDs locally.
-                let mut activity_ids: FxHashMap<&str, u32> = FxHashMap::default();
-                let mut next_id = 0u32;
-                let mut id_to_activity: Vec<&str> = Vec::new();
-                let mut bucket_samples: FxHashMap<(u32, usize), Vec<f64>> = FxHashMap::default();
-                let mut case_durations: Vec<f64> = Vec::new();
+    for trace in &log.traces {
+        let events: Vec<(&str, i64)> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                let act = e.attributes.get(activity_key).and_then(|v| v.as_string())?;
+                let ts = match e.attributes.get(timestamp_key) {
+                    Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
+                    Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
+                    Some(AttributeValue::Int(ms)) => Some(*ms),
+                    _ => None,
+                }?;
+                Some((act, ts))
+            })
+            .collect();
 
-                for trace in &log.traces {
-                    let events: Vec<(&str, i64)> = trace
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            let act = e.attributes.get(activity_key).and_then(|v| v.as_string())?;
-                            let ts = match e.attributes.get(timestamp_key) {
-                                Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
-                                Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
-                                Some(AttributeValue::Int(ms)) => Some(*ms),
-                                _ => None,
-                            }?;
-                            Some((act, ts))
-                        })
-                        .collect();
-
-                    if events.len() < 2 {
-                        continue;
-                    }
-
-                    let trace_start = match events.first() {
-                        Some((_, ts)) => *ts,
-                        None => continue,
-                    };
-                    let trace_end = match events.last() {
-                        Some((_, ts)) => *ts,
-                        None => continue,
-                    };
-                    let duration = (trace_end - trace_start) as f64;
-                    if duration <= 0.0 {
-                        continue;
-                    }
-                    case_durations.push(duration);
-
-                    for (i, (act, ts)) in events.iter().enumerate() {
-                        let act_id = *activity_ids.entry(act).or_insert_with(|| {
-                            let id = next_id;
-                            next_id += 1;
-                            id_to_activity.push(act);
-                            id
-                        });
-                        let remaining = (trace_end - ts) as f64;
-                        let prefix_len = i + 1;
-                        bucket_samples
-                            .entry((act_id, prefix_len))
-                            .or_default()
-                            .push(remaining);
-                    }
-                }
-
-                // Convert integer tuple keys back to String keys for the serializable
-                // model. Happens once at build time, not per event.
-                let bucket_samples_str: BTreeMap<String, Vec<f64>> = bucket_samples
-                    .into_iter()
-                    .map(|((act_id, prefix_len), samples)| {
-                        let act = id_to_activity[act_id as usize];
-                        (bucket_key(act, prefix_len), samples)
-                    })
-                    .collect();
-
-                Ok((bucket_samples_str, case_durations))
-            }
-            Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
-            None => Err(wasm_err(
-                codes::INVALID_HANDLE,
-                format!("EventLog handle not found: {}", log_handle),
-            )),
+        if events.len() < 2 {
+            continue;
         }
-    })?;
 
-    if case_durations.is_empty() {
-        return Err(wasm_err(
-            codes::INVALID_INPUT,
-            "No valid completed traces with timestamps found",
-        ));
+        let trace_start = match events.first() {
+            Some((_, ts)) => *ts,
+            None => continue,
+        };
+        let trace_end = match events.last() {
+            Some((_, ts)) => *ts,
+            None => continue,
+        };
+        let duration = (trace_end - trace_start) as f64;
+        if duration <= 0.0 {
+            continue;
+        }
+        case_durations.push(duration);
+
+        for (i, (act, ts)) in events.iter().enumerate() {
+            let act_id = *activity_ids.entry(act).or_insert_with(|| {
+                let id = next_id;
+                next_id += 1;
+                id_to_activity.push(act);
+                id
+            });
+            let remaining = (trace_end - ts) as f64;
+            let prefix_len = i + 1;
+            bucket_samples
+                .entry((act_id, prefix_len))
+                .or_default()
+                .push(remaining);
+        }
     }
 
-    let buckets: BTreeMap<String, BucketStats> = bucket_samples
+    if case_durations.is_empty() {
+        return Err("No valid completed traces with timestamps found".to_string());
+    }
+
+    // Convert integer tuple keys back to String keys for the serializable
+    // model. Happens once at build time, not per event.
+    let bucket_samples_str: BTreeMap<String, Vec<f64>> = bucket_samples
+        .into_iter()
+        .map(|((act_id, prefix_len), samples)| {
+            let act = id_to_activity[act_id as usize];
+            (bucket_key(act, prefix_len), samples)
+        })
+        .collect();
+
+    let buckets: BTreeMap<String, BucketStats> = bucket_samples_str
         .into_iter()
         .map(|(key, samples)| {
             let stats = compute_stats(&samples);
@@ -268,12 +264,34 @@ pub fn build_remaining_time_model(
         case_durations[case_durations.len() / 2]
     };
 
-    let model = RemainingTimeModel {
+    Ok(RemainingTimeModel {
         buckets,
         global,
         weibull: WeibullParams { shape, scale },
         median_duration_ms,
-    };
+    })
+}
+
+/// Build a remaining-time prediction model from a completed event log.
+#[wasm_bindgen]
+pub fn build_remaining_time_model(
+    log_handle: &str,
+    activity_key: &str,
+    timestamp_key: &str,
+) -> Result<JsValue, JsValue> {
+    let state = get_or_init_state();
+
+    let model = state.with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            build_remaining_time_model_native(log, activity_key, timestamp_key)
+                .map_err(|e| wasm_err(codes::INVALID_INPUT, e))
+        }
+        Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog handle not found: {}", log_handle),
+        )),
+    })?;
 
     let json = serde_json::to_string(&model).map_err(|e| {
         wasm_err(
@@ -288,6 +306,96 @@ pub fn build_remaining_time_model(
 // ---------------------------------------------------------------------------
 // Remaining-time prediction
 // ---------------------------------------------------------------------------
+
+/// Predict remaining time for a running case given its activity prefix.
+/// Pure Rust — callable natively (no `wasm_bindgen` boundary), unlike
+/// [`predict_case_duration`] which requires the `wasm32` target for its
+/// `JsValue` return type.
+pub fn predict_case_duration_native(
+    model: &RemainingTimeModel,
+    prefix: &[String],
+) -> Result<DurationPrediction, String> {
+    let last_activity = match prefix.last() {
+        Some(act) => act,
+        None => return Err("Cannot predict on empty prefix".to_string()),
+    };
+    let prefix_len = prefix.len();
+
+    // Strategy 1: exact bucket
+    let exact_key = bucket_key(last_activity, prefix_len);
+    if let Some(bucket) = model.buckets.get(&exact_key) {
+        let confidence = confidence_from_bucket(bucket, &model.global);
+        return Ok(DurationPrediction {
+            remaining_ms: bucket.mean_ms,
+            confidence,
+            method: format!("bucket({})", exact_key),
+        });
+    }
+
+    // Strategy 2: same activity, any prefix length
+    let activity_prefix = format!("{}|", last_activity); // one alloc before iter
+    let activity_buckets: Vec<&BucketStats> = model
+        .buckets
+        .iter()
+        .filter(|(k, _)| k.starts_with(activity_prefix.as_str()))
+        .map(|(_, v)| v)
+        .collect();
+
+    if !activity_buckets.is_empty() {
+        let total_count: usize = activity_buckets.iter().map(|b| b.count).sum();
+        let weighted_mean: f64 = activity_buckets
+            .iter()
+            .map(|b| b.mean_ms * b.count as f64)
+            .sum::<f64>()
+            / total_count as f64;
+        let bucket_avg = BucketStats {
+            mean_ms: weighted_mean,
+            std_ms: 0.0,
+            count: total_count,
+        };
+        let confidence = confidence_from_bucket(&bucket_avg, &model.global) * 0.9;
+        return Ok(DurationPrediction {
+            remaining_ms: weighted_mean,
+            confidence,
+            method: format!("activity_avg({})", last_activity),
+        });
+    }
+
+    // Strategy 3: same prefix length, any activity
+    let suffix = format!("|{}", prefix_len);
+    let length_buckets: Vec<&BucketStats> = model
+        .buckets
+        .iter()
+        .filter(|(k, _)| k.ends_with(&suffix))
+        .map(|(_, v)| v)
+        .collect();
+
+    if !length_buckets.is_empty() {
+        let total_count: usize = length_buckets.iter().map(|b| b.count).sum();
+        let weighted_mean: f64 = length_buckets
+            .iter()
+            .map(|b| b.mean_ms * b.count as f64)
+            .sum::<f64>()
+            / total_count as f64;
+        let confidence = (total_count as f64 / (total_count as f64 + 10.0)) * 0.6;
+        return Ok(DurationPrediction {
+            remaining_ms: weighted_mean,
+            confidence,
+            method: format!("prefix_len_avg({})", prefix_len),
+        });
+    }
+
+    // Strategy 4: global fallback
+    // Confidence is derived from the coefficient of variation (cv = std / mean).
+    // High spread → low confidence; low spread → higher confidence. Capped in [0, 1].
+    let cv = model.global.std_ms / (model.global.mean_ms + 1.0);
+    let fallback_confidence = (1.0 - cv.min(1.0)).max(0.0);
+    Ok(DurationPrediction {
+        remaining_ms: model.global.mean_ms,
+        confidence: fallback_confidence,
+        method: "global_fallback".to_string(),
+    })
+}
 
 /// Predict remaining time for a running case given its activity prefix.
 #[wasm_bindgen]
@@ -325,90 +433,12 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
             )
         })?;
 
-        let last_activity = match prefix.last() {
-            Some(act) => act,
-            None => {
-                return Err(crate::error::js_val("Cannot predict on empty prefix"));
-            }
-        };
-        let prefix_len = prefix.len();
-
-        // Strategy 1: exact bucket
-        let exact_key = bucket_key(last_activity, prefix_len);
-        if let Some(bucket) = model.buckets.get(&exact_key) {
-            let confidence = confidence_from_bucket(bucket, &model.global);
-            let result = serde_json::json!({
-                "remaining_ms": bucket.mean_ms,
-                "confidence": confidence,
-                "method": format!("bucket({})", exact_key)
-            });
-            return Ok(crate::error::js_val(&result.to_string()));
-        }
-
-        // Strategy 2: same activity, any prefix length
-        let activity_prefix = format!("{}|", last_activity); // one alloc before iter
-        let activity_buckets: Vec<&BucketStats> = model
-            .buckets
-            .iter()
-            .filter(|(k, _)| k.starts_with(activity_prefix.as_str()))
-            .map(|(_, v)| v)
-            .collect();
-
-        if !activity_buckets.is_empty() {
-            let total_count: usize = activity_buckets.iter().map(|b| b.count).sum();
-            let weighted_mean: f64 = activity_buckets
-                .iter()
-                .map(|b| b.mean_ms * b.count as f64)
-                .sum::<f64>()
-                / total_count as f64;
-            let bucket_avg = BucketStats {
-                mean_ms: weighted_mean,
-                std_ms: 0.0,
-                count: total_count,
-            };
-            let confidence = confidence_from_bucket(&bucket_avg, &model.global) * 0.9;
-            let result = serde_json::json!({
-                "remaining_ms": weighted_mean,
-                "confidence": confidence,
-                "method": format!("activity_avg({})", last_activity)
-            });
-            return Ok(crate::error::js_val(&result.to_string()));
-        }
-
-        // Strategy 3: same prefix length, any activity
-        let suffix = format!("|{}", prefix_len);
-        let length_buckets: Vec<&BucketStats> = model
-            .buckets
-            .iter()
-            .filter(|(k, _)| k.ends_with(&suffix))
-            .map(|(_, v)| v)
-            .collect();
-
-        if !length_buckets.is_empty() {
-            let total_count: usize = length_buckets.iter().map(|b| b.count).sum();
-            let weighted_mean: f64 = length_buckets
-                .iter()
-                .map(|b| b.mean_ms * b.count as f64)
-                .sum::<f64>()
-                / total_count as f64;
-            let confidence = (total_count as f64 / (total_count as f64 + 10.0)) * 0.6;
-            let result = serde_json::json!({
-                "remaining_ms": weighted_mean,
-                "confidence": confidence,
-                "method": format!("prefix_len_avg({})", prefix_len)
-            });
-            return Ok(crate::error::js_val(&result.to_string()));
-        }
-
-        // Strategy 4: global fallback
-        // Confidence is derived from the coefficient of variation (cv = std / mean).
-        // High spread → low confidence; low spread → higher confidence. Capped in [0, 1].
-        let cv = model.global.std_ms / (model.global.mean_ms + 1.0);
-        let fallback_confidence = (1.0 - cv.min(1.0)).max(0.0);
+        let prediction = predict_case_duration_native(&model, &prefix)
+            .map_err(|e| crate::error::js_val(&e))?;
         let result = serde_json::json!({
-            "remaining_ms": model.global.mean_ms,
-            "confidence": fallback_confidence,
-            "method": "global_fallback"
+            "remaining_ms": prediction.remaining_ms,
+            "confidence": prediction.confidence,
+            "method": prediction.method,
         });
         Ok(crate::error::js_val(&result.to_string()))
     })
@@ -655,5 +685,79 @@ mod tests {
             f64::INFINITY
         };
         assert!((h0 - 1.0 / lambda).abs() < 1e-12);
+    }
+
+    fn trace_with_timestamps(events: &[(&str, i64)]) -> crate::models::Trace {
+        let events = events
+            .iter()
+            .map(|(act, ts)| {
+                let mut ev = crate::models::Event::new();
+                ev.attributes.insert(
+                    "concept:name".to_string(),
+                    AttributeValue::String(act.to_string()),
+                );
+                ev.attributes
+                    .insert("time:timestamp".to_string(), AttributeValue::Int(*ts));
+                ev
+            })
+            .collect();
+        crate::models::Trace {
+            attributes: BTreeMap::new(),
+            events,
+        }
+    }
+
+    #[test]
+    fn build_remaining_time_model_native_rejects_a_log_with_no_completed_traces() {
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![],
+        };
+        let err = build_remaining_time_model_native(&log, "concept:name", "time:timestamp")
+            .expect_err("empty log must refuse");
+        assert!(err.contains("No valid completed traces"));
+    }
+
+    #[test]
+    fn build_remaining_time_model_native_and_predict_case_duration_native_round_trip() {
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![
+                trace_with_timestamps(&[("A", 0), ("B", 1000), ("C", 3000)]),
+                trace_with_timestamps(&[("A", 0), ("B", 1200), ("C", 2800)]),
+            ],
+        };
+        let model = build_remaining_time_model_native(&log, "concept:name", "time:timestamp")
+            .expect("model builds from valid log");
+        assert!(model.buckets.contains_key(&bucket_key("A", 1)));
+        // Durations [3000.0, 2800.0] sorted ascending -> [2800.0, 3000.0];
+        // `median_duration_ms` picks index len/2 = 1 -> 3000.0 (matches the
+        // unchanged, moved algorithm's index-based "median" convention).
+        assert_eq!(model.median_duration_ms, 3000.0);
+
+        let prediction = predict_case_duration_native(&model, &["A".to_string()])
+            .expect("prediction succeeds for a known prefix");
+        assert!(prediction.remaining_ms > 0.0);
+        assert!(prediction.confidence >= 0.0 && prediction.confidence <= 1.0);
+        assert!(prediction.method.starts_with("bucket("));
+    }
+
+    #[test]
+    fn predict_case_duration_native_rejects_an_empty_prefix() {
+        let model = RemainingTimeModel {
+            buckets: BTreeMap::new(),
+            global: BucketStats {
+                mean_ms: 1.0,
+                std_ms: 0.0,
+                count: 1,
+            },
+            weibull: WeibullParams {
+                shape: 1.0,
+                scale: 1.0,
+            },
+            median_duration_ms: 1.0,
+        };
+        let err = predict_case_duration_native(&model, &[]).expect_err("empty prefix must refuse");
+        assert_eq!(err, "Cannot predict on empty prefix");
     }
 }
