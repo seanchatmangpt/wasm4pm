@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::etconformance_precision::compute_precision;
+use wasm4pm::generalization::compute_quality;
 use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 use wasm4pm::pnml_io::{from_pnml, to_pnml};
 use wasm4pm::models::PetriNet;
@@ -132,6 +133,18 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 activity_key,
             );
 
+            // Third of the four van der Aalst / Buijs et al. (2012) quality dimensions
+            // wired into this CLI (fitness, precision, generalization -- simplicity is
+            // reported by `discover`, not `conformance`, since it's a property of the
+            // model alone). Deliberately the one canonical, documented implementation
+            // (`wasm4pm::generalization`) -- two other generalization-shaped functions
+            // exist elsewhere in this workspace (`simd_token_replay::overall_generalization`,
+            // `conformance_authority::ConformanceVerdicts.generalization`) and are
+            // intentionally left unwired here to avoid reporting three disagreeing
+            // "generalization" numbers from one command.
+            let quality = compute_quality(&petri_net, &log, activity_key)
+                .map_err(|e| anyhow::anyhow!("Failed to compute generalization: {:?}", e))?;
+
             let mut table = Table::new(vec!["Metric", "Value"]);
             table.add_row(vec![
                 "Average fitness".to_string(),
@@ -140,6 +153,10 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             table.add_row(vec![
                 "Precision".to_string(),
                 format!("{:.4}", precision.precision),
+            ]);
+            table.add_row(vec![
+                "Generalization".to_string(),
+                format!("{:.4}", quality.generalization),
             ]);
             table.add_row(vec![
                 "Conforming cases".to_string(),

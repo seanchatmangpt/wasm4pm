@@ -139,6 +139,22 @@ fn test_mining_discover_ilp_and_conformance_end_to_end() {
         (0.0..=1.0).contains(&fitness),
         "fitness {fitness} out of [0,1]"
     );
+
+    // Third quality dimension, checked the same way (real number, not a stub/absent row):
+    // `wasm4pm::generalization::compute_quality` (Buijs et al. 2012), wired into this same
+    // `conformance` command's table.
+    let generalization_line = stdout
+        .lines()
+        .find(|l| l.contains("Generalization"))
+        .expect("generalization row present in conformance output");
+    let generalization: f64 = generalization_line
+        .split_whitespace()
+        .find_map(|tok| tok.trim_matches(|c: char| !c.is_ascii_digit() && c != '.').parse().ok())
+        .expect("parseable generalization value");
+    assert!(
+        (0.0..=1.0).contains(&generalization),
+        "generalization {generalization} out of [0,1]"
+    );
 }
 
 #[test]
