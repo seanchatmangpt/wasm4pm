@@ -114,21 +114,26 @@ fn dispatch(count: usize) -> Result<()> {
             .progress_chars("#>-"),
     );
 
-    // wasm4pm-algos removed; PrefixOracle/PrefixEvent not yet re-implemented
-    // Simulate routing loop without oracle for throughput measurement
+    // No real PrefixOracle wiring here: this command takes only `count` (no
+    // OCEL tape / law / activity input), so there is no real per-event trace
+    // data to classify. `wpm oracle check <tape> --law <law>` is the entry
+    // point for real conformance checking (see commands/oracle.rs); this
+    // command is an honestly-labeled synthetic loop-overhead benchmark only.
+    // wasm4pm-algos removed; PrefixOracle/PrefixEvent integration would need
+    // real per-event input from a tape, which this command does not accept.
     let start_time = std::time::Instant::now();
 
     for i in 0..count {
-        let _ = format!("case_{}", i % 100); // minimal work per iteration
+        let _ = format!("case_{}", i % 100); // minimal work per iteration, no oracle call
 
         if i % 1000 == 0 {
-            pb.set_message(format!("Routing..."));
+            pb.set_message(format!("Iterating..."));
         }
 
         pb.inc(1);
     }
 
-    pb.finish_with_message("Dispatch complete!");
+    pb.finish_with_message("Loop complete!");
 
     let elapsed_ns = start_time.elapsed().as_nanos();
     let ns_per_event = if count > 0 {
@@ -144,13 +149,15 @@ fn dispatch(count: usize) -> Result<()> {
 
     println!(
         "\n{}",
-        "SUCCESS: All events routed through the Vision 2030 layer."
+        "SYNTHETIC BENCHMARK: no events were routed and no PrefixOracle conformance \
+         check ran — this measures bare loop overhead only. Use `wpm oracle check` for \
+         real conformance verification against a law."
             .bold()
-            .green()
+            .yellow()
     );
     println!("Total execution time: {} ns", elapsed_ns);
-    println!("Actual nanoseconds per event: {} ns", ns_per_event);
-    println!("Actual throughput: {} events/sec", throughput);
+    println!("Measured nanoseconds per iteration: {} ns", ns_per_event);
+    println!("Measured loop throughput: {} iterations/sec", throughput);
 
     Ok(())
 }
