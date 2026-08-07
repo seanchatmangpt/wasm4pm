@@ -3420,6 +3420,7 @@ name = "wasm4pm-bindings-py"
 version = "26.7.23"
 dependencies = [
  "pyo3",
+ "pyo3-build-config",
  "serde",
  "serde_json",
  "wasm-bindgen",
