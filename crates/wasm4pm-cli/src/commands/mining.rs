@@ -4,32 +4,14 @@ use colored::Colorize;
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
+use wasm4pm::conformance::token_replay_pure;
+use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
+use wasm4pm::pnml_io::{from_pnml, to_pnml};
+use wasm4pm::models::PetriNet;
 use wasm4pm_cli::io::{Io, Table};
 use wasm4pm_compat::event_log::EventLog;
 use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
 use wasm4pm_compat::models::DFG;
-
-// Stub module — wasm4pm-algos crate removed; these functions are not yet re-implemented
-mod heuristic {
-    use wasm4pm_compat::{event_log::EventLog, models::DFG};
-    pub fn discover_heuristic(_log: &EventLog, _activity_key: &str) -> anyhow::Result<DFG> {
-        anyhow::bail!("heuristic discovery not available in this build")
-    }
-}
-mod conformance {
-    use wasm4pm_compat::{event_log::EventLog, models::DFG};
-    pub struct ConformanceResult {
-        pub fitness: f64,
-        pub precision: Option<f64>,
-    }
-    pub fn check_conformance_token_replay(
-        _log: &EventLog,
-        _dfg: &DFG,
-        _key: &str,
-    ) -> anyhow::Result<ConformanceResult> {
-        anyhow::bail!("token replay conformance not available in this build")
-    }
-}
 
 #[derive(Args, Debug)]
 pub struct MiningArgs {
@@ -43,18 +25,22 @@ pub enum MiningCommands {
     Discover {
         /// Path to the event log file (.xes or .json)
         input: PathBuf,
-        /// Algorithm to use (heuristic, inductive)
-        #[arg(long, default_value = "heuristic")]
+        /// Algorithm to use (only "ilp-petri-net" is wired: a real Petri net,
+        /// required as input for `conformance`)
+        #[arg(long, default_value = "ilp-petri-net")]
         algo: String,
         /// Activity key to use (e.g. "concept:name")
         #[arg(short = 'k', long, default_value = "concept:name")]
         activity_key: String,
+        /// Write the discovered model to this file (.json for a DFG, .pnml for a Petri net)
+        #[arg(short = 'o', long)]
+        output: Option<PathBuf>,
     },
     /// Check conformance of an event log against a model.
     Conformance {
         /// Path to the event log file
         log: PathBuf,
-        /// Path to the model file (.dfg or .pnml)
+        /// Path to the model file (.pnml — produced by `discover --algo ilp-petri-net`)
         model: PathBuf,
         /// Activity key to use
         #[arg(short, long, default_value = "concept:name")]
@@ -69,6 +55,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             input,
             algo,
             activity_key,
+            output,
         } => {
             io.info(format!(
                 "Discovering model from {:?} using {}...",
@@ -77,12 +64,27 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
 
             let log = load_log(input)?;
 
-            if algo == "heuristic" {
-                let dfg = heuristic::discover_heuristic(&log, activity_key)
-                    .context("Heuristic discovery failed")?;
-                print_dfg(&dfg, &io)?;
-            } else {
-                anyhow::bail!("Algorithm '{}' not yet supported in CLI", algo);
+            match algo.as_str() {
+                "ilp-petri-net" => {
+                    let wasm4pm_log: wasm4pm::models::EventLog = log.into();
+                    let (net, simplicity, fitness) =
+                        discover_ilp_petri_net_from_log(&wasm4pm_log, activity_key);
+                    print_petri_net(&net, simplicity, fitness, &io)?;
+                    if let Some(path) = output {
+                        fs::write(path, to_pnml(&net))
+                            .with_context(|| format!("Failed to write Petri net to {:?}", path))?;
+                        io.info(format!("Wrote Petri net (PNML) to {:?}", path));
+                    }
+                }
+                // "heuristic" (plain DFG) discovery in `wasm4pm` requires an
+                // `AdmittedEventLog` (evidence-carrier state machine), which the CLI does
+                // not construct from raw XES/JSON input. Only the Petri-net miner (which
+                // is also what `conformance` needs) is wired here.
+                other => anyhow::bail!(
+                    "Algorithm '{}' not supported by this CLI build. Use 'ilp-petri-net' \
+                     (the only miner wired here; its output feeds `conformance` directly).",
+                    other
+                ),
             }
         }
         MiningCommands::Conformance {
@@ -94,25 +96,46 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 "Checking conformance of {:?} against {:?}...",
                 log, model
             ));
-            let log = load_log(log)?;
-            let dfg = load_dfg_model(model)?;
+            let log: wasm4pm::models::EventLog = load_log(log)?.into();
+            let petri_net = load_petri_net_model(model)?;
 
-            let result = conformance::check_conformance_token_replay(&log, &dfg, activity_key)
-                .context("Token replay conformance check failed")?;
+            let result = token_replay_pure(&log, &petri_net, activity_key);
 
             let mut table = Table::new(vec!["Metric", "Value"]);
             table.add_row(vec![
-                "Fitness".to_string(),
-                format!("{:.4}", result.fitness),
+                "Average fitness".to_string(),
+                format!("{:.4}", result.avg_fitness),
             ]);
             table.add_row(vec![
-                "Precision".to_string(),
-                result
-                    .precision
-                    .map(|v| format!("{:.4}", v))
-                    .unwrap_or_else(|| "N/A".to_string()),
+                "Conforming cases".to_string(),
+                format!("{} / {}", result.conforming_cases, result.total_cases),
             ]);
             table.print();
+
+            let deviating: Vec<_> = result
+                .case_fitness
+                .iter()
+                .filter(|c| !c.is_conforming)
+                .collect();
+            if !deviating.is_empty() {
+                println!("\n{}", "Deviations".bold().bright_yellow());
+                let mut dev_table = Table::new(vec!["Case", "Fitness", "Missing", "Remaining"]);
+                for case in &deviating {
+                    dev_table.add_row(vec![
+                        case.case_id.clone(),
+                        format!("{:.4}", case.trace_fitness),
+                        case.tokens_missing.to_string(),
+                        case.tokens_remaining.to_string(),
+                    ]);
+                    for dev in &case.deviations {
+                        io.info(format!(
+                            "  case {} event #{} activity={} type={}",
+                            case.case_id, dev.event_index, dev.activity, dev.deviation_type
+                        ));
+                    }
+                }
+                dev_table.print();
+            }
         }
     }
     Ok(())
@@ -137,25 +160,40 @@ fn load_log(path: &PathBuf) -> Result<EventLog> {
     }
 }
 
-/// Load a process model (DFG) from a file.
-/// Supports:
-/// - `.json` — JSON-serialized DFG (wasm4pm native format)
-/// - `.dfg.json` — same as .json
-fn load_dfg_model(path: &PathBuf) -> Result<DFG> {
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("Failed to read model file: {:?}", path))?;
+/// Load a Petri net model (`.pnml`) for use with `conformance`.
+fn load_petri_net_model(path: &PathBuf) -> Result<PetriNet> {
     let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
     match ext {
-        "json" => serde_json::from_str(&content)
-            .with_context(|| format!("Failed to deserialize DFG from {:?}", path)),
         "pnml" => {
-            anyhow::bail!("PNML model loading not yet supported in this CLI. Use a JSON DFG model.")
+            let content = fs::read_to_string(path)
+                .with_context(|| format!("Failed to read model file: {:?}", path))?;
+            from_pnml(&content)
+                .map_err(|e| anyhow::anyhow!("Failed to parse PNML from {:?}: {}", path, e))
         }
         other => anyhow::bail!(
-            "Unsupported model format '{}'. Supported: .json (DFG)",
+            "Unsupported model format '{}'. Supported: .pnml (Petri net, from \
+             `discover --algo ilp-petri-net -o model.pnml`)",
             other
         ),
     }
+}
+
+fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, _io: &Io) -> Result<()> {
+    println!(
+        "\n{}",
+        "Discovered Petri net (ILP miner)".bold().bright_cyan()
+    );
+    let mut table = Table::new(vec!["Metric", "Value"]);
+    table.add_row(vec!["Places".to_string(), net.places.len().to_string()]);
+    table.add_row(vec![
+        "Transitions".to_string(),
+        net.transitions.len().to_string(),
+    ]);
+    table.add_row(vec!["Arcs".to_string(), net.arcs.len().to_string()]);
+    table.add_row(vec!["Simplicity".to_string(), format!("{:.4}", simplicity)]);
+    table.add_row(vec!["Fitness (self)".to_string(), format!("{:.4}", fitness)]);
+    table.print();
+    Ok(())
 }
 
 fn print_dfg(dfg: &DFG, _io: &Io) -> Result<()> {
