@@ -4,14 +4,17 @@ use colored::Colorize;
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::collections::BTreeMap;
+use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::conformance::token_replay_pure;
+use wasm4pm::etconformance_precision::compute_precision;
 use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 use wasm4pm::pnml_io::{from_pnml, to_pnml};
 use wasm4pm::models::PetriNet;
 use wasm4pm_cli::io::{Io, Table};
 use wasm4pm_compat::event_log::EventLog;
 use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
-use wasm4pm_compat::models::DFG;
+use wasm4pm::models::DFG;
 
 #[derive(Args, Debug)]
 pub struct MiningArgs {
@@ -25,13 +28,17 @@ pub enum MiningCommands {
     Discover {
         /// Path to the event log file (.xes or .json)
         input: PathBuf,
-        /// Algorithm to use (only "ilp-petri-net" is wired: a real Petri net,
-        /// required as input for `conformance`)
+        /// Algorithm to use: "ilp-petri-net" (Petri net, feeds `conformance`) or
+        /// "heuristic" (plain DFG via the Heuristic Miner, Weijters & van der Aalst 2003)
         #[arg(long, default_value = "ilp-petri-net")]
         algo: String,
         /// Activity key to use (e.g. "concept:name")
         #[arg(short = 'k', long, default_value = "concept:name")]
         activity_key: String,
+        /// Dependency threshold for the heuristic miner (edges below this are filtered
+        /// out). Conventional default per Weijters et al. is 0.5. Ignored by ilp-petri-net.
+        #[arg(long, default_value_t = 0.5)]
+        dependency_threshold: f64,
         /// Write the discovered model to this file (.json for a DFG, .pnml for a Petri net)
         #[arg(short = 'o', long)]
         output: Option<PathBuf>,
@@ -55,6 +62,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             input,
             algo,
             activity_key,
+            dependency_threshold,
             output,
         } => {
             io.info(format!(
@@ -63,10 +71,10 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             ));
 
             let log = load_log(input)?;
+            let wasm4pm_log: wasm4pm::models::EventLog = log.into();
 
             match algo.as_str() {
                 "ilp-petri-net" => {
-                    let wasm4pm_log: wasm4pm::models::EventLog = log.into();
                     let (net, simplicity, fitness) =
                         discover_ilp_petri_net_from_log(&wasm4pm_log, activity_key);
                     print_petri_net(&net, simplicity, fitness, &io)?;
@@ -76,13 +84,24 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                         io.info(format!("Wrote Petri net (PNML) to {:?}", path));
                     }
                 }
-                // "heuristic" (plain DFG) discovery in `wasm4pm` requires an
-                // `AdmittedEventLog` (evidence-carrier state machine), which the CLI does
-                // not construct from raw XES/JSON input. Only the Petri-net miner (which
-                // is also what `conformance` needs) is wired here.
+                "heuristic" => {
+                    let dfg = discover_heuristic_miner_from_log(
+                        &wasm4pm_log,
+                        activity_key,
+                        *dependency_threshold,
+                    );
+                    print_dfg(&dfg, &io)?;
+                    if let Some(path) = output {
+                        let json = serde_json::to_string_pretty(&dfg)
+                            .context("Failed to serialize DFG to JSON")?;
+                        fs::write(path, json)
+                            .with_context(|| format!("Failed to write DFG to {:?}", path))?;
+                        io.info(format!("Wrote DFG (JSON) to {:?}", path));
+                    }
+                }
                 other => anyhow::bail!(
                     "Algorithm '{}' not supported by this CLI build. Use 'ilp-petri-net' \
-                     (the only miner wired here; its output feeds `conformance` directly).",
+                     (feeds `conformance` directly) or 'heuristic' (plain DFG).",
                     other
                 ),
             }
@@ -101,10 +120,26 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
 
             let result = token_replay_pure(&log, &petri_net, activity_key);
 
+            // `_final_marking` is unused by `compute_precision` itself (see its own
+            // doc comment: states are keyed by activity-sequence prefix, not marking),
+            // so an empty placeholder is correct here, not a shortcut.
+            let empty_final_marking: BTreeMap<String, usize> = BTreeMap::new();
+            let precision = compute_precision(
+                &petri_net,
+                &petri_net.initial_marking,
+                &empty_final_marking,
+                &log,
+                activity_key,
+            );
+
             let mut table = Table::new(vec!["Metric", "Value"]);
             table.add_row(vec![
                 "Average fitness".to_string(),
                 format!("{:.4}", result.avg_fitness),
+            ]);
+            table.add_row(vec![
+                "Precision".to_string(),
+                format!("{:.4}", precision.precision),
             ]);
             table.add_row(vec![
                 "Conforming cases".to_string(),
@@ -200,8 +235,8 @@ fn print_dfg(dfg: &DFG, _io: &Io) -> Result<()> {
     let mut table = Table::new(vec!["Source", "Target", "Frequency"]);
     for edge in &dfg.edges {
         table.add_row(vec![
-            edge.source.clone(),
-            edge.target.clone(),
+            edge.from.clone(),
+            edge.to.clone(),
             edge.frequency.to_string(),
         ]);
     }
