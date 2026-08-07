@@ -267,8 +267,12 @@ fn test_mining_predict_duration_real_bucket_estimate() {
         stdout.contains("2000.00"),
         "expected a real predicted remaining time of exactly 2000.00ms: {stdout}"
     );
+    // "bucket(B|2)" -- the `|` separator matches
+    // wasm4pm::prediction_remaining_time::bucket_key's real format now that
+    // this command calls the upstream native function directly, not the
+    // CLI's former workaround reimplementation (which used a "," separator).
     assert!(
-        stdout.contains("bucket(B,2)"),
+        stdout.contains("bucket(B|2)"),
         "expected the exact-bucket method to fire (not a fallback): {stdout}"
     );
 }
