@@ -531,14 +531,18 @@ export function buildReleaseCertificate(rootDir = process.cwd()): ReleaseCertifi
   };
 }
 
+// This Set is the DETECTOR for placeholder/fake evidence — it must enumerate
+// the forbidden markers verbatim. Each poison-word entry is annotated with
+// `release-scan:allow` so verify-forbidden-terms.sh treats it as the detector,
+// not a poison-word regression in a release path.
 const INVALID_MARKERS = new Set([
   '...',
-  'placeholder',
+  'placeholder', // release-scan:allow
   'verified_via_gate',
   'calculated_at_runtime',
-  'assume success',
-  'stub',
-  'fake',
+  'assume success', // release-scan:allow
+  'stub', // release-scan:allow
+  'fake', // release-scan:allow
   'not_found',
   'wasm_not_found',
   'integrity_not_found',
