@@ -1,11 +1,23 @@
 #!/usr/bin/env node
 
 import { runMain } from 'citty';
-import { needsStdin, runCli } from '@wasm4pm/noun-verb';
-import { ALL_NOUNS, cliOptions, main } from '../cli.js';
+import {
+  NounVerbError,
+  needsStdin,
+  runCli,
+  writeJson,
+} from '@wasm4pm/noun-verb';
+import {
+  ALL_NOUNS,
+  admitCliInvocation,
+  cliOptions,
+  hasActiveCliInvocation,
+  main,
+  recordCliFatal,
+} from '../cli.js';
 import { initOtel } from '../otel/init.js';
 import { shutdownOtel } from '../otel/exit.js';
-import { checkRemoved } from '../nouns/_removed.js';
+import { findRemovedEntry } from '../nouns/_removed.js';
 
 // Drain stdio before any synchronous `process.exit(code)`.
 const origExit = process.exit.bind(process);
@@ -21,50 +33,105 @@ process.exit = ((code?: number): never => {
   };
   try { process.stdout.write('', done); } catch { done(); }
   try { process.stderr.write('', done); } catch { done(); }
-  setTimeout(() => { if (!exited) { exited = true; origExit(code0); } }, 50);
+  setTimeout(() => {
+    if (!exited) {
+      exited = true;
+      origExit(code0);
+    }
+  }, 50);
   return undefined as never;
 }) as typeof process.exit;
+
+function writeFatalEnvelope(error: NounVerbError): void {
+  try {
+    writeJson(error.toEnvelope());
+  } catch {
+    process.stdout.write(
+      '{"error":{"code":"INTERNAL_ERROR","message":"CLI_FATAL_OUTPUT_BLOCKED"}}\n'
+    );
+  }
+}
+
+function isReadOnlyInvocation(argv: readonly string[]): boolean {
+  if (argv.length === 0) return true;
+  if (argv.length === 1 && ['--help', '-h', '--version', '-v', '--introspect'].includes(argv[0]!)) {
+    return true;
+  }
+  return !argv.includes('++') && argv.includes('--introspect');
+}
+
+async function dispatch(argv: readonly string[]): Promise<void> {
+  if (argv.includes('++') || needsStdin(argv)) {
+    await runCli(ALL_NOUNS, cliOptions, argv);
+  } else {
+    await runMain(main);
+  }
+}
 
 async function bootstrap(): Promise<void> {
   if (process.argv.includes('--no-color')) {
     process.env.NO_COLOR = '1';
   }
 
-  // Hard break: retired wpm v1 invocations exit 1 with a replacement hint
-  // BEFORE any WASM/OTEL/dispatch machinery spins up — see nouns/_removed.ts.
-  // Never shown in --help or generated docs.
-  const removedExitCode = checkRemoved(process.argv.slice(2));
-  if (removedExitCode !== undefined) {
-    process.exit(removedExitCode);
+  const argv = process.argv.slice(2);
+
+  // Retired invocations are typed refusals before WASM, OTEL, or command
+  // actuation. stdout remains one JSON envelope.
+  const removed = findRemovedEntry(argv);
+  if (removed) {
+    const error = new NounVerbError(
+      'COMMAND_NOT_FOUND',
+      `'wpm ${removed.old}' was removed`,
+      {
+        actionTemplate: {
+          kind: 'command_fix',
+          suggested_command: `wpm ${removed.replacement}`,
+          reason: 'retired CLI surface',
+        },
+      }
+    );
+    writeJson(error.toEnvelope());
+    process.exit(1);
     return;
   }
 
-  const argv = process.argv.slice(2);
+  // Help, version, and introspection are observation-only. They do not enter
+  // BRCE and do not initialize exporters.
+  if (isReadOnlyInvocation(argv)) {
+    await dispatch(argv);
+    return;
+  }
+
+  // BRCE admission precedes every potentially actuating boundary, including
+  // telemetry initialization. Failure here refuses dispatch.
+  admitCliInvocation(argv);
 
   await initOtel();
   try {
-    // `++` chaining and `@-`/`@-::path` stdin extraction are argv-level
-    // features citty's own dispatch (runMain/runCommand) has no way to
-    // express — see @wasm4pm/noun-verb's entry.ts. Route ONLY invocations
-    // that actually need them through runCli(); every other invocation
-    // (the overwhelming majority) keeps citty's own runMain(), so --help,
-    // --version, and CLIError-to-usage formatting are completely
-    // unaffected by this change. Both paths share the same ALL_NOUNS
-    // registry and cliOptions (receipt/OTEL middleware, errorCodeMap,
-    // resolveResultExitCode) from cli.ts, so neither can drift from the
-    // other.
-    if (argv.includes('++') || needsStdin(argv)) {
-      await runCli(ALL_NOUNS, cliOptions, argv);
-    } else {
-      await runMain(main);
-    }
+    await dispatch(argv);
   } finally {
     await shutdownOtel();
   }
 }
 
-bootstrap().catch(async (error) => {
-  console.error('Fatal error:', error);
-  await shutdownOtel();
+bootstrap().catch(async (thrown) => {
+  let fatal = NounVerbError.internalError(
+    `CLI_FATAL: ${thrown instanceof Error ? thrown.message : String(thrown)}`,
+    thrown
+  );
+
+  if (hasActiveCliInvocation()) {
+    try {
+      recordCliFatal(fatal);
+    } catch (receiptError) {
+      fatal = NounVerbError.internalError(
+        `RECEIPT_FATAL_OUTCOME_BLOCKED: ${receiptError instanceof Error ? receiptError.message : String(receiptError)}`,
+        receiptError
+      );
+    }
+  }
+
+  try { await shutdownOtel(); } catch { /* fatal path remains system_error */ }
+  writeFatalEnvelope(fatal);
   process.exit(5);
 });

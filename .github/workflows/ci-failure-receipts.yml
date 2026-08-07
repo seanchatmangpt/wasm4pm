@@ -36,7 +36,15 @@ jobs:
           path: |
             ggen-workflow-source.log
             .github/workflows
+            Cargo.toml
+            Cargo.lock
             wasm4pm/Cargo.toml
+            wasm4pm/src/pnml_io.rs
+            wasm4pm/src/automl_envelope.rs
+            wasm4pm/src/prediction_rf.rs
+            wasm4pm/src/statistical_analysis.rs
+            crates/wasm4pm-cognition/src
+            crates/wasm4pm-cognition/tests/composed_pipeline_breed_handoff.rs
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7

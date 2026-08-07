@@ -1,0 +1,238 @@
+name: CLI Fortune 5 Production
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/wasm4pm/**'
+      - 'packages/**'
+      - 'wasm4pm/**'
+      - 'scripts/release/verify-cli-fortune5.ts'
+      - '.github/workflows/cli-fortune5-production.yml'
+  push:
+    branches:
+      - main
+      - 'agent/cli-fortune5-production-closure'
+    paths:
+      - 'apps/wasm4pm/**'
+      - 'packages/**'
+      - 'wasm4pm/**'
+      - 'scripts/release/verify-cli-fortune5.ts'
+      - '.github/workflows/cli-fortune5-production.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-fortune5-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Contract (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Materialize exact Node-compatible pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.node }}" = "20" ]; then
+            version=10.15.0
+          else
+            version=11.5.2
+          fi
+          root="$RUNNER_TEMP/pnpm-$version"
+          npm install --prefix "$root" --no-audit --no-fund "pnpm@$version"
+          cli="$root/node_modules/pnpm/bin/pnpm.cjs"
+          npm_config_manage_package_manager_versions=false node "$cli" --version
+          echo "PNPM_CLI=$cli" >> "$GITHUB_ENV"
+          echo "npm_config_manage_package_manager_versions=false" >> "$GITHUB_ENV"
+
+      - name: Materialize pinned Rust and wasm-pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal --target wasm32-unknown-unknown
+          rustup default nightly-2026-04-15
+          python - <<'PY'
+          import hashlib, os, pathlib, stat, tarfile, urllib.request
+
+          if os.name == "nt":
+              asset = "wasm-pack-v0.15.0-x86_64-pc-windows-msvc.tar.gz"
+              expected = "518dc51180c7bc864699c9279b3bc99025bc109123e0249a34ba34d130a509bf"
+              executable = "wasm-pack.exe"
+          else:
+              asset = "wasm-pack-v0.15.0-x86_64-unknown-linux-musl.tar.gz"
+              expected = "c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a"
+              executable = "wasm-pack"
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "wasm-pack-v0.15.0"
+          root.mkdir(parents=True, exist_ok=True)
+          archive = root / asset
+          url = f"https://github.com/wasm-bindgen/wasm-pack/releases/download/v0.15.0/{asset}"
+          urllib.request.urlretrieve(url, archive)
+          observed = hashlib.sha256(archive.read_bytes()).hexdigest()
+          if observed != expected:
+              raise SystemExit(f"wasm-pack digest mismatch: {observed}")
+          with tarfile.open(archive, "r:gz") as bundle:
+              bundle.extractall(root)
+          candidates = list(root.rglob(executable))
+          if len(candidates) != 1:
+              raise SystemExit(f"expected one {executable}, found {candidates}")
+          binary = candidates[0]
+          if os.name != "nt":
+              binary.chmod(binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+          with open(os.environ["GITHUB_PATH"], "a", encoding="utf-8") as target:
+              target.write(str(binary.parent) + os.linesep)
+          with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "wasm-pack-bin", "w", encoding="utf-8") as target:
+              target.write(str(binary))
+          print(f"wasm-pack archive sha256:{observed}")
+          PY
+          WASM_PACK_BIN="$(cat "$RUNNER_TEMP/wasm-pack-bin")"
+          test -x "$WASM_PACK_BIN"
+          "$WASM_PACK_BIN" --version
+          rustc --version --verbose
+          rustup target list --installed | grep -Fx wasm32-unknown-unknown
+
+      - name: Install exact CLI dependency closure without ambient lifecycle actuation
+        shell: bash
+        run: node "$PNPM_CLI" install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli...
+
+      - name: Build declared CLI workspace closure
+        shell: bash
+        run: node "$PNPM_CLI" --recursive --filter @wasm4pm/cli... --if-present build
+
+      - name: Execute CLI package tests
+        shell: bash
+        run: node "$PNPM_CLI" --filter @wasm4pm/cli test
+
+      - name: Execute noun-verb framework tests
+        shell: bash
+        run: node "$PNPM_CLI" --filter @wasm4pm/noun-verb test
+
+      - name: Execute packaged-binary adversarial verifier
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
+        env:
+          WASM4PM_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          WASM4PM_FORTUNE5_REPORT: artifacts/cli-fortune5/report.json
+        shell: bash
+        run: node "$PNPM_CLI" exec tsx scripts/release/verify-cli-fortune5.ts
+
+      - name: Upload exact-head verifier receipt
+        if: success() && matrix.os == 'ubuntu-latest' && matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-fortune5-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/cli-fortune5/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  package:
+    name: Package and parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize exact pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/pnpm-11.5.2"
+          npm install --prefix "$root" --no-audit --no-fund pnpm@11.5.2
+          cli="$root/node_modules/pnpm/bin/pnpm.cjs"
+          npm_config_manage_package_manager_versions=false node "$cli" --version
+          echo "PNPM_CLI=$cli" >> "$GITHUB_ENV"
+          echo "npm_config_manage_package_manager_versions=false" >> "$GITHUB_ENV"
+
+      - name: Materialize pinned Rust and wasm-pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal --target wasm32-unknown-unknown
+          rustup default nightly-2026-04-15
+          python - <<'PY'
+          import hashlib, os, pathlib, stat, tarfile, urllib.request
+          asset = "wasm-pack-v0.15.0-x86_64-unknown-linux-musl.tar.gz"
+          expected = "c09f971ecaed9a2efc80fdcea7a00ef6b53c7fadc8c57d1f61b53a6aa66b668a"
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "wasm-pack-v0.15.0"
+          root.mkdir(parents=True, exist_ok=True)
+          archive = root / asset
+          urllib.request.urlretrieve(
+              f"https://github.com/wasm-bindgen/wasm-pack/releases/download/v0.15.0/{asset}",
+              archive,
+          )
+          observed = hashlib.sha256(archive.read_bytes()).hexdigest()
+          if observed != expected:
+              raise SystemExit(f"wasm-pack digest mismatch: {observed}")
+          with tarfile.open(archive, "r:gz") as bundle:
+              bundle.extractall(root)
+          candidates = list(root.rglob("wasm-pack"))
+          if len(candidates) != 1:
+              raise SystemExit(f"expected one wasm-pack, found {candidates}")
+          binary = candidates[0]
+          binary.chmod(binary.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+          with open(os.environ["GITHUB_PATH"], "a", encoding="utf-8") as target:
+              target.write(str(binary.parent) + os.linesep)
+          with open(pathlib.Path(os.environ["RUNNER_TEMP"]) / "wasm-pack-bin", "w", encoding="utf-8") as target:
+              target.write(str(binary))
+          print(f"wasm-pack archive sha256:{observed}")
+          PY
+          WASM_PACK_BIN="$(cat "$RUNNER_TEMP/wasm-pack-bin")"
+          test -x "$WASM_PACK_BIN"
+          "$WASM_PACK_BIN" --version
+
+      - name: Install exact CLI dependency closure without ambient lifecycle actuation
+        run: node "$PNPM_CLI" install --frozen-lockfile --ignore-scripts --filter @wasm4pm/cli...
+
+      - name: Build declared CLI workspace closure
+        run: node "$PNPM_CLI" --recursive --filter @wasm4pm/cli... --if-present build
+
+      - name: Verify registry and CLI parity
+        run: node "$PNPM_CLI" run cli:parity
+
+      - name: Verify clean tarball install and execution
+        run: node "$PNPM_CLI" run prepublish:pack-smoke

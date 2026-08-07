@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { blake3Hex } from '../../receipts/_shared.js';
 import {
   ALGO_HEALTH_CHECKS,
@@ -15,10 +18,12 @@ import {
 } from './safe-checks.js';
 import { checkOcelPowlWasmSession } from './session-check.js';
 import { checkAatLiveRuntime } from './aat-live-check.js';
+import { resolveWorkspaceRoot } from './checks-env.js';
 import {
   evaluateVision2030,
   type CapabilityDefinition,
   type Vision2030Report,
+  type Vision2030Subject,
 } from './vision2030.js';
 
 /**
@@ -46,6 +51,7 @@ export const VISION_2030_CAPABILITIES: readonly CapabilityDefinition[] = [
     label: 'Developer experience',
     description: 'Agent settings, hooks, operating doctrine, and memory/index surfaces.',
     checks: CLAUDE_CODE_CHECKS,
+    ceiling: 'PARTIAL_ALIVE',
   },
   {
     id: 'algorithm-runtime',
@@ -107,9 +113,59 @@ export const VISION_2030_CAPABILITIES: readonly CapabilityDefinition[] = [
   },
 ] as const;
 
+function readPackageVersion(root: string): string | null {
+  try {
+    const parsed = JSON.parse(
+      fs.readFileSync(path.join(root, 'apps', 'wasm4pm', 'package.json'), 'utf8')
+    ) as { version?: unknown };
+    return typeof parsed.version === 'string' ? parsed.version : null;
+  } catch {
+    return null;
+  }
+}
+
+function exactCommit(root: string): string | null {
+  try {
+    const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+    return /^[0-9a-f]{40}$/.test(commit) ? commit : null;
+  } catch {
+    const fromEnvironment = process.env.GITHUB_SHA ?? process.env.WASM4PM_GIT_COMMIT;
+    return fromEnvironment && /^[0-9a-f]{40}$/.test(fromEnvironment)
+      ? fromEnvironment
+      : null;
+  }
+}
+
+export function resolveVision2030Subject(): Vision2030Subject {
+  const root = resolveWorkspaceRoot();
+  const commit = root ? exactCommit(root) : null;
+  return {
+    repository: 'seanchatmangpt/wasm4pm',
+    git_commit: commit,
+    package_version: root ? readPackageVersion(root) : null,
+    node_version: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    admitted: Boolean(root && commit),
+    limitation: root
+      ? commit
+        ? undefined
+        : 'Workspace found, but exact Git commit identity could not be resolved.'
+      : 'Workspace root not found; the audited subject is not admitted.',
+  };
+}
+
 export async function runVision2030Audit(options: {
   readonly only?: readonly string[];
   readonly now?: () => Date;
+  readonly subject?: Vision2030Subject;
 } = {}): Promise<Vision2030Report> {
-  return evaluateVision2030(VISION_2030_CAPABILITIES, blake3Hex, options);
+  return evaluateVision2030(VISION_2030_CAPABILITIES, blake3Hex, {
+    ...options,
+    subject: options.subject ?? resolveVision2030Subject(),
+  });
 }

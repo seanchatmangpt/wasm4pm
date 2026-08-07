@@ -1,0 +1,138 @@
+name: GALL Exact-Head Crown
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/gall-checkpoint.yml'
+      - 'scripts/ci/gall_checkpoint.py'
+      - 'scripts/ci/test_gall_checkpoint.py'
+      - 'rust-toolchain.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'wasm4pm/**'
+      - 'crates/wasm4pm-cognition/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gall-exact-head-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exact-head-crown:
+    name: Execute and crown required GALL checkpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      EXPECTED_SUBJECT: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    steps:
+      - name: Checkout exact admitted subject
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify exact subject identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git rev-parse HEAD)"
+          test "$observed" = "$EXPECTED_SUBJECT" || {
+            echo "SUBJECT_IDENTITY_REFUSED expected=$EXPECTED_SUBJECT observed=$observed" >&2
+            exit 2
+          }
+
+      - name: Execute GALL kernel laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            scripts/ci/gall_checkpoint.py \
+            scripts/ci/test_gall_checkpoint.py
+          python3 scripts/ci/test_gall_checkpoint.py
+
+      - name: Materialize pinned Rust validation capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 \
+            --profile minimal \
+            --component clippy \
+            --target wasm32-unknown-unknown
+          rustup default nightly-2026-04-15
+          rustc --version --verbose
+          cargo clippy --version
+
+      - name: Execute exact-head checkpoint graph
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p artifacts/gall
+          status=0
+
+          checkpoint() {
+            python3 scripts/ci/gall_checkpoint.py run \
+              --id "$1" \
+              --title "$2" \
+              --subject-sha "$EXPECTED_SUBJECT" \
+              --root . \
+              --cwd . \
+              --artifact-dir artifacts/gall \
+              --timeout 2400 \
+              -- "${@:3}" || status=1
+          }
+
+          checkpoint rust-wasm-production \
+            "Compile the production crate for wasm32-unknown-unknown" \
+            cargo check -p wasm4pm --all-features --target wasm32-unknown-unknown
+
+          checkpoint rust-library-laws \
+            "Execute the complete wasm4pm library law suite" \
+            cargo test -p wasm4pm --all-features --lib
+
+          checkpoint cognition-handoff \
+            "Execute the composed cognition breed handoff witness" \
+            cargo test -p wasm4pm-cognition --all-features \
+              --test composed_pipeline_breed_handoff
+
+          checkpoint rust-clippy-laws \
+            "Enforce all-target all-feature wasm4pm clippy laws" \
+            cargo clippy -p wasm4pm --all-targets --all-features -- -D warnings
+
+          checkpoint cognition-clippy-laws \
+            "Enforce all-target all-feature cognition clippy laws" \
+            cargo clippy -p wasm4pm-cognition --all-targets --all-features -- -D warnings
+
+          python3 scripts/ci/gall_checkpoint.py crown \
+            --subject-sha "$EXPECTED_SUBJECT" \
+            --required \
+              rust-wasm-production \
+              rust-library-laws \
+              cognition-handoff \
+              rust-clippy-laws \
+              cognition-clippy-laws \
+            --receipts \
+              artifacts/gall/rust-wasm-production.receipt.json \
+              artifacts/gall/rust-library-laws.receipt.json \
+              artifacts/gall/cognition-handoff.receipt.json \
+              artifacts/gall/rust-clippy-laws.receipt.json \
+              artifacts/gall/cognition-clippy-laws.receipt.json \
+            --output artifacts/gall/crown.receipt.json || status=1
+
+          python3 scripts/ci/gall_checkpoint.py verify \
+            artifacts/gall/crown.receipt.json || status=1
+          exit "$status"
+
+      - name: Upload GALL receipt DAG
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gall-exact-head-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/gall
+          if-no-files-found: error
+          retention-days: 14

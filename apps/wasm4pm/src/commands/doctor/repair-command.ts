@@ -6,12 +6,14 @@ import type { Diagnosis } from './types.js';
 import { ALL_CHECKS } from './checks-arrays.js';
 import { resolveWorkspaceRoot } from './checks-env.js';
 import {
-  executeRepairPlan,
   planRepairs,
   RepairBrokerError,
   REPAIR_INTENTS,
-  type RepairExecutionReport,
 } from './repair-broker.js';
+import {
+  executeRepairPlan,
+  type HardenedRepairExecutionReport as RepairExecutionReport,
+} from './repair-execution.js';
 
 export interface RunDoctorRepairOptions {
   readonly format: 'json' | 'human';
@@ -33,6 +35,7 @@ async function executeDiagnoses(): Promise<Diagnosis[]> {
           name: check.name || 'anonymous doctor check',
           pathology: 'EPISTEMIC_FAULT',
           severity: 'STOP_THE_LINE',
+          observation: 'EXECUTED',
           message: `Check execution failed: ${error instanceof Error ? error.message : String(error)}`,
           repairMode: 'MANUAL_INTERVENTION',
         } satisfies Diagnosis;
@@ -83,7 +86,7 @@ export async function runDoctorRepair(options: RunDoctorRepairOptions): Promise<
     });
 
     const after =
-      options.dryRun || execution.standing === 'REFUSED'
+      options.dryRun || execution.standing === 'REFUSED' || execution.standing === 'BLOCKED'
         ? before
         : await executeDiagnoses();
     const remaining = after.filter((diagnosis) => diagnosis.severity !== 'INFO');
@@ -116,6 +119,7 @@ export async function runDoctorRepair(options: RunDoctorRepairOptions): Promise<
       projection.log(`Doctor repair: ${execution.standing}`);
       projection.log(`Run: ${execution.run_id}`);
       projection.log(`Authorized: ${execution.authorized}; dry-run: ${execution.dry_run}`);
+      projection.log(`Receipt chain: ${execution.receipt_chain.valid ? 'ALIVE' : 'BLOCKED'}`);
       projection.log('');
       if (execution.plan.length === 0) projection.log('  No admitted repair intents matched current diagnoses.');
       for (const outcome of execution.outcomes) {
@@ -126,6 +130,15 @@ export async function runDoctorRepair(options: RunDoctorRepairOptions): Promise<
         if (options.verbose && outcome.outcome_receipt) {
           projection.log(`      outcome: ${outcome.outcome_receipt}`);
         }
+      }
+      if (options.verbose && execution.receipt_chain.admission_receipt) {
+        projection.log(`  chain admission: ${execution.receipt_chain.admission_receipt}`);
+      }
+      if (options.verbose && execution.receipt_chain.consequence_receipt) {
+        projection.log(`  chain consequence: ${execution.receipt_chain.consequence_receipt}`);
+      }
+      for (const issue of execution.receipt_chain.issues) {
+        projection.log(`  chain issue: ${issue}`);
       }
       if (remaining.length > 0) {
         projection.log('');
