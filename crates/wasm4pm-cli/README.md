@@ -31,7 +31,7 @@ The Rust binary exposes a narrower, lower-level command set built directly on th
 | `doctor` | 4-check environment health (rustc, wasm-pack, Cargo.toml, src/) — simpler than the TypeScript `wpm doctor` (17 checks) |
 | `wizard` | Interactive project setup — writes `.wasm4pm/config.json` with name, author, license, deployment profile |
 | `telco status\|map\|dispatch` | Vision 2030 nanosecond architecture status display and simulated event dispatch |
-| `mining discover\|conformance` | Process discovery (heuristic miner via `wasm4pm-algos`) and token-replay conformance against native types |
+| `mining discover\|conformance` | Process discovery (heuristic miner and ILP Petri-net miner, both from the `wasm4pm` engine crate — `wasm4pm-algos` no longer exists in this workspace) and token-replay conformance against native types — verified end-to-end: `discover` produces a real DFG from an XES fixture (`data/small-example.xes`), and `test_mining_discover_ilp_and_conformance_end_to_end` exercises ILP discovery → PNML → conformance-check |
 | `config get\|set` | Read/write key-value pairs in `.wasm4pm/config.json` |
 | `autoprocess` | Calls `autonomic_execute_cycle()` directly on the Rust WASM crate — same Perception→Decision→Protection→Optimization pipeline as `wpm autoprocess` in the TypeScript CLI, but native |
 | `agent list\|status\|switch\|reset` | Manage the 5 RL agents (QLearning, SARSA, DoubleQLearning, ExpectedSARSA, REINFORCE) via `RL_ORCHESTRATOR` thread-local |
@@ -39,7 +39,7 @@ The Rust binary exposes a narrower, lower-level command set built directly on th
 | `audit` | SIMD-accelerated token replay (`simd_token_replay`) with Vision 2030 verdicts (TRUTHFUL/VARIANCE/DECEPTIVE) |
 | `receipt` | Forensics toolkit for receipt verification and adversarial audits (`ReceiptDoctor`) |
 | `lean` | Lean value-stream audit of `.wasm4pm/` artifacts (overproduction/waste checks) |
-| `oracle check\|watch` | Andon oracle for online prefix conformance and impossible-prefix detection against an OCEL tape |
+| `oracle check\|watch` | Andon oracle for online prefix conformance and impossible-prefix detection against an OCEL tape — `check` verified with real command output on both a lawful fixture (`Admitted`, exit 0) and an unlawful one (`AndonPull` with `ReceiptBeforeGate` finding, exit 1); `watch`'s early-stop/dead-case behavior is covered by passing automated tests (`test_oracle_watch_succeeds_on_lawful_tape`, `test_oracle_watch_prints_early_stop_and_fails_on_dead_case`) but was not independently re-run as a manual streaming invocation in this session |
 | `man` | Generate Markdown documentation for all commands |
 
 ---
