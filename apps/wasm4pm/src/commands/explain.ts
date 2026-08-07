@@ -176,7 +176,7 @@ export const explain = defineCommand({
             typeof ctx.args.target === 'string' &&
             ctx.args.target.length > 0
           ) {
-            ctx.args.algorithm = ctx.args.target;
+            (ctx.args as { algorithm?: string }).algorithm = ctx.args.target;
           }
 
           // Step 1: Zero-arg mode — show algorithm menu instead of a bare error
