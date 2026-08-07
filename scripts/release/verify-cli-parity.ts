@@ -74,22 +74,28 @@ async function main() {
     `[PASS] ${Object.keys(ALGORITHM_CLI_ALIASES).length} CLI aliases resolve to kernel registry IDs`
   );
 
-  // Subprocess: wpm algorithms --format json returns >= registry count
+  // Subprocess: `wpm help algorithms` returns >= registry count.
+  // (The flat `wpm algorithms` was replaced by `wpm help algorithms` in the
+  // noun-verb migration; the noun-verb CLI emits JSON on stdout by default.)
   const wpmBin = new URL('../../apps/wasm4pm/dist/bin/wpm.js', import.meta.url).pathname;
-  const algoJson = execFileSync(process.execPath, [wpmBin, 'algorithms', '--format', 'json'], {
+  const algoJson = execFileSync(process.execPath, [wpmBin, 'help', 'algorithms'], {
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   });
+  // Native noun-verb output is the raw handler return (`{ count, algorithms }`)
+  // at the top level; only bridged legacy commands wrap it in `payload`. Accept
+  // either shape.
   const parsed = JSON.parse(algoJson.slice(algoJson.indexOf('{'))) as {
+    algorithms?: unknown[];
     payload?: { algorithms?: unknown[] };
   };
-  const listed = parsed.payload?.algorithms?.length ?? 0;
+  const listed = parsed.algorithms?.length ?? parsed.payload?.algorithms?.length ?? 0;
   if (listed < algos.length) {
     throw new Error(
-      `wpm algorithms listed ${listed} entries but kernel registry has ${algos.length}`
+      `wpm help algorithms listed ${listed} entries but kernel registry has ${algos.length}`
     );
   }
-  console.log(`[PASS] wpm algorithms --format json lists ${listed} algorithms (registry ${algos.length})`);
+  console.log(`[PASS] wpm help algorithms lists ${listed} algorithms (registry ${algos.length})`);
 
   console.log(`[PASS] CLI parity verified for ${algos.length} algorithms.`);
 }
