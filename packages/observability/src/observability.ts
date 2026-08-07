@@ -20,6 +20,31 @@ import {
   ObservabilityResult,
 } from './types.js';
 
+/** Ordinal severity of each CLI log level, for threshold comparison. */
+const CLI_LEVEL_WEIGHT: Record<CliEvent['level'], number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+};
+
+/**
+ * Resolve the minimum CLI log level to print, honoring the documented
+ * `WASM4PM_LOG_LEVEL` contract (see `.env.example`). Defaults to `info`, so
+ * routine `debug` breadcrumbs (e.g. WASM init chatter) stay off normal runs;
+ * set `WASM4PM_LOG_LEVEL=debug` to restore them. An unrecognized value falls
+ * back to `info` rather than silencing everything.
+ */
+function resolveCliLogThreshold(): number {
+  const raw =
+    typeof process !== 'undefined' && process.env
+      ? process.env.WASM4PM_LOG_LEVEL?.toLowerCase()
+      : undefined;
+  return raw && raw in CLI_LEVEL_WEIGHT
+    ? CLI_LEVEL_WEIGHT[raw as CliEvent['level']]
+    : CLI_LEVEL_WEIGHT.info;
+}
+
 /**
  * Central observability layer managing all three logging outputs
  * All methods are non-blocking; they return immediately or return Promises that resolve asynchronously
@@ -84,6 +109,13 @@ export class ObservabilityLayer {
    * Prints to console immediately
    */
   public emitCli(event: CliEvent): void {
+    // Suppress messages below the configured log-level threshold (default:
+    // info) so normal CLI runs stay quiet; WASM4PM_LOG_LEVEL=debug restores
+    // diagnostic chatter. error/warn are never gated below info.
+    if (CLI_LEVEL_WEIGHT[event.level] < resolveCliLogThreshold()) {
+      return;
+    }
+
     const timestamp = event.timestamp ?? new Date();
     const level = event.level.toUpperCase().padEnd(5);
     const formattedMessage = `[${level}] ${timestamp.toISOString()} ${event.message}`;
