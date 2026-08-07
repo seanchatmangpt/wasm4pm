@@ -433,19 +433,20 @@ impl BoundedPrefixRouter {
         time_ms: i64,
         tape_index: usize,
     ) -> Result<PartitionedPrefixResult, BoundedPrefixError> {
-        if !self.cases.contains_key(key) {
-            if self.cases.len() >= self.max_active_cases {
-                return Err(BoundedPrefixError::CapacityExceeded {
-                    max_active_cases: self.max_active_cases,
-                    key: key.clone(),
-                });
+        let at_capacity = self.cases.len() >= self.max_active_cases;
+        let oracle = match self.cases.entry(key.clone()) {
+            std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                if at_capacity {
+                    return Err(BoundedPrefixError::CapacityExceeded {
+                        max_active_cases: self.max_active_cases,
+                        key: key.clone(),
+                    });
+                }
+                entry.insert(PrefixOracle::new(&self.law))
             }
-            self.cases.insert(key.clone(), PrefixOracle::new(&self.law));
-        }
-
-        let Some(oracle) = self.cases.get_mut(key) else {
-            return Err(BoundedPrefixError::UnknownCase { key: key.clone() });
         };
+
         let event = PrefixEvent {
             activity: activity.to_string(),
             time_ms,
