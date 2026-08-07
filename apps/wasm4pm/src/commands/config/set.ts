@@ -124,10 +124,15 @@ export const configSet = defineCommand({
       'Examples: wpm config set algorithm.name dfg  |  wpm config set execution.profile quality',
   },
   args: {
-    _: {
+    field: {
       type: 'positional',
-      description: 'Field path and value: <field.path> <value>',
+      description: 'Field path, e.g. algorithm.name',
       required: true,
+    },
+    value: {
+      type: 'positional',
+      description: 'New value for the field',
+      required: false,
     },
     config: {
       type: 'string',
@@ -142,7 +147,12 @@ export const configSet = defineCommand({
   async run(ctx) {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
-    const raw = String(ctx.args._ ?? '').trim();
+    // Accept both the natural two-token form `wpm config set algorithm.name dfg`
+    // (field + value positionals) AND the single quoted form
+    // `wpm config set "algorithm.name dfg"` (field carries the whole string).
+    const fieldArg = ctx.args.field !== undefined ? String(ctx.args.field) : '';
+    const valueArg = ctx.args.value !== undefined ? String(ctx.args.value) : undefined;
+    const raw = (valueArg !== undefined ? `${fieldArg} ${valueArg}` : fieldArg).trim();
 
     return withSpanRaw('config.set', { 'config.raw': raw }, async () => {
       // Parse "field.path value" from the positional
