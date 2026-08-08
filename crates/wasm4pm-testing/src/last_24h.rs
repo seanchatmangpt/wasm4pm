@@ -92,7 +92,7 @@ pub fn transition_is_lawful(
         ) | (
             RepositoryRole::Manufacture,
             RepositoryRole::ProductionRuntime,
-            TransitionKind::ManufactureBundle
+            TransitionKind::ManufactureBundle | TransitionKind::PromoteBundle
         ) | (
             RepositoryRole::WorldExecution,
             RepositoryRole::ExploreAdmit,
@@ -209,7 +209,10 @@ impl RecoveryTrace {
             RecoveryStep::Observe,
             RecoveryStep::Decide,
         ];
-        let retry_position = self.steps.iter().position(|step| *step == RecoveryStep::Retry);
+        let retry_position = self
+            .steps
+            .iter()
+            .position(|step| *step == RecoveryStep::Retry);
         let Some(retry_position) = retry_position else {
             return Ok(false);
         };
@@ -272,7 +275,8 @@ impl HotPathCandidate {
         if !self.candidate_only || self.carries_authority {
             return Err(REFUSED_HOT_PATH_AUTHORITY_ESCALATION);
         }
-        let bytes = serde_json::to_vec(self).expect("HotPathCandidate serialization is infallible");
+        let bytes =
+            serde_json::to_vec(self).expect("HotPathCandidate serialization is infallible");
         Ok(blake3::hash(&bytes).to_hex().to_string())
     }
 }
@@ -389,7 +393,10 @@ impl SemanticSourceRecord {
         if !self.registered {
             SourceStanding::Unknown
         } else if self.source_bytes_pinned
-            && self.source_digest.as_ref().is_some_and(|digest| !digest.is_empty())
+            && self
+                .source_digest
+                .as_ref()
+                .is_some_and(|digest| !digest.is_empty())
             && self.validation_executed
         {
             SourceStanding::Alive
@@ -614,7 +621,8 @@ pub fn last_24h_innovation_index() -> Vec<InnovationRecord> {
         InnovationRecord {
             repository: "seanchatmangpt/autofde-lab".to_owned(),
             pull_request: Some(29),
-            theme: "fitness precision generalization drift remaining-time and resource mining".to_owned(),
+            theme: "fitness precision generalization drift remaining-time and resource mining"
+                .to_owned(),
             interaction_model: None,
             evidence_only: true,
         },
@@ -684,7 +692,8 @@ pub fn last_24h_innovation_index() -> Vec<InnovationRecord> {
         InnovationRecord {
             repository: "seanchatmangpt/gymact".to_owned(),
             pull_request: Some(13),
-            theme: "ProductionGymAct BRCE execution grants reconciliation and HOT recipes".to_owned(),
+            theme: "ProductionGymAct BRCE execution grants reconciliation and HOT recipes"
+                .to_owned(),
             interaction_model: None,
             evidence_only: false,
         },
