@@ -142,9 +142,10 @@ fn ocel_projection_preserves_multiple_typed_qualified_objects() {
     let event = receipt_to_ocel_event(&source);
     assert_eq!(event.activity, Operation::Materialize);
     assert_eq!(event.objects.len(), 2);
-    assert!(event.objects.iter().any(|object| {
-        object.object_type == "Episode" && object.qualifier == "episode"
-    }));
+    assert!(event
+        .objects
+        .iter()
+        .any(|object| { object.object_type == "Episode" && object.qualifier == "episode" }));
     assert!(event.objects.iter().any(|object| {
         object.object_type == "Capability" && object.qualifier == "used-capability"
     }));
@@ -188,21 +189,42 @@ fn expected_parallel_process() -> ExpectedProcess {
 fn partial_order_accepts_both_lawful_linearizations() {
     let process = expected_parallel_process();
     for observed in [
-        vec!["materialize", "observe-a", "observe-b", "verify", "teardown"],
-        vec!["materialize", "observe-b", "observe-a", "verify", "teardown"],
+        vec![
+            "materialize",
+            "observe-a",
+            "observe-b",
+            "verify",
+            "teardown",
+        ],
+        vec![
+            "materialize",
+            "observe-b",
+            "observe-a",
+            "verify",
+            "teardown",
+        ],
     ] {
         let observed = observed.into_iter().map(str::to_owned).collect::<Vec<_>>();
-        assert_eq!(process.check_observed(&observed), ProcessDisposition::Conforming);
+        assert_eq!(
+            process.check_observed(&observed),
+            ProcessDisposition::Conforming
+        );
     }
 }
 
 #[test]
 fn partial_order_refuses_precedence_violation() {
     let process = expected_parallel_process();
-    let observed = ["observe-a", "materialize", "observe-b", "verify", "teardown"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
+    let observed = [
+        "observe-a",
+        "materialize",
+        "observe-b",
+        "verify",
+        "teardown",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
     assert!(matches!(
         process.check_observed(&observed),
         ProcessDisposition::Dead { .. }
@@ -214,12 +236,20 @@ fn repeated_operation_labels_keep_distinct_step_identity() {
     let mut process = expected_parallel_process();
     assert_eq!(process.steps["observe-a"].operation, Operation::Observe);
     assert_eq!(process.steps["observe-b"].operation, Operation::Observe);
-    process.precedes.insert(("observe-a".to_owned(), "observe-b".to_owned()));
+    process
+        .precedes
+        .insert(("observe-a".to_owned(), "observe-b".to_owned()));
 
-    let reversed = ["materialize", "observe-b", "observe-a", "verify", "teardown"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
+    let reversed = [
+        "materialize",
+        "observe-b",
+        "observe-a",
+        "verify",
+        "teardown",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
     assert!(matches!(
         process.check_observed(&reversed),
         ProcessDisposition::Dead { .. }
