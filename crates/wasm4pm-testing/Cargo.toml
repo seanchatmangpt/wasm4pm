@@ -1,0 +1,17 @@
+[package]
+name = "wasm4pm-testing"
+version.workspace = true
+edition.workspace = true
+description = "Evidence-bounded testkit for GymAct, OCEL, conformance, and process-oracle integration patterns"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+blake3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
