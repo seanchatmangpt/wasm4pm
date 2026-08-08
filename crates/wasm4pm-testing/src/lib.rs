@@ -8,8 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-pub const REFUSED_PROCESS_SEMANTIC_DIVERGENCE: &str =
-    "REFUSED:PROCESS_SEMANTIC_DIVERGENCE";
+pub const REFUSED_PROCESS_SEMANTIC_DIVERGENCE: &str = "REFUSED:PROCESS_SEMANTIC_DIVERGENCE";
 pub const REFUSED_INVALID_RECEIPT_CHAIN: &str = "REFUSED:INVALID_RECEIPT_CHAIN";
 pub const REFUSED_INVALID_LIFECYCLE: &str = "REFUSED:INVALID_LIFECYCLE";
 pub const REFUSED_DISCOVER_IN_EPISODE: &str = "REFUSED:DISCOVER_IN_EPISODE";
@@ -313,7 +312,8 @@ pub struct ProcessEvidenceBundle {
 impl ProcessEvidenceBundle {
     #[must_use]
     pub fn digest(&self) -> String {
-        let bytes = serde_json::to_vec(self).expect("ProcessEvidenceBundle serialization is infallible");
+        let bytes =
+            serde_json::to_vec(self).expect("ProcessEvidenceBundle serialization is infallible");
         blake3::hash(&bytes).to_hex().to_string()
     }
 }
