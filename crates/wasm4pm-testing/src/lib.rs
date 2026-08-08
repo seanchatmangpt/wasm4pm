@@ -4,6 +4,8 @@
 //! It models the contracts that integrations must preserve so richer wasm4pm
 //! implementations can be tested against a small Gall-style oracle.
 
+pub mod last_24h;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
