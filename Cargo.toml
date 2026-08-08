@@ -36,7 +36,14 @@ ocpq = { version = "26.7.23", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 criterion = { version = "0.5", features = ["html_reports"] }
-tempfile = "3.8"
+tempfile = "3.10"
+wasm-bindgen = "=0.2.100"
+js-sys = "0.3"
+serde-wasm-bindgen = "0.6"
+regex = "1.10"
+anyhow = "1.0"
+colored = "2.1"
+git2 = "0.21"
 
 [profile.release]
 opt-level = "z"
