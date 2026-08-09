@@ -1,0 +1,158 @@
+name: Benchmark branches updated in last 24h
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: '1'
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout orchestration ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all branch heads
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+          rustup default nightly-2026-04-15
+          rustc --version
+          cargo --version
+
+      - name: Install pnpm through Corepack
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm --version
+
+      - name: Enumerate and benchmark recent branch heads
+        shell: bash
+        run: |
+          set -uo pipefail
+          ORCH_SHA="$(git rev-parse HEAD)"
+          CUTOFF="$(( $(date -u +%s) - 86400 ))"
+          OUT="$RUNNER_TEMP/wasm4pm-last24h"
+          mkdir -p "$OUT/logs"
+
+          printf '# wasm4pm branch benchmark receipt\n\n' > "$OUT/REPORT.md"
+          printf -- '- orchestration_sha: `%s`\n' "$ORCH_SHA" >> "$OUT/REPORT.md"
+          printf -- '- cutoff_utc: `%s`\n' "$(date -u -d "@$CUTOFF" +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT/REPORT.md"
+          printf -- '- runner: `%s`\n' "${RUNNER_OS}-${RUNNER_ARCH}" >> "$OUT/REPORT.md"
+          printf -- '- rust: `%s`\n' "$(rustc --version)" >> "$OUT/REPORT.md"
+          printf -- '- node: `%s`\n\n' "$(node --version)" >> "$OUT/REPORT.md"
+          printf '| Branch | SHA | Head time (UTC) | cargo test | closed_claw | fast_algorithms | WASM CI | receipt verify |\n' >> "$OUT/REPORT.md"
+          printf '|---|---|---|---:|---:|---:|---:|---:|\n' >> "$OUT/REPORT.md"
+
+          : > "$OUT/branches.tsv"
+          while IFS='|' read -r ref sha epoch; do
+            branch="${ref#origin/}"
+            [ "$ref" = "origin/HEAD" ] && continue
+            case "$branch" in agent/validate-last24h-benchmarks-*) continue ;; esac
+            if [ "${epoch:-0}" -ge "$CUTOFF" ]; then
+              printf '%s\t%s\t%s\n' "$branch" "$sha" "$epoch" >> "$OUT/branches.tsv"
+            fi
+          done < <(git for-each-ref refs/remotes/origin --format='%(refname:short)|%(objectname)|%(committerdate:unix)' | sort)
+
+          branch_count="$(wc -l < "$OUT/branches.tsv" | tr -d ' ')"
+          printf '\nDiscovered **%s** branch heads whose head commit time is within the 24-hour admission window.\n\n' "$branch_count" >> "$OUT/REPORT.md"
+
+          overall=0
+          while IFS=$'\t' read -r branch sha epoch; do
+            [ -n "$branch" ] || continue
+            safe="$(printf '%s' "$branch" | tr '/ ' '__')"
+            log="$OUT/logs/$safe.log"
+            head_time="$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)"
+            echo "===== $branch @ $sha =====" | tee "$log"
+
+            git checkout --detach "$sha" >>"$log" 2>&1 || { printf '| `%s` | `%s` | %s | checkout-fail | - | - | - | - |\n' "$branch" "${sha:0:12}" "$head_time" >> "$OUT/REPORT.md"; overall=1; continue; }
+            git clean -ffdqx >>"$log" 2>&1 || true
+
+            test_status=na
+            claw_status=na
+            fast_status=na
+            wasm_status=na
+            receipt_status=na
+
+            if [ -f wasm4pm/Cargo.toml ]; then
+              if cargo test --manifest-path wasm4pm/Cargo.toml --lib --locked --quiet >>"$log" 2>&1; then test_status=pass; else test_status=fail; overall=1; fi
+
+              if grep -q 'name = "closed_claw"' wasm4pm/Cargo.toml 2>/dev/null; then
+                if cargo bench --manifest-path wasm4pm/Cargo.toml --bench closed_claw --locked -- --output-format bencher --warm-up-time 1 --measurement-time 3 >>"$log" 2>&1; then claw_status=pass; else claw_status=fail; overall=1; fi
+              fi
+
+              if grep -q 'name = "fast_algorithms"' wasm4pm/Cargo.toml 2>/dev/null; then
+                if cargo bench --manifest-path wasm4pm/Cargo.toml --bench fast_algorithms --locked -- --output-format bencher --warm-up-time 1 --measurement-time 3 >>"$log" 2>&1; then fast_status=pass; else fast_status=fail; overall=1; fi
+              fi
+            fi
+
+            if [ -f package.json ] && [ -f pnpm-lock.yaml ] && [ -f wasm4pm/benchmarks/wasm_bench_runner.js ]; then
+              if corepack pnpm install --frozen-lockfile --ignore-scripts >>"$log" 2>&1 \
+                && (cd wasm4pm && corepack pnpm run build:nodejs --quiet) >>"$log" 2>&1 \
+                && (cd wasm4pm && node benchmarks/wasm_bench_runner.js --ci) >>"$log" 2>&1; then
+                wasm_status=pass
+              else
+                wasm_status=fail
+                overall=1
+              fi
+            fi
+
+            if [ -f crates/bench-tools/Cargo.toml ]; then
+              if cargo run -q -p bench-tools -- receipt >>"$log" 2>&1 \
+                && cargo run -q -p bench-tools -- verify --allow-dirty >>"$log" 2>&1; then
+                receipt_status=pass
+              else
+                receipt_status=fail
+                overall=1
+              fi
+            fi
+
+            printf '| `%s` | `%s` | %s | %s | %s | %s | %s | %s |\n' "$branch" "${sha:0:12}" "$head_time" "$test_status" "$claw_status" "$fast_status" "$wasm_status" "$receipt_status" >> "$OUT/REPORT.md"
+
+            {
+              echo
+              echo "## $branch @ $sha"
+              echo
+              echo '```text'
+              grep -E '^(test .* bench:|Benchmarking |[A-Za-z0-9_/:.-]+[[:space:]]+time:|RESULT|Throughput|throughput|ops/s|ns/iter|us/iter|ms/iter|PASS|FAIL|ERROR)' "$log" | tail -n 240 || true
+              echo '```'
+            } >> "$OUT/REPORT.md"
+          done < "$OUT/branches.tsv"
+
+          git checkout --detach "$ORCH_SHA" >/dev/null 2>&1 || true
+          cp "$OUT/REPORT.md" "$GITHUB_WORKSPACE/benchmark-last24h-report.md"
+          cp "$OUT/branches.tsv" "$GITHUB_WORKSPACE/benchmark-last24h-branches.tsv"
+
+          echo "--- report ---"
+          cat "$OUT/REPORT.md"
+          exit "$overall"
+
+      - name: Upload benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm4pm-last24h-benchmark-evidence
+          path: |
+            benchmark-last24h-report.md
+            benchmark-last24h-branches.tsv
+            ${{ runner.temp }}/wasm4pm-last24h/logs
+          if-no-files-found: error
+          retention-days: 30
