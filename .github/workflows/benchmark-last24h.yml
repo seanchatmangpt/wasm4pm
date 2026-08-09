@@ -17,18 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - name: Checkout orchestration ref
+      - name: Checkout validation head
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Fetch all branch heads
+      - name: Fetch branch graph
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
 
-      - name: Install pinned Rust and WASM toolchain
+      - name: Install pinned execution capsule
         shell: bash
         run: |
           set -euo pipefail
@@ -38,41 +38,42 @@ jobs:
           if ! command -v wasm-pack >/dev/null 2>&1; then
             cargo install wasm-pack --version 0.13.1 --locked
           fi
+          corepack enable
           rustc --version
           cargo --version
+          node --version
+          corepack pnpm --version
           wasm-pack --version
 
-      - name: Install pnpm through Corepack
-        shell: bash
-        run: |
-          set -euo pipefail
-          corepack enable
-          corepack pnpm --version
-
-      - name: Enumerate GitHub branch activity and benchmark exact current heads
+      - name: Admit subjects and execute benchmark rails
+        id: bench
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -uo pipefail
           ORCH_SHA="$(git rev-parse HEAD)"
-          NOW_EPOCH="$(date -u +%s)"
-          CUTOFF="$(( NOW_EPOCH - 86400 ))"
-          CUTOFF_ISO="$(date -u -d "@$CUTOFF" +%Y-%m-%dT%H:%M:%SZ)"
+          CUTOFF_EPOCH="$(( $(date -u +%s) - 86400 ))"
+          CUTOFF_ISO="$(date -u -d "@$CUTOFF_EPOCH" +%Y-%m-%dT%H:%M:%SZ)"
           OUT="$RUNNER_TEMP/wasm4pm-last24h"
           mkdir -p "$OUT/logs"
 
-          printf '# wasm4pm branch benchmark receipt\n\n' > "$OUT/REPORT.md"
-          printf -- '- orchestration_sha: `%s`\n' "$ORCH_SHA" >> "$OUT/REPORT.md"
-          printf -- '- activity_cutoff_utc: `%s`\n' "$CUTOFF_ISO" >> "$OUT/REPORT.md"
-          printf -- '- admission: GitHub repository `PushEvent`/branch `CreateEvent` activity in the last 24h; exact current branch head executed\n' >> "$OUT/REPORT.md"
-          printf -- '- baseline: `main` is always included even if it has no qualifying event\n' >> "$OUT/REPORT.md"
-          printf -- '- runner: `%s`\n' "${RUNNER_OS}-${RUNNER_ARCH}" >> "$OUT/REPORT.md"
-          printf -- '- rust: `%s`\n' "$(rustc --version)" >> "$OUT/REPORT.md"
-          printf -- '- node: `%s`\n' "$(node --version)" >> "$OUT/REPORT.md"
-          printf -- '- wasm-pack: `%s`\n\n' "$(wasm-pack --version)" >> "$OUT/REPORT.md"
-          printf '| Branch | SHA | Last branch activity (UTC) | cargo test | closed_claw | fast_algorithms | WASM CI | receipt verify |\n' >> "$OUT/REPORT.md"
-          printf '|---|---|---|---:|---:|---:|---:|---:|\n' >> "$OUT/REPORT.md"
+          cat > "$OUT/REPORT.md" <<EOF
+          # wasm4pm exact-head benchmark receipt
+
+          - orchestration_sha: \`$ORCH_SHA\`
+          - activity_cutoff_utc: \`$CUTOFF_ISO\`
+          - admission: GitHub repository PushEvent/CreateEvent branch activity in the preceding 24 hours
+          - active subjects: full Rust + closed-claw + WASM + receipt rails
+          - main baseline: Rust tests + fast algorithms + receipt rail only
+          - runner: \`${RUNNER_OS}-${RUNNER_ARCH}\`
+          - rust: \`$(rustc --version)\`
+          - node: \`$(node --version)\`
+          - wasm-pack: \`$(wasm-pack --version)\`
+
+          | Branch | SHA | Admission | cargo test | closed_claw | fast_algorithms | WASM CI | receipt verify |
+          |---|---|---|---:|---:|---:|---:|---:|
+          EOF
 
           : > "$OUT/events.jsonl"
           for page in 1 2 3; do
@@ -97,34 +98,37 @@ jobs:
           | awk -F '\t' '{ if (!seen[$1] || $2 > seen[$1]) seen[$1]=$2 } END { for (b in seen) print b "\t" seen[b] }' \
           | sort > "$OUT/activity.tsv"
 
-          : > "$OUT/branches.tsv"
+          : > "$OUT/subjects.tsv"
           while IFS=$'\t' read -r branch activity; do
             [ -n "$branch" ] || continue
-            case "$branch" in agent/validate-last24h-benchmarks-*) continue ;; esac
             if sha="$(git rev-parse --verify "refs/remotes/origin/$branch" 2>/dev/null)"; then
-              printf '%s\t%s\t%s\tactivity\n' "$branch" "$sha" "$activity" >> "$OUT/branches.tsv"
+              printf '%s\t%s\t%s\tactivity\n' "$branch" "$sha" "$activity" >> "$OUT/subjects.tsv"
             fi
           done < "$OUT/activity.tsv"
 
-          if ! awk -F '\t' '$1=="main" {found=1} END{exit !found}' "$OUT/branches.tsv"; then
-            sha="$(git rev-parse --verify refs/remotes/origin/main)"
-            activity="$(git show -s --format=%cI "$sha")"
-            printf 'main\t%s\t%s\tbaseline\n' "$sha" "$activity" >> "$OUT/branches.tsv"
+          if ! awk -F '\t' '$1=="main" {found=1} END{exit !found}' "$OUT/subjects.tsv"; then
+            main_sha="$(git rev-parse --verify refs/remotes/origin/main)"
+            main_time="$(git show -s --format=%cI "$main_sha")"
+            printf 'main\t%s\t%s\tbaseline\n' "$main_sha" "$main_time" >> "$OUT/subjects.tsv"
           fi
-          sort -u -o "$OUT/branches.tsv" "$OUT/branches.tsv"
+          sort -u -o "$OUT/subjects.tsv" "$OUT/subjects.tsv"
 
-          branch_count="$(wc -l < "$OUT/branches.tsv" | tr -d ' ')"
-          activity_count="$(awk -F '\t' '$4=="activity"{n++} END{print n+0}' "$OUT/branches.tsv")"
-          printf '\nDiscovered **%s** GitHub-active branch heads plus mandatory `main` baseline as needed; **%s** subjects total.\n\n' "$activity_count" "$branch_count" >> "$OUT/REPORT.md"
+          activity_count="$(awk -F '\t' '$4=="activity"{n++} END{print n+0}' "$OUT/subjects.tsv")"
+          subject_count="$(wc -l < "$OUT/subjects.tsv" | tr -d ' ')"
+          printf '\nAdmitted **%s** active branch subjects; **%s** total subjects including baseline.\n\n' "$activity_count" "$subject_count" >> "$OUT/REPORT.md"
 
           overall=0
           while IFS=$'\t' read -r branch sha activity admission; do
             [ -n "$branch" ] || continue
             safe="$(printf '%s' "$branch" | tr '/ ' '__')"
             log="$OUT/logs/$safe.log"
-            echo "===== $branch @ $sha ($admission) =====" | tee "$log"
+            echo "===== $branch @ $sha [$admission] =====" | tee "$log"
 
-            git checkout --detach "$sha" >>"$log" 2>&1 || { printf '| `%s` | `%s` | %s | checkout-fail | - | - | - | - |\n' "$branch" "${sha:0:12}" "$activity" >> "$OUT/REPORT.md"; overall=1; continue; }
+            if ! git checkout --detach "$sha" >>"$log" 2>&1; then
+              printf '| `%s` | `%s` | %s | checkout-fail | - | - | - | - |\n' "$branch" "${sha:0:12}" "$admission" >> "$OUT/REPORT.md"
+              overall=1
+              continue
+            fi
             git clean -ffdqx >>"$log" 2>&1 || true
 
             test_status=na
@@ -133,19 +137,28 @@ jobs:
             wasm_status=na
             receipt_status=na
 
-            if [ -f wasm4pm/Cargo.toml ]; then
-              if cargo test --manifest-path wasm4pm/Cargo.toml --lib --locked --quiet >>"$log" 2>&1; then test_status=pass; else test_status=fail; overall=1; fi
-
-              if grep -q 'name = "closed_claw"' wasm4pm/Cargo.toml 2>/dev/null; then
-                if cargo bench --manifest-path wasm4pm/Cargo.toml --bench closed_claw --locked -- --output-format bencher --warm-up-time 1 --measurement-time 3 >>"$log" 2>&1; then claw_status=pass; else claw_status=fail; overall=1; fi
-              fi
-
-              if grep -q 'name = "fast_algorithms"' wasm4pm/Cargo.toml 2>/dev/null; then
-                if cargo bench --manifest-path wasm4pm/Cargo.toml --bench fast_algorithms --locked -- --output-format bencher --warm-up-time 1 --measurement-time 3 >>"$log" 2>&1; then fast_status=pass; else fast_status=fail; overall=1; fi
-              fi
+            if cargo test --manifest-path wasm4pm/Cargo.toml --lib --locked --quiet >>"$log" 2>&1; then
+              test_status=pass
+            else
+              test_status=fail
+              overall=1
             fi
 
-            if [ -f package.json ] && [ -f pnpm-lock.yaml ] && [ -f wasm4pm/benchmarks/wasm_bench_runner.js ]; then
+            if cargo bench --manifest-path wasm4pm/Cargo.toml --bench fast_algorithms --locked -- --output-format bencher >>"$log" 2>&1; then
+              fast_status=pass
+            else
+              fast_status=fail
+              overall=1
+            fi
+
+            if [ "$admission" = activity ]; then
+              if cargo bench --manifest-path wasm4pm/Cargo.toml --bench closed_claw --locked -- --output-format bencher >>"$log" 2>&1; then
+                claw_status=pass
+              else
+                claw_status=fail
+                overall=1
+              fi
+
               if corepack pnpm install --frozen-lockfile --ignore-scripts >>"$log" 2>&1 \
                 && (cd wasm4pm && corepack pnpm run build:nodejs --quiet) >>"$log" 2>&1 \
                 && (cd wasm4pm && node benchmarks/wasm_bench_runner.js --ci) >>"$log" 2>&1; then
@@ -166,26 +179,25 @@ jobs:
               fi
             fi
 
-            printf '| `%s` | `%s` | %s | %s | %s | %s | %s | %s |\n' "$branch" "${sha:0:12}" "$activity" "$test_status" "$claw_status" "$fast_status" "$wasm_status" "$receipt_status" >> "$OUT/REPORT.md"
+            printf '| `%s` | `%s` | %s | %s | %s | %s | %s | %s |\n' \
+              "$branch" "${sha:0:12}" "$admission" "$test_status" "$claw_status" "$fast_status" "$wasm_status" "$receipt_status" >> "$OUT/REPORT.md"
 
             {
               echo
               echo "## $branch @ $sha"
               echo
-              echo "Admission: $admission; last activity: $activity"
+              echo "Admission: $admission; observed activity: $activity"
               echo
               echo '```text'
-              grep -E '^(test .* bench:|Benchmarking |[A-Za-z0-9_/:.-]+[[:space:]]+time:|RESULT|Throughput|throughput|ops/s|ns/iter|us/iter|ms/iter|PASS|FAIL|ERROR)' "$log" | tail -n 320 || true
+              grep -E '^(test .* bench:|Benchmarking |[A-Za-z0-9_/:.-]+[[:space:]]+time:|RESULT|Throughput|throughput|ops/s|ns/iter|us/iter|ms/iter|PASS|FAIL|ERROR|benchmark receipt:|verified:)' "$log" | tail -n 1200 || true
               echo '```'
             } >> "$OUT/REPORT.md"
-          done < "$OUT/branches.tsv"
+          done < "$OUT/subjects.tsv"
 
           git checkout --detach "$ORCH_SHA" >/dev/null 2>&1 || true
           cp "$OUT/REPORT.md" "$GITHUB_WORKSPACE/benchmark-last24h-report.md"
-          cp "$OUT/branches.tsv" "$GITHUB_WORKSPACE/benchmark-last24h-branches.tsv"
+          cp "$OUT/subjects.tsv" "$GITHUB_WORKSPACE/benchmark-last24h-subjects.tsv"
           cp "$OUT/activity.tsv" "$GITHUB_WORKSPACE/benchmark-last24h-activity.tsv"
-
-          echo "--- report ---"
           cat "$OUT/REPORT.md"
           exit "$overall"
 
@@ -196,7 +208,7 @@ jobs:
           name: wasm4pm-last24h-benchmark-evidence
           path: |
             benchmark-last24h-report.md
-            benchmark-last24h-branches.tsv
+            benchmark-last24h-subjects.tsv
             benchmark-last24h-activity.tsv
             ${{ runner.temp }}/wasm4pm-last24h/logs
           if-no-files-found: error
