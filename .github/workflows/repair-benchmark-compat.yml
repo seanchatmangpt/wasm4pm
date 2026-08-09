@@ -35,18 +35,19 @@ jobs:
               Path('wasm4pm/benches/closed_claw/pipeline_e_manufacturing.rs'):
                   ('use std::collections::HashMap;', 'use std::collections::BTreeMap as HashMap;'),
               Path('wasm4pm/package.json'):
-                  ('wasm-pack build --target nodejs --mode no-install', 'wasm-pack build --target nodejs'),
+                  ('wasm-pack build --target nodejs --mode no-install --release --features cloud', 'wasm-pack build --target nodejs --release --features cloud'),
           }
 
           changed = []
           for path, (old, new) in replacements.items():
               text = path.read_text()
-              if new in text:
+              if old in text:
+                  path.write_text(text.replace(old, new, 1))
+                  changed.append(str(path))
+              elif new in text:
                   continue
-              if old not in text:
-                  raise SystemExit(f'expected text not found: {path}: {old}')
-              path.write_text(text.replace(old, new, 1))
-              changed.append(str(path))
+              else:
+                  raise SystemExit(f'neither expected old nor admitted new text found: {path}')
 
           Path('/tmp/changed').write_text('\n'.join(changed))
           PY
