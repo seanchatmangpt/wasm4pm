@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
           ref: agent/validate-last24h-benchmarks-20260809
 
-      - name: Repair benchmark source and toolchain compatibility
+      - name: Repair benchmark source and WASM build compatibility
         id: repair
         shell: bash
         run: |
@@ -34,8 +34,8 @@ jobs:
                   ('use std::collections::HashMap;', 'use std::collections::BTreeMap as HashMap;'),
               Path('wasm4pm/benches/closed_claw/pipeline_e_manufacturing.rs'):
                   ('use std::collections::HashMap;', 'use std::collections::BTreeMap as HashMap;'),
-              Path('.github/workflows/benchmark-last24h.yml'):
-                  ('cargo install wasm-pack --version 0.13.1 --locked', 'cargo install wasm-pack --version 0.13.1 --locked\n            cargo install wasm-bindgen-cli --version 0.2.100 --locked'),
+              Path('wasm4pm/package.json'):
+                  ('wasm-pack build --target nodejs --mode no-install', 'wasm-pack build --target nodejs'),
           }
 
           changed = []
@@ -56,7 +56,7 @@ jobs:
             cat /tmp/changed
           else
             echo 'changed=false' >> "$GITHUB_OUTPUT"
-            echo 'benchmark sources and toolchain bootstrap already compatible'
+            echo 'benchmark sources and WASM build already compatible'
           fi
 
       - name: Commit repaired benchmark surfaces
@@ -67,11 +67,11 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add \
-            .github/workflows/benchmark-last24h.yml \
+            wasm4pm/package.json \
             wasm4pm/benches/closed_claw/pipeline_b_conformance.rs \
             wasm4pm/benches/closed_claw/pipeline_c_ocel.rs \
             wasm4pm/benches/closed_claw/pipeline_d_semantic.rs \
             wasm4pm/benches/closed_claw/pipeline_e_manufacturing.rs
           git diff --cached --check
-          git commit -m 'fix(bench): align closed-claw maps and wasm-bindgen toolchain'
+          git commit -m 'fix(bench): align closed-claw maps and WASM build toolchain'
           git push origin HEAD:agent/validate-last24h-benchmarks-20260809
