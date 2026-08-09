@@ -16,7 +16,7 @@
 //!   G5 Report    -- metrics: node_count, edge_count, fitness, precision
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap as HashMap;
 use std::time::Duration;
 use wasm4pm::algorithms::discover_alpha_plus_plus;
 use wasm4pm::models::*;

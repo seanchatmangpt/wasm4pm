@@ -15,7 +15,7 @@
 //!   G5 Report    -- metrics: fitness, deviations, activity stats, utilization
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap as HashMap;
 use std::time::Duration;
 use wasm4pm::models::*;
 use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
