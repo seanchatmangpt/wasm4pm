@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "wasm-pack build --target bundler --out-dir pkg-bundler --mode no-install --all-features",
-    "build:nodejs": "wasm-pack build --target nodejs --mode no-install --release --features cloud",
+    "build:nodejs": "wasm-pack build --target nodejs --release --features cloud",
     "build:web": "wasm-pack build --target web --out-dir pkg-web --mode no-install",
     "build:all": "npm run build && npm run build:web && npm run build:nodejs",
     "build:profiles": "npm run build:mobile && npm run build:iot && npm run build:edge && npm run build:fog && npm run build:browser",
