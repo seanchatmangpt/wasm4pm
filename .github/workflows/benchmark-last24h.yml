@@ -28,14 +28,19 @@ jobs:
           set -euo pipefail
           git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
 
-      - name: Install pinned Rust toolchain
+      - name: Install pinned Rust and WASM toolchain
         shell: bash
         run: |
           set -euo pipefail
           rustup toolchain install nightly-2026-04-15 --profile minimal
           rustup default nightly-2026-04-15
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2026-04-15
+          if ! command -v wasm-pack >/dev/null 2>&1; then
+            cargo install wasm-pack --version 0.13.1 --locked
+          fi
           rustc --version
           cargo --version
+          wasm-pack --version
 
       - name: Install pnpm through Corepack
         shell: bash
@@ -44,46 +49,82 @@ jobs:
           corepack enable
           corepack pnpm --version
 
-      - name: Enumerate and benchmark recent branch heads
+      - name: Enumerate GitHub branch activity and benchmark exact current heads
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -uo pipefail
           ORCH_SHA="$(git rev-parse HEAD)"
-          CUTOFF="$(( $(date -u +%s) - 86400 ))"
+          NOW_EPOCH="$(date -u +%s)"
+          CUTOFF="$(( NOW_EPOCH - 86400 ))"
+          CUTOFF_ISO="$(date -u -d "@$CUTOFF" +%Y-%m-%dT%H:%M:%SZ)"
           OUT="$RUNNER_TEMP/wasm4pm-last24h"
           mkdir -p "$OUT/logs"
 
           printf '# wasm4pm branch benchmark receipt\n\n' > "$OUT/REPORT.md"
           printf -- '- orchestration_sha: `%s`\n' "$ORCH_SHA" >> "$OUT/REPORT.md"
-          printf -- '- cutoff_utc: `%s`\n' "$(date -u -d "@$CUTOFF" +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT/REPORT.md"
+          printf -- '- activity_cutoff_utc: `%s`\n' "$CUTOFF_ISO" >> "$OUT/REPORT.md"
+          printf -- '- admission: GitHub repository `PushEvent`/branch `CreateEvent` activity in the last 24h; exact current branch head executed\n' >> "$OUT/REPORT.md"
+          printf -- '- baseline: `main` is always included even if it has no qualifying event\n' >> "$OUT/REPORT.md"
           printf -- '- runner: `%s`\n' "${RUNNER_OS}-${RUNNER_ARCH}" >> "$OUT/REPORT.md"
           printf -- '- rust: `%s`\n' "$(rustc --version)" >> "$OUT/REPORT.md"
-          printf -- '- node: `%s`\n\n' "$(node --version)" >> "$OUT/REPORT.md"
-          printf '| Branch | SHA | Head time (UTC) | cargo test | closed_claw | fast_algorithms | WASM CI | receipt verify |\n' >> "$OUT/REPORT.md"
+          printf -- '- node: `%s`\n' "$(node --version)" >> "$OUT/REPORT.md"
+          printf -- '- wasm-pack: `%s`\n\n' "$(wasm-pack --version)" >> "$OUT/REPORT.md"
+          printf '| Branch | SHA | Last branch activity (UTC) | cargo test | closed_claw | fast_algorithms | WASM CI | receipt verify |\n' >> "$OUT/REPORT.md"
           printf '|---|---|---|---:|---:|---:|---:|---:|\n' >> "$OUT/REPORT.md"
 
+          : > "$OUT/events.jsonl"
+          for page in 1 2 3; do
+            body="$(curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/events?per_page=100&page=$page")" || exit 2
+            count="$(printf '%s' "$body" | jq 'length')"
+            printf '%s' "$body" | jq -c '.[]' >> "$OUT/events.jsonl"
+            [ "$count" -lt 100 ] && break
+          done
+
+          jq -r --arg cutoff "$CUTOFF_ISO" '
+            select(.created_at >= $cutoff) |
+            if .type == "PushEvent" and (.payload.ref // "" | startswith("refs/heads/")) then
+              [(.payload.ref | sub("^refs/heads/"; "")), .created_at] | @tsv
+            elif .type == "CreateEvent" and .payload.ref_type == "branch" then
+              [.payload.ref, .created_at] | @tsv
+            else empty end
+          ' "$OUT/events.jsonl" \
+          | awk -F '\t' '{ if (!seen[$1] || $2 > seen[$1]) seen[$1]=$2 } END { for (b in seen) print b "\t" seen[b] }' \
+          | sort > "$OUT/activity.tsv"
+
           : > "$OUT/branches.tsv"
-          while IFS='|' read -r ref sha epoch; do
-            branch="${ref#origin/}"
-            [ "$ref" = "origin/HEAD" ] && continue
+          while IFS=$'\t' read -r branch activity; do
+            [ -n "$branch" ] || continue
             case "$branch" in agent/validate-last24h-benchmarks-*) continue ;; esac
-            if [ "${epoch:-0}" -ge "$CUTOFF" ]; then
-              printf '%s\t%s\t%s\n' "$branch" "$sha" "$epoch" >> "$OUT/branches.tsv"
+            if sha="$(git rev-parse --verify "refs/remotes/origin/$branch" 2>/dev/null)"; then
+              printf '%s\t%s\t%s\tactivity\n' "$branch" "$sha" "$activity" >> "$OUT/branches.tsv"
             fi
-          done < <(git for-each-ref refs/remotes/origin --format='%(refname:short)|%(objectname)|%(committerdate:unix)' | sort)
+          done < "$OUT/activity.tsv"
+
+          if ! awk -F '\t' '$1=="main" {found=1} END{exit !found}' "$OUT/branches.tsv"; then
+            sha="$(git rev-parse --verify refs/remotes/origin/main)"
+            activity="$(git show -s --format=%cI "$sha")"
+            printf 'main\t%s\t%s\tbaseline\n' "$sha" "$activity" >> "$OUT/branches.tsv"
+          fi
+          sort -u -o "$OUT/branches.tsv" "$OUT/branches.tsv"
 
           branch_count="$(wc -l < "$OUT/branches.tsv" | tr -d ' ')"
-          printf '\nDiscovered **%s** branch heads whose head commit time is within the 24-hour admission window.\n\n' "$branch_count" >> "$OUT/REPORT.md"
+          activity_count="$(awk -F '\t' '$4=="activity"{n++} END{print n+0}' "$OUT/branches.tsv")"
+          printf '\nDiscovered **%s** GitHub-active branch heads plus mandatory `main` baseline as needed; **%s** subjects total.\n\n' "$activity_count" "$branch_count" >> "$OUT/REPORT.md"
 
           overall=0
-          while IFS=$'\t' read -r branch sha epoch; do
+          while IFS=$'\t' read -r branch sha activity admission; do
             [ -n "$branch" ] || continue
             safe="$(printf '%s' "$branch" | tr '/ ' '__')"
             log="$OUT/logs/$safe.log"
-            head_time="$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)"
-            echo "===== $branch @ $sha =====" | tee "$log"
+            echo "===== $branch @ $sha ($admission) =====" | tee "$log"
 
-            git checkout --detach "$sha" >>"$log" 2>&1 || { printf '| `%s` | `%s` | %s | checkout-fail | - | - | - | - |\n' "$branch" "${sha:0:12}" "$head_time" >> "$OUT/REPORT.md"; overall=1; continue; }
+            git checkout --detach "$sha" >>"$log" 2>&1 || { printf '| `%s` | `%s` | %s | checkout-fail | - | - | - | - |\n' "$branch" "${sha:0:12}" "$activity" >> "$OUT/REPORT.md"; overall=1; continue; }
             git clean -ffdqx >>"$log" 2>&1 || true
 
             test_status=na
@@ -125,14 +166,16 @@ jobs:
               fi
             fi
 
-            printf '| `%s` | `%s` | %s | %s | %s | %s | %s | %s |\n' "$branch" "${sha:0:12}" "$head_time" "$test_status" "$claw_status" "$fast_status" "$wasm_status" "$receipt_status" >> "$OUT/REPORT.md"
+            printf '| `%s` | `%s` | %s | %s | %s | %s | %s | %s |\n' "$branch" "${sha:0:12}" "$activity" "$test_status" "$claw_status" "$fast_status" "$wasm_status" "$receipt_status" >> "$OUT/REPORT.md"
 
             {
               echo
               echo "## $branch @ $sha"
               echo
+              echo "Admission: $admission; last activity: $activity"
+              echo
               echo '```text'
-              grep -E '^(test .* bench:|Benchmarking |[A-Za-z0-9_/:.-]+[[:space:]]+time:|RESULT|Throughput|throughput|ops/s|ns/iter|us/iter|ms/iter|PASS|FAIL|ERROR)' "$log" | tail -n 240 || true
+              grep -E '^(test .* bench:|Benchmarking |[A-Za-z0-9_/:.-]+[[:space:]]+time:|RESULT|Throughput|throughput|ops/s|ns/iter|us/iter|ms/iter|PASS|FAIL|ERROR)' "$log" | tail -n 320 || true
               echo '```'
             } >> "$OUT/REPORT.md"
           done < "$OUT/branches.tsv"
@@ -140,6 +183,7 @@ jobs:
           git checkout --detach "$ORCH_SHA" >/dev/null 2>&1 || true
           cp "$OUT/REPORT.md" "$GITHUB_WORKSPACE/benchmark-last24h-report.md"
           cp "$OUT/branches.tsv" "$GITHUB_WORKSPACE/benchmark-last24h-branches.tsv"
+          cp "$OUT/activity.tsv" "$GITHUB_WORKSPACE/benchmark-last24h-activity.tsv"
 
           echo "--- report ---"
           cat "$OUT/REPORT.md"
@@ -153,6 +197,7 @@ jobs:
           path: |
             benchmark-last24h-report.md
             benchmark-last24h-branches.tsv
+            benchmark-last24h-activity.tsv
             ${{ runner.temp }}/wasm4pm-last24h/logs
           if-no-files-found: error
           retention-days: 30
