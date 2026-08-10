@@ -1,0 +1,27 @@
+{%- set batches = sparql(query='PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#> SELECT ?value WHERE { ?x a cb:BatchScale ; cb:value ?value . } ORDER BY ?value') -%}
+{%- set noise = sparql(query='PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#> SELECT ?value WHERE { ?x a cb:ContextScale ; cb:value ?value . } ORDER BY ?value') -%}
+# Cognition Benchmark Manufacturing
+
+> ggen projection from `benchmark-manufacturing/ontology.ttl`. Do not hand-edit.
+
+The benchmark court admits **{{ results[0]["expected"] }} canonical cognition breeds** from `BreedId::ALL`.
+
+## Manufacture topology
+
+`canonical cognition ontology -> DSPy SELECT -> deterministic admission -> ggen CONSTRUCT -> Divan/contract/docs -> execution -> receipt`
+
+DSPy is allowed to explore benchmark designs. Its output is never executable by itself. Admission must preserve the canonical breed inventory and the anti-hiding lower bounds. ggen deterministically projects admitted law into repository-native benchmark surfaces. Neither tool receives DO authority.
+
+## Anti-hiding matrix
+
+Batch scales: {% for row in batches %}`{{ row["value"] }}`{% if not loop.last %}, {% endif %}{% endfor %}.
+
+Adversarial irrelevant-context scales: {% for row in noise %}`{{ row["value"] }}`{% if not loop.last %}, {% endif %}{% endfor %} facts.
+
+Every breed is measured on `kernel_only` and `full_lifecycle`; every breed is also measured under context pressure. Allocation profiling and throughput counters are mandatory. Fixtures must be grounded, falsifiable, non-empty, and executable through both raw and lawful dispatch paths.
+
+## Standing law
+
+A prompt, DSPy prediction, RDF graph, ggen plan, rendered source file, queued workflow, or benchmark name is not a performance receipt. `ALIVE` requires execution of the exact admitted subject and independent verification that all canonical breeds and required measurement points are present.
+
+`SELECT != CONSTRUCT != DO`; benchmark actuation remains `REFUSED`.
