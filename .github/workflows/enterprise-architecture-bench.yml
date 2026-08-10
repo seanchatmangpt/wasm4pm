@@ -1,0 +1,75 @@
+name: Challenger enterprise architecture benchmark
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+    paths:
+      - 'wasm4pm/benches/enterprise_architecture.rs'
+      - 'wasm4pm/bench_data/receipt.xes'
+      - 'wasm4pm/src/**'
+      - 'wasm4pm/Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/enterprise-architecture-bench.yml'
+      - 'docs/benchmarks/challenger-enterprise-architecture.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  enterprise-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+          rustup default nightly-2026-04-15
+          rustc --version
+          cargo --version
+
+      - name: Identify exact evidence subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "head_sha=$(git rev-parse HEAD)"
+            echo "dataset_sha256=$(sha256sum wasm4pm/bench_data/receipt.xes | cut -d' ' -f1)"
+            echo "dataset_bytes=$(wc -c < wasm4pm/bench_data/receipt.xes | tr -d ' ')"
+          } | tee enterprise-subject.txt
+
+      - name: Compile and execute enterprise architecture rail
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo bench --manifest-path wasm4pm/Cargo.toml --bench enterprise_architecture --locked 2>&1 | tee enterprise-benchmark.log
+
+      - name: Manufacture benchmark receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cat enterprise-subject.txt 2>/dev/null || true
+            echo "log_sha256=$(sha256sum enterprise-benchmark.log 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+          } | tee enterprise-receipt.txt
+
+      - name: Upload exact-head benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenger-enterprise-architecture-${{ github.sha }}
+          path: |
+            enterprise-subject.txt
+            enterprise-benchmark.log
+            enterprise-receipt.txt
+            target/criterion/challenger
+          if-no-files-found: warn
+          retention-days: 30
