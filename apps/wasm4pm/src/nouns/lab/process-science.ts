@@ -22,26 +22,6 @@ const PROCESS_FAMILIES = [
   ],
 ] as const;
 
-interface ParsedArgs {
-  input?: string;
-  output?: string;
-}
-
-function parseArgs(rawArgs: readonly string[]): ParsedArgs {
-  const parsed: ParsedArgs = {};
-  for (let i = 0; i < rawArgs.length; i += 1) {
-    const arg = rawArgs[i];
-    if (arg === '--input' || arg === '-i') {
-      parsed.input = rawArgs[i + 1];
-      i += 1;
-    } else if (arg === '--output' || arg === '-o') {
-      parsed.output = rawArgs[i + 1];
-      i += 1;
-    }
-  }
-  return parsed;
-}
-
 function countXmlElements(xml: string, name: 'trace' | 'event'): number {
   const pattern = new RegExp(`<${name}(?:\\s|>)`, 'g');
   return xml.match(pattern)?.length ?? 0;
@@ -63,16 +43,33 @@ export const processScienceVerb = defineVerb({
   summary:
     'Admit an XES evidence file and manufacture a deterministic data-science -> process-science operator plan',
   stability: 'experimental',
-  handler: async (_args, ctx) => {
-    const parsed = parseArgs(ctx.rawArgs);
-    if (!parsed.input) {
+  args: {
+    input: {
+      type: 'string',
+      description: 'XES evidence file to admit.',
+      required: true,
+    },
+    output: {
+      type: 'string',
+      description: 'Optional directory for deterministic process-science.json projection.',
+    },
+  } as const,
+  machine: {
+    authority: 'CONSTRUCT',
+    effects: ['STDOUT', 'STDERR', 'FILESYSTEM', 'TELEMETRY'],
+    idempotency: 'IDEMPOTENT',
+    determinism: 'INPUT_DETERMINISTIC',
+    receipts: 'REQUIRED',
+  },
+  handler: async (args) => {
+    if (!args.input) {
       return refusal(
         'PROCESS_SCIENCE_INPUT_REQUIRED',
         'usage: wpm lab process-science --input <log.xes> [--output <directory>]'
       );
     }
 
-    const inputPath = path.resolve(parsed.input);
+    const inputPath = path.resolve(args.input);
     let bytes: Buffer;
     try {
       bytes = fs.readFileSync(inputPath);
@@ -123,8 +120,8 @@ export const processScienceVerb = defineVerb({
     };
 
     let outputFile: string | undefined;
-    if (parsed.output) {
-      const outputDirectory = path.resolve(parsed.output);
+    if (args.output) {
+      const outputDirectory = path.resolve(args.output);
       try {
         fs.mkdirSync(outputDirectory, { recursive: true });
         outputFile = path.join(outputDirectory, 'process-science.json');
