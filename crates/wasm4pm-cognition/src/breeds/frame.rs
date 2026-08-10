@@ -16,7 +16,7 @@
 //! patterns are supplied, a built-in Rogerian script is used.
 
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
+use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::BTreeMap;
 
 /// Frame / ELIZA breed.
@@ -333,8 +333,10 @@ fn substitute_input(text: &str) -> String {
         .join(" ")
 }
 
-fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<(String, String)> {
-    // Build keyword table: keyword(uppercase) → rules in order
+/// Build the keyword table once (keyword(uppercase) → decomposition/reassembly
+/// rules in order) -- shared across every utterance in a multi-turn call, not
+/// rebuilt per turn.
+fn build_keyword_table(input: &BreedInput) -> BTreeMap<String, Vec<(Vec<DecompComp>, String)>> {
     let mut table: BTreeMap<String, Vec<(Vec<DecompComp>, String)>> = BTreeMap::new();
     for rule in &input.rules {
         let keyword = rule
@@ -354,13 +356,24 @@ fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<
             .or_default()
             .push((decomp, rule.conclusion.clone()));
     }
+    table
+}
 
-    // Apply input substitutions, then tokenize
-    let subst = substitute_input(&input.intent);
+/// Weizenbaum 1966's real per-utterance algorithm: substitute pronouns,
+/// scan for the first matching keyword, follow any equivalence chain, try
+/// decomposition/reassembly rules in order, fall back to the NONE keyword.
+/// Extracted from the original single-utterance `run_keyword_engine` so the
+/// exact same logic runs once per conversational turn (see
+/// `run_multi_turn_keyword_engine`), not just once against `input.intent`.
+fn process_utterance(
+    utterance: &str,
+    table: &BTreeMap<String, Vec<(Vec<DecompComp>, String)>>,
+    trace: &mut Vec<TraceStep>,
+) -> Option<(String, String)> {
+    let subst = substitute_input(utterance);
     let tokens: Vec<String> = subst.split_whitespace().map(String::from).collect();
 
-    // Scan original tokens for first matching keyword
-    let orig_tokens: Vec<String> = input.intent.split_whitespace().map(String::from).collect();
+    let orig_tokens: Vec<String> = utterance.split_whitespace().map(String::from).collect();
     let mut found_keyword: Option<String> = None;
     'scan: for tok in &orig_tokens {
         let clean = tok
@@ -432,6 +445,66 @@ fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<
     None
 }
 
+/// Single-utterance entry point (backward compatible): processes only
+/// `input.intent`, exactly as this function always did.
+fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<(String, String)> {
+    let table = build_keyword_table(input);
+    process_utterance(&input.intent, &table, trace)
+}
+
+/// Multi-turn entry point: when `input.facts` supplies a conversational
+/// transcript as `utterance:1`, `utterance:2`, ... (numerically ordered,
+/// not insertion order -- fixtures may list them out of order), process
+/// EVERY utterance through the same real keyword engine, sequentially,
+/// within this one `run()` call.
+///
+/// Found and fixed this session: the original implementation only ever read
+/// `input.intent` (turn 1) and silently ignored any `utterance:N` facts for
+/// N > 1, even though they were real input data the caller supplied -- not
+/// an inherent "one call = one turn" limitation, since `BreedOutput` already
+/// carries multiple facts/trace steps from one call for other breeds.
+///
+/// Returns `None` if `input.facts` has no `utterance:` keys at all (caller
+/// falls back to the single-utterance path).
+fn run_multi_turn_keyword_engine(
+    input: &BreedInput,
+    trace: &mut Vec<TraceStep>,
+) -> Option<Vec<(String, String, String)>> {
+    let mut utterances: Vec<(u32, &str)> = input
+        .facts
+        .iter()
+        .filter_map(|f| {
+            let n: u32 = f.key.strip_prefix("utterance:")?.parse().ok()?;
+            Some((n, f.value.as_str()))
+        })
+        .collect();
+    if utterances.is_empty() {
+        return None;
+    }
+    utterances.sort_by_key(|(n, _)| *n);
+
+    let table = build_keyword_table(input);
+    let mut turns: Vec<(String, String, String)> = Vec::new();
+    for (n, utterance) in utterances {
+        trace.push(TraceStep {
+            step: trace.len(),
+            kind: "turn-start".to_string(),
+            detail: format!("turn_{n}: {utterance}"),
+            depth: 0,
+            objects: vec![],
+        });
+        match process_utterance(utterance, &table, trace) {
+            Some((keyword, response)) => turns.push((format!("turn_{n}"), keyword, response)),
+            None => turns.push((
+                format!("turn_{n}"),
+                "NONE".to_string(),
+                "PLEASE GO ON".to_string(),
+            )),
+        }
+    }
+    Some(turns)
+}
+
 // ── Catch-all wildcard engine (unchanged) ────────────────────────────────────
 
 impl CognitionBreed for Eliza {
@@ -455,6 +528,39 @@ impl CognitionBreed for Eliza {
 
         // Keyword engine path (Weizenbaum 1966 full algorithm)
         if !input.rules.is_empty() {
+            // Multi-turn: input.facts supplies a real "utterance:N" transcript
+            // -- process every turn, not just input.intent (turn 1 only).
+            if let Some(turns) = run_multi_turn_keyword_engine(input, &mut trace) {
+                let mut facts = input.facts.clone();
+                for (turn_key, keyword, response) in &turns {
+                    facts.push(Fact {
+                        key: format!("{turn_key}_keyword"),
+                        value: keyword.clone(),
+                    });
+                    facts.push(Fact {
+                        key: format!("{turn_key}_response"),
+                        value: response.clone(),
+                    });
+                }
+                // Final selected/explanation reflect the LAST turn -- the
+                // conversation's current state, matching the semantics a
+                // single-utterance call already had (its one and only turn).
+                let (_, last_keyword, last_response) = turns
+                    .last()
+                    .cloned()
+                    .expect("run_multi_turn_keyword_engine returns Some only for non-empty turns");
+                return Ok(BreedOutput {
+                    breed: BreedId::Eliza,
+                    candidates: input.candidates.clone(),
+                    facts,
+                    selected: Some(last_keyword),
+                    explanation: last_response,
+                    inference_trace: trace,
+                    ocel_log: None,
+                    retained_cases: vec![],
+                });
+            }
+
             if let Some((keyword, response)) = run_keyword_engine(input, &mut trace) {
                 return Ok(BreedOutput {
                     breed: BreedId::Eliza,

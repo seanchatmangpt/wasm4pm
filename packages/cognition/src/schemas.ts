@@ -163,6 +163,12 @@ export const BreedOutputSchema = z.object({
   selected: z.string().nullable().optional(),
   explanation: z.string(),
   inference_trace: z.array(TraceStepSchema).optional(),
+  // Real Rust field (crates/wasm4pm-cognition/src/breeds/mod.rs::BreedOutput,
+  // `#[serde(default)] pub retained_cases: Vec<Case>`) that this schema was
+  // silently dropping before this fix -- Zod strips unknown keys by default,
+  // so CBR's real Retain-stage output (a genuinely computed new Case) never
+  // reached any external caller even though the engine always produced it.
+  retained_cases: z.array(CaseSchema).optional(),
 });
 export type BreedOutput = z.infer<typeof BreedOutputSchema>;
 

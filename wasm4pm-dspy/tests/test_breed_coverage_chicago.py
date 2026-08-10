@@ -94,11 +94,23 @@ def _expected_leaves(expected: dict, prefix: str = "") -> list[tuple[str, object
 
 
 def _output_text(result) -> str:
+    # retained_cases (CBR's Retain stage) was silently dropped by the TS
+    # BreedOutputSchema (Zod strips unknown keys by default) until this
+    # session -- included here now that packages/cognition/src/schemas.ts
+    # actually declares the field, so the real, already-computed retained
+    # case is finally checkable instead of permanently invisible.
+    retained_text = " ".join(
+        f"{k}={v}"
+        for case in result.raw_output.get("retained_cases", [])
+        for k, v in case.items()
+        if isinstance(v, (str, int, float))
+    )
     parts = [
         str(result.selected or ""),
         str(result.explanation or ""),
         " ".join(f"{f.get('key')}={f.get('value')}" for f in result.raw_output.get("facts", [])),
         " ".join(f"{t.get('kind')}:{t.get('detail')}" for t in result.inference_trace),
+        retained_text,
     ]
     # Whitespace after commas varies between fixture prose and engine
     # explanations ("x=6,y=3" vs "x=6, y=3") -- normalize before matching,
@@ -186,17 +198,32 @@ def _check_leaf(key: str, value: object, text: str, raw_facts: list[dict], resul
 # comparing its real output to the paper's expected answer this session.
 _KNOWN_GAPS: dict[str, str] = {
     "cbr": (
-        "Real run only performs CBR's Retrieve stage (confirmed: 'retrieved_case' "
-        "matches); 'suggested_solution'/'revise_needed'/'retain_action' describe "
-        "the paper's full Retrieve-Reuse-Revise-Retain cycle, which a single "
-        "stateless cognition_run cannot execute end-to-end."
+        "Corrected this session: the breed already implements the full "
+        "Retrieve-Reuse-Revise-Retain cycle in one call (confirmed via source "
+        "read), it was never a 'single-shot can't do this' limitation. The real "
+        "blocker was that packages/cognition/src/schemas.ts's BreedOutputSchema "
+        "silently dropped Retain's real output (retained_cases) at the JS "
+        "boundary -- fixed (schemas.ts now declares the field, checked here via "
+        "_output_text). 'retrieved_case' and the core "
+        "'suggested_solution' answer ('antibiotic-course', confirmed via "
+        "result.selected) both match. Remaining misses are fixture prose "
+        "duplicating that same data with human commentary ('... no adaptation "
+        "needed because ...') plus 'revise_needed'/'retain_action', which have "
+        "no explicit boolean/text signal in the breed's real output (a genuine, "
+        "small, separately-scoped enhancement -- emit a revise_needed fact -- "
+        "not attempted this session)."
     ),
     "eliza": (
-        "The fixture supplies 6 conversational utterances expecting 3 paper-"
-        "documented exchange turns; a single cognition_run only processes and "
-        "returns the first (turn_1's keyword/reassembly are confirmed correct: "
-        "ALIKE -> DIT -> 'IN WHAT WAY'). turn_2/turn_3 require multi-turn "
-        "session state (cognition_session_turn), not exercised by this bridge."
+        "Fixed this session (crates/wasm4pm-cognition/src/breeds/frame.rs): the "
+        "breed now processes every utterance:N fact as a real conversational turn, "
+        "not just input.intent. All 3 documented turns' 'eliza_response' values "
+        "match exactly (turn_2 'CAN YOU THINK OF A SPECIFIC EXAMPLE' verbatim; "
+        "turn_1/turn_3 case-insensitively). Remaining misses are fixture prose "
+        "duplicating that same data with human commentary the engine never "
+        "produces verbatim ('ALIKE (rank 10, equivalenced to DIT)', arrow-notation "
+        "'reassembly' templates) plus 'detected_theme', a thematic interpretation "
+        "with no corresponding capability in the breed -- same category as "
+        "mycin's rationale fields below, not a missing-data gap."
     ),
     "mycin": (
         "'therapy_cf': 0.9 in the fixture is the RULE's own stated certainty; "
