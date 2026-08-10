@@ -1,0 +1,125 @@
+name: Cognition 55 Divan falsification
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+    paths:
+      - 'crates/wasm4pm-cognition/**'
+      - 'Cargo.lock'
+      - '.github/workflows/cognition-55-divan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cognition-divan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pinned Rust
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+          rustup default nightly-2026-04-15
+          rustc --version | tee cognition-rust.txt
+          cargo --version | tee -a cognition-rust.txt
+
+      - name: Materialize exact Divan lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo generate-lockfile
+          if ! git diff --quiet -- Cargo.lock; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add Cargo.lock
+            git commit -m 'bench: lock cognition Divan toolchain'
+            git push origin HEAD:agent/validate-last24h-benchmarks-20260809
+          fi
+          {
+            echo "head_sha=$(git rev-parse HEAD)"
+            echo "cargo_lock_sha256=$(sha256sum Cargo.lock | cut -d' ' -f1)"
+            echo "rust=$(rustc --version)"
+            echo "cargo=$(cargo --version)"
+          } | tee cognition-subject.txt
+
+      - name: 55-of-55 benchmark admission contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p wasm4pm-cognition --test divan_benchmark_contract -- --nocapture \
+            2>&1 | tee cognition-admission.log
+
+      - name: Paper-grounded falsification gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p wasm4pm-cognition --test paper_falsification -- --nocapture \
+            2>&1 | tee cognition-paper-falsification.log
+
+      - name: Universal adversary-killing gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p wasm4pm-cognition --features breed-oracles --test universal_anticheat -- --nocapture \
+            2>&1 | tee cognition-universal-anticheat.log
+
+      - name: Execute full 55-cognition Divan matrix
+        shell: bash
+        env:
+          DIVAN_MIN_TIME: '0.25'
+          DIVAN_MAX_TIME: '1.0'
+        run: |
+          set -euo pipefail
+          cargo bench -p wasm4pm-cognition --bench cognition_divan -- \
+            --min-time 0.25 --max-time 1.0 \
+            2>&1 | tee cognition-divan.log
+
+      - name: Refuse incomplete benchmark output
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          log = Path('cognition-divan.log').read_text()
+          required = ['kernel_only', 'full_lifecycle', 'context_pressure']
+          missing = [name for name in required if name not in log]
+          if missing:
+              raise SystemExit(f'REFUSED:COGNITION_DIVAN_SURFACE_MISSING:{missing}')
+          if len(log) < 10_000:
+              raise SystemExit(f'REFUSED:COGNITION_DIVAN_LOG_TOO_SMALL:{len(log)}')
+
+          sha = hashlib.sha256(log.encode()).hexdigest()
+          Path('cognition-divan-receipt.txt').write_text(
+              Path('cognition-subject.txt').read_text()
+              + f'divan_log_sha256={sha}\n'
+              + 'admitted_cognitions=55\n'
+              + 'benchmark_surfaces=kernel_only,full_lifecycle,context_pressure\n'
+              + 'semantic_gates=divan_benchmark_contract,paper_falsification,universal_anticheat\n'
+          )
+          print(Path('cognition-divan-receipt.txt').read_text())
+          PY
+
+      - name: Upload cognition benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cognition-55-divan-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            cognition-subject.txt
+            cognition-rust.txt
+            cognition-admission.log
+            cognition-paper-falsification.log
+            cognition-universal-anticheat.log
+            cognition-divan.log
+            cognition-divan-receipt.txt
