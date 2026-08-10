@@ -3,6 +3,10 @@
 //! Performance numbers are meaningless when an implementation can avoid real work. This test
 //! therefore proves that every legally admitted cognition is benchmark-eligible through the
 //! exact full dispatch path before any timing result is accepted.
+//!
+//! Research-grade admission also requires a grounded paper fixture with a citation, a precise
+//! locus in the source, a non-empty expected falsifier, and enough semantic input to prevent
+//! an empty/default-input implementation from acquiring a flattering benchmark number.
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -19,12 +23,16 @@ fn fixture_path(id: BreedId) -> PathBuf {
         .join(format!("{}.json", id))
 }
 
-fn fixture_input(id: BreedId) -> BreedInput {
+fn fixture_json(id: BreedId) -> serde_json::Value {
     let path = fixture_path(id);
     let raw = fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("{}: benchmark fixture {} unavailable: {e}", id, path.display()));
-    let json: serde_json::Value = serde_json::from_str(&raw)
-        .unwrap_or_else(|e| panic!("{}: invalid benchmark fixture {}: {e}", id, path.display()));
+    serde_json::from_str(&raw)
+        .unwrap_or_else(|e| panic!("{}: invalid benchmark fixture {}: {e}", id, path.display()))
+}
+
+fn fixture_input(id: BreedId) -> BreedInput {
+    let json = fixture_json(id);
     let mut inp = json["input"].clone();
     let obj = inp
         .as_object_mut()
@@ -37,6 +45,10 @@ fn fixture_input(id: BreedId) -> BreedInput {
         .unwrap_or_else(|e| panic!("{}: fixture cannot deserialize as BreedInput: {e}", id))
 }
 
+fn nonempty_str<'a>(v: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    v.get(key).and_then(|x| x.as_str()).filter(|s| !s.trim().is_empty())
+}
+
 #[test]
 fn divan_matrix_is_exactly_the_55_admitted_cognitions() {
     assert_eq!(
@@ -46,6 +58,61 @@ fn divan_matrix_is_exactly_the_55_admitted_cognitions() {
     );
     let unique: BTreeSet<_> = BreedId::ALL.into_iter().collect();
     assert_eq!(unique.len(), 55, "BreedId::ALL contains duplicate cognition ids");
+}
+
+#[test]
+fn every_cognition_benchmark_is_paper_grounded_and_falsifiable() {
+    for id in BreedId::ALL {
+        let json = fixture_json(id);
+        assert_eq!(
+            json.get("breed").and_then(|x| x.as_str()),
+            Some(id.to_string().as_str()),
+            "{}: fixture identity is not bound to the benchmarked cognition",
+            id
+        );
+
+        let provenance = json
+            .get("provenance")
+            .and_then(|x| x.as_object())
+            .unwrap_or_else(|| panic!("{}: benchmark fixture has no provenance object", id));
+        let provenance_value = serde_json::Value::Object(provenance.clone());
+        for key in ["paper", "citation", "locus"] {
+            assert!(
+                nonempty_str(&provenance_value, key).is_some(),
+                "{}: benchmark fixture missing grounded provenance field {key}",
+                id
+            );
+        }
+        assert_eq!(
+            nonempty_str(&provenance_value, "extraction"),
+            Some("grounded"),
+            "{}: benchmark fixture must explicitly declare grounded extraction",
+            id
+        );
+
+        let expected = json
+            .get("expected")
+            .and_then(|x| x.as_object())
+            .unwrap_or_else(|| panic!("{}: benchmark fixture has no expected falsifier", id));
+        assert!(
+            !expected.is_empty(),
+            "{}: empty expected object would make the paper oracle vacuous",
+            id
+        );
+
+        let input = fixture_input(id);
+        let semantic_atoms = input.candidates.len()
+            + input.facts.len()
+            + input.cases.len()
+            + input.rules.len()
+            + input.goals.len()
+            + input.state.len();
+        assert!(
+            semantic_atoms > 0 || !input.intent.trim().is_empty(),
+            "{}: benchmark fixture is an empty/default cognition problem",
+            id
+        );
+    }
 }
 
 #[test]
