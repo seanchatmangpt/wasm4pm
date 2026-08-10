@@ -64,9 +64,10 @@ fn divan_matrix_is_exactly_the_55_admitted_cognitions() {
 fn every_cognition_benchmark_is_paper_grounded_and_falsifiable() {
     for id in BreedId::ALL {
         let json = fixture_json(id);
+        let id_text = id.to_string();
         assert_eq!(
             json.get("breed").and_then(|x| x.as_str()),
-            Some(id.to_string().as_str()),
+            Some(id_text.as_str()),
             "{}: fixture identity is not bound to the benchmarked cognition",
             id
         );
