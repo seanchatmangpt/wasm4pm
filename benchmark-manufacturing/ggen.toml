@@ -1,0 +1,55 @@
+[project]
+name = "wasm4pm-cognition-benchmark-manufacture"
+version = "1.0.0"
+description = "Deterministic projections from the admitted cognition benchmark graph"
+
+[ontology]
+source = "ontology.ttl"
+base_iri = "https://wasm4pm.dev/cognition-benchmark#"
+imports = ["ontology.ttl"]
+
+[ontology.prefixes]
+cb = "https://wasm4pm.dev/cognition-benchmark#"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xsd = "http://www.w3.org/2001/XMLSchema#"
+dcterms = "http://purl.org/dc/terms/"
+
+[validation]
+gates = ["gates/constitution.rq"]
+
+[generation]
+# No `generated/` tree. Canonical repository surfaces are projections of the admitted graph.
+output_dir = ".."
+
+[[generation.rules]]
+name = "cognition-divan-matrix"
+query = { inline = """
+PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#>
+SELECT ?expected WHERE { cb:BenchmarkProgram cb:expectedBreeds ?expected . } ORDER BY ?expected
+""" }
+template = { file = "templates/cognition_divan.rs.tera" }
+output_file = "crates/wasm4pm-cognition/benches/cognition_divan.rs"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "cognition-divan-contract"
+query = { inline = """
+PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#>
+SELECT ?expected WHERE { cb:BenchmarkProgram cb:expectedBreeds ?expected . } ORDER BY ?expected
+""" }
+template = { file = "templates/divan_benchmark_contract.rs.tera" }
+output_file = "crates/wasm4pm-cognition/tests/divan_benchmark_contract.rs"
+skip_empty = false
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "cognition-manufacturing-doc"
+query = { inline = """
+PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#>
+SELECT ?expected WHERE { cb:BenchmarkProgram cb:expectedBreeds ?expected . } ORDER BY ?expected
+""" }
+template = { file = "templates/cognition-manufacturing.md.tera" }
+output_file = "docs/benchmarks/cognition-manufacturing.md"
+skip_empty = false
+mode = "Overwrite"
