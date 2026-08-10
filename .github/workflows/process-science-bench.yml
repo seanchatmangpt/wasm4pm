@@ -10,6 +10,13 @@ on:
       - 'wasm4pm/bench_data/receipt.xes'
       - 'wasm4pm/src/**'
       - 'wasm4pm/Cargo.toml'
+      - 'apps/wasm4pm/src/nouns/lab/process-science.ts'
+      - 'apps/wasm4pm/src/nouns/lab/index.ts'
+      - 'apps/wasm4pm/src/__tests__/process-science-cli.chicago-fs.test.ts'
+      - 'apps/wasm4pm/package.json'
+      - 'apps/wasm4pm/tsconfig*.json'
+      - 'packages/testing/**'
+      - 'pnpm-lock.yaml'
       - 'Cargo.lock'
       - '.github/workflows/process-science-bench.yml'
       - 'docs/benchmarks/process-science.md'
@@ -34,6 +41,15 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Install Node workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+          node --version
+          corepack pnpm --version
+
       - name: Identify exact subject
         shell: bash
         run: |
@@ -41,6 +57,14 @@ jobs:
           echo "head_sha=$(git rev-parse HEAD)" | tee process-science-subject.txt
           echo "dataset_sha256=$(sha256sum wasm4pm/bench_data/receipt.xes | cut -d' ' -f1)" | tee -a process-science-subject.txt
           echo "dataset_bytes=$(wc -c < wasm4pm/bench_data/receipt.xes | tr -d ' ')" | tee -a process-science-subject.txt
+
+      - name: Build published wpm CLI
+        shell: bash
+        run: corepack pnpm --filter @wasm4pm/cli build
+
+      - name: Execute Chicago filesystem CLI tests
+        shell: bash
+        run: corepack pnpm --filter @wasm4pm/cli test -- src/__tests__/process-science-cli.chicago-fs.test.ts
 
       - name: Compile benchmark subject
         shell: bash
