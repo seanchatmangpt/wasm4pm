@@ -7,6 +7,8 @@
 //! - kernel-only and full-lifecycle timings are reported separately so shared OCEL/receipt
 //!   work cannot hide a slow cognition implementation;
 //! - geometric batch sizes expose fixed-cost, allocation, and throughput pathologies;
+//! - an adversarial context-pressure rail injects 0..4096 irrelevant facts so linear scans,
+//!   accidental quadratic work, and allocation blowups become visible as input size grows;
 //! - Divan's allocation profiler reports allocation count/bytes alongside latency;
 //! - inputs are generated outside the measured region and outputs are black-boxed;
 //! - the companion `divan_benchmark_contract` test makes missing/invalid fixtures a hard
@@ -19,7 +21,7 @@ use std::path::PathBuf;
 use divan::counter::ItemsCount;
 use divan::{black_box, AllocProfiler, Bencher};
 use wasm4pm_cognition::breeds::dispatch::{dispatch_breed_id, dispatch_breed_test_id};
-use wasm4pm_cognition::breeds::{BreedId, BreedInput};
+use wasm4pm_cognition::breeds::{BreedId, BreedInput, Fact};
 
 #[global_allocator]
 static ALLOC: AllocProfiler = AllocProfiler::system();
@@ -28,6 +30,11 @@ static ALLOC: AllocProfiler = AllocProfiler::system();
 /// not N repetitions hidden inside Divan's own sampler. This makes throughput scaling and
 /// per-execution allocation growth explicit in the report.
 const BATCHES: [usize; 4] = [1, 4, 16, 64];
+
+/// Adversarial enterprise-context sizes. These facts use a reserved benchmark namespace and
+/// are deliberately unrelated to the paper fixture. A cognition that needs only a narrow
+/// prefix/key should not accidentally become quadratic in the total observation envelope.
+const CONTEXT_NOISE: [usize; 4] = [0, 64, 512, 4096];
 
 #[derive(Clone, Copy, Debug)]
 struct Scenario {
@@ -41,11 +48,32 @@ impl fmt::Display for Scenario {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+struct ContextScenario {
+    breed: BreedId,
+    noise_facts: usize,
+}
+
+impl fmt::Display for ContextScenario {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/noise_facts={}", self.breed, self.noise_facts)
+    }
+}
+
 fn scenarios() -> impl Iterator<Item = Scenario> {
     BreedId::ALL.into_iter().flat_map(|breed| {
         BATCHES
             .into_iter()
             .map(move |batch| Scenario { breed, batch })
+    })
+}
+
+fn context_scenarios() -> impl Iterator<Item = ContextScenario> {
+    BreedId::ALL.into_iter().flat_map(|breed| {
+        CONTEXT_NOISE.into_iter().map(move |noise_facts| ContextScenario {
+            breed,
+            noise_facts,
+        })
     })
 }
 
@@ -102,12 +130,38 @@ fn preflight(id: BreedId, input: &BreedInput) {
     );
 }
 
+/// Give each independent execution a distinct, semantically irrelevant nonce. This defeats
+/// pointer/content memoization as a way to manufacture an unrealistically cheap batch number.
+fn with_nonce(mut input: BreedInput, nonce: usize) -> BreedInput {
+    input.facts.push(Fact {
+        key: "__bench:nonce".to_string(),
+        value: nonce.to_string(),
+    });
+    input
+}
+
 fn workload(s: Scenario) -> Vec<BreedInput> {
     let base = fixture_input(s.breed);
-    preflight(s.breed, &base);
-    // Clone outside the timing loop. The cognition sees real admitted fixture content on every
-    // execution; Divan measures the algorithm rather than fixture parsing or setup.
-    vec![base; s.batch]
+    (0..s.batch)
+        .map(|nonce| {
+            let input = with_nonce(base.clone(), nonce);
+            preflight(s.breed, &input);
+            input
+        })
+        .collect()
+}
+
+fn context_workload(s: ContextScenario) -> BreedInput {
+    let mut input = fixture_input(s.breed);
+    input.facts.reserve(s.noise_facts);
+    for i in 0..s.noise_facts {
+        input.facts.push(Fact {
+            key: format!("__bench:irrelevant:{i:08}"),
+            value: format!("noise-{i:08}-{}", s.breed),
+        });
+    }
+    preflight(s.breed, &input);
+    input
 }
 
 /// Raw cognition kernel. This intentionally bypasses lifecycle/OCEL work so poor algorithmic
@@ -155,8 +209,23 @@ fn full_lifecycle(bencher: Bencher, scenario: Scenario) {
         });
 }
 
+/// Input-size complexity rail. The useful paper problem stays fixed while irrelevant admitted
+/// context grows geometrically. This makes accidental whole-context scans and O(n^2) joins
+/// obvious in the latency/allocation curve instead of letting a tiny fixture look healthy.
+#[divan::bench(args = context_scenarios(), min_time = 0.05, max_time = 0.5)]
+fn context_pressure(bencher: Bencher, scenario: ContextScenario) {
+    let input = context_workload(scenario);
+    bencher
+        .counter(ItemsCount::new(input.facts.len()))
+        .bench_local(|| {
+            let out = dispatch_breed_test_id(scenario.breed, black_box(&input))
+                .unwrap_or_else(|e| panic!("{} context-pressure kernel failed: {e}", scenario.breed));
+            black_box(out)
+        });
+}
+
 fn main() {
-    // 55 admitted breeds x 4 geometric batch sizes x 2 measurement surfaces = 440
-    // independently named measurements. Allocation profiling is active for every point.
+    // 55 admitted breeds x ((4 batch sizes x 2 measurement surfaces) + 4 context sizes)
+    // = 660 independently named measurements. Allocation profiling is active for every point.
     divan::main();
 }
