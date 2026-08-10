@@ -61,7 +61,7 @@ function isReadOnlyInvocation(argv: readonly string[]): boolean {
 }
 
 async function dispatch(argv: readonly string[]): Promise<void> {
-  if (argv.includes('++') || needsStdin(argv)) {
+  if (argv.includes('--machine') || argv.includes('++') || needsStdin(argv)) {
     await runCli(ALL_NOUNS, cliOptions, argv);
   } else {
     await runMain(main);
@@ -103,7 +103,7 @@ async function bootstrap(): Promise<void> {
   }
 
   // BRCE admission precedes every potentially actuating boundary, including
-  // telemetry initialization. Failure here refuses dispatch.
+  // machine-transport stdin parsing and telemetry initialization.
   admitCliInvocation(argv);
 
   await initOtel();
