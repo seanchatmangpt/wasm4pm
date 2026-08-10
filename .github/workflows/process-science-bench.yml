@@ -12,9 +12,11 @@ on:
       - 'wasm4pm/Cargo.toml'
       - 'apps/wasm4pm/src/nouns/lab/process-science.ts'
       - 'apps/wasm4pm/src/nouns/lab/index.ts'
+      - 'apps/wasm4pm/src/bin/wpm.ts'
       - 'apps/wasm4pm/src/__tests__/process-science-cli.chicago-fs.test.ts'
       - 'apps/wasm4pm/package.json'
       - 'apps/wasm4pm/tsconfig*.json'
+      - 'packages/noun-verb/**'
       - 'packages/testing/**'
       - 'pnpm-lock.yaml'
       - 'Cargo.lock'
@@ -57,6 +59,12 @@ jobs:
           echo "head_sha=$(git rev-parse HEAD)" | tee process-science-subject.txt
           echo "dataset_sha256=$(sha256sum wasm4pm/bench_data/receipt.xes | cut -d' ' -f1)" | tee -a process-science-subject.txt
           echo "dataset_bytes=$(wc -c < wasm4pm/bench_data/receipt.xes | tr -d ' ')" | tee -a process-science-subject.txt
+
+      - name: Validate machine protocol framework
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm --filter @wasm4pm/noun-verb test -- src/__tests__/machine.test.ts src/__tests__/introspect.test.ts
 
       - name: Build published wpm CLI
         shell: bash
