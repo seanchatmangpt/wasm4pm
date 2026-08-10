@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wasm4pm-dspy"
+version = "0.1.0"
+description = "DSPy breed-selection compiler for wasm4pm's cognition kernel: NL goal -> proposed BreedInput -> deterministic admission -> real `wpm lab cognition run` execution."
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "BUSL-1.1" }
+dependencies = ["blake3>=0.4"]
+
+[project.optional-dependencies]
+# `dspy` is never imported by admission.py or runner.py (the deterministic,
+# testable core) -- only by signatures.py/program.py/compile_cli.py, which are
+# only exercised by test_nl_to_breed_input_chicago.py and the dev-only
+# optimization CLI. Mirrors benchmark-manufacturing/dspy_program.py's
+# "compatibility CLI" trick: production/CI paths never require this extra.
+llm = ["dspy-ai>=2.5"]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# `llm` tests make real Groq API calls (real dollars, real latency, real flake
+# surface from a third-party service) -- excluded by default so `pytest` alone
+# never silently burns API calls. Run them explicitly with `pytest -m llm`.
+markers = ["llm: makes a real Groq API call -- not run by default, use -m llm to include"]
+addopts = "-m 'not llm'"
+
+[tool.uv]
+package = true

@@ -802,163 +802,101 @@ fn strips_paper_grounded() {
 
 #[test]
 fn hearsay_paper_grounded() {
-    let path = "tests/fixtures/papers/hearsay.json";
-    let content = fs::read_to_string(path).unwrap_or_else(|_| {
-        panic!(
-            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
-            path
-        )
-    });
-    {
-        let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
-        {
-            let inp = &json["input"];
+    // Uses the shared `load_fixture` helper (unlike a prior hand-rolled version
+    // of this test) specifically so `state` (utterance-duration-cs) actually
+    // reaches the breed -- the earlier version hardcoded `state: vec![]`, which
+    // silently made the STOP/span-completeness fix inert in this test even
+    // though it worked correctly through the real CLI (found this session).
+    let (json, input) = load_fixture("hearsay");
 
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    if let (Some(k), Some(v)) = (
-                        f.get("key").and_then(|v| v.as_str()),
-                        f.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        facts.push(Fact {
-                            key: k.to_string(),
-                            value: v.to_string(),
-                        });
-                    }
-                }
-            }
+    let breed = hearsay::Hearsay;
+    assert!(
+        breed.preconditions(&input).is_ok(),
+        "Hearsay paper fixture must pass preconditions"
+    );
 
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    if let (Some(id), Some(conclusion), Some(certainty)) = (
-                        r.get("id").and_then(|v| v.as_str()),
-                        r.get("conclusion").and_then(|v| v.as_str()),
-                        r.get("certainty").and_then(|v| v.as_f64()),
-                    ) {
-                        let premise = r
-                            .get("premise")
-                            .and_then(|v| v.as_array())
-                            .map(|a| {
-                                a.iter()
-                                    .filter_map(|p| p.as_str().map(|s| s.to_string()))
-                                    .collect()
-                            })
-                            .unwrap_or_default();
-                        rules.push(Rule {
-                            id: id.to_string(),
-                            premise,
-                            conclusion: conclusion.to_string(),
-                            certainty: certainty as f32,
-                        });
-                    }
-                }
-            }
+    let output = breed
+        .run(&input)
+        .expect("Hearsay paper-grounded run must succeed");
+    assert_eq!(output.breed, BreedId::Hearsay);
+    assert!(
+        !output.explanation.is_empty(),
+        "Hearsay explanation must be non-empty"
+    );
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "seed" || t.kind == "post-hypothesis"),
+        "Hearsay must seed or post hypotheses from KS activations"
+    );
 
-            let intent = inp
-                .get("intent")
-                .and_then(|v| v.as_str())
-                .unwrap_or("speech_recognition")
-                .to_string();
+    // Paper-grounded assertions from Erman et al. 1980 Section 1.
+    let exp = &json["expected"];
 
-            let input = BreedInput {
-                intent,
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules,
-                goals: vec![],
-                state: vec![],
-            };
+    let final_phrase = exp["final_phrase"]
+        .as_str()
+        .expect("fixture must declare expected.final_phrase");
+    let expected_credibility = exp["credibility"]
+        .as_u64()
+        .expect("fixture must declare expected.credibility") as u32;
+    let utterance_duration = input
+        .state
+        .iter()
+        .find(|s| s.predicate == "utterance-duration-cs")
+        .expect("fixture must declare state.utterance-duration-cs")
+        .value
+        .clone();
 
-            let breed = hearsay::Hearsay;
-            assert!(
-                breed.preconditions(&input).is_ok(),
-                "Hearsay paper fixture must pass preconditions"
-            );
+    // The STOP criterion (Erman & Lesser 1980, Fig. 5h): `selected` must be
+    // EXACTLY the full-utterance-spanning phrase, not merely mentioned
+    // somewhere in the trace/explanation (which the seeded fact would satisfy
+    // trivially regardless of what actually got selected -- exactly how this
+    // test failed to catch the original bug).
+    let expected_selected = format!(
+        "phrase:{}:0:{}:{}",
+        final_phrase, utterance_duration, expected_credibility
+    );
+    assert_eq!(
+        output.selected.as_deref(),
+        Some(expected_selected.as_str()),
+        "Hearsay must select the full-utterance-spanning phrase per Erman et al. 1980 Step 38, \
+         not a partial-span hypothesis"
+    );
 
-            let output = breed
-                .run(&input)
-                .expect("Hearsay paper-grounded run must succeed");
-            assert_eq!(output.breed, BreedId::Hearsay);
-            assert!(
-                !output.explanation.is_empty(),
-                "Hearsay explanation must be non-empty"
-            );
-            assert!(
+    // The STOP acceptance itself must be a real, surfaced fact -- not merely
+    // inferable after the fact.
+    assert!(
+        output
+            .facts
+            .iter()
+            .any(|f| f.key == "accepted_by_ks" && f.value == "STOP"),
+        "Hearsay must surface accepted_by_ks=STOP when a spanning hypothesis is accepted"
+    );
+
+    // Assert correct words hypothesized (unconditional — no is_empty guard)
+    let correct_words = exp["correct_words_hypothesized"]
+        .as_array()
+        .expect("fixture must declare expected.correct_words_hypothesized");
+    let found_any = correct_words.iter().any(|w| {
+        w.as_str()
+            .map(|word| {
                 output
-                    .inference_trace
+                    .facts
                     .iter()
-                    .any(|t| t.kind == "seed" || t.kind == "post-hypothesis"),
-                "Hearsay must seed or post hypotheses from KS activations"
-            );
-
-            // Paper-grounded assertions from Erman et al. 1980 Section 1.
-            let exp = &json["expected"];
-
-            // Assert final phrase and credibility (Erman & Lesser 1980 Step 38, Fig. 5h)
-            let final_phrase = exp["final_phrase"]
-                .as_str()
-                .expect("fixture must declare expected.final_phrase");
-            let expected_credibility = exp["credibility"]
-                .as_u64()
-                .expect("fixture must declare expected.credibility")
-                as u32;
-            let found_phrase = output
-                .inference_trace
-                .iter()
-                .any(|t| t.detail.contains(final_phrase))
-                || output.explanation.contains(final_phrase)
-                || output
-                    .selected
-                    .as_deref()
-                    .map(|s| s.contains(final_phrase))
-                    .unwrap_or(false);
-            assert!(
-                found_phrase,
-                "Hearsay must produce final phrase '{}' per Erman et al. 1980 Step 38",
-                final_phrase
-            );
-            // Credibility 85 must appear in trace or explanation
-            let cred_str = expected_credibility.to_string();
-            let credibility_found = output
-                .inference_trace
-                .iter()
-                .any(|t| t.detail.contains(&cred_str))
-                || output.explanation.contains(&cred_str);
-            assert!(
-                credibility_found,
-                "Hearsay credibility {} must appear in trace or explanation per Erman et al. 1980",
-                expected_credibility
-            );
-
-            // Assert correct words hypothesized (unconditional — no is_empty guard)
-            let correct_words = exp["correct_words_hypothesized"]
-                .as_array()
-                .expect("fixture must declare expected.correct_words_hypothesized");
-            let found_any = correct_words.iter().any(|w| {
-                w.as_str()
-                    .map(|word| {
-                        output
-                            .facts
-                            .iter()
-                            .any(|f| f.value.to_uppercase().contains(word))
-                            || output
-                                .inference_trace
-                                .iter()
-                                .any(|t| t.detail.to_uppercase().contains(word))
-                    })
-                    .unwrap_or(false)
-            });
-            assert!(
-                found_any,
-                "Hearsay must hypothesize at least one correct word (ARE/BY/AND/FELDMAN) \
-                 per Erman et al. 1980 Fig. 5e Step 5 MOW output"
-            );
-        }
-    }
+                    .any(|f| f.value.to_uppercase().contains(word))
+                    || output
+                        .inference_trace
+                        .iter()
+                        .any(|t| t.detail.to_uppercase().contains(word))
+            })
+            .unwrap_or(false)
+    });
+    assert!(
+        found_any,
+        "Hearsay must hypothesize at least one correct word (ARE/BY/AND/FELDMAN) \
+         per Erman et al. 1980 Fig. 5e Step 5 MOW output"
+    );
 }
 
 // ============================================================================

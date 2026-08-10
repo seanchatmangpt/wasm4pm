@@ -109,6 +109,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
         };
 
         // Step 3: process each stimulus through the neurotic state.
+        let mut defensive_response_count: usize = 0;
         for (stimulus, strength) in &stimuli {
             let snap_fear = state.fear;
             let snap_anger = state.anger;
@@ -146,6 +147,10 @@ impl CognitionBreed for AutoinstinctNeurosis {
                 breed = "autoinstinct_neurosis",
                 "L1 inference step"
             );
+            if response == "defensive" {
+                defensive_response_count += 1;
+            }
+
             // Emit a candidate describing the affect change for this stimulus.
             output_candidates.push(Candidate {
                 id: stimulus.clone(),
@@ -204,10 +209,29 @@ impl CognitionBreed for AutoinstinctNeurosis {
             state.mistrust
         );
 
+        // Step 6: a real, general status signal -- "has_findings" whenever
+        // at least one stimulus provoked a defensive (pathological) response,
+        // "nominal" otherwise. Fits within BreedOutput's existing `facts`
+        // field (no schema change) rather than adding a dedicated status
+        // field this breed alone would use.
+        let mut facts = input.facts.clone();
+        facts.push(Fact {
+            key: "status".to_string(),
+            value: if defensive_response_count > 0 {
+                "has_findings".to_string()
+            } else {
+                "nominal".to_string()
+            },
+        });
+        facts.push(Fact {
+            key: "defensive_response_count".to_string(),
+            value: defensive_response_count.to_string(),
+        });
+
         Ok(BreedOutput {
             breed: BreedId::AutoinstinctNeurosis,
             candidates: output_candidates,
-            facts: input.facts.clone(),
+            facts,
             selected,
             explanation,
             inference_trace: trace,
@@ -362,6 +386,58 @@ mod tests {
             !output.candidates[0].eliminated,
             "accepting response should NOT eliminate candidate"
         );
+    }
+
+    #[test]
+    fn run_status_fact_reflects_defensive_responses() {
+        let breed = AutoinstinctNeurosis;
+        // High conviction + conflicting low-strength stimulus -> defensive.
+        let defensive_input = make_input(
+            vec![Fact {
+                key: "belief:authority".into(),
+                value: "1.0".into(),
+            }],
+            vec![Candidate {
+                id: "authority".into(),
+                score: 0.0,
+                eliminated: false,
+                elimination_reason: None,
+            }],
+        );
+        let out = breed.run(&defensive_input).expect("run ok");
+        let status = out
+            .facts
+            .iter()
+            .find(|f| f.key == "status")
+            .expect("status fact must be present");
+        assert_eq!(status.value, "has_findings");
+        let count = out
+            .facts
+            .iter()
+            .find(|f| f.key == "defensive_response_count")
+            .expect("defensive_response_count fact must be present");
+        assert_eq!(count.value, "1");
+
+        // Aligned belief/stimulus -> accepting, not defensive -> nominal status.
+        let accepting_input = make_input(
+            vec![Fact {
+                key: "belief:policy".into(),
+                value: "0.7".into(),
+            }],
+            vec![Candidate {
+                id: "policy".into(),
+                score: 0.75,
+                eliminated: false,
+                elimination_reason: None,
+            }],
+        );
+        let out2 = breed.run(&accepting_input).expect("run ok");
+        let status2 = out2
+            .facts
+            .iter()
+            .find(|f| f.key == "status")
+            .expect("status fact must be present");
+        assert_eq!(status2.value, "nominal");
     }
 
     #[test]

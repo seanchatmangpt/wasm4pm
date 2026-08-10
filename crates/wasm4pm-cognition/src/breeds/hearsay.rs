@@ -51,6 +51,35 @@ fn level_of(content: &str) -> &str {
     content.split(':').next().unwrap_or("")
 }
 
+/// Resolve a KS trigger against the blackboard, two ways: (1) exact literal
+/// content match (the engine's original, documented contract -- `premise[0]`
+/// = literal posted content like `"phone:T"`; required for existing tests
+/// that rely on it), or (2) a level-name match, `premise[0] ==
+/// "{level}-hypotheses"` for any content currently posted at that level
+/// (additive -- lets a KS trigger on "this level now has content", the
+/// classic Hearsay-II opportunistic-scheduling semantics real paper fixtures
+/// use, without requiring one rule per literal fact). When multiple entries
+/// at a level match, the highest confidence among them is used -- "the
+/// level has posted content" is naturally as confident as its best
+/// hypothesis so far.
+fn trigger_confidence(trigger: &str, blackboard: &BTreeMap<String, f32>) -> Option<f32> {
+    if let Some(&cf) = blackboard.get(trigger) {
+        return Some(cf);
+    }
+    blackboard
+        .iter()
+        .filter(|(k, _)| format!("{}-hypotheses", level_of(k)) == trigger)
+        .map(|(_, &cf)| cf)
+        .fold(None, |acc, cf| Some(acc.map_or(cf, |a: f32| a.max(cf))))
+}
+
+/// Same two-way match as [`trigger_confidence`], as a plain boolean -- used
+/// where only "would this trigger match this newly posted content" matters,
+/// not the confidence value itself.
+fn trigger_matches_content(trigger: &str, content: &str) -> bool {
+    trigger == content || format!("{}-hypotheses", level_of(content)) == trigger
+}
+
 /// Knowledge Source Activation Record — represents a pending KS firing.
 #[derive(Clone, Debug)]
 struct Ksar {
@@ -120,7 +149,7 @@ impl CognitionBreed for Hearsay {
                 Some(t) => t,
                 None => continue,
             };
-            if let Some(&trigger_cf) = blackboard.get(trigger) {
+            if let Some(trigger_cf) = trigger_confidence(trigger, &blackboard) {
                 let rating =
                     (ks.certainty.clamp(0.0, 1.0) * trigger_cf.clamp(0.0, 1.0)).clamp(0.0, 1.0);
                 let ksar = Ksar {
@@ -170,7 +199,7 @@ impl CognitionBreed for Hearsay {
             );
 
             // Check trigger still valid on blackboard.
-            let trigger_cf = match blackboard.get(&ksar.trigger).copied() {
+            let trigger_cf = match trigger_confidence(&ksar.trigger, &blackboard) {
                 Some(cf) => cf,
                 None => continue,
             };
@@ -231,7 +260,7 @@ impl CognitionBreed for Hearsay {
                         Some(t) => t,
                         None => continue,
                     };
-                    if trigger != &new_content {
+                    if !trigger_matches_content(trigger, &new_content) {
                         continue;
                     }
                     // Deduplicate by ks_id + conclusion.
@@ -241,7 +270,7 @@ impl CognitionBreed for Hearsay {
                     if already {
                         continue;
                     }
-                    let new_trigger_cf = blackboard.get(trigger).copied().unwrap_or(0.0);
+                    let new_trigger_cf = trigger_confidence(trigger, &blackboard).unwrap_or(0.0);
                     let rating = (ks.certainty.clamp(0.0, 1.0) * new_trigger_cf.clamp(0.0, 1.0))
                         .clamp(0.0, 1.0);
                     let new_ksar = Ksar {
@@ -275,7 +304,7 @@ impl CognitionBreed for Hearsay {
         // Determine top level: level of the highest-confidence posted hypothesis
         // that is NOT also at level-0 (i.e. not in the seed level).
         let seed_level: &str = input.facts.first().map(|f| f.key.as_str()).unwrap_or("");
-        let selected = blackboard
+        let max_confidence_selection = blackboard
             .iter()
             .filter(|(k, _)| level_of(k) != seed_level)
             .map(|(k, v)| (k, *v))
@@ -285,6 +314,44 @@ impl CognitionBreed for Hearsay {
                     .then_with(|| bk.cmp(ak)) // reversed: smallest key wins on tie
             })
             .map(|(k, _)| k.clone());
+
+        // STOP criterion (Erman & Lesser 1980, Fig. 5h): a hypothesis whose span
+        // covers the entire utterance [0, utterance-duration] is accepted outright,
+        // independent of the plain max-confidence/alphabetical tie-break above --
+        // without this, every seeded hypothesis at the seeded confidence 1.0 ties,
+        // and selection silently degenerates to ASCII ordering of an arbitrary label.
+        let utterance_duration: Option<f32> = input
+            .state
+            .iter()
+            .find(|s| s.predicate == "utterance-duration-cs")
+            .and_then(|s| s.value.parse::<f32>().ok());
+
+        let spanning_hypothesis: Option<String> = utterance_duration.and_then(|duration| {
+            blackboard
+                .keys()
+                .filter(|k| level_of(k) != seed_level)
+                .find(|k| {
+                    // Content keys with a "[start,end]" span encode it as the last
+                    // two ':'-separated fields before an optional trailing
+                    // credibility field (e.g. "phrase:TEXT:0:225:85"); the label
+                    // text itself never contains ':' (confirmed against the real
+                    // fixture), so splitting the whole key is safe.
+                    let parts: Vec<&str> = k.split(':').collect();
+                    if parts.len() < 4 {
+                        return false;
+                    }
+                    let end: Option<f32> = parts[parts.len() - 2].parse().ok();
+                    let start: Option<f32> = parts[parts.len() - 3].parse().ok();
+                    match (start, end) {
+                        (Some(s), Some(e)) => s == 0.0 && (e - duration).abs() < 1e-6,
+                        _ => false,
+                    }
+                })
+                .cloned()
+        });
+
+        let accepted_by_stop = spanning_hypothesis.is_some();
+        let selected = spanning_hypothesis.or(max_confidence_selection);
 
         // Collect new_facts from BTreeMap (already sorted).
         let mut new_facts: Vec<Fact> = blackboard
@@ -297,6 +364,18 @@ impl CognitionBreed for Hearsay {
                 })
             })
             .collect();
+
+        if accepted_by_stop {
+            new_facts.push(Fact {
+                key: "accepted_by_ks".to_string(),
+                value: "STOP".to_string(),
+            });
+            new_facts.push(Fact {
+                key: "step_count".to_string(),
+                value: firings.to_string(),
+            });
+        }
+
         new_facts.sort_by(|a, b| a.key.cmp(&b.key).then_with(|| a.value.cmp(&b.value)));
 
         tracing::debug!(

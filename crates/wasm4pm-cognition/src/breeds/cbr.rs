@@ -297,10 +297,24 @@ impl CognitionBreed for Cbr {
             None => "CBR found no cases".to_string(),
         };
 
+        // A real, general Revise-stage signal: whether the accepted case
+        // actually needed adaptation (n_adapted > 0, i.e. the query supplied
+        // facts the retrieved case's stored facts didn't already cover) or
+        // was reused unchanged. Fits within BreedOutput's existing `facts`
+        // field -- the decision was already computed above, just never
+        // surfaced explicitly.
+        let mut facts = input.facts.clone();
+        if accepted_idx.is_some() {
+            facts.push(Fact {
+                key: "revise_needed".to_string(),
+                value: (adapted_count > 0).to_string(),
+            });
+        }
+
         Ok(BreedOutput {
             breed: BreedId::Cbr,
             candidates: input.candidates.clone(),
-            facts: input.facts.clone(),
+            facts,
             selected,
             explanation,
             inference_trace: trace,
