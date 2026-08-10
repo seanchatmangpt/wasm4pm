@@ -187,6 +187,21 @@ enum DecompComp {
     WordSet(Vec<String>),
 }
 
+/// Render a parsed decomposition pattern back into Weizenbaum's own
+/// notation (e.g. `[Wildcard, Literal("YOUR"), Wildcard]` -> `"(0 YOUR 0)"`),
+/// the inverse of `parse_decomp`.
+fn render_decomp(decomp: &[DecompComp]) -> String {
+    let parts: Vec<String> = decomp
+        .iter()
+        .map(|c| match c {
+            DecompComp::Wildcard => "0".to_string(),
+            DecompComp::Literal(w) => w.clone(),
+            DecompComp::WordSet(words) => format!("(*{})", words.join(" ")),
+        })
+        .collect();
+    format!("({})", parts.join(" "))
+}
+
 fn parse_decomp(s: &str) -> Vec<DecompComp> {
     let inner = s.trim().trim_start_matches('(').trim_end_matches(')');
     let mut comps: Vec<DecompComp> = Vec::new();
@@ -423,6 +438,18 @@ fn process_utterance(
         for (decomp, reassembly) in rules {
             if let Some(slots) = match_decomp(decomp, &tokens) {
                 let response = apply_reassembly(reassembly, &slots);
+                // Render the matched decomposition pattern back into the
+                // paper's own notation (e.g. "(0)", "(0 YOUR 0)") -- this was
+                // computed (`decomp`) but never surfaced anywhere in the
+                // output before this session; fits within the existing
+                // `inference_trace` field, no schema change.
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "decomp-pattern".to_string(),
+                    detail: render_decomp(decomp),
+                    depth: 0,
+                    objects: vec![],
+                });
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "decomp-match".to_string(),

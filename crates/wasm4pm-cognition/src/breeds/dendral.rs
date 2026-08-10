@@ -22,9 +22,74 @@
 
 use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
 use tracing;
+
+/// Alkyl substituent formula -> (carbon count, trivial group name). General
+/// lookup table, not specific to any one candidate.
+fn alkyl_group(formula: &str) -> Option<(u32, &'static str)> {
+    match formula {
+        "CH3" => Some((1, "methyl")),
+        "C2H5" => Some((2, "ethyl")),
+        "C3H7" => Some((3, "propyl")),
+        "C4H9" => Some((4, "butyl")),
+        "C5H11" => Some((5, "pentyl")),
+        "C6H13" => Some((6, "hexyl")),
+        _ => None,
+    }
+}
+
+const ALKANE_ROOTS: [&str; 10] = [
+    "", "meth", "eth", "prop", "but", "pent", "hex", "hept", "oct", "non",
+];
+
+/// Derive a real organic-chemistry name for a DENDRAL candidate id of the
+/// form `"<family>-F<n>-<R1>-<R2>"` (e.g. a ketone id with two ethyl-group
+/// substituents), general over any recognized alkyl-group formula pair --
+/// not hardcoded to one
+/// candidate. Produces the trivial name (e.g. "diethyl ketone") and, for
+/// ketones, the IUPAC substitutive name via standard lowest-locant numbering
+/// (total chain carbons = R1 + R2 + 1 for the carbonyl carbon; carbonyl
+/// locant = the shorter arm's carbon count + 1). Returns `None` for
+/// unrecognized families, unrecognized substituent formulas, or a candidate
+/// id carrying a trailing structural-variant suffix (e.g. "-branched",
+/// "-iso") this simple two-substituent model can't name correctly -- refuses
+/// rather than silently mis-naming a structure it can't actually derive.
+fn derive_chemical_name(candidate_id: &str) -> Option<String> {
+    let parts: Vec<&str> = candidate_id.split('-').collect();
+    if parts.len() != 4 {
+        return None;
+    }
+    let family = parts[0];
+    let functional = match family {
+        "ketone" => "ketone",
+        "ether" => "ether",
+        "amine" => "amine",
+        _ => return None,
+    };
+    // parts[1] is the "F<n>" fragment tag (ignored); parts[2], parts[3] are
+    // the two substituent groups.
+    let (c1, name1) = alkyl_group(parts[2])?;
+    let (c2, name2) = alkyl_group(parts[3])?;
+
+    let (lo, hi) = if name1 <= name2 { (name1, name2) } else { (name2, name1) };
+    let trivial = if name1 == name2 {
+        format!("di{name1} {functional}")
+    } else {
+        format!("{lo} {hi} {functional}")
+    };
+
+    if family == "ketone" {
+        let total_carbons = (c1 + c2 + 1) as usize;
+        if let Some(root) = ALKANE_ROOTS.get(total_carbons).filter(|r| !r.is_empty()) {
+            let locant = c1.min(c2) + 1;
+            return Some(format!("{locant}-{root}anone ({trivial})"));
+        }
+    }
+
+    Some(trivial)
+}
 
 /// DENDRAL constraint-based candidate enumerator.
 pub struct Dendral;
@@ -190,10 +255,32 @@ impl CognitionBreed for Dendral {
             candidates.len()
         );
 
+        // Derive a real chemical name for every nameable candidate (fits
+        // within BreedOutput's existing `facts` field -- no schema change):
+        // the candidate id already encodes the structure
+        // ("<family>-F<n>-<R1>-<R2>"), this was previously never decoded.
+        let mut facts = input.facts.clone();
+        for c in &candidates {
+            if let Some(name) = derive_chemical_name(&c.id) {
+                facts.push(Fact {
+                    key: format!("chemical_name:{}", c.id),
+                    value: name,
+                });
+            }
+        }
+        if let Some(sel_id) = &selected {
+            if let Some(name) = derive_chemical_name(sel_id) {
+                facts.push(Fact {
+                    key: "selected_chemical_name".to_string(),
+                    value: name,
+                });
+            }
+        }
+
         Ok(BreedOutput {
             breed: BreedId::Dendral,
             candidates,
-            facts: input.facts.clone(),
+            facts,
             selected,
             explanation,
             inference_trace: trace,
@@ -435,6 +522,37 @@ mod tests {
                 .unwrap_or_else(|| panic!("candidate {} must be present", survivor));
             assert!(!c.eliminated, "candidate {} must survive", survivor);
         }
+
+        // The selected candidate's real chemical name (derived from its id,
+        // not looked up from any input the fixture provides -- no fact in
+        // this fixture states it) must match Feigenbaum 1971's stated answer.
+        let name = out
+            .facts
+            .iter()
+            .find(|f| f.key == "selected_chemical_name")
+            .unwrap_or_else(|| panic!("selected_chemical_name fact must be present"));
+        assert_eq!(
+            name.value, "3-pentanone (diethyl ketone)",
+            "Feigenbaum 1971 Table 4: the correct ketone-family answer is diethyl ketone (3-pentanone)"
+        );
+    }
+
+    #[test]
+    fn derive_chemical_name_general_over_asymmetric_and_other_families() {
+        // Asymmetric ketone: methyl + propyl, IUPAC locant favors the shorter arm.
+        assert_eq!(
+            derive_chemical_name("ketone-F2-CH3-C3H7").as_deref(),
+            Some("2-pentanone (methyl propyl ketone)")
+        );
+        // Ether family: trivial name only (no "-one" IUPAC suffix applies).
+        assert_eq!(
+            derive_chemical_name("ether-F5-C2H5-C2H5").as_deref(),
+            Some("diethyl ether")
+        );
+        // A trailing structural-variant suffix must refuse rather than mis-name.
+        assert_eq!(derive_chemical_name("ketone-F3-CH3-C3H7-branched"), None);
+        // Unrecognized family must refuse.
+        assert_eq!(derive_chemical_name("unknown-F1-CH3-CH3"), None);
     }
 
     #[test]
