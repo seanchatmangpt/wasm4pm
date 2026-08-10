@@ -21,7 +21,20 @@ export interface RunCliIo {
   readonly readStdin?: () => Promise<string>;
 }
 
-function writeFrameworkError(error: NounVerbError, options: BuildCliOptions): void {
+async function writeFrameworkError(
+  error: NounVerbError,
+  options: BuildCliOptions,
+  transport: 'machine' | 'stdin'
+): Promise<void> {
+  // Close the host lifecycle when one exists. This makes pre-dispatch refusal
+  // receiptable without pretending a noun/verb handler executed.
+  await options.onError?.({
+    noun: 'system',
+    verb: `${transport}-transport`,
+    args: { transport },
+    error,
+    durationMs: 0,
+  });
   writeJson(error.toEnvelope());
   process.exitCode = resolveExitCode(error.code, options.errorCodeMap);
 }
@@ -36,8 +49,8 @@ export async function runCli(
 
   const readStdin = io.readStdin ?? readProcessStdin;
   let resolvedArgs: string[];
-  try {
-    if (rawArgs.includes('--machine')) {
+  if (rawArgs.includes('--machine')) {
+    try {
       if (rawArgs.length !== 1 || rawArgs[0] !== '--machine') {
         throw NounVerbError.invalidInput(
           "MACHINE_INVOCATION_REFUSED: '--machine' must be the only argv token"
@@ -45,12 +58,17 @@ export async function runCli(
       }
       const envelope = await readStdin();
       resolvedArgs = machineInvocationToArgv(envelope, nouns);
-    } else {
-      resolvedArgs = await resolveStdinRefs(rawArgs, readStdin);
+    } catch (thrown) {
+      await writeFrameworkError(NounVerbError.from(thrown), options, 'machine');
+      return;
     }
-  } catch (thrown) {
-    writeFrameworkError(NounVerbError.from(thrown), options);
-    return;
+  } else {
+    try {
+      resolvedArgs = await resolveStdinRefs(rawArgs, readStdin);
+    } catch (thrown) {
+      await writeFrameworkError(NounVerbError.from(thrown), options, 'stdin');
+      return;
+    }
   }
 
   if (resolvedArgs.includes('++')) {
