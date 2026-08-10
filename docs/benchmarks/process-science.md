@@ -54,9 +54,40 @@ Twelve discipline-specific families execute at 10,000, 100,000, and 1,000,000 ob
 
 These counts are directly executed synthetic benchmark episodes. Capacity projections beyond the executed counts, if produced by CI summaries, are explicitly labeled derived rather than executed.
 
+## Published `wpm` CLI surface
+
+The installed CLI exposes the process-science admission/projection boundary directly:
+
+```bash
+wpm lab process-science --input evidence.xes --output process-science-out
+```
+
+The command reads actual XES bytes, binds their evidence identity, requires at least one observable trace and event, manufactures the complete 13-family process-operator plan, and writes `process-science-out/process-science.json` when `--output` is supplied. Every family carries `authority=CONSTRUCT_ONLY`; the projection carries `actuation=REFUSED`.
+
+The command does not shell out to a repository-local Cargo example. This keeps the surface valid for the published npm package, whose distributable file surface is `dist`. Unreadable evidence and structurally empty XES inputs are typed source refusals and may not manufacture an output projection.
+
+## Chicago filesystem court
+
+`apps/wasm4pm/src/__tests__/process-science-cli.chicago-fs.test.ts` validates the published binary through real filesystem consequences rather than a mocked filesystem. The court:
+
+1. creates a real temporary XES file;
+2. spawns the built `wpm` child process through `@wasm4pm/testing`;
+3. reads the actual persisted `process-science.json` projection;
+4. checks all 13 operators, observed evidence counts, construction-only authority, refused actuation, and receipt shape;
+5. replays the same admitted evidence into a second real directory and requires byte-for-byte deterministic projection output;
+6. observes the CLI's command-receipt directory as a separate filesystem consequence;
+7. supplies a missing path and requires `PROCESS_SCIENCE_INPUT_UNREADABLE` with no output projection;
+8. supplies structurally empty XES and requires `PROCESS_SCIENCE_XES_EVIDENCE_EMPTY` with no output projection.
+
+The dedicated `.github/workflows/process-science-bench.yml` builds `@wasm4pm/cli`, runs this exact Chicago filesystem test, then compiles and executes the Rust stress subject and invokes the independent benchmark verifier.
+
 ## Authority boundary
 
-The benchmark has no external DO authority. Causal and reinforcement-learning families manufacture candidate interventions only. `actuation=REFUSED` is part of both the subject and completion identity and is validated by CI.
+The benchmark and CLI have no external DO authority. Causal and reinforcement-learning families manufacture candidate interventions only. `actuation=REFUSED` is part of both the benchmark subject/completion identity and the CLI projection.
+
+```text
+SELECT != CONSTRUCT != DO
+```
 
 ## Interpretation
 
