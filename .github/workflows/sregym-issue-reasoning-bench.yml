@@ -5,187 +5,54 @@ on:
     branches:
       - agent/validate-last24h-benchmarks-20260809
     paths:
-      - 'wasm4pm/examples/sregym_issue_reasoning.rs'
-      - '.github/workflows/sregym-issue-reasoning-bench.yml'
-      - 'docs/benchmarks/sregym-compiled-troubleshooting.md'
-      - 'wasm4pm/Cargo.toml'
-      - 'Cargo.lock'
-      - 'wasm4pm/src/**'
+      - "wasm4pm/examples/sregym_issue_reasoning.rs"
+      - "scripts/validate-sregym-reasoning.py"
+      - ".github/workflows/sregym-issue-reasoning-bench.yml"
+      - "docs/benchmarks/sregym-compiled-troubleshooting.md"
+      - "wasm4pm/Cargo.toml"
+      - "Cargo.lock"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  compiled-troubleshooting:
+  benchmark:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
       - name: Install pinned Rust
-        shell: bash
         run: |
-          set -euo pipefail
           rustup toolchain install nightly-2026-04-15 --profile minimal
           rustup default nightly-2026-04-15
           rustc --version
           cargo --version
 
-      - name: Bind benchmark subject
-        shell: bash
+      - name: Bind exact subject
         run: |
-          set -euo pipefail
-          {
-            echo "head_sha=$(git rev-parse HEAD)"
-            echo "upstream_repo=SREGym/SREGym"
-            echo "upstream_revision=ba07faf1a322f9b6d4a279643bb796aa2f36f64b"
-            echo "problem_list_blob=41f9e5d96c14be808a863cca4842cb3479863300"
-          } | tee sregym-subject.txt
+          echo "head_sha=$(git rev-parse HEAD)" | tee sregym-subject.txt
+          echo "upstream_repo=SREGym/SREGym" | tee -a sregym-subject.txt
+          echo "upstream_revision=ba07faf1a322f9b6d4a279643bb796aa2f36f64b" | tee -a sregym-subject.txt
+          echo "problem_list_blob=41f9e5d96c14be808a863cca4842cb3479863300" | tee -a sregym-subject.txt
 
-      - name: Execute compiled troubleshooting rail
-        shell: bash
+      - name: Execute benchmark
         run: |
-          set -euo pipefail
-          cargo run \
-            --manifest-path wasm4pm/Cargo.toml \
-            --release \
-            --example sregym_issue_reasoning \
-            --locked \
-            2>&1 | tee sregym-reasoning.log
+          cargo run --manifest-path wasm4pm/Cargo.toml --release --example sregym_issue_reasoning --locked 2>&1 | tee sregym-reasoning.log
 
-      - name: Validate exact measurements
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import csv
-          import hashlib
-          import re
-          from pathlib import Path
+      - name: Validate benchmark
+        run: python3 scripts/validate-sregym-reasoning.py sregym-reasoning.log
 
-          log = Path('sregym-reasoning.log').read_text()
-          lines = log.splitlines()
-          subjects = [x for x in lines if x.startswith('SREGYM_REASONING_SUBJECT\t')]
-          results = [x for x in lines if x.startswith('SREGYM_REASONING_RESULT\t')]
-          completes = [x for x in lines if x.startswith('SREGYM_REASONING_COMPLETE\t')]
-
-          def fields(line):
-              return dict(part.split('=', 1) for part in line.split('\t')[1:])
-
-          if len(subjects) != 1 or len(completes) != 1:
-              raise SystemExit('REFUSED:SREGYM_IDENTITY_MISSING')
-          if len(results) != 15:
-              raise SystemExit(f'REFUSED:SREGYM_ROW_COUNT:{len(results)}')
-
-          subject = fields(subjects[0])
-          complete = fields(completes[0])
-          rows = [fields(x) for x in results]
-
-          if subject.get('upstream_revision') != 'ba07faf1a322f9b6d4a279643bb796aa2f36f64b':
-              raise SystemExit('REFUSED:SREGYM_UPSTREAM_REVISION_DRIFT')
-          if subject.get('problem_list_blob') != '41f9e5d96c14be808a863cca4842cb3479863300':
-              raise SystemExit('REFUSED:SREGYM_TAXONOMY_DRIFT')
-          if subject.get('actuation') != 'REFUSED' or complete.get('actuation') != 'REFUSED':
-              raise SystemExit('REFUSED:SREGYM_ACTUATION_AUTHORITY_LEAK')
-          if complete.get('status') != 'ALIVE_CANDIDATE':
-              raise SystemExit('REFUSED:SREGYM_COMPLETION_STANDING')
-
-          planned = int(subject['planned_episodes'])
-          planned_transitions = int(subject['planned_transitions'])
-          if planned < 30_000_000 or planned_transitions < 240_000_000:
-              raise SystemExit('REFUSED:SREGYM_SCALE_TOO_SMALL')
-          if int(complete['planned_episodes']) != planned or int(complete['planned_transitions']) != planned_transitions:
-              raise SystemExit('REFUSED:SREGYM_PLAN_DRIFT')
-          if int(complete['flagship_scale']) != 10_000_000:
-              raise SystemExit('REFUSED:SREGYM_FLAGSHIP_MISSING')
-
-          total = transitions = eliminated = 0
-          for row in rows:
-              scale = int(row['scale'])
-              admitted = int(row['admitted'])
-              refused = int(row['refused'])
-              fallback = int(row['fallback'])
-              compiled = int(row['compiled'])
-              elim = int(row['hypotheses_eliminated'])
-              trans = int(row['transitions'])
-              elapsed_ns = int(row['elapsed_ns'])
-              receipt = row['final_receipt']
-              if admitted + refused + fallback != scale:
-                  raise SystemExit(f"REFUSED:SREGYM_STANDING:{row['family']}@{scale}")
-              if compiled > scale or elim < scale or trans != scale * 8:
-                  raise SystemExit(f"REFUSED:SREGYM_WORK_ACCOUNTING:{row['family']}@{scale}")
-              if row.get('actuation') != 'REFUSED':
-                  raise SystemExit('REFUSED:SREGYM_RESULT_AUTHORITY_LEAK')
-              if elapsed_ns <= 0 or not re.fullmatch(r'[0-9a-f]{64}', receipt):
-                  raise SystemExit(f"REFUSED:SREGYM_RECEIPT:{row['family']}@{scale}")
-
-              seconds = elapsed_ns / 1e9
-              expected = {
-                  'episodes_per_second': scale / seconds,
-                  'hypotheses_eliminated_per_second': elim / seconds,
-                  'transitions_per_second': trans / seconds,
-              }
-              for key, raw in expected.items():
-                  logged = float(row[key])
-                  if logged <= 0 or abs(raw - logged) / raw > 1e-6:
-                      raise SystemExit(f"REFUSED:SREGYM_ARITHMETIC_DRIFT:{row['family']}:{key}")
-              total += scale
-              transitions += trans
-              eliminated += elim
-
-          if total != planned or transitions != planned_transitions:
-              raise SystemExit('REFUSED:SREGYM_EXECUTION_TOTAL_DRIFT')
-
-          flagship = next(row for row in rows if row['family'] == 'symptom_to_diagnostic_route' and int(row['scale']) == 10_000_000)
-          end_to_end = next(row for row in rows if row['family'] == 'issue_reasoning_end_to_end' and int(row['scale']) == 5_000_000)
-          compiled = next(row for row in rows if row['family'] == 'compiled_known_troubleshooting' and int(row['scale']) == 5_000_000)
-
-          with Path('sregym-results.csv').open('w', newline='') as f:
-              writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-              writer.writeheader()
-              writer.writerows(rows)
-
-          compiled_episodes = sum(int(row['compiled']) for row in rows)
-          fallback_episodes = sum(int(row['fallback']) for row in rows)
-          coverage = compiled_episodes / total
-          log_sha = hashlib.sha256(log.encode()).hexdigest()
-          summary = f'''# SREGym Compiled Troubleshooting Benchmark Receipt
-
-## Directly observed execution
-
-- Troubleshooting episodes: **{total:,}**
-- Diagnostic transitions: **{transitions:,}**
-- Hypotheses eliminated: **{eliminated:,}**
-- Compiled-path episode observations: **{compiled_episodes:,}**
-- Fallback observations: **{fallback_episodes:,}**
-- Aggregate compiled-path share across measured rows: **{coverage:.2%}**
-- 10M routing row: **{float(flagship['episodes_per_second']):,.0f} episodes/s**
-- 5M compiled troubleshooting row: **{float(compiled['episodes_per_second']):,.0f} episodes/s**
-- 5M end-to-end issue reasoning row: **{float(end_to_end['episodes_per_second']):,.0f} episodes/s**
-- Log SHA-256: `{log_sha}`
-
-## Claim boundary
-
-These are deterministic diagnostic-graph simulations derived from the SREGym failure taxonomy identity. They benchmark structured symptom routing, hypothesis elimination, repair-intent construction, verification, fallback and receipts. They do not reproduce SREGym's live environments, prove solve rate on its benchmark, measure an LLM baseline, or actuate a repair. `actuation=REFUSED` is invariant.
-'''
-          Path('sregym-summary.md').write_text(summary)
-          print(summary)
-          PY
-
-      - name: Manufacture exact-head receipt
+      - name: Manufacture receipt
         if: always()
-        shell: bash
         run: |
-          set -euo pipefail
-          {
-            cat sregym-subject.txt 2>/dev/null || true
-            echo "log_sha256=$(sha256sum sregym-reasoning.log 2>/dev/null | cut -d' ' -f1 || true)"
-            echo "results_sha256=$(sha256sum sregym-results.csv 2>/dev/null | cut -d' ' -f1 || true)"
-            echo "summary_sha256=$(sha256sum sregym-summary.md 2>/dev/null | cut -d' ' -f1 || true)"
-            echo "run_id=${GITHUB_RUN_ID}"
-            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
-          } | tee sregym-receipt.txt
+          echo "head_sha=$(git rev-parse HEAD)" > sregym-receipt.txt
+          echo "log_sha256=$(sha256sum sregym-reasoning.log 2>/dev/null | cut -d' ' -f1 || true)" >> sregym-receipt.txt
+          echo "results_sha256=$(sha256sum sregym-results.csv 2>/dev/null | cut -d' ' -f1 || true)" >> sregym-receipt.txt
+          echo "summary_sha256=$(sha256sum sregym-summary.md 2>/dev/null | cut -d' ' -f1 || true)" >> sregym-receipt.txt
+          echo "run_id=${GITHUB_RUN_ID}" >> sregym-receipt.txt
+          echo "run_attempt=${GITHUB_RUN_ATTEMPT}" >> sregym-receipt.txt
 
       - name: Upload exact-head evidence
         if: always()
