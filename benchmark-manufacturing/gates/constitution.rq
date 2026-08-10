@@ -1,0 +1,59 @@
+PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#>
+
+# A row is a violation. ggen validation must return zero rows.
+SELECT ?violation WHERE {
+  {
+    cb:BenchmarkProgram cb:expectedBreeds ?n .
+    FILTER(?n != 55)
+    BIND("expected-breeds-not-55" AS ?violation)
+  }
+  UNION
+  {
+    SELECT ("measurement-surface-cardinality" AS ?violation) WHERE {
+      ?x a cb:MeasurementSurface .
+    }
+    GROUP BY ?violation
+    HAVING(COUNT(?x) != 3)
+  }
+  UNION
+  {
+    SELECT ("batch-scale-cardinality" AS ?violation) WHERE {
+      ?x a cb:BatchScale .
+    }
+    GROUP BY ?violation
+    HAVING(COUNT(?x) < 4)
+  }
+  UNION
+  {
+    SELECT ("context-scale-cardinality" AS ?violation) WHERE {
+      ?x a cb:ContextScale .
+    }
+    GROUP BY ?violation
+    HAVING(COUNT(?x) < 4)
+  }
+  UNION
+  {
+    cb:BenchmarkProgram cb:allocationProfiler ?v .
+    FILTER(?v != true)
+    BIND("allocation-profiler-disabled" AS ?violation)
+  }
+  UNION
+  {
+    cb:BenchmarkProgram cb:preflight ?v .
+    FILTER(?v != true)
+    BIND("preflight-disabled" AS ?violation)
+  }
+  UNION
+  {
+    cb:BenchmarkProgram cb:paperGroundedFixtures ?v .
+    FILTER(?v != true)
+    BIND("grounded-fixtures-disabled" AS ?violation)
+  }
+  UNION
+  {
+    cb:BenchmarkProgram cb:actuation ?a .
+    FILTER(?a != "REFUSED")
+    BIND("benchmark-acquired-actuation" AS ?violation)
+  }
+}
+ORDER BY ?violation
