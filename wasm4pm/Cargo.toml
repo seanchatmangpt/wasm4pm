@@ -83,7 +83,7 @@ insta = { version = "1", features = ["json"] }
 wasm-bindgen-test = "0.3"
 tempfile = { workspace = true }
 regex = "1"
-naga = { version = "0.19", features = ["wgsl-in"] }
+naga = { version = "30.0", features = ["wgsl-in"] }
 miniml = { workspace = true }
 
 [[bench]]
