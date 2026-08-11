@@ -34,14 +34,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install pinned Rust
+      - name: Install pinned Rust and wasm-pack
         shell: bash
         run: |
           set -euo pipefail
-          rustup toolchain install nightly-2026-04-15 --profile minimal
+          rustup toolchain install nightly-2026-04-15 --profile minimal --target wasm32-unknown-unknown
           rustup default nightly-2026-04-15
+          npm install -g wasm-pack@0.13.1
           rustc --version
           cargo --version
+          wasm-pack --version
 
       - name: Install Node workspace
         shell: bash
