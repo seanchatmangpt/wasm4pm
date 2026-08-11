@@ -20,6 +20,7 @@ import { supabaseVerb } from './supabase.js';
 import { wasmServerVerb } from './wasm-server.js';
 import { traceVerb } from './trace.js';
 import { benchmarkVerb } from './benchmark.js';
+import { processScienceVerb } from './process-science.js';
 import { timeoutVerb } from './timeout.js';
 import { feedbackVerb } from './feedback.js';
 import { mlVerb } from './ml.js';
@@ -45,6 +46,7 @@ export const labNoun = defineNoun({
     wasmServerVerb,
     traceVerb,
     benchmarkVerb,
+    processScienceVerb,
     timeoutVerb,
     feedbackVerb,
     mlVerb,

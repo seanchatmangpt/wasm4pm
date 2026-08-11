@@ -8,6 +8,12 @@ export type {
   VerbStability,
   VerbContext,
   HumanRenderer,
+  MachineAuthority,
+  MachineEffect,
+  MachineIdempotency,
+  MachineDeterminism,
+  MachineReceiptPolicy,
+  MachineContract,
   VerbSpec,
   VerbDefinition,
   NounSpec,
@@ -25,6 +31,12 @@ export {
 } from './cli.js';
 
 export { runCli, type RunCliIo } from './entry.js';
+
+export {
+  MACHINE_PROTOCOL,
+  machineInvocationToArgv,
+  type MachineInvocation,
+} from './machine.js';
 
 export {
   buildToolSchema,

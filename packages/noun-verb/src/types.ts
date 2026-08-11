@@ -19,6 +19,39 @@ export type ParsedVerbArgs<TArgs extends TypedArgSpec> = ParsedArgs<TArgs>;
  */
 export type VerbStability = 'stable' | 'experimental';
 
+/** Machine-visible authority classification. Only BRCE-governed verbs may claim DO. */
+export type MachineAuthority = 'OBSERVE' | 'SELECT' | 'CONSTRUCT' | 'DO';
+
+/** Coarse consequence classes used by machine planners before invocation. */
+export type MachineEffect =
+  | 'NONE'
+  | 'STDOUT'
+  | 'STDERR'
+  | 'FILESYSTEM'
+  | 'NETWORK'
+  | 'PROCESS'
+  | 'TELEMETRY';
+
+export type MachineIdempotency = 'IDEMPOTENT' | 'CONDITIONAL' | 'NON_IDEMPOTENT' | 'UNKNOWN';
+export type MachineDeterminism =
+  | 'DETERMINISTIC'
+  | 'INPUT_DETERMINISTIC'
+  | 'ENVIRONMENT_DEPENDENT'
+  | 'UNKNOWN';
+export type MachineReceiptPolicy = 'REQUIRED' | 'OPTIONAL' | 'NONE';
+
+/**
+ * Optional execution contract exposed through `--introspect` for machine planners.
+ * This is descriptive metadata, never ambient execution authority.
+ */
+export interface MachineContract {
+  readonly authority: MachineAuthority;
+  readonly effects: readonly MachineEffect[];
+  readonly idempotency: MachineIdempotency;
+  readonly determinism: MachineDeterminism;
+  readonly receipts: MachineReceiptPolicy;
+}
+
 /** Reserved argument names the framework injects into every verb — user args may not use these. */
 export const RESERVED_ARG_NAMES: readonly string[] = ['human', 'introspect'];
 
@@ -64,6 +97,8 @@ export interface VerbSpec<TArgs extends TypedArgSpec = TypedArgSpec, TResult = u
   readonly args?: TArgs;
   /** Default: 'stable'. */
   readonly stability?: VerbStability;
+  /** Optional machine-planning contract surfaced through introspection. */
+  readonly machine?: MachineContract;
   readonly handler: (args: ParsedVerbArgs<TArgs>, ctx: VerbContext) => TResult | Promise<TResult>;
   /** Optional formatter used only for `--human` (stderr-only, see output.ts). */
   readonly human?: HumanRenderer<TResult>;

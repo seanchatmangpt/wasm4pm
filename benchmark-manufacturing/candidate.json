@@ -1,0 +1,31 @@
+{
+  "breeds": [
+    "abductive_ibe", "abductive_lp", "act_r", "allen_temporal", "analogy_sme", "asp",
+    "autoinstinct_learning", "autoinstinct_neurosis", "autoinstinct_semantics", "autoinstinct_vision",
+    "bayesian_network", "belief_merging", "cbr", "circumscription", "clp", "construction_grammar",
+    "contingent_plan", "csp_ac3", "ctl_check", "default_logic", "dempster_shafer", "dendral",
+    "description_logic", "ebl", "eliza", "episodic_memory", "event_calculus", "frames_inheritance",
+    "fuzzy_logic", "gps", "hearsay", "htn_planning", "ilp", "ltl_monitor", "markov_logic", "mdp",
+    "meta_reasoning", "morphological", "mycin", "naive_physics", "ocpm_route_discoverer",
+    "partial_order_plan", "pomdp", "problog", "prolog", "qualitative_reason", "rl_symbolic", "sat_cdcl",
+    "script_sam", "situation_calculus", "soar", "strips", "tableaux", "triz", "version_space"
+  ],
+  "batch_sizes": [1, 4, 16, 64],
+  "context_sizes": [0, 64, 512, 4096],
+  "surfaces": ["kernel_only", "full_lifecycle", "context_pressure"],
+  "falsifiers": [
+    "missing breed refuses",
+    "duplicate breed refuses",
+    "ungrounded fixture refuses",
+    "empty semantic problem refuses",
+    "vacuous expected oracle refuses",
+    "zero observable inference work refuses",
+    "missing OCEL evidence refuses full lifecycle",
+    "non-monotonic inference trace refuses",
+    "silent benchmark skip refuses",
+    "weak context scaling refuses",
+    "kernel and lifecycle timing may not be conflated",
+    "allocation and throughput observation are mandatory"
+  ],
+  "rationale": "Expose fixed-cost, scaling, allocation, irrelevant-context, lifecycle, and degenerate-work pathologies independently for all canonical cognition breeds."
+}

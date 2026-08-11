@@ -1,0 +1,134 @@
+{%- set batches = sparql(query='PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#> SELECT ?value WHERE { ?x a cb:BatchScale ; cb:value ?value . } ORDER BY ?value') -%}
+{%- set noise = sparql(query='PREFIX cb: <https://wasm4pm.dev/cognition-benchmark#> SELECT ?value WHERE { ?x a cb:ContextScale ; cb:value ?value . } ORDER BY ?value') -%}
+//! ggen projection of the admitted wasm4pm-cognition Divan benchmark constitution.
+//!
+//! DO NOT EDIT THIS PROJECTION BY HAND. Edit `benchmark-manufacturing/ontology.ttl`
+//! and/or its DSPy-selected admitted contract, then execute pinned ggen.
+//!
+//! Anti-hiding properties: exact canonical inventory, kernel/lifecycle separation,
+//! geometric batch scaling, adversarial context pressure, allocation profiling,
+//! preflight evidence checks, nonces, throughput counters, and black-boxed outputs.
+
+use std::fmt;
+use std::fs;
+use std::path::PathBuf;
+
+use divan::counter::ItemsCount;
+use divan::{black_box, AllocProfiler, Bencher};
+use wasm4pm_cognition::breeds::dispatch::{dispatch_breed_id, dispatch_breed_test_id};
+use wasm4pm_cognition::breeds::{BreedId, BreedInput, Fact};
+
+#[global_allocator]
+static ALLOC: AllocProfiler = AllocProfiler::system();
+
+const EXPECTED_BREEDS: usize = {{ results[0]["expected"] }};
+const BATCHES: [usize; {{ batches | length }}] = [{% for row in batches %}{{ row["value"] }}{% if not loop.last %}, {% endif %}{% endfor %}];
+const CONTEXT_NOISE: [usize; {{ noise | length }}] = [{% for row in noise %}{{ row["value"] }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+#[derive(Clone, Copy, Debug)]
+struct Scenario { breed: BreedId, batch: usize }
+impl fmt::Display for Scenario {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/batch={}", self.breed, self.batch)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ContextScenario { breed: BreedId, noise_facts: usize }
+impl fmt::Display for ContextScenario {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/noise_facts={}", self.breed, self.noise_facts)
+    }
+}
+
+fn scenarios() -> impl Iterator<Item = Scenario> {
+    assert_eq!(BreedId::ALL.len(), EXPECTED_BREEDS, "REFUSED:BENCHMARK_INVENTORY_DRIFT");
+    BreedId::ALL.into_iter().flat_map(|breed| BATCHES.into_iter().map(move |batch| Scenario { breed, batch }))
+}
+
+fn context_scenarios() -> impl Iterator<Item = ContextScenario> {
+    assert_eq!(BreedId::ALL.len(), EXPECTED_BREEDS, "REFUSED:BENCHMARK_INVENTORY_DRIFT");
+    BreedId::ALL.into_iter().flat_map(|breed| CONTEXT_NOISE.into_iter().map(move |noise_facts| ContextScenario { breed, noise_facts }))
+}
+
+fn fixture_path(id: BreedId) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("papers").join(format!("{}.json", id))
+}
+
+fn fixture_input(id: BreedId) -> BreedInput {
+    let path = fixture_path(id);
+    let raw = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: benchmark fixture {} unavailable: {e}", id, path.display()));
+    let json: serde_json::Value = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: invalid benchmark fixture {}: {e}", id, path.display()));
+    let mut inp = json["input"].clone();
+    let obj = inp.as_object_mut().unwrap_or_else(|| panic!("{}: fixture input must be an object", id));
+    obj.entry("intent").or_insert(serde_json::json!(""));
+    for key in ["candidates", "facts", "cases", "rules", "goals", "state"] { obj.entry(key).or_insert(serde_json::json!([])); }
+    serde_json::from_value(inp).unwrap_or_else(|e| panic!("{}: fixture cannot deserialize as BreedInput: {e}", id))
+}
+
+fn preflight(id: BreedId, input: &BreedInput) {
+    let out = dispatch_breed_id(id, input).unwrap_or_else(|e| panic!("{}: full-path benchmark admission failed: {e}", id));
+    assert_eq!(out.breed, id, "{}: output attributed to wrong breed", id);
+    assert!(!out.inference_trace.is_empty(), "{}: zero observable inference work", id);
+    assert!(out.ocel_log.is_some(), "{}: no OCEL evidence", id);
+    assert!(out.inference_trace.windows(2).all(|w| w[0].step < w[1].step), "{}: non-monotonic inference trace", id);
+}
+
+fn with_nonce(mut input: BreedInput, nonce: usize) -> BreedInput {
+    input.facts.push(Fact { key: "__bench:nonce".to_string(), value: nonce.to_string() });
+    input
+}
+
+fn workload(s: Scenario) -> Vec<BreedInput> {
+    let base = fixture_input(s.breed);
+    (0..s.batch).map(|nonce| { let input = with_nonce(base.clone(), nonce); preflight(s.breed, &input); input }).collect()
+}
+
+fn context_workload(s: ContextScenario) -> BreedInput {
+    let mut input = fixture_input(s.breed);
+    input.facts.reserve(s.noise_facts);
+    for i in 0..s.noise_facts {
+        input.facts.push(Fact { key: format!("__bench:irrelevant:{i:08}"), value: format!("noise-{i:08}-{}", s.breed) });
+    }
+    preflight(s.breed, &input);
+    input
+}
+
+#[divan::bench(args = scenarios(), min_time = 0.05, max_time = 0.5)]
+fn kernel_only(bencher: Bencher, scenario: Scenario) {
+    let inputs = workload(scenario);
+    bencher.counter(ItemsCount::new(scenario.batch)).bench_local(|| {
+        let mut evidence = 0usize;
+        for input in black_box(&inputs) {
+            let out = dispatch_breed_test_id(scenario.breed, black_box(input)).unwrap_or_else(|e| panic!("{} kernel failed: {e}", scenario.breed));
+            evidence = evidence.wrapping_add(out.inference_trace.len()).wrapping_add(out.facts.len()).wrapping_add(out.candidates.len());
+            black_box(&out);
+        }
+        black_box(evidence)
+    });
+}
+
+#[divan::bench(args = scenarios(), min_time = 0.05, max_time = 0.5)]
+fn full_lifecycle(bencher: Bencher, scenario: Scenario) {
+    let inputs = workload(scenario);
+    bencher.counter(ItemsCount::new(scenario.batch)).bench_local(|| {
+        let mut evidence = 0usize;
+        for input in black_box(&inputs) {
+            let out = dispatch_breed_id(scenario.breed, black_box(input)).unwrap_or_else(|e| panic!("{} lifecycle failed: {e}", scenario.breed));
+            evidence = evidence.wrapping_add(out.inference_trace.len()).wrapping_add(out.facts.len()).wrapping_add(out.candidates.len());
+            black_box(&out);
+        }
+        black_box(evidence)
+    });
+}
+
+#[divan::bench(args = context_scenarios(), min_time = 0.05, max_time = 0.5)]
+fn context_pressure(bencher: Bencher, scenario: ContextScenario) {
+    let input = context_workload(scenario);
+    bencher.counter(ItemsCount::new(input.facts.len())).bench_local(|| {
+        let out = dispatch_breed_test_id(scenario.breed, black_box(&input)).unwrap_or_else(|e| panic!("{} context-pressure kernel failed: {e}", scenario.breed));
+        black_box(out)
+    });
+}
+
+fn main() { divan::main(); }

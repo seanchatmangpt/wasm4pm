@@ -1,22 +1,10 @@
 /**
- * `--introspect` — emits Anthropic/OpenAI tool-schema-shaped JSON so an
- * agent can discover a verb's (or the whole registry's) calling
- * convention without parsing `--help` text.
- *
- * Two entry points, mirroring the two invocation shapes:
- *   - `wpm <noun> <verb> --introspect` -> `buildToolSchema()` for one verb
- *     (wired into `buildVerbCommand()` in cli.ts).
- *   - `wpm --introspect` (no noun given) -> `buildRegistrySchema()` for
- *     every verb in the registry (wired into `runCli()` in entry.ts, and
- *     into `buildCli()`'s root command for hosts that drive the returned
- *     `CommandDef` directly through citty's own `runMain`/`runCommand`).
- *
- * Schemas are generated purely from each verb's `TypedArgSpec` — never
- * from the framework-injected `--human`/`--introspect` flags, since those
- * are CLI plumbing, not part of the verb's actual contract.
+ * `--introspect` emits machine-consumable tool schemas. The registry is
+ * sufficient for an agent to discover commands without parsing help text.
  */
 
 import type { ArgDef } from 'citty';
+import { MACHINE_PROTOCOL } from './machine.js';
 import type { NounDefinition, TypedArgSpec, VerbDefinition } from './types.js';
 import { writeJson } from './output.js';
 
@@ -26,11 +14,17 @@ export interface ToolInputSchema {
   readonly required: readonly string[];
 }
 
-/** Anthropic/OpenAI tool-use style schema for a single verb. */
 export interface ToolSchema {
   readonly name: string;
   readonly description: string;
   readonly input_schema: ToolInputSchema;
+  readonly x_wasm4pm: {
+    readonly protocol: typeof MACHINE_PROTOCOL;
+    readonly noun: string;
+    readonly verb: string;
+    readonly stability: string;
+    readonly machine_contract: VerbDefinition['machine'] | null;
+  };
 }
 
 function argJsonType(argDef: ArgDef): string {
@@ -53,7 +47,6 @@ function isRequiredArg(argDef: ArgDef): boolean {
   return argDef.required === true;
 }
 
-/** Build the Anthropic/OpenAI-style tool schema for a single verb, from its `TypedArgSpec`. */
 export function buildToolSchema(nounName: string, verb: VerbDefinition<any, any>): ToolSchema {
   const properties: ToolInputSchema['properties'] = {};
   const required: string[] = [];
@@ -63,51 +56,56 @@ export function buildToolSchema(nounName: string, verb: VerbDefinition<any, any>
     const property: { type: string; description?: string; default?: unknown } = {
       type: argJsonType(argDef),
     };
-    if (argDef.description) {
-      property.description = argDef.description;
-    }
-    if (argDef.default !== undefined) {
-      property.default = argDef.default;
-    }
+    if (argDef.description) property.description = argDef.description;
+    if (argDef.default !== undefined) property.default = argDef.default;
     properties[name] = property;
-    if (isRequiredArg(argDef)) {
-      required.push(name);
-    }
+    if (isRequiredArg(argDef)) required.push(name);
   }
 
   return {
     name: `${nounName}_${verb.verb}`,
     description: verb.stability === 'experimental' ? `[experimental] ${verb.summary}` : verb.summary,
     input_schema: { type: 'object', properties, required },
+    x_wasm4pm: {
+      protocol: MACHINE_PROTOCOL,
+      noun: nounName,
+      verb: verb.verb,
+      stability: verb.stability,
+      machine_contract: verb.machine ?? null,
+    },
   };
 }
 
-/** Build tool schemas for every verb across every noun in the registry. */
-export function buildRegistrySchema(nouns: readonly NounDefinition[]): { readonly tools: readonly ToolSchema[] } {
+export function buildRegistrySchema(nouns: readonly NounDefinition[]): {
+  readonly protocol: typeof MACHINE_PROTOCOL;
+  readonly transport: {
+    readonly invocation: string;
+    readonly stdout: 'single-json-value';
+    readonly stderr: 'diagnostic-only';
+  };
+  readonly tools: readonly ToolSchema[];
+} {
   const tools: ToolSchema[] = [];
   for (const noun of nouns) {
-    for (const verb of noun.verbs) {
-      tools.push(buildToolSchema(noun.name, verb));
-    }
+    for (const verb of noun.verbs) tools.push(buildToolSchema(noun.name, verb));
   }
-  return { tools };
+  return {
+    protocol: MACHINE_PROTOCOL,
+    transport: {
+      invocation: `printf '%s' '<json>' | wpm --machine`,
+      stdout: 'single-json-value',
+      stderr: 'diagnostic-only',
+    },
+    tools,
+  };
 }
 
-/**
- * If `rawArgs` is a bare `--introspect` invocation with no noun token
- * (i.e. `wpm --introspect`), write the whole-registry schema to stdout
- * and return `true`. Otherwise does nothing and returns `false`, leaving
- * dispatch to proceed normally (including per-verb `--introspect`, which
- * `buildVerbCommand()` handles once a noun/verb has actually matched).
- */
 export function tryHandleRegistryIntrospect(
   rawArgs: readonly string[],
   nouns: readonly NounDefinition[]
 ): boolean {
   const hasNounToken = rawArgs.some((token) => !token.startsWith('-'));
-  if (hasNounToken || !rawArgs.includes('--introspect')) {
-    return false;
-  }
+  if (hasNounToken || !rawArgs.includes('--introspect')) return false;
   writeJson(buildRegistrySchema(nouns));
   process.exitCode = 0;
   return true;

@@ -10,6 +10,13 @@ const add = defineVerb({
     left: { type: 'positional', description: 'Left operand' },
     right: { type: 'positional', description: 'Right operand' },
   } as const,
+  machine: {
+    authority: 'OBSERVE',
+    effects: ['STDOUT'],
+    idempotency: 'IDEMPOTENT',
+    determinism: 'DETERMINISTIC',
+    receipts: 'REQUIRED',
+  },
   handler: () => ({}),
 });
 
@@ -28,7 +35,7 @@ const square = defineVerb({
 const calcNoun = defineNoun({ name: 'calc', verbs: [add, square] });
 
 describe('buildToolSchema', () => {
-  it('has the Anthropic/OpenAI tool-schema shape: name, description, input_schema', () => {
+  it('has the Anthropic/OpenAI tool-schema shape plus a machine execution extension', () => {
     const schema = buildToolSchema('calc', add);
     expect(schema).toHaveProperty('name');
     expect(schema).toHaveProperty('description');
@@ -36,6 +43,13 @@ describe('buildToolSchema', () => {
     expect(schema.input_schema).toHaveProperty('type', 'object');
     expect(schema.input_schema).toHaveProperty('properties');
     expect(schema.input_schema).toHaveProperty('required');
+    expect(schema.x_wasm4pm).toMatchObject({
+      protocol: 'wasm4pm.machine.v1',
+      noun: 'calc',
+      verb: 'add',
+      stability: 'stable',
+      machine_contract: { authority: 'OBSERVE', receipts: 'REQUIRED' },
+    });
   });
 
   it('names the tool `<noun>_<verb>`', () => {
@@ -64,6 +78,10 @@ describe('buildToolSchema', () => {
     expect(schema.description).toBe('[experimental] Square a number (experimental)');
   });
 
+  it('marks undeclared machine contracts as unknown rather than inventing authority', () => {
+    expect(buildToolSchema('calc', square).x_wasm4pm.machine_contract).toBeNull();
+  });
+
   it('never leaks the framework-injected --human/--introspect flags into the schema', () => {
     const schema = buildToolSchema('calc', add);
     expect(schema.input_schema.properties).not.toHaveProperty('human');
@@ -78,12 +96,13 @@ describe('buildRegistrySchema', () => {
     expect(registry.tools.map((tool) => tool.name).sort()).toEqual(['calc_add', 'calc_square']);
   });
 
-  it('every entry has the same name/description/input_schema shape', () => {
+  it('advertises the canonical machine transport without help-text parsing', () => {
     const registry = buildRegistrySchema([calcNoun]);
-    for (const tool of registry.tools) {
-      expect(tool).toHaveProperty('name');
-      expect(tool).toHaveProperty('description');
-      expect(tool.input_schema.type).toBe('object');
-    }
+    expect(registry.protocol).toBe('wasm4pm.machine.v1');
+    expect(registry.transport).toEqual({
+      invocation: "printf '%s' '<json>' | wpm --machine",
+      stdout: 'single-json-value',
+      stderr: 'diagnostic-only',
+    });
   });
 });

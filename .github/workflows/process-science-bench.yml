@@ -1,0 +1,113 @@
+name: Process science benchmark
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+    paths:
+      - 'wasm4pm/examples/process_science.rs'
+      - 'wasm4pm/benchmarks/validate_process_science.py'
+      - 'wasm4pm/bench_data/receipt.xes'
+      - 'wasm4pm/src/**'
+      - 'wasm4pm/Cargo.toml'
+      - 'apps/wasm4pm/src/nouns/lab/process-science.ts'
+      - 'apps/wasm4pm/src/nouns/lab/index.ts'
+      - 'apps/wasm4pm/src/bin/wpm.ts'
+      - 'apps/wasm4pm/src/__tests__/process-science-cli.chicago-fs.test.ts'
+      - 'apps/wasm4pm/package.json'
+      - 'apps/wasm4pm/tsconfig*.json'
+      - 'packages/noun-verb/**'
+      - 'packages/testing/**'
+      - 'pnpm-lock.yaml'
+      - 'Cargo.lock'
+      - '.github/workflows/process-science-bench.yml'
+      - 'docs/benchmarks/process-science.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust and wasm-pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal --target wasm32-unknown-unknown
+          rustup default nightly-2026-04-15
+          npm install -g wasm-pack@0.13.1
+          rustc --version
+          cargo --version
+          wasm-pack --version
+
+      - name: Install Node workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+          node --version
+          corepack pnpm --version
+
+      - name: Identify exact subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "head_sha=$(git rev-parse HEAD)" | tee process-science-subject.txt
+          echo "dataset_sha256=$(sha256sum wasm4pm/bench_data/receipt.xes | cut -d' ' -f1)" | tee -a process-science-subject.txt
+          echo "dataset_bytes=$(wc -c < wasm4pm/bench_data/receipt.xes | tr -d ' ')" | tee -a process-science-subject.txt
+
+      - name: Validate machine protocol framework
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm --filter @wasm4pm/noun-verb test -- src/__tests__/machine.test.ts src/__tests__/introspect.test.ts
+
+      - name: Build published wpm CLI
+        shell: bash
+        run: corepack pnpm --filter @wasm4pm/cli build
+
+      - name: Execute Chicago filesystem CLI tests
+        shell: bash
+        run: corepack pnpm --filter @wasm4pm/cli test -- src/__tests__/process-science-cli.chicago-fs.test.ts
+
+      - name: Compile benchmark subject
+        shell: bash
+        run: cargo check --manifest-path wasm4pm/Cargo.toml --example process_science --locked
+
+      - name: Execute benchmark subject
+        shell: bash
+        run: cargo run --manifest-path wasm4pm/Cargo.toml --release --example process_science --locked 2>&1 | tee process-science.log
+
+      - name: Verify benchmark receipts and arithmetic
+        shell: bash
+        run: python3 wasm4pm/benchmarks/validate_process_science.py process-science.log
+
+      - name: Manufacture receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat process-science-subject.txt 2>/dev/null || true
+          echo "log_sha256=$(sha256sum process-science.log 2>/dev/null | cut -d' ' -f1 || true)" | tee process-science-receipt.txt
+          echo "results_sha256=$(sha256sum process-science-results.csv 2>/dev/null | cut -d' ' -f1 || true)" | tee -a process-science-receipt.txt
+          echo "summary_sha256=$(sha256sum process-science-summary.md 2>/dev/null | cut -d' ' -f1 || true)" | tee -a process-science-receipt.txt
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: process-science-benchmark-evidence
+          path: |
+            process-science-subject.txt
+            process-science.log
+            process-science-results.csv
+            process-science-summary.md
+            process-science-receipt.txt
+          if-no-files-found: warn
+          retention-days: 30

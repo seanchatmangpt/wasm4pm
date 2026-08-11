@@ -1,0 +1,352 @@
+name: Challenger enterprise architecture benchmark
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+    paths:
+      - 'wasm4pm/benches/enterprise_architecture.rs'
+      - 'wasm4pm/examples/fortune5_decision_economics.rs'
+      - 'wasm4pm/examples/forward_deployed_engineer_cognition.rs'
+      - 'wasm4pm/bench_data/receipt.xes'
+      - 'wasm4pm/src/**'
+      - 'wasm4pm/Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/enterprise-architecture-bench.yml'
+      - 'docs/benchmarks/challenger-enterprise-architecture.md'
+      - 'docs/benchmarks/forward-deployed-engineer-cognition.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  enterprise-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+          rustup default nightly-2026-04-15
+          rustc --version
+          cargo --version
+
+      - name: Identify exact evidence subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "head_sha=$(git rev-parse HEAD)"
+            echo "dataset_sha256=$(sha256sum wasm4pm/bench_data/receipt.xes | cut -d' ' -f1)"
+            echo "dataset_bytes=$(wc -c < wasm4pm/bench_data/receipt.xes | tr -d ' ')"
+          } | tee enterprise-subject.txt
+
+      - name: Execute Fortune 5 decision-economics rail
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo run \
+            --manifest-path wasm4pm/Cargo.toml \
+            --release \
+            --example fortune5_decision_economics \
+            --locked \
+            2>&1 | tee enterprise-benchmark.log
+
+      - name: Validate measured numbers and manufacture thesis table
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv
+          import hashlib
+          import re
+          from pathlib import Path
+
+          log = Path("enterprise-benchmark.log").read_text()
+          lines = log.splitlines()
+          result_lines = [line for line in lines if line.startswith("FORTUNE5_RESULT\t")]
+          discovery = [line for line in lines if line.startswith("DISCOVERY_RESULT\t")]
+          subject = [line for line in lines if line.startswith("FORTUNE5_SUBJECT\t")]
+          complete = [line for line in lines if line.startswith("FORTUNE5_COMPLETE\t")]
+
+          if len(discovery) != 1 or len(subject) != 1 or len(complete) != 1:
+              raise SystemExit("REFUSED: missing unique discovery/subject/completion receipt")
+          if len(result_lines) != 16:
+              raise SystemExit(f"REFUSED: expected 16 measured frontier rows, observed {len(result_lines)}")
+
+          def fields(line):
+              return dict(part.split("=", 1) for part in line.split("\t")[1:])
+
+          rows = [fields(line) for line in result_lines]
+          scales = [int(row["scale"]) for row in rows]
+          if 10_000_000 not in scales:
+              raise SystemExit("REFUSED: flagship 10,000,000-envelope execution absent")
+
+          total = 0
+          for row in rows:
+              scale = int(row["scale"])
+              admitted = int(row["admitted"])
+              refused = int(row["refused"])
+              elapsed_ns = int(row["elapsed_ns"])
+              rate = float(row["ebaa_per_second"])
+              receipt = row["final_receipt"]
+              if admitted + refused != scale:
+                  raise SystemExit(f"REFUSED: standing mismatch for {row['family']}@{scale}")
+              if elapsed_ns <= 0 or rate <= 0:
+                  raise SystemExit(f"REFUSED: non-positive measurement for {row['family']}@{scale}")
+              if not re.fullmatch(r"[0-9a-f]{64}", receipt):
+                  raise SystemExit(f"REFUSED: invalid receipt for {row['family']}@{scale}")
+              total += scale
+
+          completion = fields(complete[0])
+          planned = int(completion["planned_evaluations"])
+          if total != planned:
+              raise SystemExit(f"REFUSED: executed total {total} != planned total {planned}")
+          if total < 30_000_000:
+              raise SystemExit(f"REFUSED: massive rail too small: {total}")
+
+          for row in rows:
+              raw = int(row["scale"]) / (int(row["elapsed_ns"]) / 1e9)
+              logged = float(row["ebaa_per_second"])
+              relative_error = abs(raw - logged) / raw
+              if relative_error > 1e-6:
+                  raise SystemExit(
+                      f"REFUSED: throughput arithmetic drift {row['family']}@{row['scale']}: {relative_error}"
+                  )
+
+          out = Path("fortune5-results.csv")
+          with out.open("w", newline="") as f:
+              writer = csv.DictWriter(
+                  f,
+                  fieldnames=[
+                      "family", "scale", "admitted", "refused", "elapsed_ns",
+                      "ebaa_per_second", "final_receipt"
+                  ],
+              )
+              writer.writeheader()
+              writer.writerows(rows)
+
+          fastest = max(rows, key=lambda row: float(row["ebaa_per_second"]))
+          flagship = next(
+              row for row in rows
+              if row["family"] == "governance_portfolio_frontier" and int(row["scale"]) == 10_000_000
+          )
+          flagship_rate = float(flagship["ebaa_per_second"])
+          one_hour = flagship_rate * 3600
+          one_day = flagship_rate * 86400
+          one_week = flagship_rate * 604800
+          log_sha = hashlib.sha256(log.encode()).hexdigest()
+
+          summary = f"""# Fortune 5 Enterprise Architecture Benchmark Receipt
+
+          ## Observed execution
+
+          - Executed decision envelopes: **{total:,}**
+          - Largest single measured frontier: **10,000,000** envelopes
+          - Flagship measured throughput: **{flagship_rate:,.0f} evidence-bound architectural alternatives/second**
+          - Fastest measured row: **{float(fastest['ebaa_per_second']):,.0f} EBAA/s** ({fastest['family']} @ {int(fastest['scale']):,})
+          - Benchmark log SHA-256: `{log_sha}`
+
+          ## Derived human-latency arbitrage
+
+          These are arithmetic projections from the measured 10,000,000-envelope flagship rate, not separately executed envelope counts.
+
+          - One hour: **{one_hour:,.0f}** alternatives
+          - One day: **{one_day:,.0f}** alternatives
+          - One week: **{one_week:,.0f}** alternatives
+
+          ## Claim boundary
+
+          The stress rail reuses semantic roots manufactured from the checked-in real XES process evidence. Its EBAA/s numbers measure deterministic policy/conformance/receipt envelope evaluation over those roots. They are **not** full process-discovery operations per second. The separate `DISCOVERY_RESULT` line records the real process-semantics manufacture cost.
+          """
+          Path("fortune5-summary.md").write_text("\n".join(line.strip() for line in summary.splitlines()) + "\n")
+          print(summary)
+          PY
+
+      - name: Execute forward-deployed engineer cognition rail
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo run \
+            --manifest-path wasm4pm/Cargo.toml \
+            --release \
+            --example forward_deployed_engineer_cognition \
+            --locked \
+            2>&1 | tee fde-cognition.log
+
+      - name: Validate forward-deployed engineer cognition receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import csv
+          import hashlib
+          import re
+          from pathlib import Path
+
+          log = Path("fde-cognition.log").read_text()
+          lines = log.splitlines()
+          subject_lines = [line for line in lines if line.startswith("FDE_COGNITION_SUBJECT\t")]
+          result_lines = [line for line in lines if line.startswith("FDE_COGNITION_RESULT\t")]
+          complete_lines = [line for line in lines if line.startswith("FDE_COGNITION_COMPLETE\t")]
+
+          if len(subject_lines) != 1 or len(complete_lines) != 1:
+              raise SystemExit("REFUSED:FDE_COGNITION_IDENTITY_MISSING")
+          if len(result_lines) != 13:
+              raise SystemExit(f"REFUSED:FDE_COGNITION_ROW_COUNT:{len(result_lines)}")
+
+          def fields(line):
+              return dict(part.split("=", 1) for part in line.split("\t")[1:])
+
+          subject = fields(subject_lines[0])
+          completion = fields(complete_lines[0])
+          rows = [fields(line) for line in result_lines]
+
+          if subject.get("actuation") != "REFUSED" or completion.get("actuation") != "REFUSED":
+              raise SystemExit("REFUSED:FDE_ACTUATION_AUTHORITY_LEAK")
+          if completion.get("status") != "ALIVE_CANDIDATE":
+              raise SystemExit("REFUSED:FDE_COMPLETION_STANDING")
+
+          planned_episodes = int(subject["planned_episodes"])
+          planned_transitions = int(subject["planned_cognition_transitions"])
+          if planned_episodes < 20_000_000 or planned_transitions < 160_000_000:
+              raise SystemExit("REFUSED:FDE_SCALE_TOO_SMALL")
+          if int(completion["planned_episodes"]) != planned_episodes:
+              raise SystemExit("REFUSED:FDE_EPISODE_PLAN_DRIFT")
+          if int(completion["planned_cognition_transitions"]) != planned_transitions:
+              raise SystemExit("REFUSED:FDE_TRANSITION_PLAN_DRIFT")
+          if int(completion["flagship_episodes"]) != 10_000_000:
+              raise SystemExit("REFUSED:FDE_FLAGSHIP_MISSING")
+
+          total_episodes = 0
+          total_transitions = 0
+          total_hypotheses = 0
+          for row in rows:
+              scale = int(row["scale"])
+              hypotheses = int(row["hypotheses"])
+              known = int(row["known_pattern_routes"])
+              search = int(row["search_routes"])
+              admitted = int(row["admitted"])
+              refused = int(row["refused"])
+              transitions = int(row["cognition_transitions"])
+              elapsed_ns = int(row["elapsed_ns"])
+              receipt = row["final_receipt"]
+              if known + search != scale:
+                  raise SystemExit(f"REFUSED:FDE_ROUTE_STANDING:{row['family']}@{scale}")
+              if admitted + refused != scale:
+                  raise SystemExit(f"REFUSED:FDE_ADMISSION_STANDING:{row['family']}@{scale}")
+              if transitions != scale * 8:
+                  raise SystemExit(f"REFUSED:FDE_TRANSITION_COUNT:{row['family']}@{scale}")
+              if hypotheses < scale:
+                  raise SystemExit(f"REFUSED:FDE_HYPOTHESIS_COUNT:{row['family']}@{scale}")
+              if elapsed_ns <= 0:
+                  raise SystemExit(f"REFUSED:FDE_CLOCK:{row['family']}@{scale}")
+              if not re.fullmatch(r"[0-9a-f]{64}", receipt):
+                  raise SystemExit(f"REFUSED:FDE_RECEIPT:{row['family']}@{scale}")
+
+              seconds = elapsed_ns / 1e9
+              expected = {
+                  "episodes_per_second": scale / seconds,
+                  "hypotheses_per_second": hypotheses / seconds,
+                  "transitions_per_second": transitions / seconds,
+              }
+              for key, raw in expected.items():
+                  logged = float(row[key])
+                  if logged <= 0:
+                      raise SystemExit(f"REFUSED:FDE_NON_POSITIVE:{key}")
+                  if abs(raw - logged) / raw > 1e-6:
+                      raise SystemExit(f"REFUSED:FDE_ARITHMETIC_DRIFT:{row['family']}:{key}")
+
+              total_episodes += scale
+              total_transitions += transitions
+              total_hypotheses += hypotheses
+
+          if total_episodes != planned_episodes:
+              raise SystemExit(f"REFUSED:FDE_EXECUTION_TOTAL:{total_episodes}!={planned_episodes}")
+          if total_transitions != planned_transitions:
+              raise SystemExit(f"REFUSED:FDE_TRANSITION_TOTAL:{total_transitions}!={planned_transitions}")
+
+          flagship = next(
+              row for row in rows
+              if row["family"] == "forward_deployed_engineer_end_to_end"
+              and int(row["scale"]) == 10_000_000
+          )
+          hook = next(
+              row for row in rows
+              if row["family"] == "compiled_known_pattern_hook"
+              and int(row["scale"]) == 5_000_000
+          )
+
+          with Path("fde-cognition-results.csv").open("w", newline="") as f:
+              writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+              writer.writeheader()
+              writer.writerows(rows)
+
+          flagship_eps = float(flagship["episodes_per_second"])
+          flagship_tps = float(flagship["transitions_per_second"])
+          hook_eps = float(hook["episodes_per_second"])
+          log_sha = hashlib.sha256(log.encode()).hexdigest()
+
+          summary = f"""# Forward-Deployed Engineer Cognition Benchmark Receipt
+
+          ## Directly observed execution
+
+          - Simulated deployed engineering episodes: **{total_episodes:,}**
+          - Directly executed cognition transitions: **{total_transitions:,}**
+          - Directly evaluated engineering hypotheses: **{total_hypotheses:,}**
+          - Largest end-to-end measured row: **10,000,000 episodes**
+          - End-to-end FDE episodes/second: **{flagship_eps:,.0f}**
+          - End-to-end cognition transitions/second: **{flagship_tps:,.0f}**
+          - Compiled known-pattern hook episodes/second: **{hook_eps:,.0f}**
+          - Benchmark log SHA-256: `{log_sha}`
+
+          ## Model boundary
+
+          The benchmark simulates a bounded forward-deployed engineering cognition graph: OBSERVE -> ROUTE -> HYPOTHESIZE -> TEST -> CONSTRUCT -> VERIFY -> ADMIT/REFUSE -> RECEIPT. It is seeded by the checked-in XES evidence identity, but its incident/change envelopes are deterministic simulations. It does **not** measure human thoughts, LLM inference, real customer incidents, or external actuation. Every path retains `actuation=REFUSED`.
+
+          ## Derived capacity (not separately executed)
+
+          At the measured 10M end-to-end rate, one hour corresponds arithmetically to **{flagship_eps * 3600:,.0f} simulated FDE episodes** and **{flagship_tps * 3600:,.0f} cognition transitions**. These are projections from measured throughput, not additional executions.
+          """
+          Path("fde-cognition-summary.md").write_text("\n".join(line.strip() for line in summary.splitlines()) + "\n")
+          print(summary)
+          PY
+
+      - name: Manufacture benchmark receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cat enterprise-subject.txt 2>/dev/null || true
+            echo "enterprise_log_sha256=$(sha256sum enterprise-benchmark.log 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "enterprise_results_sha256=$(sha256sum fortune5-results.csv 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "enterprise_summary_sha256=$(sha256sum fortune5-summary.md 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "fde_log_sha256=$(sha256sum fde-cognition.log 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "fde_results_sha256=$(sha256sum fde-cognition-results.csv 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "fde_summary_sha256=$(sha256sum fde-cognition-summary.md 2>/dev/null | cut -d' ' -f1 || true)"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+          } | tee enterprise-receipt.txt
+
+      - name: Upload exact-head benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenger-enterprise-architecture-${{ github.sha }}
+          path: |
+            enterprise-subject.txt
+            enterprise-benchmark.log
+            enterprise-receipt.txt
+            fortune5-results.csv
+            fortune5-summary.md
+            fde-cognition.log
+            fde-cognition-results.csv
+            fde-cognition-summary.md
+          if-no-files-found: warn
+          retention-days: 30

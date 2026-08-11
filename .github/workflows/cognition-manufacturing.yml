@@ -1,0 +1,227 @@
+name: Cognition Benchmark Manufacture
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+    paths:
+      - 'benchmark-manufacturing/**'
+      - 'crates/wasm4pm-cognition/src/breeds/**'
+      - 'crates/wasm4pm-cognition/tests/fixtures/papers/**'
+      - '.github/workflows/cognition-manufacturing.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cognition-benchmark-manufacture-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  manufacture-verify-receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact wasm4pm subject
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Bind observed subject
+        id: subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "observed_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "branch=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          git status --short
+
+      - name: Replay DSPy SELECT-to-ADMIT membrane without LM authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 benchmark-manufacturing/dspy_program.py \
+            --inventory benchmark-manufacturing/inventory.json \
+            --candidate benchmark-manufacturing/candidate.json \
+            > /tmp/admitted-cognition-benchmark.json
+          python3 - <<'PY'
+          import json
+          p = json.load(open('/tmp/admitted-cognition-benchmark.json'))
+          assert p['expected_breeds'] == 55
+          assert p['expected_measurements'] == 660
+          assert p['authority'] == 'SELECT_ONLY'
+          assert p['actuation'] == 'REFUSED'
+          print('DSPY_ADMISSION_ALIVE breeds=55 measurements=660 actuation=REFUSED')
+          PY
+
+      - name: Checkout pinned ggen constructor
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: seanchatmangpt/ggen
+          ref: e9298d4dbb1a22329e8aee4c8e2d622c25c72223
+          path: .tools/ggen
+          fetch-depth: 1
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt --component clippy
+          rustup default nightly-2026-04-15
+          rustc --version
+          cargo --version
+
+      - name: Build exact ggen constructor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --manifest-path .tools/ggen/Cargo.toml -p ggen-cli-lib --bin ggen --release
+          .tools/ggen/target/release/ggen --version || true
+          test "$(git -C .tools/ggen rev-parse HEAD)" = "e9298d4dbb1a22329e8aee4c8e2d622c25c72223"
+
+      - name: ggen CONSTRUCT canonical benchmark projections
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd benchmark-manufacturing
+            ../.tools/ggen/target/release/ggen sync run
+          )
+          git diff --check
+
+      - name: Refuse unexpected ggen consequence paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          allowed = {
+              'crates/wasm4pm-cognition/benches/cognition_divan.rs',
+              'crates/wasm4pm-cognition/tests/divan_benchmark_contract.rs',
+              'docs/benchmarks/cognition-manufacturing.md',
+          }
+          out = subprocess.check_output(['git','status','--porcelain'], text=True)
+          bad=[]
+          for line in out.splitlines():
+              path=line[3:]
+              if path.startswith('.tools/ggen/') or path.startswith('benchmark-manufacturing/.ggen/'):
+                  continue
+              if path not in allowed:
+                  bad.append(path)
+          if bad:
+              raise SystemExit('REFUSED:UNEXPECTED_GGEN_CONSEQUENCE:' + ','.join(bad))
+          print('GGEN_CONSEQUENCE_PATHS_ADMITTED')
+          PY
+
+      - name: Commit manufactured projections locally
+        id: projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            crates/wasm4pm-cognition/benches/cognition_divan.rs \
+            crates/wasm4pm-cognition/tests/divan_benchmark_contract.rs \
+            docs/benchmarks/cognition-manufacturing.md
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "projection_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "wasm4pm-benchmark-manufacturer"
+            git config user.email "benchmark-manufacturer@users.noreply.github.com"
+            git commit -m "ggen: project cognition benchmark constitution"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "projection_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate exact manufactured Rust subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path crates/wasm4pm-cognition/Cargo.toml -- --check
+          cargo check --manifest-path crates/wasm4pm-cognition/Cargo.toml --all-targets
+          cargo test --manifest-path crates/wasm4pm-cognition/Cargo.toml --test divan_benchmark_contract
+
+      - name: Execute all cognition Divan measurements
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo bench --manifest-path crates/wasm4pm-cognition/Cargo.toml --bench cognition_divan 2>&1 | tee /tmp/cognition-divan.log
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Verify anti-hiding execution coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          log=open('/tmp/cognition-divan.log', errors='replace').read()
+          inv=json.load(open('benchmark-manufacturing/inventory.json'))['breeds']
+          missing=[b for b in inv if b not in log]
+          if missing:
+              raise SystemExit('REFUSED:DIVAN_OUTPUT_MISSING_BREEDS:' + ','.join(missing))
+          for surface in ('kernel_only','full_lifecycle','context_pressure'):
+              if surface not in log:
+                  raise SystemExit('REFUSED:DIVAN_OUTPUT_MISSING_SURFACE:' + surface)
+          print(f'DIVAN_COVERAGE_ALIVE breeds={len(inv)} constitution_measurements=660')
+          PY
+
+      - name: Manufacture exact-subject receipt
+        shell: bash
+        env:
+          OBSERVED_SHA: ${{ steps.subject.outputs.observed_sha }}
+          PROJECTION_SHA: ${{ steps.projection.outputs.projection_sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          def sha256(path):
+              return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+          receipt={
+              'standing':'ALIVE',
+              'repository':'seanchatmangpt/wasm4pm',
+              'observed_sha':os.environ['OBSERVED_SHA'],
+              'executed_sha':os.environ['PROJECTION_SHA'],
+              'dspygen_ref':'83f9e42a879ca83891c724709743613cace52256',
+              'ggen_ref':'e9298d4dbb1a22329e8aee4c8e2d622c25c72223',
+              'expected_breeds':55,
+              'constitution_measurements':660,
+              'actuation':'REFUSED',
+              'inputs':{
+                  'O.star.toml':sha256('benchmark-manufacturing/O.star.toml'),
+                  'ontology.ttl':sha256('benchmark-manufacturing/ontology.ttl'),
+                  'candidate.json':sha256('benchmark-manufacturing/candidate.json'),
+                  'inventory.json':sha256('benchmark-manufacturing/inventory.json'),
+              },
+              'outputs':{
+                  'cognition_divan.rs':sha256('crates/wasm4pm-cognition/benches/cognition_divan.rs'),
+                  'divan_benchmark_contract.rs':sha256('crates/wasm4pm-cognition/tests/divan_benchmark_contract.rs'),
+                  'cognition-manufacturing.md':sha256('docs/benchmarks/cognition-manufacturing.md'),
+                  'divan.log':sha256('/tmp/cognition-divan.log'),
+              },
+              'run_id':os.environ.get('GITHUB_RUN_ID'),
+              'run_attempt':os.environ.get('GITHUB_RUN_ATTEMPT'),
+          }
+          pathlib.Path('/tmp/cognition-manufacturing-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(receipt,indent=2,sort_keys=True))
+          PY
+
+      - name: Publish verified projection commit
+        if: steps.projection.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ steps.projection.outputs.projection_sha }}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload cognition manufacturing receipt
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: cognition-manufacturing-${{ steps.projection.outputs.projection_sha || github.sha }}
+          path: |
+            /tmp/admitted-cognition-benchmark.json
+            /tmp/cognition-divan.log
+            /tmp/cognition-manufacturing-receipt.json
+            benchmark-manufacturing/.ggen/receipts/latest.json
+          if-no-files-found: warn
