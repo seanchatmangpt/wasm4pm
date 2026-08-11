@@ -9,7 +9,7 @@
 /// All inputs and returned results are wrapped in `criterion::black_box` so the
 /// optimizer cannot elide the measured work. Throughput is reported in events.
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::time::Duration;
 use wasm4pm::algorithms::discover_dfg_filtered;
 use wasm4pm::fast_discovery::{
@@ -37,7 +37,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -48,7 +48,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

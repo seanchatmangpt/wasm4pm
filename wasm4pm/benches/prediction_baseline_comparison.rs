@@ -14,7 +14,6 @@
 ///   - `prediction_baseline/ngram_predict_bigram`   — predict_next (n=2) per unique prefix
 ///   - `prediction_baseline/uniform_random_baseline` — baseline: pick uniformly at random
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
 use std::time::Duration;
 use wasm4pm::models::{AttributeValue, EventLog, NGramPredictor};
 use wasm4pm::xes_format::validate_and_parse_xes;
@@ -83,7 +82,10 @@ fn bench_log() -> EventLog {
 
 fn build_ngram(log: &EventLog, activity_key: &str, n: usize) -> NGramPredictor {
     let n = n.max(2);
-    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
+    let mut counts: std::collections::BTreeMap<
+        Vec<String>,
+        std::collections::BTreeMap<String, usize>,
+    > = std::collections::BTreeMap::new();
     for trace in &log.traces {
         let acts: Vec<String> = trace
             .events

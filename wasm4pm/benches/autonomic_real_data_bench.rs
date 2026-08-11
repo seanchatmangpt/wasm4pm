@@ -20,7 +20,7 @@
 //!   ~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes — 100 cases
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::time::Duration;
 
@@ -45,7 +45,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -56,7 +56,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -104,13 +104,13 @@ fn generate_synthetic_fallback() -> EventLog {
     let mut log = EventLog::new();
     for i in 0..100usize {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         let len = 5 + (i % 8);
         for j in 0..len {
             let mut ev = Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             };
             ev.attributes.insert(
                 ACTIVITY_KEY.to_string(),

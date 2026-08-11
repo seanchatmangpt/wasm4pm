@@ -8,7 +8,7 @@
 //!   roadtraffic100traces.xes — 100 cases,   ~1.3K events (road traffic fines)
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::{collections::HashMap, fs, path::Path, time::Duration};
+use std::{collections::BTreeMap, fs, path::Path, time::Duration};
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::batches::discover_batches;
 use wasm4pm::correlation_miner::{mine_correlation, CorrelationConfig};
@@ -53,7 +53,7 @@ fn parse_xes(content: &str) -> EventLog {
         let t = line.trim();
         if t.starts_with("<trace") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -64,7 +64,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if t.starts_with("<event") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if t.starts_with("</event>") {

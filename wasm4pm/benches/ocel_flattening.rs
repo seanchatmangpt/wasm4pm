@@ -10,7 +10,7 @@
 /// `measure_flattening_loss` symbol will still exist (it is not cfg-gated at the
 /// function-signature level) but the body may be a no-op.
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::time::Duration;
 use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
 use wasm4pm::ocel_flatten::measure_flattening_loss;
@@ -38,7 +38,7 @@ fn build_one_to_one_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
         objects.push(OCELObject {
             id: obj_id.clone(),
             object_type: "order".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: vec![],
             embedded_relations: vec![],
         });
@@ -53,7 +53,7 @@ fn build_one_to_one_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
                     (evt_idx % 28) + 1,
                     evt_idx % 24,
                 ),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec![obj_id.clone()],
                 object_refs: vec![],
             });
@@ -83,7 +83,7 @@ fn build_one_to_many_ocel(num_events: usize, objects_per_event: usize) -> OCEL {
         .map(|i| OCELObject {
             id: format!("item{}", i),
             object_type: "item".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: vec![],
             embedded_relations: vec![],
         })
@@ -101,7 +101,7 @@ fn build_one_to_many_ocel(num_events: usize, objects_per_event: usize) -> OCEL {
                     (evt_idx % 28) + 1,
                     evt_idx % 24,
                 ),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: (base..base + objects_per_event)
                     .map(|i| format!("item{}", i))
                     .collect(),
@@ -133,7 +133,7 @@ fn build_many_to_many_ocel(num_objects: usize, num_events: usize, fanout: usize)
         .map(|i| OCELObject {
             id: format!("obj{}", i),
             object_type: "process".to_string(),
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             changes: vec![],
             embedded_relations: vec![],
         })
@@ -154,7 +154,7 @@ fn build_many_to_many_ocel(num_objects: usize, num_events: usize, fanout: usize)
                     (evt_idx % 28) + 1,
                     evt_idx % 24,
                 ),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids,
                 object_refs: vec![],
             }

@@ -10,7 +10,7 @@
 //!   synthetic log generation).
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::{collections::HashMap, fs, time::Duration};
+use std::{collections::BTreeMap, fs, time::Duration};
 
 use wasm4pm::discovery::discover_dfg_from_log;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -51,7 +51,7 @@ fn parse_xes(content: &str, max_traces: usize) -> EventLog {
                 break;
             }
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -62,7 +62,7 @@ fn parse_xes(content: &str, max_traces: usize) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
