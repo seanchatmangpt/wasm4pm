@@ -12,6 +12,12 @@ export interface MachineInvocation {
 
 const ALLOWED_TOP_LEVEL = new Set(['protocol', 'noun', 'verb', 'args']);
 
+type TypedArgEntry = [string, TypedArgSpec[string]];
+
+function typedArgEntries(args: TypedArgSpec): TypedArgEntry[] {
+  return Object.entries(args) as TypedArgEntry[];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -21,7 +27,7 @@ function invalid(message: string, details?: Record<string, unknown>): never {
 }
 
 function requiredArgNames(args: TypedArgSpec): string[] {
-  return Object.entries(args)
+  return typedArgEntries(args)
     .filter(([, def]) =>
       def.type === 'positional'
         ? def.default === undefined && def.required !== false
@@ -67,7 +73,7 @@ export function machineInvocationToArgv(
 
   const rawArgs = value.args ?? {};
   if (!isRecord(rawArgs)) invalid('args must be a JSON object');
-  const spec = verb.args ?? {};
+  const spec: TypedArgSpec = verb.args ?? {};
   for (const name of Object.keys(rawArgs)) {
     if (!Object.prototype.hasOwnProperty.call(spec, name)) {
       invalid(`unknown argument '${name}' for ${noun.name} ${verb.verb}`, {
@@ -82,7 +88,7 @@ export function machineInvocationToArgv(
   if (missing.length > 0) invalid(`missing required arguments: ${missing.join(', ')}`);
 
   const argv: string[] = [noun.name, verb.verb];
-  for (const [name, def] of Object.entries(spec)) {
+  for (const [name, def] of typedArgEntries(spec)) {
     if (!Object.prototype.hasOwnProperty.call(rawArgs, name)) continue;
     const raw = rawArgs[name];
     if (!['string', 'number', 'boolean'].includes(typeof raw)) {
