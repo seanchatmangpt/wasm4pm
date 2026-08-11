@@ -9,27 +9,21 @@ SELECT ?violation WHERE {
   }
   UNION
   {
-    SELECT ("measurement-surface-cardinality" AS ?violation) WHERE {
-      ?x a cb:MeasurementSurface .
-    }
-    GROUP BY ?violation
-    HAVING(COUNT(?x) != 3)
+    { SELECT (COUNT(?x) AS ?count) WHERE { ?x a cb:MeasurementSurface . } }
+    FILTER(?count != 3)
+    BIND("measurement-surface-cardinality" AS ?violation)
   }
   UNION
   {
-    SELECT ("batch-scale-cardinality" AS ?violation) WHERE {
-      ?x a cb:BatchScale .
-    }
-    GROUP BY ?violation
-    HAVING(COUNT(?x) < 4)
+    { SELECT (COUNT(?x) AS ?count) WHERE { ?x a cb:BatchScale . } }
+    FILTER(?count < 4)
+    BIND("batch-scale-cardinality" AS ?violation)
   }
   UNION
   {
-    SELECT ("context-scale-cardinality" AS ?violation) WHERE {
-      ?x a cb:ContextScale .
-    }
-    GROUP BY ?violation
-    HAVING(COUNT(?x) < 4)
+    { SELECT (COUNT(?x) AS ?count) WHERE { ?x a cb:ContextScale . } }
+    FILTER(?count < 4)
+    BIND("context-scale-cardinality" AS ?violation)
   }
   UNION
   {
