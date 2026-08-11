@@ -27,7 +27,7 @@ tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
 bcinr-powl = { version = "26.6.25", features = ["std"] }
-wasm4pm-compat = { version = "26.6", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { version = "26.8.7", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.7.23", path = "wasm4pm", features = ["cloud"] }
 wasm4pm-cognition = { version = "26.7.23", path = "crates/wasm4pm-cognition" }
 prolog8 = { version = "26.7.23", path = "crates/prolog8" }
@@ -36,7 +36,14 @@ ocpq = { version = "26.7.23", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 criterion = { version = "0.5", features = ["html_reports"] }
-tempfile = "3.8"
+tempfile = "3.10"
+wasm-bindgen = "=0.2.100"
+js-sys = "0.3"
+serde-wasm-bindgen = "0.6"
+regex = "1.10"
+anyhow = "1.0"
+colored = "2.1"
+git2 = "0.21"
 
 [profile.release]
 opt-level = "z"

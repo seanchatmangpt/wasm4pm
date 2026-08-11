@@ -18,7 +18,7 @@ wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"]
 
 # wasm bindings — gated behind a feature so the crate can be tested
 # natively with `cargo test` while still building as cdylib for browsers.
-wasm-bindgen = { version = "0.2.92", optional = true }
+wasm-bindgen = { workspace = true, optional = true }
 
 [features]
 default = []

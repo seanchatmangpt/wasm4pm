@@ -92,7 +92,7 @@ fn build_sequential_net() -> PetriNet {
     net.initial_marking.insert("p_start".to_string(), 1);
 
     // Final marking
-    let mut final_marking = HashMap::new();
+    let mut final_marking = BTreeMap::new();
     final_marking.insert("p_end".to_string(), 1);
     net.final_markings.push(final_marking);
 
@@ -144,7 +144,7 @@ fn build_parallel_net() -> PetriNet {
 
     net.initial_marking.insert("p_start".to_string(), 1);
 
-    let mut final_marking = HashMap::new();
+    let mut final_marking = BTreeMap::new();
     final_marking.insert("p_join".to_string(), 1);
     net.final_markings.push(final_marking);
 
@@ -308,12 +308,12 @@ fn bench_etconformance_precision(c: &mut Criterion) {
     }
 
     let net = build_sequential_net();
-    let initial_marking: HashMap<String, usize> = net
+    let initial_marking: BTreeMap<String, usize> = net
         .places
         .iter()
         .filter_map(|p| p.marking.map(|m| (p.id.clone(), m)))
         .collect();
-    let final_marking: HashMap<String, usize> =
+    let final_marking: BTreeMap<String, usize> =
         net.final_markings.first().cloned().unwrap_or_default();
 
     for num_cases in [100, 500, 1_000, 5_000] {
@@ -622,7 +622,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -633,7 +633,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

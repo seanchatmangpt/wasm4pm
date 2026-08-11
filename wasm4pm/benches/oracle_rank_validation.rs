@@ -162,7 +162,7 @@ fn make_linear_petri_net(activities: &[&str]) -> PetriNet {
 
     // final_markings: one token in the last place
     let last_place = format!("p{}", num_places - 1);
-    let mut final_mark = HashMap::new();
+    let mut final_mark = std::collections::BTreeMap::new();
     final_mark.insert(last_place, 1usize);
     net.final_markings.push(final_mark);
 
@@ -175,7 +175,7 @@ fn make_conforming_log(activities: &[&str], num_traces: usize) -> EventLog {
     for case_idx in 0..num_traces {
         let mut trace = Trace {
             attributes: {
-                let mut m = HashMap::new();
+                let mut m = std::collections::BTreeMap::new();
                 m.insert(
                     "concept:name".to_string(),
                     AttributeValue::String(format!("case{}", case_idx)),
@@ -185,7 +185,7 @@ fn make_conforming_log(activities: &[&str], num_traces: usize) -> EventLog {
             events: Vec::new(),
         };
         for (i, &act) in activities.iter().enumerate() {
-            let mut attrs = HashMap::new();
+            let mut attrs = std::collections::BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(act.to_string()),

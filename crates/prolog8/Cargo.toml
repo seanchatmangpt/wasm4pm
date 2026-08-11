@@ -16,9 +16,9 @@ serde_json = { workspace = true }
 blake3 = { workspace = true }
 smallvec = { workspace = true }
 
-wasm-bindgen = { version = "0.2.92", optional = true }
-serde-wasm-bindgen = { version = "0.6", optional = true }
-js-sys = { version = "0.3", optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+serde-wasm-bindgen = { workspace = true, optional = true }
+js-sys = { workspace = true, optional = true }
 
 [features]
 default = []

@@ -177,10 +177,10 @@ fn bench_ml_classify(c: &mut Criterion) {
     group.bench_function("empty", |b| {
         b.iter(|| {
             black_box(knn_internal(
-                black_box(&[]),
-                black_box(&[]),
-                black_box(&[]),
-                black_box(&[]),
+                black_box(&[] as &[[f64; 2]]),
+                black_box(&[] as &[u8]),
+                black_box(&[] as &[[f64; 2]]),
+                black_box(&[] as &[u8]),
                 3,
             ))
         })
@@ -379,7 +379,7 @@ fn bench_ml_pca(c: &mut Criterion) {
 
     // Edge cases
     group.bench_function("empty", |b| {
-        b.iter(|| black_box(pca_internal(black_box(&[]))))
+        b.iter(|| black_box(pca_internal(black_box(&[] as &[[f64; 2]]))))
     });
     group.bench_function("single_row", |b| {
         let features = vec![[5.0_f64, 3.0]];

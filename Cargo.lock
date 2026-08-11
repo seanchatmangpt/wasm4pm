@@ -2166,15 +2166,6 @@ checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
 name = "quick-xml"
-version = "0.36.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
-dependencies = [
- "memchr",
-]
-
-[[package]]
-name = "quick-xml"
 version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
@@ -3389,7 +3380,7 @@ dependencies = [
  "once_cell",
  "pollster",
  "proptest",
- "quick-xml 0.41.0",
+ "quick-xml",
  "rand 0.8.6",
  "rand_distr",
  "regex",
@@ -3420,6 +3411,7 @@ name = "wasm4pm-bindings-py"
 version = "26.7.23"
 dependencies = [
  "pyo3",
+ "pyo3-build-config",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -3478,14 +3470,14 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-compat"
-version = "26.6.27"
+version = "26.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64c2d8bd9c549d4cea311859d0afc835106202bd733d1c703a1d543524d1d2f8"
+checksum = "c4cf5d42b99ce39490bd4275cdd5d8baf76fc1d4788348b6d9c5c6752d78d23a"
 dependencies = [
  "blake3",
  "chrono",
  "hashbrown 0.17.1",
- "quick-xml 0.36.2",
+ "quick-xml",
  "rustc-hash 2.1.2",
  "serde",
  "serde_json",

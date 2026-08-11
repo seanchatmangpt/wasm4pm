@@ -50,8 +50,9 @@
 //! response shape. Internal helpers (`jaccard_distance`, `ewma_series`,
 //! `classify_trend`) are additive.
 
-use crate::models::AttributeValue;
+use crate::models::{AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{BTreeMap, HashSet};
 use wasm_bindgen::prelude::*;
@@ -240,6 +241,113 @@ pub fn classify_trend(smoothed: &[f64]) -> &'static str {
 }
 
 // ---------------------------------------------------------------------------
+// Native detector (pure Rust, callable off the wasm32 target)
+// ---------------------------------------------------------------------------
+
+/// One detected drift point between two consecutive windows.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DriftEvent {
+    pub position: usize,
+    pub distance: f64,
+    pub tv_distance: f64,
+    pub method: &'static str,
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+    pub appeared: std::collections::BTreeSet<String>,
+    pub disappeared: std::collections::BTreeSet<String>,
+    pub suggestion: String,
+}
+
+/// The full drift-detection result over an event log.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DriftReport {
+    pub drifts_detected: usize,
+    pub drifts: Vec<DriftEvent>,
+    pub window_size: usize,
+    pub method: &'static str,
+    pub threshold: f64,
+}
+
+/// Detect concept drift over an [`EventLog`] using a sliding-window Jaccard +
+/// total-variation distance over the per-window activity vocabulary and
+/// frequency distribution. Pure Rust — callable natively (no `wasm_bindgen`
+/// boundary), unlike [`detect_drift`] which requires the `wasm32` target for
+/// its `JsValue` return type.
+///
+/// A drift point is recorded whenever either signal between two consecutive
+/// windows exceeds [`DEFAULT_DRIFT_THRESHOLD`] (see [`evaluate_window_pair`]).
+///
+/// `window_size` is clamped to `>= 1` (a value of `0` is treated as `1`).
+pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usize) -> DriftReport {
+    let window_size = window_size.max(1);
+
+    let mut drifts: Vec<DriftEvent> = Vec::new();
+    let mut previous_freqs: Option<BTreeMap<String, usize>> = None;
+
+    for (idx, window) in log.traces.windows(window_size).enumerate() {
+        let mut current_freqs: BTreeMap<String, usize> = BTreeMap::new();
+        for trace in window {
+            for event in &trace.events {
+                if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key)
+                {
+                    *current_freqs.entry(activity.clone()).or_default() += 1;
+                }
+            }
+        }
+
+        if let Some(prev) = &previous_freqs {
+            if let Some((distance, tv, method)) =
+                evaluate_window_pair(prev, &current_freqs, DEFAULT_DRIFT_THRESHOLD)
+            {
+                let current_activities: HashSet<String> = current_freqs.keys().cloned().collect();
+                let prev_set: HashSet<String> = prev.keys().cloned().collect();
+                // Compute appeared (in current but not prev) and disappeared (in prev but not current)
+                let appeared: std::collections::BTreeSet<String> = current_activities
+                    .difference(&prev_set)
+                    .cloned()
+                    .collect();
+                let disappeared: std::collections::BTreeSet<String> = prev_set
+                    .difference(&current_activities)
+                    .cloned()
+                    .collect();
+                let suggestion = if let Some(first) = disappeared.iter().next() {
+                    format!(
+                        "Activity '{}' disappeared — re-run discovery or check for process change",
+                        first
+                    )
+                } else if let Some(first) = appeared.iter().next() {
+                    format!(
+                        "Activity '{}' appeared — new path detected, consider model update",
+                        first
+                    )
+                } else {
+                    "Frequency shift detected — inspect directly-follows graph".to_string()
+                };
+                drifts.push(DriftEvent {
+                    position: idx * window_size,
+                    distance,
+                    tv_distance: tv,
+                    method,
+                    kind: "concept_drift",
+                    appeared,
+                    disappeared,
+                    suggestion,
+                });
+            }
+        }
+        previous_freqs = Some(current_freqs);
+    }
+
+    DriftReport {
+        drifts_detected: drifts.len(),
+        drifts,
+        window_size,
+        method: "jaccard+tv_window",
+        threshold: DEFAULT_DRIFT_THRESHOLD,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // WASM-exported API
 // ---------------------------------------------------------------------------
 
@@ -285,78 +393,11 @@ pub fn detect_drift(
     activity_key: &str,
     window_size: usize,
 ) -> Result<JsValue, JsValue> {
-    let window_size = window_size.max(1);
-
     get_or_init_state().with_event_log(log_handle, |log| {
-            let mut drifts: Vec<serde_json::Value> = Vec::new();
-            let mut previous_freqs: Option<BTreeMap<String, usize>> = None;
-
-            for (idx, window) in log.traces.windows(window_size).enumerate() {
-                let mut current_freqs: BTreeMap<String, usize> = BTreeMap::new();
-                for trace in window {
-                    for event in &trace.events {
-                        if let Some(AttributeValue::String(activity)) =
-                            event.attributes.get(activity_key)
-                        {
-                            *current_freqs.entry(activity.clone()).or_default() += 1;
-                        }
-                    }
-                }
-
-                if let Some(prev) = &previous_freqs {
-                    if let Some((distance, tv, method)) =
-                        evaluate_window_pair(prev, &current_freqs, DEFAULT_DRIFT_THRESHOLD)
-                    {
-                        let current_activities: HashSet<String> =
-                            current_freqs.keys().cloned().collect();
-                        let prev_set: HashSet<String> = prev.keys().cloned().collect();
-                        // Compute appeared (in current but not prev) and disappeared (in prev but not current)
-                        let appeared: std::collections::BTreeSet<String> = current_activities
-                            .difference(&prev_set)
-                            .cloned()
-                            .collect();
-                        let disappeared: std::collections::BTreeSet<String> = prev_set
-                            .difference(&current_activities)
-                            .cloned()
-                            .collect();
-                        let suggestion = if let Some(first) = disappeared.iter().next() {
-                            format!(
-                                "Activity '{}' disappeared — re-run discovery or check for process change",
-                                first
-                            )
-                        } else if let Some(first) = appeared.iter().next() {
-                            format!(
-                                "Activity '{}' appeared — new path detected, consider model update",
-                                first
-                            )
-                        } else {
-                            "Frequency shift detected — inspect directly-follows graph".to_string()
-                        };
-                        drifts.push(json!({
-                            "position": idx * window_size,
-                            "distance": distance,
-                            "tv_distance": tv,
-                            "method": method,
-                            "type": "concept_drift",
-                            "appeared": appeared,
-                            "disappeared": disappeared,
-                            "suggestion": suggestion,
-                        }));
-                    }
-                }
-                previous_freqs = Some(current_freqs);
-            }
-
-            let result = json!({
-                "drifts_detected": drifts.len(),
-                "drifts": drifts,
-                "window_size": window_size,
-                "method": "jaccard+tv_window",
-                "threshold": DEFAULT_DRIFT_THRESHOLD,
-            });
-            serde_json::to_string(&result)
-                .map(|s| crate::error::js_val(&s))
-                .map_err(|e| crate::error::js_val(&e.to_string()))
+        let result = detect_drift_native(log, activity_key, window_size);
+        serde_json::to_string(&result)
+            .map(|s| crate::error::js_val(&s))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
     })
 }
 
@@ -601,5 +642,79 @@ mod tests {
         assert_eq!(classify_trend(&[1.0, 2.0, 3.0, 4.0]), "rising");
         assert_eq!(classify_trend(&[10.0, 8.0, 6.0]), "falling");
         assert_eq!(classify_trend(&[5.0, 5.001, 5.0, 4.999]), "stable");
+    }
+
+    fn trace_of(activities: &[&str]) -> crate::models::Trace {
+        let events = activities
+            .iter()
+            .map(|a| {
+                let mut ev = crate::models::Event::new();
+                ev.attributes
+                    .insert("concept:name".to_string(), AttributeValue::String(a.to_string()));
+                ev
+            })
+            .collect();
+        crate::models::Trace {
+            attributes: BTreeMap::new(),
+            events,
+        }
+    }
+
+    #[test]
+    fn detect_drift_native_finds_no_drift_on_a_stable_vocabulary() {
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+            ],
+        };
+        let report = detect_drift_native(&log, "concept:name", 2);
+        assert_eq!(report.drifts_detected, 0);
+        assert!(report.drifts.is_empty());
+        assert_eq!(report.window_size, 2);
+        assert_eq!(report.threshold, DEFAULT_DRIFT_THRESHOLD);
+    }
+
+    #[test]
+    fn detect_drift_native_detects_a_vocabulary_shift() {
+        // `.windows(2)` is a SLIDING window over traces (overlapping, not
+        // disjoint chunks), so a hard vocabulary transition produces more
+        // than one flagged window-pair while the transition traces are
+        // shared between consecutive windows — that's the pre-existing,
+        // unchanged behavior of the moved algorithm, not a defect.
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["X", "Y"]),
+                trace_of(&["X", "Y"]),
+            ],
+        };
+        let report = detect_drift_native(&log, "concept:name", 2);
+        assert!(report.drifts_detected >= 1);
+        // At least one flagged window-pair must show X/Y appearing, since the
+        // vocabulary genuinely shifts from {A,B} toward {X,Y} across the log.
+        assert!(report
+            .drifts
+            .iter()
+            .any(|d| d.appeared.contains("X") || d.appeared.contains("Y")));
+        for drift in &report.drifts {
+            assert_eq!(drift.kind, "concept_drift");
+            assert!(["jaccard", "tv", "both"].contains(&drift.method));
+        }
+    }
+
+    #[test]
+    fn detect_drift_native_clamps_zero_window_size_to_one() {
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![trace_of(&["A"]), trace_of(&["B"])],
+        };
+        let report = detect_drift_native(&log, "concept:name", 0);
+        assert_eq!(report.window_size, 1);
     }
 }

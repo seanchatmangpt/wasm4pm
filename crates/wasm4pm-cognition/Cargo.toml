@@ -28,9 +28,9 @@ rand = { version = "0.8", default-features = false, features = ["small_rng"] }
 
 # wasm bindings — gated behind a feature so the crate can be tested
 # natively with `cargo test` while still building as cdylib for browsers.
-wasm-bindgen = { version = "0.2.92", optional = true }
-serde-wasm-bindgen = { version = "0.6", optional = true }
-js-sys = { version = "0.3", optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+serde-wasm-bindgen = { workspace = true, optional = true }
+js-sys = { workspace = true, optional = true }
 
 [features]
 default = ["actor-ed25519"]

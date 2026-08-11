@@ -139,6 +139,142 @@ fn test_mining_discover_ilp_and_conformance_end_to_end() {
         (0.0..=1.0).contains(&fitness),
         "fitness {fitness} out of [0,1]"
     );
+
+    // Third quality dimension, checked the same way (real number, not a stub/absent row):
+    // `wasm4pm::generalization::compute_quality` (Buijs et al. 2012), wired into this same
+    // `conformance` command's table.
+    let generalization_line = stdout
+        .lines()
+        .find(|l| l.contains("Generalization"))
+        .expect("generalization row present in conformance output");
+    let generalization: f64 = generalization_line
+        .split_whitespace()
+        .find_map(|tok| tok.trim_matches(|c: char| !c.is_ascii_digit() && c != '.').parse().ok())
+        .expect("parseable generalization value");
+    assert!(
+        (0.0..=1.0).contains(&generalization),
+        "generalization {generalization} out of [0,1]"
+    );
+}
+
+/// A minimal `wasm4pm-compat::event_log::EventLog` JSON document with `n` traces,
+/// each with the given (name, timestamp_ms) event sequence.
+fn event_log_json(traces: &[Vec<(&str, i64)>]) -> String {
+    let trace_jsons: Vec<String> = traces
+        .iter()
+        .map(|events| {
+            let event_jsons: Vec<String> = events
+                .iter()
+                .map(|(name, ts)| {
+                    format!(
+                        r#"{{"attributes":[
+                            {{"key":"concept:name","value":{{"type":"String","content":"{name}"}}}},
+                            {{"key":"time:timestamp","value":{{"type":"Int","content":{ts}}}}}
+                        ]}}"#
+                    )
+                })
+                .collect();
+            format!(
+                r#"{{"attributes":[],"events":[{}]}}"#,
+                event_jsons.join(",")
+            )
+        })
+        .collect();
+    format!(
+        r#"{{"attributes":[],"traces":[{}],"extensions":null,"classifiers":null,"global_trace_attrs":null,"global_event_attrs":null}}"#,
+        trace_jsons.join(",")
+    )
+}
+
+#[test]
+fn test_mining_drift_detects_real_vocabulary_shift() {
+    let temp_dir = tempdir().unwrap();
+    let log_path = temp_dir.path().join("drift_log.json");
+
+    // 4 traces of X->Y->Z, then 4 traces of a fully disjoint P->Q->R --
+    // window_size=1 gives non-overlapping single-trace windows, so the
+    // vocabulary-shift boundary (trace 3 -> trace 4) must fire real
+    // jaccard=1.0 / tv=1.0 drift.
+    let mut traces: Vec<Vec<(&str, i64)>> = Vec::new();
+    for _ in 0..4 {
+        traces.push(vec![("X", 0), ("Y", 1), ("Z", 2)]);
+    }
+    for _ in 0..4 {
+        traces.push(vec![("P", 0), ("Q", 1), ("R", 2)]);
+    }
+    fs::write(&log_path, event_log_json(&traces)).unwrap();
+
+    let mut cmd = Command::cargo_bin("wpm").unwrap();
+    let output = cmd
+        .arg("mining")
+        .arg("drift")
+        .arg(&log_path)
+        .arg("--window-size")
+        .arg("1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Drifts detected"))
+        .get_output()
+        .stdout
+        .clone();
+    let stdout = String::from_utf8(output).unwrap();
+
+    assert!(
+        stdout.contains("Drift points"),
+        "expected at least one real drift point, got:\n{stdout}"
+    );
+    let distance_line = stdout
+        .lines()
+        .find(|l| l.trim_start().starts_with('4'))
+        .expect("drift row for position 4 present");
+    assert!(
+        distance_line.contains("1.0000"),
+        "expected jaccard/tv distance of 1.0000 for a fully disjoint vocabulary shift: {distance_line}"
+    );
+}
+
+#[test]
+fn test_mining_predict_duration_real_bucket_estimate() {
+    let temp_dir = tempdir().unwrap();
+    let log_path = temp_dir.path().join("duration_log.json");
+
+    // Every trace: A(t=0) -> B(t=1000) -> C(t=3000). The gap from B to the
+    // trace end is always exactly 2000ms, so the bucket estimate for prefix
+    // "A,B" must be exactly 2000.00, not merely "some positive number".
+    let mut traces: Vec<Vec<(&str, i64)>> = Vec::new();
+    for i in 0..6 {
+        let base = i * 100_000;
+        traces.push(vec![("A", base), ("B", base + 1_000), ("C", base + 3_000)]);
+    }
+    fs::write(&log_path, event_log_json(&traces)).unwrap();
+
+    let mut cmd = Command::cargo_bin("wpm").unwrap();
+    let output = cmd
+        .arg("mining")
+        .arg("predict-duration")
+        .arg(&log_path)
+        .arg("--prefix")
+        .arg("A,B")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Remaining-time prediction"))
+        .get_output()
+        .stdout
+        .clone();
+    let stdout = String::from_utf8(output).unwrap();
+
+    assert!(
+        stdout.contains("2000.00"),
+        "expected a real predicted remaining time of exactly 2000.00ms: {stdout}"
+    );
+    // "bucket(B|2)" -- the `|` separator matches
+    // wasm4pm::prediction_remaining_time::bucket_key's real format now that
+    // this command calls the upstream native function directly, not the
+    // CLI's former workaround reimplementation (which used a "," separator).
+    assert!(
+        stdout.contains("bucket(B|2)"),
+        "expected the exact-bucket method to fire (not a fallback): {stdout}"
+    );
 }
 
 #[test]

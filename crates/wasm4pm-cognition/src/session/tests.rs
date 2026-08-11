@@ -250,7 +250,12 @@ fn later_contradiction_reopens_a_committed_track() {
 fn refuses_tampered_state_hash() {
     let mut first = run_session_turn(&turn(None, Some(("o1", "x and y")), None))
         .expect("first turn");
-    first.state.turn = 99;
+    // Tamper a field that's part of StateHashView (hash.rs) but doesn't
+    // participate in verify_previous_state's earlier structural checks
+    // (turn.rs) — mutating `turn` instead trips the `turn == turns.len()`
+    // ledger-length invariant first and returns InvalidState before the
+    // hash comparison this test means to exercise is ever reached.
+    first.state.phase = "tampered_phase".to_string();
     let error = run_session_turn(&turn(
         Some(first.state),
         Some(("o2", "dictionary of moves")),

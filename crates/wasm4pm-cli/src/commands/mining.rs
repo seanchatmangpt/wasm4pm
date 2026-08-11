@@ -8,9 +8,14 @@ use std::collections::BTreeMap;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::etconformance_precision::compute_precision;
+use wasm4pm::generalization::compute_quality;
 use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 use wasm4pm::pnml_io::{from_pnml, to_pnml};
 use wasm4pm::models::PetriNet;
+use wasm4pm::prediction_drift::{detect_drift_native, DriftReport};
+use wasm4pm::prediction_remaining_time::{
+    build_remaining_time_model_native, predict_case_duration_native, DurationPrediction,
+};
 use wasm4pm_cli::io::{Io, Table};
 use wasm4pm_compat::event_log::EventLog;
 use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
@@ -52,6 +57,34 @@ pub enum MiningCommands {
         /// Activity key to use
         #[arg(short, long, default_value = "concept:name")]
         activity_key: String,
+    },
+    /// Detect concept drift (windowed Jaccard + total-variation distance over
+    /// consecutive trace windows, Bose/van der Aalst/Žliobaitė/Pechenizkiy 2011/2014).
+    Drift {
+        /// Path to the event log file
+        log: PathBuf,
+        /// Activity key to use
+        #[arg(short = 'k', long, default_value = "concept:name")]
+        activity_key: String,
+        /// Number of traces per comparison window
+        #[arg(long, default_value_t = 5)]
+        window_size: usize,
+    },
+    /// Predict remaining case duration for a given activity prefix (bucketed
+    /// mean/median + Weibull survival model, van der Aalst/Schonenberg/Song 2011
+    /// and Rogge-Solti/Weske 2013).
+    PredictDuration {
+        /// Path to the (completed-trace) event log to train the model on
+        log: PathBuf,
+        /// Comma-separated activity prefix of the running case, e.g. "A,B"
+        #[arg(long)]
+        prefix: String,
+        /// Activity key to use
+        #[arg(short = 'k', long, default_value = "concept:name")]
+        activity_key: String,
+        /// Event attribute key carrying each event's timestamp
+        #[arg(long, default_value = "time:timestamp")]
+        timestamp_key: String,
     },
 }
 
@@ -132,6 +165,18 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 activity_key,
             );
 
+            // Third of the four van der Aalst / Buijs et al. (2012) quality dimensions
+            // wired into this CLI (fitness, precision, generalization -- simplicity is
+            // reported by `discover`, not `conformance`, since it's a property of the
+            // model alone). Deliberately the one canonical, documented implementation
+            // (`wasm4pm::generalization`) -- two other generalization-shaped functions
+            // exist elsewhere in this workspace (`simd_token_replay::overall_generalization`,
+            // `conformance_authority::ConformanceVerdicts.generalization`) and are
+            // intentionally left unwired here to avoid reporting three disagreeing
+            // "generalization" numbers from one command.
+            let quality = compute_quality(&petri_net, &log, activity_key)
+                .map_err(|e| anyhow::anyhow!("Failed to compute generalization: {:?}", e))?;
+
             let mut table = Table::new(vec!["Metric", "Value"]);
             table.add_row(vec![
                 "Average fitness".to_string(),
@@ -140,6 +185,10 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             table.add_row(vec![
                 "Precision".to_string(),
                 format!("{:.4}", precision.precision),
+            ]);
+            table.add_row(vec![
+                "Generalization".to_string(),
+                format!("{:.4}", quality.generalization),
             ]);
             table.add_row(vec![
                 "Conforming cases".to_string(),
@@ -171,6 +220,54 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 }
                 dev_table.print();
             }
+        }
+        MiningCommands::Drift {
+            log,
+            activity_key,
+            window_size,
+        } => {
+            io.info(format!(
+                "Detecting concept drift in {:?} (window_size={})...",
+                log, window_size
+            ));
+            let wasm4pm_log: wasm4pm::models::EventLog = load_log(log)?.into();
+
+            // `wasm4pm::prediction_drift::detect_drift` itself is `#[wasm_bindgen]`-only:
+            // its `Ok` value is a `JsValue`-wrapped JSON string, and extracting that
+            // string via `JsValue::as_string()` genuinely panics off wasm32. Calls the
+            // real, tested `detect_drift_native` directly instead of going through that
+            // wasm-only entry point.
+            let report = detect_drift_native(&wasm4pm_log, activity_key, *window_size);
+            print_drift_result(&report)?;
+        }
+        MiningCommands::PredictDuration {
+            log,
+            prefix,
+            activity_key,
+            timestamp_key,
+        } => {
+            io.info(format!(
+                "Predicting remaining duration for prefix {:?} in {:?}...",
+                prefix, log
+            ));
+            let wasm4pm_log: wasm4pm::models::EventLog = load_log(log)?.into();
+            let prefix_activities: Vec<String> =
+                prefix.split(',').map(|s| s.trim().to_string()).collect();
+            anyhow::ensure!(
+                !prefix_activities.is_empty() && prefix_activities.iter().any(|a| !a.is_empty()),
+                "--prefix must contain at least one activity name"
+            );
+
+            // Same underlying constraint as `Drift` above:
+            // `wasm4pm::prediction_remaining_time::{build_remaining_time_model,
+            // predict_case_duration}` are `#[wasm_bindgen]`-only with a `JsValue`-wrapped
+            // `Ok` payload, unreadable natively via `.as_string()`. Calls the real,
+            // tested native functions (the full bucketed+Weibull model) directly instead.
+            let model = build_remaining_time_model_native(&wasm4pm_log, activity_key, timestamp_key)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            let prediction = predict_case_duration_native(&model, &prefix_activities)
+                .map_err(|e| anyhow::anyhow!(e))?;
+            print_prediction_result(&prediction)?;
         }
     }
     Ok(())
@@ -227,6 +324,48 @@ fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, _io: &Io) -> R
     table.add_row(vec!["Arcs".to_string(), net.arcs.len().to_string()]);
     table.add_row(vec!["Simplicity".to_string(), format!("{:.4}", simplicity)]);
     table.add_row(vec!["Fitness (self)".to_string(), format!("{:.4}", fitness)]);
+    table.print();
+    Ok(())
+}
+
+fn print_drift_result(report: &DriftReport) -> Result<()> {
+    println!("\n{}", "Concept drift detection".bold().bright_cyan());
+    let mut table = Table::new(vec!["Metric", "Value"]);
+    table.add_row(vec!["Window size".to_string(), report.window_size.to_string()]);
+    table.add_row(vec![
+        "Drifts detected".to_string(),
+        report.drifts_detected.to_string(),
+    ]);
+    table.print();
+
+    if !report.drifts.is_empty() {
+        println!("\n{}", "Drift points".bold().bright_yellow());
+        let mut drift_table = Table::new(vec!["Position", "Distance", "TV Distance", "Method"]);
+        for drift in &report.drifts {
+            drift_table.add_row(vec![
+                drift.position.to_string(),
+                format!("{:.4}", drift.distance),
+                format!("{:.4}", drift.tv_distance),
+                drift.method.to_string(),
+            ]);
+        }
+        drift_table.print();
+    }
+    Ok(())
+}
+
+fn print_prediction_result(prediction: &DurationPrediction) -> Result<()> {
+    println!("\n{}", "Remaining-time prediction".bold().bright_cyan());
+    let mut table = Table::new(vec!["Metric", "Value"]);
+    table.add_row(vec![
+        "Remaining (ms)".to_string(),
+        format!("{:.2}", prediction.remaining_ms),
+    ]);
+    table.add_row(vec![
+        "Confidence".to_string(),
+        format!("{:.4}", prediction.confidence),
+    ]);
+    table.add_row(vec!["Method".to_string(), prediction.method.clone()]);
     table.print();
     Ok(())
 }

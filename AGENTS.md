@@ -141,6 +141,17 @@ manifests before making a release claim.
 `wasm4pm-compat` is crates.io-only in this repository. Never add it as a path
 dependency.
 
+`prolog8` is both a workspace-internal path dependency and published to
+crates.io — reference it via `prolog8 = { workspace = true }`, not a
+hand-written `path`-only line (a path-only dependency fails
+`cargo publish --dry-run` manifest verification for any crate that depends
+on it). Because `prolog8` is published separately, a version bump to it must
+land on crates.io before (or in the same release step as) publishing any
+crate that depends on the new version — `cargo publish` resolves against
+crates.io, not the local path, so a bumped-but-unpublished `prolog8` blocks
+downstream crates' real publish even though `--dry-run`'s local manifest
+check passes.
+
 ## 5. Understand commands before relying on them
 
 Command names do not prove their scope. Inspect `Justfile`, `Makefile`, and the

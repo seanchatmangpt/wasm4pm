@@ -14,7 +14,7 @@
 //! so the bench always produces output regardless of environment.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::{collections::HashMap, fs, time::Duration};
+use std::{collections::BTreeMap, fs, time::Duration};
 
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::algorithms::discover_alpha_plus_plus_from_log;
@@ -50,7 +50,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -61,7 +61,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -117,13 +117,13 @@ fn generate_synthetic_fallback() -> EventLog {
     let mut log = EventLog::new();
     for i in 0..100usize {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         let len = 5 + (i % 8);
         for j in 0..len {
             let mut ev = Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             };
             ev.attributes.insert(
                 ACTIVITY_KEY.to_string(),

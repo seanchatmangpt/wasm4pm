@@ -24,7 +24,7 @@
 //! 6. **Determinism Verification** — Reproducibility across runs with seeded RNG
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::time::Duration;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -59,7 +59,7 @@ fn generate_abrupt_drift_log(num_cases: usize, events_per_case: usize) -> EventL
 
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -75,7 +75,7 @@ fn generate_abrupt_drift_log(num_cases: usize, events_per_case: usize) -> EventL
 
         for evt_idx in 0..events_per_case {
             let activity = activities[evt_idx % activities.len()];
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activity.to_string()),
@@ -107,7 +107,7 @@ fn generate_gradual_drift_log(num_cases: usize, events_per_case: usize) -> Event
 
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -125,7 +125,7 @@ fn generate_gradual_drift_log(num_cases: usize, events_per_case: usize) -> Event
             } else {
                 "B"
             };
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activity.to_string()),
@@ -162,7 +162,7 @@ fn generate_seasonal_drift_log(num_cases: usize, events_per_case: usize) -> Even
 
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -175,7 +175,7 @@ fn generate_seasonal_drift_log(num_cases: usize, events_per_case: usize) -> Even
 
         for evt_idx in 0..events_per_case {
             let activity = activities[evt_idx % activities.len()];
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activity.to_string()),
@@ -205,7 +205,7 @@ fn generate_oscillating_drift_log(num_cases: usize, events_per_case: usize) -> E
 
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -222,7 +222,7 @@ fn generate_oscillating_drift_log(num_cases: usize, events_per_case: usize) -> E
 
         for evt_idx in 0..events_per_case {
             let activity = activities[evt_idx % activities.len()];
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activity.to_string()),
@@ -251,7 +251,7 @@ fn generate_stable_log(num_cases: usize, events_per_case: usize) -> EventLog {
 
     for case_idx in 0..num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -261,7 +261,7 @@ fn generate_stable_log(num_cases: usize, events_per_case: usize) -> EventLog {
 
         for evt_idx in 0..events_per_case {
             let activity = activities[rng.next_usize_mod(activities.len())];
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activity.to_string()),
@@ -303,7 +303,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -314,7 +314,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {

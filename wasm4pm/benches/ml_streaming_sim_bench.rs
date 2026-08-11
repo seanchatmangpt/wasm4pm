@@ -11,7 +11,7 @@
 ///
 /// Note: Uses internal Rust APIs directly, not WASM bindings.
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::time::Duration;
 use wasm4pm::models::{
@@ -132,7 +132,7 @@ fn generate_event_log_with_timestamps(shape: &LogShape) -> EventLog {
 
     for case_idx in 0..shape.num_cases {
         let mut trace = Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: Vec::new(),
         };
         trace.attributes.insert(
@@ -156,7 +156,7 @@ fn generate_event_log_with_timestamps(shape: &LogShape) -> EventLog {
             let service_time_ms = 100 + rng.next_usize_mod(900);
             timestamp_ms += service_time_ms as i64;
 
-            let mut attrs = HashMap::new();
+            let mut attrs = BTreeMap::new();
             attrs.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activities[act_idx].to_string()),
@@ -200,7 +200,7 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
             current_trace = Some(Trace {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 events: Vec::new(),
             });
         }
@@ -211,7 +211,7 @@ fn parse_xes(content: &str) -> EventLog {
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
             current_event = Some(Event {
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
             });
         }
         if trimmed.starts_with("</event>") {
@@ -277,7 +277,7 @@ fn make_handle_with_timestamps(shape: &LogShape) -> (String, usize) {
 /// Build an n-gram predictor from an event log (internal version).
 fn build_ngram_predictor_internal(log: &EventLog, activity_key: &str, n: usize) -> NGramPredictor {
     let n = n.max(2);
-    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
+    let mut counts: BTreeMap<Vec<String>, BTreeMap<String, usize>> = BTreeMap::new();
 
     for trace in &log.traces {
         let acts: Vec<String> = trace
@@ -778,8 +778,8 @@ fn bench_monte_carlo_simulation(c: &mut Criterion) {
             let config = MonteCarloConfig {
                 num_cases,
                 inter_arrival_mean_ms: 1000.0,
-                activity_service_time_ms: HashMap::new(),
-                resource_capacity: HashMap::new(),
+                activity_service_time_ms: BTreeMap::new(),
+                resource_capacity: BTreeMap::new(),
                 simulation_time_ms: 60000,
                 random_seed: 42,
             };
@@ -805,7 +805,7 @@ fn create_synthetic_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
             id: obj_id.clone(),
             object_type: "Order".to_string(),
             attributes: {
-                let mut attrs = HashMap::new();
+                let mut attrs = BTreeMap::new();
                 attrs.insert(
                     "value".to_string(),
                     AttributeValue::Float((obj_idx * 100) as f64),
@@ -825,7 +825,7 @@ fn create_synthetic_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
                     "Update".to_string()
                 },
                 timestamp: format!("2024-01-{:02}T{:02}:00:00Z", (obj_idx % 28) + 1, evt_idx),
-                attributes: HashMap::new(),
+                attributes: BTreeMap::new(),
                 object_ids: vec![obj_id.clone()],
                 object_refs: vec![],
             });
@@ -872,7 +872,7 @@ fn bench_ocel_flatten(c: &mut Criterion) {
                             continue;
                         }
                         let mut trace = Trace {
-                            attributes: HashMap::new(),
+                            attributes: BTreeMap::new(),
                             events: Vec::new(),
                         };
                         trace.attributes.insert(
@@ -882,7 +882,7 @@ fn bench_ocel_flatten(c: &mut Criterion) {
 
                         for ocel_event in &ocel.events {
                             if ocel_event.object_ids.contains(&obj.id) {
-                                let mut event_attrs = HashMap::new();
+                                let mut event_attrs = BTreeMap::new();
                                 event_attrs.insert(
                                     "concept:name".to_string(),
                                     AttributeValue::String(ocel_event.event_type.clone()),

@@ -127,7 +127,6 @@ const BREED_SKIPS: &[(&str, &[&str])] = &[
             "algorithm_outcome",
         ],
     ),
-    ("hearsay", &["accepted_by_ks"]),
     // Weizenbaum 1966 fixture encodes a multi-turn session; the breed runs one turn.
     (
         "eliza",

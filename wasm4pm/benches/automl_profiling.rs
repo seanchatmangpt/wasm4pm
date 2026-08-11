@@ -32,7 +32,7 @@ fn setup_real_log(path: &str, max_traces: usize) -> Option<(String, usize)> {
 
 fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
     let mut log = EventLog {
-        attributes: std::collections::HashMap::new(),
+        attributes: std::collections::BTreeMap::new(),
         traces: Vec::with_capacity(num_traces),
     };
 
