@@ -25,7 +25,9 @@ those, never the reverse.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from pathlib import Path
 
 import dspy
 
@@ -38,11 +40,12 @@ from wasm4pm_dspy.orchestrator import (
     combine_via_meta_reasoning,
     extract_confidence,
 )
+from wasm4pm_dspy.registry import breed_ids
 from wasm4pm_dspy.runner import NoEvidence, run_admitted_breed_input
 
 __all__ = [
     "SPECIALIST_BREEDS",
-    "SPECIALIST_ENCODING_NOTES",
+    "encoding_notes_for",
     "NLIncidentToBreedPayload",
     "CritiqueBreedPayload",
     "RepairBreedPayload",
@@ -53,11 +56,13 @@ __all__ = [
     "diagnose_from_nl",
 ]
 
-# Real, already-proven input conventions for each Section-5 breed, paraphrased
-# from the Rust source read this session and exercised in
+# Real, already-proven input conventions for the 6 originally-scoped Section-5
+# breeds, paraphrased from the Rust source read this session and exercised in
 # test_k8s_max_breed_projections_chicago.py -- guidance teaching the LM a
 # real external format, not a narrative answer planted for it to echo back.
-SPECIALIST_ENCODING_NOTES: dict[str, str] = {
+# Higher fidelity than the doc-comment fallback below (deep-read + cross-
+# checked against a real passing fixture/test); kept as an override table.
+_VERIFIED_ENCODING_NOTES: dict[str, str] = {
     "sat_cdcl": (
         "facts are keyed `clause:00`, `clause:01`, ... (zero-padded index); each "
         "value is a DIMACS-style space-separated literal string, e.g. `1 -2 3` "
@@ -100,7 +105,58 @@ SPECIALIST_ENCODING_NOTES: dict[str, str] = {
     ),
 }
 
-SPECIALIST_BREEDS: tuple[str, ...] = tuple(SPECIALIST_ENCODING_NOTES)
+# Combinatorial-maximalism scope: every registered breed, not just the 6
+# originally hand-verified ones. Parsed from the real registry, never a
+# retyped literal list -- same discipline as _load_real_fault_ids() earlier
+# this session.
+SPECIALIST_BREEDS: tuple[str, ...] = tuple(sorted(breed_ids()))
+
+_BREEDS_SRC_DIR = (
+    Path(__file__).resolve().parents[3] / "crates" / "wasm4pm-cognition" / "src" / "breeds"
+)
+
+_GENERIC_ENCODING_NOTE = (
+    "no verified encoding convention is available for this breed -- use the "
+    "standard BreedInput fields (facts: list of {key, value}; rules: list of "
+    "{id, premise, conclusion, certainty}; cases: list of {id, intent, "
+    "architecture, outcome_score, facts}; goals: list of {id, predicate, "
+    "value}; candidates: list of {id, score, eliminated}; state: list of "
+    "{predicate, value}) in whatever combination best fits this breed's "
+    "named reasoning paradigm. If no combination plausibly fits, prefer "
+    "producing an empty/minimal payload over inventing a fake fit."
+)
+
+
+def _load_breed_doc_comment(breed_id: str) -> str:
+    """Real, parsed-not-invented encoding guidance: the breed's own real
+    ``//!``/``///`` module doc comment, read directly from its .rs source at
+    ``crates/wasm4pm-cognition/src/breeds/<breed_id>.rs``. Falls back to
+    ``_GENERIC_ENCODING_NOTE`` if the file or a doc comment isn't found --
+    an honest "no verified guidance" signal, never a fabricated convention
+    for a paradigm this module hasn't actually read source for."""
+    path = _BREEDS_SRC_DIR / f"{breed_id}.rs"
+    if not path.is_file():
+        return _GENERIC_ENCODING_NOTE
+
+    lines: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("//!") or stripped.startswith("///"):
+            lines.append(re.sub(r"^//[!/]\s?", "", stripped))
+        elif lines:
+            break  # doc comment block ended
+
+    note = " ".join(lines).strip()
+    return note if note else _GENERIC_ENCODING_NOTE
+
+
+def encoding_notes_for(breed_id: str) -> str:
+    """The real encoding guidance for ``breed_id`` -- the hand-verified note
+    for the 6 originally-scoped breeds, else the breed's own real doc
+    comment (parsed live), else an honest generic fallback."""
+    if breed_id in _VERIFIED_ENCODING_NOTES:
+        return _VERIFIED_ENCODING_NOTES[breed_id]
+    return _load_breed_doc_comment(breed_id)
 
 
 class NLIncidentToBreedPayload(dspy.Signature):
@@ -257,7 +313,7 @@ async def propose_and_run_specialists(
     as a real, typed outcome -- never silently retried or hidden."""
     outcomes: list[SpecialistOutcome] = []
     for breed in target_breeds:
-        prediction = program(incident=incident, target_breed=breed, encoding_notes=SPECIALIST_ENCODING_NOTES[breed])
+        prediction = program(incident=incident, target_breed=breed, encoding_notes=encoding_notes_for(breed))
         candidate = {"breed": breed, "payload": prediction.breed_input.model_dump(mode="json")}
 
         try:
