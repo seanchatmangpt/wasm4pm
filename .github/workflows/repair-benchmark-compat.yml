@@ -1,0 +1,78 @@
+name: Repair benchmark compatibility
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/validate-last24h-benchmarks-20260809
+
+      - name: Repair benchmark source and WASM build compatibility
+        id: repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path('wasm4pm/benches/closed_claw/pipeline_b_conformance.rs'):
+                  ('use std::collections::HashMap;', 'use std::collections::BTreeMap as HashMap;'),
+              Path('wasm4pm/benches/closed_claw/pipeline_c_ocel.rs'):
+                  ('use std::collections::{HashMap, HashSet};', 'use std::collections::{BTreeMap as HashMap, HashSet};'),
+              Path('wasm4pm/benches/closed_claw/pipeline_d_semantic.rs'):
+                  ('use std::collections::HashMap;', 'use std::collections::BTreeMap as HashMap;'),
+              Path('wasm4pm/benches/closed_claw/pipeline_e_manufacturing.rs'):
+                  ('use std::collections::HashMap;', 'use std::collections::BTreeMap as HashMap;'),
+              Path('wasm4pm/package.json'):
+                  ('wasm-pack build --target nodejs --mode no-install --release --features cloud', 'wasm-pack build --target nodejs --release --features cloud'),
+          }
+
+          changed = []
+          for path, (old, new) in replacements.items():
+              text = path.read_text()
+              if old in text:
+                  path.write_text(text.replace(old, new, 1))
+                  changed.append(str(path))
+              elif new in text:
+                  continue
+              else:
+                  raise SystemExit(f'neither expected old nor admitted new text found: {path}')
+
+          Path('/tmp/changed').write_text('\n'.join(changed))
+          PY
+
+          if [ -s /tmp/changed ]; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+            cat /tmp/changed
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'benchmark sources and WASM build already compatible'
+          fi
+
+      - name: Commit repaired benchmark surfaces
+        if: steps.repair.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            wasm4pm/package.json \
+            wasm4pm/benches/closed_claw/pipeline_b_conformance.rs \
+            wasm4pm/benches/closed_claw/pipeline_c_ocel.rs \
+            wasm4pm/benches/closed_claw/pipeline_d_semantic.rs \
+            wasm4pm/benches/closed_claw/pipeline_e_manufacturing.rs
+          git diff --cached --check
+          git commit -m 'fix(bench): align closed-claw maps and WASM build toolchain'
+          git push origin HEAD:agent/validate-last24h-benchmarks-20260809

@@ -45,9 +45,14 @@ serde_json = { workspace = true }
 proptest = { workspace = true }
 trybuild = "1.0"
 criterion = { version = "0.5", features = ["html_reports"] }
+divan = "0.1.21"
 
 [[bench]]
 name = "breed_latency"
+harness = false
+
+[[bench]]
+name = "cognition_divan"
 harness = false
 
 [[test]]

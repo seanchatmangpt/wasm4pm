@@ -1,0 +1,80 @@
+//! ggen projection: hard admission contract for the cognition Divan matrix.
+//! DO NOT EDIT BY HAND. Edit the admitted benchmark graph/contract and rerun ggen.
+
+use std::collections::BTreeSet;
+use std::fs;
+use std::path::PathBuf;
+
+use wasm4pm_cognition::breeds::dispatch::{dispatch_breed_id, dispatch_breed_test_id};
+use wasm4pm_cognition::breeds::{BreedId, BreedInput};
+
+const EXPECTED_BREEDS: usize = {{ results[0]["expected"] }};
+
+fn fixture_path(id: BreedId) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("fixtures").join("papers").join(format!("{}.json", id))
+}
+
+fn fixture_json(id: BreedId) -> serde_json::Value {
+    let path = fixture_path(id);
+    let raw = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: benchmark fixture {} unavailable: {e}", id, path.display()));
+    serde_json::from_str(&raw).unwrap_or_else(|e| panic!("{}: invalid benchmark fixture {}: {e}", id, path.display()))
+}
+
+fn fixture_input(id: BreedId) -> BreedInput {
+    let json = fixture_json(id);
+    let mut inp = json["input"].clone();
+    let obj = inp.as_object_mut().unwrap_or_else(|| panic!("{}: fixture input must be an object", id));
+    obj.entry("intent").or_insert(serde_json::json!(""));
+    for key in ["candidates", "facts", "cases", "rules", "goals", "state"] { obj.entry(key).or_insert(serde_json::json!([])); }
+    serde_json::from_value(inp).unwrap_or_else(|e| panic!("{}: fixture cannot deserialize as BreedInput: {e}", id))
+}
+
+fn nonempty_str<'a>(v: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    v.get(key).and_then(|x| x.as_str()).filter(|s| !s.trim().is_empty())
+}
+
+#[test]
+fn divan_matrix_is_exactly_the_admitted_cognition_inventory() {
+    assert_eq!(BreedId::ALL.len(), EXPECTED_BREEDS, "REFUSED:BENCHMARK_INVENTORY_DRIFT");
+    let unique: BTreeSet<_> = BreedId::ALL.into_iter().collect();
+    assert_eq!(unique.len(), EXPECTED_BREEDS, "REFUSED:DUPLICATE_COGNITION_ID");
+}
+
+#[test]
+fn every_cognition_benchmark_is_paper_grounded_and_falsifiable() {
+    for id in BreedId::ALL {
+        let json = fixture_json(id);
+        let id_text = id.to_string();
+        assert_eq!(json.get("breed").and_then(|x| x.as_str()), Some(id_text.as_str()), "{}: fixture identity drift", id);
+
+        let provenance = json.get("provenance").and_then(|x| x.as_object()).unwrap_or_else(|| panic!("{}: missing provenance", id));
+        let provenance_value = serde_json::Value::Object(provenance.clone());
+        for key in ["paper", "citation", "locus"] {
+            assert!(nonempty_str(&provenance_value, key).is_some(), "{}: missing grounded provenance field {key}", id);
+        }
+        assert_eq!(nonempty_str(&provenance_value, "extraction"), Some("grounded"), "{}: extraction not grounded", id);
+
+        let expected = json.get("expected").and_then(|x| x.as_object()).unwrap_or_else(|| panic!("{}: missing expected falsifier", id));
+        assert!(!expected.is_empty(), "{}: vacuous expected oracle", id);
+
+        let input = fixture_input(id);
+        let semantic_atoms = input.candidates.len() + input.facts.len() + input.cases.len() + input.rules.len() + input.goals.len() + input.state.len();
+        assert!(semantic_atoms > 0 || !input.intent.trim().is_empty(), "{}: empty/default cognition problem", id);
+    }
+}
+
+#[test]
+fn every_admitted_cognition_has_real_benchmark_work_and_evidence() {
+    for id in BreedId::ALL {
+        let input = fixture_input(id);
+        let raw = dispatch_breed_test_id(id, &input).unwrap_or_else(|e| panic!("{}: raw cognition path failed: {e}", id));
+        assert_eq!(raw.breed, id, "{}: raw output identity drift", id);
+        assert!(!raw.inference_trace.is_empty(), "{}: raw cognition did zero observable work", id);
+
+        let full = dispatch_breed_id(id, &input).unwrap_or_else(|e| panic!("{}: lawful cognition path failed: {e}", id));
+        assert_eq!(full.breed, id, "{}: full output identity drift", id);
+        assert!(!full.inference_trace.is_empty(), "{}: full cognition did zero observable work", id);
+        assert!(full.ocel_log.is_some(), "{}: full path emitted no OCEL evidence", id);
+        assert!(full.inference_trace.windows(2).all(|w| w[0].step < w[1].step), "{}: trace is not strictly monotonic", id);
+    }
+}

@@ -15,7 +15,7 @@
 //!   3. Output hashed with blake3 for determinism verification
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use std::collections::HashMap;
+use std::collections::BTreeMap as HashMap;
 use std::time::Duration;
 use wasm4pm::conformance;
 use wasm4pm::etconformance_precision;

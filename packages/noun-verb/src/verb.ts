@@ -37,6 +37,15 @@ export function defineVerb<TArgs extends TypedArgSpec = TypedArgSpec, TResult = 
     }
   }
 
+  // Metadata can describe authority but may never manufacture it. A verb that
+  // claims DO authority must explicitly require receipts; otherwise definition
+  // itself is refused before the command registry can become executable.
+  if (spec.machine?.authority === 'DO' && spec.machine.receipts !== 'REQUIRED') {
+    throw new Error(
+      `Verb '${spec.noun} ${spec.verb}' claims machine authority DO without receipts=REQUIRED.`
+    );
+  }
+
   return {
     ...spec,
     stability: spec.stability ?? 'stable',

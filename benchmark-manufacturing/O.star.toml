@@ -1,0 +1,61 @@
+# O*.toml — admitted observation for cognition benchmark manufacture.
+# DSPy may propose candidate changes to this contract. Only reviewed/admitted values here
+# are executable inputs to ggen. ggen CONSTRUCTS projections; neither DSPy nor ggen has DO authority.
+
+[subject]
+repository = "seanchatmangpt/wasm4pm"
+crate = "crates/wasm4pm-cognition"
+canonical_inventory = "BreedId::ALL"
+expected_breeds = 55
+actuation = "REFUSED"
+
+[toolchain.dspygen]
+repository = "seanchatmangpt/dspygen"
+ref = "83f9e42a879ca83891c724709743613cace52256"
+role = "SELECT"
+
+[toolchain.ggen]
+repository = "seanchatmangpt/ggen"
+ref = "e9298d4dbb1a22329e8aee4c8e2d622c25c72223"
+role = "CONSTRUCT"
+
+[benchmark]
+framework = "divan"
+allocation_profiler = true
+black_box_inputs = true
+preflight = true
+paper_grounded_fixtures = true
+fail_closed_inventory = true
+
+[benchmark.batch]
+values = [1, 4, 16, 64]
+surfaces = ["kernel_only", "full_lifecycle"]
+
+[benchmark.context]
+irrelevant_facts = [0, 64, 512, 4096]
+surface = "context_pressure"
+
+[benchmark.acceptance]
+expected_measurements = 660
+require_nonempty_inference_trace = true
+require_full_lifecycle_ocel = true
+require_monotonic_trace = true
+require_distinct_nonce_per_batch_item = true
+require_allocation_observation = true
+require_throughput_counter = true
+
+[anti_hiding]
+reject_missing_breed = true
+reject_duplicate_breed = true
+reject_empty_fixture = true
+reject_ungrounded_fixture = true
+reject_empty_expected_falsifier = true
+reject_zero_observable_work = true
+reject_silent_skip = true
+reject_unmeasured_context_growth = true
+reject_kernel_lifecycle_conflation = true
+
+[projections]
+benchmark = "crates/wasm4pm-cognition/benches/cognition_divan.rs"
+contract = "crates/wasm4pm-cognition/tests/divan_benchmark_contract.rs"
+documentation = "docs/benchmarks/cognition-manufacturing.md"

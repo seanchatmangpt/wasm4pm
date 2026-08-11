@@ -1,0 +1,46 @@
+@prefix cb: <https://wasm4pm.dev/cognition-benchmark#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+cb:BenchmarkProgram a cb:Program ;
+    dcterms:title "wasm4pm-cognition anti-hiding Divan matrix" ;
+    cb:canonicalInventory "BreedId::ALL" ;
+    cb:expectedBreeds 55 ;
+    cb:allocationProfiler true ;
+    cb:preflight true ;
+    cb:paperGroundedFixtures true ;
+    cb:actuation "REFUSED" .
+
+cb:KernelOnly a cb:MeasurementSurface ; cb:name "kernel_only" ; cb:lifecycle false .
+cb:FullLifecycle a cb:MeasurementSurface ; cb:name "full_lifecycle" ; cb:lifecycle true .
+cb:ContextPressure a cb:MeasurementSurface ; cb:name "context_pressure" ; cb:adversarial true .
+
+cb:Batch1 a cb:BatchScale ; cb:value 1 .
+cb:Batch4 a cb:BatchScale ; cb:value 4 .
+cb:Batch16 a cb:BatchScale ; cb:value 16 .
+cb:Batch64 a cb:BatchScale ; cb:value 64 .
+
+cb:Noise0 a cb:ContextScale ; cb:value 0 .
+cb:Noise64 a cb:ContextScale ; cb:value 64 .
+cb:Noise512 a cb:ContextScale ; cb:value 512 .
+cb:Noise4096 a cb:ContextScale ; cb:value 4096 .
+
+cb:RejectMissingBreed a cb:Falsifier ; cb:code "MISSING_BREED" .
+cb:RejectDuplicateBreed a cb:Falsifier ; cb:code "DUPLICATE_BREED" .
+cb:RejectUngroundedFixture a cb:Falsifier ; cb:code "UNGROUNDED_FIXTURE" .
+cb:RejectEmptyProblem a cb:Falsifier ; cb:code "EMPTY_PROBLEM" .
+cb:RejectEmptyExpected a cb:Falsifier ; cb:code "VACUOUS_EXPECTED" .
+cb:RejectZeroWork a cb:Falsifier ; cb:code "ZERO_OBSERVABLE_WORK" .
+cb:RejectMissingEvidence a cb:Falsifier ; cb:code "MISSING_OCEL_EVIDENCE" .
+cb:RejectNonMonotonicTrace a cb:Falsifier ; cb:code "NON_MONOTONIC_TRACE" .
+cb:RejectSilentSkip a cb:Falsifier ; cb:code "SILENT_SKIP" .
+cb:RejectWeakContextScale a cb:Falsifier ; cb:code "WEAK_CONTEXT_SCALE" .
+cb:RejectKernelLifecycleConflation a cb:Falsifier ; cb:code "KERNEL_LIFECYCLE_CONFLATION" .
+
+# Tool identities are exact review subjects. They are provenance, not ambient authority.
+cb:DSPyGen a cb:Selector ; cb:repository "seanchatmangpt/dspygen" ;
+    cb:ref "83f9e42a879ca83891c724709743613cace52256" ; cb:authority "SELECT" .
+cb:GGen a cb:Constructor ; cb:repository "seanchatmangpt/ggen" ;
+    cb:ref "e9298d4dbb1a22329e8aee4c8e2d622c25c72223" ; cb:authority "CONSTRUCT" .

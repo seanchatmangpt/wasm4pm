@@ -1,0 +1,69 @@
+name: SREGym compiled troubleshooting benchmark
+
+on:
+  push:
+    branches:
+      - agent/validate-last24h-benchmarks-20260809
+    paths:
+      - "wasm4pm/examples/sregym_issue_reasoning.rs"
+      - "scripts/validate-sregym-reasoning.py"
+      - ".github/workflows/sregym-issue-reasoning-bench.yml"
+      - "docs/benchmarks/sregym-compiled-troubleshooting.md"
+      - "wasm4pm/Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust
+        run: |
+          rustup toolchain install nightly-2026-04-15 --profile minimal
+          rustup default nightly-2026-04-15
+          rustc --version
+          cargo --version
+
+      - name: Bind exact subject
+        run: |
+          echo "head_sha=$(git rev-parse HEAD)" | tee sregym-subject.txt
+          echo "upstream_repo=SREGym/SREGym" | tee -a sregym-subject.txt
+          echo "upstream_revision=ba07faf1a322f9b6d4a279643bb796aa2f36f64b" | tee -a sregym-subject.txt
+          echo "problem_list_blob=41f9e5d96c14be808a863cca4842cb3479863300" | tee -a sregym-subject.txt
+
+      - name: Execute benchmark
+        run: |
+          cargo run --manifest-path wasm4pm/Cargo.toml --release --example sregym_issue_reasoning --locked 2>&1 | tee sregym-reasoning.log
+
+      - name: Validate benchmark
+        run: python3 scripts/validate-sregym-reasoning.py sregym-reasoning.log
+
+      - name: Manufacture receipt
+        if: always()
+        run: |
+          echo "head_sha=$(git rev-parse HEAD)" > sregym-receipt.txt
+          echo "log_sha256=$(sha256sum sregym-reasoning.log 2>/dev/null | cut -d' ' -f1 || true)" >> sregym-receipt.txt
+          echo "results_sha256=$(sha256sum sregym-results.csv 2>/dev/null | cut -d' ' -f1 || true)" >> sregym-receipt.txt
+          echo "summary_sha256=$(sha256sum sregym-summary.md 2>/dev/null | cut -d' ' -f1 || true)" >> sregym-receipt.txt
+          echo "run_id=${GITHUB_RUN_ID}" >> sregym-receipt.txt
+          echo "run_attempt=${GITHUB_RUN_ATTEMPT}" >> sregym-receipt.txt
+
+      - name: Upload exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sregym-compiled-troubleshooting-${{ github.sha }}
+          path: |
+            sregym-subject.txt
+            sregym-reasoning.log
+            sregym-results.csv
+            sregym-summary.md
+            sregym-receipt.txt
+          if-no-files-found: warn
+          retention-days: 30
