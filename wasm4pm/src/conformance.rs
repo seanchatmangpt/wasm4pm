@@ -2,9 +2,26 @@
 //!
 //! ## Fitness formula
 //!
+//! Corrected 2026-08-12: this doc comment previously stated
+//! `fitness = 1.0 - (missing + consumed) / (produced + remaining)`, which
+//! does not match what the code below actually computes and never did --
+//! per this repo's own AGENTS.md rule that documentation is subordinate to
+//! executable source when they disagree, the code (see `replay_log`'s
+//! `trace_fitness` computation) is correct and this doc is what was wrong.
+//! The real, executed formula is the standard van der Aalst token-replay
+//! fitness, per-trace and then averaged:
+//!
 //! ```text
-//! fitness = 1.0 - (missing + consumed) / (produced + remaining)
+//! fitness = 0.5 * (1 - missing / consumed) + 0.5 * (1 - remaining / produced)
 //! ```
+//!
+//! where `consumed`/`produced` are real tokens consumed/produced during
+//! replay, `missing` is tokens that had to be artificially inserted because
+//! a transition needed to fire but its input token wasn't present, and
+//! `remaining` is tokens left over after replay that are not part of the
+//! final marking. This is the same formula pm4py implements
+//! (`pm4py.algo.evaluation.replay_fitness.variants.token_replay`),
+//! confirmed against pm4py's real source this session.
 //!
 //! A value ≥ 0.85 is considered acceptable for real-world logs (van der Aalst 2016).
 //! A value of 1.0 means every trace replayed without missing tokens.
