@@ -301,9 +301,9 @@
       "user": "Well, my boyfriend made me come here.",
       "keyword_triggered": "MY (rank 2, MY substituted to YOUR during scan)",
       "decomposition": "(0 YOUR 0) \u2014 no /FAMILY tag match, falls to general MY rule",
-      "reassembly": "YOUR 3 \u2192 YOUR BOYFRIEND MADE YOU COME HERE",
-      "eliza_response": "YOUR BOYFRIEND MADE YOU COME HERE",
-      "note": "ME substituted to YOU during scan per unconditional substitution rule (ME = YOU)"
+      "reassembly": "YOUR 3 \u2192 YOUR boyfriend made YOU come here.",
+      "eliza_response": "YOUR boyfriend made YOU come here.",
+      "note": "The real substitute_input() (frame.rs) only case-transforms the specific substituted words (MY->YOUR, ME->YOU); every other captured token, and the sentence's original punctuation, passes through verbatim -- confirmed against apply_reassembly/match_decomp, which do no case normalization of their own. An earlier version of this fixture asserted a fully-uppercase, period-stripped response ('YOUR BOYFRIEND MADE YOU COME HERE') that no code path in this breed actually produces."
     },
     "detected_theme": "family_relationships_and_emotional_distress",
     "dominant_keywords_by_rank": [

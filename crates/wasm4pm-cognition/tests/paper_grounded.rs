@@ -897,6 +897,24 @@ fn hearsay_paper_grounded() {
         "Hearsay must hypothesize at least one correct word (ARE/BY/AND/FELDMAN) \
          per Erman et al. 1980 Fig. 5e Step 5 MOW output"
     );
+
+    // Real check against the fixture's own expected.step_count -- this is
+    // this implementation's real `firings` counter (how many non-stale
+    // KSARs actually pop-and-fire for this exact fact/rule set), not the
+    // original paper's own hand-walked narrative step numbering (which the
+    // fixture's `note` field states separately and does not assert here).
+    if let Some(expected_step_count) = exp.get("step_count").and_then(|v| v.as_u64()) {
+        let step_count = output
+            .facts
+            .iter()
+            .find(|f| f.key == "step_count")
+            .and_then(|f| f.value.parse::<u64>().ok())
+            .expect("Hearsay output must surface a real, parseable step_count fact");
+        assert_eq!(
+            step_count, expected_step_count,
+            "Hearsay's real firing count must match the fixture's expected.step_count"
+        );
+    }
 }
 
 // ============================================================================
@@ -1612,7 +1630,7 @@ fn autoinstinct_semantics_paper_grounded() {
             let intent = inp
                 .get("intent")
                 .and_then(|v| v.as_str())
-                .unwrap_or("John give book to Mary")
+                .unwrap_or("John give book to Mary from John")
                 .to_string();
 
             let input = BreedInput {
@@ -1686,6 +1704,18 @@ fn autoinstinct_semantics_paper_grounded() {
                     selected.contains(to_role),
                     "AutoinstinctSemantics: to-role must be '{}' per Schank 1972, got: {}",
                     to_role,
+                    selected
+                );
+            }
+
+            if let Some(from_role) = exp.get("from_role").and_then(|v| v.as_str()) {
+                let selected = output.selected.as_deref().unwrap_or("");
+                assert!(
+                    selected.contains(from_role),
+                    "AutoinstinctSemantics: from-role must be '{}' per Schank 1972 ATRANS \
+                     (real SemanticParser only populates this when the sentence contains a \
+                     literal 'from <X>' token), got: {}",
+                    from_role,
                     selected
                 );
             }
