@@ -12,8 +12,12 @@
 //!   -- see `wasm4pm/tests/fixtures/algorithms/detect_drift.json`'s
 //!   provenance note.
 //! * [`detect_drift_ks`] — added 2026-08-12: windowed J-measure feature
-//!   extraction plus a two-sample Kolmogorov-Smirnov test, Bose, van der
-//!   Aalst, Zliobaite & Pechenizkiy's actual Section 3 method.
+//!   extraction plus a two-sample Kolmogorov-Smirnov test, using the same
+//!   J-measure/KS-test machinery Bose, van der Aalst, Zliobaite &
+//!   Pechenizkiy's Section 3 describes -- with the paper's tunable
+//!   window-length `l` "follows within a window" feature narrowed here to a
+//!   fixed directly-follows (bigram, `l=1`) relation, not the paper's general
+//!   parameterized definition. See `window_j_measures`'s own doc.
 //! * [`compute_ewma`] — exponentially weighted moving average over a numeric
 //!   series, with a coarse trend classification (`rising` / `falling` /
 //!   `stable`).
@@ -423,15 +427,21 @@ pub fn detect_drift(
 // Real J-measure + Kolmogorov-Smirnov concept-drift detection.
 //
 // Added 2026-08-12 alongside (not replacing) `detect_drift_native`'s
-// windowed Jaccard/TV-distance heuristic, to actually implement the method
-// Bose, van der Aalst, Zliobaite & Pechenizkiy's real paper describes
-// ("Handling Concept Drift in Process Mining", CAiSE 2011, Section 3):
-// windowed J-measure feature extraction over the directly-follows relation,
-// compared across adjacent windows via a two-sample Kolmogorov-Smirnov
-// test. `wasm4pm/tests/fixtures/algorithms/detect_drift.json` was corrected
-// the same day to stop claiming the OLD Jaccard/TV method was a verbatim
-// extraction of this paper -- this function is the real, separate
-// implementation that fixture's provenance note now points to.
+// windowed Jaccard/TV-distance heuristic, to implement the J-measure/KS-test
+// machinery Bose, van der Aalst, Zliobaite & Pechenizkiy's real paper
+// describes ("Handling Concept Drift in Process Mining", CAiSE 2011,
+// Section 3): J-measure feature extraction over a "follows within a window"
+// relation, compared across adjacent windows via a two-sample
+// Kolmogorov-Smirnov test. Real, disclosed narrowing from the paper: Section
+// 3's own feature is parameterized by a window length `l` (the bag of
+// length-`l` subsequences a follows within); this implementation fixes that
+// relation to the directly-follows bigram case (`l=1`) rather than
+// generalizing to arbitrary `l` -- see `window_j_measures`'s doc.
+// `wasm4pm/tests/fixtures/algorithms/detect_drift.json` was corrected the
+// same day to stop claiming the OLD Jaccard/TV method was a verbatim
+// extraction of this paper -- this function is the real, separate,
+// disclosed-narrowing implementation that fixture's provenance note now
+// points to.
 // ---------------------------------------------------------------------------
 
 /// The real J-measure (Smyth & Goodman, 1992, "Rule Induction Using
@@ -470,6 +480,16 @@ pub fn j_measure(p_a: f64, p_b_given_a: f64, p_b: f64) -> f64 {
 /// P(b|a), P(b))` over that window, returning a map keyed by `"a\u{1f}b"`
 /// (unit-separator-joined, matching `etconformance_precision.rs`'s own
 /// prefix-key convention to avoid activity-name collisions).
+///
+/// Disclosed narrowing from the cited paper: Bose et al.'s own `p^{l,t}(a,b)`
+/// feature is a windowed, length-`l`-parameterized "b follows a within a
+/// window of length l" probability (Section VI.4 of the journal extension),
+/// computed over bags of length-`l` subsequences per trace. This function
+/// fixes that window length to `1` -- a strict directly-follows (bigram)
+/// relation via `activities.windows(2)` below -- rather than the paper's
+/// general parameterized definition. The J-measure formula itself
+/// (`j_measure`) is unchanged from the paper; only the "follows" relation
+/// it's applied to is narrower.
 fn window_j_measures(traces: &[crate::models::Trace], activity_key: &str) -> BTreeMap<String, f64> {
     let mut predecessor_counts: BTreeMap<String, usize> = BTreeMap::new();
     let mut df_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
@@ -581,9 +601,12 @@ pub struct KsDriftReport {
 }
 
 /// Real concept-drift detection via windowed J-measure feature extraction
-/// plus a two-sample Kolmogorov-Smirnov test between adjacent windows --
-/// Bose et al. (2011)'s actual Section 3 method, not the Jaccard/TV
-/// heuristic `detect_drift_native` implements. A drift point is flagged at
+/// plus a two-sample Kolmogorov-Smirnov test between adjacent windows -- the
+/// J-measure/KS-test machinery Bose et al. (2011) Section 3 describes,
+/// applied here to a directly-follows (bigram) relation rather than the
+/// paper's general windowed-length-`l` relation (see `window_j_measures`'s
+/// doc for the exact narrowing) -- not the Jaccard/TV heuristic
+/// `detect_drift_native` implements. A drift point is flagged at
 /// window-iterator index `idx` whenever the KS statistic between window
 /// `idx-1` and window `idx`'s J-measure feature distributions exceeds the
 /// real asymptotic critical value for that pair's sample sizes and `alpha`.
@@ -633,8 +656,9 @@ pub fn detect_drift_ks_native(
 
 /// Real, `wasm_bindgen`-exported entry point for [`detect_drift_ks_native`].
 /// See that function's docs for the real algorithm (J-measure + two-sample
-/// Kolmogorov-Smirnov test, Bose et al. 2011 Section 3) -- distinct from,
-/// and additive alongside, [`detect_drift`]'s Jaccard/TV heuristic.
+/// Kolmogorov-Smirnov test, using Bose et al. 2011 Section 3's machinery on
+/// a narrowed directly-follows relation) -- distinct from, and additive
+/// alongside, [`detect_drift`]'s Jaccard/TV heuristic.
 ///
 /// # Returns
 ///
