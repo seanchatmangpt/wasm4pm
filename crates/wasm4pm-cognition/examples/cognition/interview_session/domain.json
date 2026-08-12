@@ -75,7 +75,7 @@
       "id": "movement-table",
       "phrases": ["dictionary of moves", "map of moves", "movement table", "direction lookup", "map of directions"],
       "proposition": "uses_movement_lookup",
-      "track_weights": {"coordinate_traversal": 0.60, "hash_lookup": 0.20},
+      "track_weights": {"coordinate_traversal": 0.60},
       "concept": "data_structure"
     },
     {
@@ -131,7 +131,7 @@
       "id": "complexity-linear",
       "phrases": ["o of n", "linear time", "one pass"],
       "proposition": "states_linear_complexity",
-      "track_weights": {"coordinate_traversal": 0.35, "hash_lookup": 0.35},
+      "track_weights": {"coordinate_traversal": 0.35, "hash_lookup": 0.26},
       "concept": "complexity"
     },
     {
@@ -152,7 +152,7 @@
       "id": "edge-cases",
       "phrases": ["empty input", "invalid direction", "boundary condition", "edge cases", "missing key"],
       "proposition": "handles_edge_cases",
-      "track_weights": {"coordinate_traversal": 0.30, "grid_dfs": 0.30, "graph_dfs": 0.30, "hash_lookup": 0.30},
+      "track_weights": {"coordinate_traversal": 0.30, "grid_dfs": 0.30, "graph_dfs": 0.30, "hash_lookup": 0.26},
       "concept": "edge_cases"
     }
   ],

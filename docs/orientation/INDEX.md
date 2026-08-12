@@ -14,12 +14,13 @@ This index provides a comprehensive map of the `wasm4pm` architecture. It is str
 | 5 | CLI & API Map | How do users and applications interface with wasm4pm? | Developers | High | [05-cli-and-api-map.md](./05-cli-and-api-map.md) |
 | 6 | State & Data Flow | How do Event Logs turn into BLAKE3 Receipts? | Architects, Developers | High | [06-state-and-data-flow.md](./06-state-and-data-flow.md) |
 | 7 | Evidence & Proof | How does the project enforce Combinatorial Maximalism? | QA, Devs, Audit | High | [07-evidence-and-proof.md](./07-evidence-and-proof.md) |
+| 8 | Known Issues | What's currently broken, in-flight, or named-but-unfixed? | On-call, New Owners | High | [08-known-issues.md](./08-known-issues.md) |
 
 ## Cardinality Report
 
-- **Module Count**: 8 modules (Phase 00–07, reconciled).
+- **Module Count**: 9 modules (Phase 00–08, reconciled).
 - **Index Count**: 1 (INDEX.md).
-- **Total Operational Files**: 9.
+- **Total Operational Files**: 10.
 
 ## Top 10 Proven Facts (High Confidence)
 
