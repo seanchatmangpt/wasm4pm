@@ -12,12 +12,8 @@
 
 fn breed_source(module: &str) -> String {
     let src_path = format!("{}/src/breeds/{}.rs", env!("CARGO_MANIFEST_DIR"), module);
-    std::fs::read_to_string(&src_path).unwrap_or_else(|_| {
-        panic!(
-            "MISSING SOURCE: {} — every pointer-bearing breed must have its module on disk",
-            src_path
-        )
-    })
+    std::fs::read_to_string(&src_path)
+        .unwrap_or_else(|_| panic!("MISSING SOURCE: {} — every pointer-bearing breed must have its module on disk", src_path))
 }
 
 /// Strip ALL inline `#[cfg(test)]` modules/items, not just the first.
@@ -1725,3 +1721,4 @@ fn anticheat_version_space_true_111_not_hardcoded() {
         "version_space"
     );
 }
+
