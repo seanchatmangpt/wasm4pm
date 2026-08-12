@@ -7,47 +7,37 @@
     "extraction": "grounded"
   },
   "input": {
-    "intent": "G (req -> F res)",
+    "intent": "G (red -> !green)",
     "candidates": [],
-    "facts": [],
-    "cases": [
+    "facts": [
       {
-        "id": "state0",
-        "intent": "",
-        "architecture": "",
-        "outcome_score": 1.0,
-        "facts": [
-          {
-            "key": "req",
-            "value": "true"
-          }
-        ]
+        "key": "ltl:formula",
+        "value": "G (red -> !green)"
       },
       {
-        "id": "state1",
-        "intent": "",
-        "architecture": "",
-        "outcome_score": 1.0,
-        "facts": []
+        "key": "trace:0",
+        "value": "red"
       },
       {
-        "id": "state2",
-        "intent": "",
-        "architecture": "",
-        "outcome_score": 1.0,
-        "facts": [
-          {
-            "key": "res",
-            "value": "true"
-          }
-        ]
+        "key": "trace:1",
+        "value": ""
+      },
+      {
+        "key": "trace:2",
+        "value": "green"
+      },
+      {
+        "key": "trace:3",
+        "value": "red"
       }
     ],
+    "cases": [],
     "rules": [],
     "goals": [],
     "state": []
   },
   "expected": {
-    "satisfies": true
+    "satisfies": true,
+    "progress_steps": 4
   }
 }

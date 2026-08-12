@@ -1,7 +1,7 @@
 # cbr — Case-Based Reasoning
 
 ## 1. Identity & Lineage
-CBR via Jaccard similarity with Discrimination Net indexing (Schank 1983; Kolodner 1993). BreedId `cbr`, module `src/breeds/cbr.rs`.
+CBR via Jaccard similarity with Discrimination Net indexing (Schank 1983; Aamodt & Plaza 1994). BreedId `cbr`, module `src/breeds/cbr.rs`.
 
 ## 2. Algorithm
 Build discrimination-net index: map `key=value` feature strings to case indices (O(log N) lookup). For each candidate case, compute `sim = |intersection(query_facts, case_facts)| / |union|`. Score = `sim × outcome_score`. Select maximum-score case (lex tiebreak on case id). Recommend `selected = best_case.architecture`.
@@ -22,4 +22,4 @@ Structural: Jaccard symmetry (a,b) == (b,a); identity (a,a) == 1; empty-set == 0
 BTreeMap discrimination net; HashSet for Jaccard (order-independent); lex tiebreak.
 
 ## 8. Provenance
-Fixture `tests/fixtures/papers/cbr.json` (Kolodner 1993 CHEF cooking failure-and-repair case).
+Fixture `tests/fixtures/papers/cbr.json` (Aamodt & Plaza 1994, physician vignette, `CASE-PHYSICIAN-2WK`). Confirmed against `cbr.rs`'s own module doc comment ("Case-Based Reasoning via Jaccard similarity with Discrimination Net Indexing (Schank 1983)") and its falsification-gate test, both built around this exact scenario -- not Kolodner 1993 CHEF, which this file previously (incorrectly) cited.

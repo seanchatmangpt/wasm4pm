@@ -27,7 +27,7 @@
           "improving=weight",
           "worsening=strength"
         ],
-        "conclusion": "principles=40,26",
+        "conclusion": "principles=1,8,40,15",
         "certainty": 1.0
       }
     ],
@@ -36,6 +36,6 @@
     "state": []
   },
   "expected": {
-    "principles": "principles=40,26"
+    "principles": "principles=1,8,40,15"
   }
 }
