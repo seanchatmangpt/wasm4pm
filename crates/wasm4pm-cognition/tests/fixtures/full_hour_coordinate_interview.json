@@ -154,7 +154,7 @@
       "timestamp": "2026-07-23T09:45:00-07:00",
       "speaker": "interviewer",
       "kind": "observation",
-      "text": "What edge cases and failure policy would you commit to in production?",
+      "text": "What failure policy would you commit to in production, and what should the function refuse to accept?",
       "checkpoint": null
     },
     {
