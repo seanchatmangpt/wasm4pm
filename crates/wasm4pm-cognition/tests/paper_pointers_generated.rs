@@ -12,12 +12,8 @@ fn fixture_json(breed_id: &str) -> serde_json::Value {
         env!("CARGO_MANIFEST_DIR"),
         breed_id
     );
-    let raw = std::fs::read_to_string(&path).unwrap_or_else(|_| {
-        panic!(
-            "MISSING FIXTURE: {} — breeds with paper pointers must have fixtures",
-            path
-        )
-    });
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — breeds with paper pointers must have fixtures", path));
     serde_json::from_str(&raw).unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e))
 }
 
@@ -374,3 +370,4 @@ fn pointer_fixture_version_space_111_is_real() {
     // True pointer: "Sunny,Warm,?,Strong,?,?" — Mitchell 1982, Artificial Intelligence 18(2), Sections 3-4 (candidate-elimination); EnjoySport worked instance in Mitchell 1997 ML, Ch. 2, Tables 2.1/2.5
     assert_real_fixture("version_space");
 }
+
