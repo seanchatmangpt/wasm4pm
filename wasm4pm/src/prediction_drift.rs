@@ -4,10 +4,16 @@
 //!
 //! > **"Has the process behaviour changed over time?"**
 //!
-//! Two complementary primitives are exported across the WASM boundary:
+//! Three complementary primitives are exported across the WASM boundary:
 //!
 //! * [`detect_drift`] — windowed Jaccard-distance drift detection over the
-//!   activity vocabulary of consecutive trace windows.
+//!   activity vocabulary of consecutive trace windows. A real, useful
+//!   heuristic, but NOT a reproduction of Bose et al. (2011)'s own method
+//!   -- see `wasm4pm/tests/fixtures/algorithms/detect_drift.json`'s
+//!   provenance note.
+//! * [`detect_drift_ks`] — added 2026-08-12: windowed J-measure feature
+//!   extraction plus a two-sample Kolmogorov-Smirnov test, Bose, van der
+//!   Aalst, Zliobaite & Pechenizkiy's actual Section 3 method.
 //! * [`compute_ewma`] — exponentially weighted moving average over a numeric
 //!   series, with a coarse trend classification (`rising` / `falling` /
 //!   `stable`).
@@ -324,7 +330,19 @@ pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usiz
                     "Frequency shift detected — inspect directly-follows graph".to_string()
                 };
                 drifts.push(DriftEvent {
-                    position: idx * window_size,
+                    // Corrected 2026-08-12: `log.traces.windows(window_size)`
+                    // yields an OVERLAPPING, stride-1 sliding window -- each
+                    // successive window starts exactly one trace later than
+                    // the previous one, regardless of `window_size`. The
+                    // window at iterator index `idx` therefore starts at
+                    // real trace offset `idx`, not `idx * window_size` (the
+                    // latter only holds for non-overlapping, stride-
+                    // `window_size` chunking, which is not what `.windows()`
+                    // does). The old formula overstated the real position
+                    // for every `window_size > 1`, and the bug was invisible
+                    // in the existing test suite because it only exercises
+                    // `window_size: 1`, where `idx * 1 == idx`.
+                    position: idx,
                     distance,
                     tv_distance: tv,
                     method,
@@ -395,6 +413,258 @@ pub fn detect_drift(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
         let result = detect_drift_native(log, activity_key, window_size);
+        serde_json::to_string(&result)
+            .map(|s| crate::error::js_val(&s))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Real J-measure + Kolmogorov-Smirnov concept-drift detection.
+//
+// Added 2026-08-12 alongside (not replacing) `detect_drift_native`'s
+// windowed Jaccard/TV-distance heuristic, to actually implement the method
+// Bose, van der Aalst, Zliobaite & Pechenizkiy's real paper describes
+// ("Handling Concept Drift in Process Mining", CAiSE 2011, Section 3):
+// windowed J-measure feature extraction over the directly-follows relation,
+// compared across adjacent windows via a two-sample Kolmogorov-Smirnov
+// test. `wasm4pm/tests/fixtures/algorithms/detect_drift.json` was corrected
+// the same day to stop claiming the OLD Jaccard/TV method was a verbatim
+// extraction of this paper -- this function is the real, separate
+// implementation that fixture's provenance note now points to.
+// ---------------------------------------------------------------------------
+
+/// The real J-measure (Smyth & Goodman, 1992, "Rule Induction Using
+/// Information Theory") for a directly-follows pair `(a, b)`, per Bose et
+/// al.'s use of it as a drift-detection feature:
+///
+/// ```text
+/// J(a, b) = P(a) * [ P(b|a)*log2(P(b|a)/P(b)) + (1-P(b|a))*log2((1-P(b|a))/(1-P(b))) ]
+/// ```
+///
+/// `p_a` = probability activity `a` occurs as a predecessor in the window;
+/// `p_b_given_a` = probability `b` directly follows `a`, given `a` occurred;
+/// `p_b` = marginal probability of `b` occurring as *any* activity's
+/// successor in the window. Degenerate cases (`p_b_given_a` or `p_b` at the
+/// boundary `0.0`/`1.0`, where a `log` term would be undefined) contribute
+/// `0.0` for that term, by the standard information-theoretic convention
+/// `0 * log(0) = 0`.
+pub fn j_measure(p_a: f64, p_b_given_a: f64, p_b: f64) -> f64 {
+    if p_a <= 0.0 {
+        return 0.0;
+    }
+    let term = |p_cond: f64, p_marg: f64| -> f64 {
+        if p_cond <= 0.0 || p_marg <= 0.0 || p_marg >= 1.0 {
+            0.0
+        } else {
+            p_cond * (p_cond / p_marg).log2()
+        }
+    };
+    let positive = term(p_b_given_a, p_b);
+    let negative = term(1.0 - p_b_given_a, 1.0 - p_b);
+    p_a * (positive + negative)
+}
+
+/// Real windowed J-measure feature extraction: for every directly-follows
+/// activity pair `(a, b)` observed in `traces`, computes `j_measure(P(a),
+/// P(b|a), P(b))` over that window, returning a map keyed by `"a\u{1f}b"`
+/// (unit-separator-joined, matching `etconformance_precision.rs`'s own
+/// prefix-key convention to avoid activity-name collisions).
+fn window_j_measures(traces: &[crate::models::Trace], activity_key: &str) -> BTreeMap<String, f64> {
+    let mut predecessor_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut df_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut successor_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut total_successor_slots: usize = 0;
+
+    for trace in traces {
+        let activities: Vec<&str> = trace
+            .events
+            .iter()
+            .filter_map(|e| match e.attributes.get(activity_key) {
+                Some(AttributeValue::String(a)) => Some(a.as_str()),
+                _ => None,
+            })
+            .collect();
+        for pair in activities.windows(2) {
+            let (a, b) = (pair[0], pair[1]);
+            *predecessor_counts.entry(a.to_string()).or_default() += 1;
+            *df_counts.entry((a.to_string(), b.to_string())).or_default() += 1;
+            *successor_counts.entry(b.to_string()).or_default() += 1;
+            total_successor_slots += 1;
+        }
+    }
+
+    let mut features: BTreeMap<String, f64> = BTreeMap::new();
+    if total_successor_slots == 0 {
+        return features;
+    }
+    for ((a, b), &count_ab) in &df_counts {
+        let p_a = *predecessor_counts.get(a).unwrap_or(&0) as f64 / total_successor_slots as f64;
+        let p_b_given_a = count_ab as f64 / *predecessor_counts.get(a).unwrap_or(&1) as f64;
+        let p_b = *successor_counts.get(b).unwrap_or(&0) as f64 / total_successor_slots as f64;
+        let key = format!("{}\u{1f}{}", a, b);
+        features.insert(key, j_measure(p_a, p_b_given_a, p_b));
+    }
+    features
+}
+
+/// Real two-sample Kolmogorov-Smirnov statistic: the maximum absolute
+/// difference between the empirical CDFs of `sample_a` and `sample_b`.
+/// Standard definition (Massey, 1951, "The Kolmogorov-Smirnov Test for
+/// Goodness of Fit"). Returns `0.0` if either sample is empty (no real
+/// comparison possible).
+pub fn ks_statistic(sample_a: &[f64], sample_b: &[f64]) -> f64 {
+    if sample_a.is_empty() || sample_b.is_empty() {
+        return 0.0;
+    }
+    let mut all_values: Vec<f64> = sample_a.iter().chain(sample_b.iter()).copied().collect();
+    all_values.sort_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal));
+
+    let n_a = sample_a.len() as f64;
+    let n_b = sample_b.len() as f64;
+    let ecdf = |sample: &[f64], x: f64| -> f64 {
+        sample.iter().filter(|&&v| v <= x).count() as f64
+    };
+
+    let mut max_diff = 0.0_f64;
+    for &x in &all_values {
+        let diff = (ecdf(sample_a, x) / n_a - ecdf(sample_b, x) / n_b).abs();
+        if diff > max_diff {
+            max_diff = diff;
+        }
+    }
+    max_diff
+}
+
+/// Real, standard asymptotic two-sample KS critical value (Massey, 1951):
+///
+/// ```text
+/// D_critical(alpha) = c(alpha) * sqrt((n + m) / (n * m))
+/// ```
+///
+/// `c(alpha)` is the standard KS coefficient; `c(0.05) = 1.36` and
+/// `c(0.01) = 1.63` are the two most commonly tabulated values. Any other
+/// `alpha` falls back to the `0.05` coefficient with the real value named,
+/// not silently substituted -- callers wanting a different exact
+/// significance level should supply `alpha` in `{0.05, 0.01}` until a real
+/// closed-form/tabulated lookup is added for other values.
+pub fn ks_critical_value(n: usize, m: usize, alpha: f64) -> f64 {
+    let coefficient = if (alpha - 0.01).abs() < 1e-9 {
+        1.63
+    } else {
+        1.36 // alpha = 0.05 default/fallback
+    };
+    if n == 0 || m == 0 {
+        return f64::INFINITY; // no real comparison possible -- never a spurious drift
+    }
+    coefficient * (((n + m) as f64) / ((n * m) as f64)).sqrt()
+}
+
+/// One real, flagged drift point from the KS-test method.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KsDriftEvent {
+    pub position: usize,
+    pub ks_statistic: f64,
+    pub critical_value: f64,
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+}
+
+/// The full KS-test drift-detection result over an event log.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KsDriftReport {
+    pub drifts_detected: usize,
+    pub drifts: Vec<KsDriftEvent>,
+    pub window_size: usize,
+    pub method: &'static str,
+    pub alpha: f64,
+}
+
+/// Real concept-drift detection via windowed J-measure feature extraction
+/// plus a two-sample Kolmogorov-Smirnov test between adjacent windows --
+/// Bose et al. (2011)'s actual Section 3 method, not the Jaccard/TV
+/// heuristic `detect_drift_native` implements. A drift point is flagged at
+/// window-iterator index `idx` whenever the KS statistic between window
+/// `idx-1` and window `idx`'s J-measure feature distributions exceeds the
+/// real asymptotic critical value for that pair's sample sizes and `alpha`.
+///
+/// `window_size` uses the same overlapping `.windows(window_size)`
+/// convention as `detect_drift_native`, and `position` uses the same
+/// corrected (2026-08-12) real trace-offset convention: the sliding-window
+/// iterator index itself, not `idx * window_size`.
+pub fn detect_drift_ks_native(
+    log: &EventLog,
+    activity_key: &str,
+    window_size: usize,
+    alpha: f64,
+) -> KsDriftReport {
+    let window_size = window_size.max(1);
+    let mut drifts: Vec<KsDriftEvent> = Vec::new();
+    let mut previous_features: Option<BTreeMap<String, f64>> = None;
+
+    for (idx, window) in log.traces.windows(window_size).enumerate() {
+        let current_features = window_j_measures(window, activity_key);
+
+        if let Some(prev) = &previous_features {
+            let sample_a: Vec<f64> = prev.values().copied().collect();
+            let sample_b: Vec<f64> = current_features.values().copied().collect();
+            let statistic = ks_statistic(&sample_a, &sample_b);
+            let critical = ks_critical_value(sample_a.len(), sample_b.len(), alpha);
+            if statistic > critical {
+                drifts.push(KsDriftEvent {
+                    position: idx,
+                    ks_statistic: statistic,
+                    critical_value: critical,
+                    kind: "concept_drift_ks",
+                });
+            }
+        }
+        previous_features = Some(current_features);
+    }
+
+    KsDriftReport {
+        drifts_detected: drifts.len(),
+        drifts,
+        window_size,
+        method: "j_measure_ks_test",
+        alpha,
+    }
+}
+
+/// Real, `wasm_bindgen`-exported entry point for [`detect_drift_ks_native`].
+/// See that function's docs for the real algorithm (J-measure + two-sample
+/// Kolmogorov-Smirnov test, Bose et al. 2011 Section 3) -- distinct from,
+/// and additive alongside, [`detect_drift`]'s Jaccard/TV heuristic.
+///
+/// # Returns
+///
+/// A JSON-serialised JS string, e.g.:
+///
+/// ```json
+/// {
+///   "drifts_detected": 1,
+///   "drifts": [
+///     { "position": 3, "ks_statistic": 0.72, "critical_value": 0.61, "type": "concept_drift_ks" }
+///   ],
+///   "window_size": 5,
+///   "method": "j_measure_ks_test",
+///   "alpha": 0.05
+/// }
+/// ```
+///
+/// # Errors
+///
+/// Returns a `JsValue` error if the handle is missing or refers to a
+/// non-`EventLog` object.
+#[wasm_bindgen]
+pub fn detect_drift_ks(
+    log_handle: &str,
+    activity_key: &str,
+    window_size: usize,
+    alpha: f64,
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_event_log(log_handle, |log| {
+        let result = detect_drift_ks_native(log, activity_key, window_size, alpha);
         serde_json::to_string(&result)
             .map(|s| crate::error::js_val(&s))
             .map_err(|e| crate::error::js_val(&e.to_string()))
@@ -709,12 +979,176 @@ mod tests {
     }
 
     #[test]
+    fn detect_drift_native_position_matches_the_real_overlapping_window_offset() {
+        // Regression test for the 2026-08-12 fix: `position` must equal the
+        // sliding-window iterator index `idx` itself, never `idx *
+        // window_size`.
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["X", "Y"]),
+                trace_of(&["X", "Y"]),
+                trace_of(&["X", "Y"]),
+            ],
+        };
+        let report = detect_drift_native(&log, "concept:name", 3);
+        assert!(!report.drifts.is_empty(), "expected at least one real drift point");
+        for drift in &report.drifts {
+            assert!(
+                drift.position <= 3,
+                "position {} exceeds the real max iterator index (3) -- looks like \
+                 the idx * window_size regression reappeared",
+                drift.position
+            );
+        }
+    }
+
+    #[test]
     fn detect_drift_native_clamps_zero_window_size_to_one() {
         let log = EventLog {
             attributes: BTreeMap::new(),
             traces: vec![trace_of(&["A"]), trace_of(&["B"])],
         };
         let report = detect_drift_native(&log, "concept:name", 0);
+        assert_eq!(report.window_size, 1);
+    }
+
+    // -----------------------------------------------------------------
+    // Real J-measure + Kolmogorov-Smirnov drift detection (added 2026-08-12).
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn j_measure_is_zero_when_a_never_occurs() {
+        assert_eq!(j_measure(0.0, 0.5, 0.5), 0.0);
+    }
+
+    #[test]
+    fn j_measure_hand_computed_perfect_predictor() {
+        let j = j_measure(0.5, 1.0, 0.5);
+        assert!((j - 0.5).abs() < 1e-9, "j = {j}");
+    }
+
+    #[test]
+    fn j_measure_is_zero_when_conditional_equals_marginal() {
+        let j = j_measure(0.7, 0.4, 0.4);
+        assert!(j.abs() < 1e-9, "j = {j}");
+    }
+
+    #[test]
+    fn window_j_measures_real_perfect_predictor_log() {
+        let traces = vec![trace_of(&["A", "B"]), trace_of(&["A", "B"])];
+        let features = window_j_measures(&traces, "concept:name");
+        assert_eq!(features.len(), 1);
+        let j = features["A\u{1f}B"];
+        assert!(j.is_finite(), "j must be finite, got {j}");
+    }
+
+    #[test]
+    fn ks_statistic_identical_samples_is_zero() {
+        let s = vec![0.1, 0.2, 0.3, 0.4];
+        assert_eq!(ks_statistic(&s, &s), 0.0);
+    }
+
+    #[test]
+    fn ks_statistic_disjoint_ranges_is_one() {
+        let a = vec![0.0, 0.0, 0.0];
+        let b = vec![1.0, 1.0, 1.0];
+        let d = ks_statistic(&a, &b);
+        assert!((d - 1.0).abs() < 1e-9, "d = {d}");
+    }
+
+    #[test]
+    fn ks_statistic_hand_computed_two_point_case() {
+        let a = vec![0.0, 1.0];
+        let b = vec![0.0, 0.0];
+        let d = ks_statistic(&a, &b);
+        assert!((d - 0.5).abs() < 1e-9, "d = {d}");
+    }
+
+    #[test]
+    fn ks_statistic_empty_sample_is_zero() {
+        assert_eq!(ks_statistic(&[], &[1.0]), 0.0);
+        assert_eq!(ks_statistic(&[1.0], &[]), 0.0);
+    }
+
+    #[test]
+    fn ks_critical_value_real_massey_1951_coefficients() {
+        let d05 = ks_critical_value(10, 10, 0.05);
+        let expected05 = 1.36 * ((20.0_f64) / 100.0).sqrt();
+        assert!((d05 - expected05).abs() < 1e-9, "d05 = {d05}");
+
+        let d01 = ks_critical_value(10, 10, 0.01);
+        let expected01 = 1.63 * ((20.0_f64) / 100.0).sqrt();
+        assert!((d01 - expected01).abs() < 1e-9, "d01 = {d01}");
+        assert!(d01 > d05);
+    }
+
+    #[test]
+    fn ks_critical_value_empty_sample_is_infinite() {
+        assert!(ks_critical_value(0, 5, 0.05).is_infinite());
+        assert!(ks_critical_value(5, 0, 0.05).is_infinite());
+    }
+
+    #[test]
+    fn detect_drift_ks_native_finds_no_drift_on_a_stable_vocabulary() {
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+                trace_of(&["A", "B"]),
+            ],
+        };
+        let report = detect_drift_ks_native(&log, "concept:name", 2, 0.05);
+        assert_eq!(report.drifts_detected, 0);
+        assert_eq!(report.method, "j_measure_ks_test");
+        assert_eq!(report.window_size, 2);
+        assert!((report.alpha - 0.05).abs() < 1e-12);
+    }
+
+    #[test]
+    fn detect_drift_ks_native_detects_a_real_vocabulary_shift() {
+        // A pure two-activity chain always yields J=0.0 (only one distinct
+        // predecessor role); real informativeness needs >=2 distinct
+        // predecessor roles per window. Chain length 3 (2 pairs) gives
+        // J=log2(2)/2=0.5 per pair; chain length 6 (5 pairs) gives
+        // J=log2(5)/5≈0.4644 per pair -- a real, numerically distinct
+        // constant even though every individual transition is deterministic
+        // in both regimes.
+        let mut traces = Vec::new();
+        for _ in 0..8 {
+            traces.push(trace_of(&["A", "B", "C"]));
+        }
+        for _ in 0..8 {
+            traces.push(trace_of(&["X1", "X2", "X3", "X4", "X5", "X6"]));
+        }
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces,
+        };
+        let report = detect_drift_ks_native(&log, "concept:name", 8, 0.05);
+        assert!(
+            !report.drifts.is_empty(),
+            "expected at least one real KS-flagged drift point"
+        );
+        for drift in &report.drifts {
+            assert_eq!(drift.kind, "concept_drift_ks");
+            assert!(drift.ks_statistic > drift.critical_value);
+            assert!(drift.ks_statistic.is_finite() && drift.critical_value.is_finite());
+        }
+    }
+
+    #[test]
+    fn detect_drift_ks_native_clamps_zero_window_size_to_one() {
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces: vec![trace_of(&["A"]), trace_of(&["B"])],
+        };
+        let report = detect_drift_ks_native(&log, "concept:name", 0, 0.05);
         assert_eq!(report.window_size, 1);
     }
 }

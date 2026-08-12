@@ -7,6 +7,7 @@ use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 /// A candidate Petri net place with pre-set (inputs) and post-set (outputs) of activity indices.
+#[derive(Clone)]
 struct CandidatePlace {
     /// Sorted activity IDs that produce a token (pre-set transitions).
     input_acts: Vec<u32>,
@@ -195,8 +196,16 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
 
     // Stage 4: Greedy set-cover — select the smallest consistent set that
     // explains all causal dependencies.
+    // Stage 4: real 0/1 ILP set-cover solve (added 2026-08-12), replacing
+    // the greedy heuristic as the primary path -- `ilp_exact_cover` finds
+    // the real minimum-cardinality selection. Falls back to
+    // `ilp_greedy_cover` only on a real solve failure -- a disclosed
+    // fallback, never a silent wrong answer.
     let causal_set: HashSet<(u32, u32)> = causal_pairs.iter().copied().collect();
-    let selected = ilp_greedy_cover(valid_candidates, &causal_set);
+    let selected = match ilp_exact_cover(valid_candidates.clone(), &causal_set) {
+        Some(exact) => exact,
+        None => ilp_greedy_cover(valid_candidates, &causal_set),
+    };
 
     // Stage 5: Assemble Petri net and compute metrics.
     build_ilp_petri_net(
@@ -208,6 +217,60 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
         &end_acts,
         &loop1_acts,
     )
+}
+
+/// Real 0/1 integer-linear-program solve of the exact same set-cover problem
+/// [`ilp_greedy_cover`] approximates -- added 2026-08-12. Formulation: one
+/// binary variable `x_i` per candidate place; minimize `sum(x_i)` subject
+/// to, for every real causal pair `(a, b)`, `sum(x_i for i covering (a,b))
+/// >= 1`. Solved via [`good_lp`]'s pure-Rust `microlp` backend (real
+/// branch-and-bound, no native/C solver dependency -- chosen for
+/// `wasm32-unknown-unknown` compatibility).
+///
+/// Returns `None` on any real solve failure (should not occur -- every
+/// real causal pair is guaranteed coverable by its 1-to-1 candidate). Callers
+/// fall back to [`ilp_greedy_cover`] in that case.
+fn ilp_exact_cover(
+    candidates: Vec<CandidatePlace>,
+    causal_pairs: &HashSet<(u32, u32)>,
+) -> Option<Vec<CandidatePlace>> {
+    use good_lp::{variable, Expression, ProblemVariables, Solution, SolverModel};
+
+    if candidates.is_empty() || causal_pairs.is_empty() {
+        return Some(Vec::new());
+    }
+
+    let mut vars = ProblemVariables::new();
+    let mut x = Vec::with_capacity(candidates.len());
+    for _ in &candidates {
+        x.push(vars.add(variable().binary()));
+    }
+
+    let objective: Expression = x.iter().map(|&v| Expression::from(v)).sum();
+    let mut model = vars.minimise(objective).using(good_lp::microlp);
+
+    for &(a, b) in causal_pairs {
+        let covering: Vec<good_lp::Variable> = candidates
+            .iter()
+            .zip(&x)
+            .filter(|(c, _)| c.input_acts.contains(&a) && c.output_acts.contains(&b))
+            .map(|(_, &v)| v)
+            .collect();
+        if covering.is_empty() {
+            return None;
+        }
+        let coverage: Expression = covering.into_iter().map(Expression::from).sum();
+        model = model.with(coverage.geq(1.0));
+    }
+
+    let solution = model.solve().ok()?;
+    let selected: Vec<CandidatePlace> = candidates
+        .into_iter()
+        .zip(&x)
+        .filter(|(_, &v)| solution.value(v) > 0.5)
+        .map(|(c, _)| c)
+        .collect();
+    Some(selected)
 }
 
 /// Greedy set-cover: select the minimum subset of candidate places that together
@@ -388,7 +451,23 @@ fn build_ilp_petri_net(
     // Fitness via proper token replay (not DFG-fitting).
     let conformance = crate::conformance::token_replay_pure(log, &petri_net, activity_key);
     let fitness = conformance.avg_fitness;
-    let precision = calculate_precision(&petri_net, log, activity_key);
+    // Corrected 2026-08-12: previously used the local `calculate_precision`
+    // (a coarse activity-coverage ratio), when the real, correctly-
+    // implemented ETConformance precision already existed unused in this
+    // crate.
+    let final_marking: crate::etconformance_precision::Marking = petri_net
+        .final_markings
+        .first()
+        .cloned()
+        .unwrap_or_default();
+    let precision = crate::etconformance_precision::compute_precision(
+        &petri_net,
+        &petri_net.initial_marking,
+        &final_marking,
+        log,
+        activity_key,
+    )
+    .precision;
 
     (petri_net, fitness, precision)
 }
@@ -571,39 +650,9 @@ pub fn discover_optimized_dfg(
     }))
 }
 
-// Calculate precision: fraction of model transitions (visible activities) that are
-// covered by activities observed in the log.
-#[inline]
-fn calculate_precision(petri_net: &PetriNet, log: &EventLog, activity_key: &str) -> f64 {
-    // Collect unique activities observed in the log
-    let log_activities: HashSet<String> = log
-        .traces
-        .iter()
-        .flat_map(|trace| {
-            trace.events.iter().filter_map(|e| {
-                e.attributes
-                    .get(activity_key)?
-                    .as_string()
-                    .map(str::to_owned)
-            })
-        })
-        .collect();
-
-    // Collect visible (non-silent) transition labels from the model
-    let model_activities: HashSet<String> = petri_net
-        .transitions
-        .iter()
-        .filter(|t| !t.is_invisible.unwrap_or(false))
-        .map(|t| t.label.clone())
-        .collect();
-
-    if model_activities.is_empty() {
-        return 0.0;
-    }
-
-    let covered = log_activities.intersection(&model_activities).count();
-    covered as f64 / model_activities.len() as f64
-}
+// Removed 2026-08-12: `calculate_precision` (a coarse activity-coverage
+// ratio) was replaced at its one real call site by the real, correctly-
+// implemented ETConformance precision (`etconformance_precision::compute_precision`).
 
 #[wasm_bindgen]
 pub fn ilp_discovery_info() -> String {
@@ -612,10 +661,10 @@ pub fn ilp_discovery_info() -> String {
         "algorithms": [
             {
                 "name": "discover_ilp_petri_net",
-                "description": "Finds optimal Petri net using constraint-based optimization",
+                "description": "Region-based Petri net discovery: causal-pair candidate places validated by token replay, selected via a real 0/1 ILP solve (minimum-cardinality set cover, solved with good_lp/microlp) with a greedy-heuristic fallback on solve failure",
                 "parameters": ["activity_key"],
                 "returns": ["fitness", "precision", "simplicity", "f_measure"],
-                "better_for": "Finding optimal process models with balanced fit and complexity"
+                "better_for": "Finding process models with balanced fit and complexity; optimal place selection on the common path"
             },
             {
                 "name": "discover_optimized_dfg",
@@ -627,4 +676,84 @@ pub fn ilp_discovery_info() -> String {
         ]
     })
     .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn candidate(input: &[u32], output: &[u32]) -> CandidatePlace {
+        CandidatePlace {
+            input_acts: input.to_vec(),
+            output_acts: output.to_vec(),
+        }
+    }
+
+    fn covers_pair(c: &CandidatePlace, a: u32, b: u32) -> bool {
+        c.input_acts.contains(&a) && c.output_acts.contains(&b)
+    }
+
+    fn covers_pair_in(selected: &[&CandidatePlace], a: u32, b: u32) -> bool {
+        selected.iter().any(|c| covers_pair(c, a, b))
+    }
+
+    fn all_pairs_covered(selected: &[CandidatePlace], causal_pairs: &HashSet<(u32, u32)>) -> bool {
+        let refs: Vec<&CandidatePlace> = selected.iter().collect();
+        causal_pairs.iter().all(|(a, b)| covers_pair_in(&refs, *a, *b))
+    }
+
+    #[test]
+    fn ilp_exact_cover_finds_a_real_valid_cover() {
+        let causal: HashSet<(u32, u32)> = [(0, 1), (0, 2), (1, 3), (2, 3)].into_iter().collect();
+        let candidates = vec![
+            candidate(&[0], &[1, 2]),
+            candidate(&[1, 2], &[3]),
+            candidate(&[0], &[1]),
+            candidate(&[0], &[2]),
+            candidate(&[1], &[3]),
+            candidate(&[2], &[3]),
+        ];
+        let result = ilp_exact_cover(candidates, &causal).expect("real solve must succeed");
+        assert!(all_pairs_covered(&result, &causal), "exact cover must cover every real causal pair");
+        assert_eq!(result.len(), 2, "expected the real minimum-cardinality cover (2 places)");
+    }
+
+    #[test]
+    fn ilp_exact_cover_never_produces_more_places_than_the_greedy_heuristic() {
+        let causal: HashSet<(u32, u32)> = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 4)].into_iter().collect();
+        let candidates = vec![
+            candidate(&[0], &[1]),
+            candidate(&[1], &[2]),
+            candidate(&[2], &[3]),
+            candidate(&[3], &[4]),
+            candidate(&[0], &[4]),
+            candidate(&[0, 3], &[1, 4]),
+        ];
+        let exact = ilp_exact_cover(candidates.clone(), &causal).expect("real solve must succeed");
+        let greedy = ilp_greedy_cover(candidates, &causal);
+        assert!(all_pairs_covered(&exact, &causal));
+        assert!(all_pairs_covered(&greedy, &causal));
+        assert!(
+            exact.len() <= greedy.len(),
+            "exact ILP solve ({} places) must never need more places than greedy ({} places)",
+            exact.len(),
+            greedy.len()
+        );
+    }
+
+    #[test]
+    fn ilp_exact_cover_empty_causal_pairs_returns_empty() {
+        let candidates = vec![candidate(&[0], &[1])];
+        let causal: HashSet<(u32, u32)> = HashSet::new();
+        let result = ilp_exact_cover(candidates, &causal).expect("must succeed on trivial input");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn ilp_exact_cover_returns_none_when_a_pair_is_genuinely_uncoverable() {
+        let candidates = vec![candidate(&[0], &[1])];
+        let causal: HashSet<(u32, u32)> = [(0, 1), (5, 6)].into_iter().collect();
+        let result = ilp_exact_cover(candidates, &causal);
+        assert!(result.is_none());
+    }
 }

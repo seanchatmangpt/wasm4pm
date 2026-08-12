@@ -3,8 +3,8 @@
   "provenance": {
     "paper": "Handling Concept Drift in Process Mining",
     "citation": "Bose, R.P.J.C., van der Aalst, W.M.P., Zliobaite, I., Pechenizkiy, M. (2011). Handling Concept Drift in Process Mining. CAiSE 2011.",
-    "locus": "Section 3, drift detection algorithm",
-    "extraction": "verbatim"
+    "locus": "Section 3 names the drift-detection PROBLEM this algorithm addresses; the paper's own Section 3 method is windowed J-measure feature extraction plus a Kolmogorov-Smirnov two-sample test -- corrected 2026-08-12, this fixture previously claimed 'verbatim' extraction of that method. `detect_drift_native` implements a different, real algorithm (windowed Jaccard + total-variation distance) inspired by the same windowed-distributional-shift problem, not a reproduction. See `detect_drift_ks_native` in `wasm4pm/src/prediction_drift.rs` for a real, separate implementation of the paper's own J-measure/KS-test method, added 2026-08-12.",
+    "extraction": "computed"
   },
   "input": {
     "log": "wasm4pm/tests/fixtures/running-example.xes"

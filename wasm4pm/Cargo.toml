@@ -65,6 +65,7 @@ wasm4pm-cognition = { workspace = true, default-features = false, optional = tru
 miniml = { workspace = true, optional = true }
 wgpu = { version = "0.19", optional = true }
 pollster = { version = "0.3", optional = true }
+good_lp = { version = "1.15.3", default-features = false, features = ["microlp"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.16.0", features = ["v4", "js"] }

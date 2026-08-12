@@ -1,0 +1,16 @@
+{
+  "algorithm": "detect_drift_ks_native",
+  "provenance": {
+    "paper": "Handling Concept Drift in Process Mining",
+    "citation": "Bose, R.P.J.C., van der Aalst, W.M.P., Zliobaite, I., Pechenizkiy, M. (2011). Handling Concept Drift in Process Mining. CAiSE 2011.",
+    "locus": "Section 3: windowed J-measure feature extraction over the directly-follows relation, compared across adjacent windows via a two-sample statistical test.",
+    "extraction": "computed"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "drift_points=0",
+    "description": "Clean running-example log with uniform behavior yields no real, statistically-significant concept drift under the real J-measure + Kolmogorov-Smirnov two-sample test (Massey 1951 asymptotic critical value). Added 2026-08-12 as the real, separate companion to detect_drift.json's Jaccard/TV heuristic -- this fixture's algorithm genuinely implements the paper's own Section 3 pipeline (J-measure + KS-test), not merely inspired by it."
+  }
+}

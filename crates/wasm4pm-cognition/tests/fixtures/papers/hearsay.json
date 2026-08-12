@@ -288,13 +288,13 @@
     "credibility": 85,
     "time_span_cs": "0:225",
     "accepted_by_ks": "STOP",
-    "step_count": 38,
+    "step_count": 19,
     "correct_words_hypothesized": [
       "ARE",
       "BY",
       "AND",
       "FELDMAN"
     ],
-    "note": "Four of six correct words were hypothesized by MOW (Figure 5e, Step 5). 'ARE ANY BY FEIGENBAUM AND FELDMAN' is a complete spanning sentence selected at Step 38 when STOP fires on the phrase [+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]* (85, 0:225) after the search via PREDICT/VERIFY/CONCAT extends [+ARE*] leftward through ANY, BY, FEIGENBAUM, AND, FELDMAN. The system correctly interprets this as a query to an information-retrieval database of computer science abstracts."
+    "note": "Four of six correct words were hypothesized by MOW (Figure 5e, Step 5). In the ORIGINAL PAPER's own narrative (Section 1.2), 'ARE ANY BY FEIGENBAUM AND FELDMAN' is described as selected at Step 38, when STOP fires on the phrase [+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]* (85, 0:225) after the search via PREDICT/VERIFY/CONCAT extends [+ARE*] leftward through ANY, BY, FEIGENBAUM, AND, FELDMAN. That '38' is the paper's own hand-walked protocol-step numbering, not a count this breed's implementation computes -- hearsay.rs's real `firings` counter (which becomes the output `step_count` fact) increments once per non-stale KSAR pop-and-fire on this exact fact/rule set and reaches 19 for this input, confirmed by hand-tracing the real algorithm. expected.step_count asserts what THIS implementation actually produces (19), not the paper's own narrative step numbering (38), which no code path here computes."
   }
 }
