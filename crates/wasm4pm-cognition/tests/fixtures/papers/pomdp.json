@@ -1,4 +1,11 @@
 {
+  "breed": "pomdp",
+  "provenance": {
+    "paper": "Kaelbling, L. P., Littman, M. L. & Cassandra, A. R. (1998). Planning and acting in partially observable stochastic domains. Artificial Intelligence, 101(1-2), 99-134.",
+    "citation": "Kaelbling, Littman & Cassandra 1998",
+    "locus": "Section 3 -- the tiger problem: listen is 0.85-accurate; opening the wrong door costs -100, the right door +10, listening -1. From the uniform prior, one listen action with observation hear-left yields posterior P(tiger-left) = 0.85*0.5 / (0.85*0.5 + 0.15*0.5) = 0.85 exactly.",
+    "extraction": "grounded"
+  },
   "paper": {
     "authors": "Leslie Pack Kaelbling, Michael L. Littman and Anthony R. Cassandra",
     "title": "Planning and acting in partially observable stochastic domains",

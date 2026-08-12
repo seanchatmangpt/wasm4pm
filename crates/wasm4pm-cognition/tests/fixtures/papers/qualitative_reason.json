@@ -1,6 +1,7 @@
 {
   "breed": "qualitative_reason",
   "provenance": {
+    "paper": "A Qualitative Physics Based on Confluences",
     "citation": "de Kleer, J., & Brown, J. S. (1984). A Qualitative Physics Based on Confluences. Artificial Intelligence, 24(1\u20133), 7\u201383.",
     "locus": "Sections 1\u20133: the pressure-regulator running example; the valve confluence dQ = dP + dA (flow changes with pressure and valve area) and the central observation that the sign sum + \u2295 \u2212 is ambiguous, forcing the envisionment to branch into multiple qualitative states.",
     "extraction": "verbatim",

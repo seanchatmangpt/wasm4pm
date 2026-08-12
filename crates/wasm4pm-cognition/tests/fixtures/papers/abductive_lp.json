@@ -2,7 +2,9 @@
   "breed": "abductive_lp",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Kakas et al. 1992"
+    "citation": "Kakas et al. 1992",
+    "locus": "Kakas, Kowalski & Toni 1992, Section 1.1 (grass-is-wet example) -- integrity constraint r_ic (a,d -> false) rules out abducible 'a' given context fact 'd', leaving 'c' as the only consistent single-literal explanation of goal g.",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "abduce",

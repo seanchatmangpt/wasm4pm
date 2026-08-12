@@ -1,6 +1,7 @@
 {
   "breed": "partial_order_plan",
   "provenance": {
+    "paper": "Systematic Nonlinear Planning",
     "citation": "McAllester, D., & Rosenblitt, D. (1991). Systematic Nonlinear Planning. In: Proceedings of the Ninth National Conference on Artificial Intelligence (AAAI-91), pp. 634\u2013639.",
     "locus": "The Sussman anomaly (three-block problem, initial: C on A, A and B on table; goals: A on B and B on C), the canonical example motivating nonlinear/partial-order planning that SNLP solves systematically; threat resolution by promotion/demotion per the paper's causal-link semantics.",
     "extraction": "verbatim-propositionalized",

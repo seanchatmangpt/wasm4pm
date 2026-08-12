@@ -1,4 +1,11 @@
 {
+  "breed": "meta_reasoning",
+  "provenance": {
+    "paper": "Cox, M. T. & Raja, A. (eds.) (2011). Metareasoning: Thinking about Thinking. MIT Press.",
+    "citation": "Cox & Raja 2011",
+    "locus": "Ch. 1 -- the meta-level monitors object-level reasoners, detects conflicts among their conclusions, and arbitrates control.",
+    "extraction": "grounded"
+  },
   "paper": {
     "authors": "Michael T. Cox and Anita Raja (eds.)",
     "title": "Metareasoning: Thinking about Thinking",

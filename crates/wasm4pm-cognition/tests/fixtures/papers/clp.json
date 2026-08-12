@@ -1,6 +1,7 @@
 {
   "breed": "clp",
   "provenance": {
+    "paper": "Constraint Logic Programming",
     "citation": "Jaffar, J., & Lassez, J.-L. (1987). Constraint Logic Programming. In: Proceedings of the 14th ACM SIGACT-SIGPLAN Symposium on Principles of Programming Languages (POPL 1987), pp. 111–119.",
     "locus": "Sections 1–2: the CLP scheme — computation is constraint solving over a structure's solver, not syntactic unification or generate-and-test enumeration; CLP(R) examples (e.g., resistive circuits) where posting constraints alone determines the answer.",
     "extraction": "adapted",

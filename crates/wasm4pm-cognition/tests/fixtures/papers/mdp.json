@@ -1,6 +1,7 @@
 {
   "breed": "mdp",
   "provenance": {
+    "paper": "Dynamic Programming",
     "citation": "Bellman, R. (1957). Dynamic Programming. Princeton University Press. (Functional equation / principle of optimality, Chapter III; successive-approximation solution, Chapter IV.)",
     "locus": "The functional equation V(s) = max_a [ r(s,a) + \u03b3 \u03a3 p(s'|s,a) V(s') ] and its solution by successive approximation (value iteration); closed-form geometric-series fixed points for stationary policies.",
     "extraction": "closed-form-instance",

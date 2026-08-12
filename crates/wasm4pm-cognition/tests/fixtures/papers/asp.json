@@ -2,7 +2,9 @@
   "breed": "asp",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Gelfond & Lifschitz 1988"
+    "citation": "Gelfond & Lifschitz 1988",
+    "locus": "Gelfond & Lifschitz 1988, Section 2, Examples 1-2 -- the two-rule negation-as-failure cycle (a :- not b; b :- not a) has exactly 2 stable models ({a} and {b}), the canonical minimal example of stable-model multiplicity.",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "solve",

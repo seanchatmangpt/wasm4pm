@@ -1,6 +1,7 @@
 {
   "breed": "mycin",
   "provenance": {
+    "paper": "Computer-Based Medical Consultations: MYCIN",
     "citation": "Shortliffe, E.H. (1976). Computer-Based Medical Consultations: MYCIN. American Elsevier, New York.",
     "locus": "p.247 — therapy CF derivation: RULE069 (cultures=blood → organism=streptococcus CF 0.7) and RULE071 (organism=streptococcus + allergy-penicillin=no → therapy=penicillin CF 0.9). Combined therapy CF = rule.certainty × premise_cf = 0.9 × 0.7 = 0.630.",
     "extraction": "verbatim-propositionalized",
