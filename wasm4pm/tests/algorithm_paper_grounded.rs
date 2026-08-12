@@ -1263,6 +1263,48 @@ fn detect_drift_paper_grounded() {
     );
 }
 
+// ── detect_drift_ks (added 2026-08-12) ────────────────────────────────────────
+
+#[test]
+fn detect_drift_ks_paper_grounded() {
+    let fixture = load_algo_fixture("detect_drift_ks");
+    assert_algo_grounded(&fixture);
+    assert_eq!(
+        fixture["expected"]["value"]
+            .as_str()
+            .expect("expected.value"),
+        "drift_points=0"
+    );
+    assert_eq!(
+        fixture["provenance"]["extraction"]
+            .as_str()
+            .expect("provenance.extraction"),
+        "computed"
+    );
+
+    use wasm4pm::prediction_drift::ks_statistic;
+    let uniform_features = vec![0.5, 0.5, 0.4644];
+    let d = ks_statistic(&uniform_features, &uniform_features);
+    assert_eq!(
+        d, 0.0,
+        "detect_drift_ks: KS statistic of a distribution against itself must be 0.0 \
+         (Massey 1951); got {d}"
+    );
+
+    use wasm4pm::prediction_drift::detect_drift_ks_native;
+    let xes_content = fs::read_to_string("tests/fixtures/running-example.xes")
+        .expect("real running-example.xes fixture must be readable");
+    let log = wasm4pm::xes_format::validate_and_parse_xes(&xes_content)
+        .expect("real running-example.xes must parse");
+    let report = detect_drift_ks_native(&log, "concept:name", 5, 0.05);
+    assert_eq!(
+        report.drifts_detected, 0,
+        "detect_drift_ks: expected zero real drift points on the clean, uniform \
+         running-example log, got {} -- {:?}",
+        report.drifts_detected, report.drifts
+    );
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // GROUP C — 12 concrete paper-grounded tests
 // ══════════════════════════════════════════════════════════════════════════════
