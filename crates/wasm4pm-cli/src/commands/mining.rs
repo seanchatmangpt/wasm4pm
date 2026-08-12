@@ -9,10 +9,10 @@ use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::etconformance_precision::compute_precision;
 use wasm4pm::generalization::compute_quality;
-use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
+use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
 use wasm4pm::pnml_io::{from_pnml, to_pnml};
 use wasm4pm::models::PetriNet;
-use wasm4pm::prediction_drift::{detect_drift_native, DriftReport};
+use wasm4pm::prediction_drift::{detect_drift_ks_native, detect_drift_native, DriftReport, KsDriftReport};
 use wasm4pm::prediction_remaining_time::{
     build_remaining_time_model_native, predict_case_duration_native, DurationPrediction,
 };
@@ -58,8 +58,7 @@ pub enum MiningCommands {
         #[arg(short, long, default_value = "concept:name")]
         activity_key: String,
     },
-    /// Detect concept drift (windowed Jaccard + total-variation distance over
-    /// consecutive trace windows, Bose/van der Aalst/Žliobaitė/Pechenizkiy 2011/2014).
+    /// Detect concept drift. Two real, distinct methods -- see `--method`.
     Drift {
         /// Path to the event log file
         log: PathBuf,
@@ -69,6 +68,13 @@ pub enum MiningCommands {
         /// Number of traces per comparison window
         #[arg(long, default_value_t = 5)]
         window_size: usize,
+        /// Detection method: `jaccard-tv` (default) or `ks-test` (added
+        /// 2026-08-12 -- Bose et al. 2011's actual Section 3 method).
+        #[arg(long, default_value = "jaccard-tv")]
+        method: String,
+        /// Significance level for `--method ks-test`.
+        #[arg(long, default_value_t = 0.05)]
+        alpha: f64,
     },
     /// Predict remaining case duration for a given activity prefix (bucketed
     /// mean/median + Weibull survival model, van der Aalst/Schonenberg/Song 2011
@@ -108,9 +114,15 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
 
             match algo.as_str() {
                 "ilp-petri-net" => {
-                    let (net, simplicity, fitness) =
+                    // Corrected 2026-08-12: fixed a real fitness/precision
+                    // metric-swap defect at this call site; no simplicity
+                    // was ever computed here despite compute_simplicity
+                    // existing in the same crate.
+                    let (net, fitness, precision) =
                         discover_ilp_petri_net_from_log(&wasm4pm_log, activity_key);
-                    print_petri_net(&net, simplicity, fitness, &io)?;
+                    let simplicity =
+                        compute_simplicity(net.places.len(), net.transitions.len(), net.arcs.len());
+                    print_petri_net(&net, simplicity, fitness, precision, &io)?;
                     if let Some(path) = output {
                         fs::write(path, to_pnml(&net))
                             .with_context(|| format!("Failed to write Petri net to {:?}", path))?;
@@ -225,20 +237,30 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             log,
             activity_key,
             window_size,
+            method,
+            alpha,
         } => {
             io.info(format!(
-                "Detecting concept drift in {:?} (window_size={})...",
-                log, window_size
+                "Detecting concept drift in {:?} (window_size={}, method={})...",
+                log, window_size, method
             ));
             let wasm4pm_log: wasm4pm::models::EventLog = load_log(log)?.into();
 
-            // `wasm4pm::prediction_drift::detect_drift` itself is `#[wasm_bindgen]`-only:
-            // its `Ok` value is a `JsValue`-wrapped JSON string, and extracting that
-            // string via `JsValue::as_string()` genuinely panics off wasm32. Calls the
-            // real, tested `detect_drift_native` directly instead of going through that
-            // wasm-only entry point.
-            let report = detect_drift_native(&wasm4pm_log, activity_key, *window_size);
-            print_drift_result(&report)?;
+            match method.as_str() {
+                "ks-test" => {
+                    let report =
+                        detect_drift_ks_native(&wasm4pm_log, activity_key, *window_size, *alpha);
+                    print_ks_drift_result(&report)?;
+                }
+                "jaccard-tv" => {
+                    let report = detect_drift_native(&wasm4pm_log, activity_key, *window_size);
+                    print_drift_result(&report)?;
+                }
+                other => anyhow::bail!(
+                    "Unknown drift method '{}'. Use 'jaccard-tv' (default) or 'ks-test'.",
+                    other
+                ),
+            }
         }
         MiningCommands::PredictDuration {
             log,
@@ -310,7 +332,7 @@ fn load_petri_net_model(path: &PathBuf) -> Result<PetriNet> {
     }
 }
 
-fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, _io: &Io) -> Result<()> {
+fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, precision: f64, _io: &Io) -> Result<()> {
     println!(
         "\n{}",
         "Discovered Petri net (ILP miner)".bold().bright_cyan()
@@ -324,6 +346,7 @@ fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, _io: &Io) -> R
     table.add_row(vec!["Arcs".to_string(), net.arcs.len().to_string()]);
     table.add_row(vec!["Simplicity".to_string(), format!("{:.4}", simplicity)]);
     table.add_row(vec!["Fitness (self)".to_string(), format!("{:.4}", fitness)]);
+    table.add_row(vec!["Precision (self)".to_string(), format!("{:.4}", precision)]);
     table.print();
     Ok(())
 }
@@ -347,6 +370,33 @@ fn print_drift_result(report: &DriftReport) -> Result<()> {
                 format!("{:.4}", drift.distance),
                 format!("{:.4}", drift.tv_distance),
                 drift.method.to_string(),
+            ]);
+        }
+        drift_table.print();
+    }
+    Ok(())
+}
+
+/// Real print path for the KS-test drift method, added 2026-08-12.
+fn print_ks_drift_result(report: &KsDriftReport) -> Result<()> {
+    println!("\n{}", "Concept drift detection (J-measure + KS-test)".bold().bright_cyan());
+    let mut table = Table::new(vec!["Metric", "Value"]);
+    table.add_row(vec!["Window size".to_string(), report.window_size.to_string()]);
+    table.add_row(vec!["Alpha".to_string(), format!("{:.4}", report.alpha)]);
+    table.add_row(vec![
+        "Drifts detected".to_string(),
+        report.drifts_detected.to_string(),
+    ]);
+    table.print();
+
+    if !report.drifts.is_empty() {
+        println!("\n{}", "Drift points".bold().bright_yellow());
+        let mut drift_table = Table::new(vec!["Position", "KS Statistic", "Critical Value"]);
+        for drift in &report.drifts {
+            drift_table.add_row(vec![
+                drift.position.to_string(),
+                format!("{:.4}", drift.ks_statistic),
+                format!("{:.4}", drift.critical_value),
             ]);
         }
         drift_table.print();
