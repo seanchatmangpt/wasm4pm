@@ -25,6 +25,7 @@ those, never the reverse.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +33,7 @@ from pathlib import Path
 import dspy
 
 from wasm4pm_dspy.admission import AdmissionRefused, admit_breed_input
+from wasm4pm_dspy.k8s_state import DETERMINISTIC_ENCODER_BREEDS
 from wasm4pm_dspy.models import BreedInput
 from wasm4pm_dspy.orchestrator import (
     OrchestrationResult,
@@ -45,6 +47,7 @@ from wasm4pm_dspy.runner import NoEvidence, run_admitted_breed_input
 
 __all__ = [
     "SPECIALIST_BREEDS",
+    "SPECIALIST_BREEDS_WITHOUT_DETERMINISTIC_ENCODER",
     "encoding_notes_for",
     "NLIncidentToBreedPayload",
     "CritiqueBreedPayload",
@@ -55,6 +58,11 @@ __all__ = [
     "propose_and_run_specialists",
     "diagnose_from_nl",
 ]
+
+# Default LLM-encoding concurrency -- matches typical DSPy/LM client
+# connection-pool sizes; bounded so 55-breed sweeps don't open 55 simultaneous
+# HTTP connections to the provider at once.
+_DEFAULT_CONCURRENCY = 8
 
 # Real, already-proven input conventions for the 6 originally-scoped Section-5
 # breeds, paraphrased from the Rust source read this session and exercised in
@@ -110,6 +118,15 @@ _VERIFIED_ENCODING_NOTES: dict[str, str] = {
 # retyped literal list -- same discipline as _load_real_fault_ids() earlier
 # this session.
 SPECIALIST_BREEDS: tuple[str, ...] = tuple(sorted(breed_ids()))
+
+# Breeds this LLM-encoding tier should actually be asked to handle: everything
+# registered EXCEPT the breeds k8s_state.py now encodes deterministically --
+# explicit tiering so a caller with a real K8sIncidentState doesn't also spend
+# an LLM call re-encoding a breed that already has a real, non-fabricated
+# encoder. Never silently overlaps with k8s_state.encode_incident's output.
+SPECIALIST_BREEDS_WITHOUT_DETERMINISTIC_ENCODER: tuple[str, ...] = tuple(
+    b for b in SPECIALIST_BREEDS if b not in DETERMINISTIC_ENCODER_BREEDS
+)
 
 _BREEDS_SRC_DIR = (
     Path(__file__).resolve().parents[3] / "crates" / "wasm4pm-cognition" / "src" / "breeds"
@@ -303,35 +320,54 @@ class SpecialistOutcome:
     error: str | None
 
 
-async def propose_and_run_specialists(
+async def _propose_and_run_one(
     program: K8sIncidentEncodingProgram,
     incident: str,
-    target_breeds: tuple[str, ...] = SPECIALIST_BREEDS,
-) -> list[SpecialistOutcome]:
-    """For each target breed: propose an encoding via the real LLM, then try
-    real admission and execution. Every failure mode is caught and reported
-    as a real, typed outcome -- never silently retried or hidden."""
-    outcomes: list[SpecialistOutcome] = []
-    for breed in target_breeds:
-        prediction = program(incident=incident, target_breed=breed, encoding_notes=encoding_notes_for(breed))
+    breed: str,
+    semaphore: asyncio.Semaphore,
+) -> SpecialistOutcome:
+    """One breed's full propose -> admit -> run pipeline, gated by
+    ``semaphore`` so bounded concurrency applies to both the LLM call (run
+    off-thread via ``asyncio.to_thread`` since ``dspy.Module.__call__`` is
+    synchronous) and the real subprocess run. Each call is independent --
+    ``program.forward`` reads only its own arguments and returns a fresh
+    ``dspy.Prediction``, no shared mutable state crosses this boundary."""
+    async with semaphore:
+        prediction = await asyncio.to_thread(
+            program, incident=incident, target_breed=breed, encoding_notes=encoding_notes_for(breed)
+        )
         candidate = {"breed": breed, "payload": prediction.breed_input.model_dump(mode="json")}
 
         try:
             admitted = admit_breed_input(candidate)
         except AdmissionRefused as exc:
-            outcomes.append(SpecialistOutcome(breed=breed, status="admission_refused", report=None, error=str(exc)))
-            continue
+            return SpecialistOutcome(breed=breed, status="admission_refused", report=None, error=str(exc))
 
         try:
             result = await run_admitted_breed_input(admitted)
         except NoEvidence as exc:
-            outcomes.append(SpecialistOutcome(breed=breed, status="no_evidence", report=None, error=str(exc)))
-            continue
+            return SpecialistOutcome(breed=breed, status="no_evidence", report=None, error=str(exc))
 
         report = SpecialistReport(breed=breed, result=result, confidence=extract_confidence(breed, result))
-        outcomes.append(SpecialistOutcome(breed=breed, status="ok", report=report, error=None))
+        return SpecialistOutcome(breed=breed, status="ok", report=report, error=None)
 
-    return outcomes
+
+async def propose_and_run_specialists(
+    program: K8sIncidentEncodingProgram,
+    incident: str,
+    target_breeds: tuple[str, ...] = SPECIALIST_BREEDS,
+    *,
+    concurrency: int = _DEFAULT_CONCURRENCY,
+) -> list[SpecialistOutcome]:
+    """For each target breed, concurrently (bounded by ``concurrency``):
+    propose an encoding via the real LLM, then try real admission and
+    execution. Every failure mode is caught and reported as a real, typed
+    outcome -- never silently retried or hidden. Order of the returned list
+    matches ``target_breeds``, not completion order."""
+    semaphore = asyncio.Semaphore(concurrency)
+    return await asyncio.gather(
+        *(_propose_and_run_one(program, incident, breed, semaphore) for breed in target_breeds)
+    )
 
 
 async def diagnose_from_nl(

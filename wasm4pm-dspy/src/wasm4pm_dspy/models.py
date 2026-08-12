@@ -34,7 +34,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-__all__ = ["Fact", "Rule", "Goal", "Case", "Candidate", "StateAtom", "BreedInput", "terminal_conclusions"]
+__all__ = [
+    "Fact", "Rule", "Goal", "Case", "Candidate", "StateAtom", "BreedInput",
+    "terminal_conclusions", "unresolvable_premises",
+]
 
 
 class Fact(BaseModel):
@@ -105,11 +108,11 @@ def terminal_conclusions(breed_input: BreedInput) -> list[str]:
     source): ``selected`` is chosen as the highest-CF conclusion among
     terminals, never simply the highest-CF conclusion overall.
 
-    This is a real, deterministic, pure computation -- not an LM guess -- fed
-    to :class:`~wasm4pm_dspy.signatures.CritiqueBreedSelection` as a properly
-    typed field so the critique stage can check "does the goal's intended
-    answer appear in this list" against ground truth, rather than trying to
-    infer terminality itself from reading English guidance.
+    This is a real, deterministic, pure computation -- not an LM guess --
+    attached to :class:`~wasm4pm_dspy.program.BreedSelectionProgram`'s
+    prediction as a real diagnostic field for a caller to inspect, not fed
+    back into a second LM call (see that module's docstring for why the
+    propose-only pipeline has no critique/repair stage).
 
     This is a conservative static approximation of the Rust engine's runtime
     behavior: Rust only marks a premise "consumed" by rules that actually
@@ -124,3 +127,47 @@ def terminal_conclusions(breed_input: BreedInput) -> list[str]:
     derived = {r.conclusion for r in breed_input.rules}
     consumed = {p for r in breed_input.rules for p in r.premise}
     return sorted(derived - consumed)
+
+
+def unresolvable_premises(breed_input: BreedInput) -> list[str]:
+    """Which rule ``premise`` strings can *never* match anything in the real
+    Rust working-memory, confirmed by reading ``Mycin::run`` directly
+    (``crates/wasm4pm-cognition/src/breeds/production_rules.rs``): working
+    memory is seeded as ``f"{fact.key}={fact.value}"`` (NO spaces around
+    ``=``) and ``fact.value`` alone, both at CF 1.0; a fired rule's
+    ``conclusion`` string is later inserted verbatim as its own key.
+    ``premise_satisfied`` looks up a premise string by exact equality against
+    those keys -- no normalization, no trimming.
+
+    A premise that matches neither any fact-derived key/value nor any rule's
+    ``conclusion`` string can never be satisfied by any real run, regardless
+    of rule firing order -- this is the exact, real failure mode confirmed
+    live this session against two different models: a weak model omitted
+    "bacterial_culture" as a fact entirely, and a stronger model wrote
+    ``"gram_stain = gram_positive"`` (spaces around ``=``) when the working
+    memory only ever contains ``"gram_stain=gram_positive"`` (no spaces).
+    Both produced a real, live ``EXECUTION_ERROR: postcondition failed: empty
+    inference trace (fraud signal)`` from the real engine -- this function
+    exists to catch that class of failure before a run is ever attempted,
+    not to guess at it.
+
+    Deliberately conservative, same honest limitation as
+    :func:`terminal_conclusions`: this is a flat reachability check (any
+    premise matching *some* conclusion counts as resolvable), not a
+    fixed-point simulation of firing order/CF-threshold propagation -- a
+    premise that only resolves via a conclusion that itself can never fire
+    (chained unresolvability) will not be flagged by this function. Named
+    here as an honest limitation, not silently claimed as a complete
+    simulation of the Rust runtime.
+    """
+    working_memory_keys: set[str] = set()
+    for f in breed_input.facts:
+        working_memory_keys.add(f"{f.key}={f.value}")
+        working_memory_keys.add(f.value)
+    conclusions = {r.conclusion for r in breed_input.rules}
+    reachable = working_memory_keys | conclusions
+
+    unresolvable = [
+        p for r in breed_input.rules for p in r.premise if p not in reachable
+    ]
+    return sorted(set(unresolvable))

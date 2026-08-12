@@ -2349,6 +2349,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "blake3" },
+    { name = "jsonschema" },
 ]
 
 [package.optional-dependencies]
@@ -2363,6 +2364,7 @@ llm = [
 requires-dist = [
     { name = "blake3", specifier = ">=0.4" },
     { name = "dspy-ai", marker = "extra == 'llm'", specifier = ">=2.5" },
+    { name = "jsonschema", specifier = ">=4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
 ]
 provides-extras = ["llm", "dev"]
