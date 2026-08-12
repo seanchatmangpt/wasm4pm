@@ -1,7 +1,7 @@
 # autoinstinct_neurosis — Autoinstinct Neurosis Engine
 
 ## 1. Identity & Lineage
-Adaptive autoinstinct: conflict-detection among active rules; generates introspective inhibition signals when incompatible conclusions compete. BreedId `autoinstinct_neurosis`, module `src/breeds/autoinstinct_neurosis.rs`.
+Adaptive autoinstinct: conflict-detection among active rules; generates introspective inhibition signals when incompatible conclusions compete, in the tradition of Colby's PARRY and Abelson's ideology machines (Colby, Weber & Hilf 1971, "Artificial Paranoia," per this module's own doc comment). BreedId `autoinstinct_neurosis`, module `src/breeds/autoinstinct_neurosis.rs`.
 
 ## 2. Algorithm
 1. Fire all rules whose premises match working memory.
@@ -26,4 +26,4 @@ Two rules with equal certainty and opposite conclusions → inhibition 1.0 → b
 BTreeMap conflict accumulation; conflict pair key sorted lex.
 
 ## 8. Provenance
-Fixture `tests/fixtures/papers/autoinstinct_neurosis.json` (synthetic ambivalence scenario).
+Fixture `tests/fixtures/papers/autoinstinct_neurosis.json` (synthetic ambivalence scenario, citing Colby, Weber & Hilf 1971 "Artificial Paranoia" -- the real primary source this module's own doc comment names, not Boden 1977, which is a secondary survey of the same work).

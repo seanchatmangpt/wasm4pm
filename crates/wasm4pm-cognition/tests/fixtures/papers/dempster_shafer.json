@@ -13,31 +13,40 @@
     "cases": [],
     "rules": [
       {
-        "id": "source1",
+        "id": "witness1",
         "premise": [],
-        "conclusion": "flim",
-        "certainty": 0.6
+        "conclusion": "life",
+        "certainty": 0.9
       },
       {
-        "id": "source2",
+        "id": "witness1",
         "premise": [],
-        "conclusion": "flam",
-        "certainty": 0.7
+        "conclusion": "death",
+        "certainty": 0.0
+      },
+      {
+        "id": "witness2",
+        "premise": [],
+        "conclusion": "life",
+        "certainty": 0.9
+      },
+      {
+        "id": "witness2",
+        "premise": [],
+        "conclusion": "death",
+        "certainty": 0.0
       }
     ],
     "goals": [
       {
         "id": "query",
         "predicate": "query",
-        "value": "flim"
+        "value": "life"
       }
     ],
-    "candidates": [],
-    "facts": [],
-    "cases": [],
     "state": []
   },
   "expected": {
-    "belief": 0.310344
+    "belief": 0.99
   }
 }

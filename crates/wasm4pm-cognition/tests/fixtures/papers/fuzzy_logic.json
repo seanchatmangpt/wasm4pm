@@ -20,7 +20,7 @@
       },
       {
         "key": "fuzzy_set:ventilation:medium",
-        "value": "triangular 10,50,90"
+        "value": "triangular 0,25,100"
       }
     ],
     "cases": [],
@@ -38,6 +38,6 @@
     "state": []
   },
   "expected": {
-    "defuzzified_ventilation": 50.0
+    "defuzzified_ventilation": 41.66667
   }
 }
