@@ -234,6 +234,67 @@ fn test_mining_drift_detects_real_vocabulary_shift() {
 }
 
 #[test]
+fn test_mining_drift_ks_method_detects_a_real_regime_shift() {
+    let temp_dir = tempdir().unwrap();
+    let log_path = temp_dir.path().join("ks_drift_log.json");
+
+    let mut traces: Vec<Vec<(&str, i64)>> = Vec::new();
+    for _ in 0..8 {
+        traces.push(vec![("A", 0), ("B", 1), ("C", 2)]);
+    }
+    for _ in 0..8 {
+        traces.push(vec![
+            ("X1", 0),
+            ("X2", 1),
+            ("X3", 2),
+            ("X4", 3),
+            ("X5", 4),
+            ("X6", 5),
+        ]);
+    }
+    fs::write(&log_path, event_log_json(&traces)).unwrap();
+
+    let mut cmd = Command::cargo_bin("wpm").unwrap();
+    let output = cmd
+        .arg("mining")
+        .arg("drift")
+        .arg(&log_path)
+        .arg("--method")
+        .arg("ks-test")
+        .arg("--window-size")
+        .arg("8")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("J-measure + KS-test"))
+        .get_output()
+        .stdout
+        .clone();
+    let stdout = String::from_utf8(output).unwrap();
+
+    assert!(
+        stdout.contains("Drift points"),
+        "expected at least one real KS-flagged drift point, got:\n{stdout}"
+    );
+}
+
+#[test]
+fn test_mining_drift_unknown_method_is_refused() {
+    let temp_dir = tempdir().unwrap();
+    let log_path = temp_dir.path().join("drift_log_bad_method.json");
+    fs::write(&log_path, event_log_json(&[vec![("A", 0), ("B", 1)]])).unwrap();
+
+    let mut cmd = Command::cargo_bin("wpm").unwrap();
+    cmd.arg("mining")
+        .arg("drift")
+        .arg(&log_path)
+        .arg("--method")
+        .arg("not-a-real-method")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Unknown drift method"));
+}
+
+#[test]
 fn test_mining_predict_duration_real_bucket_estimate() {
     let temp_dir = tempdir().unwrap();
     let log_path = temp_dir.path().join("duration_log.json");
