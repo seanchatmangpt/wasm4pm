@@ -2,7 +2,9 @@
   "breed": "htn_planning",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Nau et al. 2003"
+    "citation": "Nau et al. 2003",
+    "locus": "Nau et al. 2003, SHOP2, JAIR 20:379-404, Section 2 (total-order task decomposition) -- this fixture's minimal go_to_dest task, decomposing via method:go_to_dest:walk into the single operator op:walk, mirrors SHOP2's total-order method-decomposition contract on a reduced scale.",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "plan",

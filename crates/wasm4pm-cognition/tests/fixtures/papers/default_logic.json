@@ -2,7 +2,9 @@
   "breed": "default_logic",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Reiter 1980"
+    "citation": "Reiter 1980",
+    "locus": "Reiter 1980, Artificial Intelligence 13(1-2), 81-132, Section 1.1 (the birds-fly-by-default rule and the Tweety-the-penguin exception) -- the canonical default-logic worked example this fixture's penguin/bird/flies rule triple is modeled on.",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "does tweety fly",

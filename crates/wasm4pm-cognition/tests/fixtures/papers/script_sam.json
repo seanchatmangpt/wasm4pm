@@ -1,6 +1,7 @@
 {
   "breed": "script_sam",
   "provenance": {
+    "paper": "Scripts, Plans, Goals and Understanding: An Inquiry into Human Knowledge Structures",
     "citation": "Schank, R. C., & Abelson, R. P. (1977). Scripts, Plans, Goals and Understanding: An Inquiry into Human Knowledge Structures. Lawrence Erlbaum Associates.",
     "locus": "Chapter 3 (Scripts): the restaurant script ($RESTAURANT) with its scene sequence (entering, ordering, eating, exiting/paying) and the canonical story-understanding example: 'John went to a restaurant. He ordered lobster. He paid the check and left.' \u2014 readers (and SAM) infer that John ate the lobster although eating is never stated.",
     "extraction": "verbatim",

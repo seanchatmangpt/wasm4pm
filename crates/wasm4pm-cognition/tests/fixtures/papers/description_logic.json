@@ -2,7 +2,9 @@
   "breed": "description_logic",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Baader et al. 2003"
+    "citation": "Baader et al. 2003",
+    "locus": "This breed's completion-rule algorithm is grounded against Baader, Brandt & Lutz 2005 (Pushing the EL Envelope, IJCAI), Section 1 medical-ontology subsumption example, completion rules Table 2 (CR1-CR4) -- the same real, already-verified locus this repo's paper-pointers.ttl anti-cheat lock uses for description_logic's classify algorithm.",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "classify",

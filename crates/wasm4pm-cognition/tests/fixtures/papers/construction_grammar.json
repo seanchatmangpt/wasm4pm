@@ -1,4 +1,11 @@
 {
+  "breed": "construction_grammar",
+  "provenance": {
+    "paper": "Goldberg, A. E. (1995). Constructions: A Construction Grammar Approach to Argument Structure. University of Chicago Press.",
+    "citation": "Goldberg 1995",
+    "locus": "Ch. 1-2 -- the ditransitive construction (X CAUSES Y to RECEIVE Z); 'Pat faxed Bill the letter' shows the construction (not the verb 'fax') supplying the transfer meaning.",
+    "extraction": "grounded"
+  },
   "paper": {
     "authors": "Adele E. Goldberg",
     "title": "Constructions: A Construction Grammar Approach to Argument Structure",

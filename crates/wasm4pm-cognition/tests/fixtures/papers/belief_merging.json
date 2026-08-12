@@ -1,6 +1,7 @@
 {
   "breed": "belief_merging",
   "provenance": {
+    "paper": "Merging Information Under Constraints: A Logical Framework",
     "citation": "Konieczny, S., & Pino P\u00e9rez, R. (2002). Merging Information Under Constraints: A Logical Framework. Journal of Logic and Computation, 12(5), 773\u2013808.",
     "locus": "Sections 5\u20136: the \u03a3 (sum) family is majoritarian, the GMax (leximax) family is egalitarian (arbitration); the two operator families are distinguished exactly by profiles where a repeated majority base opposes a single dissenting base.",
     "extraction": "operationalized",

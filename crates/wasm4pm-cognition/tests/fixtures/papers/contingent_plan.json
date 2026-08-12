@@ -1,4 +1,11 @@
 {
+  "breed": "contingent_plan",
+  "provenance": {
+    "paper": "Russell, S. & Norvig, P. (2010). Artificial Intelligence: A Modern Approach (3rd ed.). Pearson.",
+    "citation": "Russell & Norvig 2010",
+    "locus": "Section 4.3.2 -- AND-OR search trees for nondeterministic/partially observable vacuum worlds; conditional plans of the form [if-then-else].",
+    "extraction": "grounded"
+  },
   "paper": {
     "authors": "Stuart Russell and Peter Norvig",
     "title": "Artificial Intelligence: A Modern Approach (3rd ed.)",

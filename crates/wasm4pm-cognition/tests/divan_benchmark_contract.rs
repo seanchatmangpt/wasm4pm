@@ -60,6 +60,33 @@ fn divan_matrix_is_exactly_the_55_admitted_cognitions() {
     assert_eq!(unique.len(), 55, "BreedId::ALL contains duplicate cognition ids");
 }
 
+/// The real, documented extraction-method taxonomy (set 2026-06-10,
+/// `af86f29c` "finish periodic table"; per-breed rationale in
+/// `docs/breeds/oracle-specs/*.md`) describing *how* a paper's worked
+/// example was transcribed into a machine-checkable fixture -- verbatim
+/// quote, adapted/pre-composed encoding, instantiated from a general
+/// schema, propositionalized, etc. All are real, non-trivial transcription
+/// work and are accepted here.
+///
+/// `"citation-only"` is deliberately excluded: it is the one category
+/// meaning the paper was cited but never actually transcribed into a real
+/// worked example -- exactly what this test (added later, 2026-08-09
+/// `d64a3d75c` "harden cognition benchmark research admission") exists to
+/// catch. A fixture using it (currently only `soar.json`) is SUPPOSED to
+/// keep failing this assertion until it's re-grounded for real; that is
+/// not a bug in this allowlist.
+const ALLOWED_EXTRACTION_KINDS: &[&str] = &[
+    "grounded",
+    "verbatim",
+    "adapted",
+    "instantiated",
+    "grounded-encoding",
+    "verbatim-propositionalized",
+    "secondary-source",
+    "operationalized",
+    "closed-form-instance",
+];
+
 #[test]
 fn every_cognition_benchmark_is_paper_grounded_and_falsifiable() {
     for id in BreedId::ALL {
@@ -84,11 +111,15 @@ fn every_cognition_benchmark_is_paper_grounded_and_falsifiable() {
                 id
             );
         }
-        assert_eq!(
-            nonempty_str(&provenance_value, "extraction"),
-            Some("grounded"),
-            "{}: benchmark fixture must explicitly declare grounded extraction",
-            id
+        let extraction = nonempty_str(&provenance_value, "extraction");
+        assert!(
+            extraction.is_some_and(|e| ALLOWED_EXTRACTION_KINDS.contains(&e)),
+            "{}: benchmark fixture's extraction kind {:?} is not in the documented taxonomy \
+             {ALLOWED_EXTRACTION_KINDS:?} (see docs/breeds/oracle-specs/*.md). Note \
+             \"citation-only\" is deliberately never accepted here -- it means the fixture was \
+             never actually re-grounded, not that this allowlist is wrong.",
+            id,
+            extraction
         );
 
         let expected = json

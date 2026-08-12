@@ -1,6 +1,7 @@
 {
   "breed": "event_calculus",
   "provenance": {
+    "paper": "A Logic-based Calculus of Events",
     "citation": "Kowalski, R., & Sergot, M. (1986). A Logic-based Calculus of Events. New Generation Computing, 4(1), 67\u201395.",
     "locus": "Sections 2\u20135: the running office-personnel narrative \u2014 'Mary was hired as a lecturer', 'Mary was promoted to professor' \u2014 with events initiating and terminating rank/employment periods; HoldsAt queries over the resulting periods.",
     "extraction": "adapted",

@@ -1,4 +1,11 @@
 {
+  "breed": "markov_logic",
+  "provenance": {
+    "paper": "Richardson, M. & Domingos, P. (2006). Markov logic networks. Machine Learning, 62(1-2), 107-136.",
+    "citation": "Richardson & Domingos 2006",
+    "locus": "Table 1 / Fig. 1 -- smoking causes cancer (w=1.5-style weighted implication) and friends have similar smoking habits, grounded for two constants.",
+    "extraction": "grounded"
+  },
   "paper": {
     "authors": "Matthew Richardson and Pedro Domingos",
     "title": "Markov logic networks",

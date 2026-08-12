@@ -2,7 +2,9 @@
   "breed": "abductive_ibe",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Thagard 1989"
+    "citation": "Thagard 1989",
+    "locus": "Thagard, P. (1989). Explanatory Coherence. Behavioral and Brain Sciences, 12(3), 435-467. Principles 2 (Explanation), 5 (Contradiction), and 6 (Competition) -- H1 explains both E1 and E2 while H2 explains only E1, and H1/H2 are asserted contradictory, so H1's broader explanatory coverage under the Competition principle is what the fixture's expected.selected=\"H1\" is grounded in.",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "coherence",

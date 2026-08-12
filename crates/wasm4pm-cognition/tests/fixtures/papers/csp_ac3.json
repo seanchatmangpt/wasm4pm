@@ -2,7 +2,9 @@
   "breed": "csp_ac3",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Mackworth 1977"
+    "citation": "Mackworth 1977",
+    "locus": "Mackworth 1977, Artificial Intelligence 8(1), 99-118, Section 3 (AC-3) -- the canonical inequality network: two variables V1/V2 each domain {R,G,B} with a not-equal constraint remains arc-consistent and satisfiable (e.g. V1=R, V2=G).",
+    "extraction": "grounded"
   },
   "input": {
     "intent": "solve",

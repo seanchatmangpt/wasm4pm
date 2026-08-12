@@ -1,4 +1,11 @@
 {
+  "breed": "tableaux",
+  "provenance": {
+    "paper": "Smullyan, R. M. (1968). First-Order Logic. Springer-Verlag, Ergebnisse der Mathematik und ihrer Grenzgebiete 43.",
+    "citation": "Smullyan 1968",
+    "locus": "Part I, Chapter II -- Analytic Tableaux (signed formulas, alpha/beta rules). The K axiom A -> (B -> A) is a tautology; its signed tableau starting from F (A -> (B -> A)) closes using only alpha rules (no branching).",
+    "extraction": "grounded"
+  },
   "paper": {
     "authors": "Raymond M. Smullyan",
     "title": "First-Order Logic",
