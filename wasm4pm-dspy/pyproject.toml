@@ -9,7 +9,7 @@ description = "DSPy breed-selection compiler for wasm4pm's cognition kernel: NL 
 requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "BUSL-1.1" }
-dependencies = ["blake3>=0.4"]
+dependencies = ["blake3>=0.4", "jsonschema>=4.0"]
 
 [project.optional-dependencies]
 # `dspy` is never imported by admission.py or runner.py (the deterministic,

@@ -16,6 +16,23 @@ real taxonomy source file (`_load_real_fault_ids`), never retyped as
 literals -- same non-circularity discipline applied there, carried into the
 orchestrator tests so they don't reintroduce a hardcoded-narrative problem
 at the combination layer.
+
+Two payload sources are used, deliberately not unified into one:
+  - Tests 1 (fan-out) and 5 (end-to-end diagnose) only need "every
+    registered breed executes successfully" -- these build their payloads
+    via the real, generalized :mod:`wasm4pm_dspy.k8s_state` deterministic
+    encoders (`_all_registered_payloads_via_state_encoder`), proving that
+    module's real ROADMAP-step-7 encoders drive the orchestrator end-to-end,
+    not just an isolated unit fixture.
+  - Tests 2-4 (`meta_reasoning` conflict detection, `hearsay` corroboration)
+    need a *guaranteed* conflicting or corroborating pair to exercise those
+    specific combiner code paths reliably -- the hand-crafted `_sat_cdcl_
+    payload`/`_version_space_payload`/`_cbr_payload` builders below stay as
+    deliberately engineered extreme fixtures (real, but purpose-built to
+    force UNSAT vs. SAT / real corroboration, not incident-encoding output).
+    Routing them through the generic state encoder would weaken -- not
+    strengthen -- these tests, since the state encoder has no reason to
+    produce an adversarial pair.
 """
 
 from __future__ import annotations
@@ -26,6 +43,7 @@ from pathlib import Path
 
 import pytest
 
+from wasm4pm_dspy.k8s_state import DETERMINISTIC_ENCODER_BREEDS, K8sAnomaly, K8sIncidentState, encode_incident
 from wasm4pm_dspy.orchestrator import (
     OrchestratorError,
     SpecialistReport,
@@ -102,56 +120,6 @@ def _version_space_payload() -> dict:
     )
 
 
-def _dendral_payload(fault_ids: list[str]) -> dict:
-    ids = fault_ids[:5]
-    candidates = [{"id": fid, "score": 1.0 - 0.05 * i, "eliminated": False} for i, fid in enumerate(ids)]
-    forbidden = ids[1:]
-    return _empty(
-        intent="diagnose frontend unavailability in hotel-reservation namespace",
-        candidates=candidates,
-        facts=[{"key": "constraint", "value": f"forbid:{fid}"} for fid in forbidden],
-    )
-
-
-def _mycin_payload() -> dict:
-    return _empty(
-        intent="diagnose and recommend remediation for repeated container restarts",
-        facts=[
-            {"key": "signal", "value": "high-restart-count"},
-            {"key": "signal", "value": "oomkilled-events-present"},
-        ],
-        rules=[
-            {
-                "id": "diagnose-memory-pressure",
-                "premise": ["high-restart-count", "oomkilled-events-present"],
-                "conclusion": "root-cause=memory-pressure",
-                "certainty": 0.8,
-            },
-            {
-                "id": "recommend-memory-increase",
-                "premise": ["root-cause=memory-pressure"],
-                "conclusion": "recommended-action=increase-memory-limit",
-                "certainty": 0.9,
-            },
-        ],
-    )
-
-
-def _strips_payload() -> dict:
-    fix_rule = {
-        "id": "fix-service-selector",
-        "premise": ["pod-scheduling-status=pending-selector-mismatch"],
-        "conclusion": "pod-scheduling-status=scheduled;!pod-scheduling-status=pending-selector-mismatch",
-        "certainty": 1.0,
-    }
-    return _empty(
-        intent="transition frontend pod from pending (selector mismatch) to scheduled",
-        state=[{"predicate": "pod-scheduling-status", "value": "pending-selector-mismatch"}],
-        goals=[{"id": "g1", "predicate": "pod-scheduling-status", "value": "scheduled"}],
-        rules=[fix_rule],
-    )
-
-
 def _cbr_payload(fault_ids: list[str]) -> dict:
     ids = fault_ids[:3]
     services = ["frontend", "profile", "search"]
@@ -182,16 +150,32 @@ def _cbr_payload(fault_ids: list[str]) -> dict:
     )
 
 
-def _all_six_payloads() -> dict[str, dict]:
-    fault_ids = _load_real_fault_ids()
-    return {
-        "sat_cdcl": _sat_cdcl_payload(),
-        "version_space": _version_space_payload(),
-        "dendral": _dendral_payload(fault_ids),
-        "mycin": _mycin_payload(),
-        "strips": _strips_payload(),
-        "cbr": _cbr_payload(fault_ids),
-    }
+def _all_registered_payloads_via_state_encoder() -> dict[str, dict]:
+    """Real execution coverage over every currently-registered deterministic
+    breed (grown from 6 to 19 across this session's work), built via the
+    real, generalized `wasm4pm_dspy.k8s_state.encode_incident` (ROADMAP step
+    7) from a real `K8sIncidentState`, instead of hand-crafted per-breed
+    literals -- proves the deterministic encoder module itself drives the
+    orchestrator, not just an isolated fixture builder."""
+    state = K8sIncidentState(
+        intent="diagnose frontend unavailability in hotel-reservation namespace",
+        anomalies=[
+            K8sAnomaly(
+                kind="Deployment",
+                object_name="frontend",
+                namespace="hotel-reservation",
+                relation_class="declared_vs_observed",
+                field="readyReplicas",
+                observed="0",
+                expected="3",
+                detail="frontend deployment has 0 ready replicas, expected 3",
+            ),
+        ],
+        fault_hint="inject_scale_pods_to_zero",
+    )
+    breed_inputs = encode_incident(state, target_breeds=DETERMINISTIC_ENCODER_BREEDS)
+    assert set(breed_inputs) == set(DETERMINISTIC_ENCODER_BREEDS)
+    return {breed: bi.model_dump(mode="json") for breed, bi in breed_inputs.items()}
 
 
 # ============================================================================
@@ -200,24 +184,27 @@ def _all_six_payloads() -> dict[str, dict]:
 
 
 def test_run_specialists_fans_out_concurrently_over_real_breeds():
-    """All six Section-5 breeds run concurrently via asyncio.gather; each
-    returns a real, independently-verified CognitionRunResult (receipt
-    verification happens inside run_admitted_breed_input itself -- a result
-    only exists here if it already passed). Proves concurrent dispatch
-    doesn't corrupt any individual run (e.g. tempfile/subprocess collisions),
-    the one gap this session's exploration flagged as unverified.
+    """Every registered deterministic breed (19, grown from the original 6)
+    runs concurrently via asyncio.gather; each returns a real,
+    independently-verified CognitionRunResult (receipt verification happens
+    inside run_admitted_breed_input itself -- a result only exists here if
+    it already passed). Proves concurrent dispatch doesn't corrupt any
+    individual run (e.g. tempfile/subprocess collisions), the one gap this
+    session's exploration flagged as unverified. Payloads come from the real
+    k8s_state deterministic encoder (ROADMAP step 7), not hand-crafted
+    literals.
     """
-    reports = asyncio.run(run_specialists(_all_six_payloads()))
-    assert len(reports) == 6
+    reports = asyncio.run(run_specialists(_all_registered_payloads_via_state_encoder()))
+    assert len(reports) == len(DETERMINISTIC_ENCODER_BREEDS)
     breeds_seen = {r.breed for r in reports}
-    assert breeds_seen == {"sat_cdcl", "version_space", "dendral", "mycin", "strips", "cbr"}
+    assert breeds_seen == set(DETERMINISTIC_ENCODER_BREEDS)
     for report in reports:
         assert isinstance(report, SpecialistReport)
         assert report.result.status == "ok"
         # Every result's run_id is distinct -- real, independent runs, not a
         # single shared/cached result fanned out six ways.
     run_ids = {r.result.run_id for r in reports}
-    assert len(run_ids) == 6
+    assert len(run_ids) == len(DETERMINISTIC_ENCODER_BREEDS)
 
 
 # ============================================================================
@@ -297,12 +284,14 @@ def test_hearsay_corroboration_promotes_agreeing_specialists():
 # ============================================================================
 
 
-def test_diagnose_end_to_end_over_all_eight_breeds():
-    """The full diagnose() pipeline: 6 real specialists + 2 real combiners,
-    8 real subprocess/WASM runs, every result's receipt independently
-    verified inside run_admitted_breed_input."""
-    result = asyncio.run(diagnose(_all_six_payloads()))
-    assert len(result.specialists) == 6
+def test_diagnose_end_to_end_over_all_registered_breeds():
+    """The full diagnose() pipeline: every registered deterministic
+    specialist (19) + 2 real combiners, real subprocess/WASM runs per
+    breed, every result's receipt independently verified inside
+    run_admitted_breed_input. Payloads come from the real k8s_state
+    deterministic encoder (ROADMAP step 7)."""
+    result = asyncio.run(diagnose(_all_registered_payloads_via_state_encoder()))
+    assert len(result.specialists) == len(DETERMINISTIC_ENCODER_BREEDS)
     assert all(r.result.status == "ok" for r in result.specialists)
     assert result.meta is not None
     assert result.meta.status == "ok"

@@ -32,7 +32,7 @@ output_dir = "."
 
 [inference]
 rules = [
-  { name = "alive-gate", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#breedStatus> \"PARTIAL_ALIVE\" } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> ; <https://wasm4pm.dev/ns#measuredFitness> ?f ; <https://wasm4pm.dev/ns#ocelAdmitted> true . FILTER(?f = 1.0) }" }
+  { name = "alive-gate", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#breedStatus> \"PARTIAL_ALIVE\" } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> ; <https://wasm4pm.dev/ns#measuredFitness> ?f ; <https://wasm4pm.dev/ns#ocelAdmitted> true . FILTER(?f = 1.0) } ORDER BY ?b" }
 ]
 
 [[packs]]
@@ -130,4 +130,24 @@ name        = "ts-breed-ids"
 query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
 template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-ids.ts.tera" }
 output_file = "packages/cognition/src/breed-ids.ts"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: paper-fidelity-docs (Overwrite — one external-facing, author-legible
+# per-breed doc per row; scoped to whichever breeds carry a real
+# compat:algorithmStatement in breed-vocabulary.ttl, currently the 5-breed
+# pilot: mycin, strips, sat_cdcl, htn_planning, cbr).
+#
+# Uses QuerySource::File / TemplateSource::File (not `pack =`, unlike every
+# other rule in this file) -- confirmed live this session: QuerySource::Pack
+# hard-blocks the entire sync at FM-GEN-006 (a tracked, unimplemented
+# ggen-engine path), and the engine's own error names File/Inline as the
+# working remediation. Paths are relative to this repo root, matching the
+# same convention already used by [ontology].source/.imports above.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "paper-fidelity-docs"
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-paper-fidelity.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/paper-fidelity.md.tera" }
+output_file = "docs/paper-fidelity/{{ breed_id }}.md"
 mode        = "Overwrite"
