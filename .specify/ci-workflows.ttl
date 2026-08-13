@@ -1,0 +1,213 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix gha:  <http://seanchatmangpt.github.io/packs/github-actions#> .
+@prefix ci:   <https://chatmangpt.com/ns/wasm4pm/ci#> .
+
+# ---------------------------------------------------------------------------
+# wasm4pm CI instance data — github-actions-pack consumer facts.
+#
+# Models the REAL new .github/workflows/ci.yml target from PR #558 (the
+# "rebuild CI from scratch" PR: 39 legacy workflow files deleted, this one
+# ci.yml added — 40 diff --git blocks total, confirmed against the real PR
+# diff). Every gha:Workflow/gha:Job/gha:Step fact below is transcribed
+# verbatim from that PR's ci.yml content, not invented.
+#
+# KNOWN, INTENTIONAL gate finding: PR #558's real ci.yml pins none of its
+# four third-party action refs (actions/checkout@v4, dtolnay/rust-toolchain
+# @master, actions/setup-node@v4, actions/upload-artifact@v4) to a 40-hex
+# commit SHA. This file records that fact as-is (gha:usesAction below uses
+# the real @v4/@master tag/branch refs, unpinned) rather than fabricating
+# SHAs the real diff does not contain. Running packs/github-actions-pack/
+# gates/020_security.rq against this data WILL therefore report 4 mutable-
+# third-party-action-ref findings — that is the gate correctly catching a
+# real property of the real PR #558 content, not a bug in these facts.
+#
+# gha:Step has no `shell:` property in the pack's ontology (only stepName/
+# stepId/usesAction/runCommand/withParam/envVar/continueOnError/condition/
+# stepOrder/inJob are modeled). The real ci.yml sets `shell: bash` on six
+# steps; that fact is not represented here because there is nowhere typed
+# to put it, and it does not change actual behavior on the `ubuntu-24.04`
+# runner this workflow uses (bash is already the default shell there) — a
+# real, disclosed ontology gap, not a silently dropped fact.
+# ---------------------------------------------------------------------------
+
+ci:CiWorkflow a gha:Workflow ;
+    gha:fileName "ci.yml" ;
+    gha:purpose "CI" ;
+    gha:trigger gha:EventPullRequest, gha:EventPush, gha:EventWorkflowDispatch ;
+    gha:onBlock """pull_request:
+push:
+  branches: [main]
+workflow_dispatch:
+""" ;
+    gha:workflowEnv "CARGO_TERM_COLOR: always" ;
+    gha:workflowEnv "CARGO_INCREMENTAL: \"0\"" ;
+    gha:concurrencyPolicy """group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+cancel-in-progress: true
+""" ;
+    gha:permissionCeiling "contents: read" ;
+    gha:performsOperation gha:OpReadSource ;
+    gha:output gha:OutReceipt ;
+    gha:evidenceObligation "artifacts/ci/receipt.json uploaded as ci-receipt-<run_id>: JSON with repository, subject_sha, workflow, run_id, standing, workflow_count, boundaries (rust/wasm/typescript/wpm-cli/pack-smoke)." ;
+    gha:standingEffect "A green run confers ALIVE standing on the exact PR head SHA (or push SHA) across the five verified boundaries recorded in the uploaded ci-receipt-<run_id> artifact: rust, wasm, typescript, wpm-cli, pack-smoke." ;
+    rdfs:comment "Single-job replacement for the 39 deleted legacy workflows (PR #558): checkout the exact subject SHA, admit CI topology (exactly one workflow file), then Rust/WASM/TypeScript/CLI verification, ending in a packed-artifact smoke test and an uploaded verification receipt." .
+
+# ---------------------------------------------------------------------------
+# Job: verify (the only job in the workflow — no matrix, no strategy block)
+# ---------------------------------------------------------------------------
+
+ci:VerifyJob a gha:Job ;
+    gha:inWorkflow ci:CiWorkflow ;
+    gha:jobName "verify" ;
+    gha:runner "ubuntu-24.04" ;
+    gha:timeoutMinutes 60 ;
+    gha:jobExtra "name: exact-subject Rust/WASM/TypeScript/CLI" ;
+    gha:failureClassification "A red result means the exact subject SHA failed the verify boundary (rust/wasm/typescript/wpm-cli/pack-smoke) -- treat as gate refusal on that subject, not an infrastructure fault, unless the 'Admit exact head and CI topology' step itself failed (HEAD/workflow-count mismatch), which signals checkout/repo-topology drift instead." .
+
+# ---------------------------------------------------------------------------
+# Steps, in real rendering order (gha:stepOrder 1..17)
+# ---------------------------------------------------------------------------
+
+ci:StepCheckout a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 1 ;
+    gha:stepName "Checkout exact subject" ;
+    gha:usesAction "actions/checkout@v4" ;
+    gha:withParam "ref: ${{ github.event.pull_request.head.sha || github.sha }}" ;
+    gha:withParam "persist-credentials: false" .
+
+ci:StepAdmitTopology a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 2 ;
+    gha:stepName "Admit exact head and CI topology" ;
+    gha:envVar "EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}" ;
+    gha:runCommand """set -euo pipefail
+test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+count="$(find .github/workflows -maxdepth 1 -type f \\( -name '*.yml' -o -name '*.yaml' \\) | wc -l | tr -d ' ')"
+test "$count" -eq 1
+printf 'subject_sha=%s\\nworkflow_count=%s\\n' "$EXPECTED_SHA" "$count"
+""" .
+
+ci:StepInstallRust a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 3 ;
+    gha:stepName "Install repository-pinned Rust" ;
+    gha:usesAction "dtolnay/rust-toolchain@master" ;
+    gha:withParam "toolchain: nightly-2026-04-15" ;
+    gha:withParam "components: rustfmt, clippy" ;
+    gha:withParam "targets: wasm32-unknown-unknown" .
+
+ci:StepInstallNode a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 4 ;
+    gha:stepName "Install declared Node and pnpm" ;
+    gha:usesAction "actions/setup-node@v4" ;
+    gha:withParam "node-version: \"22\"" .
+
+ci:StepCorepackActivate a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 5 ;
+    gha:runCommand """set -euo pipefail
+corepack enable
+corepack prepare "$(node -p "require('./package.json').packageManager")" --activate
+node --version
+pnpm --version
+""" .
+
+ci:StepInstallWasmPack a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 6 ;
+    gha:stepName "Install wasm-pack 0.13.1" ;
+    gha:runCommand """set -euo pipefail
+cargo install wasm-pack --version 0.13.1 --locked
+test "$(wasm-pack --version)" = "wasm-pack 0.13.1"
+""" .
+
+ci:StepPnpmInstall a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 7 ;
+    gha:stepName "Install immutable JavaScript dependency graph" ;
+    gha:runCommand "pnpm install --frozen-lockfile" .
+
+ci:StepRustFmt a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 8 ;
+    gha:stepName "Rust format" ;
+    gha:runCommand "cargo fmt --all -- --check" .
+
+ci:StepRustCheck a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 9 ;
+    gha:stepName "Rust compile" ;
+    gha:runCommand "cargo check --workspace --all-targets --locked" .
+
+ci:StepRustTest a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 10 ;
+    gha:stepName "Rust tests" ;
+    gha:runCommand "cargo test --workspace --locked" .
+
+ci:StepWasmBuild a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 11 ;
+    gha:stepName "WASM compile and Node bundle" ;
+    gha:runCommand """set -euo pipefail
+cargo check --target wasm32-unknown-unknown --features wasm
+wasm-pack build wasm4pm --target nodejs --out-dir pkg -- --features wasm
+test -s wasm4pm/pkg/wasm4pm.js
+test -s wasm4pm/pkg/wasm4pm_bg.wasm
+""" .
+
+ci:StepTsBuild a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 12 ;
+    gha:stepName "TypeScript build" ;
+    gha:runCommand "pnpm build" .
+
+ci:StepTsTest a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 13 ;
+    gha:stepName "TypeScript integration tests" ;
+    gha:runCommand "pnpm test" .
+
+ci:StepCliBuildRun a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 14 ;
+    gha:stepName "Published CLI build and real execution" ;
+    gha:runCommand """set -euo pipefail
+pnpm --filter @wasm4pm/cli run build
+node apps/wasm4pm/dist/bin/wpm.js model discover data/small-example.xes -a dfg --json > /tmp/discover.json
+node -e 'const x=require("/tmp/discover.json"); if (!JSON.stringify(x).toLowerCase().includes("dfg")) process.exit(1)'
+node apps/wasm4pm/dist/bin/wpm.js system doctor --json > /tmp/doctor.json
+node -e 'const x=require("/tmp/doctor.json"); if (!JSON.stringify(x).includes("ok")) process.exit(1)'
+""" .
+
+ci:StepPackSmoke a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 15 ;
+    gha:stepName "Packed artifact smoke" ;
+    gha:runCommand "pnpm run prepublish:pack-smoke" .
+
+ci:StepEmitReceipt a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 16 ;
+    gha:stepName "Emit verification receipt" ;
+    gha:envVar "SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}" ;
+    gha:runCommand """set -euo pipefail
+mkdir -p artifacts/ci
+cat > artifacts/ci/receipt.json <<JSON
+{"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":1,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
+JSON
+cat artifacts/ci/receipt.json
+""" .
+
+ci:StepUploadReceipt a gha:Step ;
+    gha:inJob ci:VerifyJob ;
+    gha:stepOrder 17 ;
+    gha:stepName "Upload receipt" ;
+    gha:usesAction "actions/upload-artifact@v4" ;
+    gha:withParam "name: ci-receipt-${{ github.run_id }}" ;
+    gha:withParam "path: artifacts/ci/receipt.json" ;
+    gha:withParam "if-no-files-found: error" ;
+    gha:withParam "retention-days: 14" .

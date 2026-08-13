@@ -415,8 +415,26 @@ mod tests {
         format!("{}:{:?}", prefix, thread::current().id())
     }
 
+    /// `cache_clear()` wipes the process-global `PARSE_CACHE` / `COLUMNAR_CACHE` /
+    /// `INTERNER_CACHE` singletons unconditionally -- that blanket-wipe is the real,
+    /// intended production semantics of `cache_clear()`, not a bug, so it cannot be
+    /// scoped away by giving each test a `unique_key()` namespace: the clear still
+    /// removes every key regardless of prefix. Under cargo's default parallel test
+    /// execution this raced `test_cache_clear`'s `cache_clear()` call against any other
+    /// test in this module that inserts into the same statics and later asserts the
+    /// entry is still present (`test_interner_cache_shared`, `test_columnar_cache_roundtrip`):
+    /// if the clear landed between the insert and the get, the get panicked with
+    /// "should be cached" -- a real, reproducible test-isolation race, not a flaky
+    /// assertion in the cache logic itself. Since the caches are real process-global
+    /// state shared by the whole test binary, the correct fix is to serialize exactly
+    /// the tests that read/write those statics against `cache_clear()`, so no interleaving
+    /// is possible; `unique_key()` above still guards against benign key collisions
+    /// between concurrently-running tests, it just doesn't guard against a full clear.
+    static CACHE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
     #[test]
     fn test_cache_clear() {
+        let _guard = CACHE_TEST_LOCK.lock().expect("mutex poisoned");
         let k = unique_key("tcc");
         let lk = unique_key("tcc-log");
 
@@ -448,6 +466,7 @@ mod tests {
 
     #[test]
     fn test_columnar_cache_roundtrip() {
+        let _guard = CACHE_TEST_LOCK.lock().expect("mutex poisoned");
         let k = unique_key("ccr");
 
         let col = OwnedColumnarLog {
@@ -475,6 +494,7 @@ mod tests {
     #[cfg(feature = "streaming_basic")]
     #[test]
     fn test_interner_cache_shared() {
+        let _guard = CACHE_TEST_LOCK.lock().expect("mutex poisoned");
         let k = unique_key("ics");
 
         let mut interner = Interner::new();

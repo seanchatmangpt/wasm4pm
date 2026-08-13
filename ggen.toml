@@ -40,6 +40,11 @@ name     = "wasm4pm-compat"
 registry = "local"
 path     = "../wasm4pm-compat/ggen"
 
+[[packs]]
+name     = "github-actions-pack"
+registry = "local"
+path     = "packs/github-actions-pack"
+
 # ---------------------------------------------------------------------------
 # Rule: witness-markers
 # Writes witness_marker!() calls directly into wasm4pm-compat/src/witnesses.rs.
@@ -150,4 +155,37 @@ name        = "paper-fidelity-docs"
 query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-paper-fidelity.rq" }
 template    = { file = "../wasm4pm-compat/ggen/templates-breeds/paper-fidelity.md.tera" }
 output_file = "docs/paper-fidelity/{{ breed_id }}.md"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: ci-workflows-render (github-actions-pack consumer facts)
+#
+# Renders .specify/ci-workflows.ttl's gha:Workflow/gha:Job/gha:Step facts
+# (PR #558's real new ci.yml target) through packs/github-actions-pack's
+# workflow.yml.tmpl. output_file deliberately targets a SCRATCH path under
+# .specify/ci-workflows-rendered/, NOT .github/workflows/ci.yml -- this
+# repo's live CI is not yet in a state to auto-regenerate from this pass,
+# per this session's discipline of never silently overwriting a live CI
+# file without a separate, explicit human decision. Promote by hand once
+# that decision is made.
+#
+# Both query and template use QuerySource::File/TemplateSource::File, not
+# `pack =`, matching paper-fidelity-docs above -- and going one step
+# further than that rule's own comment: live-verified this session (real
+# `ggen sync run` against an isolated project using this exact pack),
+# QuerySource::Pack fails at FM-GEN-006 (as paper-fidelity-docs already
+# documented) AND TemplateSource::Pack independently fails at FM-GEN-007
+# ("TemplateSource::Pack ... is not implemented yet") on ggen 26.8.8 --
+# a second, distinct pack-sourcing gap this rule's original draft hit and
+# that the pre-existing rules in this file (breed-registration etc., which
+# use `template = { pack = ..., ... }`) have never actually exercised,
+# since ggen.toml's own QuerySource::Pack rules never reach the render
+# stage to prove it either way. File/File is the only combination
+# confirmed to actually render for this rule.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "ci-workflows-render"
+query       = { file = ".specify/queries/ci-workflows.rq" }
+template    = { file = "packs/github-actions-pack/templates/workflow.yml.tmpl" }
+output_file = ".specify/ci-workflows-rendered/{{ fileName }}"
 mode        = "Overwrite"
