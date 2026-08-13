@@ -1,0 +1,42 @@
+# MESSAGE: extraction query example. One row per compat:Widget, with the
+# MESSAGE: ordered multi-valued field (widgetTagItem) GROUP_CONCAT-joined in
+# MESSAGE: deterministic order. Each list item is its own compat:ListItem
+# MESSAGE: blank node (itemText + itemOrder) -- NOT a flat value/order
+# MESSAGE: property pair directly on the Widget subject. See ontology.ttl.example
+# MESSAGE: for why the flat shape corrupts GROUP_CONCAT with a cartesian
+# MESSAGE: product (found and fixed live in story-pack's first draft).
+# MESSAGE:
+# MESSAGE: The pattern that avoids the bug has two required parts, both
+# MESSAGE: present below:
+# MESSAGE:   1. ORDER BY ?ord INSIDE the inner SELECT, before aggregation.
+# MESSAGE:      GROUP_CONCAT alone does not guarantee row order; SPARQL 1.1
+# MESSAGE:      only guarantees order if an ORDER BY is evaluated on the
+# MESSAGE:      solution sequence feeding the aggregate.
+# MESSAGE:   2. A subselect (OPTIONAL { SELECT ... (GROUP_CONCAT(...) AS ?x)
+# MESSAGE:      WHERE { SELECT ... } GROUP BY ?entity }) rather than grouping
+# MESSAGE:      in the outer WHERE directly -- this keeps each multi-valued
+# MESSAGE:      field's join independent, so adding a second ordered property
+# MESSAGE:      later doesn't reintroduce a cross-multiplication between the
+# MESSAGE:      two unrelated lists.
+# MESSAGE:
+# MESSAGE: Separator is "%%WIDGET_SEP%%", not a bare "|" or ",": real item
+# MESSAGE: text may legitimately contain both (same reasoning as
+# MESSAGE: story-pack's "%%STORY_SEP%%" and github-actions-pack's
+# MESSAGE: workflow.yml.tmpl).
+PREFIX compat: <https://chatmangpt.com/ns/wasm4pm/compat#>
+SELECT ?widget ?widgetId ?widgetName ?widgetTags
+WHERE {
+  ?widget a compat:Widget ;
+          compat:widgetId ?widgetId ;
+          compat:widgetName ?widgetName .
+
+  OPTIONAL {
+    SELECT ?widget (GROUP_CONCAT(?text; separator="%%WIDGET_SEP%%") AS ?widgetTags) WHERE {
+      SELECT ?widget ?text WHERE {
+        ?widget compat:widgetTagItem ?item .
+        ?item compat:itemText ?text ; compat:itemOrder ?ord .
+      } ORDER BY ?ord
+    } GROUP BY ?widget
+  }
+}
+ORDER BY ?widgetId
