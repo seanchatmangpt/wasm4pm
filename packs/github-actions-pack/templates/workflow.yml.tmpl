@@ -1,30 +1,92 @@
-{#- Renders one real .github/workflows/FILENAME file per gha:Workflow
-    individual, from typed gha:Job/gha:Step facts -- not an echoed literal.
-
-    Pure Tera, no frontmatter: [[generation.rules]]-consumed templates in
-    this ecosystem never use a --- sparql: --- frontmatter block (that is a
-    separate, sync.rs-native mechanism for self-discovered pack templates,
-    not what a consumer's own ggen.toml rule invokes). Matches the real,
-    working pattern in .specify/templates/docs/pack_maturity_model.md.tera:
-    an inline sparql(query='...') Tera function call for any data beyond
-    what the driving rule's own query row supplies.
-
-    The consumer's [[generation.rules]] entry supplies, per row (one row
-    per gha:Workflow, excluding any carrying gha:ownedBy): wf (the
-    workflow's own subject IRI, needed below to filter nested queries),
-    fileName, purpose, onBlock, workflowEnv (comma-joined KEY=value pairs),
-    concurrencyPolicy, permissionCeiling, triggers (comma-joined event
-    labels). output_file containing fileName triggers per-row rendering --
-    one output file per gha:Workflow.
-
-    GROUP_CONCAT separators below use "%%GHA_SEP%%", never a bare "|" --
-    real step values (e.g. `a || b || c` expressions) legitimately contain
-    "|", so joining on that character corrupts them on split-back-apart.
-    Multi-line values (run: blocks) are re-indented by looping split("\n")
-    and prefixing each line with literal spaces, not the `indent` filter --
-    empirically this template's first draft got indent(width=N, first=false)
-    wrong (verified against a real diff of ggen's own ci.yml, not assumed)
-    and this looping form is unambiguous. -#}
+---
+# Renders one real .github/workflows/FILENAME file per gha:Workflow
+# individual, from typed gha:Job/gha:Step facts -- not an echoed literal.
+# Self-contained sync.rs-native format (to:/sparql:/for_each:) -- this is
+# the convention this marketplace's own qualify tooling expects of every
+# pack template (see scripts/qualify_packs.py's FRONTMATTER_PROBE_TEMPLATE)
+# and the convention every other real template in this repo already
+# follows. A consumer wires this via a real `[[packs]]`/`[packs]` entry in
+# their own ggen.toml (matching ggen-marketplace's own qualify consumer
+# wiring), not `[[generation.rules]]`'s File-sourced workaround an earlier
+# revision of this file used (that workaround existed only because
+# [[generation.rules]]'s own `template = { pack = ... }` sourcing is
+# separately broken in ggen 26.8.8, [FM-GEN-007] -- irrelevant to this
+# self-contained path, which never touches TemplateSource::Pack at all).
+#
+# gha:Workflow individuals carrying gha:ownedBy must be excluded by the
+# `workflows` query below (generation belongs elsewhere for those).
+#
+# for_each: workflows drives one output file per gha:Workflow row. The
+# jobs:/steps: queries below return every job/step for every workflow
+# (frontmatter sparql: values are static strings, not per-row templated,
+# so no per-row filtering is possible here) -- the body filters both down
+# to the current row's own wf/jobName using Tera's standard
+# filter(attribute=, value=).
+#
+# GROUP_CONCAT separators use "%%GHA_SEP%%" for with/env, never a bare
+# "|" -- real step values (e.g. `a || b || c` expressions) legitimately
+# contain "|", so joining on that character corrupts them on split-back-
+# apart (confirmed the hard way against a real diff, not assumed).
+# Multi-line values (run: blocks, onBlock, jobExtra) are re-indented by
+# looping split("\n") rather than the `indent` filter -- that filter's
+# actual behavior didn't match assumption either, also confirmed against
+# a real diff.
+to: ".github/workflows/{{ fileName }}"
+for_each: workflows
+sparql:
+  workflows: |
+    PREFIX gha:  <http://seanchatmangpt.github.io/packs/github-actions#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT ?wf ?fileName ?purpose ?onBlock ?concurrencyPolicy ?permissionCeiling
+           (GROUP_CONCAT(DISTINCT ?triggerLabel; separator=",") AS ?triggers)
+           (GROUP_CONCAT(DISTINCT ?envKv; separator=",") AS ?workflowEnv)
+    WHERE {
+      ?wf a gha:Workflow ; gha:fileName ?fileName .
+      FILTER NOT EXISTS { ?wf gha:ownedBy ?owner }
+      OPTIONAL { ?wf gha:purpose ?purpose . }
+      OPTIONAL { ?wf gha:onBlock ?onBlock . }
+      OPTIONAL { ?wf gha:concurrencyPolicy ?concurrencyPolicy . }
+      OPTIONAL { ?wf gha:permissionCeiling ?permissionCeiling . }
+      OPTIONAL { ?wf gha:trigger ?t . ?t rdfs:label ?triggerLabel . }
+      OPTIONAL { ?wf gha:workflowEnv ?envKv . }
+    }
+    GROUP BY ?wf ?fileName ?purpose ?onBlock ?concurrencyPolicy ?permissionCeiling
+    ORDER BY ?fileName
+  jobs: |
+    PREFIX gha: <http://seanchatmangpt.github.io/packs/github-actions#>
+    SELECT ?wf ?jobName ?runner ?timeoutMinutes ?condition ?jobPermissions ?jobExtra
+           (GROUP_CONCAT(DISTINCT ?dep; separator=",") AS ?dependsOnList)
+    WHERE {
+      ?job a gha:Job ; gha:inWorkflow ?wf ; gha:jobName ?jobName .
+      OPTIONAL { ?job gha:runner ?runner . }
+      OPTIONAL { ?job gha:timeoutMinutes ?timeoutMinutes . }
+      OPTIONAL { ?job gha:condition ?condition . }
+      OPTIONAL { ?job gha:jobPermissions ?jobPermissions . }
+      OPTIONAL { ?job gha:jobExtra ?jobExtra . }
+      OPTIONAL { ?job gha:dependsOn ?depJob . ?depJob gha:jobName ?dep . }
+    }
+    GROUP BY ?wf ?jobName ?runner ?timeoutMinutes ?condition ?jobPermissions ?jobExtra
+    ORDER BY ?wf ?jobName
+  steps: |
+    PREFIX gha: <http://seanchatmangpt.github.io/packs/github-actions#>
+    SELECT ?wf ?jobName ?stepOrder ?stepName ?stepId ?usesAction ?runCommand ?condition ?continueOnError
+           (GROUP_CONCAT(DISTINCT ?with; separator="%%GHA_SEP%%") AS ?withParams)
+           (GROUP_CONCAT(DISTINCT ?env; separator="%%GHA_SEP%%") AS ?envVars)
+    WHERE {
+      ?step a gha:Step ; gha:inJob ?job ; gha:stepOrder ?stepOrder .
+      ?job gha:jobName ?jobName ; gha:inWorkflow ?wf .
+      OPTIONAL { ?step gha:stepName ?stepName . }
+      OPTIONAL { ?step gha:stepId ?stepId . }
+      OPTIONAL { ?step gha:usesAction ?usesAction . }
+      OPTIONAL { ?step gha:runCommand ?runCommand . }
+      OPTIONAL { ?step gha:condition ?condition . }
+      OPTIONAL { ?step gha:continueOnError ?continueOnError . }
+      OPTIONAL { ?step gha:withParam ?with . }
+      OPTIONAL { ?step gha:envVar ?env . }
+    }
+    GROUP BY ?wf ?jobName ?stepOrder ?stepName ?stepId ?usesAction ?runCommand ?condition ?continueOnError
+    ORDER BY ?wf ?jobName ?stepOrder
+---
 {%- macro reindent(text, spaces) -%}
 {%- for line in text | split(pat="\n") -%}
 {{ spaces }}{{ line }}
@@ -60,8 +122,7 @@ env:
 {%- endif %}
 
 jobs:
-{%- set jobs_q = 'PREFIX gha: <http://seanchatmangpt.github.io/packs/github-actions#> SELECT ?jobName ?runner ?timeoutMinutes ?condition ?jobPermissions ?jobExtra (GROUP_CONCAT(DISTINCT ?dep; separator=",") AS ?dependsOnList) WHERE { ?job a gha:Job ; gha:inWorkflow <' ~ wf ~ '> ; gha:jobName ?jobName . OPTIONAL { ?job gha:runner ?runner . } OPTIONAL { ?job gha:timeoutMinutes ?timeoutMinutes . } OPTIONAL { ?job gha:condition ?condition . } OPTIONAL { ?job gha:jobPermissions ?jobPermissions . } OPTIONAL { ?job gha:jobExtra ?jobExtra . } OPTIONAL { ?job gha:dependsOn ?depJob . ?depJob gha:jobName ?dep . } } GROUP BY ?jobName ?runner ?timeoutMinutes ?condition ?jobPermissions ?jobExtra ORDER BY ?jobName' -%}
-{%- set my_jobs = sparql(query=jobs_q) -%}
+{%- set my_jobs = jobs | filter(attribute="wf", value=wf) %}
 {%- for job in my_jobs %}
   {{ job.jobName }}:
     runs-on: {{ job.runner | default(value="ubuntu-latest") }}
@@ -82,8 +143,7 @@ jobs:
 {{ self::reindent(text=job.jobExtra, spaces="    ") }}
 {%- endif %}
     steps:
-{%- set steps_q = 'PREFIX gha: <http://seanchatmangpt.github.io/packs/github-actions#> SELECT ?stepOrder ?stepName ?stepId ?usesAction ?runCommand ?condition ?continueOnError (GROUP_CONCAT(DISTINCT ?with; separator="%%GHA_SEP%%") AS ?withParams) (GROUP_CONCAT(DISTINCT ?env; separator="%%GHA_SEP%%") AS ?envVars) WHERE { ?step a gha:Step ; gha:inJob ?job ; gha:stepOrder ?stepOrder . ?job gha:jobName "' ~ job.jobName ~ '" ; gha:inWorkflow <' ~ wf ~ '> . OPTIONAL { ?step gha:stepName ?stepName . } OPTIONAL { ?step gha:stepId ?stepId . } OPTIONAL { ?step gha:usesAction ?usesAction . } OPTIONAL { ?step gha:runCommand ?runCommand . } OPTIONAL { ?step gha:condition ?condition . } OPTIONAL { ?step gha:continueOnError ?continueOnError . } OPTIONAL { ?step gha:withParam ?with . } OPTIONAL { ?step gha:envVar ?env . } } GROUP BY ?stepOrder ?stepName ?stepId ?usesAction ?runCommand ?condition ?continueOnError ORDER BY ?stepOrder' -%}
-{%- set my_steps = sparql(query=steps_q) -%}
+{%- set my_steps = steps | filter(attribute="jobName", value=job.jobName) | filter(attribute="wf", value=wf) %}
 {%- for step in my_steps %}
       - {% if step.stepName %}name: {{ step.stepName }}
         {% endif -%}
