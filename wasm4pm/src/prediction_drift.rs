@@ -12,8 +12,12 @@
 //!   -- see `wasm4pm/tests/fixtures/algorithms/detect_drift.json`'s
 //!   provenance note.
 //! * [`detect_drift_ks`] — added 2026-08-12: windowed J-measure feature
-//!   extraction plus a two-sample Kolmogorov-Smirnov test, Bose, van der
-//!   Aalst, Zliobaite & Pechenizkiy's actual Section 3 method.
+//!   extraction plus a two-sample Kolmogorov-Smirnov test, following Bose,
+//!   van der Aalst, Zliobaite & Pechenizkiy's Section 3 method. The
+//!   J-measure formula matches the paper; the "follows" relation it is
+//!   applied to is narrowed to a fixed directly-follows bigram (window
+//!   length `l = 1`), not the paper's general window-length-`l`
+//!   parameterized relation `p^{l,t}(a,b)`.
 //! * [`compute_ewma`] — exponentially weighted moving average over a numeric
 //!   series, with a coarse trend classification (`rising` / `falling` /
 //!   `stable`).
@@ -423,12 +427,15 @@ pub fn detect_drift(
 // Real J-measure + Kolmogorov-Smirnov concept-drift detection.
 //
 // Added 2026-08-12 alongside (not replacing) `detect_drift_native`'s
-// windowed Jaccard/TV-distance heuristic, to actually implement the method
-// Bose, van der Aalst, Zliobaite & Pechenizkiy's real paper describes
-// ("Handling Concept Drift in Process Mining", CAiSE 2011, Section 3):
-// windowed J-measure feature extraction over the directly-follows relation,
+// windowed Jaccard/TV-distance heuristic, following the method Bose, van
+// der Aalst, Zliobaite & Pechenizkiy's paper describes ("Handling Concept
+// Drift in Process Mining", CAiSE 2011, Section 3): a J-measure feature
 // compared across adjacent windows via a two-sample Kolmogorov-Smirnov
-// test. `wasm4pm/tests/fixtures/algorithms/detect_drift.json` was corrected
+// test. The J-measure formula matches the paper; the relation it is
+// computed over here is a fixed directly-follows bigram (l = 1), narrower
+// than the paper's own p^{l,t}(a,b) feature, which is parameterized by
+// window length l over bags of length-l subsequences.
+// `wasm4pm/tests/fixtures/algorithms/detect_drift.json` was corrected
 // the same day to stop claiming the OLD Jaccard/TV method was a verbatim
 // extraction of this paper -- this function is the real, separate
 // implementation that fixture's provenance note now points to.
@@ -582,8 +589,11 @@ pub struct KsDriftReport {
 
 /// Real concept-drift detection via windowed J-measure feature extraction
 /// plus a two-sample Kolmogorov-Smirnov test between adjacent windows --
-/// Bose et al. (2011)'s actual Section 3 method, not the Jaccard/TV
-/// heuristic `detect_drift_native` implements. A drift point is flagged at
+/// following Bose et al. (2011)'s Section 3 method (J-measure formula
+/// matches the paper; the code applies it to a fixed directly-follows
+/// bigram, l = 1, rather than the paper's window-length-l parameterized
+/// relation), not the Jaccard/TV heuristic `detect_drift_native`
+/// implements. A drift point is flagged at
 /// window-iterator index `idx` whenever the KS statistic between window
 /// `idx-1` and window `idx`'s J-measure feature distributions exceeds the
 /// real asymptotic critical value for that pair's sample sizes and `alpha`.
@@ -633,8 +643,10 @@ pub fn detect_drift_ks_native(
 
 /// Real, `wasm_bindgen`-exported entry point for [`detect_drift_ks_native`].
 /// See that function's docs for the real algorithm (J-measure + two-sample
-/// Kolmogorov-Smirnov test, Bose et al. 2011 Section 3) -- distinct from,
-/// and additive alongside, [`detect_drift`]'s Jaccard/TV heuristic.
+/// Kolmogorov-Smirnov test, following Bose et al. 2011 Section 3, with the
+/// "follows" relation narrowed to a fixed directly-follows bigram rather
+/// than the paper's parameterized window-length-l relation) -- distinct
+/// from, and additive alongside, [`detect_drift`]'s Jaccard/TV heuristic.
 ///
 /// # Returns
 ///
