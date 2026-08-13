@@ -1,0 +1,111 @@
+@prefix compat: <https://chatmangpt.com/ns/wasm4pm/compat#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# workspace-pack ontology — cross product of {crate} x {artifact}.
+#
+# compat:WorkspaceCrate is deliberately populated (not schema-only, unlike
+# github-actions-pack) because this pack's entire value is "every subcrate
+# gets shared boilerplate with near-zero setup" — the individuals ARE the
+# setup. Re-survey by re-editing this file when a crate is added, removed,
+# or its Cargo.toml package.description/name changes; there is no live
+# cargo-metadata query wired into ggen sync yet, so this file is the
+# checked-in survey snapshot, dated in its header comment below.
+#
+# Survey snapshot date: 2026-08-13, all 9 members of the workspace at the
+# time of authoring (root `wasm4pm` crate + 8 crates/* members).
+#################################################################
+
+compat:WorkspaceCrate a rdfs:Class ;
+    rdfs:label "One member crate of the wasm4pm Cargo workspace: identity (crateDir/packageName), one-line purpose (description), and two facts that gate which generated artifacts make sense for it (hasWasmBindgen, hasTests)." .
+
+compat:crateDir       a rdf:Property ; rdfs:domain compat:WorkspaceCrate ;
+    rdfs:label "Path from repo root to the crate's directory, e.g. 'crates/wasm4pm-cli' or 'wasm4pm' for the root crate. Used verbatim as an output-path segment by every template in this pack — never re-derived, so a crate that moves gets a one-line ontology edit, not a template change." .
+compat:packageName    a rdf:Property ; rdfs:domain compat:WorkspaceCrate ; rdfs:range xsd:string ;
+    rdfs:label "Cargo.toml [package].name — may differ from crateDir's basename (e.g. crates/miniml-core -> package 'miniml')." .
+compat:description    a rdf:Property ; rdfs:domain compat:WorkspaceCrate ; rdfs:range xsd:string ;
+    rdfs:label "Cargo.toml [package].description, verbatim." .
+compat:hasWasmBindgen a rdf:Property ; rdfs:domain compat:WorkspaceCrate ; rdfs:range xsd:string ;
+    rdfs:label "True if the crate depends on wasm-bindgen / compiles to a wasm-bindgen target. Gates whether the generated CI job fragment includes a wasm32 build step." .
+compat:hasTests       a rdf:Property ; rdfs:domain compat:WorkspaceCrate ; rdfs:range xsd:string ;
+    rdfs:label "True if the crate has a tests/ dir or #[cfg(test)] modules. Gates whether the generated CI job fragment includes a test step at all (a crate with none still gets fmt+clippy)." .
+compat:hasReadme      a rdf:Property ; rdfs:domain compat:WorkspaceCrate ; rdfs:range xsd:string ;
+    rdfs:label "True if the crate directory already has its own README.md. Informational only — the crate-readme-header template renders a STUB under docs/, not the crate's own README.md, so this pack never overwrites a hand-written one regardless of this value." .
+
+#################################################################
+# Individuals — real workspace survey, 9 crates.
+#################################################################
+
+compat:CrateWasm4pm a compat:WorkspaceCrate ;
+    compat:crateDir "wasm4pm" ;
+    compat:packageName "wasm4pm" ;
+    compat:description "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "true" .
+
+compat:CrateWasm4pmCli a compat:WorkspaceCrate ;
+    compat:crateDir "crates/wasm4pm-cli" ;
+    compat:packageName "wasm4pm-cli" ;
+    compat:description "The official wasm4pm process mining command-line interface" ;
+    compat:hasWasmBindgen "false" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "true" .
+
+compat:CrateWasm4pmCognition a compat:WorkspaceCrate ;
+    compat:crateDir "crates/wasm4pm-cognition" ;
+    compat:packageName "wasm4pm-cognition" ;
+    compat:description "AutoSystems old-AI cognition kernel for wasm4pm: frames, production rules, Prolog, STRIPS, Hearsay-II blackboard, BLAKE3 receipt chain, adversarial gates" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
+
+compat:CrateWasm4pmPlanner a compat:WorkspaceCrate ;
+    compat:crateDir "crates/wasm4pm-planner" ;
+    compat:packageName "wasm4pm-planner" ;
+    compat:description "wasm4pm-native PDDL-subset temporal planner with prolog8 admission gating and an MCP server — a fresh design (not a port) drawing on lessons from bcinr-pddl's durative-action scheduler and capability-router pattern." ;
+    compat:hasWasmBindgen "false" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
+
+compat:CrateWasm4pmBindingsPy a compat:WorkspaceCrate ;
+    compat:crateDir "crates/wasm4pm-bindings-py" ;
+    compat:packageName "wasm4pm-bindings-py" ;
+    compat:description "Python bindings for wasm4pm process mining algorithms" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
+
+compat:CrateMiniml a compat:WorkspaceCrate ;
+    compat:crateDir "crates/miniml-core" ;
+    compat:packageName "miniml" ;
+    compat:description "A minimal, blazing-fast WASM-powered machine learning library with SIMD acceleration" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "true" .
+
+compat:CrateProlog8 a compat:WorkspaceCrate ;
+    compat:crateDir "crates/prolog8" ;
+    compat:packageName "prolog8" ;
+    compat:description "Prolog8 — byte-capped proof engine for policy, workflow, and agent action admission" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "true" .
+
+compat:CrateOcpq a compat:WorkspaceCrate ;
+    compat:crateDir "crates/ocpq" ;
+    compat:packageName "ocpq" ;
+    compat:description "OCPQ runtime for wasm4pm: object-centric process querying & constraints (binding boxes, query trees, BASIC predicates E2O/O2O/TBE, CHILD SET, constr) per Kuesters & van der Aalst 2025" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
+
+compat:CrateBenchTools a compat:WorkspaceCrate ;
+    compat:crateDir "crates/bench-tools" ;
+    compat:packageName "bench-tools" ;
+    compat:description "Benchmark tools for the wasm4pm workspace" ;
+    compat:hasWasmBindgen "false" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .

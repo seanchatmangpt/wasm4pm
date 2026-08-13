@@ -1,0 +1,4 @@
+[pack]
+name        = "workspace-pack"
+version     = "0.1.0"
+description = "Combinatorial-maximalist local pack: every workspace subcrate x {README header, CI check-matrix job fragment, registry doc} — additive-only output (docs/, .specify/generated/), never touches hand-written Cargo.toml or src/*.rs. Ontology carries real individuals for all 9 wasm4pm workspace crates (not schema-only like github-actions-pack, since this pack's whole point is being pre-populated from a real cargo-workspace survey, re-run by re-editing this file when crates are added/removed)."

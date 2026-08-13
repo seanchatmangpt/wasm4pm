@@ -24,6 +24,7 @@ imports = [
   "ggen/ontology/breeds.ttl",
   "ontology/chatmangpt/wasm4pm-namespace.ttl",
   "ocel/reports/evidence.ttl",
+  "packs/workspace-pack/ontology.ttl",
 ]
 standard_only = false
 
@@ -44,6 +45,11 @@ path     = "../wasm4pm-compat/ggen"
 name     = "github-actions-pack"
 registry = "local"
 path     = "packs/github-actions-pack"
+
+[[packs]]
+name     = "workspace-pack"
+registry = "local"
+path     = "packs/workspace-pack"
 
 # ---------------------------------------------------------------------------
 # Rule: witness-markers
@@ -66,8 +72,15 @@ path     = "packs/github-actions-pack"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "breed-registration"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-registration.rs.tera" }
+# QuerySource::Pack/TemplateSource::Pack -> QuerySource::File/TemplateSource::File
+# 2026-08-13: [FM-GEN-006] (QuerySource::Pack not implemented in this
+# ggen-engine's declarative-rules sync path) was blocking `ggen sync run`
+# validation for the ENTIRE file, before any rule (including new ones added
+# below) ever reached generation. Same remediation already proven live by
+# paper-fidelity-docs/ci-workflows-render further down this file: File/File
+# sourcing against the identical on-disk paths the pack= form pointed to.
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-registration.rs.tera" }
 output_file = "crates/wasm4pm-cognition/src/breeds/registration.rs"
 mode        = "Overwrite"
 
@@ -89,8 +102,9 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "paper-pointers"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "paper-pointers-test.tera" }
+# File/File — [FM-GEN-006], see breed-registration's comment above.
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-paper-pointers.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/paper-pointers-test.tera" }
 output_file = "crates/wasm4pm-cognition/tests/paper_pointers_generated.rs"
 mode        = "Overwrite"
 
@@ -112,8 +126,9 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "universal-anticheat"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "universal-anticheat.tera" }
+# File/File — [FM-GEN-006], see breed-registration's comment above.
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-paper-pointers.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/universal-anticheat.tera" }
 output_file = "crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs"
 mode        = "Overwrite"
 
@@ -122,8 +137,9 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "registry-json"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "registry.json.tera" }
+# File/File — [FM-GEN-006], see breed-registration's comment above.
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/registry.json.tera" }
 output_file = "crates/wasm4pm-cognition/breeds/registry.json"
 mode        = "Overwrite"
 
@@ -132,8 +148,9 @@ mode        = "Overwrite"
 # ---------------------------------------------------------------------------
 [[generation.rules]]
 name        = "ts-breed-ids"
-query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
-template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-ids.ts.tera" }
+# File/File — [FM-GEN-006], see breed-registration's comment above.
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-ids.ts.tera" }
 output_file = "packages/cognition/src/breed-ids.ts"
 mode        = "Overwrite"
 
@@ -188,4 +205,42 @@ name        = "ci-workflows-render"
 query       = { file = ".specify/queries/ci-workflows.rq" }
 template    = { file = "packs/github-actions-pack/templates/workflow.yml.tmpl" }
 output_file = ".specify/ci-workflows-rendered/{{ fileName }}"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: workspace-crate-readme-headers
+# One README-header stub per compat:WorkspaceCrate, under docs/crates/ —
+# additive only, never touches a crate's own README.md.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "workspace-crate-readme-headers"
+query       = { file = "packs/workspace-pack/queries/extract-workspace-crates.rq" }
+template    = { file = "packs/workspace-pack/templates/crate-readme-header.md.tera" }
+output_file = "docs/crates/{{ crateDir }}/README-header.md"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: workspace-crate-ci-jobs
+# One {crate} x {fmt,clippy,test[,wasm-build]} job fragment per crate under
+# .specify/generated/ci-jobs/ — a splice-able fragment feeding the same
+# convention as .specify/ci-workflows.ttl / github-actions-pack's gha:Job
+# layer (see ci-workflows-render above), not a standalone runnable workflow.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "workspace-crate-ci-jobs"
+query       = { file = "packs/workspace-pack/queries/extract-workspace-crates.rq" }
+template    = { file = "packs/workspace-pack/templates/crate-ci-job.yml.tera" }
+output_file = ".specify/generated/ci-jobs/{{ crateDir | replace(from='/', to='-') }}.yml"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: workspace-crate-registry
+# Single doc listing every workspace crate, under docs/ — safe to
+# regenerate on every ggen sync.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "workspace-crate-registry"
+query       = { file = "packs/workspace-pack/queries/extract-workspace-crates.rq" }
+template    = { file = "packs/workspace-pack/templates/workspace-crate-registry.md.tera" }
+output_file = "docs/workspace-crate-registry.md"
 mode        = "Overwrite"

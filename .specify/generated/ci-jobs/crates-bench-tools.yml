@@ -1,0 +1,17 @@
+crates-bench-tools-checks:
+    name: "bench-tools — fmt, clippy, test"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/bench-tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: fmt check
+        run: cargo fmt --check
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: test
+        run: cargo test --all-features

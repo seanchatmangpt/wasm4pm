@@ -1,0 +1,21 @@
+crates-wasm4pm-cognition-checks:
+    name: "wasm4pm-cognition — fmt, clippy, test"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/wasm4pm-cognition
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: fmt check
+        run: cargo fmt --check
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: test
+        run: cargo test --all-features
+      - name: wasm32 build check
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo build --target wasm32-unknown-unknown

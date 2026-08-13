@@ -1,0 +1,6 @@
+[consumer]
+# workspace-pack ships its own 9 compat:WorkspaceCrate individuals (unlike
+# github-actions-pack's schema-only contract) because its source of truth
+# IS this repo's own Cargo workspace, surveyed once by hand and re-surveyed
+# whenever crates/*/Cargo.toml changes. Nothing for a qualification pass to
+# union locally beyond what ontology.ttl already declares.
