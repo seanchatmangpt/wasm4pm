@@ -1,0 +1,16 @@
+# MESSAGE: workspace-pack extraction query. One row per compat:WorkspaceCrate,
+# MESSAGE: ordered by crateDir for deterministic template output (repeat runs
+# MESSAGE: over an unchanged graph must byte-for-byte match — BLAKE3 receipt
+# MESSAGE: discipline per .claude/rules/_core/absolute.md #6).
+PREFIX compat: <https://chatmangpt.com/ns/wasm4pm/compat#>
+SELECT ?crate ?crateDir ?packageName ?description ?hasWasmBindgen ?hasTests ?hasReadme
+WHERE {
+  ?crate a compat:WorkspaceCrate ;
+         compat:crateDir ?crateDir ;
+         compat:packageName ?packageName ;
+         compat:description ?description ;
+         compat:hasWasmBindgen ?hasWasmBindgen ;
+         compat:hasTests ?hasTests .
+  OPTIONAL { ?crate compat:hasReadme ?hasReadme }
+}
+ORDER BY ?crateDir
