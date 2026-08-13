@@ -274,6 +274,35 @@ output_file = "stories/{{ storyId }}-qa-procedure.md"
 mode        = "Overwrite"
 
 # ---------------------------------------------------------------------------
+# Rule: story-programs
+# One minimal, real, executable placeholder program per compat:Story,
+# under stories/ — additive. Prints the story's exampleOutputItem
+# text(s); exists so story-acceptance-tests has a real process to shell
+# out to instead of a stub. Replace with the real implementation (or
+# repoint compat:storyRunCommand) once one exists.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "story-programs"
+query       = { file = "packs/story-pack/queries/extract-stories.rq" }
+template    = { file = "packs/story-pack/templates/run-program.sh.tera" }
+output_file = "stories/{{ storyId }}.sh"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: story-acceptance-tests
+# One real, executable Vitest acceptance test per compat:Story, under
+# stories/ — additive. Shells out to compat:storyRunCommand (the
+# story-programs rule's script) and asserts the real captured stdout
+# against the story's real exampleOutputItem values.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "story-acceptance-tests"
+query       = { file = "packs/story-pack/queries/extract-stories.rq" }
+template    = { file = "packs/story-pack/templates/acceptance-test.test.mjs.tera" }
+output_file = "stories/{{ storyId }}.test.mjs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
 # Rule: story-tickets
 # One docs/jira ticket per compat:Story — additive, Markdown only, never
 # calls the GitHub API (opening a real issue stays a separate, deliberate,

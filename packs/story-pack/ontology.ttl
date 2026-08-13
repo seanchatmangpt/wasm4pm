@@ -39,6 +39,20 @@ compat:qaScope          a rdf:Property ; rdfs:domain compat:Story ; rdfs:range x
     rdfs:label "QA procedure's 'Scope' section body (may be multi-line, rendered as a single paragraph)." .
 
 #################################################################
+# Fourth combinatorial artifact: a real, executable Vitest acceptance
+# test rendered from the same facts as the feature file / QA procedure /
+# ticket, asserting the story's real captured stdout against its
+# exampleOutputItem values. This story has no pre-existing program to
+# shell out to, so the pack ALSO generates a minimal real program (a
+# one-line script that echoes the story's exampleOutputItem text) so the
+# round trip stays honest: the test really executes a real process and
+# really asserts on its real stdout, never a stub.
+#################################################################
+
+compat:storyRunCommand  a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "Shell command, relative to the repo root, that a real implementation of this story must satisfy: running it with no arguments must print exactly the story's exampleOutputItem text(s) and nothing else. Consumed by both the generated program stub (stories/<id>.sh) and the generated acceptance test (stories/<id>.test.mjs), so the two stay in lockstep." .
+
+#################################################################
 # Ordered-list items: each list item is its OWN blank node carrying a
 # paired (itemText, itemOrder) -- deliberately NOT four flat
 # value/order property pairs directly on the Story subject. A flat
@@ -80,6 +94,7 @@ compat:StoryHelloWorldPrint a compat:Story ;
     compat:whenStep "the program is run" ;
     compat:thenStepTemplate "the program output is exactly \"<output>\"" ;
     compat:qaScope "Verify the program's user-visible output for the approved story. The only required behavior is that running the program prints exactly: \"hello world.\"" ;
+    compat:storyRunCommand "sh stories/hello-world-print.sh" ;
 
     compat:exampleOutputItem [ compat:itemText "hello world." ; compat:itemOrder 1 ] ;
 

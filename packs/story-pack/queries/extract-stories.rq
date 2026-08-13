@@ -16,7 +16,7 @@
 # MESSAGE: both (see github-actions-pack's workflow.yml.tmpl, same reasoning).
 PREFIX compat: <https://chatmangpt.com/ns/wasm4pm/compat#>
 SELECT ?story ?storyId ?storyTitle ?scenarioName ?givenStep ?whenStep ?thenStepTemplate
-       ?qaScope ?exampleOutputs ?qaPreconditions ?qaProcedureSteps ?passCriteria ?failCriteria
+       ?qaScope ?storyRunCommand ?exampleOutputs ?qaPreconditions ?qaProcedureSteps ?passCriteria ?failCriteria
 WHERE {
   ?story a compat:Story ;
          compat:storyId ?storyId ;
@@ -25,7 +25,8 @@ WHERE {
          compat:givenStep ?givenStep ;
          compat:whenStep ?whenStep ;
          compat:thenStepTemplate ?thenStepTemplate ;
-         compat:qaScope ?qaScope .
+         compat:qaScope ?qaScope ;
+         compat:storyRunCommand ?storyRunCommand .
 
   OPTIONAL {
     SELECT ?story (GROUP_CONCAT(?text; separator="%%STORY_SEP%%") AS ?exampleOutputs) WHERE {
