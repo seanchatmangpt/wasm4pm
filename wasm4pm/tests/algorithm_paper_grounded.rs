@@ -76,13 +76,34 @@ fn assert_algo_grounded(json: &serde_json::Value) {
     }
 }
 
-macro_rules! native_early_return {
-    () => {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            return;
-        }
-    };
+/// Extract the JSON payload produced by a `wasm_bindgen`-exported algorithm call.
+///
+/// `to_js_str`/`js_val` (see `wasm4pm::error::js_val`, `wasm4pm::utilities::to_js_str`)
+/// serialize real payloads on every target, but only *return* the payload as the
+/// `JsValue` itself on `wasm32` (`JsValue::from_str(s)`); on native targets `js_val`
+/// returns `JsValue::null()` and stashes the same JSON string in the
+/// `wasm4pm::native_bridge` thread-local instead (see that module's docs -- it exists
+/// precisely so native/Python callers can retrieve it). The tests below previously
+/// called `.as_string()` on the returned `JsValue` and used `native_early_return!()` to
+/// `return` before that call on native targets, since `.as_string()` on
+/// `JsValue::null()` is `None` and would panic the `.expect(...)` right after it --
+/// which made every assertion after the early return permanently unreachable native
+/// dead code (confirmed by real `unreachable_code` warnings from `cargo clippy`).
+///
+/// The real fix: read the payload from the correct location per target, so the same
+/// paper-grounded assertions genuinely run and can genuinely fail on native, not just
+/// on wasm32.
+fn extract_json_result(js_value: wasm_bindgen::JsValue) -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_value.as_string().expect("result must be a string")
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = js_value;
+        wasm4pm::native_bridge::take_native_json()
+            .expect("native_bridge::take_native_json() must hold a stashed JSON payload")
+    }
 }
 
 // ── Shared log builders ──────────────────────────────────────────────────────
@@ -2445,8 +2466,7 @@ fn similar_activity_paper_grounded() {
 
     let result = wasm4pm::fast_discovery::analyze_activity_cooccurrence(&handle, "concept:name")
         .expect("analyze_activity_cooccurrence must succeed");
-    native_early_return!();
-    let json_str = result.as_string().expect("result must be a string");
+    let json_str = extract_json_result(result);
 
     let parsed: serde_json::Value =
         serde_json::from_str(&json_str).expect("result must be valid JSON");
@@ -2505,8 +2525,7 @@ fn bottleneck_miner_paper_grounded() {
         0,
     )
     .expect("detect_bottlenecks must succeed");
-    native_early_return!();
-    let json_str = result.as_string().expect("result must be a string");
+    let json_str = extract_json_result(result);
 
     assert!(
         !json_str.is_empty(),
@@ -2552,8 +2571,7 @@ fn case_duration_paper_grounded() {
 
     let result = wasm4pm::analysis::analyze_case_duration(&handle)
         .expect("analyze_case_duration must succeed");
-    native_early_return!();
-    let json_str = result.as_string().expect("result must be a string");
+    let json_str = extract_json_result(result);
 
     let parsed: serde_json::Value =
         serde_json::from_str(&json_str).expect("result must be valid JSON");
@@ -2617,8 +2635,7 @@ fn remaining_time_prediction_paper_grounded() {
         "time:timestamp",
     )
     .expect("build_remaining_time_model must succeed");
-    native_early_return!();
-    let model_handle = result.as_string().expect("model handle must be a string");
+    let model_handle = extract_json_result(result);
 
     assert!(
         !model_handle.is_empty(),
@@ -2648,18 +2665,12 @@ fn next_activity_prediction_paper_grounded() {
     let predictor_result =
         wasm4pm::prediction::build_ngram_predictor(&log_handle, "concept:name", 2)
             .expect("build_ngram_predictor must succeed");
-    native_early_return!();
-    let predictor_handle = predictor_result
-        .as_string()
-        .expect("predictor handle must be a string");
+    let predictor_handle = extract_json_result(predictor_result);
 
     let prefix_json = r#"["a"]"#;
     let pred_result = wasm4pm::prediction::predict_next_activity(&predictor_handle, prefix_json)
         .expect("predict_next_activity must succeed");
-    native_early_return!();
-    let pred_str = pred_result
-        .as_string()
-        .expect("prediction must be a string");
+    let pred_str = extract_json_result(pred_result);
     let preds: serde_json::Value =
         serde_json::from_str(&pred_str).expect("prediction result must be valid JSON");
     let arr = preds.as_array().expect("predictions must be an array");
@@ -2699,8 +2710,7 @@ fn outcome_prediction_paper_grounded() {
         "concept:name",
     )
     .expect("compute_boundary_coverage must succeed");
-    native_early_return!();
-    let json_str = result.as_string().expect("result must be a string");
+    let json_str = extract_json_result(result);
 
     assert!(
         !json_str.is_empty(),
