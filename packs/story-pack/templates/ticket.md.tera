@@ -1,0 +1,29 @@
+{#- Renders one docs/jira/<storyId>.md ticket per compat:Story row, following
+    this repo's docs/jira/** convention: a Definition of Done tied to real,
+    checkable criteria (here, the story's own Pass Criteria), not a restated
+    feature description. -#}
+# {{ storyTitle }}
+
+- Story ID: `{{ storyId }}`
+- Feature file: `stories/{{ storyId }}.feature`
+- QA procedure: `stories/{{ storyId }}-qa-procedure.md`
+
+## Scenario
+
+{{ scenarioName }}: given {{ givenStep }}, when {{ whenStep }}, then {{ thenStepTemplate }}.
+
+## Definition of Done
+
+Run the QA procedure in `stories/{{ storyId }}-qa-procedure.md` against a real build. Done
+only when every one of the following holds, verified against real captured output (not
+asserted from memory):
+
+{%- for c in passCriteria | split(pat="%%STORY_SEP%%") %}
+- [ ] {{ c }}
+{%- endfor %}
+
+## Known fail conditions (do not ship if any of these hold)
+
+{%- for c in failCriteria | split(pat="%%STORY_SEP%%") %}
+- {{ c }}
+{%- endfor %}

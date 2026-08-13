@@ -1,0 +1,4 @@
+[pack]
+name        = "story-pack"
+version     = "0.1.0"
+description = "Combinatorial pack: every compat:Story x {Gherkin .feature file, QA procedure doc, docs/jira ticket} — additive-only output (stories/, docs/jira/), never overwrites hand-written source. Seeded with one real individual (StoryHelloWorldPrint) transcribed verbatim from the user-supplied hello-world-print feature/QA-procedure pair, proving the round trip end to end before any other story is authored."

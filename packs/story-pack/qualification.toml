@@ -1,0 +1,7 @@
+[consumer]
+# story-pack ships its own compat:Story individuals (same pattern as
+# workspace-pack, unlike github-actions-pack's schema-only contract):
+# a story is authored once as ontology facts, and every artifact that
+# story requires (feature file, QA procedure, ticket) is generated from
+# it. Nothing for a qualification pass to union locally beyond what
+# ontology.ttl already declares.

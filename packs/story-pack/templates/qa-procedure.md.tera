@@ -1,0 +1,37 @@
+{#- Renders one QA-procedure Markdown doc per compat:Story row. Multi-valued
+    fields (qaPreconditions, qaProcedureSteps, passCriteria, failCriteria)
+    are "%%STORY_SEP%%"-joined by the driving query, split back apart here. -#}
+# QA Procedure: {{ storyTitle }}
+
+## Story
+
+- Story ID: `{{ storyId }}`
+- Story artifact: `stories/{{ storyId }}.feature`
+
+## Scope
+
+{{ qaScope }}
+
+## Preconditions
+
+{%- for p in qaPreconditions | split(pat="%%STORY_SEP%%") %}
+- {{ p }}
+{%- endfor %}
+
+## Procedure
+
+{%- for step in qaProcedureSteps | split(pat="%%STORY_SEP%%") %}
+{{ loop.index }}. {{ step }}
+{%- endfor %}
+
+## Pass Criteria
+
+{%- for c in passCriteria | split(pat="%%STORY_SEP%%") %}
+- {{ c }}
+{%- endfor %}
+
+## Fail Criteria
+
+{%- for c in failCriteria | split(pat="%%STORY_SEP%%") %}
+- {{ c }}
+{%- endfor %}

@@ -25,6 +25,7 @@ imports = [
   "ontology/chatmangpt/wasm4pm-namespace.ttl",
   "ocel/reports/evidence.ttl",
   "packs/workspace-pack/ontology.ttl",
+  "packs/story-pack/ontology.ttl",
 ]
 standard_only = false
 
@@ -45,6 +46,11 @@ path     = "../wasm4pm-compat/ggen"
 name     = "github-actions-pack"
 registry = "local"
 path     = "packs/github-actions-pack"
+
+[[packs]]
+name     = "story-pack"
+registry = "local"
+path     = "packs/story-pack"
 
 [[packs]]
 name     = "workspace-pack"
@@ -243,4 +249,39 @@ name        = "workspace-crate-registry"
 query       = { file = "packs/workspace-pack/queries/extract-workspace-crates.rq" }
 template    = { file = "packs/workspace-pack/templates/workspace-crate-registry.md.tera" }
 output_file = "docs/workspace-crate-registry.md"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: story-feature-files
+# One Gherkin .feature file per compat:Story, under stories/ — additive.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "story-feature-files"
+query       = { file = "packs/story-pack/queries/extract-stories.rq" }
+template    = { file = "packs/story-pack/templates/feature.feature.tera" }
+output_file = "stories/{{ storyId }}.feature"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: story-qa-procedures
+# One QA-procedure doc per compat:Story, under stories/ — additive.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "story-qa-procedures"
+query       = { file = "packs/story-pack/queries/extract-stories.rq" }
+template    = { file = "packs/story-pack/templates/qa-procedure.md.tera" }
+output_file = "stories/{{ storyId }}-qa-procedure.md"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: story-tickets
+# One docs/jira ticket per compat:Story — additive, Markdown only, never
+# calls the GitHub API (opening a real issue stays a separate, deliberate,
+# approved action).
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "story-tickets"
+query       = { file = "packs/story-pack/queries/extract-stories.rq" }
+template    = { file = "packs/story-pack/templates/ticket.md.tera" }
+output_file = "docs/jira/{{ storyId }}.md"
 mode        = "Overwrite"
