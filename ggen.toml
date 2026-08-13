@@ -1,0 +1,191 @@
+# wasm4pm ggen.toml — Constitutional Equation: wasm4pm substrate = mu(wasm4pm-compat.ttl)
+#
+# The ontology IS the specification. ggen IS the compiler.
+# The Rust files ARE the compiled output — no "generated/" subfolder.
+# Generated code and hand-written code are the same kind of source.
+# To change a type: change the TTL. To see the change: run ggen sync.
+
+[project]
+name        = "wasm4pm"
+version     = "26.6.11"
+description = "Process mining platform substrate — generated from wasm4pm-compat ontology"
+authors     = ["Sean Chatman"]
+license     = "MIT"
+
+[ontology]
+source = "../wasm4pm-compat/ggen/ontology/wasm4pm-compat.ttl"
+imports = [
+  "../wasm4pm-compat/ggen/ontology/papers.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl",
+  "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl",
+  "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl",
+  "ggen/ontology/breeds.ttl",
+  "ontology/chatmangpt/wasm4pm-namespace.ttl",
+  "ocel/reports/evidence.ttl",
+]
+standard_only = false
+
+[generation]
+output_dir = "."
+
+[inference]
+rules = [
+  { name = "alive-gate", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#breedStatus> \"PARTIAL_ALIVE\" } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> ; <https://wasm4pm.dev/ns#measuredFitness> ?f ; <https://wasm4pm.dev/ns#ocelAdmitted> true . FILTER(?f = 1.0) } ORDER BY ?b" }
+]
+
+[[packs]]
+name     = "wasm4pm-compat"
+registry = "local"
+path     = "../wasm4pm-compat/ggen"
+
+[[packs]]
+name     = "github-actions-pack"
+registry = "local"
+path     = "packs/github-actions-pack"
+
+# ---------------------------------------------------------------------------
+# Rule: witness-markers
+# Writes witness_marker!() calls directly into wasm4pm-compat/src/witnesses.rs.
+# No "generated/" folder — the output IS the source, compiled from the ontology.
+# The template produces code identical to hand-written witness_marker!() calls.
+# ---------------------------------------------------------------------------
+# BLOCKED: cross-repo output traversal (../wasm4pm-compat/src/) blocked by ggen E0006.
+# This rule must live in the wasm4pm-compat/ggen manifest, not here.
+# [[generation.rules]]
+# name        = "witness-markers"
+# query       = { file = "ggen/queries/extract-witnesses-full.rq" }
+# template    = { file = "../wasm4pm-compat/ggen/templates/witness-marker.tera" }
+# output_file = "../wasm4pm-compat/src/witnesses.rs"
+# mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: breed-registration
+# Generates the breeds!{} macro invocation (registration.rs included from mod.rs)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "breed-registration"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-registration.rs.tera" }
+output_file = "crates/wasm4pm-cognition/src/breeds/registration.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: breed-stubs — RETIRED 2026-06-11.
+# ggen >= 26.6.9 Create mode errors (not skips) on existing files; all 55
+# breed modules now exist, so the scaffolding job is done. To scaffold a NEW
+# breed: add it to ggen/ontology/breeds.ttl, uncomment, sync once, re-comment.
+# ---------------------------------------------------------------------------
+# [[generation.rules]]
+# name        = "breed-stubs"
+# query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+# template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-stub.rs.tera" }
+# output_file = "crates/wasm4pm-cognition/src/breeds/{{ module_file }}.rs"
+# mode        = "Create"
+
+# ---------------------------------------------------------------------------
+# Rule: paper-pointers (Overwrite — anti-cheat test suite, ggen is authority)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "paper-pointers"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "paper-pointers-test.tera" }
+output_file = "crates/wasm4pm-cognition/tests/paper_pointers_generated.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: breed-fixtures — RETIRED 2026-06-11 (same reason as breed-stubs):
+# ggen >= 26.6.9 Create mode errors on existing files; all 55 fixtures exist
+# and carry real paper values. Re-enable transiently for a NEW breed only.
+# ---------------------------------------------------------------------------
+# [[generation.rules]]
+# name        = "breed-fixtures"
+# query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+# template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-fixture.json.tera" }
+# output_file = "crates/wasm4pm-cognition/tests/fixtures/papers/{{ breed_id }}.json"
+# mode        = "Create"
+
+# ---------------------------------------------------------------------------
+# Rule: universal-anticheat (Overwrite — ggen is authority for anti-cheat tests)
+# Uses paper-pointers query so only breeds WITH pointers get a test
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "universal-anticheat"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "universal-anticheat.tera" }
+output_file = "crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: registry-json (Overwrite — admission derived from alive-gate CONSTRUCT)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "registry-json"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "registry.json.tera" }
+output_file = "crates/wasm4pm-cognition/breeds/registry.json"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: ts-breed-ids (Overwrite — packages/cognition/src/breed-ids.ts)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "ts-breed-ids"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-ids.ts.tera" }
+output_file = "packages/cognition/src/breed-ids.ts"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: paper-fidelity-docs (Overwrite — one external-facing, author-legible
+# per-breed doc per row; scoped to whichever breeds carry a real
+# compat:algorithmStatement in breed-vocabulary.ttl, currently the 5-breed
+# pilot: mycin, strips, sat_cdcl, htn_planning, cbr).
+#
+# Uses QuerySource::File / TemplateSource::File (not `pack =`, unlike every
+# other rule in this file) -- confirmed live this session: QuerySource::Pack
+# hard-blocks the entire sync at FM-GEN-006 (a tracked, unimplemented
+# ggen-engine path), and the engine's own error names File/Inline as the
+# working remediation. Paths are relative to this repo root, matching the
+# same convention already used by [ontology].source/.imports above.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "paper-fidelity-docs"
+query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-paper-fidelity.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates-breeds/paper-fidelity.md.tera" }
+output_file = "docs/paper-fidelity/{{ breed_id }}.md"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: ci-workflows-render (github-actions-pack consumer facts)
+#
+# Renders .specify/ci-workflows.ttl's gha:Workflow/gha:Job/gha:Step facts
+# (PR #558's real new ci.yml target) through packs/github-actions-pack's
+# workflow.yml.tmpl. output_file deliberately targets a SCRATCH path under
+# .specify/ci-workflows-rendered/, NOT .github/workflows/ci.yml -- this
+# repo's live CI is not yet in a state to auto-regenerate from this pass,
+# per this session's discipline of never silently overwriting a live CI
+# file without a separate, explicit human decision. Promote by hand once
+# that decision is made.
+#
+# Both query and template use QuerySource::File/TemplateSource::File, not
+# `pack =`, matching paper-fidelity-docs above -- and going one step
+# further than that rule's own comment: live-verified this session (real
+# `ggen sync run` against an isolated project using this exact pack),
+# QuerySource::Pack fails at FM-GEN-006 (as paper-fidelity-docs already
+# documented) AND TemplateSource::Pack independently fails at FM-GEN-007
+# ("TemplateSource::Pack ... is not implemented yet") on ggen 26.8.8 --
+# a second, distinct pack-sourcing gap this rule's original draft hit and
+# that the pre-existing rules in this file (breed-registration etc., which
+# use `template = { pack = ..., ... }`) have never actually exercised,
+# since ggen.toml's own QuerySource::Pack rules never reach the render
+# stage to prove it either way. File/File is the only combination
+# confirmed to actually render for this rule.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "ci-workflows-render"
+query       = { file = ".specify/queries/ci-workflows.rq" }
+template    = { file = "packs/github-actions-pack/templates/workflow.yml.tmpl" }
+output_file = ".specify/ci-workflows-rendered/{{ fileName }}"
+mode        = "Overwrite"
