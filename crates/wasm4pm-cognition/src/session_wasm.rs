@@ -78,9 +78,7 @@ fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
     serde_json::to_string(value)
         .map(|json| JsValue::from_str(&json))
         .map_err(|error| {
-            JsValue::from_str(&format!(
-                "session boundary serialization failed: {error}"
-            ))
+            JsValue::from_str(&format!("session boundary serialization failed: {error}"))
         })
 }
 
@@ -113,9 +111,8 @@ fn attest(run_id: &str, input_hash: &str, attested_hash: &str) -> AttestationBou
     let signer = ActorSigner::from_seed(
         *blake3::hash(b"wasm4pm.cognition.session.v2.local-self-signer").as_bytes(),
     );
-    let message = format!(
-        "wasm4pm.cognition.session.attestation.v2|{run_id}|{input_hash}|{attested_hash}"
-    );
+    let message =
+        format!("wasm4pm.cognition.session.attestation.v2|{run_id}|{input_hash}|{attested_hash}");
     AttestationBoundary {
         kind: "ed25519-self-signed",
         signature: Some(hex::encode(signer.sign(message.as_bytes()))),
@@ -222,9 +219,10 @@ pub fn cognition_session_code(input_json: &str) -> Result<JsValue, JsValue> {
         Ok(code) => code,
         Err(error) => return refused(input_hash, error),
     };
-    let encoded = serde_json::to_vec(&(input.state.state_hash.as_str(), &code)).map_err(|error| {
-        JsValue::from_str(&format!("code projection serialization failed: {error}"))
-    })?;
+    let encoded =
+        serde_json::to_vec(&(input.state.state_hash.as_str(), &code)).map_err(|error| {
+            JsValue::from_str(&format!("code projection serialization failed: {error}"))
+        })?;
     let mut hasher = blake3::Hasher::new_derive_key("wasm4pm.cognition.code-boundary.v1");
     hasher.update(&encoded);
     let digest = hasher.finalize().to_hex().to_string();

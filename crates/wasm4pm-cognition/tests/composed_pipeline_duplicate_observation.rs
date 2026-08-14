@@ -17,7 +17,9 @@ fn repeated_observation_id_is_refused_on_later_run() {
         projection_options: Vec::new(),
     };
 
-    pipeline.run(make_input()).expect("first observation should pass");
+    pipeline
+        .run(make_input())
+        .expect("first observation should pass");
     assert!(matches!(
         pipeline.run(make_input()),
         Err(PipelineRefusal::Admission(_))

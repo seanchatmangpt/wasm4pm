@@ -17,7 +17,10 @@ const REQUIRES_OBLIGATION: &str = "requires_obligation";
 /// for every admitted fact that doesn't already have a matching triple
 /// recorded in `graph` (idempotent: re-running against a graph that already
 /// admitted a prior candidate does not propose it again).
-pub fn construct_obligations(graph: &SemanticGraph, admitted: &[AdmittedFact]) -> Vec<CandidateTriple> {
+pub fn construct_obligations(
+    graph: &SemanticGraph,
+    admitted: &[AdmittedFact],
+) -> Vec<CandidateTriple> {
     admitted
         .iter()
         .filter(|fact| {

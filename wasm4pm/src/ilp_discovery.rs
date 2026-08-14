@@ -699,7 +699,9 @@ mod tests {
 
     fn all_pairs_covered(selected: &[CandidatePlace], causal_pairs: &HashSet<(u32, u32)>) -> bool {
         let refs: Vec<&CandidatePlace> = selected.iter().collect();
-        causal_pairs.iter().all(|(a, b)| covers_pair_in(&refs, *a, *b))
+        causal_pairs
+            .iter()
+            .all(|(a, b)| covers_pair_in(&refs, *a, *b))
     }
 
     #[test]
@@ -714,13 +716,22 @@ mod tests {
             candidate(&[2], &[3]),
         ];
         let result = ilp_exact_cover(candidates, &causal).expect("real solve must succeed");
-        assert!(all_pairs_covered(&result, &causal), "exact cover must cover every real causal pair");
-        assert_eq!(result.len(), 2, "expected the real minimum-cardinality cover (2 places)");
+        assert!(
+            all_pairs_covered(&result, &causal),
+            "exact cover must cover every real causal pair"
+        );
+        assert_eq!(
+            result.len(),
+            2,
+            "expected the real minimum-cardinality cover (2 places)"
+        );
     }
 
     #[test]
     fn ilp_exact_cover_never_produces_more_places_than_the_greedy_heuristic() {
-        let causal: HashSet<(u32, u32)> = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 4)].into_iter().collect();
+        let causal: HashSet<(u32, u32)> = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 4)]
+            .into_iter()
+            .collect();
         let candidates = vec![
             candidate(&[0], &[1]),
             candidate(&[1], &[2]),

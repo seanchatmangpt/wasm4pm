@@ -59,7 +59,9 @@ pub struct ReceiptLedger {
 impl ReceiptLedger {
     /// A fresh, empty ledger (bootstrap: zero receipts).
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 
     /// All recorded receipts, in order.

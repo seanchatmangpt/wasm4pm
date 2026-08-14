@@ -40,18 +40,90 @@ const APP_ERROR: u16 = 1 << 11;
 // These archetypes are abstractions of recurring SREGym failure families. Stable invariant-driven
 // classes are compiled; open-ended/metastable cases remain explicit fallback candidates.
 const ARCHETYPES: &[Archetype] = &[
-    Archetype { id: "scheduling_capacity", required: POD_PENDING, contradictory: 0, hypotheses: 7, compiled: true },
-    Archetype { id: "probe_restart_loop", required: RESTARTING, contradictory: POD_PENDING, hypotheses: 6, compiled: true },
-    Archetype { id: "service_selector_endpoint", required: NO_ENDPOINTS, contradictory: DNS_FAIL, hypotheses: 6, compiled: true },
-    Archetype { id: "dns_coredns_policy", required: DNS_FAIL, contradictory: NO_ENDPOINTS, hypotheses: 7, compiled: true },
-    Archetype { id: "rbac_or_credentials", required: AUTH_FAIL, contradictory: 0, hypotheses: 8, compiled: true },
-    Archetype { id: "resource_oom", required: OOM, contradictory: IO_FAIL, hypotheses: 6, compiled: true },
-    Archetype { id: "storage_mount_io", required: IO_FAIL, contradictory: DNS_FAIL, hypotheses: 8, compiled: true },
-    Archetype { id: "config_env_image", required: CONFIG_DRIFT | APP_ERROR, contradictory: IO_FAIL, hypotheses: 9, compiled: true },
-    Archetype { id: "cpu_saturation", required: HIGH_CPU, contradictory: POD_PENDING, hypotheses: 8, compiled: true },
-    Archetype { id: "queue_backpressure", required: QUEUE_LAG, contradictory: AUTH_FAIL, hypotheses: 9, compiled: true },
-    Archetype { id: "network_path_loss", required: NETWORK_LOSS, contradictory: OOM, hypotheses: 10, compiled: true },
-    Archetype { id: "metastable_or_unknown", required: HIGH_CPU | QUEUE_LAG, contradictory: 0, hypotheses: 12, compiled: false },
+    Archetype {
+        id: "scheduling_capacity",
+        required: POD_PENDING,
+        contradictory: 0,
+        hypotheses: 7,
+        compiled: true,
+    },
+    Archetype {
+        id: "probe_restart_loop",
+        required: RESTARTING,
+        contradictory: POD_PENDING,
+        hypotheses: 6,
+        compiled: true,
+    },
+    Archetype {
+        id: "service_selector_endpoint",
+        required: NO_ENDPOINTS,
+        contradictory: DNS_FAIL,
+        hypotheses: 6,
+        compiled: true,
+    },
+    Archetype {
+        id: "dns_coredns_policy",
+        required: DNS_FAIL,
+        contradictory: NO_ENDPOINTS,
+        hypotheses: 7,
+        compiled: true,
+    },
+    Archetype {
+        id: "rbac_or_credentials",
+        required: AUTH_FAIL,
+        contradictory: 0,
+        hypotheses: 8,
+        compiled: true,
+    },
+    Archetype {
+        id: "resource_oom",
+        required: OOM,
+        contradictory: IO_FAIL,
+        hypotheses: 6,
+        compiled: true,
+    },
+    Archetype {
+        id: "storage_mount_io",
+        required: IO_FAIL,
+        contradictory: DNS_FAIL,
+        hypotheses: 8,
+        compiled: true,
+    },
+    Archetype {
+        id: "config_env_image",
+        required: CONFIG_DRIFT | APP_ERROR,
+        contradictory: IO_FAIL,
+        hypotheses: 9,
+        compiled: true,
+    },
+    Archetype {
+        id: "cpu_saturation",
+        required: HIGH_CPU,
+        contradictory: POD_PENDING,
+        hypotheses: 8,
+        compiled: true,
+    },
+    Archetype {
+        id: "queue_backpressure",
+        required: QUEUE_LAG,
+        contradictory: AUTH_FAIL,
+        hypotheses: 9,
+        compiled: true,
+    },
+    Archetype {
+        id: "network_path_loss",
+        required: NETWORK_LOSS,
+        contradictory: OOM,
+        hypotheses: 10,
+        compiled: true,
+    },
+    Archetype {
+        id: "metastable_or_unknown",
+        required: HIGH_CPU | QUEUE_LAG,
+        contradictory: 0,
+        hypotheses: 12,
+        compiled: false,
+    },
 ];
 
 struct Family {
@@ -86,8 +158,12 @@ fn evidence_for(ordinal: u64, archetype: Archetype) -> u16 {
     } else if mode < 13 {
         evidence |= archetype.contradictory;
     }
-    if ordinal % 7 == 0 { evidence |= APP_ERROR; }
-    if ordinal % 11 == 0 { evidence |= CONFIG_DRIFT; }
+    if ordinal % 7 == 0 {
+        evidence |= APP_ERROR;
+    }
+    if ordinal % 11 == 0 {
+        evidence |= CONFIG_DRIFT;
+    }
     evidence
 }
 
@@ -97,12 +173,17 @@ fn evaluate_episode(family: &Family, ordinal: u64) -> Episode {
     let evidence = evidence_for(ordinal, archetype);
 
     // OBSERVE -> NORMALIZE -> ROUTE
-    let required_present = archetype.required != 0 && (evidence & archetype.required) == archetype.required;
+    let required_present =
+        archetype.required != 0 && (evidence & archetype.required) == archetype.required;
     let contradiction = archetype.contradictory != 0 && (evidence & archetype.contradictory) != 0;
 
     // HYPOTHESIZE -> ELIMINATE -> CONSTRUCT -> VERIFY -> ADMIT/REFUSE/FALLBACK -> RECEIPT
     let hypotheses = archetype.hypotheses as u64;
-    let eliminated = if required_present { hypotheses.saturating_sub(1) } else { hypotheses / 2 };
+    let eliminated = if required_present {
+        hypotheses.saturating_sub(1)
+    } else {
+        hypotheses / 2
+    };
     let standing = if !archetype.compiled {
         Standing::Fallback
     } else if !required_present || contradiction {
@@ -121,7 +202,11 @@ fn evaluate_episode(family: &Family, ordinal: u64) -> Episode {
     candidate.update(&ordinal.to_le_bytes());
     candidate.update(&evidence.to_le_bytes());
     candidate.update(&[archetype.hypotheses, u8::from(compiled_path)]);
-    candidate.update(&[match standing { Standing::Admitted => 1, Standing::Refused => 2, Standing::Fallback => 3 }]);
+    candidate.update(&[match standing {
+        Standing::Admitted => 1,
+        Standing::Refused => 2,
+        Standing::Fallback => 3,
+    }]);
     let candidate = candidate.finalize();
 
     let mut receipt = blake3::Hasher::new();
@@ -197,11 +282,31 @@ fn main() {
     const BOARD: &[u64] = &[100_000, 1_000_000];
 
     let families = [
-        Family { name: "symptom_to_diagnostic_route", domain: b"route", scales: ROUTING },
-        Family { name: "hypothesis_elimination", domain: b"eliminate", scales: GLOBAL },
-        Family { name: "compiled_known_troubleshooting", domain: b"compiled", scales: GLOBAL },
-        Family { name: "llm_fallback_boundary", domain: b"fallback", scales: BOARD },
-        Family { name: "issue_reasoning_end_to_end", domain: b"end-to-end", scales: GLOBAL },
+        Family {
+            name: "symptom_to_diagnostic_route",
+            domain: b"route",
+            scales: ROUTING,
+        },
+        Family {
+            name: "hypothesis_elimination",
+            domain: b"eliminate",
+            scales: GLOBAL,
+        },
+        Family {
+            name: "compiled_known_troubleshooting",
+            domain: b"compiled",
+            scales: GLOBAL,
+        },
+        Family {
+            name: "llm_fallback_boundary",
+            domain: b"fallback",
+            scales: BOARD,
+        },
+        Family {
+            name: "issue_reasoning_end_to_end",
+            domain: b"end-to-end",
+            scales: GLOBAL,
+        },
     ];
 
     let planned_episodes: u64 = families.iter().flat_map(|f| f.scales.iter().copied()).sum();
@@ -231,7 +336,9 @@ fn main() {
         planned_transitions,
     );
 
-    for family in &families { run_family(family); }
+    for family in &families {
+        run_family(family);
+    }
 
     println!(
         "SREGYM_REASONING_COMPLETE\tplanned_episodes={}\tplanned_transitions={}\tflagship_scale={}\tstatus=ALIVE_CANDIDATE\tactuation=REFUSED",

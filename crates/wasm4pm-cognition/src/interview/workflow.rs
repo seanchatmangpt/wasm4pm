@@ -49,7 +49,11 @@ impl Workflow {
 
     /// Declare a step and its prerequisite step names (which need not
     /// already be declared, to allow declaring steps in any order).
-    pub fn add_step(&mut self, step: impl Into<String>, prerequisites: impl IntoIterator<Item = String>) {
+    pub fn add_step(
+        &mut self,
+        step: impl Into<String>,
+        prerequisites: impl IntoIterator<Item = String>,
+    ) {
         self.prerequisites
             .insert(step.into(), prerequisites.into_iter().collect());
     }
@@ -66,7 +70,8 @@ impl Workflow {
         self.prerequisites
             .iter()
             .filter(|(step, prereqs)| {
-                !self.completed.contains(*step) && prereqs.iter().all(|p| self.completed.contains(p))
+                !self.completed.contains(*step)
+                    && prereqs.iter().all(|p| self.completed.contains(p))
             })
             .map(|(step, _)| step.clone())
             .collect()
@@ -97,7 +102,10 @@ impl Workflow {
     /// sequence of "completed" claims against a fresh instance sharing the
     /// same step declarations — each claim is independently re-validated via
     /// [`Workflow::complete_step`], not trusted because it's a persisted flag.
-    pub fn replay_completed(&mut self, claimed_completed_in_order: &[String]) -> Result<(), StepRefusal> {
+    pub fn replay_completed(
+        &mut self,
+        claimed_completed_in_order: &[String],
+    ) -> Result<(), StepRefusal> {
         for step in claimed_completed_in_order {
             self.complete_step(step)?;
         }

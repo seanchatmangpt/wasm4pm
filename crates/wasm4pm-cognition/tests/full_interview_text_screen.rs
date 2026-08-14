@@ -36,10 +36,8 @@ fn pack() -> DomainPack {
 }
 
 fn fixture() -> InterviewFixture {
-    serde_json::from_str(include_str!(
-        "fixtures/full_hour_coordinate_interview.json"
-    ))
-    .expect("full-hour interview fixture")
+    serde_json::from_str(include_str!("fixtures/full_hour_coordinate_interview.json"))
+        .expect("full-hour interview fixture")
 }
 
 fn clock(timestamp: &str) -> &str {
@@ -76,7 +74,10 @@ fn apply(
     let (observation, confirmation) = match event.kind.as_str() {
         "observation" => (
             Some(Observation {
-                id: format!("fixture-{index:02}-{}", clock(&event.timestamp).replace(':', "")),
+                id: format!(
+                    "fixture-{index:02}-{}",
+                    clock(&event.timestamp).replace(':', "")
+                ),
                 source: event.speaker.clone(),
                 text: event.text.clone(),
                 retract_evidence_ids: vec![],
@@ -133,9 +134,12 @@ fn render_screen(
         .unwrap_or_else(|| "None".to_string());
 
     let mut lines = vec![
-        "┌──────────────────────────────────────────────────────────────────────────────┐".to_string(),
-        "│ WASM4PM COGNITION · INTERVIEW TEXT SCREEN                                   │".to_string(),
-        "├──────────────────────────────────────────────────────────────────────────────┤".to_string(),
+        "┌──────────────────────────────────────────────────────────────────────────────┐"
+            .to_string(),
+        "│ WASM4PM COGNITION · INTERVIEW TEXT SCREEN                                   │"
+            .to_string(),
+        "├──────────────────────────────────────────────────────────────────────────────┤"
+            .to_string(),
         format!("│ Session  : {}", fixture.title),
         format!(
             "│ Clock    : {}  · elapsed {:02}m  · turn {:02}",
@@ -147,7 +151,8 @@ fn render_screen(
         format!("│ Track    : {current}"),
         format!("│ Committed: {committed}"),
         format!("│ Confirm  : {pending}"),
-        "├──────────────────────────────────────────────────────────────────────────────┤".to_string(),
+        "├──────────────────────────────────────────────────────────────────────────────┤"
+            .to_string(),
         "│ RANKED HYPOTHESES".to_string(),
     ];
 
@@ -159,11 +164,18 @@ fn render_screen(
             (hypothesis.score * 100.0).round() as u32,
             (hypothesis.support * 100.0).round() as u32,
             (hypothesis.contradiction * 100.0).round() as u32,
-            if hypothesis.eliminated { "  REJECTED" } else { "" }
+            if hypothesis.eliminated {
+                "  REJECTED"
+            } else {
+                ""
+            }
         ));
     }
 
-    lines.push("├──────────────────────────────────────────────────────────────────────────────┤".to_string());
+    lines.push(
+        "├──────────────────────────────────────────────────────────────────────────────┤"
+            .to_string(),
+    );
     lines.push("│ COVERED".to_string());
     if projection.covered_concepts.is_empty() {
         lines.push("│   · None".to_string());
@@ -188,7 +200,10 @@ fn render_screen(
         }
     }
 
-    lines.push("├──────────────────────────────────────────────────────────────────────────────┤".to_string());
+    lines.push(
+        "├──────────────────────────────────────────────────────────────────────────────┤"
+            .to_string(),
+    );
     lines.push("│ RECENT TRANSCRIPT".to_string());
     let first = event_index.saturating_sub(3);
     for prior in &fixture.events[first..=event_index] {
@@ -201,18 +216,33 @@ fn render_screen(
         ));
     }
 
-    lines.push("├──────────────────────────────────────────────────────────────────────────────┤".to_string());
+    lines.push(
+        "├──────────────────────────────────────────────────────────────────────────────┤"
+            .to_string(),
+    );
     lines.push(format!(
         "│ Receipt  : {}  · state {}  · {}",
         &output.receipt.combined_hash[..16],
         &state.state_hash[..16],
-        if projection.complete { "COMPLETE" } else { "ACTIVE" }
+        if projection.complete {
+            "COMPLETE"
+        } else {
+            "ACTIVE"
+        }
     ));
-    lines.push("└──────────────────────────────────────────────────────────────────────────────┘".to_string());
+    lines.push(
+        "└──────────────────────────────────────────────────────────────────────────────┘"
+            .to_string(),
+    );
     lines.join("\n")
 }
 
-fn run_interview() -> (InterviewFixture, DomainPack, SessionState, BTreeMap<String, String>) {
+fn run_interview() -> (
+    InterviewFixture,
+    DomainPack,
+    SessionState,
+    BTreeMap<String, String>,
+) {
     let fixture = fixture();
     let pack = pack();
     let mut state = None;
@@ -254,21 +284,39 @@ fn fixture_spans_a_realistic_hour() {
     for event in &fixture.events {
         assert!(event.elapsed_minutes >= prior);
         assert!(!event.text.trim().is_empty());
-        assert!(matches!(event.speaker.as_str(), "candidate" | "interviewer"));
+        assert!(matches!(
+            event.speaker.as_str(),
+            "candidate" | "interviewer"
+        ));
         prior = event.elapsed_minutes;
     }
 
-    assert!(fixture.events.iter().any(|event| event.kind == "confirmation"));
-    assert!(fixture.events.iter().any(|event| event.text.contains("complexity")));
-    assert!(fixture.events.iter().any(|event| event.text.contains("edge cases")));
-    assert!(fixture.events.iter().any(|event| event.text.contains("Follow-up")));
+    assert!(fixture
+        .events
+        .iter()
+        .any(|event| event.kind == "confirmation"));
+    assert!(fixture
+        .events
+        .iter()
+        .any(|event| event.text.contains("complexity")));
+    assert!(fixture
+        .events
+        .iter()
+        .any(|event| event.text.contains("edge cases")));
+    assert!(fixture
+        .events
+        .iter()
+        .any(|event| event.text.contains("Follow-up")));
 }
 
 #[test]
 fn full_hour_commits_and_completes_coordinate_traversal() {
     let (fixture, pack, final_state, screens) = run_interview();
     assert_eq!(final_state.turn, fixture.events.len() as u64);
-    assert_eq!(final_state.committed_track.as_deref(), Some("coordinate_traversal"));
+    assert_eq!(
+        final_state.committed_track.as_deref(),
+        Some("coordinate_traversal")
+    );
     assert_eq!(final_state.phase, "complete");
     assert!(final_state.pending_confirmation.is_none());
     assert!(final_state.missing_concepts.is_empty());
@@ -294,7 +342,10 @@ fn full_hour_commits_and_completes_coordinate_traversal() {
         "follow-up",
         "wrap-up",
     ] {
-        assert!(screens.contains_key(required), "missing checkpoint {required}");
+        assert!(
+            screens.contains_key(required),
+            "missing checkpoint {required}"
+        );
     }
     verify_session_state(&pack, &final_state).expect("full ledger must replay-verify");
 }

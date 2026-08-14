@@ -4,7 +4,9 @@
 use wasm4pm_cognition::interview::admission::{AdmissionEngine, RawObservation};
 use wasm4pm_cognition::interview::construct::construct_obligations;
 use wasm4pm_cognition::interview::graph::SemanticGraph;
-use wasm4pm_cognition::interview::orchestrator::{InvalidTransition, Orchestrator, Phase, TransitionRecord};
+use wasm4pm_cognition::interview::orchestrator::{
+    InvalidTransition, Orchestrator, Phase, TransitionRecord,
+};
 use wasm4pm_cognition::interview::receipt::ReceiptLedger;
 use wasm4pm_cognition::interview::self_play::{run_self_play, FixtureActor};
 use wasm4pm_cognition::interview::workflow::{StepRefusal, Workflow};
@@ -16,7 +18,8 @@ fn a_well_formed_persisted_ledger_replays_and_verifies() {
     ledger.record("admission", "hash-b", "ok");
     let persisted = ledger.entries().to_vec();
 
-    let round_tripped = ReceiptLedger::from_persisted(persisted).expect("well-formed ledger replays");
+    let round_tripped =
+        ReceiptLedger::from_persisted(persisted).expect("well-formed ledger replays");
 
     assert_eq!(round_tripped.entries().len(), 2);
 }
@@ -151,7 +154,11 @@ fn construct_does_not_re_propose_an_obligation_already_admitted_into_the_graph()
 
     // Admit the proposed obligation into the graph, as a caller would.
     let candidate = &first_pass[0].0;
-    graph.insert(candidate.subject.clone(), candidate.predicate.clone(), candidate.object.clone());
+    graph.insert(
+        candidate.subject.clone(),
+        candidate.predicate.clone(),
+        candidate.object.clone(),
+    );
 
     // Re-running CONSTRUCT against the same admitted fact must not propose
     // the same obligation again now that it's already in the graph.

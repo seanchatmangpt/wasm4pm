@@ -70,10 +70,9 @@ fn scenarios() -> impl Iterator<Item = Scenario> {
 
 fn context_scenarios() -> impl Iterator<Item = ContextScenario> {
     BreedId::ALL.into_iter().flat_map(|breed| {
-        CONTEXT_NOISE.into_iter().map(move |noise_facts| ContextScenario {
-            breed,
-            noise_facts,
-        })
+        CONTEXT_NOISE
+            .into_iter()
+            .map(move |noise_facts| ContextScenario { breed, noise_facts })
     })
 }
 
@@ -89,8 +88,13 @@ fn fixture_path(id: BreedId) -> PathBuf {
 /// malformed fields fail loudly. There is deliberately no skip path.
 fn fixture_input(id: BreedId) -> BreedInput {
     let path = fixture_path(id);
-    let raw = fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("{}: benchmark fixture {} unavailable: {e}", id, path.display()));
+    let raw = fs::read_to_string(&path).unwrap_or_else(|e| {
+        panic!(
+            "{}: benchmark fixture {} unavailable: {e}",
+            id,
+            path.display()
+        )
+    });
     let json: serde_json::Value = serde_json::from_str(&raw)
         .unwrap_or_else(|e| panic!("{}: invalid benchmark fixture {}: {e}", id, path.display()));
     let mut inp = json["input"].clone();
@@ -110,7 +114,11 @@ fn fixture_input(id: BreedId) -> BreedInput {
 fn preflight(id: BreedId, input: &BreedInput) {
     let out = dispatch_breed_id(id, input)
         .unwrap_or_else(|e| panic!("{}: full-path benchmark admission failed: {e}", id));
-    assert_eq!(out.breed, id, "{}: output was attributed to the wrong breed", id);
+    assert_eq!(
+        out.breed, id,
+        "{}: output was attributed to the wrong breed",
+        id
+    );
     assert!(
         !out.inference_trace.is_empty(),
         "{}: empty inference trace is ineligible for benchmarking",
@@ -174,8 +182,10 @@ fn kernel_only(bencher: Bencher, scenario: Scenario) {
         .bench_local(|| {
             let mut evidence = 0usize;
             for input in black_box(&inputs) {
-                let out = dispatch_breed_test_id(scenario.breed, black_box(input))
-                    .unwrap_or_else(|e| panic!("{} kernel failed during benchmark: {e}", scenario.breed));
+                let out =
+                    dispatch_breed_test_id(scenario.breed, black_box(input)).unwrap_or_else(|e| {
+                        panic!("{} kernel failed during benchmark: {e}", scenario.breed)
+                    });
                 evidence = evidence
                     .wrapping_add(out.inference_trace.len())
                     .wrapping_add(out.facts.len())
@@ -197,8 +207,9 @@ fn full_lifecycle(bencher: Bencher, scenario: Scenario) {
         .bench_local(|| {
             let mut evidence = 0usize;
             for input in black_box(&inputs) {
-                let out = dispatch_breed_id(scenario.breed, black_box(input))
-                    .unwrap_or_else(|e| panic!("{} lifecycle failed during benchmark: {e}", scenario.breed));
+                let out = dispatch_breed_id(scenario.breed, black_box(input)).unwrap_or_else(|e| {
+                    panic!("{} lifecycle failed during benchmark: {e}", scenario.breed)
+                });
                 evidence = evidence
                     .wrapping_add(out.inference_trace.len())
                     .wrapping_add(out.facts.len())
@@ -218,8 +229,10 @@ fn context_pressure(bencher: Bencher, scenario: ContextScenario) {
     bencher
         .counter(ItemsCount::new(input.facts.len()))
         .bench_local(|| {
-            let out = dispatch_breed_test_id(scenario.breed, black_box(&input))
-                .unwrap_or_else(|e| panic!("{} context-pressure kernel failed: {e}", scenario.breed));
+            let out =
+                dispatch_breed_test_id(scenario.breed, black_box(&input)).unwrap_or_else(|e| {
+                    panic!("{} context-pressure kernel failed: {e}", scenario.breed)
+                });
             black_box(out)
         });
 }

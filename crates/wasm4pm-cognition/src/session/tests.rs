@@ -55,8 +55,8 @@ fn converges_and_requires_confirmation() {
 
 #[test]
 fn confirmation_commits_track() {
-    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
-        .expect("first turn");
+    let first =
+        run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None)).expect("first turn");
     let second = run_session_turn(&turn(
         Some(first.state),
         None,
@@ -137,7 +137,10 @@ fn concept_coverage_is_scoped_to_the_ranked_track() {
         None,
     ))
     .expect("turn succeeds");
-    assert_eq!(output.projection.current_track.as_deref(), Some("graph_dfs"));
+    assert_eq!(
+        output.projection.current_track.as_deref(),
+        Some("graph_dfs")
+    );
     assert!(output
         .projection
         .missing_concepts
@@ -148,10 +151,7 @@ fn concept_coverage_is_scoped_to_the_ranked_track() {
 fn hash_lookup_can_complete_without_a_transition_concept() {
     let first = run_session_turn(&turn(
         None,
-        Some((
-            "o1",
-            "key value pairs hash lookup linear time missing key",
-        )),
+        Some(("o1", "key value pairs hash lookup linear time missing key")),
         None,
     ))
     .expect("first turn");
@@ -174,8 +174,8 @@ fn hash_lookup_can_complete_without_a_transition_concept() {
 
 #[test]
 fn explicit_rejection_eliminates_track() {
-    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
-        .expect("first turn");
+    let first =
+        run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None)).expect("first turn");
     let second = run_session_turn(&turn(
         Some(first.state),
         None,
@@ -197,8 +197,8 @@ fn explicit_rejection_eliminates_track() {
 
 #[test]
 fn rejection_must_target_pending_or_committed_track() {
-    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
-        .expect("first turn");
+    let first =
+        run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None)).expect("first turn");
     let error = run_session_turn(&turn(
         Some(first.state),
         None,
@@ -218,8 +218,8 @@ fn rejection_must_target_pending_or_committed_track() {
 
 #[test]
 fn later_contradiction_reopens_a_committed_track() {
-    let first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
-        .expect("first turn");
+    let first =
+        run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None)).expect("first turn");
     let committed = run_session_turn(&turn(
         Some(first.state),
         None,
@@ -239,7 +239,10 @@ fn later_contradiction_reopens_a_committed_track() {
     ))
     .expect("revision turn");
     assert!(revised.state.committed_track.is_none());
-    assert_eq!(revised.projection.current_track.as_deref(), Some("graph_dfs"));
+    assert_eq!(
+        revised.projection.current_track.as_deref(),
+        Some("graph_dfs")
+    );
     assert!(revised
         .inference_trace
         .iter()
@@ -248,8 +251,8 @@ fn later_contradiction_reopens_a_committed_track() {
 
 #[test]
 fn refuses_tampered_state_hash() {
-    let mut first = run_session_turn(&turn(None, Some(("o1", "x and y")), None))
-        .expect("first turn");
+    let mut first =
+        run_session_turn(&turn(None, Some(("o1", "x and y")), None)).expect("first turn");
     // Tamper a field that's part of StateHashView (hash.rs) but doesn't
     // participate in verify_previous_state's earlier structural checks
     // (turn.rs) — mutating `turn` instead trips the `turn == turns.len()`
@@ -267,19 +270,12 @@ fn refuses_tampered_state_hash() {
 
 #[test]
 fn refuses_semantically_forged_state_with_recomputed_hash() {
-    let mut first = run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None))
-        .expect("first turn");
-    first
-        .state
-        .covered_concepts
-        .push("complexity".to_string());
+    let mut first =
+        run_session_turn(&turn(None, Some(("o1", coordinate_answer())), None)).expect("first turn");
+    first.state.covered_concepts.push("complexity".to_string());
     first.state.state_hash = hash_session_state(&first.state).expect("rehash forged state");
-    let error = run_session_turn(&turn(
-        Some(first.state),
-        Some(("o2", "linear time")),
-        None,
-    ))
-    .expect_err("semantic forgery must refuse");
+    let error = run_session_turn(&turn(Some(first.state), Some(("o2", "linear time")), None))
+        .expect_err("semantic forgery must refuse");
     assert!(matches!(error, SessionError::InvalidState { .. }));
 }
 

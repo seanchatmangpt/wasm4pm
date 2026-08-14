@@ -28,10 +28,8 @@ fn pack() -> DomainPack {
 }
 
 fn fixture() -> Fixture {
-    serde_json::from_str(include_str!(
-        "fixtures/full_hour_coordinate_interview.json"
-    ))
-    .expect("valid full-hour fixture")
+    serde_json::from_str(include_str!("fixtures/full_hour_coordinate_interview.json"))
+        .expect("valid full-hour fixture")
 }
 
 #[test]
@@ -54,10 +52,7 @@ fn full_hour_state_selects_committed_coordinate_python() {
             "confirmation" => (
                 None,
                 Some(Confirmation {
-                    track_id: event
-                        .track_id
-                        .clone()
-                        .expect("confirmation has track"),
+                    track_id: event.track_id.clone().expect("confirmation has track"),
                     accepted: event.accepted.expect("confirmation has decision"),
                 }),
             ),
@@ -78,7 +73,10 @@ fn full_hour_state_selects_committed_coordinate_python() {
 
     let state = state.expect("full hour produces state");
     assert_eq!(state.phase, "complete");
-    assert_eq!(state.committed_track.as_deref(), Some("coordinate_traversal"));
+    assert_eq!(
+        state.committed_track.as_deref(),
+        Some("coordinate_traversal")
+    );
 
     let projected = project_python_code(&domain, &state)
         .expect("full-hour state replay-verifies")

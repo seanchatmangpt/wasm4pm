@@ -71,7 +71,10 @@ pub fn select_projection(
     // Bootstrap / first mile: nothing to stay stable against — pick the
     // profile's preferred default if it's usable, otherwise the most
     // urgent usable option.
-    if let Some(&preferred) = usable.iter().find(|option| option.id == profile.preferred_default) {
+    if let Some(&preferred) = usable
+        .iter()
+        .find(|option| option.id == profile.preferred_default)
+    {
         return Ok(preferred.clone());
     }
     Ok(usable

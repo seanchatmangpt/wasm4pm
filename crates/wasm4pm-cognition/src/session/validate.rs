@@ -73,9 +73,7 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     let mut track_concepts: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for track in &pack.tracks {
         if track.id.trim().is_empty() || track.label.trim().is_empty() {
-            return Err(invalid(
-                "track id and label must be non-empty".to_string(),
-            ));
+            return Err(invalid("track id and label must be non-empty".to_string()));
         }
         if !track_ids.insert(track.id.clone()) {
             return Err(invalid(format!("duplicate track id: {}", track.id)));
@@ -131,15 +129,15 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     let mut proposition_supporters: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for pattern in &pack.patterns {
         if !pattern_ids.insert(pattern.id.clone()) {
-            return Err(invalid(format!(
-                "duplicate pattern id: {}",
-                pattern.id
-            )));
+            return Err(invalid(format!("duplicate pattern id: {}", pattern.id)));
         }
         if pattern.id.trim().is_empty()
             || pattern.proposition.trim().is_empty()
             || pattern.phrases.is_empty()
-            || pattern.phrases.iter().any(|phrase| phrase.trim().is_empty())
+            || pattern
+                .phrases
+                .iter()
+                .any(|phrase| phrase.trim().is_empty())
         {
             return Err(invalid(format!("malformed pattern: {}", pattern.id)));
         }
@@ -221,10 +219,7 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
                 rule.id, rule.track_id
             )));
         }
-        if !rule.certainty.is_finite()
-            || rule.certainty <= 0.0
-            || rule.certainty > 1.0
-        {
+        if !rule.certainty.is_finite() || rule.certainty <= 0.0 || rule.certainty > 1.0 {
             return Err(invalid(format!(
                 "rule {} certainty must be inside (0,1]",
                 rule.id
@@ -263,9 +258,7 @@ pub fn validate_domain_pack(pack: &DomainPack) -> Result<(), SessionError> {
     let mut phase_ids = BTreeSet::new();
     for phase in &pack.phases {
         if phase.id.trim().is_empty() || phase.label.trim().is_empty() {
-            return Err(invalid(
-                "phase id and label must be non-empty".to_string(),
-            ));
+            return Err(invalid("phase id and label must be non-empty".to_string()));
         }
         if !phase_ids.insert(phase.id.clone()) {
             return Err(invalid(format!("duplicate phase id: {}", phase.id)));

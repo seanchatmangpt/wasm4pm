@@ -30,7 +30,9 @@ fn source_for(track_id: &str) -> Option<(&'static str, &'static str)> {
     match track_id {
         "coordinate_traversal" => Some((
             "coordinate_traversal.py",
-            include_str!("../../examples/cognition/interview_session/python/coordinate_traversal.py"),
+            include_str!(
+                "../../examples/cognition/interview_session/python/coordinate_traversal.py"
+            ),
         )),
         "grid_dfs" => Some((
             "grid_dfs.py",
@@ -49,11 +51,12 @@ fn source_for(track_id: &str) -> Option<(&'static str, &'static str)> {
 }
 
 fn verify_canonical_artifact_domain(pack: &DomainPack) -> Result<(), SessionError> {
-    let canonical: DomainPack = serde_json::from_str(CANONICAL_INTERVIEW_PACK).map_err(|error| {
-        SessionError::Serialization {
-            reason: format!("canonical interview domain could not be decoded: {error}"),
-        }
-    })?;
+    let canonical: DomainPack =
+        serde_json::from_str(CANONICAL_INTERVIEW_PACK).map_err(|error| {
+            SessionError::Serialization {
+                reason: format!("canonical interview domain could not be decoded: {error}"),
+            }
+        })?;
     let supplied_hash = hash_domain_pack(pack)?;
     let canonical_hash = hash_domain_pack(&canonical)?;
     if supplied_hash != canonical_hash {

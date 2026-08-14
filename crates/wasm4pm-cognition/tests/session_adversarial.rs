@@ -39,7 +39,9 @@ fn rule_premise_must_positively_support_its_target() {
 #[test]
 fn rule_contribution_is_bounded_by_weakest_premise() {
     let mut domain = pack();
-    domain.tracks.retain(|track| track.id == "coordinate_traversal");
+    domain
+        .tracks
+        .retain(|track| track.id == "coordinate_traversal");
     domain.tracks[0].concepts = vec![
         "state_representation".to_string(),
         "data_structure".to_string(),
@@ -73,7 +75,10 @@ fn rule_contribution_is_bounded_by_weakest_premise() {
     .expect("weak rule executes");
 
     let hypothesis = &output.projection.hypotheses[0];
-    assert!(hypothesis.fired_rules.iter().any(|rule| rule == "weak-rule"));
+    assert!(hypothesis
+        .fired_rules
+        .iter()
+        .any(|rule| rule == "weak-rule"));
     assert!((hypothesis.support - 0.36).abs() < 0.000_001);
     assert!(output
         .projection
