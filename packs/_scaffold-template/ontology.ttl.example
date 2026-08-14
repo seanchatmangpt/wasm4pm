@@ -1,0 +1,70 @@
+@prefix compat: <https://chatmangpt.com/ns/wasm4pm/compat#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# _scaffold-template ontology example — generic "Widget" entity with one
+# scalar identity property and one ORDERED, multi-valued property
+# ("widgetTagItem"). This is the shape to copy for a new combinatorial
+# pack: one ontology class, real individuals, N Tera templates driven off
+# a single {file=...}-sourced extraction query.
+#
+# See checklist.md for the two mechanically-checkable bugs this shape and
+# the accompanying query pattern prevent, and README.md for the full
+# writeup with citations to the two real packs these bugs were found and
+# fixed in (workspace-pack, story-pack).
+#################################################################
+
+compat:Widget a rdfs:Class ;
+    rdfs:label "One generic entity: a scalar identity (widgetId) and an ordered, multi-valued property (widgetTagItem) demonstrating the correct blank-node-list-item shape." .
+
+compat:widgetId a rdf:Property ; rdfs:domain compat:Widget ; rdfs:range xsd:string ;
+    rdfs:label "kebab-case identifier, used verbatim as an output-path segment by templates." .
+compat:widgetName a rdf:Property ; rdfs:domain compat:Widget ; rdfs:range xsd:string ;
+    rdfs:label "Human-readable name." .
+
+#################################################################
+# CORRECT shape for an ordered, multi-valued property: one blank node per
+# list item, pairing (itemText, itemOrder) on a SHARED blank node.
+#
+# WRONG shape (do not do this):
+#   compat:widgetTag "alpha" ; compat:widgetTagOrder 1 ;
+#   compat:widgetTag "beta"  ; compat:widgetTagOrder 2 ;
+#   compat:widgetTag "gamma" ; compat:widgetTagOrder 3 .
+#
+# The wrong shape puts widgetTag and widgetTagOrder directly on the
+# Widget subject with no RDF-level pairing between a given value and its
+# own order. When an extraction query does:
+#   ?w compat:widgetTag ?tag ; compat:widgetTagOrder ?ord .
+# SPARQL's shared-subject join matches EVERY ?tag against EVERY ?ord for
+# that subject -- an N x N cartesian product, not N pairs. GROUP_CONCAT
+# over that join then emits each value duplicated N times. This is not
+# hypothetical: it was found and fixed live in story-pack's first draft
+# (see packs/story-pack/ontology.ttl's own comment on this exact bug, and
+# checklist.md / README.md in this directory for the citation).
+#
+# The correct shape below avoids the join entirely: itemText and
+# itemOrder live on the SAME blank node, so there is exactly one binding
+# per item, and no cross-multiplication is possible.
+#################################################################
+
+compat:widgetTagItem a rdf:Property ; rdfs:domain compat:Widget ; rdfs:range compat:ListItem ;
+    rdfs:label "One tag in this widget's ordered tag list, as a [ compat:itemText ...; compat:itemOrder N ] blank node." .
+
+compat:ListItem a rdfs:Class ; rdfs:label "A single ordered-list entry: itemText + itemOrder, correctly paired via a shared blank node." .
+compat:itemText  a rdf:Property ; rdfs:domain compat:ListItem ; rdfs:range xsd:string .
+compat:itemOrder a rdf:Property ; rdfs:domain compat:ListItem ; rdfs:range xsd:integer .
+
+#################################################################
+# Individuals — replace with your real entities. Keep the ontology
+# populated (not schema-only) if your pack's whole value is "author a
+# fact once, generate every artifact from it" -- see README.md.
+#################################################################
+
+compat:WidgetExampleOne a compat:Widget ;
+    compat:widgetId "example-one" ;
+    compat:widgetName "Example Widget One" ;
+    compat:widgetTagItem [ compat:itemText "alpha" ; compat:itemOrder 1 ] ;
+    compat:widgetTagItem [ compat:itemText "beta"  ; compat:itemOrder 2 ] ;
+    compat:widgetTagItem [ compat:itemText "gamma" ; compat:itemOrder 3 ] .
