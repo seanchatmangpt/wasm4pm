@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  verify:
+    name: exact-subject Rust/WASM/TypeScript/CLI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Admit exact head and CI topology
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          # 8, not 1: this repo also keeps 7 real benchmark/repair workflows
+          # (benchmark-last24h.yml, cognition-55-divan.yml, cognition-manufacturing.yml,
+          # enterprise-architecture-bench.yml, process-science-bench.yml,
+          # repair-benchmark-compat.yml, sregym-issue-reasoning-bench.yml) added after
+          # this ci.yml's original baseline commit, none of which overlap this workflow's
+          # verify job. Preserving their coverage is deliberate, not drift.
+          count="$(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
+          test "$count" -eq 8
+          printf 'subject_sha=%s\nworkflow_count=%s\n' "$EXPECTED_SHA" "$count"
+
+      - name: Install repository-pinned Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Install declared Node and pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare "$(node -p "require('./package.json').packageManager")" --activate
+          node --version
+          pnpm --version
+
+      - name: Install wasm-pack 0.13.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install wasm-pack --version 0.13.1 --locked
+          test "$(wasm-pack --version)" = "wasm-pack 0.13.1"
+
+      - name: Install immutable JavaScript dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Rust format
+        run: cargo fmt --all -- --check
+
+      - name: Rust compile
+        run: cargo check --workspace --all-targets --locked
+
+      - name: Rust tests
+        run: cargo test --workspace --locked
+
+      - name: WASM compile and Node bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --target wasm32-unknown-unknown --features wasm
+          wasm-pack build wasm4pm --target nodejs --out-dir pkg -- --features wasm
+          test -s wasm4pm/pkg/wasm4pm.js
+          test -s wasm4pm/pkg/wasm4pm_bg.wasm
+
+      - name: TypeScript build
+        run: pnpm build
+
+      - name: TypeScript integration tests
+        run: pnpm test
+
+      - name: Published CLI build and real execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @wasm4pm/cli run build
+          node apps/wasm4pm/dist/bin/wpm.js model discover data/small-example.xes -a dfg --json > /tmp/discover.json
+          node -e 'const x=require("/tmp/discover.json"); if (!JSON.stringify(x).toLowerCase().includes("dfg")) process.exit(1)'
+          node apps/wasm4pm/dist/bin/wpm.js system doctor --json > /tmp/doctor.json
+          node -e 'const x=require("/tmp/doctor.json"); if (!JSON.stringify(x).includes("ok")) process.exit(1)'
+
+      - name: Packed artifact smoke
+        run: pnpm run prepublish:pack-smoke
+
+      - name: Emit verification receipt
+        shell: bash
+        env:
+          SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ci
+          cat > artifacts/ci/receipt.json <<JSON
+          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":8,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
+          JSON
+          cat artifacts/ci/receipt.json
+
+      - name: Upload receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-receipt-${{ github.run_id }}
+          path: artifacts/ci/receipt.json
+          if-no-files-found: error
+          retention-days: 14
