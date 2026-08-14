@@ -1,0 +1,19 @@
+{#- Renders one .feature file per compat:Story row. Row fields (storyId,
+    storyTitle, scenarioName, givenStep, whenStep, thenStepTemplate,
+    exampleOutputs) are supplied directly by the driving [[generation.rules]]
+    query -- bare names, not row.x, matching workspace-pack's established
+    convention on this ggen-engine version. exampleOutputs is
+    "%%STORY_SEP%%"-joined; split back into an Examples table, one row per
+    value, matching Gherkin's real table syntax. -#}
+Feature: {{ storyTitle }}
+
+  Scenario Outline: {{ scenarioName }}
+    Given {{ givenStep }}
+    When {{ whenStep }}
+    Then {{ thenStepTemplate }}
+
+    Examples:
+      | output       |
+{%- for out in exampleOutputs | split(pat="%%STORY_SEP%%") %}
+      | {{ out }} |
+{%- endfor %}

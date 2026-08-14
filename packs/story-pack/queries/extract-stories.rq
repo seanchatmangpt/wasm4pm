@@ -1,0 +1,72 @@
+# MESSAGE: story-pack extraction query. One row per compat:Story, with each
+# MESSAGE: multi-valued field (example outputs, preconditions, procedure steps,
+# MESSAGE: pass/fail criteria) GROUP_CONCAT-joined in deterministic order.
+# MESSAGE: Each list item is its own compat:ListItem blank node (itemText +
+# MESSAGE: itemOrder) -- NOT flat value/order property pairs directly on the
+# MESSAGE: Story subject. A flat shape has no RDF-level pairing between a
+# MESSAGE: given text and its own order: SPARQL's shared-subject join then
+# MESSAGE: cross-matches every value against every order (N values x N
+# MESSAGE: orders), corrupting GROUP_CONCAT with a cartesian product --
+# MESSAGE: found and fixed live this session (first real render duplicated
+# MESSAGE: every multi-valued list N times). Each subselect below ORDER BYs
+# MESSAGE: itemOrder before aggregating (GROUP_CONCAT alone does not
+# MESSAGE: guarantee row order; an ORDER BY evaluated before the aggregation
+# MESSAGE: does, per SPARQL 1.1). Separator is "%%STORY_SEP%%", not a bare
+# MESSAGE: "|" or ",": real procedure text and criteria legitimately contain
+# MESSAGE: both (see github-actions-pack's workflow.yml.tmpl, same reasoning).
+PREFIX compat: <https://chatmangpt.com/ns/wasm4pm/compat#>
+SELECT ?story ?storyId ?storyTitle ?scenarioName ?givenStep ?whenStep ?thenStepTemplate
+       ?qaScope ?storyRunCommand ?exampleOutputs ?qaPreconditions ?qaProcedureSteps ?passCriteria ?failCriteria
+WHERE {
+  ?story a compat:Story ;
+         compat:storyId ?storyId ;
+         compat:storyTitle ?storyTitle ;
+         compat:scenarioName ?scenarioName ;
+         compat:givenStep ?givenStep ;
+         compat:whenStep ?whenStep ;
+         compat:thenStepTemplate ?thenStepTemplate ;
+         compat:qaScope ?qaScope ;
+         compat:storyRunCommand ?storyRunCommand .
+
+  OPTIONAL {
+    SELECT ?story (GROUP_CONCAT(?text; separator="%%STORY_SEP%%") AS ?exampleOutputs) WHERE {
+      SELECT ?story ?text WHERE {
+        ?story compat:exampleOutputItem ?item .
+        ?item compat:itemText ?text ; compat:itemOrder ?ord .
+      } ORDER BY ?ord
+    } GROUP BY ?story
+  }
+  OPTIONAL {
+    SELECT ?story (GROUP_CONCAT(?text; separator="%%STORY_SEP%%") AS ?qaPreconditions) WHERE {
+      SELECT ?story ?text WHERE {
+        ?story compat:qaPreconditionItem ?item .
+        ?item compat:itemText ?text ; compat:itemOrder ?ord .
+      } ORDER BY ?ord
+    } GROUP BY ?story
+  }
+  OPTIONAL {
+    SELECT ?story (GROUP_CONCAT(?text; separator="%%STORY_SEP%%") AS ?qaProcedureSteps) WHERE {
+      SELECT ?story ?text WHERE {
+        ?story compat:qaProcedureStepItem ?item .
+        ?item compat:itemText ?text ; compat:itemOrder ?ord .
+      } ORDER BY ?ord
+    } GROUP BY ?story
+  }
+  OPTIONAL {
+    SELECT ?story (GROUP_CONCAT(?text; separator="%%STORY_SEP%%") AS ?passCriteria) WHERE {
+      SELECT ?story ?text WHERE {
+        ?story compat:passCriterionItem ?item .
+        ?item compat:itemText ?text ; compat:itemOrder ?ord .
+      } ORDER BY ?ord
+    } GROUP BY ?story
+  }
+  OPTIONAL {
+    SELECT ?story (GROUP_CONCAT(?text; separator="%%STORY_SEP%%") AS ?failCriteria) WHERE {
+      SELECT ?story ?text WHERE {
+        ?story compat:failCriterionItem ?item .
+        ?item compat:itemText ?text ; compat:itemOrder ?ord .
+      } ORDER BY ?ord
+    } GROUP BY ?story
+  }
+}
+ORDER BY ?storyId

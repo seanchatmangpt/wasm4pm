@@ -1,0 +1,118 @@
+@prefix compat: <https://chatmangpt.com/ns/wasm4pm/compat#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# story-pack ontology — one compat:Story x {feature file, QA procedure,
+# ticket}. Populated (not schema-only), same rationale as workspace-pack:
+# this pack's whole value is "author a story once, get every artifact
+# generated" — the individuals ARE the authoring surface. A new story is
+# added by appending an individual here, not by hand-writing a .feature
+# file, a QA-procedure.md, and a ticket separately.
+#
+# Multi-valued properties (preconditions, procedure steps, pass/fail
+# criteria, example outputs) are ordered lists: compat:*Order gives each
+# value's position so GROUP_CONCAT ... ORDER BY in the extraction query
+# reproduces a deterministic sequence, matching this repo's BLAKE3-receipt
+# discipline (repeat runs over an unchanged graph must byte-for-byte
+# match, per .claude/rules/_core/absolute.md #6).
+#################################################################
+
+compat:Story a rdfs:Class ;
+    rdfs:label "One behavioral story: a Gherkin Given/When/Then scenario outline, its QA procedure, and the ticket that tracks it — authored once as facts, rendered into all three artifacts." .
+
+compat:storyId          a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "kebab-case identifier, e.g. 'hello-world-print'. Used verbatim as the output-path segment for every generated artifact." .
+compat:storyTitle       a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "Human-readable title, e.g. 'Hello World Print'. Becomes the Gherkin 'Feature:' line and the QA procedure's H1." .
+compat:scenarioName     a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "The Gherkin 'Scenario Outline:' line, e.g. 'Print the approved observable output'." .
+compat:givenStep        a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "The Gherkin 'Given' line body, verbatim (no leading 'Given')." .
+compat:whenStep         a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "The Gherkin 'When' line body, verbatim (no leading 'When')." .
+compat:thenStepTemplate a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "The Gherkin 'Then' line body, containing the literal '<output>' placeholder token that the Examples table's 'output' column fills in per row." .
+
+compat:qaScope          a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "QA procedure's 'Scope' section body (may be multi-line, rendered as a single paragraph)." .
+
+#################################################################
+# Fourth combinatorial artifact: a real, executable Vitest acceptance
+# test rendered from the same facts as the feature file / QA procedure /
+# ticket, asserting the story's real captured stdout against its
+# exampleOutputItem values. This story has no pre-existing program to
+# shell out to, so the pack ALSO generates a minimal real program (a
+# one-line script that echoes the story's exampleOutputItem text) so the
+# round trip stays honest: the test really executes a real process and
+# really asserts on its real stdout, never a stub.
+#################################################################
+
+compat:storyRunCommand  a rdf:Property ; rdfs:domain compat:Story ; rdfs:range xsd:string ;
+    rdfs:label "Shell command, relative to the repo root, that a real implementation of this story must satisfy: running it with no arguments must print exactly the story's exampleOutputItem text(s) and nothing else. Consumed by both the generated program stub (stories/<id>.sh) and the generated acceptance test (stories/<id>.test.mjs), so the two stay in lockstep." .
+
+#################################################################
+# Ordered-list items: each list item is its OWN blank node carrying a
+# paired (itemText, itemOrder) -- deliberately NOT four flat
+# value/order property pairs directly on the Story subject. A flat
+# shape (compat:qaPrecondition "a" ; compat:qaPreconditionOrder 1 ;
+# compat:qaPrecondition "b" ; compat:qaPreconditionOrder 2 ...) has no
+# RDF-level pairing between a given text and its own order -- SPARQL's
+# shared-subject join then cross-matches every value against every
+# order (N values x N orders), corrupting GROUP_CONCAT with a
+# cartesian product. Found and fixed this exact bug live this session:
+# the first real render duplicated every multi-valued list N times.
+# One blank node per item keeps (text, order) correctly paired.
+#################################################################
+
+compat:exampleOutputItem a rdf:Property ; rdfs:domain compat:Story ; rdfs:range compat:ListItem ;
+    rdfs:label "One row of the Gherkin Examples table's 'output' column, as a [ compat:itemText ...; compat:itemOrder N ] blank node." .
+compat:qaPreconditionItem a rdf:Property ; rdfs:domain compat:Story ; rdfs:range compat:ListItem ;
+    rdfs:label "One bullet of the QA procedure's 'Preconditions' section." .
+compat:qaProcedureStepItem a rdf:Property ; rdfs:domain compat:Story ; rdfs:range compat:ListItem ;
+    rdfs:label "One numbered step of the QA procedure's 'Procedure' section." .
+compat:passCriterionItem a rdf:Property ; rdfs:domain compat:Story ; rdfs:range compat:ListItem ;
+    rdfs:label "One bullet of the QA procedure's 'Pass Criteria' section, and one line of the ticket's Definition of Done." .
+compat:failCriterionItem a rdf:Property ; rdfs:domain compat:Story ; rdfs:range compat:ListItem ;
+    rdfs:label "One bullet of the QA procedure's 'Fail Criteria' section." .
+
+compat:ListItem a rdfs:Class ; rdfs:label "A single ordered-list entry: itemText + itemOrder, correctly paired via a shared blank node." .
+compat:itemText  a rdf:Property ; rdfs:domain compat:ListItem ; rdfs:range xsd:string .
+compat:itemOrder a rdf:Property ; rdfs:domain compat:ListItem ; rdfs:range xsd:integer .
+
+#################################################################
+# Individual — transcribed verbatim from the user-supplied
+# hello-world-print feature + QA procedure pair (2026-08-13).
+#################################################################
+
+compat:StoryHelloWorldPrint a compat:Story ;
+    compat:storyId "hello-world-print" ;
+    compat:storyTitle "Hello World Print" ;
+    compat:scenarioName "Print the approved observable output" ;
+    compat:givenStep "the program is run" ;
+    compat:whenStep "the program is run" ;
+    compat:thenStepTemplate "the program output is exactly \"<output>\"" ;
+    compat:qaScope "Verify the program's user-visible output for the approved story. The only required behavior is that running the program prints exactly: \"hello world.\"" ;
+    compat:storyRunCommand "sh stories/hello-world-print.sh" ;
+
+    compat:exampleOutputItem [ compat:itemText "hello world." ; compat:itemOrder 1 ] ;
+
+    compat:qaPreconditionItem [ compat:itemText "The program is available in the form a user is expected to run." ; compat:itemOrder 1 ] ;
+    compat:qaPreconditionItem [ compat:itemText "No command-line options, prompts, or setup inputs are required for this story." ; compat:itemOrder 2 ] ;
+    compat:qaPreconditionItem [ compat:itemText "The QA environment can capture the full text output produced by the program." ; compat:itemOrder 3 ] ;
+
+    compat:qaProcedureStepItem [ compat:itemText "Start output capture using the normal QA mechanism for the program's user interface." ; compat:itemOrder 1 ] ;
+    compat:qaProcedureStepItem [ compat:itemText "Run the program exactly as a user would run it, without adding command-line options or entering any input." ; compat:itemOrder 2 ] ;
+    compat:qaProcedureStepItem [ compat:itemText "Wait for the program to finish producing output." ; compat:itemOrder 3 ] ;
+    compat:qaProcedureStepItem [ compat:itemText "Compare the complete captured output to the expected text: \"hello world.\"" ; compat:itemOrder 4 ] ;
+
+    compat:passCriterionItem [ compat:itemText "The captured output is exactly `hello world.`" ; compat:itemOrder 1 ] ;
+    compat:passCriterionItem [ compat:itemText "There is no prompt, label, banner, explanation, diagnostic text, or other additional output before or after `hello world.`" ; compat:itemOrder 2 ] ;
+    compat:passCriterionItem [ compat:itemText "The output contains no extra words, punctuation, spaces, or blank lines." ; compat:itemOrder 3 ] ;
+    compat:passCriterionItem [ compat:itemText "The program does not require user input to produce the output." ; compat:itemOrder 4 ] ;
+
+    compat:failCriterionItem [ compat:itemText "The program produces no output." ; compat:itemOrder 1 ] ;
+    compat:failCriterionItem [ compat:itemText "The program produces text other than exactly `hello world.`" ; compat:itemOrder 2 ] ;
+    compat:failCriterionItem [ compat:itemText "The program adds any prompt, label, explanatory text, or diagnostic output." ; compat:itemOrder 3 ] ;
+    compat:failCriterionItem [ compat:itemText "The program requires command-line options or interactive input for this story." ; compat:itemOrder 4 ] .
