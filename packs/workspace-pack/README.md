@@ -6,8 +6,9 @@ stub, CI check-matrix job fragment, registry doc}.
 ## What it generates
 
 `packs/workspace-pack/ontology.ttl` declares `compat:WorkspaceCrate` and
-carries one individual per real crate in this workspace (9 as of the
-2026-08-13 survey: the root `wasm4pm` crate plus 8 `crates/*` members).
+carries one individual per real crate in this workspace (10 as of the
+2026-08-14 `cargo metadata`-derived survey: the root `wasm4pm` crate,
+`tps-metrics`, and 8 `crates/*` members).
 Three `[[generation.rules]]` entries in the root `ggen.toml` drive three
 templates off that same query result set:
 
@@ -38,11 +39,25 @@ templates off that same query result set:
 
 ## Re-surveying the workspace
 
-There is no live `cargo metadata` query wired into `ggen sync` yet.
-`ontology.ttl` is a checked-in survey snapshot: when a crate is added,
-removed, or its `Cargo.toml` `package.description`/`package.name` changes,
-edit the corresponding `compat:WorkspaceCrate` individual (or add/remove
-one) by hand, then re-run `ggen sync run`.
+`ggen sync` itself still has no live shell-out capability, so
+`ontology.ttl` remains a checked-in snapshot -- but it is now machine-
+regenerated, not hand-edited. When a crate is added, removed, or its
+`Cargo.toml` `package.description`/`package.name` changes, run:
+
+```
+python3 packs/workspace-pack/scripts/sync-crates-from-cargo-metadata.py
+```
+
+This shells out to a real `cargo metadata --no-deps`, derives
+`hasWasmBindgen`/`hasTests`/`hasReadme` the same way the original hand
+survey did (dependency scan, `tests/`-dir-or-`#[cfg(test)]` scan,
+`README.md` presence), and rewrites the individuals block in
+`crateDir`-sorted order -- byte-identical output on an unchanged
+workspace, so it's safe to re-run anytime and only ever produces a real
+diff when the workspace actually changed. Then re-run `ggen sync run` to
+propagate the change into the generated docs/CI-job artifacts. The first
+real run of this script (2026-08-14) caught `tps-metrics` missing from
+the original 2026-08-13 hand survey -- exactly the drift this closes.
 
 ## Query and template sourcing
 
@@ -59,8 +74,10 @@ to actually render.
 - `pack.toml` — pack metadata.
 - `qualification.toml` — consumer-union contract (nothing to union; this
   pack ships its own individuals).
-- `ontology.ttl` — `compat:WorkspaceCrate` class, properties, and the 9
-  real workspace-crate individuals.
+- `ontology.ttl` — `compat:WorkspaceCrate` class, properties, and the 10
+  real workspace-crate individuals (machine-regenerated, see above).
+- `scripts/sync-crates-from-cargo-metadata.py` — regenerates the
+  individuals block above from a real `cargo metadata` query.
 - `queries/extract-workspace-crates.rq` — one row per crate, ordered by
   `crateDir` for deterministic, byte-for-byte-repeatable output.
 - `templates/crate-readme-header.md.tera` — per-crate README stub.

@@ -68,7 +68,7 @@ pub struct PrefixFinding {
 
 /// Per-case incremental cursor (the online state). One per open episode
 /// (spec §7.1).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CaseCursor {
     pub case_id: String,
     /// Current state in the [`CompiledLaw`] automaton.
@@ -310,13 +310,16 @@ impl PrefixOracle {
     /// event produced. When the returned verdict is [`PrefixVerdict::Dead`],
     /// callers MUST emit an early STOP.
     pub fn observe(&mut self, ev: &PrefixEvent) -> (PrefixVerdict, Vec<PrefixFinding>) {
-        let cursor = self.cases.entry(ev.case_id.clone()).or_insert_with(|| CaseCursor {
-            case_id: ev.case_id.clone(),
-            dfa_state: 0,
-            seen: Vec::new(),
-            last_time_ms: i64::MIN,
-            verdict: PrefixVerdict::Alive,
-        });
+        let cursor = self
+            .cases
+            .entry(ev.case_id.clone())
+            .or_insert_with(|| CaseCursor {
+                case_id: ev.case_id.clone(),
+                dfa_state: 0,
+                seen: Vec::new(),
+                last_time_ms: i64::MIN,
+                verdict: PrefixVerdict::Alive,
+            });
         let findings = step(
             &self.law,
             cursor,
@@ -331,6 +334,152 @@ impl PrefixOracle {
     /// Snapshot of all open cases (for the report `open_cases` array).
     pub fn snapshot(&self) -> Vec<CaseCursor> {
         self.cases.values().cloned().collect()
+    }
+}
+
+/// Stable enterprise partition key. Identical case ids in different tenants
+/// are intentionally distinct state machines.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CasePartitionKey {
+    pub tenant_id: String,
+    pub case_id: String,
+}
+
+/// Result of one bounded, tenant-partitioned online conformance step.
+#[derive(Debug, Clone)]
+pub struct PartitionedPrefixResult {
+    pub key: CasePartitionKey,
+    pub verdict: PrefixVerdict,
+    pub findings: Vec<PrefixFinding>,
+}
+
+/// Fail-closed errors for the bounded enterprise router.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BoundedPrefixError {
+    ZeroCapacity,
+    CapacityExceeded {
+        max_active_cases: usize,
+        key: CasePartitionKey,
+    },
+    UnknownCase {
+        key: CasePartitionKey,
+    },
+    CaseStillAlive {
+        key: CasePartitionKey,
+    },
+}
+
+impl std::fmt::Display for BoundedPrefixError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ZeroCapacity => write!(formatter, "ZERO_ACTIVE_CASE_CAPACITY"),
+            Self::CapacityExceeded {
+                max_active_cases,
+                key,
+            } => write!(
+                formatter,
+                "ACTIVE_CASE_CAPACITY_EXCEEDED:max={max_active_cases}:tenant={}:case={}",
+                key.tenant_id, key.case_id
+            ),
+            Self::UnknownCase { key } => write!(
+                formatter,
+                "UNKNOWN_ACTIVE_CASE:tenant={}:case={}",
+                key.tenant_id, key.case_id
+            ),
+            Self::CaseStillAlive { key } => write!(
+                formatter,
+                "CASE_STILL_ALIVE:tenant={}:case={}",
+                key.tenant_id, key.case_id
+            ),
+        }
+    }
+}
+
+impl std::error::Error for BoundedPrefixError {}
+
+/// Capacity-bounded router for Fortune-5-scale interleaved case streams.
+///
+/// Each partition owns its own [`PrefixOracle`], so identical case ids in
+/// separate tenants cannot share cursor state. Closed cases must be explicitly
+/// released; if callers fail to do so, capacity exhaustion is a typed refusal
+/// rather than unbounded memory growth.
+pub struct BoundedPrefixRouter {
+    law: OrderingLaw,
+    max_active_cases: usize,
+    cases: HashMap<CasePartitionKey, PrefixOracle>,
+}
+
+impl BoundedPrefixRouter {
+    pub fn new(law: &OrderingLaw, max_active_cases: usize) -> Result<Self, BoundedPrefixError> {
+        if max_active_cases == 0 {
+            return Err(BoundedPrefixError::ZeroCapacity);
+        }
+        Ok(Self {
+            law: law.clone(),
+            max_active_cases,
+            cases: HashMap::new(),
+        })
+    }
+
+    pub fn active_cases(&self) -> usize {
+        self.cases.len()
+    }
+
+    pub fn max_active_cases(&self) -> usize {
+        self.max_active_cases
+    }
+
+    pub fn observe(
+        &mut self,
+        key: &CasePartitionKey,
+        activity: &str,
+        time_ms: i64,
+        tape_index: usize,
+    ) -> Result<PartitionedPrefixResult, BoundedPrefixError> {
+        let at_capacity = self.cases.len() >= self.max_active_cases;
+        let oracle = match self.cases.entry(key.clone()) {
+            std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                if at_capacity {
+                    return Err(BoundedPrefixError::CapacityExceeded {
+                        max_active_cases: self.max_active_cases,
+                        key: key.clone(),
+                    });
+                }
+                entry.insert(PrefixOracle::new(&self.law))
+            }
+        };
+
+        let event = PrefixEvent {
+            activity: activity.to_string(),
+            time_ms,
+            case_id: key.case_id.clone(),
+            tape_index,
+        };
+        let (verdict, findings) = oracle.observe(&event);
+        Ok(PartitionedPrefixResult {
+            key: key.clone(),
+            verdict,
+            findings,
+        })
+    }
+
+    /// Release only a closed (TERMINAL or DEAD) case and return its final cursor.
+    pub fn release_closed_case(
+        &mut self,
+        key: &CasePartitionKey,
+    ) -> Result<CaseCursor, BoundedPrefixError> {
+        let Some(oracle) = self.cases.get(key) else {
+            return Err(BoundedPrefixError::UnknownCase { key: key.clone() });
+        };
+        let Some(cursor) = oracle.snapshot().into_iter().next() else {
+            return Err(BoundedPrefixError::UnknownCase { key: key.clone() });
+        };
+        if cursor.verdict == PrefixVerdict::Alive {
+            return Err(BoundedPrefixError::CaseStillAlive { key: key.clone() });
+        }
+        let _ = self.cases.remove(key);
+        Ok(cursor)
     }
 }
 
@@ -365,7 +514,11 @@ mod tests {
             if id == law.dead_sink {
                 assert!(!completable, "DEAD sink must never be completable");
             } else {
-                assert!(*completable, "state {id} ({}) should be completable", law.states[id]);
+                assert!(
+                    *completable,
+                    "state {id} ({}) should be completable",
+                    law.states[id]
+                );
             }
         }
     }
@@ -531,5 +684,104 @@ mod tests {
         assert_eq!(snap.len(), 1);
         assert_eq!(snap[0].case_id, "case-x");
         assert_eq!(snap[0].verdict, PrefixVerdict::Alive);
+    }
+
+    #[test]
+    fn bounded_router_refuses_capacity_instead_of_growing_without_limit() {
+        let law = load_law();
+        let mut router = BoundedPrefixRouter::new(&law, 1).expect("positive capacity");
+        let first = CasePartitionKey {
+            tenant_id: "tenant-a".to_string(),
+            case_id: "case-1".to_string(),
+        };
+        let second = CasePartitionKey {
+            tenant_id: "tenant-b".to_string(),
+            case_id: "case-2".to_string(),
+        };
+        router
+            .observe(&first, "DiagnosticRaised", 0, 0)
+            .expect("first case fits");
+        let error = router
+            .observe(&second, "DiagnosticRaised", 0, 0)
+            .expect_err("second active case must be refused");
+        assert_eq!(
+            error,
+            BoundedPrefixError::CapacityExceeded {
+                max_active_cases: 1,
+                key: second,
+            }
+        );
+        assert_eq!(router.active_cases(), 1);
+    }
+
+    #[test]
+    fn bounded_router_isolates_identical_case_ids_between_tenants() {
+        let law = load_law();
+        let mut router = BoundedPrefixRouter::new(&law, 2).expect("positive capacity");
+        let a = CasePartitionKey {
+            tenant_id: "tenant-a".to_string(),
+            case_id: "same-case".to_string(),
+        };
+        let b = CasePartitionKey {
+            tenant_id: "tenant-b".to_string(),
+            case_id: "same-case".to_string(),
+        };
+
+        let dead = router
+            .observe(&a, "ReceiptEmitted", 0, 0)
+            .expect("capacity exists");
+        let alive = router
+            .observe(&b, "DiagnosticRaised", 0, 0)
+            .expect("separate tenant must have separate cursor");
+
+        assert_eq!(dead.verdict, PrefixVerdict::Dead);
+        assert_eq!(alive.verdict, PrefixVerdict::Alive);
+        assert_eq!(dead.key.tenant_id, "tenant-a");
+        assert_eq!(alive.key.tenant_id, "tenant-b");
+        assert_eq!(router.active_cases(), 2);
+    }
+
+    #[test]
+    fn releasing_closed_case_frees_capacity_but_alive_case_fails_closed() {
+        let law = load_law();
+        let mut router = BoundedPrefixRouter::new(&law, 1).expect("positive capacity");
+        let first = CasePartitionKey {
+            tenant_id: "tenant-a".to_string(),
+            case_id: "case-1".to_string(),
+        };
+        let second = CasePartitionKey {
+            tenant_id: "tenant-b".to_string(),
+            case_id: "case-2".to_string(),
+        };
+
+        router
+            .observe(&first, "DiagnosticRaised", 0, 0)
+            .expect("first case fits");
+        assert_eq!(
+            router.release_closed_case(&first),
+            Err(BoundedPrefixError::CaseStillAlive { key: first.clone() })
+        );
+        router
+            .observe(&first, "GateFailed", 1, 1)
+            .expect("abrupt lawful close");
+        let released = router
+            .release_closed_case(&first)
+            .expect("terminal case may be released");
+        assert_eq!(released.verdict, PrefixVerdict::Terminal);
+        assert_eq!(router.active_cases(), 0);
+
+        let next = router
+            .observe(&second, "DiagnosticRaised", 0, 0)
+            .expect("released slot is reusable");
+        assert_eq!(next.verdict, PrefixVerdict::Alive);
+    }
+
+    #[test]
+    fn bounded_router_refuses_zero_capacity() {
+        let law = load_law();
+        assert_eq!(
+            BoundedPrefixRouter::new(&law, 0).err(),
+            Some(BoundedPrefixError::ZeroCapacity)
+        );
     }
 }

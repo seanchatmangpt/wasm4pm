@@ -55,5 +55,3 @@ strip = "debuginfo"
 [profile.bench]
 opt-level = 3
 lto = false
-
-

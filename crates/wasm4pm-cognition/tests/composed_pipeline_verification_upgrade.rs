@@ -13,10 +13,7 @@ fn later_breed_can_raise_but_not_weaken_verification_standing() {
         AuthorityClass::Project,
         |_input| {
             Ok(BreedProposal {
-                verification: Some((
-                    "candidate".to_string(),
-                    VerificationStatus::ExamplePass,
-                )),
+                verification: Some(("candidate".to_string(), VerificationStatus::ExamplePass)),
                 ..BreedProposal::default()
             })
         },
@@ -41,10 +38,7 @@ fn later_breed_can_raise_but_not_weaken_verification_standing() {
         AuthorityClass::Project,
         |_input| {
             Ok(BreedProposal {
-                verification: Some((
-                    "candidate".to_string(),
-                    VerificationStatus::ExamplePass,
-                )),
+                verification: Some(("candidate".to_string(), VerificationStatus::ExamplePass)),
                 ..BreedProposal::default()
             })
         },

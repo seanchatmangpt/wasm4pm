@@ -1,0 +1,101 @@
+name: wasm4auto Exact-Head Court
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/wasm4auto.yml'
+      - 'wasm4pm/src/advanced/mod.rs'
+      - 'wasm4pm/src/advanced/wasm4auto.rs'
+      - 'wasm4pm/Cargo.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wasm4auto-exact-head-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  autonomic-court:
+    name: Execute bounded second-order autonomic laws
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_SUBJECT: ${{ github.event.pull_request.head.sha || github.sha }}
+      BOUNDED_FEATURES: ocel,conformance_basic,hand_rolled_stats,ml
+
+    steps:
+      - name: Checkout exact admitted subject
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify exact subject identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git rev-parse HEAD)"
+          test "$observed" = "$EXPECTED_SUBJECT" || {
+            echo "SUBJECT_IDENTITY_REFUSED expected=$EXPECTED_SUBJECT observed=$observed" >&2
+            exit 2
+          }
+
+      - name: Materialize pinned Rust verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 \
+            --profile minimal \
+            --target wasm32-unknown-unknown
+          rustup default nightly-2026-04-15
+          rustc --version --verbose
+          cargo --version
+
+      - name: Compile bounded capability for wasm32
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This court intentionally avoids the default/browser profile. The
+          # existing crate's OCEL surface is not feature-closed by `ocel`
+          # alone: discovery requires AppState::with_ocel, oc_conformance
+          # requires the basic conformance module, and oc_performance requires
+          # one statistics implementation. The lib-test harness additionally
+          # compiles pre-existing GPU/utility tests whose imports are explicitly
+          # gated by `ml`. Admit exactly that observed feature closure and
+          # nothing carrying execution/actuation authority.
+          cargo check -p wasm4pm --no-default-features \
+            --features "$BOUNDED_FEATURES" \
+            --target wasm32-unknown-unknown
+
+      - name: Execute wasm4auto law and falsifier suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p wasm4pm --no-default-features \
+            --features "$BOUNDED_FEATURES" \
+            advanced::wasm4auto --lib
+
+      - name: Assert authority ceiling remains non-consequential
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('wasm4pm/src/advanced/wasm4auto.rs').read_text()
+          required = [
+              'pub const CAPABILITY_ID: &str = "wasm4auto";',
+              'pub const CONSEQUENTIAL_DO_AUTHORITY: bool = false;',
+              'Execute_MAPE-K != DO_BRCE',
+          ]
+          missing = [marker for marker in required if marker not in source]
+          if missing:
+              raise SystemExit(f'AUTHORITY_CEILING_REFUSED missing={missing}')
+          print('WASM4AUTO_AUTHORITY_CEILING_ALIVE consequential_do=false')
+          PY

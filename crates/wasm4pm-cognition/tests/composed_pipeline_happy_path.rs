@@ -34,10 +34,7 @@ fn downstream_user_declares_breed_without_manually_wiring_pipeline() {
     let mut pipeline = CognitivePipelineBuilder::new(0.5)
         .grant(AuthorityClass::Project)
         .breed(breed)
-        .require_verification(
-            "candidate:two-sum",
-            VerificationStatus::VisibleTestsPass,
-        )
+        .require_verification("candidate:two-sum", VerificationStatus::VisibleTestsPass)
         .build();
 
     let output = pipeline
@@ -88,8 +85,10 @@ fn downstream_user_declares_breed_without_manually_wiring_pipeline() {
             .len(),
         1
     );
-    assert!(output.trace.contains(&PipelineEvent::VerificationEstablished(
-        "candidate:two-sum".to_string(),
-        VerificationStatus::VisibleTestsPass,
-    )));
+    assert!(output
+        .trace
+        .contains(&PipelineEvent::VerificationEstablished(
+            "candidate:two-sum".to_string(),
+            VerificationStatus::VisibleTestsPass,
+        )));
 }

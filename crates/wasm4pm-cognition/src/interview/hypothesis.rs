@@ -68,7 +68,8 @@ impl HypothesisManager {
     /// Evaluate current standing. First mile: with all scores at 0.0 (no
     /// evidence admitted yet), this always returns [`HypothesisOutcome::Abstain`].
     pub fn evaluate(&self) -> HypothesisOutcome {
-        let mut ranked: Vec<(&String, f32)> = self.scores.iter().map(|(id, score)| (id, *score)).collect();
+        let mut ranked: Vec<(&String, f32)> =
+            self.scores.iter().map(|(id, score)| (id, *score)).collect();
         ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(b.0)));
 
         let Some((leader_id, leader_score)) = ranked.first().copied() else {

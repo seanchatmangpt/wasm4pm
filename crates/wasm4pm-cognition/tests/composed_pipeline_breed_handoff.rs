@@ -56,7 +56,10 @@ fn one_breed_can_unlock_a_later_breed_without_consumer_pipeline_knowledge() {
     assert_eq!(
         output.breed_values,
         vec![
-            ("classify_problem".to_string(), Some("array-search".to_string())),
+            (
+                "classify_problem".to_string(),
+                Some("array-search".to_string())
+            ),
             (
                 "plan_solution".to_string(),
                 Some("scan once with indexed memory".to_string())

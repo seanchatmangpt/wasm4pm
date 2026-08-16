@@ -298,8 +298,7 @@ pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usiz
         let mut current_freqs: BTreeMap<String, usize> = BTreeMap::new();
         for trace in window {
             for event in &trace.events {
-                if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key)
-                {
+                if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
                     *current_freqs.entry(activity.clone()).or_default() += 1;
                 }
             }
@@ -312,14 +311,10 @@ pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usiz
                 let current_activities: HashSet<String> = current_freqs.keys().cloned().collect();
                 let prev_set: HashSet<String> = prev.keys().cloned().collect();
                 // Compute appeared (in current but not prev) and disappeared (in prev but not current)
-                let appeared: std::collections::BTreeSet<String> = current_activities
-                    .difference(&prev_set)
-                    .cloned()
-                    .collect();
-                let disappeared: std::collections::BTreeSet<String> = prev_set
-                    .difference(&current_activities)
-                    .cloned()
-                    .collect();
+                let appeared: std::collections::BTreeSet<String> =
+                    current_activities.difference(&prev_set).cloned().collect();
+                let disappeared: std::collections::BTreeSet<String> =
+                    prev_set.difference(&current_activities).cloned().collect();
                 let suggestion = if let Some(first) = disappeared.iter().next() {
                     format!(
                         "Activity '{}' disappeared — re-run discovery or check for process change",
@@ -477,6 +472,16 @@ pub fn j_measure(p_a: f64, p_b_given_a: f64, p_b: f64) -> f64 {
 /// P(b|a), P(b))` over that window, returning a map keyed by `"a\u{1f}b"`
 /// (unit-separator-joined, matching `etconformance_precision.rs`'s own
 /// prefix-key convention to avoid activity-name collisions).
+///
+/// Disclosed narrowing from the cited paper: Bose et al.'s own `p^{l,t}(a,b)`
+/// feature is a windowed, length-`l`-parameterized "b follows a within a
+/// window of length l" probability (Section VI.4 of the journal extension),
+/// computed over bags of length-`l` subsequences per trace. This function
+/// fixes that window length to `1` -- a strict directly-follows (bigram)
+/// relation via `activities.windows(2)` below -- rather than the paper's
+/// general parameterized definition. The J-measure formula itself
+/// (`j_measure`) is unchanged from the paper; only the "follows" relation
+/// it's applied to is narrower.
 fn window_j_measures(traces: &[crate::models::Trace], activity_key: &str) -> BTreeMap<String, f64> {
     let mut predecessor_counts: BTreeMap<String, usize> = BTreeMap::new();
     let mut df_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
@@ -529,9 +534,8 @@ pub fn ks_statistic(sample_a: &[f64], sample_b: &[f64]) -> f64 {
 
     let n_a = sample_a.len() as f64;
     let n_b = sample_b.len() as f64;
-    let ecdf = |sample: &[f64], x: f64| -> f64 {
-        sample.iter().filter(|&&v| v <= x).count() as f64
-    };
+    let ecdf =
+        |sample: &[f64], x: f64| -> f64 { sample.iter().filter(|&&v| v <= x).count() as f64 };
 
     let mut max_diff = 0.0_f64;
     for &x in &all_values {
@@ -931,8 +935,10 @@ mod tests {
             .iter()
             .map(|a| {
                 let mut ev = crate::models::Event::new();
-                ev.attributes
-                    .insert("concept:name".to_string(), AttributeValue::String(a.to_string()));
+                ev.attributes.insert(
+                    "concept:name".to_string(),
+                    AttributeValue::String(a.to_string()),
+                );
                 ev
             })
             .collect();
@@ -1007,7 +1013,10 @@ mod tests {
             ],
         };
         let report = detect_drift_native(&log, "concept:name", 3);
-        assert!(!report.drifts.is_empty(), "expected at least one real drift point");
+        assert!(
+            !report.drifts.is_empty(),
+            "expected at least one real drift point"
+        );
         for drift in &report.drifts {
             assert!(
                 drift.position <= 3,

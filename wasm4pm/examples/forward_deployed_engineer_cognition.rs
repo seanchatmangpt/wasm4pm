@@ -105,8 +105,11 @@ fn evaluate_episode(
     // HYPOTHESIZE + TEST + CONSTRUCT + VERIFY: all candidates are reversible. The best score is
     // selected only as a candidate repair plan; no external system is touched.
     let mut best = u64::MAX;
-    let seed = u64::from_le_bytes(evidence_hash.as_bytes()[0..8].try_into().expect("hash bytes"))
-        ^ ordinal.rotate_left(17);
+    let seed = u64::from_le_bytes(
+        evidence_hash.as_bytes()[0..8]
+            .try_into()
+            .expect("hash bytes"),
+    ) ^ ordinal.rotate_left(17);
     for hypothesis in 0..portfolio {
         let score = black_box(hypothesis_score(seed, black_box(hypothesis), ctx));
         if score < best {

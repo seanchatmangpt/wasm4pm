@@ -12,15 +12,11 @@ use super::accessibility::{
 use super::admission::{AdmissionEngine, AdmittedFact, RawObservation, RefusalReason};
 use super::authority_broker::{AuthorityBroker, AuthorityClass, AuthorityDenied};
 use super::blackboard::Blackboard;
-use super::capability::{
-    CapabilityDescriptor, CapabilityRegistry, PreconditionRefusal,
-};
+use super::capability::{CapabilityDescriptor, CapabilityRegistry, PreconditionRefusal};
 use super::construct::construct_obligations;
 use super::graph::{SemanticGraph, Triple};
 use super::hypothesis::{HypothesisManager, HypothesisOutcome};
-use super::verification::{
-    UnrecordedStatus, VerificationLedger, VerificationStatus,
-};
+use super::verification::{UnrecordedStatus, VerificationLedger, VerificationStatus};
 use super::workflow::{StepRefusal, Workflow};
 
 /// Reusable state and lawful verbs for one composed cognition pipeline.
@@ -215,11 +211,7 @@ impl CompositionContext {
         self.authority
             .authorize(AuthorityClass::Project)
             .map_err(|_| NoUsableOption)?;
-        let selected = select_projection(
-            profile,
-            self.previous_projection.as_deref(),
-            candidates,
-        )?;
+        let selected = select_projection(profile, self.previous_projection.as_deref(), candidates)?;
         self.previous_projection = Some(selected.id.clone());
         Ok(selected)
     }

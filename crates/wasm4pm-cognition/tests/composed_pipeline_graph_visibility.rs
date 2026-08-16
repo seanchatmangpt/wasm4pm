@@ -1,7 +1,7 @@
 use wasm4pm_cognition::interview::admission::RawObservation;
 use wasm4pm_cognition::interview::authority_broker::AuthorityClass;
 use wasm4pm_cognition::interview::composition::{
-    BreedProposal, ClosureBreed, CognitivePipelineBuilder, PipelineInput,
+    BreedInput, BreedProposal, ClosureBreed, CognitivePipelineBuilder, PipelineInput,
 };
 use wasm4pm_cognition::interview::graph::Triple;
 
@@ -11,7 +11,7 @@ fn later_breed_reads_graph_proposals_admitted_from_earlier_breed() {
         "producer",
         vec!["explain:q-graph".to_string()],
         AuthorityClass::Project,
-        |_input| {
+        |_input: BreedInput<'_>| {
             Ok(BreedProposal {
                 triples: vec![Triple {
                     subject: "problem".to_string(),
@@ -27,7 +27,7 @@ fn later_breed_reads_graph_proposals_admitted_from_earlier_breed() {
         "consumer",
         vec!["consume:classification".to_string()],
         AuthorityClass::Project,
-        |input| {
+        |input: BreedInput<'_>| {
             let visible = input
                 .graph
                 .query(Some("problem"), Some("classified_as"), Some("graph"));

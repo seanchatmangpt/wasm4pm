@@ -2,8 +2,8 @@ use wasm4pm_cognition::interview::admission::RawObservation;
 use wasm4pm_cognition::interview::authority_broker::AuthorityClass;
 use wasm4pm_cognition::interview::capability::PreconditionRefusal;
 use wasm4pm_cognition::interview::composition::{
-    BreedProposal, CapabilityRequestRefusal, ClosureBreed, CognitivePipelineBuilder,
-    PipelineInput, PipelineRefusal,
+    BreedProposal, CapabilityRequestRefusal, ClosureBreed, CognitivePipelineBuilder, PipelineInput,
+    PipelineRefusal,
 };
 use wasm4pm_cognition::interview::verification::VerificationStatus;
 
@@ -53,7 +53,9 @@ fn pipeline_preserves_default_deny_authority_refusal() {
     );
     let mut pipeline = CognitivePipelineBuilder::new(0.0).breed(breed).build();
 
-    let refusal = pipeline.run(input()).expect_err("project authority was not granted");
+    let refusal = pipeline
+        .run(input())
+        .expect_err("project authority was not granted");
     assert!(matches!(
         refusal,
         PipelineRefusal::Capability {

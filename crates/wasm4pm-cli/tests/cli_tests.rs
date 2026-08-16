@@ -70,8 +70,7 @@ fn test_verbose_flag() {
 /// Real fixture: `data/small-example.xes` (a hand-built small XES log already
 /// used elsewhere in the repo for end-to-end algorithm validation).
 fn small_example_xes() -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../data/small-example.xes")
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/small-example.xes")
 }
 
 #[test]
@@ -133,7 +132,11 @@ fn test_mining_discover_ilp_and_conformance_end_to_end() {
         .expect("fitness line present");
     let fitness: f64 = fitness_line
         .split_whitespace()
-        .find_map(|tok| tok.trim_matches(|c: char| !c.is_ascii_digit() && c != '.').parse().ok())
+        .find_map(|tok| {
+            tok.trim_matches(|c: char| !c.is_ascii_digit() && c != '.')
+                .parse()
+                .ok()
+        })
         .expect("parseable fitness value");
     assert!(
         (0.0..=1.0).contains(&fitness),
@@ -149,7 +152,11 @@ fn test_mining_discover_ilp_and_conformance_end_to_end() {
         .expect("generalization row present in conformance output");
     let generalization: f64 = generalization_line
         .split_whitespace()
-        .find_map(|tok| tok.trim_matches(|c: char| !c.is_ascii_digit() && c != '.').parse().ok())
+        .find_map(|tok| {
+            tok.trim_matches(|c: char| !c.is_ascii_digit() && c != '.')
+                .parse()
+                .ok()
+        })
         .expect("parseable generalization value");
     assert!(
         (0.0..=1.0).contains(&generalization),

@@ -9,13 +9,18 @@
 # compat:WorkspaceCrate is deliberately populated (not schema-only, unlike
 # github-actions-pack) because this pack's entire value is "every subcrate
 # gets shared boilerplate with near-zero setup" — the individuals ARE the
-# setup. Re-survey by re-editing this file when a crate is added, removed,
-# or its Cargo.toml package.description/name changes; there is no live
-# cargo-metadata query wired into ggen sync yet, so this file is the
-# checked-in survey snapshot, dated in its header comment below.
+# setup. Re-survey by running `python3 packs/workspace-pack/scripts/
+# sync-crates-from-cargo-metadata.py` (real `cargo metadata`, not a hand
+# edit) whenever a crate is added, removed, or its Cargo.toml
+# package.description/name changes -- ggen sync itself still has no live
+# shell-out capability, so this remains a checked-in snapshot, but it is
+# now machine-regenerated instead of hand-maintained.
 #
-# Survey snapshot date: 2026-08-13, all 9 members of the workspace at the
-# time of authoring (root `wasm4pm` crate + 8 crates/* members).
+# Snapshot regenerated 2026-08-14 via the sync script: 10 real workspace
+# members (confirmed against `cargo metadata`), catching one real drift
+# the original 2026-08-13 hand-survey missed -- `tps-metrics` (workspace
+# member since before this pack existed) was never in the hand-written
+# list. This is exactly the drift risk automating this was meant to close.
 #################################################################
 
 compat:WorkspaceCrate a rdfs:Class ;
@@ -38,13 +43,45 @@ compat:hasReadme      a rdf:Property ; rdfs:domain compat:WorkspaceCrate ; rdfs:
 # Individuals — real workspace survey, 9 crates.
 #################################################################
 
-compat:CrateWasm4pm a compat:WorkspaceCrate ;
-    compat:crateDir "wasm4pm" ;
-    compat:packageName "wasm4pm" ;
-    compat:description "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript" ;
+compat:CrateBenchTools a compat:WorkspaceCrate ;
+    compat:crateDir "crates/bench-tools" ;
+    compat:packageName "bench-tools" ;
+    compat:description "Benchmark tools for the wasm4pm workspace" ;
+    compat:hasWasmBindgen "false" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
+
+compat:CrateMiniml a compat:WorkspaceCrate ;
+    compat:crateDir "crates/miniml-core" ;
+    compat:packageName "miniml" ;
+    compat:description "A minimal, blazing-fast WASM-powered machine learning library with SIMD acceleration" ;
     compat:hasWasmBindgen "true" ;
     compat:hasTests "true" ;
     compat:hasReadme "true" .
+
+compat:CrateOcpq a compat:WorkspaceCrate ;
+    compat:crateDir "crates/ocpq" ;
+    compat:packageName "ocpq" ;
+    compat:description "OCPQ runtime for wasm4pm: object-centric process querying & constraints (binding boxes, query trees, BASIC predicates E2O/O2O/TBE, CHILD SET, constr) per Kuesters & van der Aalst 2025" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
+
+compat:CrateProlog8 a compat:WorkspaceCrate ;
+    compat:crateDir "crates/prolog8" ;
+    compat:packageName "prolog8" ;
+    compat:description "Prolog8 — byte-capped proof engine for policy, workflow, and agent action admission" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "true" .
+
+compat:CrateWasm4pmBindingsPy a compat:WorkspaceCrate ;
+    compat:crateDir "crates/wasm4pm-bindings-py" ;
+    compat:packageName "wasm4pm-bindings-py" ;
+    compat:description "Python bindings for wasm4pm process mining algorithms" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "false" .
 
 compat:CrateWasm4pmCli a compat:WorkspaceCrate ;
     compat:crateDir "crates/wasm4pm-cli" ;
@@ -70,42 +107,18 @@ compat:CrateWasm4pmPlanner a compat:WorkspaceCrate ;
     compat:hasTests "true" ;
     compat:hasReadme "false" .
 
-compat:CrateWasm4pmBindingsPy a compat:WorkspaceCrate ;
-    compat:crateDir "crates/wasm4pm-bindings-py" ;
-    compat:packageName "wasm4pm-bindings-py" ;
-    compat:description "Python bindings for wasm4pm process mining algorithms" ;
-    compat:hasWasmBindgen "true" ;
-    compat:hasTests "true" ;
-    compat:hasReadme "false" .
-
-compat:CrateMiniml a compat:WorkspaceCrate ;
-    compat:crateDir "crates/miniml-core" ;
-    compat:packageName "miniml" ;
-    compat:description "A minimal, blazing-fast WASM-powered machine learning library with SIMD acceleration" ;
-    compat:hasWasmBindgen "true" ;
-    compat:hasTests "true" ;
-    compat:hasReadme "true" .
-
-compat:CrateProlog8 a compat:WorkspaceCrate ;
-    compat:crateDir "crates/prolog8" ;
-    compat:packageName "prolog8" ;
-    compat:description "Prolog8 — byte-capped proof engine for policy, workflow, and agent action admission" ;
-    compat:hasWasmBindgen "true" ;
-    compat:hasTests "true" ;
-    compat:hasReadme "true" .
-
-compat:CrateOcpq a compat:WorkspaceCrate ;
-    compat:crateDir "crates/ocpq" ;
-    compat:packageName "ocpq" ;
-    compat:description "OCPQ runtime for wasm4pm: object-centric process querying & constraints (binding boxes, query trees, BASIC predicates E2O/O2O/TBE, CHILD SET, constr) per Kuesters & van der Aalst 2025" ;
-    compat:hasWasmBindgen "true" ;
-    compat:hasTests "true" ;
-    compat:hasReadme "false" .
-
-compat:CrateBenchTools a compat:WorkspaceCrate ;
-    compat:crateDir "crates/bench-tools" ;
-    compat:packageName "bench-tools" ;
-    compat:description "Benchmark tools for the wasm4pm workspace" ;
+compat:CrateTpsMetrics a compat:WorkspaceCrate ;
+    compat:crateDir "tps-metrics" ;
+    compat:packageName "tps-metrics" ;
+    compat:description "Toyota Production System metrics collection and analysis" ;
     compat:hasWasmBindgen "false" ;
     compat:hasTests "true" ;
-    compat:hasReadme "false" .
+    compat:hasReadme "true" .
+
+compat:CrateWasm4pm a compat:WorkspaceCrate ;
+    compat:crateDir "wasm4pm" ;
+    compat:packageName "wasm4pm" ;
+    compat:description "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript" ;
+    compat:hasWasmBindgen "true" ;
+    compat:hasTests "true" ;
+    compat:hasReadme "true" .

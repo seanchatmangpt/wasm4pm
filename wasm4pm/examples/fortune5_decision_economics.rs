@@ -82,15 +82,17 @@ fn real_log() -> EventLog {
                 }
             }
         } else if s.starts_with("<date") {
-            if let (Some(k), Some(v), Some(e)) =
-                (attr(s, "key"), attr(s, "value"), event.as_mut())
+            if let (Some(k), Some(v), Some(e)) = (attr(s, "key"), attr(s, "value"), event.as_mut())
             {
                 e.attributes.insert(k, AttributeValue::Date(v));
             }
         }
     }
 
-    assert!(!log.traces.is_empty(), "receipt.xes must parse as real evidence");
+    assert!(
+        !log.traces.is_empty(),
+        "receipt.xes must parse as real evidence"
+    );
     assert!(log.event_count() > 0, "receipt.xes must contain events");
     log
 }
@@ -210,7 +212,11 @@ fn run_family(evidence: &SemanticEvidence, family: &Family) {
         let elapsed = started.elapsed();
         let elapsed_ns = elapsed.as_nanos();
         assert!(elapsed_ns > 0, "benchmark clock did not advance");
-        assert_eq!(admitted + refused, scale, "every envelope must have standing");
+        assert_eq!(
+            admitted + refused,
+            scale,
+            "every envelope must have standing"
+        );
         let rate = scale as f64 / elapsed.as_secs_f64();
         let final_receipt = aggregate.finalize();
 

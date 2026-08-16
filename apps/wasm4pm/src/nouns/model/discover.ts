@@ -102,14 +102,42 @@ export const discoverVerb = defineVerb({
     const activityKey = (args['activity-key'] as string | undefined) ?? 'concept:name';
     const { raw, elapsedMs } = await runDiscoverEngine(wasm, descriptor, loaded.handle, activityKey);
 
+    // The shape discriminator only recognizes the 4 discoverable-*model*
+    // kinds (dfg/petrinet/tree/declare) per its own module doc. Algorithms
+    // whose registry `outputType` is 'analytics' or 'ml_result' don't
+    // produce a process-model shape at all — they return plain analytics/ML
+    // JSON — so forcing them through discriminate() always threw
+    // DiscoveryShapeError ("keys=[handle,metadata]") regardless of the
+    // algorithm actually having run correctly. Route by modelType instead
+    // of unconditionally discriminating every result.
+    const DISCOVERABLE_MODEL_TYPES = new Set(['dfg', 'petrinet', 'tree', 'declare']);
+    // Separately: some algorithms (e.g. causal_graph, correlation_miner,
+    // transition_system) return a newer `{ handle, metadata: { result: ... } }`
+    // wrapped shape that discriminate() also doesn't recognize under any of
+    // its 6 cases — it only knows top-level `nodes`/`edges`/`places`/etc.,
+    // not a nested `metadata.result`. That real data (e.g.
+    // `metadata.result.relations`) would otherwise be discarded/misreported
+    // as a shape-mismatch error even though the algorithm ran successfully.
+    const rawObj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : undefined;
+    const isWrappedMetadataResult =
+      !!rawObj &&
+      typeof rawObj.handle === 'string' &&
+      rawObj.metadata !== null &&
+      typeof rawObj.metadata === 'object' &&
+      'result' in (rawObj.metadata as Record<string, unknown>);
+
     let shape: unknown;
-    try {
-      shape = discriminateWithSpan(raw, descriptor.id);
-    } catch (e) {
-      if (e instanceof DiscoveryShapeError) {
-        throw NounVerbError.internalError(e.message);
+    if (DISCOVERABLE_MODEL_TYPES.has(descriptor.modelType) && !isWrappedMetadataResult) {
+      try {
+        shape = discriminateWithSpan(raw, descriptor.id);
+      } catch (e) {
+        if (e instanceof DiscoveryShapeError) {
+          throw NounVerbError.internalError(e.message);
+        }
+        throw e;
       }
-      throw e;
+    } else {
+      shape = raw;
     }
 
     const shapeObj = shape as { raw?: { handle?: string } };

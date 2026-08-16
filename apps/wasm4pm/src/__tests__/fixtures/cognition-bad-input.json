@@ -1,0 +1,11 @@
+{
+  "contract": {
+    "intent": "x",
+    "candidates": [],
+    "facts": [],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  }
+}

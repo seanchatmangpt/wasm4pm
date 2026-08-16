@@ -1,4 +1,5 @@
 pub mod alphappp;
+pub mod wasm4auto;
 pub mod oc_declare;
 pub mod ocdfg;
 pub mod ocla;

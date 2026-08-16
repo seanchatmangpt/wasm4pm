@@ -27,7 +27,11 @@ fn first_well_formed_observation_admits_at_sequence_one() {
     assert!(blackboard.admitted().is_empty());
 
     let fact = blackboard
-        .propose_admission(&engine, &observation("obs-1", "x and y dictionary of moves"), 1.0)
+        .propose_admission(
+            &engine,
+            &observation("obs-1", "x and y dictionary of moves"),
+            1.0,
+        )
         .expect("first observation admits");
 
     assert_eq!(fact.sequence, 1);
@@ -77,7 +81,10 @@ fn empty_admitted_set_does_not_excuse_below_floor_confidence() {
 #[test]
 fn hypothesis_manager_abstains_with_no_evidence_yet() {
     let manager = HypothesisManager::new(
-        vec!["dynamic_programming".to_string(), "graph_search".to_string()],
+        vec![
+            "dynamic_programming".to_string(),
+            "graph_search".to_string(),
+        ],
         0.5,
         0.1,
     );
@@ -89,7 +96,10 @@ fn hypothesis_manager_abstains_with_no_evidence_yet() {
 #[test]
 fn hypothesis_manager_commits_once_a_hypothesis_clears_floor_and_margin() {
     let mut manager = HypothesisManager::new(
-        vec!["dynamic_programming".to_string(), "graph_search".to_string()],
+        vec![
+            "dynamic_programming".to_string(),
+            "graph_search".to_string(),
+        ],
         0.5,
         0.2,
     );
