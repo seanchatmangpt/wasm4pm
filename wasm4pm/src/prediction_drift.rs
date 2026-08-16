@@ -477,6 +477,16 @@ pub fn j_measure(p_a: f64, p_b_given_a: f64, p_b: f64) -> f64 {
 /// P(b|a), P(b))` over that window, returning a map keyed by `"a\u{1f}b"`
 /// (unit-separator-joined, matching `etconformance_precision.rs`'s own
 /// prefix-key convention to avoid activity-name collisions).
+///
+/// Disclosed narrowing from the cited paper: Bose et al.'s own `p^{l,t}(a,b)`
+/// feature is a windowed, length-`l`-parameterized "b follows a within a
+/// window of length l" probability (Section VI.4 of the journal extension),
+/// computed over bags of length-`l` subsequences per trace. This function
+/// fixes that window length to `1` -- a strict directly-follows (bigram)
+/// relation via `activities.windows(2)` below -- rather than the paper's
+/// general parameterized definition. The J-measure formula itself
+/// (`j_measure`) is unchanged from the paper; only the "follows" relation
+/// it's applied to is narrower.
 fn window_j_measures(traces: &[crate::models::Trace], activity_key: &str) -> BTreeMap<String, f64> {
     let mut predecessor_counts: BTreeMap<String, usize> = BTreeMap::new();
     let mut df_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
