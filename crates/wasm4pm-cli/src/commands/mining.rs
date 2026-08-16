@@ -1,25 +1,27 @@
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 use colored::Colorize;
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::collections::BTreeMap;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::etconformance_precision::compute_precision;
 use wasm4pm::generalization::compute_quality;
 use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
-use wasm4pm::pnml_io::{from_pnml, to_pnml};
 use wasm4pm::models::PetriNet;
-use wasm4pm::prediction_drift::{detect_drift_ks_native, detect_drift_native, DriftReport, KsDriftReport};
+use wasm4pm::models::DFG;
+use wasm4pm::pnml_io::{from_pnml, to_pnml};
+use wasm4pm::prediction_drift::{
+    detect_drift_ks_native, detect_drift_native, DriftReport, KsDriftReport,
+};
 use wasm4pm::prediction_remaining_time::{
     build_remaining_time_model_native, predict_case_duration_native, DurationPrediction,
 };
 use wasm4pm_cli::io::{Io, Table};
 use wasm4pm_compat::event_log::EventLog;
 use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
-use wasm4pm::models::DFG;
 
 #[derive(Args, Debug)]
 pub struct MiningArgs {
@@ -285,8 +287,9 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             // predict_case_duration}` are `#[wasm_bindgen]`-only with a `JsValue`-wrapped
             // `Ok` payload, unreadable natively via `.as_string()`. Calls the real,
             // tested native functions (the full bucketed+Weibull model) directly instead.
-            let model = build_remaining_time_model_native(&wasm4pm_log, activity_key, timestamp_key)
-                .map_err(|e| anyhow::anyhow!(e))?;
+            let model =
+                build_remaining_time_model_native(&wasm4pm_log, activity_key, timestamp_key)
+                    .map_err(|e| anyhow::anyhow!(e))?;
             let prediction = predict_case_duration_native(&model, &prefix_activities)
                 .map_err(|e| anyhow::anyhow!(e))?;
             print_prediction_result(&prediction)?;
@@ -332,7 +335,13 @@ fn load_petri_net_model(path: &PathBuf) -> Result<PetriNet> {
     }
 }
 
-fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, precision: f64, _io: &Io) -> Result<()> {
+fn print_petri_net(
+    net: &PetriNet,
+    simplicity: f64,
+    fitness: f64,
+    precision: f64,
+    _io: &Io,
+) -> Result<()> {
     println!(
         "\n{}",
         "Discovered Petri net (ILP miner)".bold().bright_cyan()
@@ -345,8 +354,14 @@ fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, precision: f64
     ]);
     table.add_row(vec!["Arcs".to_string(), net.arcs.len().to_string()]);
     table.add_row(vec!["Simplicity".to_string(), format!("{:.4}", simplicity)]);
-    table.add_row(vec!["Fitness (self)".to_string(), format!("{:.4}", fitness)]);
-    table.add_row(vec!["Precision (self)".to_string(), format!("{:.4}", precision)]);
+    table.add_row(vec![
+        "Fitness (self)".to_string(),
+        format!("{:.4}", fitness),
+    ]);
+    table.add_row(vec![
+        "Precision (self)".to_string(),
+        format!("{:.4}", precision),
+    ]);
     table.print();
     Ok(())
 }
@@ -354,7 +369,10 @@ fn print_petri_net(net: &PetriNet, simplicity: f64, fitness: f64, precision: f64
 fn print_drift_result(report: &DriftReport) -> Result<()> {
     println!("\n{}", "Concept drift detection".bold().bright_cyan());
     let mut table = Table::new(vec!["Metric", "Value"]);
-    table.add_row(vec!["Window size".to_string(), report.window_size.to_string()]);
+    table.add_row(vec![
+        "Window size".to_string(),
+        report.window_size.to_string(),
+    ]);
     table.add_row(vec![
         "Drifts detected".to_string(),
         report.drifts_detected.to_string(),
@@ -379,9 +397,17 @@ fn print_drift_result(report: &DriftReport) -> Result<()> {
 
 /// Real print path for the KS-test drift method, added 2026-08-12.
 fn print_ks_drift_result(report: &KsDriftReport) -> Result<()> {
-    println!("\n{}", "Concept drift detection (J-measure + KS-test)".bold().bright_cyan());
+    println!(
+        "\n{}",
+        "Concept drift detection (J-measure + KS-test)"
+            .bold()
+            .bright_cyan()
+    );
     let mut table = Table::new(vec!["Metric", "Value"]);
-    table.add_row(vec!["Window size".to_string(), report.window_size.to_string()]);
+    table.add_row(vec![
+        "Window size".to_string(),
+        report.window_size.to_string(),
+    ]);
     table.add_row(vec!["Alpha".to_string(), format!("{:.4}", report.alpha)]);
     table.add_row(vec![
         "Drifts detected".to_string(),

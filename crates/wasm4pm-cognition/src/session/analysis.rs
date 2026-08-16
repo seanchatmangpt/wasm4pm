@@ -7,12 +7,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 type ConceptScores = BTreeMap<String, BTreeMap<String, f32>>;
 
-fn update_concept_score(
-    scores: &mut ConceptScores,
-    track_id: &str,
-    concept: &str,
-    weight: f32,
-) {
+fn update_concept_score(scores: &mut ConceptScores, track_id: &str, concept: &str, weight: f32) {
     let concepts = scores.entry(track_id.to_string()).or_default();
     let previous = concepts.get(concept).copied().unwrap_or(0.0);
     concepts.insert(concept.to_string(), noisy_or(previous, weight));
@@ -93,12 +88,7 @@ pub(super) fn analyze(
                 let previous = contradiction.get(track_id).copied().unwrap_or(0.0);
                 contradiction.insert(track_id.clone(), noisy_or(previous, magnitude));
                 if let Some(concept) = &item.concept {
-                    update_concept_score(
-                        &mut concept_contradiction,
-                        track_id,
-                        concept,
-                        magnitude,
-                    );
+                    update_concept_score(&mut concept_contradiction, track_id, concept, magnitude);
                 }
             }
             if signed.abs() > f32::EPSILON {
@@ -117,31 +107,20 @@ pub(super) fn analyze(
             .iter()
             .map(|premise| premise_certainty(evidence, premise, &rule.track_id))
             .collect();
-        let weakest_premise = premise_certainties
-            .iter()
-            .copied()
-            .fold(1.0_f32, f32::min);
+        let weakest_premise = premise_certainties.iter().copied().fold(1.0_f32, f32::min);
         let contribution = (weakest_premise * rule.certainty).clamp(0.0, 1.0);
         if contribution <= f32::EPSILON {
             continue;
         }
 
         let previous = support.get(&rule.track_id).copied().unwrap_or(0.0);
-        support.insert(
-            rule.track_id.clone(),
-            noisy_or(previous, contribution),
-        );
+        support.insert(rule.track_id.clone(), noisy_or(previous, contribution));
         fired_rules
             .entry(rule.track_id.clone())
             .or_default()
             .push(rule.id.clone());
         if let Some(concept) = &rule.concept {
-            update_concept_score(
-                &mut concept_support,
-                &rule.track_id,
-                concept,
-                contribution,
-            );
+            update_concept_score(&mut concept_support, &rule.track_id, concept, contribution);
         }
         trace.push(TraceStep {
             step: trace.len(),
@@ -183,11 +162,7 @@ pub(super) fn analyze(
             fired_rules: rules,
         });
     }
-    hypotheses.sort_by(|a, b| {
-        b.score
-            .total_cmp(&a.score)
-            .then_with(|| a.id.cmp(&b.id))
-    });
+    hypotheses.sort_by(|a, b| b.score.total_cmp(&a.score).then_with(|| a.id.cmp(&b.id)));
 
     for hypothesis in &hypotheses {
         trace.push(TraceStep {
@@ -235,7 +210,10 @@ pub(super) fn analyze(
         if top.eliminated || top.score <= 0.0 {
             return None;
         }
-        let second_score = hypotheses.get(1).map(|hypothesis| hypothesis.score).unwrap_or(0.0);
+        let second_score = hypotheses
+            .get(1)
+            .map(|hypothesis| hypothesis.score)
+            .unwrap_or(0.0);
         let coverage = covered_by_track
             .get(&top.id)
             .map(Vec::len)

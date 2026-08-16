@@ -77,8 +77,7 @@ fn context(ordinal: u64) -> ProcessContext {
 #[inline(always)]
 fn score(seed: u64, candidate: u16, ctx: ProcessContext) -> u64 {
     mix64(
-        seed
-            ^ ((ctx.actor as u64) << 48)
+        seed ^ ((ctx.actor as u64) << 48)
             ^ ((ctx.object as u64) << 24)
             ^ ((ctx.activity as u64) << 7)
             ^ ((ctx.state as u64) << 13)
@@ -97,8 +96,11 @@ fn evaluate_episode(
     ordinal: u64,
 ) -> (blake3::Hash, bool) {
     let ctx = context(ordinal);
-    let seed = u64::from_le_bytes(evidence_hash.as_bytes()[0..8].try_into().expect("hash bytes"))
-        ^ ordinal.rotate_left(21);
+    let seed = u64::from_le_bytes(
+        evidence_hash.as_bytes()[0..8]
+            .try_into()
+            .expect("hash bytes"),
+    ) ^ ordinal.rotate_left(21);
 
     // INFER + DISCRIMINATE. Every configured hypothesis is evaluated; no candidate can disappear
     // behind an allowlist or cached constant answer.
@@ -142,11 +144,21 @@ fn evaluate_episode(
     receipt.update(&ordinal.to_le_bytes());
     receipt.update(&ctx.actor.to_le_bytes());
     receipt.update(&ctx.object.to_le_bytes());
-    receipt.update(&[ctx.activity, ctx.state, ctx.channel, ctx.jurisdiction, ctx.policy]);
+    receipt.update(&[
+        ctx.activity,
+        ctx.state,
+        ctx.channel,
+        ctx.jurisdiction,
+        ctx.policy,
+    ]);
     receipt.update(&ctx.time_bucket.to_le_bytes());
     receipt.update(&family.hypotheses.to_le_bytes());
     receipt.update(&family.futures.to_le_bytes());
-    receipt.update(&[family.interventions, family.evidence_links, u8::from(admitted)]);
+    receipt.update(&[
+        family.interventions,
+        family.evidence_links,
+        u8::from(admitted),
+    ]);
     receipt.update(&best.to_le_bytes());
     receipt.update(&future_mix.to_le_bytes());
     receipt.update(&intervention_mix.to_le_bytes());
@@ -186,7 +198,10 @@ fn run_family(evidence_hash: &blake3::Hash, family: &Family) {
         assert_eq!(c.observations, scale);
         assert_eq!(c.receipts, scale);
         assert_eq!(c.admitted + c.refused, scale);
-        assert_eq!(c.transition_evaluations, scale * PROCESS_TRANSITIONS_PER_EPISODE);
+        assert_eq!(
+            c.transition_evaluations,
+            scale * PROCESS_TRANSITIONS_PER_EPISODE
+        );
         assert_eq!(c.hypotheses, scale * family.hypotheses.max(1) as u64);
         assert_eq!(c.candidate_futures, scale * family.futures.max(1) as u64);
         assert_eq!(c.interventions, scale * family.interventions.max(1) as u64);
@@ -226,19 +241,136 @@ fn main() {
     // Each conventional data-science surface is explicitly recast as a process-science operator.
     // The cardinalities vary so the benchmark cannot collapse all families to the same workload.
     let families = [
-        Family { name: "descriptive_statistics", operator: "latent_process_hypothesis_generation", domain: b"describe", scales: STANDARD, hypotheses: 6, futures: 1, interventions: 1, evidence_links: 2 },
-        Family { name: "classification", operator: "trajectory_state_inference", domain: b"classify", scales: STANDARD, hypotheses: 8, futures: 2, interventions: 1, evidence_links: 2 },
-        Family { name: "regression", operator: "transition_dynamics_estimation", domain: b"regress", scales: STANDARD, hypotheses: 8, futures: 4, interventions: 1, evidence_links: 2 },
-        Family { name: "clustering", operator: "process_family_inference", domain: b"cluster", scales: STANDARD, hypotheses: 12, futures: 2, interventions: 1, evidence_links: 2 },
-        Family { name: "forecasting", operator: "forward_process_inference", domain: b"forecast", scales: STANDARD, hypotheses: 8, futures: 8, interventions: 1, evidence_links: 2 },
-        Family { name: "survival_analysis", operator: "terminal_path_hazard_inference", domain: b"survival", scales: STANDARD, hypotheses: 6, futures: 8, interventions: 1, evidence_links: 2 },
-        Family { name: "anomaly_detection", operator: "transition_law_violation_detection", domain: b"anomaly", scales: STANDARD, hypotheses: 4, futures: 2, interventions: 1, evidence_links: 3 },
-        Family { name: "causal_inference", operator: "intervention_reachability_discrimination", domain: b"causal", scales: STANDARD, hypotheses: 12, futures: 8, interventions: 4, evidence_links: 4 },
-        Family { name: "feature_engineering", operator: "process_projection_retention", domain: b"feature", scales: STANDARD, hypotheses: 6, futures: 4, interventions: 1, evidence_links: 3 },
-        Family { name: "etl", operator: "evidence_reconstruction_and_provenance", domain: b"etl", scales: STANDARD, hypotheses: 4, futures: 2, interventions: 1, evidence_links: 6 },
-        Family { name: "bayesian_inference", operator: "process_hypothesis_discrimination", domain: b"bayes", scales: STANDARD, hypotheses: 16, futures: 4, interventions: 1, evidence_links: 4 },
-        Family { name: "reinforcement_learning", operator: "governed_policy_trajectory_search", domain: b"rl", scales: STANDARD, hypotheses: 12, futures: 8, interventions: 6, evidence_links: 4 },
-        Family { name: "process_science_end_to_end", operator: "observe_admit_infer_discriminate_simulate_construct_govern_receipt", domain: b"process-science-e2e", scales: END_TO_END, hypotheses: 16, futures: 8, interventions: 6, evidence_links: 6 },
+        Family {
+            name: "descriptive_statistics",
+            operator: "latent_process_hypothesis_generation",
+            domain: b"describe",
+            scales: STANDARD,
+            hypotheses: 6,
+            futures: 1,
+            interventions: 1,
+            evidence_links: 2,
+        },
+        Family {
+            name: "classification",
+            operator: "trajectory_state_inference",
+            domain: b"classify",
+            scales: STANDARD,
+            hypotheses: 8,
+            futures: 2,
+            interventions: 1,
+            evidence_links: 2,
+        },
+        Family {
+            name: "regression",
+            operator: "transition_dynamics_estimation",
+            domain: b"regress",
+            scales: STANDARD,
+            hypotheses: 8,
+            futures: 4,
+            interventions: 1,
+            evidence_links: 2,
+        },
+        Family {
+            name: "clustering",
+            operator: "process_family_inference",
+            domain: b"cluster",
+            scales: STANDARD,
+            hypotheses: 12,
+            futures: 2,
+            interventions: 1,
+            evidence_links: 2,
+        },
+        Family {
+            name: "forecasting",
+            operator: "forward_process_inference",
+            domain: b"forecast",
+            scales: STANDARD,
+            hypotheses: 8,
+            futures: 8,
+            interventions: 1,
+            evidence_links: 2,
+        },
+        Family {
+            name: "survival_analysis",
+            operator: "terminal_path_hazard_inference",
+            domain: b"survival",
+            scales: STANDARD,
+            hypotheses: 6,
+            futures: 8,
+            interventions: 1,
+            evidence_links: 2,
+        },
+        Family {
+            name: "anomaly_detection",
+            operator: "transition_law_violation_detection",
+            domain: b"anomaly",
+            scales: STANDARD,
+            hypotheses: 4,
+            futures: 2,
+            interventions: 1,
+            evidence_links: 3,
+        },
+        Family {
+            name: "causal_inference",
+            operator: "intervention_reachability_discrimination",
+            domain: b"causal",
+            scales: STANDARD,
+            hypotheses: 12,
+            futures: 8,
+            interventions: 4,
+            evidence_links: 4,
+        },
+        Family {
+            name: "feature_engineering",
+            operator: "process_projection_retention",
+            domain: b"feature",
+            scales: STANDARD,
+            hypotheses: 6,
+            futures: 4,
+            interventions: 1,
+            evidence_links: 3,
+        },
+        Family {
+            name: "etl",
+            operator: "evidence_reconstruction_and_provenance",
+            domain: b"etl",
+            scales: STANDARD,
+            hypotheses: 4,
+            futures: 2,
+            interventions: 1,
+            evidence_links: 6,
+        },
+        Family {
+            name: "bayesian_inference",
+            operator: "process_hypothesis_discrimination",
+            domain: b"bayes",
+            scales: STANDARD,
+            hypotheses: 16,
+            futures: 4,
+            interventions: 1,
+            evidence_links: 4,
+        },
+        Family {
+            name: "reinforcement_learning",
+            operator: "governed_policy_trajectory_search",
+            domain: b"rl",
+            scales: STANDARD,
+            hypotheses: 12,
+            futures: 8,
+            interventions: 6,
+            evidence_links: 4,
+        },
+        Family {
+            name: "process_science_end_to_end",
+            operator: "observe_admit_infer_discriminate_simulate_construct_govern_receipt",
+            domain: b"process-science-e2e",
+            scales: END_TO_END,
+            hypotheses: 16,
+            futures: 8,
+            interventions: 6,
+            evidence_links: 6,
+        },
     ];
 
     let planned_observations: u64 = families

@@ -16,7 +16,9 @@
 //! patterns are supplied, a built-in Rogerian script is used.
 
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use std::collections::BTreeMap;
 
 /// Frame / ELIZA breed.

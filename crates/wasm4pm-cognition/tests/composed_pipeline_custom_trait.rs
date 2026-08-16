@@ -57,6 +57,9 @@ fn downstream_users_can_implement_the_public_breed_trait() {
 
     assert_eq!(
         output.breed_values,
-        vec![("domain_breed".to_string(), Some("domain result".to_string()))]
+        vec![(
+            "domain_breed".to_string(),
+            Some("domain result".to_string())
+        )]
     );
 }

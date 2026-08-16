@@ -43,11 +43,7 @@ fn invalid_state(reason: impl Into<String>) -> SessionError {
     }
 }
 
-fn track_satisfies_commitment(
-    pack: &DomainPack,
-    analysis: &Analysis,
-    track_id: &str,
-) -> bool {
+fn track_satisfies_commitment(pack: &DomainPack, analysis: &Analysis, track_id: &str) -> bool {
     let Some(track) = analysis
         .hypotheses
         .iter()
@@ -295,13 +291,12 @@ fn apply_turn_record(
         .and_then(|id| analysis.missing_by_track.get(id))
         .cloned()
         .unwrap_or_default();
-    let pending_confirmation = if pack.thresholds.confirmation_required
-        && state.committed_track.is_none()
-    {
-        analysis.eligible_track.clone()
-    } else {
-        None
-    };
+    let pending_confirmation =
+        if pack.thresholds.confirmation_required && state.committed_track.is_none() {
+            analysis.eligible_track.clone()
+        } else {
+            None
+        };
     let (phase, phase_label, complete) =
         current_phase(pack, state.committed_track.as_deref(), &covered);
     trace.push(TraceStep {
@@ -469,12 +464,8 @@ pub fn run_session_turn(input: &SessionTurnInput) -> Result<SessionTurnOutput, S
     })?;
     let input_hash = hash_turn_input(input)?;
     let output_hash = hash_output_payload(&state, &projection, &trace, &ocel_log)?;
-    let combined_hash = hash_receipt_material(
-        &input_hash,
-        &previous_state_hash,
-        &pack_hash,
-        &output_hash,
-    )?;
+    let combined_hash =
+        hash_receipt_material(&input_hash, &previous_state_hash, &pack_hash, &output_hash)?;
     let receipt = SessionReceipt {
         input_hash,
         previous_state_hash,

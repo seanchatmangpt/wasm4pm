@@ -73,7 +73,11 @@ fn derive_chemical_name(candidate_id: &str) -> Option<String> {
     let (c1, name1) = alkyl_group(parts[2])?;
     let (c2, name2) = alkyl_group(parts[3])?;
 
-    let (lo, hi) = if name1 <= name2 { (name1, name2) } else { (name2, name1) };
+    let (lo, hi) = if name1 <= name2 {
+        (name1, name2)
+    } else {
+        (name2, name1)
+    };
     let trivial = if name1 == name2 {
         format!("di{name1} {functional}")
     } else {

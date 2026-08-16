@@ -433,8 +433,8 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
             )
         })?;
 
-        let prediction = predict_case_duration_native(&model, &prefix)
-            .map_err(|e| crate::error::js_val(&e))?;
+        let prediction =
+            predict_case_duration_native(&model, &prefix).map_err(|e| crate::error::js_val(&e))?;
         let result = serde_json::json!({
             "remaining_ms": prediction.remaining_ms,
             "confidence": prediction.confidence,

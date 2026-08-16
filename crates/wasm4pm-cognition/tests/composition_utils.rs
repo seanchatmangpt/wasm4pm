@@ -20,10 +20,7 @@ fn obligation_derivation_is_idempotent_and_queryable() {
 
     assert_eq!(context.derive_obligations(), 1);
     assert_eq!(context.derive_obligations(), 0);
-    assert!(context
-        .blackboard()
-        .obligations()
-        .contains("explain:obs-1"));
+    assert!(context.blackboard().obligations().contains("explain:obs-1"));
     assert_eq!(
         context
             .graph()

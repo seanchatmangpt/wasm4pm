@@ -107,8 +107,6 @@ pub mod compat_api_probe;
 pub mod conformance_authority;
 /// Structured error types and JS interop helpers.
 pub mod error;
-/// Native host JSON bridge for Python bindings and integration tests.
-pub mod native_bridge;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
@@ -125,6 +123,8 @@ pub mod ml_algorithms;
 pub mod model_registry;
 /// Core data models: `EventLog`, `OCEL`, `DFG`, `PetriNet`, etc.
 pub mod models;
+/// Native host JSON bridge for Python bindings and integration tests.
+pub mod native_bridge;
 /// Adversarial receipt doctor validation and truth verification.
 pub mod receipt;
 /// Process Replay Authority Module — token-based replay, simulation, and execution profiling.

@@ -30,7 +30,12 @@ impl SemanticGraph {
     }
 
     /// Insert a triple. Idempotent — inserting the same triple twice is a no-op.
-    pub fn insert(&mut self, subject: impl Into<String>, predicate: impl Into<String>, object: impl Into<String>) {
+    pub fn insert(
+        &mut self,
+        subject: impl Into<String>,
+        predicate: impl Into<String>,
+        object: impl Into<String>,
+    ) {
         self.triples.insert(Triple {
             subject: subject.into(),
             predicate: predicate.into(),

@@ -53,7 +53,8 @@ impl CapabilityRegistry {
 
     /// Register a capability descriptor.
     pub fn register(&mut self, descriptor: CapabilityDescriptor) {
-        self.descriptors.insert(descriptor.capability_id.clone(), descriptor);
+        self.descriptors
+            .insert(descriptor.capability_id.clone(), descriptor);
     }
 
     /// Look up a descriptor by id.
@@ -69,10 +70,9 @@ impl CapabilityRegistry {
         capability_id: &str,
         blackboard: &Blackboard,
     ) -> Result<&CapabilityDescriptor, PreconditionRefusal> {
-        let descriptor = self
-            .descriptors
-            .get(capability_id)
-            .ok_or_else(|| PreconditionRefusal::Unknown(UnknownCapability(capability_id.to_string())))?;
+        let descriptor = self.descriptors.get(capability_id).ok_or_else(|| {
+            PreconditionRefusal::Unknown(UnknownCapability(capability_id.to_string()))
+        })?;
 
         for precondition in &descriptor.preconditions {
             if !blackboard.obligations().contains(precondition) {

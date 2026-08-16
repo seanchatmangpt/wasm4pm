@@ -71,9 +71,18 @@ fn phrase_polarity(text: &str, phrase: &str) -> EvidencePolarity {
 
 fn phrase_matches(text: &str, phrase: &str) -> bool {
     contains_phrase(text, phrase)
-        || ["not", "no", "without", "dont", "do not", "wouldnt", "would not", "never"]
-            .iter()
-            .any(|prefix| contains_phrase(text, &format!("{prefix} {phrase}")))
+        || [
+            "not",
+            "no",
+            "without",
+            "dont",
+            "do not",
+            "wouldnt",
+            "would not",
+            "never",
+        ]
+        .iter()
+        .any(|prefix| contains_phrase(text, &format!("{prefix} {phrase}")))
 }
 
 pub(super) fn extract_evidence(

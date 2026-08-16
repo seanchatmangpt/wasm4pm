@@ -25,8 +25,8 @@ pub mod workflow;
 
 pub use composition::{
     BreedFailure, BreedInput, BreedProposal, CapabilityRequestRefusal, ClosureBreed,
-    CognitiveBreed, CognitivePipeline, CognitivePipelineBuilder, CompositionContext,
-    PipelineEvent, PipelineInput, PipelineOutput, PipelineRefusal,
+    CognitiveBreed, CognitivePipeline, CognitivePipelineBuilder, CompositionContext, PipelineEvent,
+    PipelineInput, PipelineOutput, PipelineRefusal,
 };
 
 impl Default for CompositionContext {

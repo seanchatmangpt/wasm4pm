@@ -72,8 +72,9 @@ pub fn oc_conformance_check_inner(ocel: &OCEL) -> Result<serde_json::Value, Stri
         // StoredObject handle round-trip.
         let admitted: AdmittedEventLog<()> =
             wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-        let net = crate::algorithms::discover_alpha_plus_plus_from_log(&admitted, "concept:name", 0.5)
-            .map_err(|e| format!("alpha++ failed: {}", e))?;
+        let net =
+            crate::algorithms::discover_alpha_plus_plus_from_log(&admitted, "concept:name", 0.5)
+                .map_err(|e| format!("alpha++ failed: {}", e))?;
 
         // Real token-based replay against the real discovered net -- the
         // actual fix: presence-of-activity-name is no longer conflated
@@ -358,13 +359,24 @@ mod tests {
         // since the real per-type discovery call no longer crosses the
         // wasm_bindgen JsValue boundary.
         let ocel = create_test_ocel();
-        let result = oc_conformance_check_inner(&ocel).expect("real conformance check must succeed");
+        let result =
+            oc_conformance_check_inner(&ocel).expect("real conformance check must succeed");
 
         let order_result = &result["Order"];
-        assert!(order_result["fitness"].is_f64(), "real fitness must be present");
+        assert!(
+            order_result["fitness"].is_f64(),
+            "real fitness must be present"
+        );
         let fitness = order_result["fitness"].as_f64().unwrap();
-        assert!((0.0..=1.0).contains(&fitness), "real fitness out of [0,1]: {fitness}");
-        assert_eq!(order_result["traces"].as_u64().unwrap(), 1, "one real Order object -> one trace");
+        assert!(
+            (0.0..=1.0).contains(&fitness),
+            "real fitness out of [0,1]: {fitness}"
+        );
+        assert_eq!(
+            order_result["traces"].as_u64().unwrap(),
+            1,
+            "one real Order object -> one trace"
+        );
         // Every real event in this fixture relates to exactly one Order --
         // no real cardinality deviation should be flagged.
         assert_eq!(
@@ -432,7 +444,8 @@ mod tests {
             object_refs: vec![],
         });
 
-        let result = oc_conformance_check_inner(&ocel).expect("real conformance check must succeed");
+        let result =
+            oc_conformance_check_inner(&ocel).expect("real conformance check must succeed");
         let violations = result["Order"]["cardinality_violations"].as_u64().unwrap();
         assert_eq!(
             violations, 1,
@@ -444,6 +457,11 @@ mod tests {
         assert_eq!(sample.len(), 1);
         assert_eq!(sample[0]["event_id"].as_str().unwrap(), "e_deviant");
         assert_eq!(sample[0]["observed_object_count"].as_u64().unwrap(), 2);
-        assert_eq!(sample[0]["modal_object_count_for_activity"].as_u64().unwrap(), 1);
+        assert_eq!(
+            sample[0]["modal_object_count_for_activity"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
     }
 }

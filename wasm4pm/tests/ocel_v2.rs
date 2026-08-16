@@ -85,7 +85,11 @@ fn validate_ocel_v2_rejects_bad_cardinality_json() {
 fn validate_ocel_v2_report_accepts_lawful_log() {
     let ocel: OCEL = serde_json::from_str(ORDER_TO_CASH).expect("parse fixture");
     let report = validate_ocel_v2_report(&ocel, &HashMap::new());
-    assert!(report.valid, "lawful log must validate; errors: {:?}", report.errors);
+    assert!(
+        report.valid,
+        "lawful log must validate; errors: {:?}",
+        report.errors
+    );
 }
 
 #[test]

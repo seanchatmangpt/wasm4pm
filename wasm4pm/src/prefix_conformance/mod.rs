@@ -310,13 +310,16 @@ impl PrefixOracle {
     /// event produced. When the returned verdict is [`PrefixVerdict::Dead`],
     /// callers MUST emit an early STOP.
     pub fn observe(&mut self, ev: &PrefixEvent) -> (PrefixVerdict, Vec<PrefixFinding>) {
-        let cursor = self.cases.entry(ev.case_id.clone()).or_insert_with(|| CaseCursor {
-            case_id: ev.case_id.clone(),
-            dfa_state: 0,
-            seen: Vec::new(),
-            last_time_ms: i64::MIN,
-            verdict: PrefixVerdict::Alive,
-        });
+        let cursor = self
+            .cases
+            .entry(ev.case_id.clone())
+            .or_insert_with(|| CaseCursor {
+                case_id: ev.case_id.clone(),
+                dfa_state: 0,
+                seen: Vec::new(),
+                last_time_ms: i64::MIN,
+                verdict: PrefixVerdict::Alive,
+            });
         let findings = step(
             &self.law,
             cursor,
@@ -365,7 +368,11 @@ mod tests {
             if id == law.dead_sink {
                 assert!(!completable, "DEAD sink must never be completable");
             } else {
-                assert!(*completable, "state {id} ({}) should be completable", law.states[id]);
+                assert!(
+                    *completable,
+                    "state {id} ({}) should be completable",
+                    law.states[id]
+                );
             }
         }
     }

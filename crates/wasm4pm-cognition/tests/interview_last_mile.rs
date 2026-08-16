@@ -3,10 +3,14 @@
 
 use wasm4pm_cognition::interview::authority_broker::AuthorityClass;
 use wasm4pm_cognition::interview::blackboard::Blackboard;
-use wasm4pm_cognition::interview::capability::{CapabilityDescriptor, CapabilityRegistry, PreconditionRefusal};
+use wasm4pm_cognition::interview::capability::{
+    CapabilityDescriptor, CapabilityRegistry, PreconditionRefusal,
+};
 use wasm4pm_cognition::interview::orchestrator::{Orchestrator, Phase};
 use wasm4pm_cognition::interview::receipt::ReceiptLedger;
-use wasm4pm_cognition::interview::verification::{UnrecordedStatus, VerificationLedger, VerificationStatus};
+use wasm4pm_cognition::interview::verification::{
+    UnrecordedStatus, VerificationLedger, VerificationStatus,
+};
 use wasm4pm_cognition::interview::workflow::{StepRefusal, Workflow};
 
 fn advance_to(orchestrator: &mut Orchestrator, phases: &[Phase]) {

@@ -86,7 +86,10 @@ impl AdmissionEngine {
         if confidence < self.confidence_floor {
             return Err(RefusalReason::BelowConfidenceFloor);
         }
-        if already_admitted.iter().any(|fact| fact.id == observation.id) {
+        if already_admitted
+            .iter()
+            .any(|fact| fact.id == observation.id)
+        {
             return Err(RefusalReason::ObservationIdConflict);
         }
         let sequence = already_admitted.len() as u64 + 1;
