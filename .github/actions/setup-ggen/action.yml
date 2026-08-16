@@ -1,0 +1,131 @@
+name: 'Setup ggen'
+description: >
+  Installs the pinned ggen CLI. Downloads a prebuilt binary from a tagged
+  seanchatmangpt/ggen GitHub release when `ggen-ref` matches a release tag
+  (fast path, no compilation). Falls back to a cached cargo build from
+  source when `ggen-ref` is an untagged commit SHA (e.g. a commit between
+  releases). Either path publishes the binary at `ggen-path` and adds its
+  directory to PATH.
+
+inputs:
+  ggen-ref:
+    description: 'Git ref to install — a release tag (e.g. v26.7.63) or a commit SHA.'
+    required: true
+  rust-toolchain:
+    description: 'Rust toolchain to use for the source-build fallback (e.g. "1.82.0" or "nightly-2026-04-15"). Only used if no matching release is found.'
+    required: false
+    default: 'stable'
+  cache-key-suffix:
+    description: 'Extra string mixed into the cache key, for callers that need per-workflow cache isolation even at the same ggen-ref.'
+    required: false
+    default: ''
+
+outputs:
+  ggen-path:
+    description: 'Absolute path to the installed ggen binary.'
+    value: ${{ steps.resolve.outputs.ggen-path }}
+  install-method:
+    description: 'Either "release-binary" or "source-build".'
+    value: ${{ steps.resolve.outputs.install-method }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Try prebuilt release binary
+      id: try-release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GGEN_REF: ${{ inputs.ggen-ref }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/ggen-install"
+        cd "$RUNNER_TEMP/ggen-install"
+
+        asset="ggen-x86_64-unknown-linux-gnu.tar.gz"
+
+        if gh release download "$GGEN_REF" \
+             --repo seanchatmangpt/ggen \
+             --pattern "$asset" \
+             --pattern "${asset}.sha256" \
+             --clobber 2>/tmp/ggen-release-download.log; then
+          sha256sum -c "${asset}.sha256"
+          tar -xzf "$asset"
+          bin="$(find . -maxdepth 2 -type f -name ggen | head -n1)"
+          test -n "$bin"
+          chmod +x "$bin"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "bin-path=$(cd "$(dirname "$bin")" && pwd)/ggen" >> "$GITHUB_OUTPUT"
+        else
+          echo "No release asset for ref '$GGEN_REF' — falling back to source build."
+          cat /tmp/ggen-release-download.log || true
+          echo "found=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Checkout ggen source (fallback)
+      if: steps.try-release.outputs.found != 'true'
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        repository: seanchatmangpt/ggen
+        ref: ${{ inputs.ggen-ref }}
+        path: .tools/ggen
+        fetch-depth: 1
+
+    - name: Cache cargo build artifacts (fallback)
+      if: steps.try-release.outputs.found != 'true'
+      id: cargo-cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          .tools/ggen/target
+        key: setup-ggen-${{ runner.os }}-${{ inputs.ggen-ref }}-${{ inputs.cache-key-suffix }}-${{ hashFiles('.tools/ggen/Cargo.lock') }}
+        restore-keys: |
+          setup-ggen-${{ runner.os }}-${{ inputs.ggen-ref }}-${{ inputs.cache-key-suffix }}-
+          setup-ggen-${{ runner.os }}-${{ inputs.ggen-ref }}-
+
+    - name: Install Rust toolchain (fallback)
+      if: steps.try-release.outputs.found != 'true'
+      shell: bash
+      env:
+        TOOLCHAIN: ${{ inputs.rust-toolchain }}
+      run: |
+        set -euo pipefail
+        rustup toolchain install "$TOOLCHAIN" --profile minimal --component rustfmt --component clippy
+        rustup default "$TOOLCHAIN"
+        rustc --version
+        cargo --version
+
+    - name: Build ggen from source (fallback)
+      if: steps.try-release.outputs.found != 'true'
+      shell: bash
+      env:
+        GGEN_REF: ${{ inputs.ggen-ref }}
+      run: |
+        set -euo pipefail
+        cargo build --manifest-path .tools/ggen/Cargo.toml -p ggen-cli-lib --bin ggen --release
+        .tools/ggen/target/release/ggen --version || true
+        test "$(git -C .tools/ggen rev-parse HEAD)" = "$GGEN_REF"
+
+    - name: Resolve final ggen path
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ "${{ steps.try-release.outputs.found }}" = "true" ]; then
+          echo "ggen-path=${{ steps.try-release.outputs.bin-path }}" >> "$GITHUB_OUTPUT"
+          echo "install-method=release-binary" >> "$GITHUB_OUTPUT"
+        else
+          echo "ggen-path=$GITHUB_WORKSPACE/.tools/ggen/target/release/ggen" >> "$GITHUB_OUTPUT"
+          echo "install-method=source-build" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Add ggen to PATH and verify
+      shell: bash
+      run: |
+        set -euo pipefail
+        bin="${{ steps.resolve.outputs.ggen-path }}"
+        test -x "$bin"
+        dirname "$bin" >> "$GITHUB_PATH"
+        "$bin" --version
