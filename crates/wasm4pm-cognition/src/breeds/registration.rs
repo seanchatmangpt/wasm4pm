@@ -109,8 +109,6 @@ breeds! {
     Triz = "triz" => crate::breeds::triz::Triz;
     /// Version-space candidate elimination (Mitchell, 'Generalization as Search', Artificial Intelligence 18(2), 1982).
     VersionSpace = "version_space" => crate::breeds::version_space::VersionSpace;
-    /// Version-space candidate elimination (Mitchell, 'Generalization as Search', Artificial Intelligence 18(2), 1982).
-    VersionSpace = "version_space" => crate::breeds::version_space::VersionSpace;
 }
 
 impl BreedId {

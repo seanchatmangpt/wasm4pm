@@ -201,10 +201,7 @@ pub fn execute_powl_string(powl_str: &str, max_iters: u8) -> Result<serde_json::
             bits &= bits - 1;
             op_trace |= 1u64 << i;
             topo_order.push(i);
-            if ocel_log
-                .record_op_fired(run_id, i, tape.ops[i as usize].kind as u8)
-                .is_err()
-            {
+            if ocel_log.record_op_fired(run_id, i, ticks, 0).is_err() {
                 overflow = true;
             }
         }
@@ -214,7 +211,7 @@ pub fn execute_powl_string(powl_str: &str, max_iters: u8) -> Result<serde_json::
             break;
         }
     }
-    if ocel_log.record_run_sealed(run_id, op_trace).is_err() {
+    if ocel_log.record_run_sealed(run_id, op_trace, ticks).is_err() {
         overflow = true;
     }
 
