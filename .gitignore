@@ -6,6 +6,7 @@ target/
 # WASM build artifacts
 *.wasm
 wasm4pm/pkg/
+crates/wasm4pm-cognition/pkg/
 
 # Node
 node_modules/

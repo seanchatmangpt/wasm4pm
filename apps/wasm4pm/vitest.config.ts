@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, configDefaults } from 'vitest/config';
 import wasm from 'vite-plugin-wasm';
 
 export default defineConfig({
@@ -9,6 +9,11 @@ export default defineConfig({
     globalSetup: './src/__tests__/global-setup.ts',
     setupFiles: ['./src/__tests__/setup.ts'],
     testTimeout: 60_000,
+    // Combinatorial-maximalism suites are deliberately excluded from the
+    // default `vitest run` (what CI's `pnpm test` invokes) — they are a
+    // local/on-demand deep-verification layer, not a CI gate. Run them via
+    // `pnpm test:combinatorial` (vitest.combinatorial.config.ts).
+    exclude: [...configDefaults.exclude, '**/*.combinatorial.integration.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

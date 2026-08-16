@@ -23,6 +23,7 @@
     "pretest": "tsc -p tsconfig.tests.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:combinatorial": "vitest run --config vitest.combinatorial.config.ts",
     "bench": "vitest bench --run",
     "lint": "tsc --noEmit",
     "typecheck:scripts": "tsc --noEmit -p tsconfig.scripts.json",
