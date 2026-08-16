@@ -61,6 +61,12 @@ publish:
 
 ci: polish test-full anticheat
 
+# Regenerate packs/workspace-pack/ontology.ttl's compat:WorkspaceCrate individuals
+# from real `cargo metadata` (replaces hand-editing the ontology when a crate is
+# added/removed/renamed). Idempotent -- no-op diff on an unchanged workspace.
+workspace-pack-sync:
+    python3 packs/workspace-pack/scripts/sync-crates-from-cargo-metadata.py
+
 # ── ggen breed scaffold pipeline ────────────────────────────────────────────
 
 # Project ocel/reports/*.json admission evidence into evidence.ttl

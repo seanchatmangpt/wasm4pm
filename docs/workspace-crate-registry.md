@@ -15,6 +15,7 @@ and re-run `ggen sync`.
 | `crates/wasm4pm-cli` | `wasm4pm-cli` | no | yes | The official wasm4pm process mining command-line interface |
 | `crates/wasm4pm-cognition` | `wasm4pm-cognition` | yes | yes | AutoSystems old-AI cognition kernel for wasm4pm: frames, production rules, Prolog, STRIPS, Hearsay-II blackboard, BLAKE3 receipt chain, adversarial gates |
 | `crates/wasm4pm-planner` | `wasm4pm-planner` | no | yes | wasm4pm-native PDDL-subset temporal planner with prolog8 admission gating and an MCP server — a fresh design (not a port) drawing on lessons from bcinr-pddl's durative-action scheduler and capability-router pattern. |
+| `tps-metrics` | `tps-metrics` | no | yes | Toyota Production System metrics collection and analysis |
 | `wasm4pm` | `wasm4pm` | yes | yes | High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript |
 
-Total crates: 9
+Total crates: 10
