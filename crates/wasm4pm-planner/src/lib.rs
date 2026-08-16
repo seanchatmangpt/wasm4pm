@@ -13,6 +13,7 @@ pub mod receipt;
 pub mod schedule;
 pub mod sexpr;
 
+pub use admission::{admit_plan_labels_with_policy, PlanAdmissionPolicy};
 pub use capability_router::{
     route_capability_plan, CapabilityRouteReceipt, CapabilityTask, CostVector, DesiredEffect,
 };
@@ -24,5 +25,7 @@ pub use mfw_interop::{
     WASM4PM_ADMISSION_SCHEMA,
 };
 pub use parse::{domain_from_pddl, problem_from_pddl, Domain, PlannerError, Problem};
-pub use receipt::{manufacture_world, ManufactureReceipt, PlanStepView};
+pub use receipt::{
+    manufacture_world, manufacture_world_with_policy, ManufactureReceipt, PlanStepView,
+};
 pub use schedule::{max_parallelism, plan_to_powl_v2};

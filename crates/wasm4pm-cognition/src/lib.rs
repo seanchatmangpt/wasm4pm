@@ -17,6 +17,7 @@
 //! - [`breeds::prolog`] — Horn-clause backward chaining with Robinson unification
 //! - [`breeds::strips`] — STRIPS-style means-ends planner (Fikes & Nilsson 1971)
 //! - [`breeds::hearsay`] — Hearsay-II blackboard architecture (Erman & Lesser 1980)
+//! - [`gmrw`] — ontology-addressed admission, diagnosis, and real-time operator scheduling
 //! - [`session`] — receipted, state-carrying compound cognition sessions
 //! - [`autosystems::cost_law`] — traditional + replacement cost-law evaluators
 //! - [`autosystems::dominance`] — Pareto dominance over scored candidates
@@ -39,6 +40,7 @@ pub mod autosystems;
 pub mod breeds;
 pub mod evidence;
 pub mod ghf;
+pub mod gmrw;
 pub mod interview;
 pub mod log_adapter;
 pub mod observability;
