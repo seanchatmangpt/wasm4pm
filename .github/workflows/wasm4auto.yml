@@ -61,13 +61,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo check -p wasm4pm --no-default-features --target wasm32-unknown-unknown
+          # `discovery.rs` consumes AppState::with_ocel unconditionally while
+          # that method is correctly gated by the `ocel` feature.  The
+          # previous zero-feature court therefore tested an invalid crate
+          # composition rather than wasm4auto.  Admit only the minimal feature
+          # required to make the existing state/discovery seam coherent.
+          cargo check -p wasm4pm --no-default-features --features ocel --target wasm32-unknown-unknown
 
       - name: Execute wasm4auto law and falsifier suite
         shell: bash
         run: |
           set -euo pipefail
-          cargo test -p wasm4pm --no-default-features advanced::wasm4auto --lib
+          cargo test -p wasm4pm --no-default-features --features ocel advanced::wasm4auto --lib
 
       - name: Assert authority ceiling remains non-consequential
         shell: bash
