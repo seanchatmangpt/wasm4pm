@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 30
     env:
       EXPECTED_SUBJECT: ${{ github.event.pull_request.head.sha || github.sha }}
-      BOUNDED_FEATURES: ocel,conformance_basic,hand_rolled_stats
+      BOUNDED_FEATURES: ocel,conformance_basic,hand_rolled_stats,ml
 
     steps:
       - name: Checkout exact admitted subject
@@ -66,8 +66,10 @@ jobs:
           # existing crate's OCEL surface is not feature-closed by `ocel`
           # alone: discovery requires AppState::with_ocel, oc_conformance
           # requires the basic conformance module, and oc_performance requires
-          # one statistics implementation. Admit exactly those pre-existing
-          # dependencies and nothing with execution/actuation authority.
+          # one statistics implementation. The lib-test harness additionally
+          # compiles pre-existing GPU/utility tests whose imports are explicitly
+          # gated by `ml`. Admit exactly that observed feature closure and
+          # nothing carrying execution/actuation authority.
           cargo check -p wasm4pm --no-default-features \
             --features "$BOUNDED_FEATURES" \
             --target wasm32-unknown-unknown
