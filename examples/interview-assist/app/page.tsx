@@ -1,37 +1,5 @@
 "use client";
 
-/**
- * First real InterviewAssist session page. Not tied to a single numbered
- * ticket (workstreams C/G/H each produced pieces this composes) -- this is
- * the groundwork workstream I's Playwright scenarios need: a real,
- * type-checked, client-rendered page that actually drives
- * lib/domain/reducer.ts's sessionReducer and actually renders workstream
- * G's real components, backed by real server-side execution (via
- * app/api/run) and real BLAKE3 receipt hashing (via app/api/receipt) --
- * not fabricated data.
- *
- * Phase 4 (this pass) is a UI/UX restructuring on top of the already-proven
- * cognition loop (Phases 1-3: real wasm4pm-cognition Eliza breed ->
- * confirmed hypothesis -> real phase advance -> real sandbox execution,
- * exercised end to end by tests/scenarios/cognition-first-decisive.test.ts).
- * The functional dispatch/fetch logic below is UNCHANGED from that proven
- * loop; only composition/layout/control-grouping changed. See the new
- * hand-authored components this pass adds: session-header.tsx,
- * session-workspace.tsx, session-activity-drawer.tsx, session-menu.tsx,
- * execution-result-card.tsx, accessibility-preferences-dialog.tsx.
- *
- * Keyboard/focus-order (DOM source order, since CSS Grid repositions
- * regions visually without changing tab order -- see session-workspace.tsx):
- *   skip-to-current-task -> session status (SessionHeader) -> cognition
- *   question + track choices (Cognition region) -> problem statement
- *   (Objective region) -> editor + run (Coding region) -> execution result
- *   + visible tests (Result region) -> session actions (SessionMenu).
- * "Authorized guidance" from the redesign brief's diagram has no backing
- * feature anywhere in this codebase yet (grepped; nothing named
- * guidance/hint exists) -- rather than fabricate a panel with invented
- * content, that step is simply not represented here; disclosed honestly
- * rather than papered over per this repo's Evidence-First principle.
- */
 import { useEffect, useState } from "react";
 import { SessionHeader, type InputStatus } from "../components/session-header";
 import { SessionWorkspace } from "../components/session-workspace";
@@ -61,14 +29,7 @@ import type { RefusalCode } from "../lib/domain/refusal";
 import type { TransitionReceipt } from "../lib/domain/receipt";
 import { ACCESSIBILITY_DEFAULTS, type AccessibilityDefaults } from "../lib/accessibility/defaults";
 import { DEFAULT_ACTIVE_MODE } from "../lib/adapters/policy-check-adapter";
-// Type-only: erased at compile time, so importing sandbox-executor.ts's
-// exported type here does not pull node:child_process into the client
-// bundle (the real executor call happens server-side, via app/api/run).
 import type { CapabilityId } from "../lib/adapters/sandbox-executor";
-// Type-only, same discipline: cognition-adapter.ts is a server-only module
-// (wraps a wasm-bindgen Node require()) reachable ONLY via app/api/cognition
-// -- this page never imports runCognition itself, only the erased
-// CognitionOutcome type describing what that route returns as JSON.
 import type { CognitionOutcome } from "../lib/adapters/cognition-adapter";
 
 interface AppState extends SessionState {
@@ -85,10 +46,6 @@ interface AppState extends SessionState {
   usedEvents: string[];
   refusal?: { code: RefusalCode; reason?: string };
   receipt?: TransitionReceipt;
-  /** JTBD 5 closure: real outcome of the most recent "Run visible tests" /
-   * "Run hidden tests" click (real run_pytest via /api/test -> real
-   * sandbox-executor.ts, no mocks). Undefined until the corresponding
-   * button has actually been clicked once. */
   visibleTest?: { exitCode: number; stdout: string; stderr: string };
   hiddenTest?: { exitCode: number; stdout: string; stderr: string };
 }
@@ -145,24 +102,6 @@ export default function InterviewAssistPage() {
   const [finishError, setFinishError] = useState<string | null>(null);
   const [testTimeoutOverrideMs, setTestTimeoutOverrideMs] = useState<number | null>(null);
 
-  // `?debug=1` gate for SessionActivityDrawer's developer-diagnostics
-  // section (session-activity-drawer.tsx). Read from window.location on
-  // mount rather than next/navigation's useSearchParams(), which requires
-  // wrapping the reading component in a <Suspense> boundary to avoid a
-  // build-time "should be wrapped in a suspense boundary" error/de-opt --
-  // this page is already entirely client-rendered ("use client" at the
-  // top), so a plain post-mount effect is simpler and has no SSR/hydration
-  // mismatch risk (both server and first client render see debug=false;
-  // it only flips true after mount, same pattern as any client-only
-  // browser-API read).
-  //
-  // `?testTimeoutMs=N` (UX-polish pass, test-only, same discipline as
-  // `?debug=1` above): overrides every real `fetchWithTimeout` budget below
-  // with a tiny value so a Playwright test can deterministically force the
-  // real client-side timeout/retry path (tests/e2e/jtbd-13-loading-states.spec.ts's
-  // sibling timeout test) without shrinking the real production defaults
-  // (COGNITION_TIMEOUT_MS etc.) themselves. Absent (the real app), this is
-  // `null` and every flow uses its own real, generous default.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setDebug(params.get("debug") === "1");
@@ -171,17 +110,6 @@ export default function InterviewAssistPage() {
     setTestTimeoutOverrideMs(Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : null);
   }, []);
 
-  /** JTBD 6 closure: projects three of the 16 real AccessibilityDefaults
-   * keys onto `document.documentElement.dataset`, which app/globals.css
-   * reads via `:root[data-*="true"]` selectors to produce real, computed-
-   * style-verifiable effects (see that file's own comment for exactly
-   * which three and why). `state.accessibility` -- not the DOM attribute --
-   * remains the single source of truth; this effect is a one-way
-   * projection of it, run after every change so the dataset never drifts
-   * from the lifted React state (including on first mount, where it sets
-   * the real "false" defaults rather than relying on the attribute being
-   * absent). The other 13 keys are real typed state with no downstream
-   * visual effect yet -- not touched here, not silently claimed. */
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.reducedMotion = String(state.accessibility["reduced-motion-mode"]);
@@ -218,14 +146,6 @@ export default function InterviewAssistPage() {
     dispatch({ family: "SessionEvent", targetPhase: "REFUSED" }, `SessionEvent:${state.phase}->REFUSED`);
   }
 
-  /** Deliberate demo affordance: dispatches an event.family the reducer's
-   * real KNOWN_EVENT_FAMILIES set does not admit, so this always exercises
-   * the real "refused" branch (RefusalCode STALE_SESSION_EVENT) regardless
-   * of current phase -- for manual/Playwright verification that
-   * RefusalPresentation renders a real refused AdmissionResult, not a
-   * fabricated one. Relocated (Phase 4) into SessionActivityDrawer's
-   * `?debug=1`-gated developer-diagnostics section -- it is a demo/test
-   * affordance, not part of the real candidate-facing flow. */
   function triggerAdmissionRefusalDemo(): void {
     dispatch({ family: "NotAnAdmittedEventFamily" }, "demo:unrecognized-family");
   }
@@ -253,27 +173,6 @@ export default function InterviewAssistPage() {
     "editor/rename-file": () => onEditorAction("editor/rename-file"),
   };
 
-  /** Real end-to-end execution: POSTs to app/api/run, which calls the real
-   * subprocess-spawning sandbox-executor.ts server-side (real python3, no
-   * mocks). Only dispatches the IMPLEMENTATION->EXECUTION phase event on
-   * the first run from IMPLEMENTATION -- re-running while already in
-   * EXECUTION is real, but re-requesting the same phase transition would
-   * be a genuinely illegal transition per phase-transitions.ts (EXECUTION's
-   * only legal target is DEBUGGING), so it is intentionally skipped rather
-   * than surfacing a spurious refusal on every re-run.
-   *
-   * Phase 4 addition: the real ExecutionReceipt's `transitionReceipt` field
-   * (already returned by /api/run, previously read but discarded by the
-   * client) is now also appended to `receipts` for SessionActivityDrawer's
-   * receipt inspector -- no change to what the server computes or returns,
-   * only to what the client keeps.
-   *
-   * UX-polish pass: real busy state (`running`, already existed) now also
-   * drives `aria-busy` + a visible spinner on the "Run" button (see JSX
-   * below), and the fetch itself is wrapped with a real client-side
-   * timeout (fetchWithTimeout) -- if it fires or the network genuinely
-   * fails, `runError` is set and a real Retry affordance renders instead
-   * of the request hanging silently. */
   async function runCode(): Promise<void> {
     setRunning(true);
     setRunError(null);
@@ -304,7 +203,10 @@ export default function InterviewAssistPage() {
           stderr: "",
           diagnostics: [
             ...prev.diagnostics,
-            { message: `sandbox refused: ${json.refusal!.kind}${json.refusal!.reason ? ` (${json.refusal!.reason})` : ""}`, severity: "error" },
+            {
+              message: `sandbox refused: ${json.refusal!.kind}${json.refusal!.reason ? ` (${json.refusal!.reason})` : ""}`,
+              severity: "error",
+            },
           ],
         }));
       } else if (json.receipt) {
@@ -332,24 +234,6 @@ export default function InterviewAssistPage() {
     }
   }
 
-  /** JTBD 5 closure: real end-to-end pytest run, distinct from runCode()
-   * above (which only ever dispatches "execute_python"). POSTs the
-   * candidate's current code plus a `testKind` to the new app/api/test
-   * route, which server-side pairs it with the real two-sum visible/hidden
-   * pytest fixture (lib/domain/two-sum-test-fixtures.ts, never imported
-   * here) and calls the same real, subprocess-spawning
-   * getSandboxExecutor().execute({capability:"run_pytest", ...}) that
-   * tests/scenarios/*-tests.test.ts and tests/scenarios/cognition-first-
-   * decisive.test.ts already exercise Node-side. Sets the corresponding
-   * real VerificationState key ("verification/run-visible-test" /
-   * "verification/run-hidden-test") from the real exitCode, exactly the
-   * same "never trust cognition output, only real exit codes" rule
-   * runCode() already applies to "verification/run-example".
-   *
-   * UX-polish pass: same real-timeout/retry discipline as runCode() above
-   * -- `testError` is scoped to `{kind, message}` since visible/hidden
-   * tests share this one function but must surface an independent failure
-   * for whichever kind was actually running. */
   async function runTests(testKind: "visible" | "hidden"): Promise<void> {
     setRunningTest(testKind);
     setTestError(null);
@@ -359,7 +243,12 @@ export default function InterviewAssistPage() {
         {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ testKind, code: state.code, timeoutMs: 15_000, prevReceipt: receipts[receipts.length - 1] }),
+          body: JSON.stringify({
+            testKind,
+            code: state.code,
+            timeoutMs: 15_000,
+            prevReceipt: receipts[receipts.length - 1],
+          }),
         },
         testTimeoutOverrideMs ?? TEST_TIMEOUT_MS,
       );
@@ -385,7 +274,9 @@ export default function InterviewAssistPage() {
         setState((prev) => ({
           ...prev,
           verification: { ...prev.verification, [verificationKey]: exitCode === 0 },
-          ...(testKind === "visible" ? { visibleTest: { exitCode, stdout, stderr } } : { hiddenTest: { exitCode, stdout, stderr } }),
+          ...(testKind === "visible"
+            ? { visibleTest: { exitCode, stdout, stderr } }
+            : { hiddenTest: { exitCode, stdout, stderr } }),
         }));
         if (transitionReceipt) setReceipts((prev) => [...prev, transitionReceipt]);
       }
@@ -396,31 +287,6 @@ export default function InterviewAssistPage() {
     }
   }
 
-  /** Real end-to-end cognition turn: POSTs the observed utterance to
-   * app/api/cognition, which calls the real wasm4pm-cognition Eliza breed
-   * server-side (no mock, no client-side WASM). Records the utterance as a
-   * real SpeechEvent (the family the memory note identifies as already
-   * fitting "the observed transcript utterance going IN") regardless of
-   * whether the WASM breed matched a track -- the observation itself is a
-   * real admitted session event either way. The 422/503 branches
-   * (no-track-matched / refused / unavailable) are well-formed, typed
-   * outcomes, not client-side errors -- all three status codes parse to the
-   * same CognitionOutcome JSON shape.
-   *
-   * `intentOverride` (UX-polish pass): when supplied, submits that exact
-   * text instead of reading+clearing `cognitionInputValue` -- used by
-   * CognitionPanel's "unavailable" Retry control to genuinely re-submit
-   * the SAME observed utterance rather than requiring the human to retype
-   * it, without racing a `setCognitionInputValue` update against the fetch
-   * that follows it. The input field's own value is left untouched by an
-   * override submission (it was never touched to fill it in the first
-   * place).
-   *
-   * Timeout/retry: wraps the request in `fetchWithTimeout`; a real timeout
-   * or network-level failure (NOT a well-formed 4xx/5xx JSON response --
-   * those are typed CognitionOutcomes handled above, not exceptions) sets
-   * `cognitionError`, rendered with a real Retry affordance instead of the
-   * UI hanging silently. */
   async function submitCognitionUtterance(intentOverride?: string): Promise<void> {
     const intent = (intentOverride ?? cognitionInputValue).trim();
     if (intent.length === 0) return;
@@ -500,16 +366,6 @@ export default function InterviewAssistPage() {
     }
   }
 
-  /** "Yes": the human confirms the real Eliza-proposed track. Dispatches a
-   * real HypothesisEvent carrying the next legal target phase (per
-   * phase-transitions.ts's admitted transition-plan edges for the session's
-   * CURRENT phase) so the phase advances as a direct consequence of
-   * confirming the hypothesis -- no separate "Advance to X" click needed on
-   * this path. If the current phase has no outgoing transition (a terminal
-   * phase), the HypothesisEvent is still dispatched without a targetPhase --
-   * a legitimate admitted event per reducer.ts's own documented semantics
-   * (an event that carries no phase transition is still real), rather than
-   * silently doing nothing. */
   function confirmCognitionProposal(): void {
     const nextPhase = PHASE_TRANSITIONS[state.phase]?.[0];
     const event: SessionEvent =
@@ -526,10 +382,6 @@ export default function InterviewAssistPage() {
     setCognitionOutcome(null);
   }
 
-  /** "No": the human rejects the proposed track. No session event is
-   * dispatched -- rejecting a not-yet-admitted hypothesis is not itself a
-   * session-level fact worth recording, it just clears local UI state so a
-   * different utterance can be submitted. */
   function rejectCognitionProposal(): void {
     setCognitionIntent(null);
     setCognitionOutcome(null);
