@@ -19,6 +19,8 @@
 //! - [`breeds::hearsay`] — Hearsay-II blackboard architecture (Erman & Lesser 1980)
 //! - [`gmrw`] — ontology-addressed admission, diagnosis, and real-time operator scheduling
 //! - [`session`] — receipted, state-carrying compound cognition sessions
+//! - [`interview`] — InterviewAssist cognition runtime core
+//! - [`interview_assist`] — bounded InterviewAssist consumer protocol
 //! - [`autosystems::cost_law`] — traditional + replacement cost-law evaluators
 //! - [`autosystems::dominance`] — Pareto dominance over scored candidates
 //! - [`autosystems::receipt`] — BLAKE3-linked receipt chain with replay
@@ -42,6 +44,7 @@ pub mod evidence;
 pub mod ghf;
 pub mod gmrw;
 pub mod interview;
+pub mod interview_assist;
 pub mod log_adapter;
 pub mod observability;
 pub mod ocel;

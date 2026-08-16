@@ -1,0 +1,4 @@
+# The cognition contract tests intentionally preserve the public SessionError
+# boundary. Keep Clippy from requiring Box<SessionError> in thin test helpers;
+# boxing would change the contract being exercised.
+large-error-threshold = 1000000
