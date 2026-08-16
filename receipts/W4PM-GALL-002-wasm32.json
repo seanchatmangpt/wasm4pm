@@ -1,0 +1,25 @@
+{
+  "checkpoint": "W4PM-GALL-002",
+  "title": "WASM compilation floor",
+  "git_revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+  "date": "2026-07-29",
+  "status": "PARTIAL_ALIVE",
+  "command": "cargo check --target wasm32-unknown-unknown",
+  "cwd": "wasm4pm/wasm4pm",
+  "exit_code": 0,
+  "warning": "mutable reference to mutable static, wasm4pm/src/probabilistic/wasm_bindings.rs:33 (STREAMING_LOGS.as_mut().unwrap()), lint static_mut_refs, part of rust_2024_compatibility",
+  "corrected_gate_note": "CLAUDE.md previously documented this gate with --features wasm; the wasm4pm crate has no such feature (it exists only on wasm4pm-cognition/prolog8/ocpq). Corrected command used above, already fixed in CLAUDE.md.",
+  "equivalence_test_exists": false,
+  "equivalence_candidate": "discover_oc_petri_net (has an existing native rejection test at oc_petri_net.rs:445 to build alongside)",
+  "artifact": {
+    "path": "wasm4pm/pkg/wasm4pm_bg.wasm",
+    "sha256": "e45ff8a1aa472f488b7684900f4e4f2e0dc8964485bc49b2d6bee98ea9af2570"
+  },
+  "must_not_claim": "that all algorithms behave identically under WASM \u2014 this checkpoint proves compilation only, not behavioral equivalence",
+  "promotion_blockers": [
+    "no native/WASM equivalence fixture exists yet",
+    "static_mut_refs warning not yet resolved (non-fatal, tracked separately)"
+  ],
+  "sealed_at_commit": "a7a1ecb96a906ed4b11f38d47beddeacd8a75963",
+  "sealed_at_commit_note": "git_revision above is the pre-seal revision the fix was tested against while the working tree was still dirty. This receipt is promoted from ALIVE to PARTIAL_ALIVE pending an independent clean-worktree replay at sealed_at_commit (see W4PM-GALL-007)."
+}

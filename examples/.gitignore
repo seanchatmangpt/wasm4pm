@@ -10,6 +10,11 @@
 *.d.ts.map
 *.d.mts.map
 
+# web-dashboard is a plain-JS Vite example (no tsc build step) — its .js files
+# are hand-written source, not compiled output, so they must not be caught
+# by the *.js rule above.
+!web-dashboard/src/*.js
+
 # Runtime output directory
 out/
 

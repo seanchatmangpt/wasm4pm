@@ -1,0 +1,58 @@
+{
+  "algorithm_id": "petri-firing",
+  "scope_note": "covers wasm4pm's weighted, saturating enabled/fire semantics (the shape used by conformance.rs/models.rs's streaming conformance path) only — proves transition semantics, NOT WF-net soundness (soundness.rs), mining/discovery correctness, or token-replay fitness (covered separately by W4PM-LEAN-GALL-010). Explicitly excludes powl/conformance/token_replay.rs::fire, a DIFFERENT unweighted, unchecked implementation not claimed correspondent here.",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/correspondence/petri_firing.rs",
+    "type": "(BoundedNet, transition_index: usize, marking: Vec<u8>) — bounded carrier, not models::PetriNet directly (see encoding note)"
+  },
+  "encoding_note": "This checkpoint's carrier IS the bounded domain itself (BoundedNet/Marking are exhaustively enumerated, not derived from a real models::PetriNet instance) — a real models::PetriNet -> BoundedNet encoder is future work, not built in this pass. The exhaustive domain instead directly exercises every (net, transition, marking) triple bounded by MAX_PLACES=2, MAX_TRANSITIONS=2, MAX_WEIGHT=2.",
+  "canonical_carrier": {
+    "name": "BoundedNet",
+    "fields": {
+      "num_places": "usize (<= 2)",
+      "num_transitions": "usize (<= 2)",
+      "pre": "Vec<Vec<u8>> — pre[t][p], weight in 0..=2",
+      "post": "Vec<Vec<u8>> — post[t][p], weight in 0..=2"
+    },
+    "marking": "Vec<u8>, length num_places, entries in 0..=2"
+  },
+  "lean_input_type": {
+    "files": [
+      { "path": "mfact/procint/ProcInt/Petri/Net.lean", "content_sha256": "6159dc44c0e700b335d86ca7960dfba79351040400e428cc694fd104f1ca83e1" },
+      { "path": "mfact/procint/ProcInt/Petri/Firing.lean", "content_sha256": "d2402ca5605ab17a15d66d1207915a1e0cdeddf7c594274319e61c2a9973cebd" }
+    ],
+    "type": "PetriNet P T (pre/post : T -> P ->₀ ℕ), Marking := P ->₀ ℕ",
+    "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::petri_firing::lean_fire_exact",
+    "path": "wasm4pm/src/correspondence/petri_firing.rs",
+    "source": "canonical_result"
+  },
+  "canonical_result": {
+    "name": "FiringOutcome",
+    "type": "enum",
+    "representation": "Refused | Fired(Marking)"
+  },
+  "rust_output_type": {
+    "path": "wasm4pm/src/correspondence/petri_firing.rs",
+    "field": "rust_fire (independent reference implementation, not calling lean_fire_exact)",
+    "type": "FiringOutcome"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation — same constraint as W4PM-LEAN-GALL-010 (mfact .lake build directory does not exist).",
+  "lean_theorem_ref": {
+    "definitions": ["PetriNet.Enabled", "PetriNet.fire", "PetriNet.Step"],
+    "supporting_theorems": ["step_deterministic", "fire_add_pre", "enabled_mono", "step_add", "fire_pre_self", "step_pre_self"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read during W4PM-LEAN-GALL-011"
+  },
+  "exhaustive_domain": {
+    "bounds": "MAX_PLACES=2, MAX_TRANSITIONS=2, MAX_WEIGHT=2 (weights and marking capacity both in 0..=2)",
+    "total_triples_checked": 118098,
+    "all_agreed": true
+  },
+  "achieved_evidence_class": "carrier_mapped_formula_correspondence (exhaustive_domain)",
+  "not_claimed": "direct_theorem/EXACT_CORRESPONDENCE (no live Lean re-verification); agreement outside the stated bounded domain (exhaustion over a finite domain is strong evidence toward, not proof of, unbounded agreement); correspondence for powl/conformance/token_replay.rs::fire (a different, unweighted implementation)"
+}

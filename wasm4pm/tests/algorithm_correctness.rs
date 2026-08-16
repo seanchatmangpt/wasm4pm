@@ -209,6 +209,46 @@ fn pso_deterministic_same_seed() {
     assert_eq!(f1, f2, "PSO is not deterministic");
 }
 
+/// W4PM-LEAN-GALL-034: parameter-sweep probe for the PSO analogue of the
+/// ACO degenerate-result defect fixed under W4PM-LEAN-GALL-018. ACO's core
+/// function could converge to an empty edge set on nontrivial input under
+/// low ant/iteration counts; 018 explicitly flagged (but did not verify) that
+/// `discover_pso_algorithm_from_log` has the same input-empty-only guard
+/// shape and "worth a follow-up parameter sweep." This test performs that
+/// sweep across swarm_size ∈ 1..=10 and iterations ∈ 1..=10 (100 combinations)
+/// on the same nontrivial `controlled_log()` fixture ACO's regression test
+/// uses, and asserts the DFG returned is never empty-edged.
+///
+/// This test is permanent regression coverage regardless of outcome — see
+/// receipts/W4PM-LEAN-GALL-034-pso-guard-and-rng-centralization.md for the
+/// literal sweep result and whether a fix was applied.
+#[test]
+fn pso_degenerate_result_sweep() {
+    let log = controlled_log();
+    let mut degenerate_cases: Vec<(usize, usize)> = Vec::new();
+
+    for swarm_size in 1..=10usize {
+        for iterations in 1..=10usize {
+            if let Some((dfg, _fitness)) =
+                discover_pso_algorithm_from_log(&log, "concept:name", swarm_size, iterations)
+            {
+                if dfg.edges.is_empty() {
+                    degenerate_cases.push((swarm_size, iterations));
+                }
+            }
+        }
+    }
+
+    assert!(
+        degenerate_cases.is_empty(),
+        "PSO returned Some((dfg, _)) with an empty edge set on nontrivial input for \
+         (swarm_size, iterations) pairs: {:?} — this is the same DEGENERATE_RESULT class \
+         ACO was fixed for under W4PM-LEAN-GALL-018; discover_pso_algorithm_from_log needs \
+         the same fallback-to-full-edge-vocabulary fix.",
+        degenerate_cases
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Simulated Annealing — Rank 1 + Rank 2 properties
 // ---------------------------------------------------------------------------
@@ -617,6 +657,24 @@ fn aco_fitness_in_range() {
         fitness
     );
     assert!(!dfg.nodes.is_empty(), "ACO DFG must have nodes");
+}
+
+/// W4PM-LEAN-GALL-018: the core discover_aco_algorithm_from_log must never
+/// silently return Some((empty_dfg, fitness)) on nontrivial input — this was
+/// previously guarded only at the CLI bridge layer (aco_bridge.rs), leaving
+/// any direct caller of the core function exposed to a DEGENERATE_RESULT.
+/// Whenever this function returns Some, the DFG must have at least one edge.
+#[test]
+fn aco_never_returns_empty_dfg_on_nontrivial_input() {
+    let log = controlled_log();
+    let result = discover_aco_algorithm_from_log(&log, "concept:name", 5, 10);
+    if let Some((dfg, _fitness)) = result {
+        assert!(
+            !dfg.edges.is_empty(),
+            "ACO returned Some(...) on nontrivial input but with an empty edge set — \
+             this is the DEGENERATE_RESULT the core-level guard must refuse, not silently succeed on"
+        );
+    }
 }
 
 /// Two ACO runs with same seed must produce bit-identical fitness.

@@ -1,0 +1,36 @@
+{
+  "checkpoint": "W4PM-GALL-001",
+  "title": "Native Rust floor",
+  "crate": "wasm4pm",
+  "git_revision": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+  "date": "2026-07-29",
+  "status": "PARTIAL_ALIVE",
+  "command": "cargo test",
+  "cwd": "wasm4pm/wasm4pm",
+  "exit_code": 0,
+  "total_tests_passed": 2212,
+  "total_tests_failed": 0,
+  "doctest_summary": "41 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 12.27s",
+  "known_anti_patterns": [
+    "tests/ocel_real_data_tests.rs:267 ocel_feature_gate_acknowledged (prints SKIP then assert!(true) \u2014 fake-pass placeholder, not fixed in this checkpoint)",
+    "tests/boundary_safety_test.rs:378 test_ilp_empty_log (asserts _pn.places.is_empty() || true \u2014 tautological, never falsifiable)",
+    "tests/benchmarks.rs:140 skip_test_if_wrong_tier (silently no-ops outside active tier)",
+    "4 #[ignore]'d doctests: discovery_determinism_guards::STOCHASTIC_ALGORITHM_SEED, discovery_determinism_guards::assert_determinism, lib.rs::conformance_authority, simd_streaming_dfg.rs::simd_streaming_dfg"
+  ],
+  "note": "the anti-patterns above are pre-existing repo debt, listed so this checkpoint does not overclaim zero silent skips \u2014 they are not fixed as part of GALL-001",
+  "positive_witness": {
+    "test": "petri_net_synthesis_paper_grounded",
+    "file": "tests/algorithm_paper_grounded.rs:1877",
+    "result": "ok",
+    "why_this_counts": "asserts a published number, not just output structure"
+  },
+  "negative_falsifier": {
+    "test": "n12_e2o_empty_is_refused",
+    "file": "tests/negative_corpus.rs:269",
+    "result": "ok",
+    "expects_error_code": "E2O_EMPTY",
+    "why_this_counts": "part of a fixture-driven rejection suite (negative_corpus.rs) that proves malformed OCEL input is actually refused, not silently accepted"
+  },
+  "sealed_at_commit": "a7a1ecb96a906ed4b11f38d47beddeacd8a75963",
+  "sealed_at_commit_note": "git_revision above is the pre-seal revision the fix was tested against while the working tree was still dirty. This receipt is promoted from ALIVE to PARTIAL_ALIVE pending an independent clean-worktree replay at sealed_at_commit (see W4PM-GALL-007)."
+}

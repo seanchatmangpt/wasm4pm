@@ -1,0 +1,46 @@
+{
+  "algorithm_id": "inductive-miner-sequence-cut",
+  "scope_note": "New carrier map for W4PM-LEAN-GALL-026, refining the inductive-miner entry of heuristic-stochastic-miners.json (W4PM-LEAN-GALL-018) from no_lean_coverage to VALIDATOR_BACKED for a genuinely restricted 2-activity special case of the Sequence-cut detection criterion, per the task's own explicit escape hatch when the fully general n-ary/SCC-condensation case is not tractable in one session. The general find_sequence_cut criterion (Kosaraju SCC condensation, reachability ordering, n-ary groups) remains no_lean_coverage -- NOT claimed to be covered by this map.",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/more_discovery.rs",
+    "symbol": "discover_inductive_miner_from_log (357-377) delegating to inductive_miner_recursive (452-543), specifically its find_sequence_cut branch (line 697+) restricted to the 2-activity case",
+    "type": "(&AdmittedEventLog<W>, activity_key: &str) -> String (JSON-serialized ProcessTreeNode)"
+  },
+  "canonical_carrier": {
+    "name": "SeqCutHolds",
+    "variants": "log : List (List alpha), a b : alpha -- predicate: log != [] and every trace in log equals [a, b]",
+    "invariants": ["restricted to exactly 2 singleton activity groups {a}, {b}", "does not model the general n-ary/multi-activity-group case"]
+  },
+  "lean_input_type": {
+    "file": "mfact/procint/ProcInt/InductiveMinerSoundness.lean",
+    "type": "SeqCutHolds, seq_leaf_language_eq, seqCutHolds_subset_language, seqCutHolds_traceSet_eq_language -- imports ProcessTree.language from ProcInt.Models.ProcessTree rather than redefining it",
+    "content_sha256": "736a78cc9187b1c1836477780b6550aab084ecdc670bfdccf4c90a07845b12c1",
+    "mfact_revision": "cf5e047264ccd117b49c97b0effb392a5e478e6b"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::inductive_miner_cut_soundness::tree_shape",
+    "path": "wasm4pm/src/correspondence/inductive_miner_cut_soundness.rs",
+    "note": "renders the JSON process-tree returned by the REAL discover_inductive_miner_from_log as a canonical string (e.g. 'sequence(a,b)'), matching the tree_shape helper already used by tests/algorithm_correctness.rs's other exact-shape inductive-miner assertions -- not a reimplementation of the miner."
+  },
+  "canonical_result": {
+    "name": "TreeShape",
+    "type": "String (canonical operator(children...) rendering)"
+  },
+  "rust_output_type": {
+    "path": "wasm4pm/src/correspondence/inductive_miner_cut_soundness.rs",
+    "field": "tree_shape(&v[\"root\"]) applied to discover_inductive_miner_from_log's real JSON output",
+    "type": "String"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation for the differential test itself -- same standing constraint as every prior harness. This checkpoint DID additionally attempt `lake build` on the new Lean file this same session -- lake build GallCheckpoint026 succeeded this session (8562 jobs, no sorry, no axiom) -- kernel-verified, see receipt for the exact log.",
+  "method": "exact_tree_shape_on_criterion_satisfying_and_violating_logs",
+  "method_note": "Positive case: a log where every trace is exactly [a,b] (SeqCutHolds's hypothesis) must produce tree_shape == 'sequence(a,b)', checked for two different activity-name pairs and repeat counts. Negative control: a log where the hypothesis is violated (some traces are [b,a]) must NOT produce that same shape, confirming the positive test is sensitive to the hypothesis rather than vacuously true.",
+  "lean_theorem_ref": {
+    "definitions": ["SeqCutHolds", "seq_leaf_language_eq", "seqCutHolds_subset_language", "seqCutHolds_traceSet_eq_language"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read + lake build SUCCESS during W4PM-LEAN-GALL-026 (8562 jobs, kernel-verified, no sorry/axiom)"
+  },
+  "achieved_evidence_class": "VALIDATOR_BACKED (restricted_2_activity_base_case_only)",
+  "not_claimed": "any coverage of the general n-ary Sequence-cut criterion or the SCC-condensation/reachability-ordering algorithm find_sequence_cut actually implements for arbitrary activity sets (explicitly out of scope, left as future work per the Lean file's own doc comment); coverage of XOR, Parallel, or Loop cut detection (untouched); that the flower-model fallback or depth-100 cutoff have any Lean counterpart (none exists)."
+}

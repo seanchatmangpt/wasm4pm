@@ -346,6 +346,15 @@ mod tests {
     #[cfg(feature = "streaming_basic")]
     use crate::streaming::ActivityInterner;
 
+    /// `cache_clear()` wipes the process-global PARSE_CACHE/COLUMNAR_CACHE/
+    /// INTERNER_CACHE unconditionally and unscoped — correct behavior for the
+    /// real API (a full clear must clear everything), but it races against
+    /// any other test that inserts-then-reads from those same statics under
+    /// `cargo test`'s default parallel execution. Any test that either calls
+    /// `cache_clear()` or depends on reading back something it just inserted
+    /// into a shared static must hold this guard for its whole body.
+    static SHARED_CACHE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
     #[test]
     fn test_lru_cache_basic() {
         let mut cache: LruCache<String> = LruCache::new(5);

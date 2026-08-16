@@ -1,3 +1,9 @@
+//! Petri net discovery via threshold-sweep + greedy set-cover approximation.
+//!
+//! Despite the module name (`ilp_discovery`, kept for backward compatibility with existing
+//! callers), nothing in this module invokes an Integer Linear Programming solver. See
+//! [`discover_ilp_petri_net_from_log`] for the exact deterministic algorithm actually run.
+
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::{evaluate_edges_fitness, to_js_str};
@@ -51,13 +57,24 @@ pub fn wasm_compute_simplicity(places: usize, transitions: usize, arcs: usize) -
     compute_simplicity(places, transitions, arcs)
 }
 
-/// Region-based ILP-inspired Petri net discovery.
+/// Region-based Petri net discovery via deterministic threshold-sweep + greedy set-cover.
 ///
-/// Replaces the DFG-projection stub with a 4-stage pipeline:
+/// NOT an Integer Linear Programming solve. Despite the `ilp_*` naming (kept for backward
+/// compatibility with existing callers — renaming would break the public API), this function
+/// does not construct or solve an ILP/MILP model, and it links to no LP/ILP solver (no simplex,
+/// no branch-and-bound, no external solver dependency). What it actually does is a 4-stage
+/// deterministic pipeline:
 /// 1. Build causal/parallel pairs from the log's directly-follows relation.
 /// 2. Generate candidate places: 1-to-1 causal pairs, AND-split ({a}→{b,c}), AND-join ({a,b}→{c}).
 /// 3. Validate each candidate via token replay — consistent = no trace causes a token deficit.
-/// 4. Greedy set-cover: select the smallest subset of consistent places that explains all causal pairs.
+/// 4. Greedy set-cover (not an optimal/exact cover — see `ilp_greedy_cover`): repeatedly pick the
+///    consistent candidate place that covers the most still-uncovered causal pairs, until all
+///    causal pairs are covered or no further candidate helps.
+///
+/// This is a polynomial-time approximation of the region/place-discovery problem that ILP-based
+/// process discovery approaches (van der Werf et al.) solve exactly via integer programming.
+/// The greedy step gives no optimality guarantee (no proof the selected place set is minimum-size
+/// or globally consistent) — it is a fast heuristic stand-in, not a certified ILP solution.
 ///
 /// Produces a Petri net that correctly represents concurrent and sequential structure,
 /// not just a flat DFG projection.

@@ -112,6 +112,14 @@ pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsVal
 
     // DFG threshold sweep: evaluates full and pruned (freq>1) DFG variants.
     // This is a lightweight quality assessment, not a multi-algorithm ensemble.
+    //
+    // W4PM-LEAN-GALL-032: `quality_score` below is a ranking heuristic
+    // (fitness * complexity-deviation penalty), deliberately NOT an F-measure/F1 — it has
+    // no precision term. It is legitimately distinct from
+    // `benchmarks/benchmark.rs::compute_quality_metrics`'s `f_measure` (process-model
+    // F-measure over fitness/precision) and from
+    // `benches/prediction_accuracy.rs::OutcomeAccuracy::f1` (classification F1 for
+    // next-outcome prediction). See `test_three_quality_metrics_are_distinct_not_duplicated`.
     let mut models = Vec::new();
 
     // Full DFG
@@ -669,6 +677,68 @@ mod tests {
         assert!(
             quality_score > 0.0 && quality_score <= 1.0,
             "Quality score should be in (0, 1]"
+        );
+    }
+
+    /// W4PM-LEAN-GALL-032 finding: this crate has three "quality score" / "F1-shaped"
+    /// computations that are legitimately DIFFERENT metrics for different purposes, not
+    /// copies of the same formula that should be unified:
+    ///
+    /// 1. `ensemble.rs`'s `quality_score` (this file, above): `fitness * (1 - complexity_penalty)`
+    ///    — a heuristic ranking score for candidate DFG variants, penalizing edge/node ratio
+    ///    deviation from 1.0. Not a harmonic mean of anything.
+    /// 2. `benchmarks/benchmark.rs::compute_quality_metrics`'s `f_measure`:
+    ///    `2 * fitness * precision / (fitness + precision)` — the standard process-mining
+    ///    F-measure (van der Aalst-style harmonic mean of token-replay fitness and
+    ///    ETConformance precision), evaluating a *discovered process model* against a log.
+    /// 3. `benches/prediction_accuracy.rs`'s `OutcomeAccuracy::f1`:
+    ///    `2 * precision * recall / (precision + recall)` computed from TP/FP/FN counts —
+    ///    classification F1 for *next-outcome prediction* accuracy, an entirely different
+    ///    domain (predictive monitoring, not model discovery quality).
+    ///
+    /// (2) and (3) share the harmonic-mean *shape* (both are textbook F1), which is why they
+    /// could be mistaken for duplicates — but they are computed over conceptually unrelated
+    /// inputs (model fitness/precision vs. classification precision/recall) and serve
+    /// different callers. This test proves the three formulas give different, non-interchangeable
+    /// numbers on a matched scenario rather than asserting they "should" agree.
+    #[test]
+    fn test_three_quality_metrics_are_distinct_not_duplicated() {
+        // Shared scenario: fitness = 0.9, precision = 0.8, recall = 0.8, complexity_ratio = 0.8.
+        let fitness = 0.9_f64;
+        let precision = 0.8_f64;
+        let recall = 0.8_f64;
+        let complexity_ratio = 0.8_f64;
+
+        // (1) ensemble.rs quality_score heuristic — no precision/recall term at all,
+        // penalizes structural complexity deviation instead.
+        let ensemble_quality_score = fitness * (1.0 - (complexity_ratio - 1.0).abs().min(1.0) * 0.2);
+
+        // (2) benchmarks/benchmark.rs::compute_quality_metrics's f_measure formula
+        // (process-model F-measure over fitness/precision).
+        let process_f_measure = 2.0 * fitness * precision / (fitness + precision);
+
+        // (3) benches/prediction_accuracy.rs::OutcomeAccuracy::f1 formula
+        // (classification F1 over precision/recall derived from TP/FP/FN counts).
+        let classification_f1 = 2.0 * (precision * recall) / (precision + recall);
+
+        // All three give different numbers on this shared scenario, confirming they are not
+        // three copies of one formula that happen to agree — each takes a different
+        // combination of inputs and answers a different question.
+        assert!(
+            (ensemble_quality_score - process_f_measure).abs() > 1e-6,
+            "ensemble quality_score ({ensemble_quality_score}) must differ from the \
+             process-model F-measure ({process_f_measure}) — they measure different things"
+        );
+        assert!(
+            (process_f_measure - classification_f1).abs() > 1e-6,
+            "process-model F-measure ({process_f_measure}, from fitness={fitness}/precision={precision}) \
+             must differ from classification F1 ({classification_f1}, from precision={precision}/recall={recall}) \
+             here, since fitness != recall in this scenario — they are computed from different inputs"
+        );
+        assert!(
+            (ensemble_quality_score - classification_f1).abs() > 1e-6,
+            "ensemble quality_score ({ensemble_quality_score}) must differ from classification F1 \
+             ({classification_f1}) — unrelated formulas"
         );
     }
 }

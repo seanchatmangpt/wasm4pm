@@ -4027,6 +4027,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "wasm4pm",
+ "wasm4pm-cognition",
  "wasm4pm-compat",
 ]
 

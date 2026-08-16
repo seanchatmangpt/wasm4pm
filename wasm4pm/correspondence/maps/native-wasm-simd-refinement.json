@@ -1,0 +1,59 @@
+{
+  "algorithm_id": "native-wasm-simd-refinement",
+  "scope_note": "This checkpoint is Rust-internal (native vs wasm32 vs SIMD-vs-scalar) -- there is no Lean side to this claim, unlike checkpoints 010-018. Evidence is direct command execution (both wasm32 gates, existing SIMD-vs-scalar equivalence tests), not a Rust<->Lean differential.",
+  "verification_entries": [
+    {
+      "claim": "wasm4pm crate compiles cleanly for wasm32-unknown-unknown",
+      "command": "cd wasm4pm/wasm4pm && cargo check --target wasm32-unknown-unknown",
+      "result": "PASS -- Finished dev profile, 1 warning (mutable-static-reference lint in probabilistic/wasm_bindings.rs:33, rust_2024_compatibility category, not an error), 0 errors."
+    },
+    {
+      "claim": "wasm4pm-cognition crate compiles cleanly for wasm32-unknown-unknown with the wasm feature",
+      "command": "cd crates/wasm4pm-cognition && cargo check --target wasm32-unknown-unknown --features wasm",
+      "result": "PASS -- Finished dev profile, 1 warning (unknown lint 'removed' in autosystems/candidates.rs:45), 0 errors."
+    },
+    {
+      "claim": "SIMD code paths exist and have scalar fallbacks",
+      "finding": "simd_streaming_dfg.rs:137-174,231-261 uses std::arch::wasm32 v128 intrinsics, cfg-gated to target_arch=wasm32, with an explicit scalar fallback for other targets. simd_inner_loops.rs has x86 target_feature-gated tiers (avx512f/avx2/sse4.2) with scalar fallback -- these tiers do not actually use vector intrinsics (scalar loops behind cfg guards), so they are bit-identical to scalar by construction, not merely tested-equivalent. lib.rs:14 declares #![feature(portable_simd)] (nightly) but no std::simd usage was found beyond the flag itself."
+    },
+    {
+      "claim": "SIMD-vs-scalar output equivalence (same compile target)",
+      "tests": [
+        "simd_streaming_dfg::tests::test_parity_with_scalar_dfg",
+        "simd_streaming_dfg::tests::test_columnar_parity_with_discovery_dfg",
+        "simd_streaming_dfg::tests::test_simd_detection"
+      ],
+      "result": "PASS -- 23/23 simd-prefixed tests pass (cargo test --lib simd), re-run this checkpoint, 0 failures.",
+      "scope_note": "these compare SIMD-code-path vs scalar-code-path output within ONE compilation target -- not a cross-target (native vs wasm32) execution comparison."
+    }
+  ],
+  "ledger_entries": [
+    {
+      "claim": "native-vs-wasm32 cross-target execution output equivalence (running the SAME compiled algorithm on both a native target and an actual wasm32 runtime, diffing results)",
+      "status": "VERIFIED (checkpoint 036, partial scope: 2 algorithms)",
+      "checkpoint": "W4PM-LEAN-GALL-036",
+      "receipt": "receipts/W4PM-LEAN-GALL-036-native-wasm-cross-target-equivalence.md",
+      "evidence": {
+        "harness_location": "wasm4pm/wasm4pm/wasm-equivalence-tests/ (fixture_log.json, compare.mjs) and wasm4pm/wasm4pm/tests/wasm_equivalence_native.rs",
+        "native_side": "cargo test --test wasm_equivalence_native -- runs discover_dfg_from_log and EventLog::event_count/case_count directly (pure Rust, no wasm-bindgen), writes wasm-equivalence-tests/native_output.json",
+        "wasm32_side": "node wasm-equivalence-tests/compare.mjs -- loads the wasm-pack nodejs-target build (wasm4pm/wasm4pm/pkg, built via 'wasm-pack build --target nodejs --out-dir pkg'), executes discover_dfg and analyze_event_statistics under Node's real wasm32 (V8 WebAssembly) runtime against the SAME fixture_log.json, writes wasm_output.json, and deep-equality-diffs against native_output.json",
+        "algorithms_compared": [
+          "discover_dfg (DFG discovery: nodes/edges/start_activities/end_activities)",
+          "analyze_event_statistics (total_events/total_cases/avg_events_per_case)"
+        ],
+        "result": "AGREE -- byte-identical JSON (after JSON.parse of the wasm side's to_js_str string envelope) for both algorithms, on a 3-case/9-event/4-activity fixed fixture log with a repeated activity (B->B) and divergent start/end activities.",
+        "normalization_applied": "wasm-side outputs are returned as JSON strings via to_js_str (src/discovery.rs:145, src/analysis.rs:64) specifically to avoid the to_js(&json!({...}))->{} divergence; the only normalization is JSON.parse() of that string on the JS side to obtain a comparable object graph. This does not alter field names, key order semantics, or numeric values -- it undoes the string envelope required to cross the wasm-bindgen boundary, and is documented in both compare.mjs and wasm_equivalence_native.rs."
+      },
+      "known_divergences_already_documented": [
+        "to_js(&json!({...})) returns {} on wasm32 -- must use to_js_str() instead (CLAUDE.md gotcha, confirmed still relevant; both algorithms chosen this checkpoint already use to_js_str, so this divergence did NOT affect them)",
+        "OcelLog field names differ on wasm32 (CLAUDE.md gotcha -- checkpoint 017's Explore agent found THREE distinct OcelLog types across crates, this refers specifically to bcinr_powl::ocel::OcelLog, not wasm4pm::models::OCEL; not exercised by DFG discovery or event statistics, so not applicable to this checkpoint's scope)",
+        "ActorId::as_bytes() fails on wasm32 -- use .public_key instead (CLAUDE.md gotcha, confirmed still relevant; not exercised by DFG discovery or event statistics, so not applicable to this checkpoint's scope)"
+      ],
+      "conclusion": "For the 2 algorithms exercised this checkpoint (DFG discovery, event statistics), native and wasm32 execution produce identical output on a fixed, deterministic fixture. This does NOT establish equivalence for the full algorithm surface of the crate (dozens of discover_*/analyze_* functions exist) -- only these 2 were run through the new harness. The 3 known CLAUDE.md divergences remain unaddressed and, by design, were sidestepped rather than fixed by picking algorithms that already route through to_js_str and do not touch OcelLog or ActorId."
+    }
+  ],
+  "comparison_mode": "direct_command_execution",
+  "comparison_mode_note": "No Lean citation applies to this checkpoint -- it verifies a Rust-internal (native/wasm32/SIMD) claim, not a Rust<->Lean correspondence.",
+  "achieved_evidence_class_summary": "2 wasm32 compilation gates: PASS (checkpoint 019, real command execution). SIMD-vs-scalar in-target equivalence: PASS (checkpoint 019, 23 existing tests). Native-vs-wasm32 cross-target equivalence: VERIFIED this checkpoint (036) for 2 algorithms (discover_dfg, analyze_event_statistics) via a new harness (wasm-equivalence-tests/) -- real Node.js execution against a real wasm-pack nodejs-target build, diffed against a native cargo test run on the identical fixture, byte-identical JSON agreement.",
+  "not_claimed": "full native/wasm32 output equivalence for the crate's entire algorithm surface (only 2 of dozens of discover_*/analyze_* functions were run through the harness this checkpoint); that the 3 documented CLAUDE.md gotchas have been fixed (they are pre-existing, known, and unaddressed -- the 2 algorithms chosen this checkpoint simply do not exercise the code paths where those gotchas apply); that any new SIMD equivalence test was added (the 23 SIMD tests from checkpoint 019 were not re-run this checkpoint, only cited)."
+}
