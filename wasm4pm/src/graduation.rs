@@ -5,6 +5,15 @@
 
 use wasm4pm_compat::engine_bridge::GraduationCandidate;
 
+/// Executable proof-carrying POWL 2 checker, broker, receipt, and replay bridge.
+#[path = "pc_powl2/mod.rs"]
+pub mod pc_powl2;
+
+pub use pc_powl2::{
+    canonical_digest, replay_receipt, FiniteStateDomain, PcPowl2Broker, PcPowl2Checker,
+    PcpResult, VerificationReport, VerificationStanding,
+};
+
 /// Intake a `GraduationCandidate` into the wasm4pm execution layer.
 ///
 /// Verifies that the candidate is grounded (carrying both a valid subject and
