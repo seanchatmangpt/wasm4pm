@@ -370,3 +370,4 @@ fn pointer_fixture_version_space_110_is_real() {
     // True pointer: "Sunny,Warm,?,Strong,?,?" — Mitchell 1982, Artificial Intelligence 18(2), Sections 3-4 (candidate-elimination); EnjoySport worked instance in Mitchell 1997 ML, Ch. 2, Tables 2.1/2.5
     assert_real_fixture("version_space");
 }
+

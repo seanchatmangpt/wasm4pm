@@ -55,30 +55,12 @@ jobs:
           print('DSPY_ADMISSION_ALIVE breeds=55 measurements=660 actuation=REFUSED')
           PY
 
-      - name: Checkout pinned ggen constructor
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Setup ggen
+        uses: ./.github/actions/setup-ggen
         with:
-          repository: seanchatmangpt/ggen
-          ref: e9298d4dbb1a22329e8aee4c8e2d622c25c72223
-          path: .tools/ggen
-          fetch-depth: 1
-
-      - name: Install pinned Rust toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-          rustup toolchain install nightly-2026-04-15 --profile minimal --component rustfmt --component clippy
-          rustup default nightly-2026-04-15
-          rustc --version
-          cargo --version
-
-      - name: Build exact ggen constructor
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo build --manifest-path .tools/ggen/Cargo.toml -p ggen-cli-lib --bin ggen --release
-          .tools/ggen/target/release/ggen --version || true
-          test "$(git -C .tools/ggen rev-parse HEAD)" = "e9298d4dbb1a22329e8aee4c8e2d622c25c72223"
+          ggen-ref: e9298d4dbb1a22329e8aee4c8e2d622c25c72223
+          rust-toolchain: nightly-2026-04-15
+          cache-key-suffix: cognition-manufacturing
 
       - name: ggen CONSTRUCT canonical benchmark projections
         shell: bash
@@ -86,7 +68,7 @@ jobs:
           set -euo pipefail
           (
             cd benchmark-manufacturing
-            ../.tools/ggen/target/release/ggen sync run
+            ggen sync run
           )
           git diff --check
 
