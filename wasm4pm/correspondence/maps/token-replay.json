@@ -1,0 +1,50 @@
+{
+  "algorithm_id": "token-replay",
+  "scope_note": "covers wasm4pm::conformance::trace_fitness only — excludes simd_token_replay.rs, which needs its own refinement proof (see W4PM-LEAN-GALL-009 finding)",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/conformance.rs",
+    "type": "(missing_tokens: usize, consumed_tokens: usize, tokens_remaining: usize, produced_tokens: usize)"
+  },
+  "encoder": {
+    "fn": "wasm4pm::correspondence::token_replay::compare_trace_fitness",
+    "path": "wasm4pm/src/correspondence/token_replay.rs",
+    "target": "canonical_carrier"
+  },
+  "canonical_carrier": {
+    "name": "ReplayCounts",
+    "fields": { "produced": "u64", "consumed": "u64", "missing": "u64", "remaining": "u64" },
+    "invariants": ["missing <= consumed", "remaining <= produced"]
+  },
+  "lean_input_type": {
+    "file": "mfact/procint/ProcInt/Conformance/TokenReplay.lean",
+    "type": "ReplayCounts",
+    "content_sha256": "0e33d099ad863eecade929d2242f0eaf18265b8e6b32fbccf7dd0bc82ee83185",
+    "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::token_replay::lean_fitness_exact",
+    "path": "wasm4pm/src/correspondence/token_replay.rs",
+    "source": "canonical_result"
+  },
+  "canonical_result": {
+    "name": "Fitness",
+    "type": "exact_rational",
+    "representation": "ExactRational { num: i64, den: i64 } — reduced, den > 0"
+  },
+  "rust_output_type": {
+    "path": "wasm4pm/src/conformance.rs",
+    "field": "trace_fitness",
+    "type": "f64"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation — mfact's .lake build directory does not exist (empty at time of this checkpoint), and TokenReplay.lean transitively imports all of Mathlib, making a first build impractical to run inline. lean_fitness_exact is a hand-transcribed, independently reviewable copy of the Lean formula's text, cited by content hash. See token_replay.rs module doc for the full scope boundary.",
+  "lean_theorem_ref": {
+    "name": "ProcInt.fitness",
+    "supporting_theorems": ["fitness_nonneg", "fitness_le_one", "fitness_mem_unitInterval", "fitness_perfect"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read during W4PM-LEAN-GALL-009 and re-confirmed during W4PM-LEAN-GALL-010's harness build"
+  },
+  "achieved_evidence_class": "carrier_mapped_formula_correspondence",
+  "not_claimed": "direct_theorem — this class requires either a live Lean re-verification of TokenReplay.lean's proof state, or independent kernel checking (leanchecker/nanoda), neither performed here"
+}

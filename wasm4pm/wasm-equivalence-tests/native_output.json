@@ -1,0 +1,65 @@
+{
+  "algorithm_dfg": {
+    "nodes": [
+      {
+        "id": "A",
+        "label": "A",
+        "frequency": 3
+      },
+      {
+        "id": "B",
+        "label": "B",
+        "frequency": 3
+      },
+      {
+        "id": "C",
+        "label": "C",
+        "frequency": 2
+      },
+      {
+        "id": "D",
+        "label": "D",
+        "frequency": 1
+      }
+    ],
+    "edges": [
+      {
+        "from": "A",
+        "to": "B",
+        "frequency": 2
+      },
+      {
+        "from": "A",
+        "to": "C",
+        "frequency": 1
+      },
+      {
+        "from": "B",
+        "to": "B",
+        "frequency": 1
+      },
+      {
+        "from": "B",
+        "to": "C",
+        "frequency": 1
+      },
+      {
+        "from": "B",
+        "to": "D",
+        "frequency": 1
+      }
+    ],
+    "start_activities": {
+      "A": 3
+    },
+    "end_activities": {
+      "C": 2,
+      "D": 1
+    }
+  },
+  "algorithm_event_statistics": {
+    "total_events": 9,
+    "total_cases": 3,
+    "avg_events_per_case": 3.0
+  }
+}

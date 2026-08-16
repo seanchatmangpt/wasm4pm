@@ -1,0 +1,46 @@
+{
+  "algorithm_id": "heuristic-miner-threshold",
+  "scope_note": "New carrier map for W4PM-LEAN-GALL-026, refining the heuristic-miner entry of heuristic-stochastic-miners.json (W4PM-LEAN-GALL-018) from no_lean_coverage to VALIDATOR_BACKED for a specific, narrow sub-claim: threshold-filtering MONOTONICITY, not the dependency-measure formula itself (already proven and mapped separately via causal-net-binding.json / causal_dependency_measure.rs, W4PM-LEAN-GALL-016/024) and not the discovery procedure's overall correctness (unaddressed).",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/advanced_algorithms.rs",
+    "symbol": "discover_heuristic_miner_from_log (lines 15-72)",
+    "type": "(&EventLog, activity_key: &str, dependency_threshold: f64) -> DFG"
+  },
+  "canonical_carrier": {
+    "name": "edgeSetAt",
+    "variants": "Finset (alpha x alpha), filtered from acts xs acts by EdgeSurvives",
+    "invariants": ["finite activity alphabet", "count : alpha -> alpha -> Nat directly-follows counts", "threshold t : Rat"]
+  },
+  "lean_input_type": {
+    "file": "mfact/procint/ProcInt/HeuristicMiner.lean",
+    "type": "EdgeSurvives, edgeSetAt, edgeSetAt_antitone, edgeSetAt_antitone_of_lt, edgeSetAt_eq_self, edgeSetAt_finite -- imports dependencyMeasure from ProcInt.Models.CausalNet rather than redefining it",
+    "content_sha256": "0da065c24c6c942bb542a2826f268e517e1b6370ffeb1a7b6706a87ce1804b4b",
+    "mfact_revision": "cf5e047264ccd117b49c97b0effb392a5e478e6b"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::heuristic_miner_threshold::edge_pairs",
+    "path": "wasm4pm/src/correspondence/heuristic_miner_threshold.rs",
+    "note": "extracts (from, to) edge pairs from a real DFG returned by discover_heuristic_miner_from_log, as a BTreeSet for canonical subset comparison -- not a reimplementation of the miner itself, which is called directly."
+  },
+  "canonical_result": {
+    "name": "EdgeSet",
+    "type": "BTreeSet<(String, String)>"
+  },
+  "rust_output_type": {
+    "path": "wasm4pm/src/correspondence/heuristic_miner_threshold.rs",
+    "field": "edge_pairs(&dfg) called on the REAL discover_heuristic_miner_from_log output at each of several thresholds",
+    "type": "BTreeSet<(String, String)>"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation for the differential test itself -- same standing constraint as every prior harness (mfact .lake build directory has no cached build products for this file at harness-authoring time). Unlike prior checkpoints, this one DID additionally attempt `lake build` on the new Lean file this same session -- lake build GallCheckpoint026 succeeded this session (8562 jobs, no sorry, no axiom) -- kernel-verified, see receipt for the exact log.",
+  "method": "threshold_sweep_subset_relation",
+  "method_note": "Runs the real discover_heuristic_miner_from_log at 8-10 distinct thresholds on 2 different logs, and checks the pairwise subset relation (t1 <= t2 => edges(t2) subset-of edges(t1)) for ALL O(n^2) threshold pairs, not just adjacent steps -- directly mirroring edgeSetAt_antitone's universally-quantified t1 <= t2 hypothesis.",
+  "lean_theorem_ref": {
+    "definitions": ["EdgeSurvives", "edgeSetAt", "edgeSetAt_antitone", "edgeSetAt_antitone_of_lt", "edgeSetAt_finite"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read + lake build SUCCESS during W4PM-LEAN-GALL-026 (8562 jobs, kernel-verified, no sorry/axiom)"
+  },
+  "achieved_evidence_class": "VALIDATOR_BACKED (threshold_monotonicity_only)",
+  "not_claimed": "correctness of the dependency-measure formula itself as wired into the real DFG (that claim is scoped to causal_dependency_measure.rs/causal-net-binding.json, which explicitly does NOT claim correspondence to wasm4pm's CausalRelation.strength); optimality or completeness of the discovered edge set at any single threshold; any claim about the AND/XOR split/join classification that consumes the DFG downstream (classify_heuristic_splits_joins, untouched by this checkpoint)."
+}

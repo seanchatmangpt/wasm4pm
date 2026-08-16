@@ -265,7 +265,17 @@ fn refuses_tampered_state_hash() {
         None,
     ))
     .expect_err("tamper must refuse");
-    assert_eq!(error, SessionError::StateHashMismatch);
+    // Setting `turn` without extending `turns` violates the turn/ledger-length
+    // invariant, which is checked before the hash — so this is InvalidState,
+    // not StateHashMismatch (that variant is exercised by
+    // refuses_semantically_forged_state_with_recomputed_hash below).
+    assert_eq!(
+        error,
+        SessionError::InvalidState {
+            reason: "persisted turn number must equal the non-empty turn ledger length"
+                .to_string(),
+        }
+    );
 }
 
 #[test]

@@ -1,0 +1,43 @@
+{
+  "algorithm_id": "dfg-multi-trace",
+  "scope_note": "Extends the `dfg` row of the W4PM-LEAN-GALL-009 lean-coverage ledger, whose key gap read: 'Lean model is single-trace, unweighted; Rust aggregates multi-trace with counts + start/end sets not modeled.' This checkpoint (W4PM-LEAN-GALL-023) adds new Lean definitions/theorems to mfact's Models/Dfg.lean modeling multi-trace log aggregation, and a new Rust correspondence harness comparing them against wasm4pm's real discover_dfg_from_log.",
+  "predecessor_harness": "checkpoint 017 (ocel-semantics.json) built the single-trace-only dfgOfTrace harness; this map covers the genuinely new multi-trace layer only.",
+  "harness_entries": [
+    {
+      "claim": "multi-trace DFG discovery: dfgOfLog folds dfgOfTrace over every trace in a log via Dfg.append (list append of edge multisets), matching discover_dfg_from_log's loop over col.trace_offsets which visits every trace and accumulates directly-follows pairs into one shared edge_counts BTreeMap.",
+      "lean_side": {
+        "file": "mfact/procint/ProcInt/Models/Dfg.lean",
+        "definitions": ["Dfg.append", "dfgOfLog", "traceStart", "traceEnd", "startActivities", "endActivities"],
+        "theorems": [
+          "dfgOfLog_nil",
+          "dfgOfLog_singleton",
+          "foldr_add_offset (private helper)",
+          "Dfg.append_weight",
+          "dfgOfLog_weight_eq_sum",
+          "startActivities_nil",
+          "startActivities_singleton_self",
+          "endActivities_singleton_self"
+        ],
+        "content_sha256": "0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e",
+        "mfact_revision": "PENDING — see receipts/W4PM-LEAN-GALL-023-dfg-multi-trace-closure.md for the mfact commit SHA created by this checkpoint",
+        "sorry_or_axiom_present": false,
+        "kernel_verified_this_session": true,
+        "verification_note": "`lake build ProcInt.Models.Dfg` completed successfully (8558 jobs) after `lake exe cache get` fetched prebuilt Mathlib oleans -- confirmed by a direct re-run of the build command, not merely inferred from a background job. This is the first checkpoint in the 010-023 program whose Lean-side claim is backed by an actual kernel-verified build rather than citation-by-hash alone; see receipts/W4PM-LEAN-GALL-023-dfg-multi-trace-closure.md for the exact command output."
+      },
+      "rust_side": {
+        "file": "wasm4pm/src/discovery.rs",
+        "symbol": "discover_dfg_from_log (lines 28-75)",
+        "note": "real production code; not OCEL-specific. Uses BTreeMap<(u32,u32), usize> edge_counts accumulated across every trace in col.trace_offsets, plus start_activities/end_activities BTreeMap<String, usize> frequency maps keyed by each trace's first/last activity."
+      },
+      "decoder": "wasm4pm::correspondence::dfg_multi_trace::{lean_dfg_of_log_weight, lean_start_activities, lean_end_activities}",
+      "comparison": "wasm4pm::correspondence::dfg_multi_trace::{compare_dfg_weight, real_start_activities, real_end_activities}",
+      "normalization": "lean_dfg_of_log_edges transcribes dfgOfLog's literal unaggregated edge list (one (from,to,1) triple per adjacent pair per trace, matching the Lean term exactly); lean_dfg_of_log_weight then aggregates via a filter+sum mirroring Dfg.weight's existing filter/foldr definition (unchanged by this checkpoint) -- the same state-then-aggregate discipline checkpoint 017 established for dfgOfTrace, now applied one level up at the log carrier.",
+      "method": "curated_fixture_domain",
+      "method_note": "10 tests: empty log, single-trace (matches dfgOfTrace_singleton), repeated-pair-within-one-trace, the central multi-trace claim (weight sums across traces rather than concatenating or counting trace-membership), a general per-trace-sum property check over 5 traces including an empty one, empty-traces-contribute-nothing, start/end-activity tallying across traces, empty-traces excluded from start/end tallies, a negative falsifier (trace-count aggregation vs. real occurrence-sum aggregation), and the lean-file-hash citation-freshness test. Not exhaustive -- logs are unbounded collections of unbounded traces, same rigor tier as checkpoints 012/016/017.",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (curated_fixture_domain)"
+    }
+  ],
+  "comparison_mode": "receipted_formula_with_kernel_verified_proof",
+  "comparison_mode_note": "The Rust harness itself is still a curated-fixture differential check against a hand-transcription, same methodology as every prior harness. UNLIKE prior harnesses, the Lean side was confirmed by a completed, independently re-run `lake build ProcInt.Models.Dfg` (8558 jobs, success) in this session -- not citation-by-hash alone.",
+  "not_claimed": "EXACT_CORRESPONDENCE/direct_theorem status for the Rust<->Lean formula-identity claim (the Rust side is still curated-fixture, not exhaustive); coverage of dfg-filtered/dfg-simd/dfg-hierarchical refinement rows (009 ledger) or ocel-dfg/ocel-dfg-per-type (still UNMAPPED per ocel-semantics.json); a general dfgOfLog_edges_eq_flatMap-style edge-list identity (only the weight/aggregated-frequency projection is compared, since that is the quantity discover_dfg_from_log actually returns per edge); kernel-verification of any *other* checkpoint's (010-020) Lean citations, which remain citation-by-hash only and were not re-verified here."
+}

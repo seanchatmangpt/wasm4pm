@@ -280,6 +280,16 @@ pub fn measure(arena: &PowlArena, root: u32) -> ComplexityReport {
 ///
 /// This mirrors `pm4py.analysis.simplicity_petri_net()` with variant="arc_degree".
 ///
+/// **This is a deliberately different metric from
+/// [`crate::ilp_discovery::compute_simplicity`]**, not a duplicate or a drifted copy of it:
+/// this function measures arc *density* relative to the maximum possible bipartite
+/// place-transition connectivity (`places * transitions`), while `ilp_discovery`'s version
+/// measures element *count* relative to the theoretical minimum for a linear sequence
+/// (`N+1` places, `N` transitions, `2N` arcs). Both are published pm4py-style simplicity
+/// variants with different reference baselines and are expected to disagree on the same
+/// input — see `test_simplicity_arc_degree_and_compute_simplicity_are_distinct_metrics`
+/// below, which asserts they diverge on a shared fixture.
+///
 /// # Arguments
 /// * `num_places` - Number of places in the Petri net
 /// * `num_transitions` - Number of transitions in the Petri net
@@ -424,5 +434,37 @@ mod tests {
         let s = simplicity_arc_degree(huge, huge, 7);
         assert!((0.0..=1.0).contains(&s), "score out of range: {}", s);
         assert!(s.is_finite(), "score must be finite");
+    }
+
+    /// W4PM-LEAN-GALL-031: proves `simplicity_arc_degree` (this module) and
+    /// `ilp_discovery::compute_simplicity` are legitimately DIFFERENT metrics, not two
+    /// copies of the same formula that drifted apart. Same (places, transitions, arcs)
+    /// input, deliberately different numeric outputs — arc-density-vs-max-possible-arcs
+    /// (this function) vs element-count-vs-linear-sequence-minimum (`compute_simplicity`).
+    #[test]
+    fn test_simplicity_arc_degree_and_compute_simplicity_are_distinct_metrics() {
+        use crate::ilp_discovery::compute_simplicity;
+
+        // A modest net with some parallelism: 4 places, 4 transitions, 6 arcs.
+        let (places, transitions, arcs) = (4usize, 4usize, 6usize);
+
+        let arc_degree_score = simplicity_arc_degree(places, transitions, arcs);
+        let element_count_score = compute_simplicity(places, transitions, arcs);
+
+        // arc_degree: 1 - 6/(4*4) = 1 - 0.375 = 0.625
+        assert!(
+            (arc_degree_score - 0.625).abs() < 1e-9,
+            "arc_degree formula changed: got {arc_degree_score}"
+        );
+
+        // The two metrics must disagree here — if they ever produce identical values on
+        // a broad sweep of inputs, that would suggest one has silently been reimplemented
+        // as a copy of the other, which is not the intent (see module doc above).
+        assert!(
+            (arc_degree_score - element_count_score).abs() > 1e-6,
+            "simplicity_arc_degree ({arc_degree_score}) and compute_simplicity \
+             ({element_count_score}) unexpectedly agree on ({places},{transitions},{arcs}) — \
+             they are documented as distinct metrics with different formulas"
+        );
     }
 }

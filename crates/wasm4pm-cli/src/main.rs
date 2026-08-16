@@ -70,6 +70,9 @@ enum Commands {
     /// Andon oracle for online prefix conformance and impossible prefix detection.
     #[command(subcommand)]
     Oracle(commands::oracle::OracleCommands),
+    /// Run and list registered cognitive breeds (wasm4pm-cognition).
+    #[command(subcommand)]
+    Cognition(commands::cognition::CognitionCommands),
 }
 
 fn main() {
@@ -119,6 +122,9 @@ fn try_main() -> anyhow::Result<()> {
         }
         Commands::Oracle(args) => {
             commands::oracle::handle_oracle_command(args)?;
+        }
+        Commands::Cognition(args) => {
+            commands::cognition::handle_cognition_command(args)?;
         }
     }
 

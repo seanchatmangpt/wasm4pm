@@ -247,10 +247,17 @@ fn bitmask_check(mask: u64, id: usize) -> bool {
     (mask >> id) & 1 == 1
 }
 
-/// Discover a Directly-Follows Graph (DFG) per object type from an OCEL
-#[wasm_bindgen]
-pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_ocel(ocel_handle, |ocel| {
+/// Pure-Rust per-object-type OC-DFG discovery: returns one `DFG` per object
+/// type without a wasm-bindgen boundary.
+///
+/// This is the canonical per-type OC-DFG implementation — it is also the
+/// computation `OCDFG::discover` (`advanced/ocdfg.rs`) delegates to, so the
+/// two previously-independent OC-DFG code paths no longer disagree (see
+/// `wasm4pm/correspondence/maps/ocel-semantics.json`, `flagged_defects_out_of_scope`,
+/// for the history of that consolidation).
+#[must_use]
+pub fn discover_ocel_dfg_per_type_pure(ocel: &OCEL) -> std::collections::BTreeMap<String, DFG> {
+    {
         let mut result: std::collections::BTreeMap<String, DFG> = std::collections::BTreeMap::new();
 
         // Build sorted activity vocabulary for stable index assignment
@@ -374,6 +381,15 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
             result.insert(obj_type.clone(), dfg);
         }
 
+        result
+    }
+}
+
+/// Discover a Directly-Follows Graph (DFG) per object type from an OCEL
+#[wasm_bindgen]
+pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_ocel(ocel_handle, |ocel| {
+        let result = discover_ocel_dfg_per_type_pure(ocel);
         // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
         to_js_str(&result)
     })

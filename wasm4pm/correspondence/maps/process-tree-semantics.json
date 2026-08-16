@@ -1,0 +1,45 @@
+{
+  "algorithm_id": "process-tree-semantics",
+  "scope_note": "the largest, most heavily-scoped-down checkpoint in this program. Bridges wasm4pm's ProcessTreeOperator DIRECTLY to mfact's Models/ProcessTree.lean only -- explicitly sidesteps the mfw/mfact POWL disagreement (mfw's POWLBridge.lean is proven but fully abstract, no real operators, unconnected to any concrete formalization; mfact's own Models/Powl.lean has real n-ary operators but NO proven trace-language function, so it cannot be bridged against either). Covers ONLY Sequence, ExclusiveChoice, Parallel, restricted to BINARY trees (matching ProcessTree.lean's binary constructors exactly, no n-ary desugaring built this pass). Excludes Loop (genuinely infinite trace language for nontrivial bodies -- the program requires bisimulation/automata equivalence for cyclic structures, not bounded sampling, deferred to 015B) and Or (confirmed dead code -- zero real production call sites in wasm4pm's discovery/conversion pipelines, no Lean counterpart in either mfact or mfw).",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/correspondence/process_tree_semantics.rs",
+    "type": "RestrictedTree { Leaf(u8), Seq(Box,Box), Xor(Box,Box), Par(Box,Box) } -- a purpose-built restricted carrier, not wasm4pm::process_tree::ProcessTree directly (that type is n-ary/Loop/Or-capable; no encoder from it to this restricted carrier was built this pass)"
+  },
+  "canonical_carrier": {
+    "name": "RestrictedTree",
+    "variants": ["Leaf(activity: u8)", "Seq(left, right)", "Xor(left, right)", "Par(left, right)"],
+    "invariants": ["binary only", "<= 3 leaves for the exhaustive check", "2-symbol alphabet {0,1}"]
+  },
+  "lean_input_type": {
+    "file": "mfact/procint/ProcInt/Models/ProcessTree.lean",
+    "type": "ProcessTree (inductive: leaf, silent, seq, xor, par, loop -- only leaf/seq/xor/par used here), ProcessTree.language",
+    "content_sha256": "00c76db7a3391ccf0dc5eb1346f29dd6e2e097564e8f549d22453348839935e0",
+    "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::process_tree_semantics::lean_language_exact",
+    "path": "wasm4pm/src/correspondence/process_tree_semantics.rs",
+    "note": "hand-transcribed copy of ProcessTree.language's literal definition (leaf/seq/xor/par cases) and its interleavings/seqLang helper definitions, quoted exactly, not executed"
+  },
+  "canonical_result": {
+    "name": "Language",
+    "type": "BTreeSet<Vec<u8>> -- finite set of traces (finite because no Loop is present)"
+  },
+  "rust_output_type": {
+    "path": "wasm4pm/src/correspondence/process_tree_semantics.rs",
+    "field": "rust_language (independently-written second implementation, structurally different code path from lean_language_exact, so the differential is meaningful)",
+    "type": "BTreeSet<Vec<u8>>"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation -- same constraint as every prior harness (mfact .lake build directory does not exist).",
+  "method": "exhaustive_trace_language_enumeration",
+  "method_note": "per the program's own requirement for acyclic structures: all RestrictedTree shapes up to 3 leaves (158 trees at this checkpoint's bounds) are enumerated, and the FULL trace language (a finite set) is compared for exact equality per tree -- not a bounded trace sample, which the program explicitly forbids for cyclic structures (irrelevant here since Loop is excluded) but which this checkpoint exceeds anyway by doing full language equality, not sampling.",
+  "lean_theorem_ref": {
+    "definitions": ["ProcessTree.language", "seqLang", "interleavings"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read during W4PM-LEAN-GALL-015"
+  },
+  "achieved_evidence_class": "carrier_mapped_formula_correspondence (exhaustive_acyclic_language_domain)",
+  "not_claimed": "direct_theorem/EXACT_CORRESPONDENCE (no live Lean re-verification); coverage of wasm4pm's real n-ary ProcessTree type directly (only a purpose-built binary restricted carrier); Loop (cyclic, deferred to 015B); Or (dead code, no Lean counterpart, no bridge attempted); any POWL-proper claim (partial orders, choice graphs, transitive reduction, normalization, Petri-net conversion -- all deferred, none attempted this pass); mfw's POWLBridge.lean correspondence (sidestepped entirely, not applicable to this bridge)"
+}

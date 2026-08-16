@@ -1,0 +1,65 @@
+{
+  "checkpoint_note": "One combined carrier-map file, not one-per-template as the design plan preferred (schema fields would be near-identical across all 6 templates and citing the same single Lean file/hash) -- a deliberate scope tradeoff for this pass, documented here rather than silently deviating from the plan.",
+  "lean_input_type": {
+    "file": "mfact/procint/ProcInt/Models/Declare.lean",
+    "content_sha256": "d83c5410833ce8d013d1fb03d14da7d3ae44a4aab953ace307148179b32724ae",
+    "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564",
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read during W4PM-LEAN-GALL-014"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation -- same constraint as every prior harness (mfact .lake build directory does not exist). Unlike 011/012, the Rust side of this checkpoint calls the REAL production pure core (declare_conformance::check_declare_conformance_pure) directly, not an independent reference implementation -- a stronger guarantee since it tests the actual shipped code path.",
+  "harnessed_templates": [
+    {
+      "algorithm_id": "declare-response",
+      "rust_symbol": "declare_conformance::check_declare_conformance_pure (Response arm)",
+      "lean_symbol": "Declare.lean:45-46 abbrev Response",
+      "evidence_domain": "full 6-type (satisfying/violating/vacuous/repeated-event x2/empty/shortest-counterexample)",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (per_constraint_six_evidence_domain)"
+    },
+    {
+      "algorithm_id": "declare-notcoexistence",
+      "rust_symbol": "declare_conformance::check_declare_conformance_pure (NotCoExistence arm)",
+      "lean_symbol": "Declare.lean:59-69 .notCoexistence arm",
+      "evidence_domain": "full 6-type",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (per_constraint_six_evidence_domain)"
+    },
+    {
+      "algorithm_id": "declare-precedence",
+      "rust_symbol": "declare_conformance::check_declare_conformance_pure (Precedence arm)",
+      "lean_symbol": "Declare.lean:51-52 abbrev Precedence",
+      "evidence_domain": "reduced-depth (satisfying/violating/vacuous/empty only, scope-bounded)",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (reduced_depth_domain)"
+    },
+    {
+      "algorithm_id": "declare-succession",
+      "rust_symbol": "declare_conformance::check_declare_conformance_pure (Succession arm)",
+      "lean_symbol": "Declare.lean:59-69 .succession arm (Response AND Precedence)",
+      "evidence_domain": "reduced-depth",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (reduced_depth_domain)"
+    },
+    {
+      "algorithm_id": "declare-existence",
+      "rust_symbol": "declare_conformance::check_declare_conformance_pure (Existence arm)",
+      "lean_symbol": "Declare.lean:59-69 .existence arm",
+      "evidence_domain": "reduced-depth",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (reduced_depth_domain)"
+    },
+    {
+      "algorithm_id": "declare-absence",
+      "rust_symbol": "declare_conformance::check_declare_conformance_pure (Absence arm)",
+      "lean_symbol": "Declare.lean:59-69 .absence arm",
+      "evidence_domain": "reduced-depth",
+      "achieved_evidence_class": "carrier_mapped_formula_correspondence (reduced_depth_domain)"
+    }
+  ],
+  "uncovered_ledger": [
+    { "template": "Init", "rust_status": "implemented, no dedicated correspondence test", "gap_type": "no_lean_coverage", "note": "no Lean counterpart found anywhere in mfact/procint/ProcInt" },
+    { "template": "CoExistence", "rust_status": "implemented and tested (in declare_conformance.rs's own test suite)", "gap_type": "no_lean_coverage", "note": "confirmed absent from Declare.lean, not merely unconfirmed -- checked live" },
+    { "template": "ChainResponse", "rust_status": "implemented and tested", "gap_type": "no_lean_coverage", "note": "no Lean counterpart" },
+    { "template": "ChainPrecedence", "rust_status": "implemented and tested", "gap_type": "no_lean_coverage", "note": "no Lean counterpart" },
+    { "template": "AlternateResponse", "rust_status": "not implemented at all", "gap_type": "rust_side_not_implemented", "note": "named in the governing program's minimum-required set, but wasm4pm has no such template and Lean has no such template either -- genuinely absent on both sides, not just unmapped" },
+    { "template": "exactlyOne", "rust_status": "not implemented at all", "gap_type": "rust_side_not_implemented", "note": "Lean-only: Declare.lean:30,64 def t.count c.activation = 1 -- wasm4pm only has separate Existence/Absence, no combined template" }
+  ],
+  "not_claimed": "direct_theorem/EXACT_CORRESPONDENCE for any harnessed template (no live Lean re-verification); coverage for the 4 no_lean_coverage templates or the 2 rust_side_not_implemented gaps"
+}

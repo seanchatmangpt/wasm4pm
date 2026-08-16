@@ -1,0 +1,50 @@
+{
+  "algorithm_id": "alignment-cost",
+  "scope_note": "covers only the per-move-kind cost mapping used inside wasm4pm::alignments::compute_trace_alignment's A* successor generation (alignments.rs:183-232), under the DEFAULT cost configuration (sync=0.0, log=1.0, model=1.0, invisible-model=0.0). Does NOT cover the A* search's own correctness (finding a globally optimal alignment), non-default cost configurations, or alignment_fitness.rs's derived fitness score.",
+  "rust_input_type": {
+    "crate": "wasm4pm",
+    "path": "src/correspondence/alignment_cost.rs",
+    "type": "(MoveKind, is_invisible_model_move: bool)"
+  },
+  "encoder": {
+    "fn": "n/a -- MoveKind is defined directly in the harness, no real-data encoding step",
+    "note": "this checkpoint compares cost-model formulas directly, not real alignment runs end-to-end"
+  },
+  "canonical_carrier": {
+    "name": "MoveKind",
+    "variants": ["Sync", "LogOnly", "ModelOnly", "SilentModel"],
+    "note": "mirrors mfact's Move inductive constructors exactly; SilentModel is a distinct Lean constructor, not ModelOnly+flag -- an invisible/empty-label Rust model move maps to the Lean SilentModel constructor, resolved explicitly in compare_move_cost, not conflated"
+  },
+  "lean_input_type": {
+    "file": "mfact/procint/ProcInt/Conformance/Moves.lean",
+    "type": "Move α T (inductive: sync, logOnly, modelOnly, silentModel), Move.cost : Move α T -> ℕ",
+    "content_sha256": "ab98579026f3e35450d92a2c8bd0034180149a19c1bb906ab7e31aec22237b0a",
+    "mfact_revision": "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564"
+  },
+  "decoder": {
+    "fn": "wasm4pm::correspondence::alignment_cost::lean_move_cost_exact",
+    "path": "wasm4pm/src/correspondence/alignment_cost.rs"
+  },
+  "canonical_result": { "name": "cost", "type": "ℕ on the Lean side, f64 on the Rust side, compared via epsilon-exact equality" },
+  "rust_output_type": {
+    "path": "wasm4pm/src/alignments.rs",
+    "lines": "183-232 (inline cost assignment in A* successor generation, independently transcribed as rust_move_cost, not refactored into a shared function)",
+    "type": "f64"
+  },
+  "comparison_mode": "receipted_formula_with_cited_proof",
+  "comparison_mode_note": "NOT a live Lean invocation -- same constraint as every prior harness (mfact .lake build directory does not exist).",
+  "lean_theorem_ref": {
+    "definitions": ["Move.cost"],
+    "supporting_theorems": ["Move.cost_le_one", "Move.cost_eq_zero_iff"],
+    "sorry_or_axiom_present": false,
+    "verified_by": "direct file read during W4PM-LEAN-GALL-013 (re-confirmed live, not cited from a prior round)"
+  },
+  "achieved_evidence_class": "carrier_mapped_formula_correspondence (finite-case-enumeration, cost-model scope only)",
+  "not_claimed": "direct_theorem/EXACT_CORRESPONDENCE; A* search-optimality correctness; correspondence for non-default cost configurations",
+  "other_conformance_metrics_in_this_checkpoint": {
+    "precision": "no_lean_coverage -- confirmed live: mfact has no def precision or theorem precision_* anywhere; QualityProfile.precision is an opaque, never-computed struct field",
+    "generalization": "no_lean_coverage -- same as precision; no estimator formalized",
+    "simplicity": "no_lean_coverage -- same; also a real naming collision found on the Rust side (3 distinct, mutually-inconsistent simplicity implementations: complexity_metrics.rs::simplicity_arc_degree, ilp_discovery.rs::compute_simplicity, benchmark.rs's log-based variant)",
+    "aggregate_conformance_verdict": "no_lean_coverage, unconditionally -- an aggregate combining metrics most of which have zero Lean coverage cannot itself have Lean coverage; multiple inconsistent Rust-side F1/quality-score implementations found (benchmark.rs::compute_quality_metrics, prediction_accuracy.rs::f1, ensemble.rs's ad-hoc quality_score), none canonical"
+  }
+}

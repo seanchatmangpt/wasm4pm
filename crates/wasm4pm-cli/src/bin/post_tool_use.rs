@@ -4,27 +4,18 @@
 //! and emits additionalContext if breeds.ttl was just modified.
 //!
 //! Replaces the bash script of the same name — no subprocess calls, no jq forks.
+//!
+//! Chain hashing delegates to affidavit's `ChainAssembler` — the hand-rolled
+//! `blake3_hex`/`blake3_hex2` functions are replaced by affidavit's canonical
+//! append-only BLAKE3 chain (genesis-seeded, deterministic, tamper-evident).
 
-use blake3::Hasher;
+use affidavit::chain::ChainAssembler;
+use affidavit::types::{Blake3Hash, ObjectRef, OperationEvent};
 use chrono::Utc;
 use serde_json::{json, Value};
 use std::fs::{self, OpenOptions};
-use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
-
-const GENESIS: &str = "0000000000000000000000000000000000000000000000000000000000000000";
-
-fn blake3_hex(data: &[u8]) -> String {
-    let hash = blake3::hash(data);
-    hash.to_hex().to_string()
-}
-
-fn blake3_hex2(a: &str, b: &str) -> String {
-    let mut h = Hasher::new();
-    h.update(a.as_bytes());
-    h.update(b.as_bytes());
-    h.finalize().to_hex().to_string()
-}
 
 fn main() {
     let project_dir = match std::env::var("CLAUDE_PROJECT_DIR") {
@@ -69,6 +60,8 @@ fn main() {
         return;
     }
 
+    // Build the canonical event payload and compute its BLAKE3 commitment
+    // via affidavit's Blake3Hash::from_bytes — the same primitive used inside ChainAssembler.
     let event_json = json!({
         "timestamp": timestamp,
         "tool": tool_name,
@@ -78,17 +71,49 @@ fn main() {
     });
     let event_str = event_json.to_string();
 
-    let event_hash = blake3_hex(event_str.as_bytes());
-
-    // Read previous chain hash from the last line of the log
+    // Derive a deterministic sequence number from the log length so events
+    // remain orderable even if the log is resumed across runs.
     let log_path = run_dir.join("tool-events.jsonl");
-    let prev_chain = if log_path.exists() {
-        read_last_chain_hash(&log_path).unwrap_or_else(|| GENESIS.to_string())
-    } else {
-        GENESIS.to_string()
+    let seq = count_log_lines(&log_path);
+
+    // Construct the affidavit OperationEvent.
+    // payload_commitment = Blake3Hash of the canonical event bytes.
+    let op_event = OperationEvent {
+        id: format!("post_tool_use:{seq}"),
+        seq,
+        event_type: format!("tool_use.{}", event_json["tool"].as_str().unwrap_or("unknown")),
+        objects: vec![ObjectRef {
+            id: file_path.clone(),
+            obj_type: "file".to_string(),
+            qualifier: if file_path.is_empty() {
+                None
+            } else {
+                Some("target".to_string())
+            },
+        }],
+        payload_commitment: Blake3Hash::from_bytes(event_str.as_bytes()),
     };
 
-    let chain_hash = blake3_hex2(&prev_chain, &event_hash);
+    // Load prior events from working receipt and rebuild the assembler so the
+    // chain is continuous across hook invocations within one agent session.
+    let working_path = run_dir.join("working-receipt.json");
+    let mut assembler = load_working_assembler(&working_path);
+
+    // Fold the new event into the chain.
+    if assembler.append(op_event).is_err() {
+        return;
+    }
+
+    // The rolling chain hash after folding in this event.
+    let chain_hash = assembler.events()
+        .last()
+        .map(|_| affidavit::chain::recompute_chain(assembler.events()))
+        .and_then(|r| r.ok())
+        .map(|h| h.to_string())
+        .unwrap_or_else(|| "0".repeat(64));
+
+    // event_hash = payload_commitment hex (what the event commits to)
+    let event_hash = Blake3Hash::from_bytes(event_str.as_bytes()).to_string();
 
     let entry = json!({
         "timestamp": timestamp,
@@ -98,8 +123,12 @@ fn main() {
         "exit_code": exit_code,
         "event_hash": event_hash,
         "chain_hash": chain_hash,
-        "hash_algo": "blake3",
+        "hash_algo": "blake3/affidavit",
     });
+
+    // Persist the updated event list to the working receipt file so the next
+    // invocation can resume the chain without loss.
+    save_working_assembler(&working_path, assembler.events());
 
     // Append to JSONL
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&log_path) {
@@ -121,25 +150,36 @@ fn main() {
     }
 }
 
-/// Read the `chain_hash` field from the last non-empty line of a JSONL file.
-fn read_last_chain_hash(path: &PathBuf) -> Option<String> {
-    let f = fs::File::open(path).ok()?;
-    let mut reader = BufReader::new(f);
+/// Count non-empty lines in the JSONL log to derive the next sequence number.
+fn count_log_lines(path: &PathBuf) -> u64 {
+    fs::read_to_string(path)
+        .unwrap_or_default()
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .count() as u64
+}
 
-    // Seek to end, walk back to find the last newline-terminated line
-    let file_len = reader.seek(SeekFrom::End(0)).ok()?;
-    if file_len == 0 {
-        return None;
+/// Load a `ChainAssembler` from the persisted working receipt JSON, or return
+/// a fresh genesis-seeded assembler when no working receipt exists yet.
+fn load_working_assembler(path: &PathBuf) -> ChainAssembler {
+    if !path.exists() {
+        return ChainAssembler::new();
     }
+    let bytes = match fs::read(path) {
+        Ok(b) => b,
+        Err(_) => return ChainAssembler::new(),
+    };
+    let events: Vec<OperationEvent> = match serde_json::from_slice(&bytes) {
+        Ok(v) => v,
+        Err(_) => return ChainAssembler::new(),
+    };
+    ChainAssembler::from_events(events).unwrap_or_else(|_| ChainAssembler::new())
+}
 
-    // Read the last 512 bytes — enough for any single JSONL entry tail
-    let start = file_len.saturating_sub(512);
-    reader.seek(SeekFrom::Start(start)).ok()?;
-
-    let mut tail = String::new();
-    reader.read_to_string(&mut tail).ok()?;
-
-    let last_line = tail.lines().rev().find(|l| !l.trim().is_empty())?;
-    let v: Value = serde_json::from_str(last_line).ok()?;
-    v["chain_hash"].as_str().map(|s| s.to_string())
+/// Persist the current event list to the working receipt JSON file so the
+/// chain can be resumed on the next hook invocation.
+fn save_working_assembler(path: &PathBuf, events: &[OperationEvent]) {
+    if let Ok(bytes) = serde_json::to_vec(events) {
+        let _ = fs::write(path, bytes);
+    }
 }

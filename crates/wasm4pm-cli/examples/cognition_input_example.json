@@ -1,0 +1,19 @@
+{
+  "intent": "diagnose infection risk",
+  "candidates": [],
+  "facts": [
+    { "key": "fever", "value": "true" },
+    { "key": "true", "value": "true" }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "rule-1",
+      "premise": ["true"],
+      "conclusion": "bacterial-infection-likely",
+      "certainty": 0.8
+    }
+  ],
+  "goals": [],
+  "state": []
+}

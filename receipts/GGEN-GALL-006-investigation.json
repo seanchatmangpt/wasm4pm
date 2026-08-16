@@ -1,0 +1,31 @@
+{
+  "checkpoint": "GGEN-GALL-006",
+  "title": "Hermetic ggen installation — investigation only",
+  "date": "2026-07-29",
+  "status": "investigation_complete_fix_deferred",
+  "target_repo": "/Users/sac/ggen (separate project — any fix requires its own authorization, out of scope for wasm4pm work)",
+  "wasm4pm_git_revision_at_investigation": "9ca674c91cde44a4c109c82685f6187ee97910ee",
+  "ggen_git_revision_at_investigation": "ba6c069bc68a8dd8c1e2555d1048ef3fa1912a8c",
+  "findings": [
+    {
+      "claim": "ocel-core absolute path dependency (/Users/sac/wasm4pm/crates/ocel-core)",
+      "verdict": "HISTORICAL, not live",
+      "evidence": "Only exists in an archived receipt (~/ggen/docs/archive/legacy_structure/receipts/GALL_CONFORM_001_RECEIPT.md:33, dated 2026-06-03, a migration blocked at Stage 2 and apparently abandoned). Live crates/ggen-graph/Cargo.toml has no ocel-core entry. /Users/sac/wasm4pm/crates/ocel-core does not exist on disk today — the archived path is dangling even if it were live.",
+      "action_for_fix_session": "run git -C ~/ggen status/diff first to rule out an uncommitted local reintroduction before assuming any manifest edit is needed"
+    },
+    {
+      "claim": "wasm4pm-compat hard absolute-path dependency",
+      "verdict": "STALE DOCUMENTATION, not a live violation",
+      "evidence": "Comments at ~/ggen/Cargo.toml:666, crates/ggen-lsp/Cargo.toml:12,26, crates/ggen-cli/Cargo.toml:46 claim a hard path dep, but the actual [dependencies] in crates/praxis-core/Cargo.toml:22 and crates/praxis-graphlaw/Cargo.toml:45 show wasm4pm-compat = \"26.6.29\", a plain crates.io version string. ggen currently complies with wasm4pm's own CLAUDE.md rule (\"wasm4pm-compat is crates.io only — never add a path dep\").",
+      "action_for_fix_session": "update the stale comments; if cargo publish --dry-run genuinely fails, name the real current blocker instead"
+    },
+    {
+      "claim": "packaged example workspace-edition rejection",
+      "verdict": "UNREPRODUCED statically",
+      "evidence": "~/ggen/examples/wasm4pm-verify/Cargo.toml looks structurally sound (isolated [workspace], edition = 2021, no path deps), identical to 7 other examples. Possible real culprit not confirmed: examples/tcps-generated/Cargo.toml:35 has a suspicious 'plain path dep, not a member edge' comment. Likely real cause per ~/ggen/Cargo.toml:971: wasm4pm-compat/wasm4pm use #![feature] gates requiring nightly Rust — a toolchain mismatch, not a manifest defect.",
+      "action_for_fix_session": "run cargo build in both wasm4pm-verify and tcps-generated to capture the real error before deciding on a fix"
+    }
+  ],
+  "no_files_modified_in_ggen": true,
+  "relationship_to_w4pm_gall_000": "the FM-GEN-006 ggen sync blocker recorded in receipts/W4PM-GALL-000-baseline.json is a separate, distinct issue from the three findings above — a live version-drift blocker (installed ggen 26.7.59 vs HEAD 26.15.2's QuerySource::Pack support), not resolved by any of this investigation's findings"
+}

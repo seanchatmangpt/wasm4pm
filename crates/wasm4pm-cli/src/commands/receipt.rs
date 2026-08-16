@@ -333,7 +333,9 @@ fn verify_challenge(args: &VerifyChallengeArgs) -> Result<()> {
     let has_issue = report.findings.iter().any(|f| {
         matches!(
             f.code,
-            wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected
+            wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMismatch
+                | wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMissing
+                | wasm4pm::receipt::ReceiptTruthRefusal::ObservedTraceNotChallengeBound
         )
     });
 
