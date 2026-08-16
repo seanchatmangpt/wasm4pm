@@ -29,6 +29,7 @@ bcinr = { version = "26.4.22" }
 bcinr-powl = { version = "26.6.25", features = ["std"] }
 wasm4pm-compat = { version = "26.8.7", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.7.23", path = "wasm4pm", features = ["cloud"] }
+affidavit = { git = "https://github.com/seanchatmangpt/affidavit", features = ["core"] }
 wasm4pm-cognition = { version = "26.7.23", path = "crates/wasm4pm-cognition" }
 prolog8 = { version = "26.7.23", path = "crates/prolog8" }
 miniml = { version = "26.7.23", path = "crates/miniml-core" }

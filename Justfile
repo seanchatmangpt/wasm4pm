@@ -75,7 +75,21 @@ workspace-pack-sync:
 project-evidence:
     python3 scripts/project_evidence.py
 
+# Western Electric SPC rules applied to breed fitness time-series.
+# Reads ocel/reports/*.json (current) and ocel/reports/history/**/*.json (historical).
+# Exits 1 if any WE violation is detected; 0 if all breeds are within control limits.
+# Add historical snapshots under ocel/reports/history/<breed>/<date>.json to enable
+# multi-point rules (9-in-a-row, 6-point trend, etc.).
+breed-health:
+    python3 scripts/breed_health.py
+
+# Same as breed-health but outputs JSON (suitable for CI artifact upload).
+breed-health-json:
+    python3 scripts/breed_health.py --json
+
 # Conformance gate: lsp-check, sync, and fail on any drift in generated surfaces.
+# After ggen Ed25519 verification (ggen-verify), also runs affi receipt verify
+# for cryptographic chain integrity + continuity + commitment verification.
 ggen-gate:
     ggen sync
     git diff --exit-code -- \
@@ -86,6 +100,7 @@ ggen-gate:
         crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
     just ggen-verify
     just ggen-bridge
+    just ggen-affi-verify
 
 # Cryptographic receipt verification (Ed25519 chain; ggen >= 26.6.9).
 # The CLI exits 0 even on invalid receipts, so gate on the is_valid field.
@@ -95,3 +110,11 @@ ggen-verify:
 
 ggen-bridge:
     python3 scripts/ggen_receipt_bridge.py
+
+# Affidavit cryptographic conformance check.
+# Bridges the ggen receipt into an affi receipt (emit → assemble → verify),
+# running chain integrity + continuity + commitment verification via `affi`.
+# If `affi` is not installed a warning is printed and the step soft-skips
+# (to hard-require affi, install it: cargo install --path /tmp/affidavit).
+ggen-affi-verify:
+    python3 scripts/affi_ggen_verify.py
