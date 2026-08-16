@@ -702,9 +702,6 @@ pub use discovery::discover_dfg;
 pub use state::delete_object;
 pub use xes_format::{load_eventlog_from_xes, load_eventlog_from_xes_cached};
 
-#[cfg(feature = "cognition")]
-pub use wasm4pm_cognition as cognition;
-
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
 use state::*;
