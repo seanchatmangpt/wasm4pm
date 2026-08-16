@@ -22,8 +22,14 @@ fn distinct_states() -> (RlState, RlState) {
 
 fn key_of(s: &RlState) -> u64 {
     encode_rl_state_key(
-        s.health_level, s.event_rate_q, s.activity_count_q, s.spc_alert_level,
-        s.drift_status, s.rework_ratio_q, s.circuit_state, s.cycle_phase,
+        s.health_level,
+        s.event_rate_q,
+        s.activity_count_q,
+        s.spc_alert_level,
+        s.drift_status,
+        s.rework_ratio_q,
+        s.circuit_state,
+        s.cycle_phase,
     )
 }
 
@@ -31,7 +37,11 @@ fn key_of(s: &RlState) -> u64 {
 fn fm1_states_are_actually_distinct() {
     // Vacuity gate: if this fails, the rest of FM-1 is meaningless.
     let (s, s_next) = distinct_states();
-    assert_ne!(key_of(&s), key_of(&s_next), "test states must encode distinctly");
+    assert_ne!(
+        key_of(&s),
+        key_of(&s_next),
+        "test states must encode distinctly"
+    );
     assert_ne!(s, s_next, "test states must be PartialEq-distinct");
 }
 
@@ -75,9 +85,15 @@ fn fm1_orchestrator_update_changes_q_directionally() {
     assert!(
         (q1 - q0).abs() > 1e-7,
         "Bellman update with s!=s' was a no-op: {} -> {} (FM-1 footprint)",
-        q0, q1
+        q0,
+        q1
     );
-    assert!(q1 > q0, "positive reward must increase Q(s,a): {} -> {}", q0, q1);
+    assert!(
+        q1 > q0,
+        "positive reward must increase Q(s,a): {} -> {}",
+        q0,
+        q1
+    );
 }
 
 /// Look up Q(state, action) for the active QLearning agent in exported tables.

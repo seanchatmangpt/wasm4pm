@@ -2,13 +2,17 @@ use std::collections::BTreeSet;
 
 use wasm4pm_cognition::gmrw::{
     diagnose_requirements, select_operators, CandidateKind, CandidateStatement,
-    CapabilityDescriptor, ExecutionClass, GmrwGraph, GraphAdmissionOutcome,
-    GraphAdmissionPolicy, GraphAdmissionRefusal, ObligationKind, OntologyStatement,
-    OperatorDescriptor, OperatorRegistry, Polarity, ReasoningBudget, ReasoningClock,
-    Requirement, RequirementMode, SemanticStatus,
+    CapabilityDescriptor, ExecutionClass, GmrwGraph, GraphAdmissionOutcome, GraphAdmissionPolicy,
+    GraphAdmissionRefusal, ObligationKind, OntologyStatement, OperatorDescriptor, OperatorRegistry,
+    Polarity, ReasoningBudget, ReasoningClock, Requirement, RequirementMode, SemanticStatus,
 };
 
-fn statement(subject: &str, predicate: &str, object: &str, polarity: Polarity) -> OntologyStatement {
+fn statement(
+    subject: &str,
+    predicate: &str,
+    object: &str,
+    polarity: Polarity,
+) -> OntologyStatement {
     OntologyStatement {
         subject: subject.to_string(),
         predicate: predicate.to_string(),

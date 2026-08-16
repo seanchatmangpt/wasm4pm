@@ -59,7 +59,11 @@ impl InterviewAssistScenario {
     }
 
     #[must_use]
-    pub fn confirm(mut self, track_id: impl Into<String>, choice: InterviewAssistConfirmationChoice) -> Self {
+    pub fn confirm(
+        mut self,
+        track_id: impl Into<String>,
+        choice: InterviewAssistConfirmationChoice,
+    ) -> Self {
         self.request.confirmation = Some(InterviewAssistConfirmation {
             track_id: track_id.into(),
             choice,
@@ -68,7 +72,11 @@ impl InterviewAssistScenario {
     }
 
     #[must_use]
-    pub fn confirm_prompt(self, response: &InterviewAssistResponse, choice: InterviewAssistConfirmationChoice) -> Self {
+    pub fn confirm_prompt(
+        self,
+        response: &InterviewAssistResponse,
+        choice: InterviewAssistConfirmationChoice,
+    ) -> Self {
         self.confirm(response.prompt_track(), choice)
     }
 
@@ -129,7 +137,11 @@ pub trait InterviewAssistResponseExt {
 
 impl InterviewAssistResponseExt for InterviewAssistResponse {
     fn assert_success(&self) -> &Self {
-        assert!(self.result.is_some(), "expected success, got {:?}", self.refusal);
+        assert!(
+            self.result.is_some(),
+            "expected success, got {:?}",
+            self.refusal
+        );
         assert!(self.refusal.is_none());
         self
     }
@@ -145,7 +157,11 @@ impl InterviewAssistResponseExt for InterviewAssistResponse {
     }
 
     fn prompt_track(&self) -> &str {
-        &self.confirmation.as_ref().expect("confirmation prompt").track_id
+        &self
+            .confirmation
+            .as_ref()
+            .expect("confirmation prompt")
+            .track_id
     }
 
     fn refusal_code(&self) -> Option<&str> {

@@ -136,10 +136,7 @@ pub enum AutonomicError {
     #[error("REFUSED:RECURSIVE_REGULATOR_ROOT_COUNT:{0}")]
     RecursiveRegulatorRootCount(usize),
     #[error("REFUSED:VSM_PROFILE_INCOMPLETE:node={node}:missing={missing:?}")]
-    VsmProfileIncomplete {
-        node: String,
-        missing: Vec<VsmRole>,
-    },
+    VsmProfileIncomplete { node: String, missing: Vec<VsmRole> },
     #[error("REFUSED:SERIALIZATION_FAILURE:{0}")]
     SerializationFailure(String),
 }
@@ -208,11 +205,7 @@ impl BoundedPlant {
         }
         Self::check_bound("states", states.len(), budget.max_states)?;
         Self::check_bound("actions", actions.len(), budget.max_actions)?;
-        Self::check_bound(
-            "disturbances",
-            disturbances.len(),
-            budget.max_disturbances,
-        )?;
+        Self::check_bound("disturbances", disturbances.len(), budget.max_disturbances)?;
         Self::check_bound(
             "transition_records",
             transitions.len(),
@@ -586,7 +579,10 @@ pub fn assess_requisite_variety(
             }
         }
         if by_disturbance
-            .insert(requirement.disturbance, requirement.admissible_responses.clone())
+            .insert(
+                requirement.disturbance,
+                requirement.admissible_responses.clone(),
+            )
             .is_some()
         {
             return Err(AutonomicError::DuplicateDisturbanceRequirement(
@@ -723,7 +719,9 @@ pub fn assess_model_adequacy(
             return Err(AutonomicError::UnknownAction(key.action));
         }
         if !model.admitted_actions.contains(&key.action) {
-            return Err(AutonomicError::ModelPredictionOutsideAdmittedActions(key.action));
+            return Err(AutonomicError::ModelPredictionOutsideAdmittedActions(
+                key.action,
+            ));
         }
         if !plant.disturbances.contains(&key.disturbance) {
             return Err(AutonomicError::UnknownDisturbance(key.disturbance));
@@ -784,9 +782,7 @@ pub fn assess_model_adequacy(
 
 /// Authority is ordered by reversibility. None of these variants is
 /// consequential-world DO authority.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum AdaptationAuthority {
     ObserveOnly = 0,
@@ -1014,9 +1010,7 @@ pub fn ultrastable_decision(
 
 /// Stafford Beer VSM roles. System 3* is represented explicitly because audit
 /// evidence is not equivalent to ordinary System 3 control.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum VsmRole {
     System1Operations,
     System2Coordination,
@@ -1077,9 +1071,7 @@ pub fn validate_recursive_regulator(
             if !seen.insert(id.to_string()) {
                 return Err(AutonomicError::RecursiveRegulatorCycle(id.to_string()));
             }
-            cursor = by_id
-                .get(id)
-                .and_then(|current| current.parent.as_deref());
+            cursor = by_id.get(id).and_then(|current| current.parent.as_deref());
         }
     }
 
@@ -1331,9 +1323,7 @@ mod tests {
     }
 
     fn kernel(plant: &BoundedPlant) -> ViabilityKernel {
-        plant
-            .viability_kernel(&BTreeSet::from([0, 1]))
-            .unwrap()
+        plant.viability_kernel(&BTreeSet::from([0, 1])).unwrap()
     }
 
     fn envelope(status_value: i64) -> (ViabilityEnvelope, MeasuredState) {
@@ -1459,21 +1449,35 @@ mod tests {
     #[test]
     fn viability_envelope_distinguishes_margin_from_violation() {
         let (env, healthy) = envelope(15);
-        assert_eq!(env.assess(&healthy).unwrap().status, ViabilityStatus::Viable);
+        assert_eq!(
+            env.assess(&healthy).unwrap().status,
+            ViabilityStatus::Viable
+        );
         let (_, margin) = envelope(19);
-        assert_eq!(env.assess(&margin).unwrap().status, ViabilityStatus::Threatened);
+        assert_eq!(
+            env.assess(&margin).unwrap().status,
+            ViabilityStatus::Threatened
+        );
         let (_, failed) = envelope(21);
-        assert_eq!(env.assess(&failed).unwrap().status, ViabilityStatus::Outside);
+        assert_eq!(
+            env.assess(&failed).unwrap().status,
+            ViabilityStatus::Outside
+        );
     }
 
     #[test]
     fn empty_viability_envelope_is_refused_not_vacuously_admitted() {
-        let env = ViabilityEnvelope { constraints: vec![] };
+        let env = ViabilityEnvelope {
+            constraints: vec![],
+        };
         let state = MeasuredState {
             state_id: 0,
             signals: BTreeMap::new(),
         };
-        assert_eq!(env.assess(&state), Err(AutonomicError::EmptyViabilityEnvelope));
+        assert_eq!(
+            env.assess(&state),
+            Err(AutonomicError::EmptyViabilityEnvelope)
+        );
     }
 
     #[test]
@@ -1550,7 +1554,9 @@ mod tests {
                     RegulatorDeficit::InsufficientRequisiteVariety
                 );
                 assert!(!intent.grants_consequential_do());
-                assert!(intent.requested_artifacts.contains(&"regulator_model".to_string()));
+                assert!(intent
+                    .requested_artifacts
+                    .contains(&"regulator_model".to_string()));
             }
             other => panic!("unexpected verdict: {other:?}"),
         }
@@ -1629,12 +1635,15 @@ mod tests {
         let assessed = assessment(&plant, env.assess(&state).unwrap(), &[11], true);
         let contract = RegulationContract::new("c1", AdaptationAuthority::ObserveOnly).unwrap();
         let verdict = ultrastable_decision(&contract, &assessed);
-        assert_eq!(verdict, AutonomicVerdict::Admitted(AutonomicDecision::Maintain));
+        assert_eq!(
+            verdict,
+            AutonomicVerdict::Admitted(AutonomicDecision::Maintain)
+        );
 
-        let r1 = AutonomicReceipt::issue("subject@sha", &plant, &contract, &assessed, &verdict)
-            .unwrap();
-        let r2 = AutonomicReceipt::issue("subject@sha", &plant, &contract, &assessed, &verdict)
-            .unwrap();
+        let r1 =
+            AutonomicReceipt::issue("subject@sha", &plant, &contract, &assessed, &verdict).unwrap();
+        let r2 =
+            AutonomicReceipt::issue("subject@sha", &plant, &contract, &assessed, &verdict).unwrap();
         assert_eq!(r1, r2);
         assert!(!r1.grants_consequential_do());
         r1.verify(&plant, &contract, &assessed, &verdict).unwrap();
@@ -1648,8 +1657,7 @@ mod tests {
         let contract = RegulationContract::new("c1", AdaptationAuthority::ObserveOnly).unwrap();
         let verdict = ultrastable_decision(&contract, &assessed);
         let mut receipt =
-            AutonomicReceipt::issue("subject@sha", &plant, &contract, &assessed, &verdict)
-                .unwrap();
+            AutonomicReceipt::issue("subject@sha", &plant, &contract, &assessed, &verdict).unwrap();
         receipt.receipt_digest.replace_range(0..1, "x");
         assert_eq!(
             receipt.verify(&plant, &contract, &assessed, &verdict),

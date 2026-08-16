@@ -87,5 +87,8 @@ pub fn first_response() -> InterviewAssistResponse {
 }
 
 pub fn refusal_code(response: &InterviewAssistResponse) -> Option<&str> {
-    response.refusal.as_ref().map(|refusal| refusal.code.as_str())
+    response
+        .refusal
+        .as_ref()
+        .map(|refusal| refusal.code.as_str())
 }

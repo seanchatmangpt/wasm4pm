@@ -37,6 +37,9 @@ fn cognition_state_matches_persisted_state() {
     let projected = response.cognition_state.as_ref().expect("cognition state");
     let persisted = response.success_state();
     assert_eq!(projected.revision, persisted.revision);
-    assert_eq!(projected.confirmed_track, persisted.cognition.committed_track);
+    assert_eq!(
+        projected.confirmed_track,
+        persisted.cognition.committed_track
+    );
     assert_eq!(projected.phase, persisted.cognition.phase);
 }
