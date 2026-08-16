@@ -37,16 +37,17 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           # The integration crown intentionally carries one composition court plus
-          # 13 bounded purpose-specific workflows. Count remains fail-closed: adding
+          # 14 bounded purpose-specific workflows. Count remains fail-closed: adding
           # or removing a workflow requires an explicit constitutional update here.
           # Current admitted purpose workflows:
           # benchmark-last24h.yml, cognition-55-divan.yml, cognition-manufacturing.yml,
           # enterprise-architecture-bench.yml, gymact-process-testkit.yml,
-          # mfw-gmrw-offline-verifier-transport.yml, pc-powl2-8pow4.yml, pc-powl2.yml,
-          # per-item-validation.yml, process-science-bench.yml,
-          # repair-benchmark-compat.yml, sregym-issue-reasoning-bench.yml, wasm4auto.yml.
+          # interviewassist-wpm.yml, mfw-gmrw-offline-verifier-transport.yml,
+          # pc-powl2-8pow4.yml, pc-powl2.yml, per-item-validation.yml,
+          # process-science-bench.yml, repair-benchmark-compat.yml,
+          # sregym-issue-reasoning-bench.yml, wasm4auto.yml.
           count="$(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
-          test "$count" -eq 14
+          test "$count" -eq 15
           printf 'subject_sha=%s\nworkflow_count=%s\n' "$EXPECTED_SHA" "$count"
 
       - name: Install repository-pinned Rust
@@ -123,7 +124,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/ci
           cat > artifacts/ci/receipt.json <<JSON
-          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":14,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
+          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":15,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
           JSON
           cat artifacts/ci/receipt.json
 
