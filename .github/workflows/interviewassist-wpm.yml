@@ -1,0 +1,192 @@
+name: InterviewAssist direct wpm court
+
+on:
+  pull_request:
+    paths:
+      - 'apps/wasm4pm/src/nouns/lab/interview-assist*.ts'
+      - 'apps/wasm4pm/src/nouns/lab/index.ts'
+      - 'examples/interview-assist/**'
+      - '.github/workflows/interviewassist-wpm.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/wasm4pm/src/nouns/lab/interview-assist*.ts'
+      - 'apps/wasm4pm/src/nouns/lab/index.ts'
+      - 'examples/interview-assist/**'
+      - '.github/workflows/interviewassist-wpm.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: interviewassist-wpm-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  direct-wpm:
+    name: exact-head InterviewAssist receipt chain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Assert exact subject
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'subject_sha=%s\n' "$EXPECTED_SHA"
+
+      - name: Install repository Rust and wasm target
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          targets: wasm32-unknown-unknown
+
+      - name: Install declared Node and pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare "$(node -p "require('./package.json').packageManager")" --activate
+          node --version
+          pnpm --version
+
+      - name: Install wasm-pack 0.13.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install wasm-pack --version 0.13.1 --locked
+          test "$(wasm-pack --version)" = "wasm-pack 0.13.1"
+
+      - name: Install Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Install immutable workspace and materialize cognition WASM
+        run: pnpm install --frozen-lockfile
+
+      - name: Build wpm runtime dependency closure
+        run: pnpm --filter @wasm4pm/cli... build
+
+      - name: Run built wpm binary through real InterviewAssist boundaries
+        env:
+          WASM4PM_OTEL_ENABLED: 'true'
+          WASM4PM_OTEL_ENDPOINT: http://127.0.0.1:9
+          WASM4PM_SPANS_FILE: .wasm4pm/spans.jsonl
+        run: |
+          set -euo pipefail
+          node apps/wasm4pm/dist/bin/wpm.js \
+            lab interview-assist \
+            --workspace "$GITHUB_WORKSPACE" \
+            --output "$GITHUB_WORKSPACE/.wasm4pm/interview-assist/latest.json" \
+            --timeout-ms 150000 \
+            > /tmp/interview-assist-wpm.json
+          cat /tmp/interview-assist-wpm.json
+
+      - name: Independently verify emitted evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+
+          const hex64 = /^[0-9a-f]{64}$/;
+          const expectedStages = [
+            'admission',
+            'cognition-run',
+            'sandbox-execution',
+            'test-result',
+            'accessibility-projection',
+          ];
+          const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
+
+          const stdout = await readJson('/tmp/interview-assist-wpm.json');
+          if (stdout.status !== 'verified' || stdout.receipt_count !== 5) {
+            throw new Error(`unexpected wpm stdout: ${JSON.stringify(stdout)}`);
+          }
+
+          const evidence = await readJson('.wasm4pm/interview-assist/latest.json');
+          if (evidence.status !== 'verified' || evidence.command !== 'wpm lab interview-assist') {
+            throw new Error('session evidence did not record a verified direct CLI run');
+          }
+          const stages = evidence.stages;
+          if (!Array.isArray(stages) || stages.length !== expectedStages.length) {
+            throw new Error(`expected ${expectedStages.length} stages`);
+          }
+          const seen = new Set();
+          stages.forEach((entry, index) => {
+            if (entry.stage !== expectedStages[index]) throw new Error(`wrong stage at ${index}`);
+            const receipt = entry.receipt;
+            const checksum = receipt?.checksum?.checksumValue;
+            if (receipt?.checksum?.algorithm !== 'BLAKE3' || !hex64.test(checksum)) {
+              throw new Error(`invalid receipt checksum at ${entry.stage}`);
+            }
+            if (seen.has(checksum)) throw new Error(`duplicate checksum at ${entry.stage}`);
+            seen.add(checksum);
+            if (index === 0) {
+              if (receipt.derivedFrom !== undefined || receipt.relation !== undefined) {
+                throw new Error('chain head unexpectedly has a predecessor');
+              }
+            } else {
+              const predecessor = stages[index - 1].receipt.checksum.checksumValue;
+              if (receipt.derivedFrom !== predecessor || receipt.relation !== predecessor) {
+                throw new Error(`broken predecessor link at ${entry.stage}`);
+              }
+            }
+          });
+          if (evidence.execution?.exit_code !== 0 || evidence.visible_test?.exit_code !== 0) {
+            throw new Error('real Python or pytest execution did not exit zero');
+          }
+
+          const commandReceipt = await readJson('.wasm4pm/receipts/latest.json');
+          if (commandReceipt.command !== 'lab interview-assist' || commandReceipt.status !== 'success') {
+            throw new Error('wpm command receipt did not record success');
+          }
+          if (!hex64.test(commandReceipt.input_hash) || !hex64.test(commandReceipt.output_hash)) {
+            throw new Error('wpm command receipt hashes are invalid');
+          }
+
+          const spans = (await readFile('.wasm4pm/spans.jsonl', 'utf8'))
+            .trim()
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => JSON.parse(line));
+          const span = spans.find((entry) => entry.name === 'wpm.lab.interview-assist');
+          if (!span || span.status?.code !== 'OK') {
+            throw new Error('wpm.lab.interview-assist OK span not found');
+          }
+          NODE
+
+      - name: Upload exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interviewassist-wpm-${{ github.run_id }}
+          path: |
+            /tmp/interview-assist-wpm.json
+            .wasm4pm/interview-assist/latest.json
+            .wasm4pm/receipts/latest.json
+            .wasm4pm/spans.jsonl
+          if-no-files-found: warn
+          retention-days: 14
