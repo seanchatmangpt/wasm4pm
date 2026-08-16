@@ -26,6 +26,7 @@ import { feedbackVerb } from './feedback.js';
 import { mlVerb } from './ml.js';
 import { temporalVerb } from './temporal.js';
 import { socialVerb } from './social.js';
+import { interviewAssistVerb } from './interview-assist.js';
 
 export const labNoun = defineNoun({
   name: 'lab',
@@ -52,5 +53,6 @@ export const labNoun = defineNoun({
     mlVerb,
     temporalVerb,
     socialVerb,
+    interviewAssistVerb,
   ],
 });
