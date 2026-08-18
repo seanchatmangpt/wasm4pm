@@ -36,14 +36,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          # 8, not 1: this repo also keeps 7 real benchmark/repair workflows
-          # (benchmark-last24h.yml, cognition-55-divan.yml, cognition-manufacturing.yml,
-          # enterprise-architecture-bench.yml, process-science-bench.yml,
-          # repair-benchmark-compat.yml, sregym-issue-reasoning-bench.yml) added after
-          # this ci.yml's original baseline commit, none of which overlap this workflow's
-          # verify job. Preserving their coverage is deliberate, not drift.
+          # 9, not 1: this repo keeps 7 benchmark/repair workflows plus the
+          # dedicated deterministic-dynamic-ui verifier alongside this CI workflow.
+          # Preserving all independent coverage is deliberate, not drift.
           count="$(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
-          test "$count" -eq 8
+          test "$count" -eq 9
           printf 'subject_sha=%s\nworkflow_count=%s\n' "$EXPECTED_SHA" "$count"
 
       - name: Install repository-pinned Rust
@@ -120,7 +117,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/ci
           cat > artifacts/ci/receipt.json <<JSON
-          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":8,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
+          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":9,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
           JSON
           cat artifacts/ci/receipt.json
 
