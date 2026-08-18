@@ -36,11 +36,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          # 9, not 1: this repo also keeps 7 real benchmark/repair workflows plus
-          # u8-construct-part.yml, whose exact-artifact court owns the new bounded
-          # interchangeable-part surface without replacing this full CI boundary.
+          # Exact as-found topology on this branch: 14 pre-existing workflow
+          # files plus u8-construct-part.yml. The bounded artifact court augments
+          # rather than replaces the repository's full CI/benchmark surface.
           count="$(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
-          test "$count" -eq 9
+          test "$count" -eq 15
           printf 'subject_sha=%s\nworkflow_count=%s\n' "$EXPECTED_SHA" "$count"
 
       - name: Install repository-pinned Rust
@@ -117,7 +117,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/ci
           cat > artifacts/ci/receipt.json <<JSON
-          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":9,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
+          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":15,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
           JSON
           cat artifacts/ci/receipt.json
 
