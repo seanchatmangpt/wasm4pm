@@ -12,11 +12,11 @@
 /// Exhaustive size of the semantic selector alphabet.
 pub const SELECTOR_COUNT: u16 = 256;
 
-/// The host owns the admitted selector -> execution-capsule relation.
-///
-/// A conforming host must establish OCEL v2/corpus/part standing before
-/// instantiating this module. `construct` is not a dynamic query interface: its
-/// argument is the already-bounded capsule selector.
+// The host owns the admitted selector -> execution-capsule relation.
+//
+// A conforming host must establish OCEL v2/corpus/part standing before
+// instantiating this module. `construct` is not a dynamic query interface: its
+// argument is the already-bounded capsule selector.
 #[cfg(target_arch = "wasm32")]
 #[link(wasm_import_module = "chatman")]
 extern "C" {
