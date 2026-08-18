@@ -1,0 +1,14 @@
+[package]
+name = "wasm4pm-u8-part"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Minimal construct-only WASM interchangeable part with one-byte semantic dispatch"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
