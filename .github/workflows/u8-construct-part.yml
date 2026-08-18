@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "Cargo.toml"
+      - "Cargo.lock"
       - "crates/wasm4pm-u8-part/**"
       - "scripts/seal_u8_part.py"
       - "scripts/verify_u8_part_wasm.py"
@@ -13,6 +14,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   qualify:
     runs-on: ubuntu-latest
@@ -20,6 +24,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Assert exact subject identity
+        run: test "$(git rev-parse HEAD)" = "${CANDIDATE_SHA}"
 
       - name: Install pinned Rust toolchain and wasm target
         run: |
@@ -45,9 +53,9 @@ jobs:
           python3 scripts/verify_u8_part_wasm.py \
             target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
 
-      - name: Publish bounded evidence artifact
+      - name: Publish bounded exact-head evidence artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wasm4pm-u8-part-${{ github.sha }}
+          name: wasm4pm-u8-part-${{ env.CANDIDATE_SHA }}
           path: target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
           if-no-files-found: error
