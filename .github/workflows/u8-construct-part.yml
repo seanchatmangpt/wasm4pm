@@ -1,0 +1,53 @@
+name: u8 construct part
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "crates/wasm4pm-u8-part/**"
+      - "scripts/seal_u8_part.py"
+      - "scripts/verify_u8_part_wasm.py"
+      - ".github/workflows/u8-construct-part.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain and wasm target
+        run: |
+          rustup show active-toolchain
+          rustup target add wasm32-unknown-unknown
+
+      - name: Native exhaustive selector test
+        run: cargo test -p wasm4pm-u8-part
+
+      - name: Build exact WASM part
+        env:
+          RUSTFLAGS: -C strip=symbols
+        run: cargo build -p wasm4pm-u8-part --release --target wasm32-unknown-unknown
+
+      - name: Erase non-semantic compiler metadata
+        run: |
+          python3 scripts/seal_u8_part.py \
+            target/wasm32-unknown-unknown/release/wasm4pm_u8_part.wasm \
+            target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
+
+      - name: Verify artifact instruction and string surface
+        run: |
+          python3 scripts/verify_u8_part_wasm.py \
+            target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
+
+      - name: Publish bounded evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm4pm-u8-part-${{ github.sha }}
+          path: target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
+          if-no-files-found: error
