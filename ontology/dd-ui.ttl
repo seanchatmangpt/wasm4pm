@@ -1,0 +1,23 @@
+@prefix ddui: <https://chatmangpt.com/ontology/wasm4pm/dd-ui#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ddui:Projection a skos:Concept ; skos:prefLabel "Deterministic Dynamic UI projection" .
+ddui:Avatar a skos:Concept ; skos:prefLabel "Avatar" .
+ddui:Context a skos:Concept ; skos:prefLabel "Admitted UI context" .
+ddui:Authority a skos:Concept ; skos:prefLabel "Projection authority" .
+ddui:Screen a skos:Concept ; skos:prefLabel "Manufactured screen" .
+ddui:Receipt a skos:Concept ; skos:prefLabel "UI projection receipt" .
+ddui:Claim a skos:Concept ; skos:prefLabel "Displayed claim" .
+
+ddui:projects a rdf:Property .
+ddui:forAvatar a rdf:Property .
+ddui:inContext a rdf:Property .
+ddui:boundedByAuthority a rdf:Property .
+ddui:manufactures a rdf:Property .
+ddui:receiptedBy a rdf:Property .
+ddui:inputDigest a rdf:Property .
+ddui:screenDigest a rdf:Property .
+ddui:directActuation a rdf:Property .
