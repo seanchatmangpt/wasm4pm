@@ -342,7 +342,7 @@ pub struct Receipt {
 
 /// The constructor is private: a standing session can only be obtained by the
 /// conformance handshake below.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StandingSession {
     constitution_digest: Digest32,
     corpus_digest: Digest32,
@@ -678,7 +678,8 @@ mod tests {
     #[test]
     fn standing_session_executes_only_pre_admitted_u8_capsule_and_extends_process() {
         let process = process_middle(1);
-        let mut session = establish_standing(&expected(process.clone()), &peer(process), &law()).unwrap();
+        let mut session =
+            establish_standing(&expected(process.clone()), &peer(process), &law()).unwrap();
         let mut host = RecordingConstructHost {
             calls: 0,
             expected_construct: digest(5),
@@ -697,7 +698,8 @@ mod tests {
     #[test]
     fn unassigned_byte_refuses_without_calling_construct_host() {
         let process = process_middle(1);
-        let mut session = establish_standing(&expected(process.clone()), &peer(process), &law()).unwrap();
+        let mut session =
+            establish_standing(&expected(process.clone()), &peer(process), &law()).unwrap();
         let mut host = RecordingConstructHost {
             calls: 0,
             expected_construct: digest(5),
@@ -712,7 +714,8 @@ mod tests {
     #[test]
     fn behaviorally_equivalent_foreign_part_digest_cannot_enter_capsule() {
         let process = process_middle(1);
-        let mut session = establish_standing(&expected(process.clone()), &peer(process), &law()).unwrap();
+        let mut session =
+            establish_standing(&expected(process.clone()), &peer(process), &law()).unwrap();
         let mut slots: [Option<ExecutionCapsule>; 256] = std::array::from_fn(|_| None);
         slots[17] = Some(ExecutionCapsule {
             selector: 17,
