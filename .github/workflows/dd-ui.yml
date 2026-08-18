@@ -1,0 +1,27 @@
+name: Deterministic Dynamic UI
+on:
+  pull_request:
+    paths:
+      - "prototypes/dd-ui/**"
+      - "docs/deterministic-dynamic-ui.md"
+      - "ontology/dd-ui.ttl"
+      - ".github/workflows/dd-ui.yml"
+  push:
+    branches: [main]
+    paths:
+      - "prototypes/dd-ui/**"
+      - "docs/deterministic-dynamic-ui.md"
+      - "ontology/dd-ui.ttl"
+      - ".github/workflows/dd-ui.yml"
+permissions:
+  contents: read
+jobs:
+  deterministic-dynamic-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Execute DDUI contract and falsifiers
+        run: node --test prototypes/dd-ui/dd-ui.test.mjs
