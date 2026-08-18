@@ -3,9 +3,8 @@ name: u8 construct part
 on:
   pull_request:
     paths:
-      - "Cargo.toml"
-      - "Cargo.lock"
       - "crates/wasm4pm-u8-part/**"
+      - "crates/wasm4pm-standing-runtime/**"
       - "scripts/seal_u8_part.py"
       - "scripts/verify_u8_part_wasm.py"
       - ".github/workflows/u8-construct-part.yml"
@@ -34,28 +33,41 @@ jobs:
           rustup show active-toolchain
           rustup target add wasm32-unknown-unknown
 
+      - name: Format bounded courts
+        run: |
+          cargo fmt --manifest-path crates/wasm4pm-u8-part/Cargo.toml -- --check
+          cargo fmt --manifest-path crates/wasm4pm-standing-runtime/Cargo.toml -- --check
+
+      - name: Execute standing algebra geometry and calculus tests
+        run: cargo test --manifest-path crates/wasm4pm-standing-runtime/Cargo.toml
+
       - name: Native exhaustive selector test
-        run: cargo test -p wasm4pm-u8-part
+        run: cargo test --manifest-path crates/wasm4pm-u8-part/Cargo.toml
 
       - name: Build exact WASM part
         env:
           RUSTFLAGS: -C strip=symbols
-        run: cargo build -p wasm4pm-u8-part --release --target wasm32-unknown-unknown
+        run: |
+          cargo build \
+            --manifest-path crates/wasm4pm-u8-part/Cargo.toml \
+            --target-dir target/u8-part \
+            --release \
+            --target wasm32-unknown-unknown
 
       - name: Erase non-semantic compiler metadata
         run: |
           python3 scripts/seal_u8_part.py \
-            target/wasm32-unknown-unknown/release/wasm4pm_u8_part.wasm \
-            target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
+            target/u8-part/wasm32-unknown-unknown/release/wasm4pm_u8_part.wasm \
+            target/u8-part/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
 
       - name: Verify artifact instruction and string surface
         run: |
           python3 scripts/verify_u8_part_wasm.py \
-            target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
+            target/u8-part/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
 
       - name: Publish bounded exact-head evidence artifact
         uses: actions/upload-artifact@v4
         with:
           name: wasm4pm-u8-part-${{ env.CANDIDATE_SHA }}
-          path: target/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
+          path: target/u8-part/wasm32-unknown-unknown/release/wasm4pm_u8_part.sealed.wasm
           if-no-files-found: error
