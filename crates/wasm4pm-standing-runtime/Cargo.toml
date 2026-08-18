@@ -1,0 +1,13 @@
+[package]
+name = "wasm4pm-standing-runtime"
+version = "26.7.23"
+edition = "2021"
+license = "BUSL-1.1"
+authors = ["Sean Chatman <info@chatmangpt.com>"]
+repository = "https://github.com/seanchatmangpt/wasm4pm"
+description = "Standing-first host court for OCEL process geometry and u8 construct capsules"
+publish = false
+
+[dependencies]
+
+[workspace]
