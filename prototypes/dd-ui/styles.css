@@ -1,0 +1,22 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #111827; background: #f3f4f6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.shell { min-height: 100vh; display: grid; grid-template-columns: minmax(240px, 320px) 1fr; }
+.controls { padding: 24px; background: #111827; color: white; }
+.controls h2 { margin-top: 0; }
+.controls label { display: grid; gap: 8px; margin: 18px 0; font-size: 13px; }
+.controls select { padding: 10px; border-radius: 8px; }
+.controls .check { grid-template-columns: auto 1fr; align-items: center; }
+.controls pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+.screen { padding: 36px; max-width: 1100px; width: 100%; margin: 0 auto; }
+header { display: flex; justify-content: space-between; gap: 24px; align-items: start; margin-bottom: 24px; }
+h1 { margin: 6px 0 0; font-size: clamp(28px, 4vw, 48px); }
+.eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: #6b7280; }
+.status { border: 1px solid #d1d5db; border-radius: 999px; padding: 8px 12px; background: white; white-space: nowrap; }
+.card { background: white; border: 1px solid #e5e7eb; border-radius: 16px; padding: 22px; margin: 14px 0; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.card h2 { margin: 7px 0; }.card p { color: #4b5563; }
+.metric { display: flex; justify-content: space-between; padding: 10px 0; border-top: 1px solid #f3f4f6; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+button { padding: 9px 12px; border-radius: 8px; border: 1px solid #d1d5db; background: white; cursor: pointer; }
+code { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .shell { grid-template-columns: 1fr; }.screen { padding: 22px; }.controls { order: 2; } header { display: block; }.status { display: inline-block; margin-top: 12px; } }

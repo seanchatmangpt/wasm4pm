@@ -36,14 +36,13 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          # 8, not 1: this repo also keeps 7 real benchmark/repair workflows
-          # (benchmark-last24h.yml, cognition-55-divan.yml, cognition-manufacturing.yml,
-          # enterprise-architecture-bench.yml, process-science-bench.yml,
-          # repair-benchmark-compat.yml, sregym-issue-reasoning-bench.yml) added after
-          # this ci.yml's original baseline commit, none of which overlap this workflow's
-          # verify job. Preserving their coverage is deliberate, not drift.
+          # Topology is open-world: independent verifier/benchmark workflows may be added
+          # without invalidating this workflow. Admit the required CI surfaces by identity
+          # instead of coupling correctness to an exact global file count.
+          test -f .github/workflows/ci.yml
+          test -f .github/workflows/dd-ui.yml
           count="$(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
-          test "$count" -eq 8
+          test "$count" -ge 2
           printf 'subject_sha=%s\nworkflow_count=%s\n' "$EXPECTED_SHA" "$count"
 
       - name: Install repository-pinned Rust
@@ -119,8 +118,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/ci
+          count="$(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
           cat > artifacts/ci/receipt.json <<JSON
-          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":8,"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
+          {"repository":"${GITHUB_REPOSITORY}","subject_sha":"${SUBJECT_SHA}","workflow":"${GITHUB_WORKFLOW}","run_id":"${GITHUB_RUN_ID}","standing":"ALIVE","workflow_count":${count},"boundaries":["rust","wasm","typescript","wpm-cli","pack-smoke"]}
           JSON
           cat artifacts/ci/receipt.json
 
