@@ -1,55 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { demoEvents, demoInput } from "./demo-data.mjs";
-import { DduiRefusal, manufactureUiReceipt, projectDeterministicUi, replayUi } from "./dd-ui.mjs";
+import { DduiRefusal, enumerateDfcmFrontier, manufactureIntentReceipt, manufactureUiReceipt, mermaidUiuxMap, normalizeInput, projectDeterministicUi, reduceProcess, replayUi, sha256 } from "./dd-ui.mjs";
+import { grammarDescriptor } from "./grammar.mjs";
+import { renderScreen } from "./render.mjs";
 
-test("same admitted inputs manufacture byte-identical screen identity", async () => {
-  const a = await manufactureUiReceipt(demoInput);
-  const b = await manufactureUiReceipt(demoInput);
-  assert.deepEqual(a.screen, b.screen);
-  assert.equal(a.receipt.screenDigest, b.receipt.screenDigest);
-});
-
-test("event and authority ordering do not change projection", async () => {
-  const a = await manufactureUiReceipt({ ...demoInput, authority: ["construct:repair", "brce:identity-remediation"] });
-  const b = await manufactureUiReceipt({ ...demoInput, events: [...demoEvents].reverse(), authority: ["brce:identity-remediation", "construct:repair"] });
-  assert.equal(a.receipt.screenDigest, b.receipt.screenDigest);
-});
-
-test("avatars project one process world instead of separate screens", () => {
-  const ceo = projectDeterministicUi({ ...demoInput, avatar: "CEO" }).screen;
-  const cto = projectDeterministicUi({ ...demoInput, avatar: "CTO", authority: ["construct:repair"] }).screen;
-  assert.notDeepEqual(ceo.components.map((c) => c.id), cto.components.map((c) => c.id));
-  assert.ok(cto.components.some((c) => c.id === "source-drift"));
-});
-
-test("incident context deterministically reprioritizes risk", () => {
-  const incident = projectDeterministicUi({ ...demoInput, context: "incident" }).screen;
-  assert.equal(incident.components[0].id, "identity-risk");
-});
-
-test("DO is never exposed without BRCE-shaped admitted authority", () => {
-  const without = projectDeterministicUi(demoInput).screen;
-  assert.equal(without.components.find((c) => c.id === "identity-risk").actions.some((a) => a.id === "approve"), false);
-  assert.ok(without.refusals.some((r) => r.code === "REFUSED_AUTHORITY_MISSING"));
-  const withAuthority = projectDeterministicUi({ ...demoInput, authority: ["brce:identity-remediation"] }).screen;
-  assert.equal(withAuthority.components.find((c) => c.id === "identity-risk").actions.find((a) => a.id === "approve").intentOnly, true);
-});
-
-test("direct DO without BRCE authority is typed REFUSED", () => {
-  const events = structuredClone(demoEvents);
-  events[0].claim.actions = [{ id: "bad-do", label: "Bad", consequence: "DO", requiredAuthority: "deploy:any" }];
-  const screen = projectDeterministicUi({ ...demoInput, events, authority: ["deploy:any"] }).screen;
-  assert.ok(screen.refusals.some((r) => r.code === "REFUSED_DIRECT_DO"));
-});
-
-test("receipt replay reconstructs exact screen identity", async () => {
-  const bundle = await manufactureUiReceipt({ ...demoInput, avatar: "CFO", context: "board" });
-  const replay = await replayUi(bundle);
-  assert.equal(replay.match, true);
-  assert.equal(replay.expected, replay.actual);
-});
-
-test("invalid avatars fail closed", () => {
-  assert.throws(() => projectDeterministicUi({ ...demoInput, avatar: "SUPERUSER" }), (error) => error instanceof DduiRefusal && error.code === "REFUSED_UNKNOWN_AVATAR");
-});
+test("same admitted inputs manufacture byte-identical screen identity", async () => { const a = await manufactureUiReceipt(demoInput); const b = await manufactureUiReceipt(demoInput); assert.deepEqual(a.screen, b.screen); assert.equal(a.receipt.screenDigest, b.receipt.screenDigest); assert.equal(a.receipt.frontierDigest, b.receipt.frontierDigest); });
+test("event and authority ordering do not change projection", async () => { const authority = ["construct:repair", "brce:identity-remediation"]; const a = await manufactureUiReceipt({ ...demoInput, authority }); const b = await manufactureUiReceipt({ ...demoInput, events: [...demoEvents].reverse(), authority: [...authority].reverse() }); assert.equal(a.receipt.screenDigest, b.receipt.screenDigest); });
+test("duplicate event identity fails closed", () => { assert.throws(() => normalizeInput({ ...demoInput, events: [demoEvents[0], { ...demoEvents[0] }] }), (e) => e instanceof DduiRefusal && e.code === "REFUSED_DUPLICATE_EVENT_ID"); });
+test("avatars project the same world into materially different lawful screens", async () => { const worldDigests = new Set(); const screenDigests = new Set(); for (const avatar of ["CEO", "CFO", "CTO", "ENGINEER", "AUDITOR"]) { const bundle = await manufactureUiReceipt({ ...demoInput, avatar, context: avatar === "AUDITOR" ? "audit" : "normal", authority: ["construct:repair"] }); worldDigests.add(bundle.receipt.worldDigest); screenDigests.add(bundle.receipt.screenDigest); } assert.equal(worldDigests.size, 1); assert.ok(screenDigests.size >= 4); });
+test("incident context deterministically prioritizes risk", () => { const screen = projectDeterministicUi({ ...demoInput, context: "incident" }).screen; assert.equal(screen.components[0].id, "identity-risk"); assert.equal(screen.components[0].region, "attention"); });
+test("board context exposes familiar executive summary semantics", () => { const screen = projectDeterministicUi({ ...demoInput, context: "board" }).screen; assert.equal(screen.contextLabel, "Board"); assert.equal(screen.layout.desktopColumns, 3); assert.ok(screen.summary.visibleClaims > 0); assert.equal(screen.summary.renderActuationCount, 0); });
+test("DfCM preserves multiple reversible presentation candidates before deterministic projection", () => { const input = normalizeInput({ ...demoInput, avatar: "CTO" }); const world = reduceProcess(input.events); const claim = world.claims.find((c) => c.id === "source-drift"); const frontier = enumerateDfcmFrontier(claim, input); assert.ok(frontier.candidateCount >= 2); assert.ok(frontier.frontierCount >= 1); assert.ok(frontier.selectedPresentation); assert.match(frontier.selectionLaw, /reversible-presentation-only/); });
+test("screen records zero irreversible UI selections", () => { const screen = projectDeterministicUi({ ...demoInput, avatar: "CTO" }).screen; assert.equal(screen.dfcm.irreversibleSelections, 0); assert.ok(screen.dfcm.preservedCandidates >= screen.dfcm.frontierCandidates); });
+test("DO is never projected without admitted BRCE authority", () => { const without = projectDeterministicUi(demoInput).screen; const risk = without.components.find((c) => c.id === "identity-risk"); assert.equal(risk.actions.some((a) => a.id === "approve"), false); assert.ok(without.refusals.some((r) => r.code === "REFUSED_AUTHORITY_MISSING")); const withAuthority = projectDeterministicUi({ ...demoInput, authority: ["brce:identity-remediation"] }).screen; const approve = withAuthority.components.find((c) => c.id === "identity-risk").actions.find((a) => a.id === "approve"); assert.equal(approve.intentOnly, true); assert.equal(approve.selected, false); });
+test("direct DO with non-BRCE authority is typed REFUSED", () => { const events = structuredClone(demoEvents); events[0].claim.actions = [{ id: "bad-do", label: "Bad", consequence: "DO", requiredAuthority: "deploy:any" }]; const screen = projectDeterministicUi({ ...demoInput, events, authority: ["deploy:any"] }).screen; assert.ok(screen.refusals.some((r) => r.code === "REFUSED_DIRECT_DO")); });
+test("CONSTRUCT remains distinct from DO and requires its own admitted authority", () => { const without = projectDeterministicUi({ ...demoInput, avatar: "CTO" }).screen; assert.ok(without.refusals.some((r) => r.actionId === "repair" && r.code === "REFUSED_AUTHORITY_MISSING")); const withAuthority = projectDeterministicUi({ ...demoInput, avatar: "CTO", authority: ["construct:repair"] }).screen; const action = withAuthority.components.find((c) => c.id === "source-drift").actions.find((a) => a.id === "repair"); assert.equal(action.consequence, "CONSTRUCT"); assert.equal(action.intentOnly, true); });
+test("decision context produces intent receipt bound to exact screen and never actuates", async () => { const bundle = await manufactureUiReceipt({ ...demoInput, authority: ["brce:identity-remediation"] }); const result = await manufactureIntentReceipt(bundle, "identity-risk", "approve"); assert.equal(result.intent.screenDigest, bundle.receipt.screenDigest); assert.equal(result.intent.actuation, false); assert.equal(result.receipt.actuation, false); assert.equal(result.receipt.intentDigest.length, 64); });
+test("unprojected action cannot be manufactured into an intent", async () => { const bundle = await manufactureUiReceipt(demoInput); await assert.rejects(manufactureIntentReceipt(bundle, "identity-risk", "approve"), (e) => e instanceof DduiRefusal && e.code === "REFUSED_UNPROJECTED_ACTION"); });
+test("receipt replay reconstructs grammar, world, frontier and screen identities", async () => { const bundle = await manufactureUiReceipt({ ...demoInput, avatar: "CFO", context: "board" }); const replay = await replayUi(bundle); assert.equal(replay.match, true); assert.deepEqual(replay.mismatches, []); });
+test("tampered screen receipt fails replay", async () => { const bundle = await manufactureUiReceipt(demoInput); const tampered = structuredClone(bundle); tampered.receipt.screenDigest = "0".repeat(64); const replay = await replayUi(tampered); assert.equal(replay.match, false); assert.deepEqual(replay.mismatches, ["screenDigest"]); });
+test("grammar version mismatch is refused instead of silently migrated", () => { assert.throws(() => projectDeterministicUi({ ...demoInput, grammarVersion: "dd-ui/999" }), (e) => e instanceof DduiRefusal && e.code === "REFUSED_GRAMMAR_VERSION"); });
+test("unknown avatar and context fail closed", () => { assert.throws(() => projectDeterministicUi({ ...demoInput, avatar: "SUPERUSER" }), (e) => e instanceof DduiRefusal && e.code === "REFUSED_UNKNOWN_AVATAR"); assert.throws(() => projectDeterministicUi({ ...demoInput, context: "whatever" }), (e) => e instanceof DduiRefusal && e.code === "REFUSED_UNKNOWN_CONTEXT"); });
+test("metric projection uses avatar vocabulary without changing the world", () => { const ceo = projectDeterministicUi({ ...demoInput, avatar: "CEO" }).screen.components.find((c) => c.id === "cloud-cost"); const cfo = projectDeterministicUi({ ...demoInput, avatar: "CFO" }).screen.components.find((c) => c.id === "cloud-cost"); assert.deepEqual(ceo.metrics, cfo.metrics); assert.equal(cfo.metrics.length, 3); });
+test("renderer escapes hostile claim content and emits accessibility landmarks", async () => { const events = structuredClone(demoEvents); events[0].claim.title = '<img src=x onerror="boom">'; const bundle = await manufactureUiReceipt({ ...demoInput, events }); const html = renderScreen(bundle.screen, bundle.receipt); assert.equal(html.includes("<img src=x"), false); assert.match(html, /&lt;img src=x onerror=&quot;boom&quot;&gt;/); assert.match(html, /aria-label="Executive summary"/); assert.match(html, /aria-label="Projected business claims"/); });
+test("no-action-required is a first-class closed-loop projection", () => { const screen = projectDeterministicUi(demoInput).screen; assert.equal(screen.components.find((c) => c.id === "delivery").noActionRequired, true); });
+test("Mermaid map is deterministically generated from the admitted grammar", async () => { const a = mermaidUiuxMap(); const b = mermaidUiuxMap(); assert.equal(a, b); for (const avatar of grammarDescriptor().avatars) assert.match(a, new RegExp(`${avatar} projection`)); for (const component of grammarDescriptor().components) assert.match(a, new RegExp(`C_${component}`)); assert.match(a, /no runtime render authority/); assert.equal(await sha256(a), await sha256(b)); });
+test("all domain lenses can coexist in one admitted executive world", () => { const screen = projectDeterministicUi(demoInput).screen; assert.ok(screen.summary.domains.includes("GGEN")); assert.ok(screen.summary.domains.includes("IAAS")); assert.ok(screen.summary.domains.includes("PAAS")); assert.ok(screen.summary.domains.includes("SAAS")); });
