@@ -1,5 +1,0 @@
-dd-ui/2
-projection=UI_t=P(G_t,alpha,kappa,rho,Gamma)
-runtime_ai_render_authority=false
-render_actuation_authority=false
-irreversible_ui_selections=0
