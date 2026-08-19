@@ -1,0 +1,73 @@
+name: Federated Protocol Runtime
+
+on:
+  pull_request:
+    paths:
+      - 'wasm4pm/src/graduation.rs'
+      - 'wasm4pm/src/graduation/protocol_runtime.rs'
+      - '.github/workflows/federated-protocol-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  protocol-runtime:
+    name: exact-head consequence runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Assert exact subject and private DO seam
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${EXPECTED_SHA}"
+          test -s wasm4pm/src/graduation/protocol_runtime.rs
+          grep -q '^mod protocol_runtime;' wasm4pm/src/graduation.rs
+          if grep -q '^pub mod protocol_runtime;' wasm4pm/src/graduation.rs; then
+            echo 'GENERIC_PROTOCOL_DO_SURFACE_EXPOSED_REFUSED' >&2
+            exit 65
+          fi
+
+      - name: Install repository-pinned Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt
+
+      - name: Check protocol source formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+
+      - name: Execute authority, receipt, replay, and OCEL courts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p wasm4pm --locked graduation::protocol_runtime::tests
+
+      - name: Assert authority ordering is encoded
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=wasm4pm/src/graduation/protocol_runtime.rs
+          grep -q 'validate_decision_binding(intent, decision)?;' "$file"
+          grep -q 'validate_receipt_requirement(receipt_requirement)?;' "$file"
+          grep -q 'AuthorityVerifierRefused' "$file"
+          grep -q 'BrokerRefused' "$file"
+          grep -q 'ReceiptDigestMismatch' "$file"
+          grep -q 'ReceiptChainMismatch' "$file"
+          grep -q 'OcelSubjectMissing' "$file"
+          grep -q 'DuplicateOcelEvent' "$file"
