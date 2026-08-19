@@ -1,23 +1,60 @@
 @prefix ddui: <https://chatmangpt.com/ontology/wasm4pm/dd-ui#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 ddui:Projection a skos:Concept ; skos:prefLabel "Deterministic Dynamic UI projection" .
+ddui:ProjectionSpace a skos:Concept ; skos:prefLabel "Lawful UI projection space" .
+ddui:PresentationCandidate a skos:Concept ; skos:prefLabel "Reversible presentation candidate" .
+ddui:ParetoFrontier a skos:Concept ; skos:prefLabel "DfCM presentation frontier" .
+ddui:Grammar a skos:Concept ; skos:prefLabel "Bounded UI grammar" .
 ddui:Avatar a skos:Concept ; skos:prefLabel "Avatar" .
 ddui:Context a skos:Concept ; skos:prefLabel "Admitted UI context" .
 ddui:Authority a skos:Concept ; skos:prefLabel "Projection authority" .
-ddui:Screen a skos:Concept ; skos:prefLabel "Manufactured screen" .
-ddui:Receipt a skos:Concept ; skos:prefLabel "UI projection receipt" .
+ddui:World a skos:Concept ; skos:prefLabel "Admitted process-derived world" .
 ddui:Claim a skos:Concept ; skos:prefLabel "Displayed claim" .
+ddui:Screen a skos:Concept ; skos:prefLabel "Manufactured screen IR" .
+ddui:Intent a skos:Concept ; skos:prefLabel "Unactuated UI intent" .
+ddui:Receipt a skos:Concept ; skos:prefLabel "UI projection receipt" .
+ddui:Replay a skos:Concept ; skos:prefLabel "UI replay" .
+ddui:Refusal a skos:Concept ; skos:prefLabel "Typed UI refusal" .
 
-ddui:projects a rdf:Property .
-ddui:forAvatar a rdf:Property .
-ddui:inContext a rdf:Property .
-ddui:boundedByAuthority a rdf:Property .
-ddui:manufactures a rdf:Property .
-ddui:receiptedBy a rdf:Property .
+ddui:projects a rdf:Property ; rdfs:domain ddui:Projection ; rdfs:range ddui:World .
+ddui:usesGrammar a rdf:Property ; rdfs:domain ddui:Projection ; rdfs:range ddui:Grammar .
+ddui:forAvatar a rdf:Property ; rdfs:domain ddui:Projection ; rdfs:range ddui:Avatar .
+ddui:inContext a rdf:Property ; rdfs:domain ddui:Projection ; rdfs:range ddui:Context .
+ddui:boundedByAuthority a rdf:Property ; rdfs:domain ddui:Projection ; rdfs:range ddui:Authority .
+ddui:enumerates a rdf:Property ; rdfs:domain ddui:ProjectionSpace ; rdfs:range ddui:PresentationCandidate .
+ddui:prunesTo a rdf:Property ; rdfs:domain ddui:ProjectionSpace ; rdfs:range ddui:ParetoFrontier .
+ddui:preservesCandidate a rdf:Property ; rdfs:domain ddui:ParetoFrontier ; rdfs:range ddui:PresentationCandidate .
+ddui:manufactures a rdf:Property ; rdfs:domain ddui:Projection ; rdfs:range ddui:Screen .
+ddui:manufacturesIntent a rdf:Property ; rdfs:domain ddui:Screen ; rdfs:range ddui:Intent .
+ddui:receiptedBy a rdf:Property ; rdfs:range ddui:Receipt .
+ddui:replayedBy a rdf:Property ; rdfs:domain ddui:Receipt ; rdfs:range ddui:Replay .
+ddui:refusedBy a rdf:Property ; rdfs:range ddui:Refusal .
+
+ddui:grammarDigest a rdf:Property .
+ddui:worldDigest a rdf:Property .
 ddui:inputDigest a rdf:Property .
+ddui:frontierDigest a rdf:Property .
 ddui:screenDigest a rdf:Property .
+ddui:intentDigest a rdf:Property .
+ddui:grammarVersion a rdf:Property .
 ddui:directActuation a rdf:Property .
+ddui:runtimeAiRenderAuthority a rdf:Property .
+ddui:irreversibleSelections a rdf:Property .
+ddui:selectionLaw a rdf:Property .
+ddui:claimStanding a rdf:Property .
+ddui:systemStanding a rdf:Property .
+ddui:executiveStatus a rdf:Property .
+ddui:domain a rdf:Property .
+ddui:region a rdf:Property .
+
+ddui:NoRuntimeAiRenderAuthority a skos:Concept ;
+  skos:prefLabel "Runtime AI has no render authority" .
+ddui:NoRenderActuationAuthority a skos:Concept ;
+  skos:prefLabel "Rendering has no actuation authority" .
+ddui:ReversiblePresentationSelection a skos:Concept ;
+  skos:prefLabel "Presentation selection is reversible and grants no business authority" .
