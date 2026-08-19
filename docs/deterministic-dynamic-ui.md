@@ -58,7 +58,7 @@ The grammar is intentionally finite while the lawful screen space is combinatori
 
 ## One world, multiple projections
 
-The same `G_t` may lawfully project differently for CEO, CFO, CTO, ENGINEER, SECURITY, AUDITOR, PRODUCT, or OPERATIONS avatars. Avatar is a projection parameter, not a separate database or hard-coded page hierarchy.
+The current executable grammar admits CEO, CFO, CTO, ENGINEER, and AUDITOR avatars. They all project from the same reduced `G_t`; avatar is a projection parameter, not a separate database or hard-coded page hierarchy.
 
 ```mermaid
 flowchart TB
@@ -66,17 +66,15 @@ flowchart TB
   G --> CFO[CFO]
   G --> CTO[CTO]
   G --> ENG[Engineer]
-  G --> SEC[Security]
   G --> AUD[Auditor]
-  G --> PROD[Product]
-  G --> OPS[Operations]
   CEO --> Exec[Performance / risk / decisions / opportunity]
   CFO --> Fin[Financial / variance / forecast]
   CTO --> Tech[Standing / dependency / evidence]
   ENG --> Work[Work queue / dependency / receipt]
-  SEC --> Security[Risk / evidence / authority]
-  AUD --> Audit[Receipt / evidence / replay]
+  AUD --> Audit[Receipt / evidence / standing / risk]
 ```
+
+Additional avatars are extensions to `Γ`; they do not have standing until added to the executable grammar and verified.
 
 ## Executive projection law
 
