@@ -10,30 +10,28 @@
 //!
 //! `SELECT != CONSTRUCT != DO`
 //!
-//! - SELECT and CONSTRUCT can manufacture deterministic reversible receipts but
+//! - SELECT and CONSTRUCT manufacture deterministic reversible evidence and
 //!   have no broker in their call path.
 //! - DO requires an externally verified authority decision for the exact
-//!   capability and subject.
-//! - The consequential broker must return its own non-empty effect receipt; a
-//!   successful effect can therefore never be represented as unreceipted.
-//! - wasm4pm then manufactures a BLAKE3 protocol receipt over the observed
-//!   consequence and projects it to an OCEL event.
-//! - clocks are explicit inputs; there is no hidden wall-clock authority in a
-//!   deterministic receipt.
+//!   capability and exact subject.
+//! - A successful broker return is itself receipted; raw success is not a valid
+//!   broker result.
+//! - wasm4pm then manufactures a BLAKE3 protocol receipt and projects the
+//!   observed consequence into OCEL.
+//! - time is an explicit input. Hidden wall clocks do not influence receipt
+//!   identity.
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::models::{
-    AttributeValue, OCELEvent, OCELEventObjectRef, OCEL,
-};
+use crate::models::{AttributeValue, OCELEvent, OCELEventObjectRef, OCEL};
 
 /// Read-only engine view of a protocol intent.
 ///
 /// The canonical concrete intent type lives in `wasm4pm-compat`; this trait is
-/// only the runtime seam needed to keep the engine buildable against the current
-/// crates.io release until the new compat type law is published.
+/// only the runtime seam needed while wasm4pm remains bound to the currently
+/// published crates.io release.
 pub trait IntentView {
     fn capability_id(&self) -> &str;
     fn semantic_digest(&self) -> &str;
@@ -42,7 +40,7 @@ pub trait IntentView {
     fn input_digest(&self) -> &str;
 }
 
-/// Read-only engine view of an external authority decision.
+/// Read-only engine view of an externally supplied authority decision.
 pub trait AuthorityDecisionView {
     fn authority_id(&self) -> &str;
     fn capability_id(&self) -> &str;
@@ -90,10 +88,10 @@ impl ReversibleReceipt {
 
 /// Evidence returned by an external authority verifier.
 ///
-/// This value proves only what the configured verifier attests. The runtime
-/// independently checks that the evidence is bound to the same exact intent and
-/// decision before it can manufacture [`AdmittedDo`].
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// There is intentionally no deserializer for this token. Runtime authority
+/// evidence must be manufactured by a verifier through [`AuthorityEvidence::try_new`]
+/// and is rebound to the exact intent before DO.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct AuthorityEvidence {
     authority_id: String,
     capability_id: String,
@@ -148,8 +146,8 @@ impl AuthorityEvidence {
 
 /// External authority-verification boundary.
 ///
-/// Implementations may consult signatures, policy engines, brokers, or other
-/// public authority sources. This runtime never infers authority from a planner,
+/// Implementations may consult signatures, policy engines, brokers, or public
+/// authority sources. The runtime never infers authority from a planner,
 /// transport, generated artifact, or capability name.
 pub trait AuthorityVerifier<I: IntentView, A: AuthorityDecisionView> {
     fn verify(&self, intent: &I, decision: &A) -> Result<AuthorityEvidence, String>;
@@ -175,11 +173,12 @@ impl<'a, I: IntentView> AdmittedDo<'a, I> {
     }
 }
 
-/// A broker-provided consequence receipt.
+/// Broker-provided evidence for one observed consequence.
 ///
-/// A broker cannot report success through this public type without naming both
-/// the observed consequence digest and its own effect receipt digest.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// There is intentionally no deserializer. External broker implementations can
+/// construct a success value only through [`BrokerReceipt::try_new`], which
+/// requires both an observed consequence digest and a broker receipt digest.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct BrokerReceipt {
     consequence_digest: String,
     broker_receipt_digest: String,
@@ -203,13 +202,18 @@ impl BrokerReceipt {
             cost_microunits,
             external_reference,
         };
-        if value.consequence_digest.trim().is_empty() {
+        value.validate()?;
+        Ok(value)
+    }
+
+    fn validate(&self) -> Result<(), RuntimeRefusal> {
+        if self.consequence_digest.trim().is_empty() {
             return Err(RuntimeRefusal::MissingConsequenceDigest);
         }
-        if value.broker_receipt_digest.trim().is_empty() {
+        if self.broker_receipt_digest.trim().is_empty() {
             return Err(RuntimeRefusal::MissingBrokerReceiptDigest);
         }
-        Ok(value)
+        Ok(())
     }
 
     #[must_use]
@@ -242,7 +246,7 @@ impl BrokerReceipt {
 ///
 /// Implementations are responsible for preserving their narrower BRCE law. A
 /// successful return must already carry a [`BrokerReceipt`]; returning raw
-/// effect bytes or an unreceipted success is not representable here.
+/// effect bytes or an unreceipted success is not representable by this trait.
 pub trait ConsequenceBroker<I: IntentView> {
     fn actuate(&mut self, request: &AdmittedDo<'_, I>) -> Result<BrokerReceipt, String>;
 }
@@ -271,6 +275,36 @@ pub struct ProtocolReceipt {
 
 impl ProtocolReceipt {
     pub fn verify(&self) -> Result<(), RuntimeRefusal> {
+        for (field, value) in [
+            ("receipt_version", self.receipt_version.as_str()),
+            ("capability_id", self.capability_id.as_str()),
+            ("semantic_digest", self.semantic_digest.as_str()),
+            ("subject_id", self.subject_id.as_str()),
+            ("subject_digest", self.subject_digest.as_str()),
+            ("input_digest", self.input_digest.as_str()),
+            ("authority_id", self.authority_id.as_str()),
+            (
+                "authority_decision_digest",
+                self.authority_decision_digest.as_str(),
+            ),
+            (
+                "authority_verification_digest",
+                self.authority_verification_digest.as_str(),
+            ),
+            ("broker_receipt_digest", self.broker_receipt_digest.as_str()),
+            ("consequence_digest", self.consequence_digest.as_str()),
+            ("observed_at", self.observed_at.as_str()),
+            ("replay_contract", self.replay_contract.as_str()),
+        ] {
+            if value.trim().is_empty() {
+                return Err(RuntimeRefusal::PersistedReceiptMalformed {
+                    field: field.to_owned(),
+                });
+            }
+        }
+        if !is_blake3_hex(&self.receipt_digest) {
+            return Err(RuntimeRefusal::InvalidReceiptDigestEncoding);
+        }
         if self.receipt_digest != protocol_receipt_digest(self) {
             return Err(RuntimeRefusal::ReceiptDigestMismatch);
         }
@@ -278,16 +312,16 @@ impl ProtocolReceipt {
     }
 }
 
-/// Completed consequential result. A successful runtime return always has the
-/// broker receipt, protocol receipt, and OCEL event together.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// Completed consequential result. A successful runtime return always carries
+/// the broker receipt, protocol receipt, and OCEL projection together.
+#[derive(Debug, Clone, Serialize)]
 pub struct DoOutcome {
     pub broker_receipt: BrokerReceipt,
     pub receipt: ProtocolReceipt,
     pub ocel_event: OCELEvent,
 }
 
-/// The authority-separated runtime kernel.
+/// Authority-separated runtime kernel.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ProtocolRuntime;
 
@@ -324,10 +358,9 @@ impl ProtocolRuntime {
 
     /// Execute one consequential DO through the exclusive broker boundary.
     ///
-    /// Order is fail-closed: validate exact intent -> validate authority binding
-    /// -> validate receiptability -> invoke external verifier -> bind verified
-    /// evidence -> actuate once -> manufacture protocol receipt -> manufacture
-    /// OCEL event.
+    /// Fail-closed order: exact intent -> authority binding -> receiptability ->
+    /// external authority verification -> verified binding -> one broker call ->
+    /// broker receipt validation -> protocol receipt -> OCEL projection.
     pub fn execute_do<I, A, R, V, B>(
         intent: &I,
         decision: &A,
@@ -351,15 +384,16 @@ impl ProtocolRuntime {
             return Err(RuntimeRefusal::MissingObservedAt);
         }
 
-        let authority = verifier
-            .verify(intent, decision)
-            .map_err(RuntimeRefusal::AuthorityVerifierRefused)?;
+        let authority = verifier.verify(intent, decision).map_err(|reason| {
+            RuntimeRefusal::AuthorityVerifierRefused { reason }
+        })?;
         validate_verified_authority(intent, decision, &authority)?;
 
         let request = AdmittedDo { intent, authority };
         let broker_receipt = broker
             .actuate(&request)
-            .map_err(RuntimeRefusal::BrokerRefused)?;
+            .map_err(|reason| RuntimeRefusal::BrokerRefused { reason })?;
+        broker_receipt.validate()?;
 
         let mut receipt = ProtocolReceipt {
             receipt_version: receipt_requirement.receipt_version().to_owned(),
@@ -482,9 +516,10 @@ pub fn protocol_receipt_to_ocel_event(receipt: &ProtocolReceipt) -> OCELEvent {
     }
 }
 
-/// Append a protocol event to an OCEL only when the referenced exact subject is
-/// already represented as an object. The runtime never fabricates domain
-/// objects to make an event look valid.
+/// Append a protocol event only when the referenced subject already exists as
+/// an OCEL object. The runtime never fabricates a domain object to make an event
+/// appear valid. The event is regenerated from the verified receipt so callers
+/// cannot tamper the cached projection inside [`DoOutcome`].
 pub fn append_protocol_outcome(
     log: &mut OCEL,
     outcome: &DoOutcome,
@@ -499,26 +534,25 @@ pub fn append_protocol_outcome(
             subject_id: outcome.receipt.subject_id.clone(),
         });
     }
-    if log
-        .events
-        .iter()
-        .any(|event| event.id == outcome.ocel_event.id)
-    {
-        return Err(RuntimeRefusal::DuplicateOcelEvent {
-            event_id: outcome.ocel_event.id.clone(),
-        });
+
+    let event = protocol_receipt_to_ocel_event(&outcome.receipt);
+    if log.events.iter().any(|existing| existing.id == event.id) {
+        return Err(RuntimeRefusal::DuplicateOcelEvent { event_id: event.id });
     }
     if !log
         .event_types
         .iter()
-        .any(|event_type| event_type == &outcome.ocel_event.event_type)
+        .any(|event_type| event_type == &event.event_type)
     {
-        log.event_types.push(outcome.ocel_event.event_type.clone());
+        log.event_types.push(event.event_type.clone());
         log.event_types.sort();
     }
-    log.events.push(outcome.ocel_event.clone());
-    log.events
-        .sort_by(|left, right| left.timestamp.cmp(&right.timestamp).then(left.id.cmp(&right.id)));
+    log.events.push(event);
+    log.events.sort_by(|left, right| {
+        left.timestamp
+            .cmp(&right.timestamp)
+            .then(left.id.cmp(&right.id))
+    });
     Ok(())
 }
 
@@ -624,6 +658,9 @@ fn validate_receipt_requirement<R: ReceiptRequirementView>(
     if requirement.replay_contract().trim().is_empty() {
         return Err(RuntimeRefusal::MissingReplayContract);
     }
+    if matches!(requirement.parent_receipt_digest(), Some(parent) if parent.trim().is_empty()) {
+        return Err(RuntimeRefusal::EmptyParentReceiptDigest);
+    }
     Ok(())
 }
 
@@ -649,6 +686,13 @@ fn reversible_digest(receipt: &ReversibleReceipt) -> String {
 }
 
 fn protocol_receipt_digest(receipt: &ProtocolReceipt) -> String {
+    let changed = if receipt.changed {
+        "changed=true"
+    } else {
+        "changed=false"
+    };
+    let cost = receipt.cost_microunits.to_string();
+    let parent = receipt.parent_receipt_digest.as_deref().unwrap_or("");
     digest_fields(
         "wasm4pm.protocol.receipt.v1",
         &[
@@ -663,11 +707,11 @@ fn protocol_receipt_digest(receipt: &ProtocolReceipt) -> String {
             &receipt.authority_verification_digest,
             &receipt.broker_receipt_digest,
             &receipt.consequence_digest,
-            if receipt.changed { "changed=true" } else { "changed=false" },
-            &receipt.cost_microunits.to_string(),
+            changed,
+            &cost,
             &receipt.observed_at,
             &receipt.replay_contract,
-            receipt.parent_receipt_digest.as_deref().unwrap_or(""),
+            parent,
         ],
     )
 }
@@ -686,8 +730,15 @@ fn hash_field(hasher: &mut blake3::Hasher, value: &str) {
     hasher.update(value.as_bytes());
 }
 
-/// Typed runtime refusals. A refusal is successful fail-closed behavior, not a
-/// generic transport error.
+fn is_blake3_hex(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+/// Typed runtime refusals. A lawful refusal is successful fail-closed behavior,
+/// never generic transport success.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RuntimeRefusal {
@@ -704,14 +755,17 @@ pub enum RuntimeRefusal {
     AuthorityCapabilityMismatch,
     AuthoritySubjectMismatch,
     AuthorityVerificationBindingMismatch,
-    AuthorityVerifierRefused(String),
+    AuthorityVerifierRefused { reason: String },
     MissingReceiptVersion,
     MissingReceiptDigestAlgorithm,
     UnsupportedReceiptDigestAlgorithm { algorithm: String },
     MissingReplayContract,
-    BrokerRefused(String),
+    EmptyParentReceiptDigest,
+    BrokerRefused { reason: String },
     MissingConsequenceDigest,
     MissingBrokerReceiptDigest,
+    PersistedReceiptMalformed { field: String },
+    InvalidReceiptDigestEncoding,
     ReceiptDigestMismatch,
     ReceiptChainHasUnknownParent,
     ReceiptChainMismatch { index: usize },
@@ -737,15 +791,19 @@ mod tests {
         fn capability_id(&self) -> &str {
             &self.capability
         }
+
         fn semantic_digest(&self) -> &str {
             &self.semantic
         }
+
         fn subject_id(&self) -> &str {
             &self.subject
         }
+
         fn subject_digest(&self) -> &str {
             &self.subject_digest
         }
+
         fn input_digest(&self) -> &str {
             &self.input
         }
@@ -762,12 +820,15 @@ mod tests {
         fn authority_id(&self) -> &str {
             &self.authority
         }
+
         fn capability_id(&self) -> &str {
             &self.capability
         }
+
         fn subject_digest(&self) -> &str {
             &self.subject_digest
         }
+
         fn decision_digest(&self) -> &str {
             &self.digest
         }
@@ -781,12 +842,15 @@ mod tests {
         fn receipt_version(&self) -> &str {
             "ce-receipt/1"
         }
+
         fn digest_algorithm(&self) -> &str {
             "blake3"
         }
+
         fn replay_contract(&self) -> &str {
             "ce-replay/1"
         }
+
         fn parent_receipt_digest(&self) -> Option<&str> {
             self.parent.as_deref()
         }
@@ -901,7 +965,9 @@ mod tests {
 
         assert_eq!(
             refusal,
-            RuntimeRefusal::AuthorityVerifierRefused("NO_AUTHORITY".to_owned())
+            RuntimeRefusal::AuthorityVerifierRefused {
+                reason: "NO_AUTHORITY".to_owned(),
+            }
         );
         assert_eq!(broker.calls, 0);
     }
@@ -1026,6 +1092,37 @@ mod tests {
         .unwrap();
 
         assert!(verify_receipt_chain(&[first.receipt, second.receipt]).is_ok());
+    }
+
+    #[test]
+    fn valid_but_wrong_parent_is_chain_refusal() {
+        let mut first_broker = Broker { calls: 0 };
+        let first = ProtocolRuntime::execute_do(
+            &intent(),
+            &decision(),
+            &Requirement { parent: None },
+            &ExactVerifier,
+            &mut first_broker,
+            "2026-08-19T10:06:30-07:00",
+        )
+        .unwrap();
+        let mut second_broker = Broker { calls: 0 };
+        let second = ProtocolRuntime::execute_do(
+            &intent(),
+            &decision(),
+            &Requirement {
+                parent: Some("blake3:not-the-first-receipt".to_owned()),
+            },
+            &ExactVerifier,
+            &mut second_broker,
+            "2026-08-19T10:06:31-07:00",
+        )
+        .unwrap();
+
+        assert_eq!(
+            verify_receipt_chain(&[first.receipt, second.receipt]),
+            Err(RuntimeRefusal::ReceiptChainMismatch { index: 1 })
+        );
     }
 
     #[test]
