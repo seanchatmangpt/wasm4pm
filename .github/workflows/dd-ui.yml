@@ -20,8 +20,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Admit exact subject
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'subject_sha=%s\n' "$EXPECTED_SHA"
+      - name: Syntax-check deterministic runtime
+        run: |
+          node --check prototypes/dd-ui/grammar.mjs
+          node --check prototypes/dd-ui/dd-ui.mjs
+          node --check prototypes/dd-ui/render.mjs
+          node --check prototypes/dd-ui/demo-data.mjs
+          node --check prototypes/dd-ui/app.mjs
       - name: Execute DDUI contract and falsifiers
         run: node --test prototypes/dd-ui/dd-ui.test.mjs
