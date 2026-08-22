@@ -3,6 +3,7 @@ const cmca = require('../pkg/wasm4pm_cmca.js');
 
 const contract = JSON.parse(cmca.cmcaContract());
 assert.equal(contract.schema, 'wasm4pm.cmca-allocation/v1');
+assert.equal(contract.bcinr_source_sha, 'b76dcb377b297cb8826a5256b55f8b57a6b76462');
 assert.equal(contract.package, 'bcinr-cmca');
 assert.equal(contract.version, '26.7.28');
 assert.equal(contract.authority, 'CONSTRUCT_ONLY');
@@ -27,7 +28,9 @@ const request = {
 };
 
 const response = cmca.cmcaAllocate(request);
+const replayVerified = cmca.cmcaReplay(response);
 assert.equal(response.standing, 'ALIVE');
+assert.equal(response.receipt.bcinr_source_sha, contract.bcinr_source_sha);
 assert.equal(response.receipt.authority, 'CONSTRUCT_ONLY');
 assert.equal(response.receipt.actuation_performed, false);
 assert.equal(response.receipt.bcinr_package, 'bcinr-cmca');
@@ -36,6 +39,7 @@ assert.ok(response.receipt.result_blake3.length > 0);
 assert.ok(response.receipt.receipt_blake3.length > 0);
 assert.equal(response.result.shares_q16.length, 8);
 assert.ok(response.result.shares_q16.some((value) => value > 0));
+assert.equal(replayVerified, true);
 
-process.stdout.write(JSON.stringify({ contract, response }, null, 2));
+process.stdout.write(JSON.stringify({ contract, response, replay_verified: replayVerified }, null, 2));
 process.stdout.write('\n');
