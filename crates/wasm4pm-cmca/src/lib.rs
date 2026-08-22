@@ -20,10 +20,9 @@ use wasm_bindgen::prelude::*;
 
 pub const SCHEMA: &str = "wasm4pm.cmca-allocation/v1";
 pub const BCINR_REPOSITORY: &str = "https://github.com/seanchatmangpt/bcinr";
+pub const BCINR_SOURCE_SHA: &str = "b76dcb377b297cb8826a5256b55f8b57a6b76462";
 pub const BCINR_CMCA_PACKAGE: &str = "bcinr-cmca";
 pub const BCINR_CMCA_VERSION: &str = "26.7.28";
-pub const BCINR_CMCA_LOCK_CHECKSUM: &str =
-    "c7aa454f03b50b6990c672fd72a4e2bc3ec3af63bed5d4dfae02dee5ca30ba19";
 pub const KERNEL: &str = "bcinr_cmca::allocator::allocate_single_lens";
 pub const AUTHORITY: &str = "CONSTRUCT_ONLY";
 
@@ -58,9 +57,9 @@ pub struct CmcaAllocationResult {
 pub struct CmcaComputationReceipt {
     pub schema: String,
     pub bcinr_repository: String,
+    pub bcinr_source_sha: String,
     pub bcinr_package: String,
     pub bcinr_version: String,
-    pub bcinr_lock_checksum: String,
     pub rdf_input_digest: String,
     pub generator_source_digest: String,
     pub kernel: String,
@@ -84,6 +83,7 @@ pub struct CmcaRefusal {
     pub code: String,
     pub message: String,
     pub request_blake3: String,
+    pub bcinr_source_sha: String,
     pub bcinr_package: String,
     pub bcinr_version: String,
     pub kernel: String,
@@ -94,9 +94,9 @@ pub struct CmcaRefusal {
 #[derive(Serialize)]
 struct ReceiptBody<'a> {
     schema: &'a str,
+    bcinr_source_sha: &'a str,
     bcinr_package: &'a str,
     bcinr_version: &'a str,
-    bcinr_lock_checksum: &'a str,
     rdf_input_digest: &'a str,
     generator_source_digest: &'a str,
     kernel: &'a str,
@@ -114,6 +114,7 @@ fn blake3_json<T: Serialize>(value: &T) -> Result<String, CmcaRefusal> {
             code: "CMCA_SERIALIZATION_REFUSED".to_owned(),
             message: error.to_string(),
             request_blake3: String::new(),
+            bcinr_source_sha: BCINR_SOURCE_SHA.to_owned(),
             bcinr_package: BCINR_CMCA_PACKAGE.to_owned(),
             bcinr_version: BCINR_CMCA_VERSION.to_owned(),
             kernel: KERNEL.to_owned(),
@@ -135,6 +136,7 @@ fn map_refusal(refusal: LensSelectionRefusal, request_blake3: String) -> CmcaRef
         code: code.to_owned(),
         message: refusal.to_string(),
         request_blake3,
+        bcinr_source_sha: BCINR_SOURCE_SHA.to_owned(),
         bcinr_package: BCINR_CMCA_PACKAGE.to_owned(),
         bcinr_version: BCINR_CMCA_VERSION.to_owned(),
         kernel: KERNEL.to_owned(),
@@ -181,9 +183,9 @@ pub fn allocate_native(
     let result_blake3 = blake3_json(&result)?;
     let body = ReceiptBody {
         schema: SCHEMA,
+        bcinr_source_sha: BCINR_SOURCE_SHA,
         bcinr_package: BCINR_CMCA_PACKAGE,
         bcinr_version: BCINR_CMCA_VERSION,
-        bcinr_lock_checksum: BCINR_CMCA_LOCK_CHECKSUM,
         rdf_input_digest: RDF_INPUT_DIGEST,
         generator_source_digest: GENERATOR_SOURCE_DIGEST,
         kernel: KERNEL,
@@ -200,9 +202,9 @@ pub fn allocate_native(
         receipt: CmcaComputationReceipt {
             schema: SCHEMA.to_owned(),
             bcinr_repository: BCINR_REPOSITORY.to_owned(),
+            bcinr_source_sha: BCINR_SOURCE_SHA.to_owned(),
             bcinr_package: BCINR_CMCA_PACKAGE.to_owned(),
             bcinr_version: BCINR_CMCA_VERSION.to_owned(),
-            bcinr_lock_checksum: BCINR_CMCA_LOCK_CHECKSUM.to_owned(),
             rdf_input_digest: RDF_INPUT_DIGEST.to_owned(),
             generator_source_digest: GENERATOR_SOURCE_DIGEST.to_owned(),
             kernel: KERNEL.to_owned(),
@@ -219,9 +221,9 @@ pub fn allocate_native(
 pub fn replay_receipt(response: &CmcaAllocationResponse) -> bool {
     let body = ReceiptBody {
         schema: &response.receipt.schema,
+        bcinr_source_sha: &response.receipt.bcinr_source_sha,
         bcinr_package: &response.receipt.bcinr_package,
         bcinr_version: &response.receipt.bcinr_version,
-        bcinr_lock_checksum: &response.receipt.bcinr_lock_checksum,
         rdf_input_digest: &response.receipt.rdf_input_digest,
         generator_source_digest: &response.receipt.generator_source_digest,
         kernel: &response.receipt.kernel,
@@ -234,6 +236,7 @@ pub fn replay_receipt(response: &CmcaAllocationResponse) -> bool {
     blake3_json(&body)
         .map(|actual| actual == response.receipt.receipt_blake3)
         .unwrap_or(false)
+        && response.receipt.bcinr_source_sha == BCINR_SOURCE_SHA
         && response.receipt.authority == AUTHORITY
         && !response.receipt.actuation_performed
 }
@@ -262,6 +265,7 @@ pub fn cmca_allocate(request: JsValue) -> Result<JsValue, JsValue> {
                 "schema": SCHEMA,
                 "code": "CMCA_INPUT_REFUSED",
                 "message": error.to_string(),
+                "bcinr_source_sha": BCINR_SOURCE_SHA,
                 "authority": AUTHORITY,
                 "actuation_performed": false
             })
@@ -280,7 +284,7 @@ pub fn cmca_allocate(request: JsValue) -> Result<JsValue, JsValue> {
     }
 }
 
-/// WASM-visible identity contract so a host can bind receipts to the exact CMCA package.
+/// WASM-visible identity contract so a host can bind receipts to the exact CMCA source.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(js_name = cmcaContract)]
 pub fn cmca_contract() -> JsValue {
@@ -288,9 +292,9 @@ pub fn cmca_contract() -> JsValue {
         &serde_json::json!({
             "schema": SCHEMA,
             "canonical_repository": BCINR_REPOSITORY,
+            "bcinr_source_sha": BCINR_SOURCE_SHA,
             "package": BCINR_CMCA_PACKAGE,
             "version": BCINR_CMCA_VERSION,
-            "cargo_lock_checksum": BCINR_CMCA_LOCK_CHECKSUM,
             "rdf_input_digest": RDF_INPUT_DIGEST,
             "generator_source_digest": GENERATOR_SOURCE_DIGEST,
             "kernel": KERNEL,
