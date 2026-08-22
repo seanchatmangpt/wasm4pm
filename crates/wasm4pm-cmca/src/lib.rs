@@ -284,6 +284,16 @@ pub fn cmca_allocate(request: JsValue) -> Result<JsValue, JsValue> {
     }
 }
 
+/// JavaScript/WebAssembly replay verifier. Hosts can use this as a distinct execution
+/// step rather than treating a receipt-shaped object as proof of replay.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(js_name = cmcaReplay)]
+pub fn cmca_replay(response: JsValue) -> Result<bool, JsValue> {
+    let response: CmcaAllocationResponse = serde_wasm_bindgen::from_value(response)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    Ok(replay_receipt(&response))
+}
+
 /// WASM-visible identity contract so a host can bind receipts to the exact CMCA source.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(js_name = cmcaContract)]
