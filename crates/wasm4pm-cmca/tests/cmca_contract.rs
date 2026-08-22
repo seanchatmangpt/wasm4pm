@@ -1,6 +1,6 @@
 use wasm4pm_cmca::{
     allocate_native, replay_receipt, CmcaAllocationRequest, CmcaLens, CmcaSemanticState,
-    AUTHORITY, BCINR_CMCA_PACKAGE, BCINR_CMCA_VERSION,
+    AUTHORITY, BCINR_CMCA_PACKAGE, BCINR_CMCA_VERSION, BCINR_SOURCE_SHA,
 };
 
 fn request() -> CmcaAllocationRequest {
@@ -28,6 +28,7 @@ fn exact_bcinr_kernel_produces_replayable_construct_only_receipt() {
 
     assert_eq!(response.standing, "ALIVE");
     assert!(response.result.shares_q16.iter().any(|share| *share > 0));
+    assert_eq!(response.receipt.bcinr_source_sha, BCINR_SOURCE_SHA);
     assert_eq!(response.receipt.bcinr_package, BCINR_CMCA_PACKAGE);
     assert_eq!(response.receipt.bcinr_version, BCINR_CMCA_VERSION);
     assert_eq!(response.receipt.authority, AUTHORITY);
@@ -44,6 +45,7 @@ fn cyclic_hierarchy_is_a_typed_refusal_not_a_false_success() {
     let refusal = allocate_native(&request).expect_err("cycle must refuse");
 
     assert_eq!(refusal.code, "CMCA_HIERARCHY_CYCLE_REFUSED");
+    assert_eq!(refusal.bcinr_source_sha, BCINR_SOURCE_SHA);
     assert_eq!(refusal.authority, AUTHORITY);
     assert!(!refusal.actuation_performed);
     assert!(!refusal.request_blake3.is_empty());
