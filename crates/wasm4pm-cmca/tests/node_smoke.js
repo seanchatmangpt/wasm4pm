@@ -41,5 +41,5 @@ assert.equal(response.result.shares_q16.length, 8);
 assert.ok(response.result.shares_q16.some((value) => value > 0));
 assert.equal(replayVerified, true);
 
-process.stdout.write(JSON.stringify({ contract, response, replay_verified: replayVerified }, null, 2));
+process.stdout.write(JSON.stringify({ request, contract, response, replay_verified: replayVerified }, null, 2));
 process.stdout.write('\n');
