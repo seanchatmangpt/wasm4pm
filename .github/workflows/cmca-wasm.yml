@@ -49,15 +49,18 @@ jobs:
           python3 - <<'PY'
           import json, os
           metadata = json.load(open('/tmp/cargo-metadata.json'))
-          packages = [p for p in metadata['packages'] if p['name'] == 'bcinr-cmca']
-          assert len(packages) == 1, packages
-          package = packages[0]
-          source = package.get('source') or ''
           expected = os.environ['BCINR_SOURCE_SHA']
+          candidates = [
+              p for p in metadata['packages']
+              if p['name'] == 'bcinr-cmca'
+              and (p.get('source') or '').startswith('git+https://github.com/seanchatmangpt/bcinr')
+          ]
+          assert len(candidates) == 1, candidates
+          package = candidates[0]
+          source = package.get('source') or ''
           print(f"bcinr_cmca_version={package['version']}")
           print(f"bcinr_cmca_source={source}")
           assert source.endswith('#' + expected), (source, expected)
-          assert 'github.com/seanchatmangpt/bcinr' in source, source
           PY
 
       - name: Execute native CMCA contract and falsifier courts
