@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BCINR_SOURCE_SHA: b76dcb377b297cb8826a5256b55f8b57a6b76462
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,18 +34,40 @@ jobs:
           printf 'admitted=%s\nobserved=%s\n' "$SUBJECT_SHA" "$observed"
           test "$observed" = "$SUBJECT_SHA"
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
+      - name: Install repository Rust toolchain and wasm32 target
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal --target wasm32-unknown-unknown
+          rustc +nightly-2026-04-15 --version --verbose
+
+      - name: Resolve and verify exact BCINR CMCA source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +nightly-2026-04-15 metadata --format-version 1 > /tmp/cargo-metadata.json
+          python3 - <<'PY'
+          import json, os
+          metadata = json.load(open('/tmp/cargo-metadata.json'))
+          packages = [p for p in metadata['packages'] if p['name'] == 'bcinr-cmca']
+          assert len(packages) == 1, packages
+          package = packages[0]
+          source = package.get('source') or ''
+          expected = os.environ['BCINR_SOURCE_SHA']
+          print(f"bcinr_cmca_version={package['version']}")
+          print(f"bcinr_cmca_source={source}")
+          assert source.endswith('#' + expected), (source, expected)
+          assert 'github.com/seanchatmangpt/bcinr' in source, source
+          PY
 
       - name: Execute native CMCA contract and falsifier courts
-        run: cargo test -p wasm4pm-cmca
+        run: cargo +nightly-2026-04-15 test -p wasm4pm-cmca
 
       - name: Compile the exact bridge for wasm32
-        run: cargo check -p wasm4pm-cmca --target wasm32-unknown-unknown
+        run: cargo +nightly-2026-04-15 check -p wasm4pm-cmca --target wasm32-unknown-unknown
 
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.13.1 --locked
+        run: cargo +nightly-2026-04-15 install wasm-pack --version 0.13.1 --locked
 
       - name: Build the exact Node-target WebAssembly artifact
         run: wasm-pack build crates/wasm4pm-cmca --target nodejs --out-dir pkg
@@ -64,6 +87,7 @@ jobs:
           execution="crates/wasm4pm-cmca/pkg/cmca-execution.json"
           wasm_sha256="$(sha256sum "$wasm" | awk '{print $1}')"
           execution_sha256="$(sha256sum "$execution" | awk '{print $1}')"
+          lock_sha256="$(sha256sum Cargo.lock | awk '{print $1}')"
           tree_sha="$(git rev-parse 'HEAD^{tree}')"
           cat > crates/wasm4pm-cmca/pkg/cmca-wasm-receipt.json <<JSON
           {
@@ -71,10 +95,11 @@ jobs:
             "subject_sha": "$SUBJECT_SHA",
             "subject_tree_sha": "$tree_sha",
             "canonical_cmca_repository": "https://github.com/seanchatmangpt/bcinr",
+            "cmca_source_sha": "$BCINR_SOURCE_SHA",
             "cmca_package": "bcinr-cmca",
             "cmca_version": "26.7.28",
-            "cmca_cargo_lock_checksum": "c7aa454f03b50b6990c672fd72a4e2bc3ec3af63bed5d4dfae02dee5ca30ba19",
             "kernel": "bcinr_cmca::allocator::allocate_single_lens",
+            "cargo_lock_sha256": "$lock_sha256",
             "wasm_sha256": "$wasm_sha256",
             "execution_sha256": "$execution_sha256",
             "authority": "CONSTRUCT_ONLY",
@@ -89,6 +114,7 @@ jobs:
         with:
           name: cmca-wasm-${{ env.SUBJECT_SHA }}
           path: |
+            Cargo.lock
             crates/wasm4pm-cmca/pkg/wasm4pm_cmca_bg.wasm
             crates/wasm4pm-cmca/pkg/wasm4pm_cmca.js
             crates/wasm4pm-cmca/pkg/cmca-execution.json
