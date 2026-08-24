@@ -92,7 +92,7 @@
     "@vitest/coverage-v8": "^1.6.0",
     "blake3": "^2.1.4",
     "prettier": "^3.9.6",
-    "tsx": "^4.23.1",
+    "tsx": "^4.23.12",
     "typescript": "^5.3.3"
   },
   "dependencies": {
