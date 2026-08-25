@@ -1,37 +1,34 @@
-//! Compile-checked wasm4pm-compat API probe.
+//! Legacy module path retained as a dependency-direction guard.
 //!
-//! This module does not admit evidence.
-//! This module does not execute evidence.
-//! This module does not bridge wasm4pm execution.
+//! `wasm4pm` is the process-intelligence execution engine.  It must not depend
+//! on `wasm4pm-compat`: adapters are downstream of the engine and may invoke the
+//! published WebAssembly artifact, never the reverse.
 //!
-//! Its only purpose is to prove which wasm4pm-compat v26.6.5
-//! public symbols are available to wasm4pm during the API truth pass.
+//! The former implementation imported `wasm4pm-compat` only to compile-probe
+//! its public API.  That created an engine -> adapter dependency with no runtime
+//! value.  Keep this module path temporarily so downstream Rust code that names
+//! it receives an explicit boundary description rather than an unrelated
+//! compile break, but expose no compat types from the engine.
 
-pub use wasm4pm_compat as compat;
+/// Stable description of the dependency law for diagnostics and tests.
+pub const DEPENDENCY_LAW: &str =
+    "wasm4pm-compat -> wasm4pm WebAssembly; wasm4pm -/-> wasm4pm-compat";
 
-// Verifying Evidence Lifecycle
-pub use compat::evidence::Evidence;
-pub use compat::state::{Admitted, Exportable, Parsed, Projected, Raw, Receipted, Refused};
+/// Returns the dependency law without importing or executing an adapter.
+#[must_use]
+pub const fn dependency_law() -> &'static str {
+    DEPENDENCY_LAW
+}
 
-// Verifying Witnesses
-pub use compat::witness::Witness;
-pub use compat::witnesses::{Ocel20, PowlPaper, WfNetSoundnessPaper, Xes1849};
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-// Verifying Admission and Refusals
-pub use compat::admission::{Admit, Refusal};
-
-// Verifying Structural Types
-pub use compat::declare::DeclareConstraint;
-pub use compat::dfg::DFG;
-pub use compat::event_log::{Event, EventLog, Trace};
-pub use compat::ocel::{OCELEvent, OCELObject, OCEL};
-pub use compat::petri::PetriNet;
-pub use compat::powl::PowlNode;
-pub use compat::process_tree::ProcessTree;
-
-// Verifying Accountability
-pub use compat::loss::{LossPolicy, LossReport, ProjectionName};
-pub use compat::receipt::{ReceiptEnvelope, ReceiptShape};
-
-// Verifying Graduation
-pub use compat::engine_bridge::{GraduateToWasm4pm, GraduationCandidate, GraduationReason};
+    #[test]
+    fn engine_dependency_direction_is_explicit() {
+        assert_eq!(
+            dependency_law(),
+            "wasm4pm-compat -> wasm4pm WebAssembly; wasm4pm -/-> wasm4pm-compat"
+        );
+    }
+}
