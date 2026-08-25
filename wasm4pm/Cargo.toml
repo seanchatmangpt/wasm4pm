@@ -76,7 +76,7 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "registry"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
-simd-json = "0.13"
+simd-json = "0.17"
 lazy_static = "1.4"
 fake = { workspace = true }
 proptest = { workspace = true }
