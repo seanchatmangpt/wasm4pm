@@ -1,0 +1,126 @@
+name: CMCA WASM exact-head court
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/wasm4pm-cmca/**"
+      - ".github/workflows/cmca-wasm.yml"
+  push:
+    branches:
+      - "feat/bcinr-cmca-wasm-export"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cmca-wasm:
+    runs-on: ubuntu-latest
+    env:
+      SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BCINR_SOURCE_SHA: b76dcb377b297cb8826a5256b55f8b57a6b76462
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SUBJECT_SHA }}
+
+      - name: Verify exact wasm4pm source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git rev-parse HEAD)"
+          printf 'admitted=%s\nobserved=%s\n' "$SUBJECT_SHA" "$observed"
+          test "$observed" = "$SUBJECT_SHA"
+
+      - name: Install repository Rust toolchain and wasm32 target
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install nightly-2026-04-15 --profile minimal --target wasm32-unknown-unknown
+          rustc +nightly-2026-04-15 --version --verbose
+
+      - name: Resolve and verify exact BCINR CMCA source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +nightly-2026-04-15 metadata --format-version 1 > /tmp/cargo-metadata.json
+          python3 - <<'PY'
+          import json, os
+          metadata = json.load(open('/tmp/cargo-metadata.json'))
+          expected = os.environ['BCINR_SOURCE_SHA']
+          candidates = [
+              p for p in metadata['packages']
+              if p['name'] == 'bcinr-cmca'
+              and (p.get('source') or '').startswith('git+https://github.com/seanchatmangpt/bcinr')
+          ]
+          assert len(candidates) == 1, candidates
+          package = candidates[0]
+          source = package.get('source') or ''
+          print(f"bcinr_cmca_version={package['version']}")
+          print(f"bcinr_cmca_source={source}")
+          assert source.endswith('#' + expected), (source, expected)
+          PY
+
+      - name: Execute native CMCA contract and falsifier courts
+        run: cargo +nightly-2026-04-15 test -p wasm4pm-cmca
+
+      - name: Compile the exact bridge for wasm32
+        run: cargo +nightly-2026-04-15 check -p wasm4pm-cmca --target wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo +nightly-2026-04-15 install wasm-pack --version 0.13.1 --locked
+
+      - name: Build the exact Node-target WebAssembly artifact
+        run: wasm-pack build crates/wasm4pm-cmca --target nodejs --out-dir pkg
+
+      - name: Execute the WebAssembly CMCA boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node crates/wasm4pm-cmca/tests/node_smoke.js \
+            | tee crates/wasm4pm-cmca/pkg/cmca-execution.json
+
+      - name: Manufacture exact-head CMCA WASM receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          wasm="crates/wasm4pm-cmca/pkg/wasm4pm_cmca_bg.wasm"
+          execution="crates/wasm4pm-cmca/pkg/cmca-execution.json"
+          wasm_sha256="$(sha256sum "$wasm" | awk '{print $1}')"
+          execution_sha256="$(sha256sum "$execution" | awk '{print $1}')"
+          lock_sha256="$(sha256sum Cargo.lock | awk '{print $1}')"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          cat > crates/wasm4pm-cmca/pkg/cmca-wasm-receipt.json <<JSON
+          {
+            "schema": "wasm4pm.cmca-wasm-execution/v1",
+            "subject_sha": "$SUBJECT_SHA",
+            "subject_tree_sha": "$tree_sha",
+            "canonical_cmca_repository": "https://github.com/seanchatmangpt/bcinr",
+            "cmca_source_sha": "$BCINR_SOURCE_SHA",
+            "cmca_package": "bcinr-cmca",
+            "cmca_version": "26.7.28",
+            "kernel": "bcinr_cmca::allocator::allocate_single_lens",
+            "cargo_lock_sha256": "$lock_sha256",
+            "wasm_sha256": "$wasm_sha256",
+            "execution_sha256": "$execution_sha256",
+            "authority": "CONSTRUCT_ONLY",
+            "actuation_performed": false,
+            "standing": "ALIVE"
+          }
+          JSON
+          cat crates/wasm4pm-cmca/pkg/cmca-wasm-receipt.json
+
+      - name: Upload executable CMCA WASM evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmca-wasm-${{ env.SUBJECT_SHA }}
+          path: |
+            Cargo.lock
+            crates/wasm4pm-cmca/pkg/wasm4pm_cmca_bg.wasm
+            crates/wasm4pm-cmca/pkg/wasm4pm_cmca.js
+            crates/wasm4pm-cmca/pkg/cmca-execution.json
+            crates/wasm4pm-cmca/pkg/cmca-wasm-receipt.json
+          if-no-files-found: error
+          retention-days: 14

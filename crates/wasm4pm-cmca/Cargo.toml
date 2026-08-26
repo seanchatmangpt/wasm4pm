@@ -1,0 +1,23 @@
+[package]
+name = "wasm4pm-cmca"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Portable WebAssembly boundary for BCINR Chatman Multifractal Consequence Allocation"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bcinr-cmca.workspace = true
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde-wasm-bindgen.workspace = true
+wasm-bindgen.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools", "crates/wasm4pm-planner", "crates/wasm4pm-bindings-py"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools", "crates/wasm4pm-planner", "crates/wasm4pm-bindings-py", "crates/wasm4pm-cmca"]
 # wasm4pm-lsp was removed in v26.7.1: it depended on an out-of-repo path crate
 # `lsp-max` and could not build in a clean checkout. Revival path: restore from
 # git history (crates/wasm4pm-lsp @ pre-26.7.1) once lsp-max is vendored or published.
@@ -26,6 +26,10 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
+# CMCA's live allocator surface is ahead of the published 26.7.28 crate. Pin the
+# canonical BCINR repository at an exact SHA so source identity and executable
+# behavior are one admitted subject.
+bcinr-cmca = { git = "https://github.com/seanchatmangpt/bcinr", rev = "b76dcb377b297cb8826a5256b55f8b57a6b76462", package = "bcinr-cmca", features = ["std"] }
 bcinr-powl = { version = "26.6.25", features = ["std"] }
 wasm4pm-compat = { version = "26.8.7", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.7.23", path = "wasm4pm", features = ["cloud"] }
