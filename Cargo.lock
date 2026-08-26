@@ -4080,8 +4080,10 @@ version = "0.1.0"
 dependencies = [
  "miniml",
  "ocpq",
+ "prolog8",
  "serde",
  "serde_json",
+ "wasm4pm",
  "wasm4pm-cognition",
 ]
 

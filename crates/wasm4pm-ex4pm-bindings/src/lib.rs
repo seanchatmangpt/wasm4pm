@@ -24,6 +24,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 mod phase2;
+mod phase2_playout;
+mod prolog;
 
 // ---------------------------------------------------------------------------
 // Shared buffer ABI
@@ -78,13 +80,14 @@ fn fnv1a(bytes: &[u8]) -> u64 {
 fn respond<T: Serialize>(value: &T) -> String {
     let body = serde_json::to_string(value).unwrap_or_else(|_| "{}".to_string());
     let digest = fnv1a(body.as_bytes());
-    format!(
-        "{{\"result\":{body},\"digest\":\"{digest:016x}\"}}"
-    )
+    format!("{{\"result\":{body},\"digest\":\"{digest:016x}\"}}")
 }
 
 fn error_response(message: &str) -> String {
-    format!("{{\"error\":{}}}", serde_json::to_string(message).unwrap_or_default())
+    format!(
+        "{{\"error\":{}}}",
+        serde_json::to_string(message).unwrap_or_default()
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -142,11 +145,7 @@ fn discover(request_json: &str) -> String {
 /// # Safety
 /// See module-level ABI contract.
 #[unsafe(export_name = "wasm4pm_ex4pm_discover_v1")]
-pub unsafe extern "C" fn discover_v1(
-    ptr: *const u8,
-    len: usize,
-    out_len: *mut usize,
-) -> *mut u8 {
+pub unsafe extern "C" fn discover_v1(ptr: *const u8, len: usize, out_len: *mut usize) -> *mut u8 {
     let input = unsafe { read_input(ptr, len) };
     write_output(discover(&input), out_len)
 }
@@ -206,7 +205,11 @@ fn conform(request_json: &str) -> String {
         })
         .count() as u64;
 
-    let fitness = if total == 0 { 1.0 } else { fit as f64 / total as f64 };
+    let fitness = if total == 0 {
+        1.0
+    } else {
+        fit as f64 / total as f64
+    };
 
     respond(&ConformResult {
         fitness,
@@ -491,11 +494,7 @@ fn powl_mine(request_json: &str) -> String {
 /// # Safety
 /// See module-level ABI contract.
 #[unsafe(export_name = "wasm4pm_ex4pm_powl_mine_v1")]
-pub unsafe extern "C" fn powl_mine_v1(
-    ptr: *const u8,
-    len: usize,
-    out_len: *mut usize,
-) -> *mut u8 {
+pub unsafe extern "C" fn powl_mine_v1(ptr: *const u8, len: usize, out_len: *mut usize) -> *mut u8 {
     let input = unsafe { read_input(ptr, len) };
     write_output(powl_mine(&input), out_len)
 }
@@ -532,9 +531,8 @@ mod tests {
 
     #[test]
     fn conform_computes_exact_fitness() {
-        let out = conform(
-            r#"{"traces":[["a","b"],["a","c"]],"model_edges":[{"from":"a","to":"b"}]}"#,
-        );
+        let out =
+            conform(r#"{"traces":[["a","b"],["a","c"]],"model_edges":[{"from":"a","to":"b"}]}"#);
         assert!(out.contains("\"fit_traces\":1"));
         assert!(out.contains("\"total_traces\":2"));
     }

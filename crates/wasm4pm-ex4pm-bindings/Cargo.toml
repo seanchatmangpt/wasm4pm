@@ -16,6 +16,8 @@ serde_json = "1"
 miniml = { path = "../miniml-core" }
 ocpq = { path = "../ocpq" }
 wasm4pm-cognition = { path = "../wasm4pm-cognition" }
+wasm4pm = { path = "../../wasm4pm" }
+prolog8 = { path = "../prolog8" }
 
 [lints.rust]
 unsafe_code = "allow"
