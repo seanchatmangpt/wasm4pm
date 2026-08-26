@@ -4075,6 +4075,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm4pm-ex4pm-bindings"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "wasm4pm-planner"
 version = "26.7.23"
 dependencies = [
