@@ -4078,8 +4078,11 @@ dependencies = [
 name = "wasm4pm-ex4pm-bindings"
 version = "0.1.0"
 dependencies = [
+ "miniml",
+ "ocpq",
  "serde",
  "serde_json",
+ "wasm4pm-cognition",
 ]
 
 [[package]]

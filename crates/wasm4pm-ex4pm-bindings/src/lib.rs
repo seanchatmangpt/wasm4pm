@@ -23,6 +23,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod phase2;
+
 // ---------------------------------------------------------------------------
 // Shared buffer ABI
 // ---------------------------------------------------------------------------

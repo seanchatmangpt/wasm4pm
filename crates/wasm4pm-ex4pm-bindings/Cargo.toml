@@ -2,7 +2,7 @@
 name = "wasm4pm-ex4pm-bindings"
 version = "0.1.0"
 edition = "2021"
-description = "Phase-1 extern \"C\" WASM export boundary for ex4pm process-intelligence algorithms (discover, conform, simulate, optimize, powl_mine)."
+description = "Phase-1/Phase-2 extern \"C\" WASM export boundary for ex4pm process-intelligence algorithms: Phase 1 (discover, conform, simulate, optimize, powl_mine) hand-written minimal implementations; Phase 2 (survival, markov, bayesian, ocpq_eval, strips_plan, htn_plan, ctl_check, allen_temporal) thin wrappers over already-implemented wasm4pm-workspace crates."
 license = "MIT OR Apache-2.0"
 
 [lib]
@@ -13,6 +13,9 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+miniml = { path = "../miniml-core" }
+ocpq = { path = "../ocpq" }
+wasm4pm-cognition = { path = "../wasm4pm-cognition" }
 
 [lints.rust]
 unsafe_code = "allow"
