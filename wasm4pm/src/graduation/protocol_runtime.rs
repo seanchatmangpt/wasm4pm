@@ -384,9 +384,9 @@ impl ProtocolRuntime {
             return Err(RuntimeRefusal::MissingObservedAt);
         }
 
-        let authority = verifier.verify(intent, decision).map_err(|reason| {
-            RuntimeRefusal::AuthorityVerifierRefused { reason }
-        })?;
+        let authority = verifier
+            .verify(intent, decision)
+            .map_err(|reason| RuntimeRefusal::AuthorityVerifierRefused { reason })?;
         validate_verified_authority(intent, decision, &authority)?;
 
         let request = AdmittedDo { intent, authority };
@@ -520,10 +520,7 @@ pub fn protocol_receipt_to_ocel_event(receipt: &ProtocolReceipt) -> OCELEvent {
 /// an OCEL object. The runtime never fabricates a domain object to make an event
 /// appear valid. The event is regenerated from the verified receipt so callers
 /// cannot tamper the cached projection inside [`DoOutcome`].
-pub fn append_protocol_outcome(
-    log: &mut OCEL,
-    outcome: &DoOutcome,
-) -> Result<(), RuntimeRefusal> {
+pub fn append_protocol_outcome(log: &mut OCEL, outcome: &DoOutcome) -> Result<(), RuntimeRefusal> {
     outcome.receipt.verify()?;
     if !log
         .objects
@@ -892,10 +889,7 @@ mod tests {
     }
 
     impl ConsequenceBroker<Intent> for Broker {
-        fn actuate(
-            &mut self,
-            _request: &AdmittedDo<'_, Intent>,
-        ) -> Result<BrokerReceipt, String> {
+        fn actuate(&mut self, _request: &AdmittedDo<'_, Intent>) -> Result<BrokerReceipt, String> {
             self.calls += 1;
             BrokerReceipt::try_new(
                 "blake3:consequence",
@@ -1011,11 +1005,10 @@ mod tests {
         assert_eq!(outcome.ocel_event.event_type, "protocol.consequence.do");
         assert_eq!(outcome.ocel_event.object_ids, vec!["service:payments"]);
         assert_eq!(
-            outcome
-                .ocel_event
-                .attributes
-                .get("protocol:receipt_digest"),
-            Some(&AttributeValue::String(outcome.receipt.receipt_digest.clone()))
+            outcome.ocel_event.attributes.get("protocol:receipt_digest"),
+            Some(&AttributeValue::String(
+                outcome.receipt.receipt_digest.clone()
+            ))
         );
     }
 
