@@ -75,7 +75,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo test -p wasm4pm --locked graduation::protocol_runtime::tests
+          # These tests live in the wasm4pm library. --lib prevents unrelated
+          # integration tests (including cloud-only RL fixtures) from expanding
+          # this bounded protocol court before the claimed subject executes.
+          cargo test -p wasm4pm --lib --locked graduation::protocol_runtime::tests
 
       - name: Assert authority ordering is encoded
         shell: bash
