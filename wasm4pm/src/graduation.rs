@@ -22,8 +22,8 @@ pub mod pc_powl2;
 mod protocol_runtime;
 
 pub use pc_powl2::{
-    canonical_digest, replay_receipt, FiniteStateDomain, PcPowl2Broker, PcPowl2Checker,
-    PcpResult, VerificationReport, VerificationStanding,
+    canonical_digest, replay_receipt, FiniteStateDomain, PcPowl2Broker, PcPowl2Checker, PcpResult,
+    VerificationReport, VerificationStanding,
 };
 
 // Verification and evidence shapes are safe to expose before the typed adapter:
