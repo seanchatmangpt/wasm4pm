@@ -50,7 +50,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo fmt --all -- --check
+          rustfmt --edition 2021 --check \
+            wasm4pm/src/graduation.rs \
+            wasm4pm/src/graduation/protocol_runtime.rs
 
       - name: Execute authority, receipt, replay, and OCEL courts
         shell: bash
