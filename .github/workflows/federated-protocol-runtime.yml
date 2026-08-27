@@ -46,13 +46,30 @@ jobs:
           toolchain: nightly-2026-04-15
           components: rustfmt
 
-      - name: Check protocol source formatting
+      - name: Manufacture protocol source formatting replay
         shell: bash
         run: |
           set -euo pipefail
-          rustfmt --edition 2021 --check \
-            wasm4pm/src/graduation.rs \
-            wasm4pm/src/graduation/protocol_runtime.rs
+          mkdir -p .rustfmt-replay/wasm4pm/src/graduation
+          cp wasm4pm/src/graduation.rs .rustfmt-replay/wasm4pm/src/graduation.rs
+          cp wasm4pm/src/graduation/protocol_runtime.rs .rustfmt-replay/wasm4pm/src/graduation/protocol_runtime.rs
+          rustfmt --edition 2021 .rustfmt-replay/wasm4pm/src/graduation.rs
+          rustfmt --edition 2021 .rustfmt-replay/wasm4pm/src/graduation/protocol_runtime.rs
+
+      - name: Preserve exact rustfmt replay evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: federated-protocol-rustfmt-${{ github.event.pull_request.head.sha || github.sha }}
+          if-no-files-found: error
+          include-hidden-files: true
+          path: .rustfmt-replay/
+
+      - name: Require protocol source equals rustfmt replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -u wasm4pm/src/graduation.rs .rustfmt-replay/wasm4pm/src/graduation.rs
+          diff -u wasm4pm/src/graduation/protocol_runtime.rs .rustfmt-replay/wasm4pm/src/graduation/protocol_runtime.rs
 
       - name: Execute authority, receipt, replay, and OCEL courts
         shell: bash
