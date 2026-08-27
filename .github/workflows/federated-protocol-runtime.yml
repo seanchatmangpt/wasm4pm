@@ -53,8 +53,8 @@ jobs:
           mkdir -p .rustfmt-replay/wasm4pm/src/graduation
           cp wasm4pm/src/graduation.rs .rustfmt-replay/wasm4pm/src/graduation.rs
           cp wasm4pm/src/graduation/protocol_runtime.rs .rustfmt-replay/wasm4pm/src/graduation/protocol_runtime.rs
-          rustfmt --edition 2021 .rustfmt-replay/wasm4pm/src/graduation.rs
-          rustfmt --edition 2021 .rustfmt-replay/wasm4pm/src/graduation/protocol_runtime.rs
+          rustfmt --edition 2021 --config skip_children=true .rustfmt-replay/wasm4pm/src/graduation.rs
+          rustfmt --edition 2021 --config skip_children=true .rustfmt-replay/wasm4pm/src/graduation/protocol_runtime.rs
 
       - name: Preserve exact rustfmt replay evidence
         uses: actions/upload-artifact@v4
