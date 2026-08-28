@@ -54,6 +54,39 @@ pub extern "C" fn version_v1() -> u32 {
     1
 }
 
+/// Reserves `len` zeroed bytes in this module's own linear memory and
+/// returns a pointer to them, so an external host (Wasmex, wasmtime, JS,
+/// etc.) has a real, safe location to write an input JSON request into
+/// before calling one of the `<algo>_v1` exports. Without this export the
+/// ptr/len ABI documented at the top of this file is unusable by any host
+/// that cannot otherwise reach into this module's memory allocator -- this
+/// closes that real gap. The returned buffer must be released via
+/// `wasm4pm_ex4pm_bindings_dealloc_v1` with the SAME `len` once the host is
+/// done writing to it (ownership transfers to the module the moment one of
+/// the `<algo>_v1`/`<algo>_replay_v1` exports reads from it via
+/// `read_input`, which never frees its own input buffer -- freeing the
+/// input buffer after the call is the host's responsibility, mirroring the
+/// existing `free_v1` contract for output buffers).
+#[unsafe(export_name = "wasm4pm_ex4pm_bindings_alloc_v1")]
+pub extern "C" fn alloc_v1(len: usize) -> *mut u8 {
+    let mut buf = vec![0u8; len].into_boxed_slice();
+    let ptr = buf.as_mut_ptr();
+    std::mem::forget(buf);
+    ptr
+}
+
+/// # Safety
+/// `ptr`/`len` must describe a buffer previously returned by
+/// `wasm4pm_ex4pm_bindings_alloc_v1` with this exact `len`, and not yet
+/// freed (via this export or via being consumed as an `<algo>_v1` input
+/// buffer that the host separately deallocates).
+#[unsafe(export_name = "wasm4pm_ex4pm_bindings_dealloc_v1")]
+pub unsafe extern "C" fn dealloc_v1(ptr: *mut u8, len: usize) {
+    unsafe {
+        drop(Vec::from_raw_parts(ptr, len, len));
+    }
+}
+
 /// # Safety
 /// `ptr`/`len` must describe a buffer previously returned by one of this
 /// crate's `<algo>_v1` exports and not yet freed.
@@ -520,6 +553,35 @@ fn replay_ok(recomputed_response: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn alloc_dealloc_roundtrip_supports_the_full_ptr_len_abi() {
+        // Real, no-mock proof that an external host can: alloc a buffer,
+        // write real bytes into it via the raw pointer, invoke an <algo>_v1
+        // export against exactly that buffer, read the real output buffer
+        // back, then free both -- the same sequence Wasmex must perform.
+        let request = br#"{"traces":[["a","b","c"]]}"#;
+        let in_ptr = alloc_v1(request.len());
+        assert!(!in_ptr.is_null());
+        unsafe {
+            std::ptr::copy_nonoverlapping(request.as_ptr(), in_ptr, request.len());
+        }
+
+        let mut out_len: usize = 0;
+        let out_ptr = unsafe { discover_v1(in_ptr, request.len(), &mut out_len as *mut usize) };
+        assert!(!out_ptr.is_null());
+        assert!(out_len > 0);
+
+        let out_bytes = unsafe { std::slice::from_raw_parts(out_ptr, out_len) };
+        let out_json = String::from_utf8_lossy(out_bytes).into_owned();
+        assert!(out_json.contains("\"activities\""));
+        assert!(out_json.contains("\"from\":\"a\""));
+
+        unsafe {
+            dealloc_v1(in_ptr, request.len());
+            free_v1(out_ptr, out_len);
+        }
+    }
 
     #[test]
     fn discover_builds_directly_follows_graph() {
