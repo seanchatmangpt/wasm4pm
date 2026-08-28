@@ -25,6 +25,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 mod phase2;
 mod phase2_playout;
+mod phase4_stats;
 mod prolog;
 
 // ---------------------------------------------------------------------------
