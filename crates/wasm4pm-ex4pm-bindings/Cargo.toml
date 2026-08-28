@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm-ex4pm-bindings"
-version = "0.1.0"
+version = "26.8.27"
 edition = "2021"
 description = "Phase-1/Phase-2 extern \"C\" WASM export boundary for ex4pm process-intelligence algorithms: Phase 1 (discover, conform, simulate, optimize, powl_mine) hand-written minimal implementations; Phase 2 (survival, markov, bayesian, ocpq_eval, strips_plan, htn_plan, ctl_check, allen_temporal) thin wrappers over already-implemented wasm4pm-workspace crates."
 license = "MIT OR Apache-2.0"
