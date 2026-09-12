@@ -338,8 +338,8 @@ importers:
   examples/web-dashboard:
     dependencies:
       wasm4pm-cognition-web:
-        specifier: ../../crates/wasm4pm-cognition/pkg-web
-        version: link:../../crates/wasm4pm-cognition/pkg-web
+        specifier: ../../packages/cognition/pkg-web
+        version: link:../../packages/cognition/pkg-web
     devDependencies:
       '@playwright/test':
         specifier: ^1.62.1
