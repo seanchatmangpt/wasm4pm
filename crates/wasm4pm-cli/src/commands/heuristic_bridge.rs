@@ -89,7 +89,10 @@ mod tests {
         let dfg = discover_heuristic_real(&log, "concept:name")
             .expect("heuristic miner should discover a DFG without panicking");
 
-        assert!(!dfg.nodes.is_empty(), "expected a non-empty DFG, got {dfg:?}");
+        assert!(
+            !dfg.nodes.is_empty(),
+            "expected a non-empty DFG, got {dfg:?}"
+        );
 
         // a->b appears 3 times, never reversed: dep(a,b) = (3-0)/(3+0+1) = 0.75
         // which clears the default 0.5 threshold, so the edge must survive.

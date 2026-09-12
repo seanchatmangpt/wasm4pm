@@ -18,7 +18,7 @@
           "startActivities_singleton_self",
           "endActivities_singleton_self"
         ],
-        "content_sha256": "0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e",
+        "content_sha256": "9ec70e3ac8122664df29fec6e7d3cd804dc00aa021077db3604c2e101b01a29b",
         "mfact_revision": "PENDING — see receipts/W4PM-LEAN-GALL-023-dfg-multi-trace-closure.md for the mfact commit SHA created by this checkpoint",
         "sorry_or_axiom_present": false,
         "kernel_verified_this_session": true,

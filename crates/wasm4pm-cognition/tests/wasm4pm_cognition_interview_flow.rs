@@ -1,4 +1,6 @@
+#[path = "support/interview_assist_scenario.rs"]
 mod interview_assist_scenario;
+#[path = "support/interview_assist_support/mod.rs"]
 mod interview_assist_support;
 
 use interview_assist_scenario::{

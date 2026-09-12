@@ -303,8 +303,10 @@ fn apply_turn_record(
         step: trace.len(),
         kind: "commitment-gate".to_string(),
         detail: format!(
-            "eligible={:?} committed={:?} pending={:?}",
-            analysis.eligible_track, state.committed_track, pending_confirmation
+            "eligible={} committed={} pending={}",
+            analysis.eligible_track.as_deref().unwrap_or("none"),
+            state.committed_track.as_deref().unwrap_or("none"),
+            pending_confirmation.as_deref().unwrap_or("none")
         ),
         depth: 0,
         objects: vec![],

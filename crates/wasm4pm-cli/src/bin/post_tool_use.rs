@@ -81,7 +81,10 @@ fn main() {
     let op_event = OperationEvent {
         id: format!("post_tool_use:{seq}"),
         seq,
-        event_type: format!("tool_use.{}", event_json["tool"].as_str().unwrap_or("unknown")),
+        event_type: format!(
+            "tool_use.{}",
+            event_json["tool"].as_str().unwrap_or("unknown")
+        ),
         objects: vec![ObjectRef {
             id: file_path.clone(),
             obj_type: "file".to_string(),
@@ -105,7 +108,8 @@ fn main() {
     }
 
     // The rolling chain hash after folding in this event.
-    let chain_hash = assembler.events()
+    let chain_hash = assembler
+        .events()
         .last()
         .map(|_| affidavit::chain::recompute_chain(assembler.events()))
         .and_then(|r| r.ok())

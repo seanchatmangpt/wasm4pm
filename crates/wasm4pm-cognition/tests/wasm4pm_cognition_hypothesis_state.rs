@@ -1,4 +1,6 @@
+#[path = "support/interview_assist_scenario.rs"]
 mod interview_assist_scenario;
+#[path = "support/interview_assist_support/mod.rs"]
 mod interview_assist_support;
 
 use interview_assist_scenario::{first_response, InterviewAssistResponseExt};
@@ -37,6 +39,9 @@ fn cognition_state_matches_persisted_state() {
     let projected = response.cognition_state.as_ref().expect("cognition state");
     let persisted = response.success_state();
     assert_eq!(projected.revision, persisted.revision);
-    assert_eq!(projected.confirmed_track, persisted.cognition.committed_track);
+    assert_eq!(
+        projected.confirmed_track,
+        persisted.cognition.committed_track
+    );
     assert_eq!(projected.phase, persisted.cognition.phase);
 }

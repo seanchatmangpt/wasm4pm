@@ -1,4 +1,6 @@
+#[path = "support/interview_assist_scenario.rs"]
 mod interview_assist_scenario;
+#[path = "support/interview_assist_support/mod.rs"]
 mod interview_assist_support;
 
 use interview_assist_scenario::{
@@ -14,7 +16,10 @@ fn malformed_json_returns_typed_refusal() {
 #[test]
 fn missing_request_id_returns_typed_refusal() {
     let bytes = InterviewAssistScenario::new().json(|value| {
-        value.as_object_mut().expect("request object").remove("request_id");
+        value
+            .as_object_mut()
+            .expect("request object")
+            .remove("request_id");
     });
     InterviewAssistScenario::run_json(&bytes).assert_refusal("MISSING_REQUEST_ID");
 }
@@ -22,7 +27,10 @@ fn missing_request_id_returns_typed_refusal() {
 #[test]
 fn missing_session_id_returns_typed_refusal() {
     let bytes = InterviewAssistScenario::new().json(|value| {
-        value.as_object_mut().expect("request object").remove("session_id");
+        value
+            .as_object_mut()
+            .expect("request object")
+            .remove("session_id");
     });
     InterviewAssistScenario::run_json(&bytes).assert_refusal("MISSING_SESSION_ID");
 }
@@ -42,7 +50,11 @@ fn empty_transcript_returns_recoverable_refusal() {
         .run();
     response.assert_refusal("EMPTY_TRANSCRIPT");
     assert_eq!(
-        response.refusal.expect("typed refusal").recovery_action.as_deref(),
+        response
+            .refusal
+            .expect("typed refusal")
+            .recovery_action
+            .as_deref(),
         Some("supply_non_empty_transcript")
     );
 }

@@ -11,7 +11,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "wasm4pm-cognition-web": "../../crates/wasm4pm-cognition/pkg-web"
+    "wasm4pm-cognition-web": "../../packages/cognition/pkg-web"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

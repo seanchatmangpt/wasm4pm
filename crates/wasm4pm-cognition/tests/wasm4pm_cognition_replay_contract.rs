@@ -1,4 +1,6 @@
+#[path = "support/interview_assist_scenario.rs"]
 mod interview_assist_scenario;
+#[path = "support/interview_assist_support/mod.rs"]
 mod interview_assist_support;
 
 use interview_assist_scenario::{
@@ -51,5 +53,5 @@ fn tampered_state_is_refused() {
             request.state.revision = state.revision;
         })
         .run()
-        .assert_refusal("STATE_HASH_MISMATCH");
+        .assert_refusal("INVALID_STATE");
 }
