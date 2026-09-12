@@ -83,7 +83,10 @@ fn disc_complement_is_projection_only_10_8_4_4_to_0_2_6_6() {
 
     assert!(action_first.text.contains("Action first"));
     assert!(evidence_first.text.contains("Evidence first"));
-    assert_eq!(action_first.control_subject_hash, evidence_first.control_subject_hash);
+    assert_eq!(
+        action_first.control_subject_hash,
+        evidence_first.control_subject_hash
+    );
     assert_ne!(action_first.projection_hash, evidence_first.projection_hash);
     assert_eq!(action_first.effect, ProjectionEffect::ReadOnly);
     assert_eq!(evidence_first.effect, ProjectionEffect::ReadOnly);

@@ -234,14 +234,14 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                     println!("\nFinal fitness: {fitness:.4}");
                 }
                 "aco" => {
-                    let (dfg, fitness) = discover_aco_real(&log, activity_key)
-                        .context("ACO discovery failed")?;
+                    let (dfg, fitness) =
+                        discover_aco_real(&log, activity_key).context("ACO discovery failed")?;
                     print_native_dfg(&dfg);
                     println!("\nFinal fitness: {fitness:.4}");
                 }
                 "pso" => {
-                    let (dfg, fitness) = discover_pso_real(&log, activity_key)
-                        .context("PSO discovery failed")?;
+                    let (dfg, fitness) =
+                        discover_pso_real(&log, activity_key).context("PSO discovery failed")?;
                     print_native_dfg(&dfg);
                     println!("\nFinal fitness: {fitness:.4}");
                 }
@@ -292,8 +292,9 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                     // `conformance_authority::ConformanceVerdicts.generalization`) and are
                     // intentionally left unwired here to avoid reporting three disagreeing
                     // "generalization" numbers from one command.
-                    let quality = compute_quality(&petri_net, &log, activity_key)
-                        .map_err(|e| anyhow::anyhow!("Failed to compute generalization: {:?}", e))?;
+                    let quality = compute_quality(&petri_net, &log, activity_key).map_err(|e| {
+                        anyhow::anyhow!("Failed to compute generalization: {:?}", e)
+                    })?;
 
                     let mut table = Table::new(vec!["Metric", "Value"]);
                     table.add_row(vec![
@@ -448,7 +449,10 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
             for resource in resources {
                 table.add_row(vec![
                     resource.clone(),
-                    format!("{:.4}", metrics.degree.get(resource).copied().unwrap_or(0.0)),
+                    format!(
+                        "{:.4}",
+                        metrics.degree.get(resource).copied().unwrap_or(0.0)
+                    ),
                     format!(
                         "{:.4}",
                         metrics.betweenness.get(resource).copied().unwrap_or(0.0)
@@ -477,8 +481,8 @@ fn load_ocel(path: &PathBuf) -> Result<OCEL> {
     if ext != "json" {
         anyhow::bail!("OCEL input must be a .json file, got '{}'", ext);
     }
-    let content = fs::read_to_string(path)
-        .with_context(|| format!("Failed to read log file: {:?}", path))?;
+    let content =
+        fs::read_to_string(path).with_context(|| format!("Failed to read log file: {:?}", path))?;
     parse_ocel_tolerant(&content)
 }
 

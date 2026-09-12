@@ -38,8 +38,7 @@ pub fn parse_ocel_tolerant(json_str: &str) -> Result<wasm4pm::models::OCEL> {
 
     // 2. Fall back to treating the document as a receipt/envelope wrapper with
     //    the real OCEL payload nested under a known key.
-    let root: Value =
-        serde_json::from_str(json_str).context("input is not valid JSON at all")?;
+    let root: Value = serde_json::from_str(json_str).context("input is not valid JSON at all")?;
 
     let Some(root_obj) = root.as_object() else {
         bail!("OCEL input is neither a recognized native OCEL object nor a JSON object envelope");
@@ -251,11 +250,17 @@ mod tests {
         // objects array is present in this fixture (3 objects) and must be
         // recovered too, with ocel:-prefixed keys stripped.
         assert_eq!(ocel.objects.len(), 3);
-        assert!(ocel.objects.iter().any(|o| o.id == "USER_442" && o.object_type == "User"));
+        assert!(ocel
+            .objects
+            .iter()
+            .any(|o| o.id == "USER_442" && o.object_type == "User"));
 
         // Every event must have carried its ocel:id / ocel:type / ocel:timestamp
         // through correctly.
-        assert!(ocel.events.iter().all(|e| !e.id.is_empty() && e.event_type == "Mutation"));
+        assert!(ocel
+            .events
+            .iter()
+            .all(|e| !e.id.is_empty() && e.event_type == "Mutation"));
         assert!(ocel
             .events
             .iter()
@@ -272,6 +277,9 @@ mod tests {
     fn errors_on_unrecognizable_input() {
         let garbage = r#"{"totally": "unrelated", "shape": true}"#;
         let result = parse_ocel_tolerant(garbage);
-        assert!(result.is_err(), "unrecognizable input must error, not silently succeed empty");
+        assert!(
+            result.is_err(),
+            "unrecognizable input must error, not silently succeed empty"
+        );
     }
 }

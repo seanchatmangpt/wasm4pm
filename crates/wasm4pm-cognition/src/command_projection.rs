@@ -13,9 +13,7 @@
 //! - `control_subject_hash` excludes every presentation preference.
 //! - The returned effect is always [`ProjectionEffect::ReadOnly`].
 
-use crate::breeds::{
-    frame::Eliza, hearsay::Hearsay, BreedInput, CognitionBreed, Fact, Rule,
-};
+use crate::breeds::{frame::Eliza, hearsay::Hearsay, BreedInput, CognitionBreed, Fact, Rule};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -290,14 +288,20 @@ impl fmt::Display for ProjectionRefusal {
             Self::EmptyFacts => f.write_str("projection requires at least one admitted fact"),
             Self::DuplicateFactId(id) => write!(f, "duplicate projection fact id: {id}"),
             Self::UnadmittedFact(id) => {
-                write!(f, "Bronze/Observed fact is not eligible for projection: {id}")
+                write!(
+                    f,
+                    "Bronze/Observed fact is not eligible for projection: {id}"
+                )
             }
             Self::MissingFactField { fact_id, field } => {
                 write!(f, "projection fact {fact_id} is missing {field}")
             }
             Self::Hearsay(message) => write!(f, "Hearsay projection failed: {message}"),
             Self::MissingHeadline(selection) => {
-                write!(f, "Hearsay selection did not bind to an input fact: {selection}")
+                write!(
+                    f,
+                    "Hearsay selection did not bind to an input fact: {selection}"
+                )
             }
             Self::Eliza(message) => write!(f, "ELIZA template selection failed: {message}"),
         }
@@ -614,7 +618,12 @@ fn hash_projection(
     let mut hasher = blake3::Hasher::new();
     feed(&mut hasher, control_subject_hash);
     feed(&mut hasher, profile.strategist.as_str());
-    for value in [profile.disc.d, profile.disc.i, profile.disc.s, profile.disc.c] {
+    for value in [
+        profile.disc.d,
+        profile.disc.i,
+        profile.disc.s,
+        profile.disc.c,
+    ] {
         hasher.update(&[value]);
     }
     feed(&mut hasher, blackboard_selection);
