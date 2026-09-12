@@ -87,8 +87,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo check --target wasm32-unknown-unknown --features wasm
-          wasm-pack build wasm4pm --target nodejs --out-dir pkg -- --features wasm
+          cargo check -p wasm4pm -p wasm4pm-cognition --target wasm32-unknown-unknown --features wasm
+          wasm-pack build wasm4pm --target nodejs --out-dir pkg -- --features cloud
           test -s wasm4pm/pkg/wasm4pm.js
           test -s wasm4pm/pkg/wasm4pm_bg.wasm
 
