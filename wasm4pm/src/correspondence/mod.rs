@@ -15,6 +15,7 @@ pub mod alignment_cost;
 pub mod causal_dependency_measure;
 pub mod declare_semantics;
 pub mod dfg_multi_trace;
+#[cfg(feature = "discovery_advanced")]
 pub mod heuristic_miner_threshold;
 pub mod inductive_miner_cut_soundness;
 pub mod ocel_semantics;
