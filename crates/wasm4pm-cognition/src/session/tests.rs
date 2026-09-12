@@ -255,9 +255,9 @@ fn refuses_tampered_state_hash() {
         run_session_turn(&turn(None, Some(("o1", "x and y")), None)).expect("first turn");
     // Tamper a field that's part of StateHashView (hash.rs) but doesn't
     // participate in verify_previous_state's earlier structural checks
-    // (turn.rs) — mutating `turn` instead trips the `turn == turns.len()`
-    // ledger-length invariant first and returns InvalidState before the
-    // hash comparison this test means to exercise is ever reached.
+    // (turn.rs) — `turn`/`turns` are left untouched, so the ledger-length
+    // invariant passes and the hash recompute (which does cover `phase`)
+    // is what actually catches this tamper.
     first.state.phase = "tampered_phase".to_string();
     let error = run_session_turn(&turn(
         Some(first.state),
@@ -265,16 +265,12 @@ fn refuses_tampered_state_hash() {
         None,
     ))
     .expect_err("tamper must refuse");
-    // Setting `turn` without extending `turns` violates the turn/ledger-length
-    // invariant, which is checked before the hash — so this is InvalidState,
-    // not StateHashMismatch (that variant is exercised by
-    // refuses_semantically_forged_state_with_recomputed_hash below).
-    assert_eq!(
-        error,
-        SessionError::InvalidState {
-            reason: "persisted turn number must equal the non-empty turn ledger length".to_string(),
-        }
-    );
+    // Mutating a hashed field while leaving turn/ledger structure coherent
+    // is exactly the StateHashMismatch case — distinct from
+    // refuses_semantically_forged_state_with_recomputed_hash below, which
+    // rehashes after tampering and so is caught by the deeper replay check
+    // (InvalidState) instead.
+    assert_eq!(error, SessionError::StateHashMismatch);
 }
 
 #[test]

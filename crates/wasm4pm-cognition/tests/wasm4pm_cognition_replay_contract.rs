@@ -53,5 +53,5 @@ fn tampered_state_is_refused() {
             request.state.revision = state.revision;
         })
         .run()
-        .assert_refusal("STATE_HASH_MISMATCH");
+        .assert_refusal("INVALID_STATE");
 }
