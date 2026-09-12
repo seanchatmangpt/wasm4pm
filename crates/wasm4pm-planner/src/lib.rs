@@ -6,6 +6,7 @@
 
 pub mod admission;
 pub mod capability_router;
+pub mod constitutional_objective;
 pub mod ground;
 pub mod mfw_interop;
 pub mod parse;
@@ -16,6 +17,11 @@ pub mod sexpr;
 pub use admission::{admit_plan_labels_with_policy, PlanAdmissionPolicy};
 pub use capability_router::{
     route_capability_plan, CapabilityRouteReceipt, CapabilityTask, CostVector, DesiredEffect,
+};
+pub use constitutional_objective::{
+    classify_external_signal, CanonicalObjective, ContinuationCandidate, ContinuationScore,
+    EvidenceRef, EvidenceStanding, ExternalSignal, ExternalSignalDisposition, ExternalSignalKind,
+    SelectionReceipt, SelectionRefusal, CANONICAL_OBJECTIVE_ID,
 };
 pub use ground::{
     find_temporal_plan, ground_domain, GroundAction, PlanError, PlanStep, TemporalPlan,
