@@ -134,10 +134,20 @@ describe('algorithm contract registry closure', () => {
 """
     emit("packages/kernel/src/__tests__/algorithm-contracts/registry-closure.test.ts", closure, check, drift)
 
+    # Most breeds live in a same-named source file under src/breeds/. A few
+    # implementations are consolidated into a shared file alongside sibling
+    # breeds (e.g. Eliza lives in frame.rs, Mycin in production_rules.rs) --
+    # this map is the single place that drift is corrected.
+    BREED_SOURCE_FILE = {
+        "eliza": "frame",
+        "mycin": "production_rules",
+    }
+
     modules: list[str] = []
     for breed_id in BREEDS:
+        source_file = BREED_SOURCE_FILE.get(breed_id, breed_id)
         modules.append(f'#[path = "breed_contracts/{breed_id}.rs"]\nmod {breed_id};')
-        focused_test = f'''const SOURCE: &str = include_str!("../../src/breeds/{breed_id}.rs");
+        focused_test = f'''const SOURCE: &str = include_str!("../../src/breeds/{source_file}.rs");
 const PAPER_POINTERS: &str = include_str!("../paper_pointers_generated.rs");
 const ANTICHEAT: &str = include_str!("../universal_anticheat_generated.rs");
 
