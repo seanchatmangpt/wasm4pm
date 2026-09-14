@@ -279,7 +279,7 @@ export type CognitionOutcome =
   | CognitionRefusedOutcome
   | CognitionUnavailableOutcome;
 
-const NO_TRACK_MATCH_SIGNATURE = "postcondition failed: empty inference trace";
+const NO_TRACK_MATCH_SIGNATURE = "OCEL conformance failure";
 
 /** Maps a thrown `cognition_run` failure to a typed outcome (minus the
  * receipt -- attached by the caller, since only the caller knows the real

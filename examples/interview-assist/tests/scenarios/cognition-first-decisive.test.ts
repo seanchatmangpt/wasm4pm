@@ -241,7 +241,7 @@ describe("cognition-first decisive acceptance (real cognition -> real phase adva
     const outcome = await runCognition("hello there, nice weather today");
     expect(outcome.status).toBe("no-track-matched");
     if (outcome.status !== "no-track-matched") throw new Error("unreachable");
-    expect(outcome.reason).toContain("empty inference trace");
+    expect(outcome.reason).toContain("OCEL conformance failure");
     // A real WASM call DID happen (it ran and threw the real fail-closed
     // error) -- it still gets a real receipt recording the real failed
     // attempt, same discipline sandbox-executor.ts applies to a real

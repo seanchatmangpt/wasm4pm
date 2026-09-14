@@ -42,7 +42,7 @@ describe("cognition-adapter (real wasm4pm-cognition WASM binary, no mocks)", () 
     const outcome = await runCognition("hello there, nice weather today");
     expect(outcome.status).toBe("no-track-matched");
     if (outcome.status !== "no-track-matched") throw new Error("unreachable");
-    expect(outcome.reason).toContain("empty inference trace");
+    expect(outcome.reason).toContain("OCEL conformance failure");
   });
 
   it("refuses an empty-string intent without calling the WASM module", async () => {
