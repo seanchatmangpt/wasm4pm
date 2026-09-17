@@ -10,28 +10,48 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::error::{wasm_err, codes};
 use crate::utilities::to_js_str;
+use crate::models::Trace;
 use std::collections::{BTreeMap, HashSet};
 
-/// Compute causal footprints: for each activity pair (from, to), measure
-/// the strength of the causal relationship based on temporal precedence
-/// and conditional probability.
-///
-/// ```javascript
-/// const result = JSON.parse(pm.causal_footprint(handle, 'concept:name'));
-/// // { pairs: [{from: "A", to: "B", always_precedes: true, conditional_prob: 0.95, strength: 0.9}] }
-/// ```
-#[wasm_bindgen]
-pub fn causal_footprint(
-    log_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
-    let traces = get_or_init_state().with_event_log(log_handle, |log| Ok(log.traces.clone()))?;
+/// A single causal-footprint pair result, decoupled from any JS/wasm-bindgen
+/// type so it can be constructed and asserted on in plain Rust.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct CausalPair {
+    pub from: String,
+    pub to: String,
+    pub from_count: usize,
+    pub to_count: usize,
+    pub from_to_count: usize,
+    pub always_precedes: bool,
+    pub conditional_prob: f64,
+    pub to_without_from_count: usize,
+    pub strength: f64,
+}
 
+/// Result of `causal_footprint_pure`: plain Rust data, no JsValue/wasm-bindgen
+/// coupling. The JsValue-facing `causal_footprint` entrypoint below is a thin
+/// wrapper that fetches traces from host state and serializes this to JSON.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct CausalFootprintResult {
+    pub pairs: Vec<CausalPair>,
+    pub total_pairs: usize,
+    pub total_traces: usize,
+    pub method: &'static str,
+}
+
+/// Pure computation of causal footprints: for each activity pair (from, to),
+/// measure the strength of the causal relationship based on temporal
+/// precedence and conditional probability. Operates purely on plain Rust
+/// `Trace` values — no JsValue, no wasm-bindgen, no host state — so it is
+/// independently testable and callable outside a wasm/JS boundary.
+pub fn causal_footprint_pure(traces: &[Trace], activity_key: &str) -> CausalFootprintResult {
     if traces.is_empty() {
-        return to_js_str(&serde_json::json!({
-            "pairs": [],
-            "method": "causal_footprint",
-        }));
+        return CausalFootprintResult {
+            pairs: Vec::new(),
+            total_pairs: 0,
+            total_traces: 0,
+            method: "causal_footprint",
+        };
     }
 
     // Count: from_occurrences, to_occurrences, from_then_to, to_without_from
@@ -40,7 +60,7 @@ pub fn causal_footprint(
     let mut from_to_count: BTreeMap<(String, String), usize> = BTreeMap::new();
     let mut to_without_from: BTreeMap<(String, String), usize> = BTreeMap::new();
 
-    for trace in &traces {
+    for trace in traces {
         let acts: Vec<&str> = trace.events.iter()
             .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
             .collect();
@@ -71,7 +91,7 @@ pub fn causal_footprint(
     }
 
     // Compute causal strength for each pair
-    let mut pairs = Vec::new();
+    let mut pairs: Vec<CausalPair> = Vec::new();
     for ((from, to), ft_count) in &from_to_count {
         let f_count = from_count.get(from).copied().unwrap_or(1).max(1);
         let t_count = to_count.get(to).copied().unwrap_or(1).max(1);
@@ -112,32 +132,53 @@ pub fn causal_footprint(
 
         let strength = conditional_prob * (1.0 - to_alone_ratio * 0.5);
 
-        pairs.push(serde_json::json!({
-            "from": from,
-            "to": to,
-            "from_count": f_count,
-            "to_count": t_count,
-            "from_to_count": *ft_count,
-            "always_precedes": always_precedes,
-            "conditional_prob": conditional_prob,
-            "to_without_from_count": twf_count,
-            "strength": strength,
-        }));
+        pairs.push(CausalPair {
+            from: from.clone(),
+            to: to.clone(),
+            from_count: f_count,
+            to_count: t_count,
+            from_to_count: *ft_count,
+            always_precedes,
+            conditional_prob,
+            to_without_from_count: twf_count,
+            strength,
+        });
     }
 
     // Sort by strength descending
     pairs.sort_by(|a, b| {
-        b["strength"].as_f64().unwrap_or(0.0)
-            .total_cmp(&a["strength"].as_f64().unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
+        b.strength.total_cmp(&a.strength)
     });
 
-    to_js_str(&serde_json::json!({
-        "pairs": pairs,
-        "total_pairs": pairs.len(),
-        "total_traces": traces.len(),
-        "method": "causal_footprint",
-    }))
+    let total_pairs = pairs.len();
+    CausalFootprintResult {
+        pairs,
+        total_pairs,
+        total_traces: traces.len(),
+        method: "causal_footprint",
+    }
+}
+
+/// Compute causal footprints: for each activity pair (from, to), measure
+/// the strength of the causal relationship based on temporal precedence
+/// and conditional probability.
+///
+/// ```javascript
+/// const result = JSON.parse(pm.causal_footprint(handle, 'concept:name'));
+/// // { pairs: [{from: "A", to: "B", always_precedes: true, conditional_prob: 0.95, strength: 0.9}] }
+/// ```
+///
+/// Thin JsValue-boundary wrapper: fetches traces from host state, delegates
+/// the actual computation to `causal_footprint_pure`, and serializes the
+/// plain-Rust result to JSON for the JS side.
+#[wasm_bindgen]
+pub fn causal_footprint(
+    log_handle: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
+    let traces = get_or_init_state().with_event_log(log_handle, |log| Ok(log.traces.clone()))?;
+    let result = causal_footprint_pure(&traces, activity_key);
+    to_js_str(&result)
 }
 
 /// Granger-like causality test: does activity X help predict activity Y
@@ -248,7 +289,6 @@ pub fn granger_like_test(
     pairs.sort_by(|a, b| {
         b["score"].as_f64().unwrap_or(0.0)
             .total_cmp(&a["score"].as_f64().unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
     });
 
     to_js_str(&serde_json::json!({
@@ -283,6 +323,51 @@ mod tests {
             log.traces.push(trace);
         }
         log
+    }
+
+    #[test]
+    fn test_causal_footprint_pure_basic() {
+        // Plain Rust fixture, no wasm-bindgen/JsValue anywhere in this test.
+        let log = make_test_log(vec![
+            vec!["A", "B", "C"],
+            vec!["A", "B", "C"],
+            vec!["A", "B", "D"],
+        ]);
+
+        let result = causal_footprint_pure(&log.traces, "concept:name");
+
+        assert_eq!(result.method, "causal_footprint");
+        assert_eq!(result.total_traces, 3);
+        assert_eq!(result.total_pairs, result.pairs.len());
+
+        let ab = result.pairs.iter().find(|p| p.from == "A" && p.to == "B")
+            .expect("A->B pair present");
+        assert_eq!(ab.from_to_count, 3);
+        assert!(ab.always_precedes, "A always precedes B in these traces");
+        assert!((ab.conditional_prob - 1.0).abs() < 1e-9);
+
+        let bc = result.pairs.iter().find(|p| p.from == "B" && p.to == "C")
+            .expect("B->C pair present");
+        assert_eq!(bc.from_to_count, 2);
+
+        let bd = result.pairs.iter().find(|p| p.from == "B" && p.to == "D")
+            .expect("B->D pair present");
+        assert_eq!(bd.from_to_count, 1);
+
+        // Pairs must be sorted by strength descending.
+        for window in result.pairs.windows(2) {
+            assert!(window[0].strength >= window[1].strength);
+        }
+    }
+
+    #[test]
+    fn test_causal_footprint_pure_empty_traces() {
+        let empty_log = crate::models::EventLog::new();
+        let result = causal_footprint_pure(&empty_log.traces, "concept:name");
+        assert!(result.pairs.is_empty());
+        assert_eq!(result.total_pairs, 0);
+        assert_eq!(result.total_traces, 0);
+        assert_eq!(result.method, "causal_footprint");
     }
 
     #[test]
