@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/playground-web/STATUS.md; source-sha256: 0c6fb2dba60ee87586cab7ad70b605ca6322ab913b474993accee70a1a5157a8; reason: tooling or agent control surface -->
+
 # Playground Status
 
 **Last verified:** 2026-06-10

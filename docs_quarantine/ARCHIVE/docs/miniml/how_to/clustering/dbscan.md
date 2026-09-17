@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/clustering/dbscan.md; source-sha256: 09fbbd2c11d9fb63af3a309edf62e302728417a32e242f91fe7328c53fb65a31; reason: tooling or agent control surface -->
+
 # Handle Arbitrary Shapes
 
 Cluster data with DBSCAN when clusters are not spherical.

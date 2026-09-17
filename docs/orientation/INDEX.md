@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/orientation/INDEX.md; source-sha256: 99dc1b279e8c93f74c16ce8acee928f0aaf353cef85a0257cb22d59675cedebc; reason: tooling or agent control surface -->
+
 # wasm4pm Master Architecture Index
 
 This index provides a comprehensive map of the `wasm4pm` architecture. It is structured as an **executable orientation substrate** for human and AI agents.

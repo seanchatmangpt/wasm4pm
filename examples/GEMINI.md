@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/GEMINI.md; source-sha256: 6c340ab2eb2e2b382d869050e29642234bed5e507736bf53f4b4914f4b9c232e; reason: tooling or agent control surface -->
+
 # wasm4pm Examples - Local Agent Context
 
 This directory (`examples/`) contains the executable examples for the `wasm4pm` monorepo. It serves as both a tutorial/demonstration surface for end-users and as a critical verification gate for the `wasm4pm` release process.

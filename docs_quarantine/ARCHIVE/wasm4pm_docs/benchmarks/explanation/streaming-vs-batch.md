@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/explanation/streaming-vs-batch.md; source-sha256: 7eef3e4bd1c675a9fe89665bb5a8c4473474522ca1b2f38ec81bdf455736e52b; reason: tooling or agent control surface -->
+
 # Streaming vs Batch Tradeoffs
 
 Why streaming process discovery is slower than batch, when the overhead is acceptable, and how to choose between the two approaches.

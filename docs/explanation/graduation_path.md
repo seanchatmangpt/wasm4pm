@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/graduation_path.md; source-sha256: d40e3d615e5a57a35a4d18e095e7b73d5782f1af7cfea59986e22a08cc91e101; reason: tooling or agent control surface -->
+
 # The wasm4pm Graduation Path — a Jobs-To-Be-Done ladder
 
 ## A thesis on how a TypeScript application grows into wasm4pm — what each rung's job is, what you install, whether you need WASM, and the trigger that pushes you to the next rung

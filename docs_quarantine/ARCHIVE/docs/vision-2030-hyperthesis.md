@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/vision-2030-hyperthesis.md; source-sha256: b41e090666b2553aaa92a77a93a4ca57069086868ab0e3696b9bff14eb9b5a7b; reason: tooling or agent control surface -->
+
 # The Autonomous Enterprise: A Unified Theory of Operable Truth
 
 ## Vision 2030 Hyperthesis

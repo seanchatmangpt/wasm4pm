@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/01-OCEL-V2-PRIMITIVES.md; source-sha256: 1b1f265c3165bfc887336e2433660166d0c1bab2f9da5427a4eecb6072d36d8a; reason: tooling or agent control surface -->
+
 # Agent 2 — OCEL v2 Primitive Agent
 
 ## Mission

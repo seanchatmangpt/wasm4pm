@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/genetic_algorithm.md; source-sha256: 9ffeeb66fb4fbce1f62c2177ff7e1cdb8866e2ea08a6d10e46e3d4dcaaf62444; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Genetic Algorithm
 
 ## Metadata

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent9/AGENT9-003-establish-performance-baselines.md; source-sha256: 73c6edc69d90a867df6b24683481ec0c404c1632426005289d2b2f06e9c552f5; reason: tooling or agent control surface -->
+
 # AGENT9-003: Establish Performance Baselines and Regression Detection
 
 **Status:** 🟡 READY  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/hill_climbing.md; source-sha256: dc0ce7f2e7c35b49a6cac2add74f8a050e465eac5b5fbc4a367a52455f3256dc; reason: tooling or agent control surface -->
+
 # Algorithm Review: hill_climbing
 
 ## Algorithm ID & Domain

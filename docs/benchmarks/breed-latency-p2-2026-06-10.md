@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/benchmarks/breed-latency-p2-2026-06-10.md; source-sha256: 6baec424be6a81944345c5b2bb38dca3d95ecaa401a9940fdd2f2d8fffe6d3dc; reason: tooling or agent control surface -->
+
 # P2 Tier Breed Latency — 2026-06-10
 
 Criterion medians for `CognitionBreed::run()` at the Rust boundary

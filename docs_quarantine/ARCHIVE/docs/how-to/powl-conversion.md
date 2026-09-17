@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/powl-conversion.md; source-sha256: 55f5fb494a5c4d08604521db59b115e15e45a6735a1d2072aa04b596c4e8b09f; reason: tooling or agent control surface -->
+
 # POWL Conversion Guide
 
 Convert POWL models to and from BPMN, Petri Nets, and Process Trees.

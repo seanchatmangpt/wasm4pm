@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/_scaffold-template/checklist.md; source-sha256: da7ebce2770f114d9e4e534bdf55c5f4849e00f5d4af9e2ba1eb26b6aa2d3d92; reason: tooling or agent control surface -->
+
 # New combinatorial-pack checklist
 
 Concrete, mechanically-checkable steps for building a new pack from this

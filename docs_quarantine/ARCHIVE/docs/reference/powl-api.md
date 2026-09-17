@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/powl-api.md; source-sha256: 09b845d7a9aa11030b7f055892db70b1c917f345b6c716d81ad8399f4216a753; reason: tooling or agent control surface -->
+
 # POWL API Reference
 
 Complete reference for all POWL functions exported by the WASM module.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/CANONICAL_FITNESS_FORMULA.md; source-sha256: 9b1f8783449b5ad2dcdb1b03e1e623b77e5f487b373b44d6178253b04628aea9; reason: tooling or agent control surface -->
+
 # Canonical Token-Replay Fitness Formula
 
 wasm4pm uses the **van der Aalst two-component weighted formula**:

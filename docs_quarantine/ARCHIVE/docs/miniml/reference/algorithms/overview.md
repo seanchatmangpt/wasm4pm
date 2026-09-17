@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/algorithms/overview.md; source-sha256: 8e54e87ad11fceb707e2d43b8a6863a7259496fc79defd5ca00de3dc471e6559; reason: tooling or agent control surface -->
+
 # All Algorithms
 
 Complete list of algorithms available in miniml, organized by family.

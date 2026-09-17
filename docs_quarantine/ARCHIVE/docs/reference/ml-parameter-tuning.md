@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/ml-parameter-tuning.md; source-sha256: f8d4efb27e4911490252ce5689998803e62d10af4258ada95e1a23bc34923a84; reason: tooling or agent control surface -->
+
 # ML Parameter Tuning Reference for wasm4pm
 
 **Detailed reference for tuning parameters of the 6 core ML tasks: classify, cluster, forecast, anomaly, regress, PCA**

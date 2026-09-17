@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/prediction-cli.md; source-sha256: 342cbbf1f2073237e2e9d5ecfcfe20384cfb46f64d6f7f706e2e1e984135cc7d; reason: tooling or agent control surface -->
+
 # Reference: Prediction CLI (`wpm predict`)
 
 **Version**: 26.4.6

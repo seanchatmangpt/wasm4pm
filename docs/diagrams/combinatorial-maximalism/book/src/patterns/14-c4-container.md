@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/14-c4-container.md; source-sha256: 9a0fe38b0a5cfb291035d8f193f73d463ce77bb983767f5c2fccbfd690601175; reason: tooling or agent control surface -->
+
 # C4 Container: Runtime Responsibility Partition
 
 **Pattern ID:** `14-c4-container`  

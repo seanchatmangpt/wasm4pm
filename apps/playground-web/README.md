@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/playground-web/README.md; source-sha256: dfef2a2d27b7d0c97242792fbee1ba6b7629fee3511b3fc9f44b6cd6ff61599d; reason: path-local authority or entrypoint -->
+
 # Nuxt Dashboard Template
 
 [![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)

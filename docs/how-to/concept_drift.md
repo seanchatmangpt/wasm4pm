@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/how-to/concept_drift.md; source-sha256: 33bb382cbf8fa2cb8296197426a6de64944af6441e3c1e2fcb42abc1ac93bcb7; reason: tooling or agent control surface -->
+
 # How-To: Detect Concept Drift
 
 ## Goal

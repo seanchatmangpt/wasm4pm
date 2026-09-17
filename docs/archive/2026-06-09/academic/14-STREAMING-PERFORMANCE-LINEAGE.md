@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/14-STREAMING-PERFORMANCE-LINEAGE.md; source-sha256: 17f86d3aebba77d5edc3a08ccb1dd7b1abf6e6b0b9230369cea0301a24e2480a; reason: tooling or agent control surface -->
+
 # Streaming and Engineering Algorithms — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

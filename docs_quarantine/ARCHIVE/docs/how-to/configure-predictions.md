@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/configure-predictions.md; source-sha256: 4acab7d70d4ce2c51679133e0e9468bead2f0c1f665e59ab45661309a5081f9c; reason: tooling or agent control surface -->
+
 # How-To: Configure Predictions in wasm4pm.toml
 
 **Time required**: 10 minutes

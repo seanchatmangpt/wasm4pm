@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/predict_remaining_time.md; source-sha256: e163f6ca3a43c8a6f7b02a1ffbd333b75cecb5e60c58f41bad71819812809f9f; reason: tooling or agent control surface -->
+
 # Algorithm Review: predict_remaining_time
 
 ## Algorithm ID & Domain

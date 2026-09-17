@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/dempster_shafer.md; source-sha256: cc5b72e8d6f9bca2a1f0e2e2a44666be08caaa4ac713c058adc9d8f5dab51cb6; reason: tooling or agent control surface -->
+
 # Dempster-Shafer Theory
 
 ## 1. Identity & Lineage

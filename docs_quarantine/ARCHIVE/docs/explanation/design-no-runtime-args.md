@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/design-no-runtime-args.md; source-sha256: 8a05654e2be145debad1267cbb8e6f707119ef8bfa646aebc56874290bc9e305; reason: tooling or agent control surface -->
+
 # Explanation: Why No Runtime Arguments
 
 **Time to read**: 10 minutes  

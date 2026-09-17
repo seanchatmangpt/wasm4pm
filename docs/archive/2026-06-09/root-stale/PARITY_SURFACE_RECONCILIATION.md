@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/PARITY_SURFACE_RECONCILIATION.md; source-sha256: bb364cccbeeacfc86b13ab8f8796cfb742d1239ce49dfd41c2a615db90ae476b; reason: tooling or agent control surface -->
+
 # Parity Surface Reconciliation
 
 ## 1. Clean Stack Statement

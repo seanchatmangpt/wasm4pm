@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/abductive_ibe.md; source-sha256: d76b6e25792dc9571dd202c027b82adb9fc3f99ad79343a616343f98dd8b02c1; reason: tooling or agent control surface -->
+
 # Inference to the Best Explanation (IBE)
 
 ## Origin

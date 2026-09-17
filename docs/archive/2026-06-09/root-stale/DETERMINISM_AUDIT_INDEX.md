@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/DETERMINISM_AUDIT_INDEX.md; source-sha256: ede0eeb79f56241a0d21a80ab6a1a290aa8edd63866e8d8e5e1eac27651244ce; reason: tooling or agent control surface -->
+
 # Determinism Audit — Document Index
 
 **Scope:** 36 kernel-registered process mining algorithms  

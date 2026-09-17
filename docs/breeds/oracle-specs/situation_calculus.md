@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/oracle-specs/situation_calculus.md; source-sha256: 1fa565d49049a1d80adaf645eaafd3a52ad843c11a68fafb1e2e6d846496f55d; reason: tooling or agent control surface -->
+
 # situation_calculus — Situation Calculus (Reiter 1991)
 
 Source of truth: `crates/wasm4pm-cognition/src/breeds/situation_calculus.rs`, `tests/fixtures/papers/situation_calculus.json`, oracle in `src/breeds/support/oracle_impls/planning.rs` (lines 378–441), `ocel/models/l1/situation_calculus.ocpn.json`, `breeds/registry.json`.

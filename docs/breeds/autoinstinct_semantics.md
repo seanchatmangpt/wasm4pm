@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/autoinstinct_semantics.md; source-sha256: 0ae6851612aef4ecd77a7cdfd596ae2400ee83df0bb776dda34bba7b3f13d378; reason: tooling or agent control surface -->
+
 # autoinstinct_semantics — Autoinstinct Semantic Grounding
 
 ## 1. Identity & Lineage

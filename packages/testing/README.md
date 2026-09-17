@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/testing/README.md; source-sha256: 8377baa22f2321f74c88b39a36bbb9f65cb69030c0ac28de81b4848a4bb153bd; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/testing
 
 Test harnesses for the wasm4pm monorepo. Provides parity, determinism, CLI, OTEL, and certification testing infrastructure.

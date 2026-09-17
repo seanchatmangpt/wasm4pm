@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/truex-ocel2-canonical-profile.md; source-sha256: fb3d51c2fa7831a15d2677c0c9376f112bc002f23508e578947b7424e646e12f; reason: tooling or agent control surface -->
+
 # Truex OCEL 2.0 Canonicalization & Receipt Profile
 
 ## 1. Introduction

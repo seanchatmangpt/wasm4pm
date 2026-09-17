@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/checkpoints/PM4PY-LSP-002.md; source-sha256: 0ebb9b240497aae98eaf70d3912166623e4d75ecdeac20c5831806dd8c83063b; reason: tooling or agent control surface -->
+
 # Checkpoint: PM4PY-LSP-002_ALIVE_WITH_RECEIPT_TAXONOMY_GAP
 
 ## Verdict

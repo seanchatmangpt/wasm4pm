@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/agent-09-parity.md; source-sha256: 4fe2f6a73ff63f56454b0cb038016f0c06410b148088de4d23488048faed1ed9; reason: tooling or agent control surface -->
+
 # WASM4PM Parity Investigation Report
 
 **Role**: WASM4Py Parity Agent (`parity`)  

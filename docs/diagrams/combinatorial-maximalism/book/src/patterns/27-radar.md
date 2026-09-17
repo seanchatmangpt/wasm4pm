@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/27-radar.md; source-sha256: 3cf401fd83ac29d752d9b025da745f86b5e1a9046acf7641c6980239755ff0a3; reason: tooling or agent control surface -->
+
 # Radar Chart: Multi-Dimensional Capability Profile
 
 **Pattern ID:** `27-radar`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/ggen-oracle/03-conformance-and-discovery-oracle.md; source-sha256: b56164682ae80253778b99bc5e24535f3f39e72f0a27c426b4164e9ca76f3c32; reason: tooling or agent control surface -->
+
 # 03 — Conformance + Discovery Oracle (the proof upgrade)
 
 **Status:** Spec. Buildable against the structure map (`00-STRUCTURE-MAP.md`) and the checkpoint-model spec (`02-*`, referenced as "spec 02").

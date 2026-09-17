@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/streaming_log.md; source-sha256: f8d6ab6a0da87fff58575ce31bd8c02d2c4140a0dd706c471a69779bbbd44447; reason: tooling or agent control surface -->
+
 # Algorithm Review: streaming_log
 
 ## Algorithm ID & Domain

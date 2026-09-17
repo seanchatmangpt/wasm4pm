@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/11-CONFORMANCE-LINEAGE.md; source-sha256: 6207579ece916e2e4e92f0509268d69ba930d362f72724503b50e3dc8aca9c7a; reason: tooling or agent control surface -->
+
 # Conformance Checking — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

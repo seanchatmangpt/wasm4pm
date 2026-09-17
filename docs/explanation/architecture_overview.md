@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/explanation/architecture_overview.md; source-sha256: 7d2c1bf91e2daf2d17e5a50e476f44176463b4ac5a7156fb1dfb2f2e89e29fb9; reason: canonical implemented architecture -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/architecture_overview.md; source-sha256: 7d2c1bf91e2daf2d17e5a50e476f44176463b4ac5a7156fb1dfb2f2e89e29fb9; reason: tooling or agent control surface -->
 
 # Architecture overview
 

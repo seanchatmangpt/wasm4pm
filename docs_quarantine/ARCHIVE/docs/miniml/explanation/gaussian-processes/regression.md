@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/gaussian-processes/regression.md; source-sha256: d9c7b29e978898fa019b72fa5d3f86cbf11f1bb718ba90a490009a4c9973a9b5; reason: tooling or agent control surface -->
+
 # GP Regression
 
 Gaussian process regression (GPR) is a Bayesian, non-parametric approach to regression that provides not only predictions but also a measure of uncertainty for each prediction. Instead of fitting a fixed set of parameters, a GP defines a distribution over functions -- any function drawn from a GP is consistent with the observed data, and the model quantifies how much each function is preferred.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/index.md; source-sha256: 8906525ab480e73230b9c4d4a061ccb2764a4d408cb6402450f87ac05b1acd51; reason: tooling or agent control surface -->
+
 # miniml Documentation (Diataxis Framework)
 
 Complete documentation for miniml, organized using the Diataxis framework.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/alignments.md; source-sha256: 5a29e2e9e6205ec7575a2d06aa69ddd92976ce097d3e3acb4b8b076c01237b21; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: A* Optimal Alignments
 
 ## Metadata

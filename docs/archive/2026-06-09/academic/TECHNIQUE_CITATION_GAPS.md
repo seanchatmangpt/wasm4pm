@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/TECHNIQUE_CITATION_GAPS.md; source-sha256: be14e4bbc995b535107a4f892fb3bcbf750e5970091fa7e43e63df63d9a3f363; reason: tooling or agent control surface -->
+
 # Technique Citation Gaps — Algorithms That Use Papers But Don't Cite Them
 
 *Generated 2026-05-30 from codebase sweep + ALGORITHM_LINEAGE.toml audit.*

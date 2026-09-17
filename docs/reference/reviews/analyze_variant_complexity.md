@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/analyze_variant_complexity.md; source-sha256: c88161d9962ecf58d601346a2c1d7a6c804a2a31c662644cb680bd9f8476b97a; reason: tooling or agent control surface -->
+
 # Algorithm Review: analyze_variant_complexity
 
 ## Algorithm ID & Domain

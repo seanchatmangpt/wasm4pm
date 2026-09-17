@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/semconv/sparql-proofs/README.md; source-sha256: 7339962f2fd855130118baea88862d5d6c852cebcf807594effc03251a5ebede; reason: path-local authority or entrypoint -->
+
 # SPARQL Proof Engine for wasm4pm — RDF Knowledge Graph Generation
 
 > **Status**: Production-Ready Proof Generation System | **Version**: 1.0 | **Date**: 2026-04-10

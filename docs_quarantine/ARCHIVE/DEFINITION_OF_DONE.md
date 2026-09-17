@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md; source-sha256: 766485836619c8ae8bfcc875425f397de166eff4eba72bb319141699cd01f715; reason: tooling or agent control surface -->
+
 # Definition of Done (DoD) — DX & QoL
 
 This document defines the "Definition of Done" for Developer Experience (DX) and Quality of Life (QoL) improvements in `wasm4pm`. These criteria must be satisfied for any contribution to be considered "Production Ready" and eligible for release.

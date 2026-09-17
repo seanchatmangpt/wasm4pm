@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/drift-detection.md; source-sha256: 9f50fbe6e9d6840575d76390e57c36ff3864a7c719d65ff869cbba5d67b58c5d; reason: tooling or agent control surface -->
+
 # Drift Detection Guide
 
 Concept drift is the silent killer of process-mining models — yesterday's model

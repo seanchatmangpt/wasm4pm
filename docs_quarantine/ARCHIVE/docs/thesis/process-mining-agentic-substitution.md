@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/thesis/process-mining-agentic-substitution.md; source-sha256: 175ea40f661b6e845c7b829c80f37c58d873367a9c20e8845e29275d9c7569be; reason: tooling or agent control surface -->
+
 # Substituting the Autonomous Loop: Process Mining as a Foundational Layer for Agentic AI Systems
 
 **Author:** Sean Chatman  

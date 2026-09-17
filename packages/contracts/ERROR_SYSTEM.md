@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/contracts/ERROR_SYSTEM.md; source-sha256: 5aba031914c2f61cda93904634accf3b4fa16791c93ad8301a0d59333c6b66c9; reason: tooling or agent control surface -->
+
 # Error System - PRD §14
 
 ## Overview

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/adversary-classes.md; source-sha256: 93978b5d7ffc8f4b5343c6009e07d35987f65cbe6ce34bd680fb7257136243f6; reason: tooling or agent control surface -->
+
 # Adversary Classes — Oracle Adequacy Theorem
 
 **Document:** Oracle Adequacy Theorem — Adversary Class Definitions  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/error-codes.md; source-sha256: bbeb1cf3ab2dbf1d6ad8023cac4b8c1afb8fabe4afa59a8109a8aeafd240a45c; reason: tooling or agent control surface -->
+
 # Reference: Error Codes and Remediation
 
 ## Exit Code 0 (SUCCESS)

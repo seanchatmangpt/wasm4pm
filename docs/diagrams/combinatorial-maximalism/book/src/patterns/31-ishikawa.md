@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/31-ishikawa.md; source-sha256: 075d1edd253dfea9aa4f9d0fec12b1dadf3db6d4a74d66f6f97bdb27dd94d6dc; reason: tooling or agent control surface -->
+
 # Ishikawa Diagram: Multi-Cause Failure Hypothesis
 
 **Pattern ID:** `31-ishikawa`  

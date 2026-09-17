@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/benchmark-manufacturing/README.md; source-sha256: e7051f8dbb5e00ef32387b5ea7f687fbefad4ce4d158e6bfc06fea0d665dbb0a; reason: path-local authority or entrypoint -->
+
 # DSPy → ggen Cognition Benchmark Manufacturing
 
 This directory is a source/manufacturing boundary, not a `generated/` tree.

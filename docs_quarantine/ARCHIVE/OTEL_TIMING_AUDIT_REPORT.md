@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/OTEL_TIMING_AUDIT_REPORT.md; source-sha256: 1650d29ee814ff998832493730addff306a4bfc9ce2cdf6cdb32c07aa2926733; reason: tooling or agent control surface -->
+
 # OTEL Span Timing Audit Report
 
 **Date:** 2026-05-18  

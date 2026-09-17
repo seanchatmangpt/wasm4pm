@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/benchmarks/breed-latency-p3-2026-06-10.md; source-sha256: a95559511c0dc059a05c860551d37ea725ebc3d0973e8b3773bbd227ef149eea; reason: tooling or agent control surface -->
+
 # Breed Latency — P3 Tier (2026-06-10)
 
 Criterion medians for the 11 P3 cognition breeds, measured at the Rust

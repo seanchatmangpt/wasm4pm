@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/CARTOGRAPHY_REPORT.md; source-sha256: 8c26f9e87165affadf83f32ce80ed353cb58573182e3c3e5f48887ee25c7934e; reason: tooling or agent control surface -->
+
 # Cartography Report: wasm4pm-compat Boundary Integration
 
 ## Mission

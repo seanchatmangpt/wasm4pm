@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/INDEX.md; source-sha256: e5bdb3ec14be15d327bc69af70312e0a3a340427eb8944994a10bf5b65fdf5cc; reason: tooling or agent control surface -->
+
 # Algorithm Reviews Index
 
 This index provides a structured directory of correctness audits, scale limitations, performance optimization recommendations, and code references for the 60 algorithms implemented within the `wasm4pm` monorepo.

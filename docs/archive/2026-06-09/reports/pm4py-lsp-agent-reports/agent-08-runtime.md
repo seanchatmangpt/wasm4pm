@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/agent-08-runtime.md; source-sha256: de583e727fe29d3bb7a519c5e0fd0a6849c5b21bc28615b43ac8a4100f82c58f; reason: tooling or agent control surface -->
+
 # PM4Py Runtime Bridge Investigation Report
 
 **Role**: Runtime Agent (`runtime`)  

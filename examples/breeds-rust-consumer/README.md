@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/breeds-rust-consumer/README.md; source-sha256: 3c2144937c643494ea6e24f85491519f8651e168e504be24ff9fb5e322eae149; reason: path-local authority or entrypoint -->
+
 # breeds-rust-consumer — working example
 
 A runnable Rust app that consumes the **`wasm4pm-breeds-rust`** ggen pack: it

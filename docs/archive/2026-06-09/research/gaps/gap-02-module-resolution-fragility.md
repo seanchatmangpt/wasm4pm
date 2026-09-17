@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/research/gaps/gap-02-module-resolution-fragility.md; source-sha256: 49bb910e1705fdb3698701119df040e61fb7bf18e8fd533bf3527ee0d5fcf989; reason: tooling or agent control surface -->
+
 # Research: Module Resolution Fragility
 
 ## Overview

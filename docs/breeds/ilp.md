@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/ilp.md; source-sha256: f8508388ef82d5ee9df0c9324aeed76ef14db5c1aea7486cfd81a10f8672d6dd; reason: tooling or agent control surface -->
+
 # ILP (FOIL)
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/FAILURE_SAMPLE_REPORT.md; source-sha256: 3b05af96b61d703c4edf0511c9d6b4569e794a759c6d0202160513187633f40a; reason: tooling or agent control surface -->
+
 # Test Failure Sample Report — Track B-1/C Handoff
 
 **Date:** 2026-05-30  

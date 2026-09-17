@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/TESTING.md; source-sha256: 23efd52150d30c704429bbf78a1c143b19320d43075fecc571f01f5168d0b9bb; reason: tooling or agent control surface -->
+
 # wasm4pm Testing Philosophy
 
 **Adversarial testing against an RL-based autonomic process control system.**

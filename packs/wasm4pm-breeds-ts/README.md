@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/wasm4pm-breeds-ts/README.md; source-sha256: 5020cf0f01d308933519287d091600f3e2965fb91010438f3689c78a18e3624a; reason: path-local authority or entrypoint -->
+
 # wasm4pm-breeds-ts
 
 A self-contained [ggen](https://ggen.dev) pack that generates a standalone

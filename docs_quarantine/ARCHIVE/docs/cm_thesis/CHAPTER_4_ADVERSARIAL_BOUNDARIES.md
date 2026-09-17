@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cm_thesis/CHAPTER_4_ADVERSARIAL_BOUNDARIES.md; source-sha256: dd0a5b023aed3568acc005ad5bf4a22ddca5fe2fb3b14e75b5e5023e28b3e59f; reason: tooling or agent control surface -->
+
 # Chapter 4: Adversarial Boundary Matrix
 
 ## 4.1 Introduction

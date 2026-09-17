@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/CRITICAL_PATH_ANALYSIS.md; source-sha256: bf08263c110aab2bbf9c75876ec7cb9b34b08e5b139eec58d907fdb8b411e0f6; reason: tooling or agent control surface -->
+
 # wasm4pm Critical Path Analysis
 
 **Version:** v26.4.17  

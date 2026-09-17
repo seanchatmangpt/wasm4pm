@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/AUTOPROCESS_EXAMPLES.md; source-sha256: 90149f624acd264aa893131a9e8ae556d4246ed6382e7454b062460043cdfba1; reason: tooling or agent control surface -->
+
 # wpm autoprocess — Usage Examples
 
 The `wpm autoprocess` command runs the four-phase autonomic loop: **Perception → Decision → Protection → Optimization**. Each cycle analyzes the event log, evaluates system health, checks statistical process control alerts, and dispatches RL-selected actions.

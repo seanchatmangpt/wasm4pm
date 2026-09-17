@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/VISION_2030_PERFORMANCE.md; source-sha256: 8678755dea03a73d6e72fd839a892951876bdabbd7777c8f18b56f05f292893c; reason: tooling or agent control surface -->
+
 # Vision 2030 Performance Report: Autonomic Execute Cycle
 
 **Date:** 2026-04-16  

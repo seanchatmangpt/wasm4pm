@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/analytics/anomaly-detection.md; source-sha256: 11c0c0ececd7f34a148b10c74f56f761a164b5bc64389637c562734019ab8672; reason: tooling or agent control surface -->
+
 # Find Anomalies
 
 Detect outliers and anomalous data points using statistical methods and Isolation Forests.

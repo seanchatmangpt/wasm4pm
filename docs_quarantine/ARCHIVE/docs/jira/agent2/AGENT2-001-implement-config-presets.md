@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent2/AGENT2-001-implement-config-presets.md; source-sha256: c1d4771aae06d70b4ce93c1e624f73b96a493b2f00803d1fa7ea74c7ac0768e8; reason: tooling or agent control surface -->
+
 # AGENT2-001: Implement 3 Config Presets
 
 **Status:** 🔴 BLOCKER  

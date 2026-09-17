@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/naive_physics.md; source-sha256: 9a5f766bd9bb4c784547c19aa617fcad82c17b3b909564e9d3d0ca6aa7b7086d; reason: tooling or agent control surface -->
+
 # Naive Physics
 
 ## Origin

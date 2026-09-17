@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent6/AGENT6-001-create-ml-benchmarks.md; source-sha256: 993011302258ff032ffca6c2874aee69a43bdf8d744396e313db0d3204e26d87; reason: tooling or agent control surface -->
+
 # AGENT6-001: Create ML Algorithm Benchmarks
 
 **Status:** 🔴 BLOCKER  

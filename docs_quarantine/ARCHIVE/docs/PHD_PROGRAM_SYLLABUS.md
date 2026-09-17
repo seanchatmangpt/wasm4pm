@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PHD_PROGRAM_SYLLABUS.md; source-sha256: 63cc31562ec5692911cb1f4875c78cfe405d317c3b0e499ce8c4f469b7557847; reason: tooling or agent control surface -->
+
 # PhD Program Syllabus: Autonomous Process Systems & Combinatorial Maximalism
 
 **Degree:** Ph.D. in Process Intelligence and Autonomous Systems Architecture

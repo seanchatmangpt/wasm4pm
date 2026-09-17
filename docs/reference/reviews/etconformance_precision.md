@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/etconformance_precision.md; source-sha256: 4a708dd1d442a8be671f6320284e29fb98db7d7a555e6eec9f0ff6db90af3e46; reason: tooling or agent control surface -->
+
 # Algorithm Review: etconformance_precision
 
 ## Algorithm ID & Domain

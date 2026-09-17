@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/00-WASM4PM-PRIMITIVE-INVENTORY.md; source-sha256: 15e067d0ca2a31c6f0be28df3b5e1ad3bdc037634c84eaaefaac78b2a441e8d0; reason: tooling or agent control surface -->
+
 # Agent 1 — Primitive Inventory Agent
 
 ## Mission

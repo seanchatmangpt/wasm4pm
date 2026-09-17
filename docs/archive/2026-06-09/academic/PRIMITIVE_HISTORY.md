@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/PRIMITIVE_HISTORY.md; source-sha256: 124f1394ac419c09e3d53ba13621ca1ced19d25968e3343ca549b06d5560ded4; reason: tooling or agent control surface -->
+
 # Process-Mining Primitive History — ACADEMIC-LINEAGE-001
 
 *Historical grounding for the 10 wasm4pm primitives defined in `docs/primitives/`.*

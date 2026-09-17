@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/hill_climbing.md; source-sha256: 33c5172797075a44662244c911c5befcc8642b908649de5afcd5f2da41dd5414; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Hill Climbing
 
 ## Metadata

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/tests/archive/pre-reset/apps-wasm4pm/cli-ux-gaps-identified.md; source-sha256: 4038cf2c9228cce6e75dcb3cfa4b0f014cce113372417ba33c8de63916f6df47; reason: tooling or agent control surface -->
+
 # Two New CLI UX Gaps Identified
 
 ## Gap 3: Machine-Readable Warning Levels in JSON Output

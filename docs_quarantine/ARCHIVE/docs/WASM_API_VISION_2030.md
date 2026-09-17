@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/WASM_API_VISION_2030.md; source-sha256: 5df99b820a9c83e61166ef5d4685dd183cd4b37d377e008689504882394f1588; reason: tooling or agent control surface -->
+
 # wasm4pm WASM API Reference — Vision 2030
 
 **Complete catalog of WebAssembly exports for process mining and autonomic control.**

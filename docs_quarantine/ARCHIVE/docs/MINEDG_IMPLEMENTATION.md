@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/MINEDG_IMPLEMENTATION.md; source-sha256: b5c49aabc906ae51fad738cdb79fe1f3149348c1716cdf352b2660338c6a3321; reason: tooling or agent control surface -->
+
 # MineDG Choice Graph Discovery Implementation
 
 ## Overview

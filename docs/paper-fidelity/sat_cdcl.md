@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/paper-fidelity/sat_cdcl.md; source-sha256: 2f1491961ea8e356a1b7812ec8565f0aba224adbea4aed3d2aaa50ffab6ab625; reason: tooling or agent control surface -->
+
 # SatCdcl -- Paper Fidelity
 
 <!--

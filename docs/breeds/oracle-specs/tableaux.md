@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/oracle-specs/tableaux.md; source-sha256: d48a4f34285fa19b65574f734b054a1ca4ec635f15e028b0fc122f3986214a72; reason: tooling or agent control surface -->
+
 # tableaux — Tableaux (Smullyan 1968)
 
 Signed analytic tableaux for propositional validity (Smullyan 1968, *First-Order Logic*, Part I, Chapter II — signed formulas, alpha/beta rules). Source of truth: `crates/wasm4pm-cognition/src/breeds/tableaux.rs`.

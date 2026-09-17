@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/QUALITY_THRESHOLD_JUSTIFICATION.md; source-sha256: 302cfcbbd3bd0ebe0ac53e216ea30da91bc9f9bb0908a3b88943fb7f2263f195; reason: tooling or agent control surface -->
+
 # Quality Threshold Justification
 
 These thresholds are used in the G3 quality-threshold gate.

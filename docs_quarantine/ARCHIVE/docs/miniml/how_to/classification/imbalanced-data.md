@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/classification/imbalanced-data.md; source-sha256: 6ffb42b882d071ebb950fdba017efb6c622726198f920d37386d7261669e1849; reason: tooling or agent control surface -->
+
 # Handle Imbalanced Data
 
 Train classifiers that perform well when one class dominates the dataset.

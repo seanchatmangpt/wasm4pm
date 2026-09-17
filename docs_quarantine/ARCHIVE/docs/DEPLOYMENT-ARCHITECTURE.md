@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/DEPLOYMENT-ARCHITECTURE.md; source-sha256: 49781a743a82f9e1ae025c641bbccd6e8a15d5b29bed946db4c296f9bf8af7cc; reason: tooling or agent control surface -->
+
 # wasm4pm Deployment Architecture
 ## Process Mining Across Cloud, Fog, Edge, and Device
 

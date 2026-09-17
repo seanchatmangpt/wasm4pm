@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/wasm4pm-cognition/README-header.md; source-sha256: 6c5252026d1c003ece37aa728286dd9c4868eff016bd4d8e46190fe11642f923; reason: tooling or agent control surface -->
+
 
 # wasm4pm-cognition
 

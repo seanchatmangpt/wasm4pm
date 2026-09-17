@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/cbr.md; source-sha256: 453be2084a0d450996d94e1ee90201f09ac1d8c33f129846d2810b1f1afddfd2; reason: tooling or agent control surface -->
+
 # cbr — Case-Based Reasoning
 
 ## 1. Identity & Lineage

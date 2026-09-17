@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/observability/API_REFERENCE.md; source-sha256: e0aeb46d049a960520943eeb17267af6333b0c9d8f20e749e6879c477349bf38; reason: tooling or agent control surface -->
+
 # API Reference - @wasm4pm/observability
 
 Complete reference for the public API of the observability layer.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/32-wardley.md; source-sha256: 4c71eb0eaf9d21d3ca7efa5d122a115e614d0dab542d43e334a46e1f984f39f5; reason: tooling or agent control surface -->
+
 # Wardley Map: User Need, Value Chain, And Evolution
 
 **Pattern ID:** `32-wardley`  

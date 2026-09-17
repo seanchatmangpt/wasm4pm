@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/WASM_BUILD_OPTIMIZATION_DEEP_DIVE.md; source-sha256: 135e90e24f02cd384bb3359f2fe020a6399bdd38671452cdedc6a918ca6d42e4; reason: tooling or agent control surface -->
+
 # WASM Build Optimization Deep-Dive
 
 **Date:** 2026-05-30  

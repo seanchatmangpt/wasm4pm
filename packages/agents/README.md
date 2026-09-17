@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/agents/README.md; source-sha256: 69c40da16f372c8f337503eaa455a73a0fab74a744d58b8705c29ea776374883; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/agents
 
 Van der Aalst process mining agents — autonomous adversarial validation

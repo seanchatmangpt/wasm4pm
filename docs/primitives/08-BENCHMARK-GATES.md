@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/08-BENCHMARK-GATES.md; source-sha256: d3d54fed5c156fe45816ee0c4c70e96d306baffbd153360cac2797cb146ae08a; reason: tooling or agent control surface -->
+
 # Agent 9 — Benchmark / real-data gate agent
 
 ## Mission

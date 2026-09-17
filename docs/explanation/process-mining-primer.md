@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/process-mining-primer.md; source-sha256: faeeda5d09f96a34323dc4d3f4c8c44c55655b394585a52bab854c0f032c68ca; reason: tooling or agent control surface -->
+
 # Process Mining Primer
 
 Process mining extracts process knowledge from event data. Where traditional process design asks "how should this process work?", process mining asks "how does this process actually work?" The evidence is the event log; the algorithm is the analyst.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/simulated_annealing.md; source-sha256: 0a22db9b353610761ce19b9c985bda48d222811be1480e67af6796bde5943b27; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Simulated Annealing
 
 ## Metadata

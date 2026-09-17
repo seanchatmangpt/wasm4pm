@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/MTTR_BENCHMARKING.md; source-sha256: cde0f2ee8b82cdb97e2f3eacfc6767f42f7a43bb6a6ee1078e1b51326406e435; reason: tooling or agent control surface -->
+
 # MTTR Benchmarking Suite
 
 **Mean-Time-To-Recovery (MTTR) Critical Infrastructure for SLA Compliance**

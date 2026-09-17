@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/markov_logic.md; source-sha256: 5f52fd2ca8245d5c911eb1f15ad412485d904fe6cc98ecc7d2745aa381e908d2; reason: tooling or agent control surface -->
+
 # Markov Logic — Propositional MLN MAP via MaxWalkSAT
 
 ## 1. Identity

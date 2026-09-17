@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/supabase/README.md; source-sha256: f7a88eed33de7fe068ded72125d9a891734f30318c785c3d0d4af2d124d2718c; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/supabase
 
 Remote persistence and offline-sync layer for wasm4pm. Pushes BLAKE3 receipts and TrueX conformance envelopes to a Supabase backend; buffers to a local queue when the network is unavailable.

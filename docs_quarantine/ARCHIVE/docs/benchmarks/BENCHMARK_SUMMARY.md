@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/benchmarks/BENCHMARK_SUMMARY.md; source-sha256: 3da1b476e9c7871ea6f00dab9cfdfb3cc968c8cbe6aa7733ddda1a135fdc7a36; reason: tooling or agent control surface -->
+
 # WASM Benchmark Results (May 13, 2026)
 
 The following benchmark results demonstrate the extreme nanosecond-scale performance of the `wasm4pm` engine and its newly added Authentic Discovery and AGI-level algorithms. Even at 10,000 cases, the branchless algorithms execute in a few milliseconds.

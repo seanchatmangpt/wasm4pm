@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/ACADEMIC_GAPS.md; source-sha256: c5fa18b409a5db57be56bd956253a9270e82f444847468d43710d8fb74292bd4; reason: tooling or agent control surface -->
+
 # Academic Gaps — ACADEMIC-LINEAGE-001
 
 *Generated 2026-05-30*

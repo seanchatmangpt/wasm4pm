@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/errors/types.md; source-sha256: 2b7f6cf7c1fae0c7ef510f6df9a52e3a21dd9ebe6186651344bb988eb39346e8; reason: tooling or agent control surface -->
+
 # Error Types
 
 All error variants returned by miniml operations. Errors are returned as thrown exceptions with descriptive messages.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/ERROR_MESSAGES_REFERENCE.md; source-sha256: faed0a33da19279400daa85394f9f557f6b1162cbc459c8fbcfc110a5202d9e3; reason: tooling or agent control surface -->
+
 # wasm4pm Error Messages — Reference Guide
 
 **Quick guide to 5 vague errors identified in clarity audit + improved versions.**

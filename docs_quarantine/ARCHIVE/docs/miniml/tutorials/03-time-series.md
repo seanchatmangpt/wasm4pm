@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/tutorials/03-time-series.md; source-sha256: 4a4687a92c35cb66e62e706eb040cfeac1ee8522b111d6eedee742056d035a26; reason: tooling or agent control surface -->
+
 # Time Series Analysis
 
 Forecast sales data with moving averages, exponential smoothing, and trend detection.

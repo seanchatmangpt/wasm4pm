@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/benchmarks/README.md; source-sha256: 184d4f1d50950ea199698c0421f07d8e092bd9a2b921418a2e92cea3dd4ca772; reason: path-local authority or entrypoint -->
+
 # Benchmark Regression, Reporting & Receipts
 
 The `bench-tools` crate (`crates/bench-tools`) sits on top of Criterion's output

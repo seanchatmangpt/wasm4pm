@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/ocel_petri_net.md; source-sha256: 4d497749c6d8d477119745b39b2019aeffce93523011df68dae7c11c63c9d509; reason: tooling or agent control surface -->
+
 # Algorithm Review: ocel_petri_net
 
 ## Algorithm ID & Domain

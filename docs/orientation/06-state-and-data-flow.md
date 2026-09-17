@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/orientation/06-state-and-data-flow.md; source-sha256: 3a58944ccdd418aeb96408175aecee329a097ade59a228f576e8ad2f028f60ba; reason: tooling or agent control surface -->
+
 # Phase 6: State and Data Flow
 
 The `wasm4pm` Truex Execution pipeline is designed for strict deterministic data flow. Object-centric data moves from raw files into immutable BLAKE3 receipts.

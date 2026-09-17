@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/thesis/PHASE_SHIFT_PROCESS_COGNITION.md; source-sha256: 364a9ed9792617717189aade088a847e25e3ba732f55bbb608d18c0457b11366; reason: tooling or agent control surface -->
+
 # From Inference to Process Cognition
 
 ## A Benchmark-Grounded Thesis on the Phase Transition from Opaque Intelligence to Manufacturable Cognitive Infrastructure

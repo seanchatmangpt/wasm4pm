@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/jira/v26.7.24/DECISIONS.md; source-sha256: 79552ea1772c8578476293d7346972fd0116b829428554a0044d08afcae87b6c; reason: tooling or agent control surface -->
+
 # ADR-001: Rank in TypeScript, eliminate in Dendral, question with Eliza
 
 - **Status:** Accepted for implementation; not implemented by this documentation branch

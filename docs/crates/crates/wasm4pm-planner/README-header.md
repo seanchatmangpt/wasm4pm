@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/wasm4pm-planner/README-header.md; source-sha256: c10667e9e070ddf1ee3425bb7948de72e85c21441c65270f6c19903ff266c1e8; reason: tooling or agent control surface -->
+
 
 # wasm4pm-planner
 

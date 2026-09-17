@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/lab/websocket-client-examples/README.md; source-sha256: 06453414124ba9c9dc67751c0b7d6368ce68d65b0e8b81a202d428c89b86b7f1; reason: path-local authority or entrypoint -->
+
 # WebSocket Client Examples
 
 This directory contains reference implementations for consuming the `/watch` endpoint from different environments.

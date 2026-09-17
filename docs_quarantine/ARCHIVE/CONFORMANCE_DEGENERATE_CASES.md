@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/CONFORMANCE_DEGENERATE_CASES.md; source-sha256: cbcc46df961989383871ee23ed040284d8d8ae8ee08701c33c7e5b832072689e; reason: tooling or agent control surface -->
+
 # Conformance Degenerate Case Audit — Complete
 
 **Date:** 2026-05-18  

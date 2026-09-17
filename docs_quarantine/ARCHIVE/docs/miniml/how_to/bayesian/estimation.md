@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/bayesian/estimation.md; source-sha256: 0e8e341c82dadffdc06b869042594f94aee7755b13735a1526dfc1ec15153a0f; reason: tooling or agent control surface -->
+
 # Bayesian Parameter Estimation
 
 Estimate unknown parameters from data using Bayesian inference with MCMC sampling.

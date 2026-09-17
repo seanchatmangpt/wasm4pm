@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/wasm4pm-cli/README-header.md; source-sha256: ff3cb5c134624e19ee3615e087391f53566bded9531d6b153e9e101c79848356; reason: tooling or agent control surface -->
+
 
 # wasm4pm-cli
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cm_thesis/CHAPTER_2_STATE_SPACE.md; source-sha256: 261b660c93d6030167f3f5cf613b640b2f3b3eb6d1bb0db7aac2ea49036d4ea2; reason: tooling or agent control surface -->
+
 # Chapter 2: The 8-Dimensional State Space Explosion
 
 ## 2.1 Introduction

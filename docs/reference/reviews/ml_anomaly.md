@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/ml_anomaly.md; source-sha256: 5e5da82167d22888906ed235a24d74ee687496a60188d647b8372aa3f495dd4b; reason: tooling or agent control surface -->
+
 # Algorithm Review: ml_anomaly
 
 ## Algorithm ID & Domain

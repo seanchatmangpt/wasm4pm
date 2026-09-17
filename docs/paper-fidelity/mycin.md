@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/paper-fidelity/mycin.md; source-sha256: ec9f9c8a45047401a0e22111e04db23830ce9c7dd1e9cc63ac1dbcd2550ba509; reason: tooling or agent control surface -->
+
 # Mycin -- Paper Fidelity
 
 <!--

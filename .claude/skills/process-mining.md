@@ -5,6 +5,9 @@ paths: ["wasm4pm/src/**/*.rs", "packages/**/*.ts"]
 type: skill
 ---
 
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/skills/process-mining.md; source-sha256: 8e6dc4f345a4dccb46dd9ebbc32d808b0ea0cfff0de8ffebcb93e10ae756ccf0; reason: tooling or agent control surface -->
+
+
 # Skill: Process Mining Chicago TDD
 
 ## Purpose

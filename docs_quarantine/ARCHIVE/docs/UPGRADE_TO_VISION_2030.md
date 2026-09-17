@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/UPGRADE_TO_VISION_2030.md; source-sha256: 02c166181f420a61986b34efc7cebdbd98ac2951b641869338112a015b68f769; reason: tooling or agent control surface -->
+
 # Upgrade Guide: Vision 2030 (v26.4.16)
 
 This guide walks you through upgrading from wasm4pm v26.4.10 (or earlier) to v26.4.16, which introduces the **AutoProcess autonomic loop**.

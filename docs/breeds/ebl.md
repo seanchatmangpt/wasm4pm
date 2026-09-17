@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/ebl.md; source-sha256: 18a7bc1704700e41a42bc7ba58e39e1ce09bf724433990720f0406ae9fc9eae2; reason: tooling or agent control surface -->
+
 # Explanation-Based Learning (EBL)
 
 ## 1. Identity & Lineage

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/ml-api-reference.md; source-sha256: 9b05cc1e93ed331fd11f0afdf9978d20a6a7632996d4adb2db3f1b1f4cdbe5ce; reason: tooling or agent control surface -->
+
 # `@wasm4pm/ml` — API Reference
 
 Public surface of the `@wasm4pm/ml` package. All functions are pure (no I/O, no

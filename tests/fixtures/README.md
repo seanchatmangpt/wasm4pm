@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/tests/fixtures/README.md; source-sha256: 3033637996e229cca7dcf24109993f40074858737af63f6f5aead944a1a77dca; reason: path-local authority or entrypoint -->
+
 # Real Data Benchmarking Fixtures
 
 ## Setup

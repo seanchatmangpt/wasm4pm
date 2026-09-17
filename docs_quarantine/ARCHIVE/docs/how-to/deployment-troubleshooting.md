@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/deployment-troubleshooting.md; source-sha256: 0fd36ea5ee4e908269147e8c341af015f59c3a312edea8a078f68ed8e089d94d; reason: tooling or agent control surface -->
+
 # How-To: Deployment Troubleshooting
 
 **Time required**: 25 minutes  

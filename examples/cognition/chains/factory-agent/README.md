@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/cognition/chains/factory-agent/README.md; source-sha256: f73836533cf9e3e8251070c2e595e2fdbb7178a0e640ae724d2de1a906ab0c0d; reason: path-local authority or entrypoint -->
+
 # factory-agent — Breed Chain Case Study
 
 **Domain:** Intelligent factory floor agent — full incident lifecycle from perception to operator debrief.

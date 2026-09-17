@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TRACK_A_RECEIPT.md; source-sha256: 7fa413b8c521b0f135b60bebdefedc98b50174135381a87cc29925697dd2f371; reason: tooling or agent control surface -->
+
 # TRACK A CLOSURE RECEIPT
 
 **Date:** 2026-05-30  

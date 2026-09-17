@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/ml_forecast.md; source-sha256: 5e09716b8ff8554cd077850b8d9de4d1b350b0c5f257d1b2b4de2a70b1cb8afd; reason: tooling or agent control surface -->
+
 # Algorithm Review: ml_forecast
 
 ## Algorithm ID & Domain

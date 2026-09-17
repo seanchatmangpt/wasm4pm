@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/AUTOPROCESS_VISION2030.md; source-sha256: 3e5deb1d45c7cf3ce08ca872666e847859bcf5a3f541c0b04856f0913f05f545; reason: tooling or agent control surface -->
+
 # AutoProcessAgent: Vision 2030 Autonomic Loop
 
 **Status**: Implemented and benchmarked

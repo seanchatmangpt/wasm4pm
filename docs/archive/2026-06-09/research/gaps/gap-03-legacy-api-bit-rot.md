@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/research/gaps/gap-03-legacy-api-bit-rot.md; source-sha256: cc21e1acaee51183de312417e88d0d9092bb5f8c69d5d28a853a3f66c91fd921; reason: tooling or agent control surface -->
+
 # Research: Legacy API Bit-rot
 
 ## Overview

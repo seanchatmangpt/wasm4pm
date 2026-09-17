@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/GGEN_MIGRATION_CHECKLIST.md; source-sha256: 80e49a1e6c723a5e91a09dad038fc1785db39d4735cccb4205ea59e800bb17ca; reason: tooling or agent control surface -->
+
 # ggen Migration Checklist
 
 This document details the migration path for `ggen` to adopt `wasm4pm` as its external process-law oracle, using the newly extracted `ocel-core` crate.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/monitor-drift.md; source-sha256: 480709e4bc01307d4bacf4a6048bdf1207f683cfa8ed35a9b46faabf6fcd26bc; reason: tooling or agent control surface -->
+
 # How-To: Monitor Process Drift in Real-Time
 
 **Time required**: 10 minutes

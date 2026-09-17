@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CLAUDE.md; source-sha256: b92c8f4920cf7d292cd60b76f940bc94dd5e056f883e260d6db336ddc2fb4e32; reason: active compatibility pointer to AGENTS.md -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/CLAUDE.md; source-sha256: b92c8f4920cf7d292cd60b76f940bc94dd5e056f883e260d6db336ddc2fb4e32; reason: tooling or agent control surface -->
 
 # Claude Code instructions
 

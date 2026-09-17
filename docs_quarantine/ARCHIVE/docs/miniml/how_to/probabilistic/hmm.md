@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/probabilistic/hmm.md; source-sha256: 24b7ef72d5c73067f5eb7767c214851d574aee613394bfc278bc1b8ab22c08be; reason: tooling or agent control surface -->
+
 # Hidden Markov Models
 
 Work with sequences where the underlying states are hidden and only observations are visible.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/wasm4pm/src/engines/orchestrator/README.md; source-sha256: 845e13e4b1cfc6236e546b0d11bf9aa18a11452d26d788a91ed01f2a7f3de13d; reason: path-local authority or entrypoint -->
+
 # Orchestrator proof capsule
 
 The orchestrator converts a noun/verb DAG into a proof-carrying pipeline bundle.

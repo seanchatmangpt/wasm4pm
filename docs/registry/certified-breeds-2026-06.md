@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/registry/certified-breeds-2026-06.md; source-sha256: 5b64c4378674bb1f6c524428c1b63c86179345b0828863e3c1ea136f0f169316; reason: tooling or agent control surface -->
+
 # Certified Breeds — Periodic Table of Reason
 **Registry Date:** 2026-06-10
 **Registry ID:** CertifiedRegistry_2026_06

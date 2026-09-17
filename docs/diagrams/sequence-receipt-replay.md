@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/sequence-receipt-replay.md; source-sha256: 96d1b0d460b5a6b71cbc67c42b893958f515d3abde0b169e60fcd10d36198fe4; reason: tooling or agent control surface -->
+
 # Sequence: receipt primitives, live-chain gaps, and replay
 
 **Re-verified:** 2026-07-24.

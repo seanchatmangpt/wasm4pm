@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/research/gaps/gap-01-dummy-data-limitation.md; source-sha256: 76e053d93444c1e630c7cde31bd213a43ecfb6f0a6b428d1b972b08bbfdb9f7a; reason: tooling or agent control surface -->
+
 # Research: The "Dummy Data" Limitation
 
 ## Overview

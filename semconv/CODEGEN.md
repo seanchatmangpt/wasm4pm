@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/semconv/CODEGEN.md; source-sha256: 979fc9bf931baf909d0c924393016f829be998fb4a9acbf56d363ccff5d07cb8; reason: tooling or agent control surface -->
+
 # Semconv Codegen
 
 ## Status

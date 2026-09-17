@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/batches.md; source-sha256: 9098a834e2cc466ec20cc09b8898de9a07bca15bba69afa8a80edc6510588f5f; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Batch Detection
 
 ## Metadata

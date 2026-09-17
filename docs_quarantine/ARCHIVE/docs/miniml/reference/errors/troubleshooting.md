@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/errors/troubleshooting.md; source-sha256: 17b0ab5b3cd508589497f89a6e8440453abb58addc3fc12ae4fa416aad5ae315; reason: tooling or agent control surface -->
+
 # Troubleshooting
 
 Common issues and solutions when using miniml.

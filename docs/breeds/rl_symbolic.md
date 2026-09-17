@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/rl_symbolic.md; source-sha256: 8129e459bbb44bd396ad3bbcc07fba3f8325d7da5232e46d66d258830f3f8050; reason: tooling or agent control surface -->
+
 # RL (Symbolic Q-Learning)
 
 ## Origin

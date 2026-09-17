@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/unverified/how-to/export_bpmn.md; source-sha256: e2c1e450192de768eed592bb187e060e083486714ed122dfd87d19b487969a4b; reason: tooling or agent control surface -->
+
 # How-To: Export Models to BPMN
 
 ## Goal

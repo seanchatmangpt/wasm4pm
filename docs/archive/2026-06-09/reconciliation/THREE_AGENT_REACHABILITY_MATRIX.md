@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reconciliation/THREE_AGENT_REACHABILITY_MATRIX.md; source-sha256: 3ea7b5649c0fd9a90e4730b37b5300727a2bf7b59dd3ef9afae676303bb68c24; reason: tooling or agent control surface -->
+
 # THREE-AGENT REACHABILITY MATRIX — Agent 3 (Reachability / Verification / Receipt Preparer)
 
 **Generated:** 2026-05-30 (finish-wip-primitives) | **Mode:** read-only static inspection only.

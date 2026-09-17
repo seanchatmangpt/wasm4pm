@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/09-OCPQ-PRIMITIVES.md; source-sha256: 733b20bb226f7c4802b92d84a73db568dcae5fde2fb46a2b1965ccf6636f113f; reason: tooling or agent control surface -->
+
 # 09 — OCPQ Runtime Primitive
 
 **Agent:** A3

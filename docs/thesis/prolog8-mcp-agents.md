@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/thesis/prolog8-mcp-agents.md; source-sha256: 0a4a40c9bcba68e25bbb73a097f7ffd0ffd2c99edb50d18458b8b5316169bff8; reason: tooling or agent control surface -->
+
 # Prolog8: A Byte-Capped Proof Engine for Receipted MCP Agent Reasoning
 
 **Sean Chatman — wasm4pm v26.6.26**

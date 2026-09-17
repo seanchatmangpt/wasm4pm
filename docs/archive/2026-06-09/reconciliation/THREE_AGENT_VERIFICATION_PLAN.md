@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reconciliation/THREE_AGENT_VERIFICATION_PLAN.md; source-sha256: 2eab467c967c6f2bc6d2d63ecff071b47bb4cf6aff4298a1b8ec2c4673514da3; reason: tooling or agent control surface -->
+
 # THREE-AGENT VERIFICATION PLAN — Agent 3 (Reachability / Verification / Receipt Preparer)
 
 **Generated:** 2026-05-30 (finish-wip-primitives) | **Mode:** read-only / PREPARE only.

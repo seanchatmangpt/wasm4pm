@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/tps-metrics/README.md; source-sha256: c0280705dd374bc976069e0f219f04e92862b1cdc3492d1536855d8677726af6; reason: path-local authority or entrypoint -->
+
 # tps-metrics
 
 Toyota Production System (TPS) metrics collection and analysis tool for software development.

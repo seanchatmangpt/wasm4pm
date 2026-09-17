@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/ontology/chatmangpt/README.md; source-sha256: dd65cf3b2cd8ec706652962ae746368a97d4359a031c54461b90c092a6229a86; reason: path-local authority or entrypoint -->
+
 # ChatmanGPT wasm4pm ontology
 
 This directory establishes `chatmangpt.com` as the canonical authority for new wasm4pm-owned semantic identifiers while retaining explicit compatibility with existing `wasm4pm.dev` and `urn:wasm4pm:` identifiers.

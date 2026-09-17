@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/thesis/PHD_DEFENSE_PLAN.md; source-sha256: 127ca643b2d3b6afcbe50ddac543d0105da688c54c06dfcc709d586493ccc4b6; reason: tooling or agent control surface -->
+
 # PhD Defense Plan: Cryptographic Observability, Adversarial Robustness, and Nanosecond Performance in WebAssembly Process Mining
 
 **Candidate:** wasm4pm Research Team  

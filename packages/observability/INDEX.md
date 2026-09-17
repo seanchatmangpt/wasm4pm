@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/observability/INDEX.md; source-sha256: 27da3b031de710788732568fb1c7e281c7b26907fabdadf8fd71bb0b94280315; reason: tooling or agent control surface -->
+
 # @wasm4pm/observability - Documentation Index
 
 Complete reference for all documentation in this package.

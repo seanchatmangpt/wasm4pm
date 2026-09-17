@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/FIRST_CLAIM_AUDIT.md; source-sha256: 6f38c5b4bb4c5b479d74c75c8f6408441b98a7eccf780bdc75b368983d9e5a2c; reason: tooling or agent control surface -->
+
 # First-Claim Adversary Audit
 
 **Document:** FIRST_CLAIM_AUDIT.md

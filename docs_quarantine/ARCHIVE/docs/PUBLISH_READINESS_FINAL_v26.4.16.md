@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PUBLISH_READINESS_FINAL_v26.4.16.md; source-sha256: 09f36d853b32aa29d5748ed71dec4197edfad1588e290e349a8260da701b3c7f; reason: tooling or agent control surface -->
+
 # wasm4pm v26.4.16 — Final Publish Readiness Report
 
 **Date:** 2026-04-16  

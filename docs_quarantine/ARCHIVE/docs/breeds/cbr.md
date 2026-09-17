@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/cbr.md; source-sha256: a94bd9688e6397ae30264bd9b59b8a9f0c7b36c36996ec8563f590053d5d6e41; reason: tooling or agent control surface -->
+
 # CBR (Case-Based Reasoning)
 
 ## Origin

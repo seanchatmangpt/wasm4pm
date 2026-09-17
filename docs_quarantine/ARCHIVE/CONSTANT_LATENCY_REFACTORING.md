@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/CONSTANT_LATENCY_REFACTORING.md; source-sha256: 4e8b043900ae6aadde07a895517fcedcd069712e7237d4a62dcf97dc99521b07; reason: tooling or agent control surface -->
+
 # Constant-Latency Loop Refactoring Report
 
 **Date:** 2026-04-16  

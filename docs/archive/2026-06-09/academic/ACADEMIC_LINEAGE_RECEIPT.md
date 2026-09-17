@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/ACADEMIC_LINEAGE_RECEIPT.md; source-sha256: 619ced1788f5412e8fcbd761108f3a4fa79f5d36a8e75b9d3c4a90e6a922fd1e; reason: tooling or agent control surface -->
+
 # Academic Lineage Receipt — ACADEMIC-LINEAGE-001
 
 **Date:** 2026-05-30

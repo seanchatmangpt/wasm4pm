@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/RL_STABILITY_AUDIT_REPORT.md; source-sha256: a525542b90ff8298b12ae887d5def20da5dfe6f2d5622c5eb8b468c98477cc6a; reason: tooling or agent control surface -->
+
 # wasm4pm RL Learning Stability Audit — Final Report
 
 **Date:** 2026-05-18  

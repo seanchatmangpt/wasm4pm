@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/algorithms/classification.md; source-sha256: 3679bc4a143c2a16808ea7a46b85c71dc279915159330f4bca144b8e86ac6418; reason: tooling or agent control surface -->
+
 # Classification Algorithms
 
 Classification assigns input samples to discrete categories (classes). miniml implements ten classification algorithms, each with different strengths in accuracy, speed, interpretability, and data requirements. This page explains the theory behind each.

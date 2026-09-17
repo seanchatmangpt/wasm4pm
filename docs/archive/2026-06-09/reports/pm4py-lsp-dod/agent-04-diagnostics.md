@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-dod/agent-04-diagnostics.md; source-sha256: 83d3c0673c7ff8e73f3b580352b3dc859ad7c61bc058e918706a480e7e4191f7; reason: tooling or agent control surface -->
+
 # Diagnostic System Investigation Report
 
 **Role**: Diagnostics Agent (`diagnostics`)  

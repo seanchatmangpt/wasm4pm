@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm-dspy/README.md; source-sha256: 90fcba68df955adc420290b20ceba94efbf2542676681c23913c4d71caea3343; reason: path-local authority or entrypoint -->
+
 # wasm4pm-dspy
 
 A DSPy breed-selection compiler for wasm4pm's cognition kernel: it turns a free-text

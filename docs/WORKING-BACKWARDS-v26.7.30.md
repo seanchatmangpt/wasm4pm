@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/WORKING-BACKWARDS-v26.7.30.md; source-sha256: 31ccc94aab24c9f07a81b1fb294cb0e15227db94fca5a818b2bc831867017b85; reason: tooling or agent control surface -->
+
 # Working Backwards: wasm4pm v26.7.30
 
 > **This is a target, not an announcement.** Working backwards means writing the press release

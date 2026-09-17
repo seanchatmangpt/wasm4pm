@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/autoinstinct_vision.md; source-sha256: ccbb7cd63d1c57956fe0953d4483867a672d930770cb673ca9d280abd2d25963; reason: tooling or agent control surface -->
+
 # autoinstinct_vision — Autoinstinct Vision Perception
 
 ## 1. Identity & Lineage

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/RELEASE_TEMPLATE.md; source-sha256: 3e89aa9a9e7312fc23334728cef49b5ea46d3352cad008d310e2307fd3ce1808; reason: tooling or agent control surface -->
+
 # Release Notes Template - v26.4.5
 
 > This is a template for creating release notes. Copy and customize for each release.

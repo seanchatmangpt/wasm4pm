@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/engine/README.md; source-sha256: 963620f45c947aee9ed6914342a1c02ad689a1a721b48288b3989492f72a6538; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/engine
 
 High-level engine lifecycle and state machine for wasm4pm. Manages bootstrap, planning, execution, and error recovery with a well-defined state machine and comprehensive error handling.

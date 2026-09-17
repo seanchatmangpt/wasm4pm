@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/playout.md; source-sha256: 1227101f246f9a7e5f871aaeb632c583ceb98e4030a60aca3f2f6aafe82dc84e; reason: tooling or agent control surface -->
+
 # Algorithm Review: playout
 
 ## Algorithm ID & Domain

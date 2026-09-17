@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/kubernetes.md; source-sha256: aef89c17e13a5801b6e4c69aa11f03c9c3cf56672d902ab15b028d3935398328; reason: tooling or agent control surface -->
+
 # Reference: Kubernetes Deployment
 
 ## Deployment

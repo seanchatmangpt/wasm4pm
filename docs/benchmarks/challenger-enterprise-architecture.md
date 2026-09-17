@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/benchmarks/challenger-enterprise-architecture.md; source-sha256: b0a849d17e40e9e5f2ad75ac12c51d456070257f72522333053638a247926bec; reason: tooling or agent control surface -->
+
 # Challenger Enterprise Architecture Benchmarks
 
 This rail measures the economics of architectural decision-making on real process evidence, not only isolated algorithm latency.

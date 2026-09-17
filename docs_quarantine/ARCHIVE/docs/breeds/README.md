@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/README.md; source-sha256: b5a4156a37d73d50131653cf3ef5e444df5d3b3305ee147e6a46e5c60ef298b1; reason: path-local authority or entrypoint -->
+
 # Cognition Breeds — Reference Cards
 
 Nine classical AI architectures, each implemented as a real `CognitionBreed` in `crates/wasm4pm-cognition/src/breeds/`. Every card is derived directly from the Rust source — no algorithm details are invented.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/mycin.md; source-sha256: a31d7fec8cbdfc415b2d46c015bb5f52b54b5da20f3bf1b220790ca2a53e8af6; reason: tooling or agent control surface -->
+
 # mycin — Certainty Factor Expert System
 
 ## 1. Identity & Lineage

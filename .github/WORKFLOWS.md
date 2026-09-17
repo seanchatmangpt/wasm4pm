@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/WORKFLOWS.md; source-sha256: aa0e2f182002af153f10b00ffd331d399d0212bd373fa8144ebf94b4b6f0c7bd; reason: tooling or agent control surface -->
+
 # GitHub Actions Workflows
 
 This document describes the continuous integration and deployment (CI/CD) workflows for wasm4pm.

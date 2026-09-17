@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/research/gaps/gap-05-execution-vs-assertion.md; source-sha256: 7ed7e9010a0e2809de4793c98e815c06f89d6b51b8335d7bf7de348b8668efb2; reason: tooling or agent control surface -->
+
 # Research: Execution vs. Assertion
 
 ## Overview

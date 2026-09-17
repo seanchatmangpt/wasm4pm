@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/data-types.md; source-sha256: ac25fb22e7e04172ff7fcfb900deb3c815e9ce2539fba0699681b68d3a84fc60; reason: tooling or agent control surface -->
+
 # Reference: Data Types and Schemas
 
 ## Receipt

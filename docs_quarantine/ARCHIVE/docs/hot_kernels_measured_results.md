@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/hot_kernels_measured_results.md; source-sha256: 98a4a550e8cfc52169079315e39f686bd8d94b28288d11a3ee5cf9b294c7726d; reason: tooling or agent control surface -->
+
 # Hot Kernels: Measured Benchmark Results
 
 **Date:** 2026-04-11  

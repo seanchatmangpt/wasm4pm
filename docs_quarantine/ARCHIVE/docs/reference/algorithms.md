@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/algorithms.md; source-sha256: eab22a022a77602c42e2aa4076996b10f1dbbdd9d3f10db7508142eae998f63c; reason: tooling or agent control surface -->
+
 # Algorithm Reference
 
 wasm4pm provides 18 process mining tools across three performance tiers, plus 6 ML analysis

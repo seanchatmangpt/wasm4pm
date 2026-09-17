@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/ACADEMIC_CROSSWALK.md; source-sha256: e1c3356c4c97140fc49002b1e8823a38ab1cf9c0b785dba017467dda0aefcb75; reason: tooling or agent control surface -->
+
 # Primitive Academic Crosswalk — wasm4pm
 
 Cross-reference: each primitive doc → paper grounding → formal object → implementation → tests.

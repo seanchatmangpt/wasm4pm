@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/17-c4-deployment.md; source-sha256: 9085a1ded8c97db110984ee7c9f0d503d5bbaa9c1a3d88a7885d609d14f8a76f; reason: tooling or agent control surface -->
+
 # C4 Deployment: Runtime Placement And Trust Zone
 
 **Pattern ID:** `17-c4-deployment`  

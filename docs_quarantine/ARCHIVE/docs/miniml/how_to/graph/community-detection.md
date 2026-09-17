@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/graph/community-detection.md; source-sha256: f445bb9171b1e4b077a57596bc8d844ab4aa112bd4c4fd2a223049e61c2d31b9; reason: tooling or agent control surface -->
+
 # Community Detection
 
 Discover groups of densely connected nodes using label propagation.

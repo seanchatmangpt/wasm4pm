@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/graph.md; source-sha256: effc91198ca98d9f601a7c404067fedce7cd4992c47b893b79ce355e52a821c6; reason: tooling or agent control surface -->
+
 # Graph API
 
 Graph analytics: centrality, shortest paths, and community detection. Call `await init()` before use.

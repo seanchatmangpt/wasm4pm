@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/ui-ux-redesign.md; source-sha256: 9ae71cdd3937514ae862b12ea879524ade3584a481f06624f9f07ea549875c90; reason: tooling or agent control surface -->
+
 # UI/UX redesign spec
 
 Canonical UI/UX specification for InterviewAssist, authored directly by the project owner. The specification diagrams remain the target interaction model; source-grounded corrections are fenced explicitly rather than silently rewriting the target.

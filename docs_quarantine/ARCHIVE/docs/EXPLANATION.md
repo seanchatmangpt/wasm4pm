@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/EXPLANATION.md; source-sha256: 70e8e62b13defc5c9803b1c9da0778ec5cadd56905b40e3b9116344063021dcc; reason: tooling or agent control surface -->
+
 # Understanding wasm4pm: Concepts and Design Reasoning
 
 This document is oriented toward understanding — not toward action. It explains

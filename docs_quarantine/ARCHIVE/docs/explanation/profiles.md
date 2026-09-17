@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/profiles.md; source-sha256: 7e43b96ef03977f56546622f218c62dcd6038cad9bdcecdd18fb51804868730a; reason: tooling or agent control surface -->
+
 # Explanation: Algorithm Profiles and Trade-Offs
 
 **Time to read**: 15 minutes  

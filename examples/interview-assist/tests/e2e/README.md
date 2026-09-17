@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/interview-assist/tests/e2e/README.md; source-sha256: caa9c8bbe89ed8bf171f022a2696e209d9790919835b51ec70baeca22f6de547; reason: path-local authority or entrypoint -->
+
 # Full-hour visual interview contract
 
 This directory contains the Playwright specification for the complete 60-minute interview.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/determinism.md; source-sha256: 53dd943dd0b59dfbc4a00b33b2dc8aec84cf5e7ebcf3501ac97eba71656a6e8e; reason: tooling or agent control surface -->
+
 # Explanation: Determinism in Process Mining
 
 **Time to read**: 15 minutes  

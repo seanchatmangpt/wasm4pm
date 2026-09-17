@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/environment-variables.md; source-sha256: ea61edabaa7a0d064e56f7c224d46c1326cd475e07e09b80a872a62b5167295f; reason: tooling or agent control surface -->
+
 # Reference: Environment Variables
 
 ## Configuration

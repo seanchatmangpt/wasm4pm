@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/VISION_2030_INDEX.md; source-sha256: 7dd3ffdd34adce7064ae7973cc86b740b2288c5ec5c9ef53323f2b3ed4e914ec; reason: tooling or agent control surface -->
+
 # Vision 2030 Documentation Index
 
 **Enterprise Autonomy Through Process Mining**

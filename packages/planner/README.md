@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/planner/README.md; source-sha256: 9c97535a9f117a75e2d3e4e8eda309379fa351b19197976bb79d818796f0b268; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/planner
 
 Execution plan generation for the wasm4pm process mining engine.

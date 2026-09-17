@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/00-ALGORITHM-INVENTORY.md; source-sha256: ccfdcd9d7beb4996c184bdaed8deb495014f5bb2328876dea8c9819519b2bc4b; reason: tooling or agent control surface -->
+
 # Algorithm Inventory — wasm4pm
 
 **Generated:** 2026-05-30  

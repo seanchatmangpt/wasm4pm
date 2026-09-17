@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/cli_commands.md; source-sha256: 31bca68703fde168787cd638c95d3e95d47ba0162a7188fe10a721ae1fdf86fc; reason: tooling or agent control surface -->
+
 # Reference: CLI Commands
 
 > **Generated from the live noun/verb registry.** Do not hand-edit — run

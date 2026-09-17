@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/statistical.md; source-sha256: 1146c63cc9c91d0412b7c7d52d0132c4a3e8b6a4e99f299e5fda983552f90c6c; reason: tooling or agent control surface -->
+
 # Statistical API
 
 Probability distributions, hypothesis testing, and descriptive statistics. All functions are pure and stateless unless otherwise noted. Call `await init()` before use.

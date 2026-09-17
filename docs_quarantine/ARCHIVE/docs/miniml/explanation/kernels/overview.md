@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/kernels/overview.md; source-sha256: 8a42a63debc8e9e4ceb18f709adb37ef95cd777f01ccc585eb1fdaa2de92f69c; reason: tooling or agent control surface -->
+
 # Kernel Functions
 
 A kernel function measures the similarity between two data points in a way that depends only on their relative position, not their absolute location. Kernels are the engine behind kernel methods -- algorithms that operate implicitly in high-dimensional feature spaces without ever computing the coordinates of data in those spaces.

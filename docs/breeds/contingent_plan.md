@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/contingent_plan.md; source-sha256: ac295124ea5c778be77df2e236c410ffb1f55a9c0fec17c6b5049c0d5f775aec; reason: tooling or agent control surface -->
+
 # Contingent Planning — AND-OR Search over Belief States
 
 ## 1. Identity

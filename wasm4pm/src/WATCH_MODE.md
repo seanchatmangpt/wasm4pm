@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/src/WATCH_MODE.md; source-sha256: 5bbd84f35a490f573142b53c2a69985b89adf5757566d6d383345d119ff21416; reason: tooling or agent control surface -->
+
 # Watch Mode Implementation (§16)
 
 ## Overview

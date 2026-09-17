@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/complexity_metrics.md; source-sha256: 729b7d5a3b50d1617d7710a4282446c4c6e2f3b674b694b65cf2746556b11eab; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: POWL Complexity Metrics
 
 ## Metadata

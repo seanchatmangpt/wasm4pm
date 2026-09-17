@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/event_calculus.md; source-sha256: 0d7953afb9b31db0ca3d8c4557b9cd289234ae3f9a74712f5c703e7138598b29; reason: tooling or agent control surface -->
+
 # event_calculus — Discrete Event Calculus
 
 ## 1. Identity & Lineage

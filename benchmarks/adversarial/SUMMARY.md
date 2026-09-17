@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/benchmarks/adversarial/SUMMARY.md; source-sha256: b932af15fa5b488a850bfb2fd75dd663dd0b51c832f7c5140cc1f1cf6820d7db; reason: tooling or agent control surface -->
+
 # Adversarial WvdA Algorithm Audit — Implementation Summary
 
 **Date:** 2026-04-17  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/guides/cli-guide.md; source-sha256: 74995d612e6a8e75ce8a5ab3739891d2830060c62b58a6a67e6ef7971f6933e8; reason: tooling or agent control surface -->
+
 # CLI Guide — All 20 Commands
 
 Complete reference for the `wpm` (wasm4pm) command-line interface.

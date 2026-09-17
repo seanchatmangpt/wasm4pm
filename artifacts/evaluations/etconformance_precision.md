@@ -1,35 +1,13 @@
-# Algorithm Evaluation: etconformance_precision
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/etconformance_precision.md; source-sha256: 8254d3ce28d7e7a8b4c06ef5867aae2f25276fd41f22e87ac1a133b3b19852ea; reason: historical, generated, status, or evidence narrative -->
 
-## Meta
-- **ID**: `etconformance_precision`
-- **Category**: `discovery`
-- **Profiles**: `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Status
-- **Registry**: Present
-- **Dispatch**: Present
-- **CLI**: Present
-- **WASM**: Present
+This document is retained as historical evidence and is not current product truth.
 
-## Behavior Evidence
-- **Positive Case**: `passed`
-- **Negative Cases**:
-  - `MALFORMED_EVENT_LOG`: `failed_correctly`
-  - `EMPTY_EVENT_LOG`: `failed_correctly`
-- **Invariant Case**: `passed` (Stable: `true`)
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/etconformance_precision.md`](../../docs/archive/2026-08-02/artifacts/evaluations/etconformance_precision.md)
+- Original path: `artifacts/evaluations/etconformance_precision.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `8254d3ce28d7e7a8b4c06ef5867aae2f25276fd41f22e87ac1a133b3b19852ea`
 
-## Evidence Hash
-`2cf48cf0e06cabe9458eb7e1e35faaee23410d9acac834bd02175fa7765024a2`
-
-## Verification State
-**Closed**
-
-## Algorithmic Role
-Analyzes the precision of a process model compared to an event log, specifically identifying "extra" behavior allowed by the model that is not observed in reality. It is a critical metric for evaluating the quality and accuracy of discovered process models.
-
-## Implementation Validation & Details
-- **Source Module**: `wasm4pm/src/align_etconformance.rs`
-- **Algorithm Type**: Alignment-based ETConformance precision calculation.
-- **Implementation Mechanism**: Precision is quantified by measuring the proportion of transitions within the process model that are not utilized during alignment with the event log. 
-- **Formula**: `1 - (escaping_edges / total_edges)`, where `escaping_edges` refers to model transitions never executed or used in alignments.
-- **Data Extractor**: Extracts activities up to a configured `max_iterations` limit, compares them against the total structural edges of the underlying Petri Net, computing the precise coverage of the model structure.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/ml-quickstart.md; source-sha256: 1eb9f29e2191fc0e94c71aa4adf4f6d70e281c267379522f0df37d3ffb29f97a; reason: tooling or agent control surface -->
+
 # Tutorial — ML Quick Start
 
 Goal: take an event log, run a classifier, interpret results — in under 10

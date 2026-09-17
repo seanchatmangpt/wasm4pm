@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/kernels/polynomial.md; source-sha256: 7194c55003fafd8a498fbeeb712b2d0d1087132e6ceb12187ee263592e072ceb; reason: tooling or agent control surface -->
+
 # Polynomial Kernel
 
 Compute polynomial kernel values for mapping data into higher-dimensional feature spaces.

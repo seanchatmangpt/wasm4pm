@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/performance-tuning.md; source-sha256: 4b98d330faab155285215cc0b3b37a888824a4a60003d54b7b7d3cae38c51880; reason: tooling or agent control surface -->
+
 # How-To: Performance Tuning
 
 **Time required**: 20 minutes  

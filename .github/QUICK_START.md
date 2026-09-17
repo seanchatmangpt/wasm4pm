@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/QUICK_START.md; source-sha256: 9a66965dab9ab346c0aa32a4511ffccc8805c1cea2d0e965a1cb38e93bb77d61; reason: tooling or agent control surface -->
+
 # GitHub Actions Quick Start
 
 ## Testing (Automatic on Push/PR)

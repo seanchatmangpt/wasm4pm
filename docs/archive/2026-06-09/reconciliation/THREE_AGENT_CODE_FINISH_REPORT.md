@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reconciliation/THREE_AGENT_CODE_FINISH_REPORT.md; source-sha256: 272cecd656bb6f84516a3b8fecfe92c4dfaaa9f172b6b1907049b786c88f71b1; reason: tooling or agent control surface -->
+
 # Three-Agent Finish Team — Agent 2 (Primitive Code Finisher) Report
 
 **Branch:** `finish-wip-primitives`

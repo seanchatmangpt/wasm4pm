@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/INDEX.md; source-sha256: 85e64939456a864868cf974a3de9f771241f8e5cf801c8936028a722bf7b773c; reason: tooling or agent control surface -->
+
 # wasm4pm Documentation Index
 
 **Last Updated:** 2026-05-05

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/DISCOVERY_ALGORITHM_AUDIT.md; source-sha256: 75ec4bd586704255b359931aca48169f1335c88ccad4106db59046ed77de1c6b; reason: tooling or agent control surface -->
+
 # Discovery Algorithm Audit Report
 
 **Date:** 2026-05-18  

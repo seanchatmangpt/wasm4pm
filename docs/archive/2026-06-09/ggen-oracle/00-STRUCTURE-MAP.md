@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/ggen-oracle/00-STRUCTURE-MAP.md; source-sha256: 01355f637013186aaae98b1ab30e57fe3b45971ebeb8b36a6f886540da589a22; reason: tooling or agent control surface -->
+
 # 00 — wasm4pm Structure Map (for the ggen Oracle spec)
 
 **Status:** Survey artifact. Ground truth for all sibling specs in `docs/ggen-oracle/`.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/cognition/README.md; source-sha256: 208823e73411ff5c0869a8f41687e9d8d20e4b14870de61abda72d8e49c076ed; reason: path-local authority or entrypoint -->
+
 # Cognition Examples
 
 Working `wpm cognition` examples for all 52 breeds — including 39 Admitted Periodic Table breeds and 13 Classic / Autoinstinct breeds. Each example is a self-contained directory with a JSON input file (`intent.json`), a shell runner (`run.sh`), a live `result.json`, and a `last-output.log`.

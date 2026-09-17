@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/paper-fidelity/strips.md; source-sha256: 7a3632ff02e1808e014e658182f0a7db8c527488633f45418e5a73400804e504; reason: tooling or agent control surface -->
+
 # Strips -- Paper Fidelity
 
 <!--

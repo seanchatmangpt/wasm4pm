@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/PARSELOAD_DIAGNOSTIC_REPORT.md; source-sha256: 58851dec05162cd09a8ef98f600083e45c33c60c0819aabc4dacb53023ae9d04; reason: tooling or agent control surface -->
+
 # Track B-1 Diagnosis: parsePayload() JSON Envelope Mismatch
 
 **Issue:** 9 failing admission-gate tests with symptom `parsePayload(result) === null`

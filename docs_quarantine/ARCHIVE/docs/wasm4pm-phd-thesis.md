@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/wasm4pm-phd-thesis.md; source-sha256: 913f1cde91b4623da745ef30887fcdf2ff85b5768671842179a4acfeda34899c; reason: tooling or agent control surface -->
+
 # wasm4pm: A Comprehensive WebAssembly-Native Process Mining Framework
 
 ## Doctoral Thesis in Computer Science

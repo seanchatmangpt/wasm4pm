@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/handover_network.md; source-sha256: f86e58d8d6737109701884afe9b009d390ea4ee1bec03013ec8cef533614a030; reason: tooling or agent control surface -->
+
 # Algorithm Review: handover_network
 
 ## Algorithm ID & Domain

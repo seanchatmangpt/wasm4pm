@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/CHATGPT-CLOUD-AGENTS.md; source-sha256: 0914d154d896f3e844f6ea9131c42e46aeb8270cd7ae4ce7d0229a10ecae6071; reason: tooling or agent control surface -->
+
 # CHATGPT-CLOUD-AGENTS.md — Hosted ChatGPT Environment Guide
 
 This file is an environment-specific addendum to `AGENTS.md`.

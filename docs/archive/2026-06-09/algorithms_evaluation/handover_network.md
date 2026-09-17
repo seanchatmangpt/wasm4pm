@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/handover_network.md; source-sha256: e064a35852533a80cae9e7920124109c45672d152499fcc39854c1f960e1be30; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Handover-of-Work Network
 
 ## Metadata

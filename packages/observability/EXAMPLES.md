@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/observability/EXAMPLES.md; source-sha256: 82afcad5942ae36286231d5e6d11c466d627bf9fc2c50a862eae160f1ef5ef58; reason: tooling or agent control surface -->
+
 # Observability Examples
 
 Complete working examples for the three-layer observability system.

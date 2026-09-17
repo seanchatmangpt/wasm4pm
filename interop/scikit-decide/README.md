@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/interop/scikit-decide/README.md; source-sha256: dea791a4aad7d63eeef919e9da7be1bce810339717d9b35ce3e3f798f0a69edf; reason: path-local authority or entrypoint -->
+
 # scikit-decide federation interop
 
 This directory owns the `wasm4pm` side of the receipt-bound Chatman ecosystem

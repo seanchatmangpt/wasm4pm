@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/causal_graph.md; source-sha256: 4bdb367fd26bbb87df2fde3de7e8fd2e9d26a652dfc1172146fb384d23efac1c; reason: tooling or agent control surface -->
+
 # Algorithm Review: causal_graph
 
 ## Algorithm ID & Domain

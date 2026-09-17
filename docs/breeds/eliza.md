@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/eliza.md; source-sha256: a0166a9023b743aff6458c59e655c1834e7831787e57e133051be8e497753017; reason: tooling or agent control surface -->
+
 # eliza — Pattern-Matching Dialogue Engine
 
 ## 1. Identity & Lineage

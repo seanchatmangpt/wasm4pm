@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/02-POWL-2-PRIMITIVES.md; source-sha256: e84492b574102e63859336220b4a1b8689c38c756963453197aac30d7af3200a; reason: tooling or agent control surface -->
+
 # Agent 3 — POWL 2.0 Primitive Agent
 
 ## Mission

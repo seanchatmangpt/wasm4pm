@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/02-EXISTING-CITATIONS.md; source-sha256: 4a8f79df74aa99b69e7564c710e7962f812a712dfbcb6ec8080d266b06e111c5; reason: tooling or agent control surface -->
+
 # 02 — Existing Citations Inventory
 
 **Agent:** A3 — Citation Agent  

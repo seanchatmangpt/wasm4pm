@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/monte_carlo_simulation.md; source-sha256: b61d9abdd655fbcd7363340a3318d4830331d576d20942d73083905eb001b9dd; reason: tooling or agent control surface -->
+
 # Algorithm Review: monte_carlo_simulation
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/testing/__tests__/INTEGRATION_TESTS_GUIDE.md; source-sha256: bc5b609b9b21e8c658362e38c0d52962198a049f30bc2a4bba93f7250c94806b; reason: tooling or agent control surface -->
+
 # Integration Tests Guide
 
 ## Overview

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/crates/wasm4pm-cli/README.md; source-sha256: cd715fe582e7041353556e39bcb4e8a5f67e1e09eaac8a2cac315e80858d1078; reason: path-local authority or entrypoint -->
+
 # crates/wasm4pm-cli — Rust-native wpm binary
 
 ## Status: Secondary binary — NOT the published CLI

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/crates/miniml-core/README.md; source-sha256: da99644796fc393ce1f94b8fb0781b7eaf6bd745a110fb9bf7da95cb7cdf54f3; reason: path-local authority or entrypoint -->
+
 # wminml
 
 Rust WASM core for [miniml](https://github.com/seanchatmangpt/miniml) — a minimal, blazing-fast machine learning library with SIMD acceleration.

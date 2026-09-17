@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/predictive-analytics.md; source-sha256: c6ea15ecc97c25750b9f9d085c551327accba8e5b96558ddf0c279e016317fdb; reason: tooling or agent control surface -->
+
 # Predictive Analytics with wasm4pm
 
 **Time**: 40 minutes

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/autoinstinct_neurosis.md; source-sha256: a3dfda8925196f2c6a9528f981d475b9ca79737aaaaaa58de32082950a97fb67; reason: tooling or agent control surface -->
+
 # autoinstinct_neurosis — Autoinstinct Neurosis Engine
 
 ## 1. Identity & Lineage

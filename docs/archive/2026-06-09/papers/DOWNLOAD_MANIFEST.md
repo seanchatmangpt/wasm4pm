@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/papers/DOWNLOAD_MANIFEST.md; source-sha256: 7d79de3a6b22c1e9a8effd9d4d6f46064aedefd26fd09a6d2e8bb0e42a64af86; reason: tooling or agent control surface -->
+
 # Paper Download Manifest — wasm4pm Academic Coverage
 
 *Generated: 2026-05-30 21:09 UTC*

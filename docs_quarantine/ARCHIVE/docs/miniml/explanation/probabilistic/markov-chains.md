@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/probabilistic/markov-chains.md; source-sha256: 0865ae98bfc94bf051d5edfa6273c9f132fbd041ac299434920d65780e858e49; reason: tooling or agent control surface -->
+
 # Markov Chains
 
 A Markov chain is a stochastic process where the future depends only on the present, not the past. This "memoryless" property makes Markov chains tractable models for sequential data, random walks, state transitions, and the foundation of MCMC sampling.

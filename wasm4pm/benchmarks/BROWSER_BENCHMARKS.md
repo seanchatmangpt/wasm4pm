@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/benchmarks/BROWSER_BENCHMARKS.md; source-sha256: d5379284f570601e8064ca39aeeb9c8709ba8af3034d05a34227dd8e415b79e8; reason: tooling or agent control surface -->
+
 # wasm4pm Browser Benchmarks
 
 Browser-based performance testing for wasm4pm algorithms using Vitest with headless Chromium and Playwright.

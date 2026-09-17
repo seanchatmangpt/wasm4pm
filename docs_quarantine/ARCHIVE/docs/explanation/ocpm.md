@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/ocpm.md; source-sha256: 42c276c4f7de8c4c56fc83cc7508c17de7c138c27bb00b7e1669718fda2bb96a; reason: tooling or agent control surface -->
+
 # Explanation: Object-Centric Process Mining (OCPM)
 
 **Time to read**: 15 minutes  

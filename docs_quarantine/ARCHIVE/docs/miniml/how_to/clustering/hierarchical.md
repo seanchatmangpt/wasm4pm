@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/clustering/hierarchical.md; source-sha256: 4fcfb42ec732b8775f88294124e2c5ec630b0d6979dc3b5168bccb0e0e2ebdc7; reason: tooling or agent control surface -->
+
 # Hierarchical Clustering
 
 Cluster data with agglomerative clustering.

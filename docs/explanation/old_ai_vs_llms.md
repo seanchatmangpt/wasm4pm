@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/old_ai_vs_llms.md; source-sha256: 02f074c30a5328d203f6631c2e26a9d297dd14df01133a75d63e84165089d945; reason: tooling or agent control surface -->
+
 # Explanation: Old AI vs. LLM Brochure
 
 A core doctrine of `wasm4pm` is: **Old AI is the factory. LLMs are the brochure.**

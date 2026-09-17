@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/mcp-predictive-tools.md; source-sha256: 6d4bd285dff31efc7e8602da15f86275cd67ed797b6adbf2fb1889f3a0e18a1e; reason: tooling or agent control surface -->
+
 # Reference: MCP Predictive Tools
 
 **Version**: 0.5.4

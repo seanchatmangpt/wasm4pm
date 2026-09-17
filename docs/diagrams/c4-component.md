@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/c4-component.md; source-sha256: 8fe8de8e2661f3c9c4e02c405353ccaf28ad2e594510e1b2a741f1c2f4469711; reason: tooling or agent control surface -->
+
 # C4: Component — inside the Next.js app
 
 **Re-verified:** 2026-07-24.

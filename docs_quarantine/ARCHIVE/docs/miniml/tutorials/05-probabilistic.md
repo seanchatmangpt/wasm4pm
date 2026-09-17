@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/tutorials/05-probabilistic.md; source-sha256: f544d84cfa6ccfea1c555556db27c70b2dc9c50b1f39cf7393fc2c2a554a7cf4; reason: tooling or agent control surface -->
+
 # Probabilistic Methods
 
 In this tutorial you will learn how to use miniml's probabilistic toolkit: Monte Carlo integration, Markov chains, and MCMC sampling. These methods let you solve problems that are hard or impossible with deterministic approaches -- from estimating integrals to modeling systems with uncertainty.

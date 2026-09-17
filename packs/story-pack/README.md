@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/story-pack/README.md; source-sha256: c001a1b33d032699a973cd2768cfd6c49275d1b03508cb3f4633641fa51a0448; reason: path-local authority or entrypoint -->
+
 # story-pack
 
 Cross-product pack: every behavioral story x {Gherkin `.feature` file, QA

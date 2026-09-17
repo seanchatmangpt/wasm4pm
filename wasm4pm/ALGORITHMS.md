@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/ALGORITHMS.md; source-sha256: 11b65f94b7b20c46d93b155c066777c58fb68f02c4c4ca184b8eb1ee840c7de4; reason: tooling or agent control surface -->
+
 # wasm4pm Algorithms Reference
 
 Catalog of the core process discovery and analytics methods in this crate.

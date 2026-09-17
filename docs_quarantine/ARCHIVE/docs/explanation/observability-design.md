@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/observability-design.md; source-sha256: a7200433013aabdab211cbdda46995b3e1be0a88816eec72ff1aa7a019f35de6; reason: tooling or agent control surface -->
+
 # Explanation: The Observability Architecture
 
 **Time to read**: 15 minutes  

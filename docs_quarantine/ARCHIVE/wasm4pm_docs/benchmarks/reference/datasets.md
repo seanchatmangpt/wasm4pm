@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/datasets.md; source-sha256: e1289323253ba4a763c5074a492605f5ab361d00eda030f151e5ea86727ee58a; reason: tooling or agent control surface -->
+
 # Benchmark Datasets
 
 ## Real-World Datasets

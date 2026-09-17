@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/ocel_oc_declare.md; source-sha256: 67bfc1f209d72a24c1b1567f7ba9a4471b902614199e280b932c442bab009edf; reason: tooling or agent control surface -->
+
 # Algorithm Review: ocel_oc_declare
 
 ## Algorithm ID & Domain

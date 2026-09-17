@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/cognition/chains/scientific-discovery/README.md; source-sha256: cab287863ed158c687014f41c366df2c48ca3102b62bee19f1d47605e754ec3c; reason: path-local authority or entrypoint -->
+
 # scientific-discovery — Breed Chain Case Study
 
 ## Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TEST_READY.md; source-sha256: 56c6b4ef590bd4df8806698047e338af3f0bbdfb0c8b53bf86e5f2235b93dcfb; reason: tooling or agent control surface -->
+
 # TEST_READY.md — E2E Test Suite Readiness
 
 This document verifies the readiness and current status of the opaque-box E2E test suite for the `wasm4pm` process-law oracle.

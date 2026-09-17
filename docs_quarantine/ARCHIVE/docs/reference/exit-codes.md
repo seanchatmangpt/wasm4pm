@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/exit-codes.md; source-sha256: a38b125ad31147129f9b0e6dab2d30238dff2623ff4a60b566a69ba92c385841; reason: tooling or agent control surface -->
+
 # Reference: Exit Codes
 
 ## Summary

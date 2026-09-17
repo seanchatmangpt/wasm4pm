@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/script_sam.md; source-sha256: 07f61eb8d190dcd5cb95c71741c549174ed73e310e496aa4bc00ba15e6de5c12; reason: tooling or agent control surface -->
+
 # script_sam — SAM Script Application
 
 ## 1. Identity & Lineage

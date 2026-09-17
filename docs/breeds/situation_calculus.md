@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/situation_calculus.md; source-sha256: 6a8307db0adf64598281414757c86114c083961c6fd6d41e5be47f85e6c306bd; reason: tooling or agent control surface -->
+
 # Situation Calculus
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/benchmarks/PERFORMANCE_REPORT_2026.md; source-sha256: 18fb264d04bbd6d4e1db0e1da5a3bbed573ba84fec4a31fccbe40edf0fcaa2f1; reason: tooling or agent control surface -->
+
 # wasm4pm Performance Report (May 2026)
 
 ## Executive Summary

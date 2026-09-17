@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/cognition/README.md; source-sha256: 874ceba4e1285f6640c25af7633d979c06d5704e05175003201522f1e48dc4f0; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/cognition
 
 Old-AI cognition kernel for AutoSystems: frames, rules, constraints, search, scoring, verify, receipt, contract

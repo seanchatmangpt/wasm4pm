@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/contracts/RECEIPT.md; source-sha256: ed8813b8439f7b564680b7996949172759d4b7b25a8fb8905193a017f6bbdf63; reason: tooling or agent control surface -->
+
 # Receipt System - BLAKE3 Cryptographic Verification
 
 ## Overview

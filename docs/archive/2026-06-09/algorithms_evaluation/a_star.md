@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/a_star.md; source-sha256: cc226eab35c2268b6aebac0ecc0ff733256dc711a29bfc6f70a19dad3d9a0d9e; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: A* Search
 
 ## Metadata

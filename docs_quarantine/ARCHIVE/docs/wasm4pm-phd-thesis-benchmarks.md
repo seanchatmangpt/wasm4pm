@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/wasm4pm-phd-thesis-benchmarks.md; source-sha256: 1689194f66954788012aee9457b2bbb77914f46afa612ac16ce2c14996c340fd; reason: tooling or agent control surface -->
+
 # Towards Operational Truth: What WebAssembly Process Mining Benchmarks Actually Prove
 
 ## A Doctoral Thesis on the Empirical Foundations of In-Browser Process Intelligence

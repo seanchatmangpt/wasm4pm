@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/kernels/rbf.md; source-sha256: 1dc65d921ca6cf7508fb4a7539df9b8d31d99528c6bcd64636d0e2d4ad89dc8e; reason: tooling or agent control surface -->
+
 # RBF Kernel
 
 Compute the Radial Basis Function (Gaussian) kernel between data points.

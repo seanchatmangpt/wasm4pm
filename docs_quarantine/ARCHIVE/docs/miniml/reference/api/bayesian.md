@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/bayesian.md; source-sha256: b29bac906e0514497b9ab966c55232380d9224a120916d2df6dda0db937890fc; reason: tooling or agent control surface -->
+
 # Bayesian API
 
 Bayesian estimation and Bayesian linear regression. Call `await init()` before use.

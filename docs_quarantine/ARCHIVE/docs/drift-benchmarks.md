@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/drift-benchmarks.md; source-sha256: e6561e638a928d2c411193beec2df8eb397da25fc5043898c718d033455ceffd; reason: tooling or agent control surface -->
+
 # Drift Detection Benchmarking Report
 
 **Date:** 2026-05-05  

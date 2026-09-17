@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/COMMERCIAL_LICENSE.md; source-sha256: 707c95e0ff1e230d535fb558501b978bfb51f256d85c1234bf59867660d8f408; reason: tooling or agent control surface -->
+
 # Commercial License — wasm4pm
 
 wasm4pm is available under a dual-license model:

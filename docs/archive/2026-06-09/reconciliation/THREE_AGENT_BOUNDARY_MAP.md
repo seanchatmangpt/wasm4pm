@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reconciliation/THREE_AGENT_BOUNDARY_MAP.md; source-sha256: dad3b2282bda8d1a93b935d3e71b368c24f3aec40e811bac36a00ee6f1ed13c7; reason: tooling or agent control surface -->
+
 # THREE-AGENT BOUNDARY MAP — Agent 1 (Boundary / Ownership / Fence Auditor)
 
 **Generated:** 2026-05-30 ~13:47 local | **Branch:** `finish-wip-primitives`

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/README-TRIAGE-FRAMEWORK.md; source-sha256: ecabde08ef2fa92336b738db3afed694a23917f9923c9122094daba940bd3068; reason: tooling or agent control surface -->
+
 # Test Failure Triage Framework - Complete Guide
 
 **Last Updated:** 2026-05-30  

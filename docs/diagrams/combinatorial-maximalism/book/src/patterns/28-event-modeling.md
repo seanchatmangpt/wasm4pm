@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/28-event-modeling.md; source-sha256: 4aba5fbc94043676aaa54502d3d9335607c4d5cad256340f8c983fd74b584e5c; reason: tooling or agent control surface -->
+
 # Event Modeling: Event-Command-Read-Model Chronology
 
 **Pattern ID:** `28-event-modeling`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/ZERO-TO-HERO.md; source-sha256: 8a84007233f42be44e8652b007a634bf6ea8eee0a1e1b2907bb6c7d9314eeb98; reason: tooling or agent control surface -->
+
 # Zero to Hero — wasm4pm Learning Path
 
 A progressive guide from first install to production deployment. Every step links to the relevant Diataxis document so you always know where to go next.

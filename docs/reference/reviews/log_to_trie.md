@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/log_to_trie.md; source-sha256: 7875b143ff816756ca8294f27be82a9fcac986bedbbfea8e840b5cc4e7d50a2c; reason: tooling or agent control surface -->
+
 # Algorithm Review: log_to_trie
 
 ## Algorithm ID & Domain

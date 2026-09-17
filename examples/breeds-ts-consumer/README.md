@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/breeds-ts-consumer/README.md; source-sha256: 95a2f0f1e95a84743260c76d2958017b50364d506caa88edf5a682b475f820db; reason: path-local authority or entrypoint -->
+
 # breeds-ts-consumer — working example
 
 A runnable TypeScript app that consumes the **`wasm4pm-breeds-ts`** ggen pack: it

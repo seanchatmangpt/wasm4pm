@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/service-mode.md; source-sha256: 765e76eca8cc1f98426136c56233545afb965b3aedfc2d1048bfdd66d5814e09; reason: tooling or agent control surface -->
+
 # Tutorial: Running wasm4pm as a Service
 
 **Time to complete**: 15 minutes  

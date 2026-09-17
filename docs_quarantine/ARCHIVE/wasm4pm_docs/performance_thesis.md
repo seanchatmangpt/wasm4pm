@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/performance_thesis.md; source-sha256: 8c459b0262a7373b99795f6d2da2313f16c2ae0fad5ced6387ddc3d437b2a23e; reason: tooling or agent control surface -->
+
 # wasm4pm Performance Characteristics: Enabling Process Mining Across the Edge-to-Cloud Continuum
 
 **Author:** b5-profiles Benchmark Agent

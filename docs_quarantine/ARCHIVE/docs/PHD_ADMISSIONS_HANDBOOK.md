@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PHD_ADMISSIONS_HANDBOOK.md; source-sha256: 87df4389a91bac202f56e3ae947ea179268f9ef815e1a716c0855f11d84428af; reason: tooling or agent control surface -->
+
 # Admissions & Faculty Handbook
 
 ## 1. Program Mission

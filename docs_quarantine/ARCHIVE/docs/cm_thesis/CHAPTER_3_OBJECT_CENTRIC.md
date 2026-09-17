@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cm_thesis/CHAPTER_3_OBJECT_CENTRIC.md; source-sha256: 17e22f7a9158327b8968405ca718533dc4f1ae9d0068817d91a331e98e56d2bc; reason: tooling or agent control surface -->
+
 # Chapter 3: Object-Centric Cross-Products
 
 ## 3.1 Introduction

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/benchmark_audit.md; source-sha256: 6dec9d162063946553a30012fce7eb767808a51eed6cf407e916de3d17fbc29d; reason: tooling or agent control surface -->
+
 # wasm4pm Benchmark Audit — v26.5.29
 
 **Date:** 2026-05-19 | **Branch:** `feat/iter16-miniml-prolog8`

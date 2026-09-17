@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/benchmarks/QUICKSTART.md; source-sha256: 70a7367f63d0d6efa76893bdff0df49f4f6311a74f1d2e0e07931194f1a4cbcd; reason: tooling or agent control surface -->
+
 # Benchmark Commands Quick Reference
 
 ## Browser Benchmarks

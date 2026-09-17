@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/orientation/07-evidence-and-proof.md; source-sha256: 52698c10d415bb0d5f5bbe6252b8feb01ce642519f3926138867b4ae67cde2b7; reason: tooling or agent control surface -->
+
 # Phase 7: Evidence and Proof
 
 The `wasm4pm` architecture is rigidly bound to the **Combinatorial Maximalism** proof discipline. It is built under the thesis that *enumeration is not execution, and summary is not receipt.* 

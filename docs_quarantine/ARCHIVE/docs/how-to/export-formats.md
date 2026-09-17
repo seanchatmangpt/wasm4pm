@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/export-formats.md; source-sha256: fb91bd0da2d875b78c406c7de58b1914b20159e32f631a01bbf0106187923624; reason: tooling or agent control surface -->
+
 # How-To: Export Models in Different Formats
 
 **Time required**: 5 minutes  

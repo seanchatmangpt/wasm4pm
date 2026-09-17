@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/playground-web/PORTING.md; source-sha256: 593fe2bc8ed724a57eef16983d3f02f3ac05db4d998bd9233896d4d5cfebc45e; reason: tooling or agent control surface -->
+
 # wasm4pm Playground — Porting Guide
 *Companion to ROADMAP.md. Hands-on specs for each port.*
 

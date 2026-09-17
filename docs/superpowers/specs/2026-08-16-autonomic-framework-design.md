@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/superpowers/specs/2026-08-16-autonomic-framework-design.md; source-sha256: c52300ee8acd1271812317eac82b1116489a5260a14a0fa5c53727b1d5840856; reason: tooling or agent control surface -->
+
 # WASM4PM Autonomic Framework: MAPE-K + Viability Gate Design
 
 **Status:** Draft — pending user review

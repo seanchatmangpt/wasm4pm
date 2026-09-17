@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/CLI_UX_AUDIT_REPORT.md; source-sha256: 1ba4f136b24181bb9163cea839c442b92624b0a1adb251036c6eafdce5911dc2; reason: tooling or agent control surface -->
+
 # wasm4pm CLI UX Audit Report
 
 **Date:** 2026-05-18  

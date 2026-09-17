@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/INDEX.md; source-sha256: 942738e697665d976d7e97daf2386d13de8490df4751ca6c79ebf1c2ceb5efa5; reason: tooling or agent control surface -->
+
 # GitHub Actions Implementation - Quick Navigation
 
 Complete GitHub Actions CI/CD pipeline for wasm4pm v26.4.5

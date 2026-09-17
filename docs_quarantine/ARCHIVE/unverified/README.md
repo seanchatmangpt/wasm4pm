@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/unverified/README.md; source-sha256: 8a30503613de06c6c055dbfaf2c98b28880a57389f595162ea607b657786fd59; reason: path-local authority or entrypoint -->
+
 # Unverified / Stale Documentation Archive
 
 Documents moved here document CLI commands, flags, or schemas that **do not exist** in the current `wpm` binary, or contain exit-code / receipt shapes that were never bound to runtime evidence.

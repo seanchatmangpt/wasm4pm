@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/34-treeview.md; source-sha256: cb2f44970417ce645cfea04e28fa0ae89e8898d356620dff49001fad131380e8; reason: tooling or agent control surface -->
+
 # TreeView: Repository And Taxonomy Navigation
 
 **Pattern ID:** `34-treeview`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/automl_forecast.md; source-sha256: 448d1c92ead69f8b52ece138a1d76e3376c491341f917c023c55e0587833100f; reason: tooling or agent control surface -->
+
 # Algorithm Review: automl_forecast
 
 ## Algorithm ID & Domain

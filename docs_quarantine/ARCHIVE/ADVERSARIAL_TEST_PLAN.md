@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/ADVERSARIAL_TEST_PLAN.md; source-sha256: d9281104585ef6a442b07540dedc46f474c082eeac229e9b9c2576ef80dd2ed8; reason: tooling or agent control surface -->
+
 <!-- markdownlint-disable MD060 -->
 # Adversarial Test Plan — wasm4pm Autonomic Process Control
 

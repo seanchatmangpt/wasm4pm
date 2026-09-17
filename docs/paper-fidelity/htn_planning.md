@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/paper-fidelity/htn_planning.md; source-sha256: 1671d226da7cda88df921bd3f7c2843a141afadf9f37f820ec7714c0152e7002; reason: tooling or agent control surface -->
+
 # HtnPlanning -- Paper Fidelity
 
 <!--

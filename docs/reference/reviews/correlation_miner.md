@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/correlation_miner.md; source-sha256: 489152f99b48dbbef972549e04bf52838c5200831e85ae66b20e123cf3ee7d48; reason: tooling or agent control surface -->
+
 # Algorithm Review: correlation_miner
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/concept-drift-detection.md; source-sha256: c53bbf99f08e9d44c49b0dbe2f6948c67206d113ade7ed795511c27bcb09c96d; reason: tooling or agent control surface -->
+
 # Explanation: Concept Drift Detection
 
 **Time to read**: 15 minutes

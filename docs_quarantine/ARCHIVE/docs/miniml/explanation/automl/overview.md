@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/automl/overview.md; source-sha256: daa265cd48f541123e94f2984cc187222412ae5d1984ccee0a0e92c1b00af7c5; reason: tooling or agent control surface -->
+
 # What is AutoML?
 
 AutoML (Automated Machine Learning) removes the need for manual trial-and-error in building ML pipelines. Instead of hand-picking algorithms, features, and hyperparameters, AutoML searches the space of possible configurations and finds combinations that perform well on your data.

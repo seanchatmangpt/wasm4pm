@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/crates/wasm4pm-testing/README.md; source-sha256: f7a8f6a25f27966279c906a6e0db6b30d41eda4b11550b1032f46c44a1f638e2; reason: path-local authority or entrypoint -->
+
 # wasm4pm-testing
 
 `wasm4pm-testing` is a non-production Rust testkit for the integration boundary:

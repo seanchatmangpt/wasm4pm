@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/GEMBA-CHECKLIST.md; source-sha256: b06e2250791aaf29e877933a3178985569be42a6e3716ca28999bc5d06eb59ab; reason: tooling or agent control surface -->
+
 # Gemba Enforcement Setup Checklist
 
 ## Implementation Status: ✅ COMPLETE

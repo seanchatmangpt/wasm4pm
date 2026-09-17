@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/15-PREDICTION-ML-LINEAGE.md; source-sha256: 4faaff7b2adf6685e548fc88cf33ae6b4dc87b11de2519383b94bbb0e8eca1da; reason: tooling or agent control surface -->
+
 # Prediction and ML Algorithms — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

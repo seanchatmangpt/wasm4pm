@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/CONFIG_AUDIT_FOOTGUNS.md; source-sha256: a8579d63fb6fac1431d653430b33a970f33920557ce2df7682dd23fb0e813875; reason: tooling or agent control surface -->
+
 # wasm4pm Config System Audit — Footguns & Validation Gaps
 
 **Date:** 2026-05-18  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/analyze_process_speedup.md; source-sha256: b2ab8e433ee84620821ab9c2d94b764bf15d3775b3c9e718916fe0299fc1d7e3; reason: tooling or agent control surface -->
+
 # Algorithm Review: analyze_process_speedup
 
 ## Algorithm ID & Domain

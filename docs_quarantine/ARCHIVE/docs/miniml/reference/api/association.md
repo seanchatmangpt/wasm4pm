@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/association.md; source-sha256: f2c80cd12dcd40165778875de6da6f29b4c2213aff346544ce88a8df85b5739b; reason: tooling or agent control surface -->
+
 # Association Rules API
 
 Market basket analysis via the Apriori algorithm for frequent itemset mining and association rule generation. Call `await init()` before use.

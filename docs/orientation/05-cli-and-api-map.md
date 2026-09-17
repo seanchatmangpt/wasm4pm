@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/orientation/05-cli-and-api-map.md; source-sha256: 6d5c922a0d794ae9a52b2191900b19423c1ab40d18997a9a0a63435a8830b3a6; reason: tooling or agent control surface -->
+
 # Phase 5: CLI and API Map
 
 The `wasm4pm` application exposes its functionality primarily through the `wpm` CLI, which under the hood maps 1:1 with the `packages/kernel` SDK API.

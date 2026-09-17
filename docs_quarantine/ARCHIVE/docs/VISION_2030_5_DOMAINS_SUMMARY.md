@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/VISION_2030_5_DOMAINS_SUMMARY.md; source-sha256: 894eea3583a7e2cbdbef974888c408b556cc9c9e98d672dc43578ee2fa0c8143; reason: tooling or agent control surface -->
+
 # Vision 2030: 5 Domains × Objectives/Changes/Verification Matrix
 
 **Quick Reference for Architects and Developers**

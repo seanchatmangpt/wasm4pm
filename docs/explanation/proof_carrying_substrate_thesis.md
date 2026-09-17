@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/proof_carrying_substrate_thesis.md; source-sha256: 7ba47fb915b7c2f9d40834d2da55fce1116eabc07f48fa0e48d42089c74504b7; reason: tooling or agent control surface -->
+
 # The Proof-Carrying Substrate
 
 ## A transferable pattern for software that ships its own evidence — abstracted from wasm4pm, instantiated again in wasm4games

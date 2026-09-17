@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/analytics/drift-detection.md; source-sha256: 81443add2c7e31141d25e8c59dc226829e199d1ab08e311d2a4a1b9bac6f24e9; reason: tooling or agent control surface -->
+
 # Detect Concept Drift
 
 Monitor your data for changes in distribution that indicate model degradation.

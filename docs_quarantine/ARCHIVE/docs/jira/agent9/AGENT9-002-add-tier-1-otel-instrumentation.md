@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent9/AGENT9-002-add-tier-1-otel-instrumentation.md; source-sha256: 4938de867113aac5979937c6b66d30bbaf699f3eb47f95fec2b7a19cffaefa05; reason: tooling or agent control surface -->
+
 # AGENT9-002: Add Tier 1 OTEL Instrumentation
 
 **Status:** 🟡 READY  

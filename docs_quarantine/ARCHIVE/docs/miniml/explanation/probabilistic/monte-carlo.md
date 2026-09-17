@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/probabilistic/monte-carlo.md; source-sha256: 75a765b6a82306fc8e4362a49979fc956d741eaa4233ba4342b9ffdb5d0ff6c7; reason: tooling or agent control surface -->
+
 # Monte Carlo Methods
 
 Monte Carlo methods use random sampling to approximate quantities that are deterministic but difficult to compute directly. The name comes from the Monte Carlo Casino in Monaco, reflecting the role of randomness. These methods are foundational to modern statistics, machine learning, and scientific computing.

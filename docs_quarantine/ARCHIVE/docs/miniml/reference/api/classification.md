@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/classification.md; source-sha256: 0bf293d7aa62a9f8f08cb5f37a86e66a309dfba547169bb96d4ee24c05d19717; reason: tooling or agent control surface -->
+
 # Classification API
 
 Complete reference for all classification algorithms exported by `miniml`. All classifiers accept a flat `Float64Array` in row-major order (`nSamples * nFeatures` values) and return a model object with a `predict` method.

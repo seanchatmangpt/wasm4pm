@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/tutorials/01-first-model.md; source-sha256: d33072e2831667ddc7f17349eafde600546e906366e8760baf2c19d45132e039; reason: tooling or agent control surface -->
+
 # Your First ML Model
 
 Train a classifier in 5 minutes with miniml. No Python, no servers, no setup beyond `npm install`.

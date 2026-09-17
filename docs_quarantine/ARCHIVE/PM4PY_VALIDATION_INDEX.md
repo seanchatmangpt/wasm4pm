@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/PM4PY_VALIDATION_INDEX.md; source-sha256: 95e13b4c3df7519eec1ecc26a8ff33ff1f11d63c17fa4c30a0f1aca6c5d95cc2; reason: tooling or agent control surface -->
+
 # wasm4pm vs pm4py Algorithm Validation - Master Index
 
 **Complete validation framework for all 36+ algorithms**

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/sequence-sandbox-execution.md; source-sha256: 6ac52fafd051fea0e6645d3e4a5471ca27737363a3c6c231cbeac0b055ef9a79; reason: tooling or agent control surface -->
+
 # Sequence: sandbox execution and capability catalog
 
 **Re-verified:** 2026-07-24.

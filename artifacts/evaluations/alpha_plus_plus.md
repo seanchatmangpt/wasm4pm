@@ -1,37 +1,13 @@
-# Algorithm Evaluation: alpha_plus_plus
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/alpha_plus_plus.md; source-sha256: 5fb2b6d479b73c93222820704960735ba887ffe563a6a5ba7ac3cab1a579f2a2; reason: historical, generated, status, or evidence narrative -->
 
-## Metadata
-- **Algorithm ID:** `alpha_plus_plus`
-- **Category:** `discovery`
-- **Supported Profiles:** `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Status
-- **Registry:** ✓ Present
-- **Dispatch:** ✓ Present
-- **CLI:** ✓ Present
-- **WASM:** ✓ Present
+This document is retained as historical evidence and is not current product truth.
 
-## Behavior Evidence
-- **Positive Cases:** 1/1 Passed
-- **Negative Cases:** 2/2 Failed Correctly
-- **Invariant Cases:** 1/1 Passed
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/alpha_plus_plus.md`](../../docs/archive/2026-08-02/artifacts/evaluations/alpha_plus_plus.md)
+- Original path: `artifacts/evaluations/alpha_plus_plus.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `5fb2b6d479b73c93222820704960735ba887ffe563a6a5ba7ac3cab1a579f2a2`
 
-### Test Details
-- **Positive:** `alpha_plus_plus.valid_minimal_log` (Passed)
-- **Negative:** `MALFORMED_EVENT_LOG`, `EMPTY_EVENT_LOG` (Failed Correctly)
-- **Invariant:** `DeterministicSameInputCase` (Passed)
-
-## Evidence Hash
-`71997777fabf84132ed1307bd74189cae03a53abdbab77ed7698ec272da32c2e`
-
-## Verification State
-**Closed**
-
-## Summary of Algorithmic Role
-The `alpha_plus_plus` algorithm is an advanced process discovery technique that extends the classic Alpha miner. It is designed to discover Petri Net models from event logs while overcoming limitations of the original Alpha algorithm, such as the inability to detect short loops and complex non-local dependencies. It is frequently used for rapid, high-quality Petri Net synthesis.
-
-## Implementation Validation & Details
-- **Source File:** `wasm4pm/src/algorithms.rs`
-- **Core Logic:** Implemented as `alpha_plus_plus_inner` and exposed to WASM via `discover_alpha_plus_plus`. Synthesizes a Petri Net from an event log using frequency heuristics and footprint matrix relations.
-- **Data Structures:** Constructs and returns a structured `PetriNet` consisting of places, transitions, and arcs. It interacts with the log by extracting all activities and directly-follows relationships.
-- **Constraints/Parameters:** Incorporates a `min_support` threshold to filter out low-frequency noise before footprint matrix generation.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

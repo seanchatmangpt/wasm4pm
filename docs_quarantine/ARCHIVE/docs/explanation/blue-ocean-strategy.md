@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/blue-ocean-strategy.md; source-sha256: b1d237e8bc9ba1cb8d27cc45b7c96a00f554035f869302c2678a672afaedcdc2; reason: tooling or agent control surface -->
+
 # The Mathematical Correctness Moat: Why wasm4pm is Blue Ocean
 
 ## A Porter's Five Forces Analysis of Process Mining in the Age of Agent Frameworks

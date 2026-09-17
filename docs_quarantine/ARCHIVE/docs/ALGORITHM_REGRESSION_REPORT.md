@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/ALGORITHM_REGRESSION_REPORT.md; source-sha256: 7885b993c4ec76c6ca79aec0b34a0499ec741a5fa1a721e5f09850801250e654; reason: tooling or agent control surface -->
+
 # Algorithm Regression Test Report
 
 **Date:** 2026-05-07

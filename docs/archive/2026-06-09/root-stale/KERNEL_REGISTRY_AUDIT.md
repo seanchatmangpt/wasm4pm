@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/KERNEL_REGISTRY_AUDIT.md; source-sha256: b32b0c2fc7183ea6984806b4c3e922706a4c36e3cd1034fb86b99676f14dd984; reason: tooling or agent control surface -->
+
 # wasm4pm Kernel Registry Audit Report
 
 **Date:** 2026-05-18  

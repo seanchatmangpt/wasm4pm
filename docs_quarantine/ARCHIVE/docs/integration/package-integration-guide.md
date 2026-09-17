@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/integration/package-integration-guide.md; source-sha256: bb95822fde6cfe7f87bc75d09a48a6e94a8d1f6fa9b50fe6bfdc75362cdfc5c4; reason: tooling or agent control surface -->
+
 # Package Integration Guide
 
 **Last Updated:** April 2026  

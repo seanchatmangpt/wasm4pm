@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/compute_ewma.md; source-sha256: 6e425e941adc6902d621af5565d4070efc45544280b10af3ff05c3b6f2d0b40d; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: EWMA Smoothing
 
 ## Metadata

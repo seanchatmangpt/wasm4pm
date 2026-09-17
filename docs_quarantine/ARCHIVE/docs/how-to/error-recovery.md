@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/error-recovery.md; source-sha256: 2d37a4dac92df056a465aba52761a96632ed76d10d8390b9289ca4bddec00a5a; reason: tooling or agent control surface -->
+
 # How-To: Error Recovery
 
 **Time required**: 15 minutes  

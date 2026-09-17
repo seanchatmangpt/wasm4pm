@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/receipts.md; source-sha256: 061880cc8c76e18dcad93b5620c7a30f70454cefd77b1a6afd9c6e920b2a9bfb; reason: tooling or agent control surface -->
+
 # Explanation: Receipts and Cryptographic Proof
 
 **Time to read**: 10 minutes  

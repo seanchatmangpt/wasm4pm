@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/AUTOML_AUDIT_2026-05-18.md; source-sha256: 331782e706d09276cc8d64d765c7282c4e908fe9f70287e85c129c4baf966ed0; reason: tooling or agent control surface -->
+
 # AutoML Feature Quality Audit Report
 
 **Date:** 2026-05-18  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cognition-error-catalog.md; source-sha256: b310ff9d3b4192a6a65ccef4c45b959564701e4c398e3c165bbcc42e45e20543; reason: tooling or agent control surface -->
+
 # Cognition Error Catalog
 
 Every error has: code, severity, cause, remediation, verification.

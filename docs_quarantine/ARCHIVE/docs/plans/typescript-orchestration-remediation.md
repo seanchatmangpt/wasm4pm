@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/plans/typescript-orchestration-remediation.md; source-sha256: 51bbb74b63965a66215017683b73aac0efc7b45660ebbf0fb94106d082ce060a; reason: tooling or agent control surface -->
+
 # TypeScript Orchestration Gap Remediation Plan
 
 **Branch:** `refactor/performance-optimizations`  

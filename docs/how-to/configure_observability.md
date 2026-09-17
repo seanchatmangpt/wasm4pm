@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/how-to/configure_observability.md; source-sha256: abc5d7cfdfd6ccf54c8864053762fecbfec0cc958e774d78bbd37a7477f3150a; reason: tooling or agent control surface -->
+
 # How-To: Configure OTEL Observability
 
 ## Goal

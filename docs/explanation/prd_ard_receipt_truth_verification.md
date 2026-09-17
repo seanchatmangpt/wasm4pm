@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/prd_ard_receipt_truth_verification.md; source-sha256: a17124ca203944b53582d021cbb3dd8769d0674fdd4c085a63113a886c6c2144; reason: tooling or agent control surface -->
+
 # PRD & ARD: Cryptographic Receipt Truth Verification & Adversarial Ingress Gates
 
 This document establishes the Product Requirements Document (PRD) and Architecture Requirements Document (ARD) for the Receipt Truth Verification system in `wasm4pm`. It specifies the cryptographic, mathematical, and procedural boundaries that prevent synthetic or post-facto mutated receipts from being admitted into the execution history.

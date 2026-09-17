@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/thesis/oldia/README.md; source-sha256: 09baacb65ca176650f3c339ab7ec57c8b9ff5bc8f4283a861414837a6d059926; reason: path-local authority or entrypoint -->
+
 # OLDIA Thesis — arXiv Submission Notes
 
 **OLDIA: Operational Lifecycle Determinism in Intelligent Architectures**

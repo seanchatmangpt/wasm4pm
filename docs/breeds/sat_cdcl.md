@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/sat_cdcl.md; source-sha256: 15f966aa5eb0a2cda05db70eb832b329fdacce99c1253a62478f11465373d49d; reason: tooling or agent control surface -->
+
 # SAT (CDCL)
 
 ## Origin

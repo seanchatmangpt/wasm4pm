@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/ml-benchmarks.md; source-sha256: 3620929822e2c80fa682d3bfd2b42fb1e295488cb7be7205f1850c84443c44c1; reason: tooling or agent control surface -->
+
 # wasm4pm ML Algorithm Benchmarks
 
 **Comprehensive performance analysis of all 6 ML algorithms.**

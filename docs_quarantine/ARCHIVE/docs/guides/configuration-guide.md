@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/guides/configuration-guide.md; source-sha256: b79dc14f35564d889d5566540f312e91507a8fa1668bd0e5735dfa8f73b26023; reason: tooling or agent control surface -->
+
 # Configuration Guide
 
 Complete reference for all wasm4pm configuration options.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/post-cyberpunk-agi-theory.md; source-sha256: c74a20bbe5df0c388a6414c24ca4b543ccedce3eb25b5dd89eeacfd9a4045181; reason: tooling or agent control surface -->
+
 # Post-Cyberpunk AGI: The Closed Claw Paradigm
 
 **Sean Chatman**

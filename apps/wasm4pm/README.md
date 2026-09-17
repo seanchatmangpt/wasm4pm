@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/wasm4pm/README.md; source-sha256: 0ba432d2102a77cb4a8bc3940aeac01d8e69bbb7f33f6e39ba6f639cc20e2cd4; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/cli - Professional CLI Tool
 
 **Professional command-line interface for process mining discovery, analysis, and automation.**

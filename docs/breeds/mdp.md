@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/mdp.md; source-sha256: dcb0a1650b6004a42ab3e04f0615e746f7dd7f802d1d372f38e4038c6d2f450b; reason: tooling or agent control surface -->
+
 # mdp — MDP Value Iteration
 
 ## 1. Identity & Lineage

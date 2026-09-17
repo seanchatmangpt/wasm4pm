@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/internal/receipts/WASM4PM_PRIMITIVE_KERNEL_RECEIPT.md; source-sha256: 2ce451bf598ac66cd43a4a44e9109b038a96d6a826bbedebdcbfcbbe796ceccb; reason: tooling or agent control surface -->
+
 # WASM4PM Primitive Kernel — Synthesis Receipt
 
 **Receipt ID:** `WASM4PM-KERNEL-001`

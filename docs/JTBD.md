@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/JTBD.md; source-sha256: b78273ceb1075741a24be552ad452220f48a8297b9c6e3f73e473dba58eeab95; reason: tooling or agent control surface -->
+
 # Truex: Jobs-To-Be-Done (JTBD)
 
 Truex serves as the cryptographic trust layer for Object-Centric Process Science. It is hired by specific personas to solve exact systemic friction points in process evidence generation, verification, and ingestion.

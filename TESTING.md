@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: TESTING.md; source-sha256: 03a668d5f62d8c018ff78025862c779bdef9f4e989e6fd86d1888ca48214e9d6; reason: canonical validation and evidence discipline -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/TESTING.md; source-sha256: 03a668d5f62d8c018ff78025862c779bdef9f4e989e6fd86d1888ca48214e9d6; reason: tooling or agent control surface -->
 
 # Testing and evidence
 

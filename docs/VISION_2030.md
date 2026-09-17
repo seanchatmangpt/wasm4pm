@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/VISION_2030.md; source-sha256: 0152289c79ef50eb554fcb9f0c345c56a785e24d63935314bfd1235788e3c4c6; reason: canonical Vision 2030 capability contract -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/VISION_2030.md; source-sha256: 96732d26958b51b6f8969bfd5e87d5729c3800039401f30850168ac0302e9387; reason: tooling or agent control surface -->
 
 # Vision 2030 capability contract
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/03-sequence.md; source-sha256: ebd6967877ff993f74de75ee422f4e0de4c35be105d89541c8ef6035ba90d3dd; reason: tooling or agent control surface -->
+
 # Sequence Diagram: Temporal Contract
 
 **Pattern ID:** `03-sequence`  

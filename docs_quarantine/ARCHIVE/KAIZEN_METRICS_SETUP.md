@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/KAIZEN_METRICS_SETUP.md; source-sha256: b9da1c2b6267f77e10a1e5f3fef42c9a9baa0a7ec12693af47fcafbe9c37522b; reason: tooling or agent control surface -->
+
 # wasm4pm Kaizen Metrics Tracking — Complete Setup & Operations Guide
 
 **Version:** 1.0  

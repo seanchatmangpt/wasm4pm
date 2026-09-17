@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/25-kanban.md; source-sha256: 9245d1acf6b7e2ce087e38f8b4a39758a4f3699a6799764c33caef3e47f143b9; reason: tooling or agent control surface -->
+
 # Kanban: Standing-Aware Work State
 
 **Pattern ID:** `25-kanban`  

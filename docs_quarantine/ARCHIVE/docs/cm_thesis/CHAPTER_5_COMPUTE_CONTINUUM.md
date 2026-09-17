@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cm_thesis/CHAPTER_5_COMPUTE_CONTINUUM.md; source-sha256: 5cd02e613373c01b8ce31a31158146ab90485fdb09e78208a5bd02e904c359cd; reason: tooling or agent control surface -->
+
 # Chapter 5: The Compute Continuum Matrix
 
 ## 5.1 Introduction

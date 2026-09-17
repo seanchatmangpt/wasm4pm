@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/commands.md; source-sha256: f02649d4b7ab6e83945d69eddcfd78b7f25503c696d6ea0550d64f1cae347748; reason: tooling or agent control surface -->
+
 # Benchmark Commands Reference
 
 ## CLI Commands

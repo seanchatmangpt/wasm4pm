@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/E2E_TEST_HARNESS_GUIDE.md; source-sha256: 48de5ff88caaab15952943be355b6cf598ff21ae665a108abeea72829e14baba; reason: tooling or agent control surface -->
+
 # End-to-End Test Harness Implementation Guide
 
 **Version:** v26.4.17  

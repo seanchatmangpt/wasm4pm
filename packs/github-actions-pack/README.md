@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/github-actions-pack/README.md; source-sha256: 1b875f6fbc78f9348c43902388c2eff2788f840ba27497e2e818d62585eb9bb8; reason: path-local authority or entrypoint -->
+
 # github-actions-pack
 
 TCPS production-process pack for GitHub Actions. First-class pack, prefix

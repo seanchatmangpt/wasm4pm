@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/MCP.md; source-sha256: 2caf3842c158b0b1f29a93b923394864a07434b0e098b2ca17a27e9a661d5230; reason: tooling or agent control surface -->
+
 # Model Context Protocol (MCP) Integration for wasm4pm
 
 Exposes wasm4pm as an MCP server, enabling Claude and other MCP clients to use process mining capabilities.

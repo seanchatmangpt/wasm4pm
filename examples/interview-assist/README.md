@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/interview-assist/README.md; source-sha256: f3da947ad35410725acf040715c590324e56864707a11a2e1f783afa84975915; reason: path-local authority or entrypoint -->
+
 # Interview Answer Assistant
 
 A Next.js lower-screen application for the deterministic `cognition_session_turn`, `cognition_session_verify`, and `cognition_session_code` kernels.

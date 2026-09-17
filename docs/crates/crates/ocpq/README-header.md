@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/ocpq/README-header.md; source-sha256: f39f37df619195d174fff8c61e5092531b0eacf00213a25dbfebea1571d1ce7b; reason: tooling or agent control surface -->
+
 
 # ocpq
 

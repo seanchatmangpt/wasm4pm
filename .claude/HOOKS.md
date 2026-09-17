@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/HOOKS.md; source-sha256: 5eecaffed53e565693562c7954fda17035ce9b8b8a1a07400a30d2a7438d6ab5; reason: tooling or agent control surface -->
+
 # wasm4pm Claude Code Hooks
 
 ## Resilience Configuration: Three-Layer Failure Prevention

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/sbom/SBOM_SUMMARY.md; source-sha256: f0465f881346065936c0838dbe248043a0038db188e21c9b5c9861f4b2e9c363; reason: tooling or agent control surface -->
+
 # Software Bill of Materials (SBOM)
 
 **Version:** 26.5.19

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ocel_oc_declare.md; source-sha256: b46169d7f1222c3e2e5c6d435bb3c04fae85854138cbfaee3e1a6bd3ff88fb8d; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: OC-Declare
 
 ## Metadata

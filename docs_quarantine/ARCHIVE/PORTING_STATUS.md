@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/PORTING_STATUS.md; source-sha256: 4eb6098aeb8e70201b6c7c6b49bd2aab4cf1a43a2c62466cb2cf2c6ff65f65d3; reason: tooling or agent control surface -->
+
 # wasm4pm Crates Porting Status
 
 **Status:** Phase 1 Complete  

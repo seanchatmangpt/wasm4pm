@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/guides/rl-quickstart.md; source-sha256: 4980ac658153c8e6257edcc8b5b807535cbc205b4accb745eea7256d236c3e57; reason: tooling or agent control surface -->
+
 # RL System Quickstart
 
 Get started with autonomous process health management in 5 steps.

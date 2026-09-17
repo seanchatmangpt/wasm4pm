@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/prolog.md; source-sha256: 192c25f1a0ef85eac586abbeff172372ab1f1e9f83e4eb3b9246231ba6fbe45f; reason: tooling or agent control surface -->
+
 # Prolog
 
 ## Origin

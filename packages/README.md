@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/README.md; source-sha256: 2d0dd59c33aa4ff971b8dbc377e035959d76991008f381247ff7533460a04648; reason: path-local authority or entrypoint -->
+
 # wasm4pm TypeScript Packages
 
 9 packages forming the TypeScript orchestration layer around the Rust/WASM core.

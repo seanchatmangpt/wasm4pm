@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/benchmarks/process-science.md; source-sha256: 358842fd4eb23a436e956b4b849f8fec90346085c7e2b9d662e11b5649ae5220; reason: tooling or agent control surface -->
+
 # Process Science Benchmark
 
 ## Thesis under test

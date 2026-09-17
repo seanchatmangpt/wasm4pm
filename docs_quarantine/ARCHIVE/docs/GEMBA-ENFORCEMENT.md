@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/GEMBA-ENFORCEMENT.md; source-sha256: 591553f71388686014df48cc7a876c8b26381e835b23fb29f6e51fef2bf25ed3; reason: tooling or agent control surface -->
+
 # Gemba Enforcement: Test Purity Standards
 
 **Document:** Gemba enforcement rules for wasm4pm

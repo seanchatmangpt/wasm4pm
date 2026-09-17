@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/oracle-specs/description_logic.md; source-sha256: aee8445f999833865c932645cdd33d721295500700451b55d6cb5e2dba780c0f; reason: tooling or agent control surface -->
+
 # description_logic — EL Completion-Rule Classification (Baader, Brandt & Lutz 2005)
 
 Source: `crates/wasm4pm-cognition/src/breeds/description_logic.rs`

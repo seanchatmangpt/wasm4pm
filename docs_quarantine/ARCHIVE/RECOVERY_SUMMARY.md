@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/RECOVERY_SUMMARY.md; source-sha256: 41e5a8687d10e3e6486c54707329531f9a3f5a953d83d933214351f012466646; reason: tooling or agent control surface -->
+
 # Worktree Recovery Summary — Level 10 Cognition Implementation
 
 **Date:** May 7, 2026  

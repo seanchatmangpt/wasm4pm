@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/simd_streaming_dfg.md; source-sha256: 2a080b8eeb3a063453a26b21315bfd4279f39fcfe185bbfe41ea17b8ffd775df; reason: tooling or agent control surface -->
+
 # Algorithm Review: simd_streaming_dfg
 
 ## Algorithm ID & Domain

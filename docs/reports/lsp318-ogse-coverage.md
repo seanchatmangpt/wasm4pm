@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reports/lsp318-ogse-coverage.md; source-sha256: 43f133ab87e908f072acccbe083184900b689ba9b010d363e950ecb8aca3c483; reason: tooling or agent control surface -->
+
 # LSP 3.18 x OGSE Coverage Report
 
 **Date:** 2026-06-12

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/automl_forecast.md; source-sha256: 19897d7b2df7716e29fe5c03f5b8b4a7623cfede6c5a5ec9a5b82ea95e9c71b0; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: AutoML Throughput Forecast
 
 ## Metadata

@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: WASM_API.md; source-sha256: 25e9edf8b1d5144f41f1a796ab3c0419f88bb2de982968fe8297fb77c715e0d7; reason: canonical WASM boundary reference -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/WASM_API.md; source-sha256: 25e9edf8b1d5144f41f1a796ab3c0419f88bb2de982968fe8297fb77c715e0d7; reason: tooling or agent control surface -->
 
 # WASM API boundary
 

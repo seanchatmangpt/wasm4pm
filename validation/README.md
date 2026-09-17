@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/validation/README.md; source-sha256: 417654441b2e72f6819a0bcce8d84cedd65f7a3b88951adcb8d4d77bef1b5120; reason: path-local authority or entrypoint -->
+
 # wasm4pm Algorithm Validation Framework
 
 **Comprehensive validation of all 36 wasm4pm algorithms against pm4py reference implementations.**

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/algorithms.md; source-sha256: e6eb2bb2b36d525295d3d7abe6c8aa957db144423bd2c5484eb1b2661c5d14ec; reason: tooling or agent control surface -->
+
 # Algorithm Registry
 
 <!-- Generated from wasm4pm pi ontology — regenerate with: ggen sync -->

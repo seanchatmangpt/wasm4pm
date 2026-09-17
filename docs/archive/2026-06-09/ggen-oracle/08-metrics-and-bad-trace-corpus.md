@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/ggen-oracle/08-metrics-and-bad-trace-corpus.md; source-sha256: 53565f77a5837a61951b8bcac2d0c7dbb43160fca335015f462c4666a14856a1; reason: tooling or agent control surface -->
+
 # 08 — Manufacturing Metrics + Canonical Bad-Trace Corpus
 
 **Status:** Spec. Buildable by the wasm4pm agent system. Spec-only — no Rust/Cargo.toml modified by this document.

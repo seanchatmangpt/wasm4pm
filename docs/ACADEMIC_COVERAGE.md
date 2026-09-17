@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/ACADEMIC_COVERAGE.md; source-sha256: 27a205c1f02bec962e0e3e66854701e3f8abc8f3e450bd0e97b47cd9147ba480; reason: tooling or agent control surface -->
+
 # ACADEMIC COVERAGE — wasm4pm
 
 > Academic coverage means the repo can answer:

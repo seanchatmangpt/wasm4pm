@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/predict_next_activity.md; source-sha256: f19a41cea3f628cfcfffc544918146795900bad7d53365694f847abb142bd1b5; reason: tooling or agent control surface -->
+
 # Algorithm Review: predict_next_activity
 
 ## Algorithm ID & Domain

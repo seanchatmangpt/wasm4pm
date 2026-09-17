@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/internal/audit-history.md; source-sha256: 275ef7e5190876dc3a110edb79aef35149176508fb229591ac89e66521a9e0c1; reason: tooling or agent control surface -->
+
 # Audit History (consolidated 2026-06-09)
 
 All point-in-time audit reports (`_iteration*`, `_cycle*`, `_SPAN_SCHEMA*`, OTEL gap reports, Jaeger patterns) were consolidated here and deleted. Full text in git history. Status below verified ON DISK 2026-06-09.

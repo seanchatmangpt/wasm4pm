@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/compute_ewma.md; source-sha256: aa991db9e31d772b70646abe07b16f359feb5ed066942e03dd173977566d4ce8; reason: tooling or agent control surface -->
+
 # Algorithm Review: compute_ewma
 
 ## Algorithm ID & Domain

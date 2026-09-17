@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/wasm4pm-breeds-rust/README.md; source-sha256: 02496f2f5e35d5d16afc33fa1818c7e8a6e15c141f18d613a0ef125419cd0d31; reason: path-local authority or entrypoint -->
+
 # wasm4pm-breeds-rust
 
 A self-contained [ggen](https://ggen.dev) pack that generates a **standalone Rust

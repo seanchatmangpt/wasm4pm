@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/predictive-mining.md; source-sha256: 4b8aed050be73813bcb891b05bac5cc6e76e369a434403f9ff208e4453dc3f3d; reason: tooling or agent control surface -->
+
 # How-To: Run Predictive Process Mining
 
 **Time required**: 10 minutes

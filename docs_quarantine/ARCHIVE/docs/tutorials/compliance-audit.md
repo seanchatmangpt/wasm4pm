@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/compliance-audit.md; source-sha256: 34f265eadba6362f4d1486f85e5743dad1e679db32864ad7f0fa157b88d2fbf3; reason: tooling or agent control surface -->
+
 # Tutorial: Compliance Audit Trail
 
 **Time to complete**: 20 minutes  

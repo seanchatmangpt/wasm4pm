@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/algorithms/clustering.md; source-sha256: 74e358180507891787cf7d6908d408b3f8c4f0752669d4d4b45675c9fd8fbbab; reason: tooling or agent control surface -->
+
 # Clustering Algorithms
 
 Clustering groups data points into clusters such that points within a cluster are more similar to each other than to points in other clusters. Unlike classification, clustering is unsupervised -- there are no predefined labels. miniml implements four clustering algorithms, each based on a different notion of what makes a "good" cluster.

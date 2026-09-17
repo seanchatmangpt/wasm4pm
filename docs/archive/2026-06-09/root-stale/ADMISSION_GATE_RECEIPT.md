@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/ADMISSION_GATE_RECEIPT.md; source-sha256: c6729c268f17b5a2a518b889808505856dfa71188f81637385793ddb3307df79; reason: tooling or agent control surface -->
+
 # ADMISSION GATE RECEIPT — MCPP Admission Gate Verification
 
 **Document Type:** Post-Fix Verification Receipt

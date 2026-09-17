@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/simulated_annealing.md; source-sha256: a29ee6ad568ff5d0d29f43df76b1dae3dea04d772b1648d5c96be58d98bd8497; reason: tooling or agent control surface -->
+
 # Algorithm Review: simulated_annealing
 
 ## Algorithm ID & Domain

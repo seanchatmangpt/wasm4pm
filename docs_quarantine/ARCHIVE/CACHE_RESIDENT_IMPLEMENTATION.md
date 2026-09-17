@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/CACHE_RESIDENT_IMPLEMENTATION.md; source-sha256: 436b74412e3660fc153af2a3abee4255a641ca89f7754d5c3e681830b7d12106; reason: tooling or agent control surface -->
+
 # Cache-Efficient Data Structures — Implementation Summary
 
 ## Task Completion

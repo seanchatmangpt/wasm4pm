@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/description_logic.md; source-sha256: ffcc606d46e40ad565a0aa126ed48c03e74039dc0360fa412210ff065cb80ee3; reason: tooling or agent control surface -->
+
 # Description Logic (DL)
 
 ## Origin

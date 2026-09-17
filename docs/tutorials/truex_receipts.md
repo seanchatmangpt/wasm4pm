@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/tutorials/truex_receipts.md; source-sha256: 66faa0a2dcc14ebc0b5772e70a32042d933a549f7e815cf8e055d2ca211b3d39; reason: tooling or agent control surface -->
+
 # Tutorial: Truex Receipt Verification
 
 Truex verifies object-centric OCEL 2.0 execution envelopes with deterministic canonicalization and BLAKE3 digests. This tutorial walks through admitted and refused receipts using the `wpm` CLI.

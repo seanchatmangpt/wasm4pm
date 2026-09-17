@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/breeds_typescript_thesis.md; source-sha256: 44da1d96719e4e7247e7495c57f54ed0bd5d1a4dbd3b46a268774292b3d4698f; reason: tooling or agent control surface -->
+
 # The Honest Function
 
 ## Cognition breeds through the TypeScript lens — what you import, and what stands behind it

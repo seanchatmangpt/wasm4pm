@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TRIAGE-GREP-PATTERNS.md; source-sha256: 30ac7d2ae9dcd960e79d7cb9c04e48bd22066dd8f277818ddde4d23793de42c0; reason: tooling or agent control surface -->
+
 # Track B-1: Rapid Triage Grep Patterns
 
 Quick reference for identifying failure categories without running tests.

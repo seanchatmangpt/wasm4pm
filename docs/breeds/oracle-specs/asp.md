@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/oracle-specs/asp.md; source-sha256: 2d4afb0167928ceab623739002dca1ef6f26bd89f8ca7f27a28109a33f55b612; reason: tooling or agent control surface -->
+
 # asp — Answer Set Programming, stable-model semantics (Gelfond & Lifschitz 1988)
 
 Source: `crates/wasm4pm-cognition/src/breeds/asp.rs`

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/INPUT_VALIDATION_AUDIT.md; source-sha256: cad11c088fae027d4c48c3c4cf5a3d2536e5e3f69e9373b1dba942659993223e; reason: tooling or agent control surface -->
+
 # wasm4pm CLI Input Validation Audit
 
 **Date:** 2026-05-18  

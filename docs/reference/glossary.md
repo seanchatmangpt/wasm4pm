@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/glossary.md; source-sha256: 1a0d8f2bc4886d9184bea699f64be0ac7735dad2732a96713cfe03b447e70e15; reason: tooling or agent control surface -->
+
 # Glossary
 
 Canonical terms for wasm4pm. When a term appears in code, CLI output, or receipts, use the definition here.

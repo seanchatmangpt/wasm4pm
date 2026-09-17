@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/08-gantt.md; source-sha256: c3c661937ed0132e8a970f143f6c637e92bffd11992a237aa5dfa5c6a6bc0f15; reason: tooling or agent control surface -->
+
 # Gantt Chart: Evidence-Gated Schedule
 
 **Pattern ID:** `08-gantt`  

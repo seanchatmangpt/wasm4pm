@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/problog.md; source-sha256: cf68de3172acf4f95237e3e573b00c326d0dddb8577cfc5ccdb0716d0800583e; reason: tooling or agent control surface -->
+
 # ProbLog
 
 ## Origin

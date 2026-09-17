@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ACADEMIC_INDEX.md; source-sha256: 896a33f75d4342f3173150e82ab567f5aa96eab034633d9986715a21dcd544b3; reason: tooling or agent control surface -->
+
 # Academic Index — Algorithm Evaluations
 
 This index adds academic provenance to the per-algorithm evaluation files in this directory.

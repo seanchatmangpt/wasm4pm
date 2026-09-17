@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/12-OBJECT-CENTRIC-LINEAGE.md; source-sha256: 72359de7485eb97a44b48bf2a7aad1072ed314bdcf762703ab11ce988b96b6bb; reason: tooling or agent control surface -->
+
 # Object-Centric Process Mining — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

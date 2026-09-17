@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/IMPLEMENTATION_SUMMARY.md; source-sha256: a56c8d6e721980922f12a5b784746c2cfefe4e6e2de73b2f9d4c7e3ba2f8a2dd; reason: tooling or agent control surface -->
+
 # GitHub Actions + Release Pipeline - Implementation Summary
 
 **Status:** ✅ Complete  

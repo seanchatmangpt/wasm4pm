@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-08-02/innovation-gap-falsifiers.md; reason: immutable falsifier set for the proof-carrying pipeline closure -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-08-02/innovation-gap-falsifiers.md; source-sha256: d815b205376585dd017866d7c4ddce45ce687e82aa7432bc07ca595d1a8f8c1d; reason: tooling or agent control surface -->
 
 # Proof-carrying pipeline falsifiers
 

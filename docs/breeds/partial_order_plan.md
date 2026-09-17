@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/partial_order_plan.md; source-sha256: 7fc5179e91ad3beea7e667aac698c33789a0b9a0dfc95fb1a51af219e0364578; reason: tooling or agent control surface -->
+
 # partial_order_plan — SNLP Partial-Order Planning
 
 ## 1. Identity & Lineage

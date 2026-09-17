@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/ENTERPRISE.md; source-sha256: 5108ec9b1568196bad8b206779054e6450064cc51cea4baa7fe81a145e9de369; reason: canonical enterprise deployment guidance -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/ENTERPRISE.md; source-sha256: 5108ec9b1568196bad8b206779054e6450064cc51cea4baa7fe81a145e9de369; reason: tooling or agent control surface -->
 
 # Enterprise deployment
 

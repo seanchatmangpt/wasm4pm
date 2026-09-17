@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/falsifiers.md; source-sha256: 3681be9fcc6510a27083d8deffaf52d8abb30674737f4801bb2a2c7c7b622324; reason: tooling or agent control surface -->
+
 # Falsifiers — Periodic Table of Reason
 
 These eight conditions are the self-falsifying core of the thesis. Each one, if it fires, obligates either a corrected implementation or a retracted claim. No third option exists.

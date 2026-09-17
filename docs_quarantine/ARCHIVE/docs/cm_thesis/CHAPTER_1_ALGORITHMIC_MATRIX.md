@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cm_thesis/CHAPTER_1_ALGORITHMIC_MATRIX.md; source-sha256: 8efd2db3cd68568523a31a700dcb9e3bad97886e1b669872f8bbf7f9116c81d3; reason: tooling or agent control surface -->
+
 # Chapter 1: The Algorithmic Permutation Matrix
 
 ## 1.1 Introduction

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/regression/regularization.md; source-sha256: 2d76f94c1a92ce01e438e27602ec84c0b8cc94b95a52d597223c8acb0233663b; reason: tooling or agent control surface -->
+
 # Regularization Techniques
 
 Prevent overfitting with Ridge and Lasso regression.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/validation.md; source-sha256: d4fd556b4111897b1ebbf707e1a0fa538a76b673d1e41f2ff66edca25a915071; reason: tooling or agent control surface -->
+
 # Validation and rendering
 
 This book separates four validation layers.

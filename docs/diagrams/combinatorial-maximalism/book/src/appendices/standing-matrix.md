@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/appendices/standing-matrix.md; source-sha256: 0fbd5ab8a3e0e9845e2e91c3ed354b69c43166851d46e0b3c608fba575fcaa00; reason: tooling or agent control surface -->
+
 # Standing matrix
 
 | Surface | Source standing | Parser standing | Renderer standing | Runtime standing |

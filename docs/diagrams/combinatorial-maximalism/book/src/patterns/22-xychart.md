@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/22-xychart.md; source-sha256: 2194e31134304c40b6d448f56223afd8e11a6a8d2ef4da40456e3f3bc84ad5c4; reason: tooling or agent control surface -->
+
 # XY Chart: Trend Or Comparison
 
 **Pattern ID:** `22-xychart`  

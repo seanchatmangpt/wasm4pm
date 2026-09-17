@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/ggen-oracle/07-ocpq-process-law-query-language.md; source-sha256: 1e0a50df12922cc55d0aa3c0307010c45e0040f8462ec124cf391e81ac1782e7; reason: tooling or agent control surface -->
+
 # 07 — OCPQ: Object-Centric Process-Law Query Language
 
 **Status:** Spec. Capability area: a small Object-Centric Process Query (OCPQ) language that **wasm4pm owns** and **ggen consumes via `wpm` as an external oracle** (ggen asks, wasm4pm adjudicates — NOT linked into ggen).

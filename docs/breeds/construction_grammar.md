@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/construction_grammar.md; source-sha256: 6a55a49a3c24c6c01f1273c63d1e4133e6480cd3644017421fa3defce4180902; reason: tooling or agent control surface -->
+
 # Construction Grammar — Goldberg Argument-Structure Constructions
 
 ## 1. Identity

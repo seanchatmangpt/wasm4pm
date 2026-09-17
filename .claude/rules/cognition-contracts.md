@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/rules/cognition-contracts.md; source-sha256: cf89f558e1b5edc96a9f5b3ec0f73a6eaf0dbca2091bf13b98606fb003893f2b; reason: tooling or agent control surface -->
+
 # Cognition Layer — Field Contracts (Source of Truth)
 
 EXACT field names from Rust WASM output (`crates/wasm4pm-cognition/src/wasm.rs`). Any other name is a bug. Enforced by hooks `cognition-contract-guard.sh` / `cognition-wasm-gate.sh`.

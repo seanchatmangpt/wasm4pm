@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/hearsay.md; source-sha256: 3555b849e2a7f862506890ce980e805f821e3f1c85a5ab6b8705b311148a154a; reason: tooling or agent control surface -->
+
 # hearsay — Blackboard Architecture
 
 ## 1. Identity & Lineage

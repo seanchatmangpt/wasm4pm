@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/wasm4pm-public-ontology-alignment.md; source-sha256: 8cec9531cb6a441fdaf54b5039c43c994317840f7017e9c37f3693bd2b1627e7; reason: tooling or agent control surface -->
+
 # wasm4pm Public Ontology Alignment
 
 This document describes how the `wasm4pm` combinatorial process-intelligence substrate maps to public vocabularies. Our architecture is **public-only**, meaning we use standard namespaces to represent all internal concepts.

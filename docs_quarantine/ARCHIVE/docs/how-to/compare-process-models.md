@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/compare-process-models.md; source-sha256: 4edd6d30afccdbe5fbea8837b430e731290db88473064d338f6dc88f36371dac; reason: tooling or agent control surface -->
+
 # How-To: Compare Two Event Logs
 
 **Time required**: 5 minutes

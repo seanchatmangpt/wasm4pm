@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/discover-powl.md; source-sha256: 563b6a83a6568f2cf164595f6f971962d88c529cededc618c5e1a3c4be2ec502; reason: tooling or agent control surface -->
+
 # POWL Discovery Guide
 
 POWL (Partially Ordered Workflow Language) discovery finds process models that preserve partial order structure — non-hierarchical dependencies that are lost in Petri Net or Process Tree conversion.

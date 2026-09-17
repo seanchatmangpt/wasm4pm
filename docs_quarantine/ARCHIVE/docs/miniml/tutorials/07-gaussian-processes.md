@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/tutorials/07-gaussian-processes.md; source-sha256: 2431bed45a3c256f4faaff20d91a2c09bbe18bb2cfd65bba8147e538018715be; reason: tooling or agent control surface -->
+
 # Gaussian Processes
 
 In this tutorial you will learn how to use Gaussian Process (GP) regression in miniml to make predictions with quantified uncertainty. Unlike point-estimate methods (linear regression, random forests), a GP returns a full predictive distribution -- the mean tells you what to expect, and the standard deviation tells you how confident the model is.

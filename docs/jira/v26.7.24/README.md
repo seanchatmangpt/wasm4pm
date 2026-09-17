@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/jira/v26.7.24/README.md; source-sha256: 6616a804b3fb8b27ba166db81da7ae077cd4f8bdddff3695055fa32b06e7e6c4; reason: path-local authority or entrypoint -->
+
 # InterviewAssist v26.7.24 — priority matrix + full plan to finish the release
 
 ## Why this doc exists

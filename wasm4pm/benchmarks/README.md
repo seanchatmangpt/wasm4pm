@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/benchmarks/README.md; source-sha256: 61fb6ed1f0d2664846a642bdc89640011475b8c4aa2e11acb1a2f5a8875bebe9; reason: path-local authority or entrypoint -->
+
 # wasm4pm Benchmarking Suite
 
 Comprehensive performance testing for wasm4pm algorithms in both Node.js and browser environments.

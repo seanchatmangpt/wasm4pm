@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/cli-commands.md; source-sha256: 6e395923a59bba1852367607dd6d0bae0eafb5cde32b801e195336735bd7ca6c; reason: tooling or agent control surface -->
+
 # Reference: wasm4pm CLI Commands
 
 **Version**: 26.4.7

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/architecture/memory-layout.md; source-sha256: 1d060f652992c54a2bd51fe5ad5bb37538c9cad2926b6aca1f9016db6e1aa61d; reason: tooling or agent control surface -->
+
 # Memory Layout
 
 The way data is arranged in memory has a direct impact on performance. miniml uses a flat, row-major layout with pre-allocated buffers to maximize cache efficiency and minimize allocation overhead in WASM.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/simd_streaming_dfg.md; source-sha256: c3a09dd35b61ab7528bb164a3d0a4433ff7afa98e70112fafc60deada6c1cca5; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: SIMD Streaming DFG
 
 ## Metadata

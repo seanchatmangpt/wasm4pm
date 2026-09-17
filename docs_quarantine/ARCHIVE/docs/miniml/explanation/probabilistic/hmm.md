@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/probabilistic/hmm.md; source-sha256: 3f4d359311ae9126a3685e8f2b3c02f6aa021e1c1a39248bec572e6e9f9580ca; reason: tooling or agent control surface -->
+
 # Hidden Markov Models
 
 A Hidden Markov Model (HMM) describes a system where the true state is unobservable (hidden), but it produces observable outputs. The model assumes the hidden state evolves as a Markov chain, and each state generates observations according to a state-specific probability distribution. HMMs are foundational in speech recognition, NLP, bioinformatics, and time series analysis.

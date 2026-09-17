@@ -1,33 +1,13 @@
-# TICKET-056 — wpm validation boundary
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: docs/jira/v26.7.24/TICKET-056-WPM-VALIDATION.md; source-sha256: eefeb4f9a76dec693f447b644868a26d116c996cd220fd98656442a53ff0d66e; reason: historical, generated, status, or evidence narrative -->
 
-The executable acceptance boundary for the continuous InterviewAssist receipt chain is the built CLI binary itself:
+# Archived documentation
 
-```bash
-node apps/wasm4pm/dist/bin/wpm.js \
-  lab interview-assist \
-  --workspace "$PWD" \
-  --output "$PWD/.wasm4pm/interview-assist/latest.json" \
-  --timeout-ms 150000
-```
+This document is retained as historical evidence and is not current product truth.
 
-The command starts the real InterviewAssist Next server and crosses these HTTP routes in order:
+- Archived copy: [`docs/archive/2026-08-02/docs/jira/v26.7.24/TICKET-056-WPM-VALIDATION.md`](../../archive/2026-08-02/docs/jira/v26.7.24/TICKET-056-WPM-VALIDATION.md)
+- Original path: `docs/jira/v26.7.24/TICKET-056-WPM-VALIDATION.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `eefeb4f9a76dec693f447b644868a26d116c996cd220fd98656442a53ff0d66e`
 
-1. `POST /api/admission`
-2. `POST /api/cognition`
-3. `POST /api/run`
-4. `POST /api/test`
-5. `POST /api/accessibility`
-
-It requires a BLAKE3 receipt at every stage, checks each `derivedFrom` and `relation` value against the immediately preceding checksum, requires real Python execution and real pytest to exit zero, and writes the observed session evidence to `.wasm4pm/interview-assist/latest.json`.
-
-The normal `wpm` middleware separately emits `.wasm4pm/receipts/latest.json` and the `wpm.lab.interview-assist` OTEL span. CI runs the binary directly and then reopens those durable artifacts. It does not invoke `runCli`, Vitest, a route handler, a reducer, or an adapter as the primary execution boundary.
-
-The owning CI lane installs the real runtime prerequisites, materializes the Node-target cognition WASM package, builds the CLI dependency closure, runs the command above, and independently checks:
-
-- machine-readable CLI stdout;
-- the five-stage session evidence and immediate predecessor chain;
-- real Python and pytest exit codes;
-- the CLI command receipt;
-- the persisted OTEL span.
-
-A declared command is not a pass result. Standing changes only when GitHub Actions executes the direct binary command against the exact PR head and the job conclusion is observed.
+Current documentation starts at [`docs/README.md`](../../README.md).

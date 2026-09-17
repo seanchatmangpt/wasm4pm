@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/config/automl.md; source-sha256: 8bd3ab49a4fadefc0d87e4d14be6694fa63648424adf7926992283f32f781c4b; reason: tooling or agent control surface -->
+
 # AutoML Configuration
 
 Configuration parameters for the AutoML pipeline optimizer, including genetic algorithm feature selection and PSO hyperparameter optimization.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/c4-context.md; source-sha256: ba9fe9aca6ce0d2044fe2f08f383efae8c0738f75ec1eca1f3fd77ac2a48d6d3; reason: tooling or agent control surface -->
+
 # C4: System Context
 
 **Re-verified:** 2026-07-24.

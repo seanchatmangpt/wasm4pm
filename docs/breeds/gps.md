@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/gps.md; source-sha256: 2f7199c16b26fb341c50cb786f15b23acab6f5a1c11395625f044c1c9fd47685; reason: tooling or agent control surface -->
+
 # gps — General Problem Solver
 
 ## 1. Identity & Lineage

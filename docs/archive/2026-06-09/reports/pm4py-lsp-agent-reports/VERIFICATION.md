@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/VERIFICATION.md; source-sha256: e9566cea564c754693ac00b8c09d4ec83ef7d4062d5f821442b1004f3b34aa67; reason: tooling or agent control surface -->
+
 # PM4PY-LSP-003 Verification and Checkpoint Promotion
 
 **Role**: Verifier Agent (`verifier`)  

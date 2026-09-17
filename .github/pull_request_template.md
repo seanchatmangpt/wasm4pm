@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/pull_request_template.md; source-sha256: 0db163128a9edcb055e37dacdd16f8a0ed10445a849a65cfa993f044016bfa3d; reason: tooling or agent control surface -->
+
 ## Summary
 
 <!-- What does this PR do? Why? -->

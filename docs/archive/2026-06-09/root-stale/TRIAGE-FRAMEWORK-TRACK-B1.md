@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TRIAGE-FRAMEWORK-TRACK-B1.md; source-sha256: 375c1af6b1673c38beffc1f8a5d2f28d914d382c722a90bb13464e70e0e9f6c9; reason: tooling or agent control surface -->
+
 # Track B-1: Test Failure Triage Framework
 
 **Objective:** Design a classification system to triage the remaining ~692 test failures beyond the parsePayload envelope issue (Track A).

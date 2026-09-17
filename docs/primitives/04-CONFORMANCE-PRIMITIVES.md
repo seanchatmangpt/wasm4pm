@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/04-CONFORMANCE-PRIMITIVES.md; source-sha256: ed935fac920f94358ca70e17f445f8ed1db6564f814d7e88c087048317492bf1; reason: tooling or agent control surface -->
+
 # Agent 5 — Conformance Primitive Agent
 
 ## Mission

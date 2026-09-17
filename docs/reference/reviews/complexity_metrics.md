@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/complexity_metrics.md; source-sha256: eefbac7819d5cb0e4a8847fd103d29ada8cd2f9df06029eb94c4a5ac4ad2fc54; reason: tooling or agent control surface -->
+
 # Algorithm Review: complexity_metrics
 
 ## Algorithm ID & Domain

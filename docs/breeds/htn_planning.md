@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/htn_planning.md; source-sha256: 426a68eb53bb2d86068c71e66a9856082b89ea949383058913cddea30284717c; reason: tooling or agent control surface -->
+
 # HTN Planning
 
 ## 1. Identity & Lineage

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/WASM_API.md; source-sha256: a57e298f50f37ee7c3f441c113798baca044328ba6b759654a64ea4ee1744186; reason: tooling or agent control surface -->
+
 # WASM API Reference
 
 **All public Rust→JavaScript exports via `wasm-bindgen`. ~392 total exports across 100+ modules.**

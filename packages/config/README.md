@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/config/README.md; source-sha256: 10dfd1a875100cdca08727d65bfe71ff5018cf6c60a6bfa83f34077279b312d6; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/config
 
 Configuration management system for wasm4pm with Zod-based validation, provenance tracking, and support for multiple config sources.

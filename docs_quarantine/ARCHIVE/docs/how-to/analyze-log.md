@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/analyze-log.md; source-sha256: 51d8f24f318b5e654115a390b1f388db6b1002e809f79ad1078da5cf9d395f72; reason: tooling or agent control surface -->
+
 # How-To: Analyze an Event Log
 
 **Time required**: 5 minutes  

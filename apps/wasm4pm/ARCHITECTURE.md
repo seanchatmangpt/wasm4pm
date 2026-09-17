@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/wasm4pm/ARCHITECTURE.md; source-sha256: c73c52ce71069875cbd2195c2510f9df380fd9dc02d422b6c2dd5c84a91c8997; reason: tooling or agent control surface -->
+
 # wasm4pm CLI Architecture
 
 ## Overview

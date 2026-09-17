@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/validators/README.md; source-sha256: 9f7c1e822500acbbddf9884e163a2440af3673c719a1de3a5ece528c066af378; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/validators
 
 Comprehensive validation suite for @wasm4pm/cli v26.4.9.

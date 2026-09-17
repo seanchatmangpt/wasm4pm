@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/WASM_UTILS_DEPLOYMENT_CHECKLIST.md; source-sha256: fea5f27b7e334d632b8fbd911ca02437611c9eb34dc32b9514803138ebae80a0; reason: tooling or agent control surface -->
+
 # WASM Utils Export Deployment Checklist
 
 **Status:** ✅ Code Complete (Ready for WASM Build)

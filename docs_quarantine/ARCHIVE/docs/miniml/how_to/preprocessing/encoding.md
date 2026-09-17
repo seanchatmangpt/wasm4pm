@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/preprocessing/encoding.md; source-sha256: 1ca263d7311bf6fe42947bebb200271a6bd95ac819060578c476ffef14456075; reason: tooling or agent control surface -->
+
 # Encode Categorical Data
 
 Convert string or category values into numeric form for ML models.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/CHATMAN-GGEN-FIRST-STRATEGY.md; source-sha256: f70208dd4a3f2713216bbe6c96fb117ad7511e94ba306ede329b8f44a799c8e2; reason: tooling or agent control surface -->
+
 # Chatman ggen-First Strategy
 
 **Date:** 2026-07-30

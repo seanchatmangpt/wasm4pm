@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PHD_BENCHMARK_HARNESS.md; source-sha256: 3d14446539c76a2aae54ecf3b2eeb0ba47803d77bba6aa23fb025866d4b690ba; reason: tooling or agent control surface -->
+
 # Reproducible Benchmark Harness Architecture
 
 ## 1. Overview

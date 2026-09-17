@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/multi-env-config.md; source-sha256: 0babc09bc794304e7ef1fc4e47d5e8460ea77dd3e9a5fb37c48ddcf768303a5a; reason: tooling or agent control surface -->
+
 # How-To: Create Multi-Environment Configs
 
 **Time required**: 15 minutes  

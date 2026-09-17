@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/testing-fixtures-api.md; source-sha256: a25a1bf5ebeb3dccba7c64658029862150a6f72db4e9ae77c5ebdf62515e4e3e; reason: tooling or agent control surface -->
+
 # wasm4pm Testing Fixtures API Reference
 
 **Version:** 1.0  

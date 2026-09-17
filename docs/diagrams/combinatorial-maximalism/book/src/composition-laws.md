@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/composition-laws.md; source-sha256: c83020f9628e3f441426dbbefdd5482fc6c4aca6e0eb06533fee06b5318735e9; reason: tooling or agent control surface -->
+
 # Composition laws
 
 The atlas is useful only when diagrams can be combined without semantic drift. The following laws govern cross-view composition.

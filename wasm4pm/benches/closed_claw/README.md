@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/benches/closed_claw/README.md; source-sha256: 1b8233d3af270f0935d08294a5a812473c4bd8a24c5a0b1074ec7dbf502bdc18; reason: path-local authority or entrypoint -->
+
 # Closed Claw Benchmarking Constitution
 
 A Criterion-based benchmark suite for the `wpm` (wasm4pm) process mining engine, organized around 6 canonical pipeline classes and 5 pass/fail gates. Every benchmark produces a BLAKE3 receipt proving deterministic execution.

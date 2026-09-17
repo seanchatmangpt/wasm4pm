@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: GEMINI.md; source-sha256: 65478e1b8e9454c909fc01a2f1e3bc4a8d103ec68c08ef01012bd9aee46f7a59; reason: active compatibility pointer to AGENTS.md -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/GEMINI.md; source-sha256: 65478e1b8e9454c909fc01a2f1e3bc4a8d103ec68c08ef01012bd9aee46f7a59; reason: tooling or agent control surface -->
 
 # Gemini compatibility pointer
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/out/truex_replay_valid.md; source-sha256: 4e475acd7a048ccff5ba236e2e8e719d0c9f9480dc7d4c34d19168a6b6a6e048; reason: tooling or agent control surface -->
+
 
 # Truex Capture: App State to Admitted Execution Receipt
 **Run**: valid  

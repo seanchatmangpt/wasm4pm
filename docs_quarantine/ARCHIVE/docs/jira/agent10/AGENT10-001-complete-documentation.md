@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent10/AGENT10-001-complete-documentation.md; source-sha256: fd77571c337622ac159800b72dbf335429e07f8f96f6d971552e9f09af3095e5; reason: tooling or agent control surface -->
+
 # AGENT10-001: Complete Documentation
 
 **Status:** 🟡 READY  

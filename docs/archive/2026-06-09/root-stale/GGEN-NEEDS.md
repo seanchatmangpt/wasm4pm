@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/GGEN-NEEDS.md; source-sha256: f1a0f5c8c78629581ed0fb44ed9813857e43c2a06f2e7646b18d10bf551a746a; reason: tooling or agent control surface -->
+
 # GGEN-NEEDS — what ggen needs from wasm4pm
 
 **Status:** Requirements spec (authored by ggen's conductor). A separate agent system builds against this.

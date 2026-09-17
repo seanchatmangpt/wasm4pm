@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/ctl_check.md; source-sha256: 4a0f64d44ea54a063a158161ffd6ecc5f873affc25ebd98a1507f0c9950543e7; reason: tooling or agent control surface -->
+
 # CTL Model Checking
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/03-WFNET-PETRI-PRIMITIVES.md; source-sha256: 07254d67e02b00d674c25682dab9e219e1c9043ffec8299100d064207e5c1697; reason: tooling or agent control surface -->
+
 # 03 — WF-net / Petri-net Primitive + Formal Soundness
 
 ## Mission

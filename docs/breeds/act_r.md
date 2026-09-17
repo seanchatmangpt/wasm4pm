@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/act_r.md; source-sha256: 37b1174b8c5d61809ab5f9a153ee533e156c964d950e6b4a610c537b01c6c072; reason: tooling or agent control surface -->
+
 # ACT-R
 
 ## Origin

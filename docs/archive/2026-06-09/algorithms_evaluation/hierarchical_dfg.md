@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/hierarchical_dfg.md; source-sha256: d09d3933118cd19eb055c4128300e75e1845239b17afed2b7092a884b1045b3d; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Hierarchical DFG
 
 ## Metadata

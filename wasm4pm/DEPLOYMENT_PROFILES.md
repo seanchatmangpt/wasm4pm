@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/DEPLOYMENT_PROFILES.md; source-sha256: 9fd7a6f061bb4dd76cc9e7d0c2c12227887693e1e189c5a98e8333c41b1cc7bd; reason: tooling or agent control surface -->
+
 # Deployment Profiles for wasm4pm
 
 wasm4pm supports 5 deployment profiles to optimize WASM binary size for different target environments. Each profile includes a specific set of algorithms and features tailored to the constraints of the deployment environment.

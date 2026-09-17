@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/README.md; source-sha256: 50f63b79c8cd434f4354758aafd4a883ea2e1aa4e308f737152f170fbae868e4; reason: path-local authority or entrypoint -->
+
 # wasm4pm Documentation
 
 Welcome to the wasm4pm documentation. This folder contains comprehensive guides for understanding, using, and deploying wasm4pm.

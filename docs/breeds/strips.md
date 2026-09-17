@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/strips.md; source-sha256: e40db8a6635e9272469e1e24f59358ab87e96f41ad357a9b434dfc00eaf83477; reason: tooling or agent control surface -->
+
 # strips — Classical Forward-Chaining Planner
 
 ## 1. Identity & Lineage

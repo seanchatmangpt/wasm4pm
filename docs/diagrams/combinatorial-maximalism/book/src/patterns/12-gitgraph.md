@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/12-gitgraph.md; source-sha256: eb30fb117e767369e7dac093cb9c2f5a369a707b8b29d109bd773dd0a341d21f; reason: tooling or agent control surface -->
+
 # GitGraph: Admission History
 
 **Pattern ID:** `12-gitgraph`  

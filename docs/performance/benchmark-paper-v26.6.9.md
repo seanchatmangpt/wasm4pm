@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/performance/benchmark-paper-v26.6.9.md; source-sha256: f8caefff1e7f1d26fc07c540d2a1a0865488f2094beac015f8b273298f43b2f8; reason: tooling or agent control surface -->
+
 # wasm4pm v26.6.9 — Performance Characterisation
 
 **Platform:** darwin arm64, Node v25.9.0  

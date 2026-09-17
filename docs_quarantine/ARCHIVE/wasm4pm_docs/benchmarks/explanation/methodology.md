@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/explanation/methodology.md; source-sha256: 43bf197c93018007bbe062ab3e6c7c3ba1619240254eb78d56253e4da0c8166f; reason: tooling or agent control surface -->
+
 # Benchmark Methodology
 
 How we measure the performance of 21 process mining algorithms compiled to WebAssembly, and why our choices matter for interpreting the results.

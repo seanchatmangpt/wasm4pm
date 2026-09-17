@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/ggen-oracle/02-checkpoint-process-model-registry.md; source-sha256: 7905ae01b16c0367419299a924f9f4280734ab868de1b7b3525772d131b04e72; reason: tooling or agent control surface -->
+
 # 02 — Gall Checkpoint Process-Model Registry (ggen Oracle spec)
 
 **Status:** Spec. Buildable by the wasm4pm agent system.

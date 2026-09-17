@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/docker.md; source-sha256: bd472f06c7056538b8a965cc7a65bee81b51028e7eb277241dc5bd601db32b0c; reason: tooling or agent control surface -->
+
 # Reference: Docker Deployment
 
 ## Dockerfile

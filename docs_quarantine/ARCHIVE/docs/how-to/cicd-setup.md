@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/cicd-setup.md; source-sha256: 127209a66e19965f1f99683d221d8682feafa35574aadb2ac9736c73d1e8383f; reason: tooling or agent control surface -->
+
 # How-To: Set Up CI/CD Pipeline
 
 **Time required**: 15 minutes  

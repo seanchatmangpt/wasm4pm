@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/thesis/wasm4pm-civilization-impact-phd.md; source-sha256: 083f9c981ff7b9f4f1a43daf044c74f9e16b511a3862acbf4dc1feda0a3a264d; reason: tooling or agent control surface -->
+
 # Universal Process Intelligence: The Civilization-Scale Impact of wasm4pm on the Rust, TypeScript, and WebAssembly Ecosystems
 
 **A Doctoral Dissertation Submitted in Partial Fulfillment of the Requirements for the Degree of Doctor of Philosophy**

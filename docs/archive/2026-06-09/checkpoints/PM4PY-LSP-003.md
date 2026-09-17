@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/checkpoints/PM4PY-LSP-003.md; source-sha256: 794327521b8476d8ebd9e39db169e309860ce7130e57098262154ba36157f934; reason: tooling or agent control surface -->
+
 # Checkpoint: PM4PY-LSP-003_ALIVE
 
 ## Verdict

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/realtime-monitoring.md; source-sha256: 9304118f6cb74ff7f833b9351e7812f16187167a4e2e4e1911de864b7f4367b5; reason: tooling or agent control surface -->
+
 # Tutorial: Real-Time Process Monitoring
 
 **Time to complete**: 30 minutes  

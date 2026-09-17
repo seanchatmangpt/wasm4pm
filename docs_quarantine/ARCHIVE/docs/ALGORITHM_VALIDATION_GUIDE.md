@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/ALGORITHM_VALIDATION_GUIDE.md; source-sha256: e4a34e79a9efa678ad1f3611278fcf0d3a16e46d701f2e9fb8cb275db31a581a; reason: tooling or agent control surface -->
+
 # wasm4pm Algorithm Validation Guide
 
 **Comprehensive framework for validating all 36 algorithms against pm4py reference implementations.**

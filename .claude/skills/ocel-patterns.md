@@ -5,6 +5,9 @@ paths: ["packages/*/src/**/*.ts", "wasm4pm/src/ocel*.rs"]
 type: skill
 ---
 
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/skills/ocel-patterns.md; source-sha256: b7762659419ccf3f9a72b5fd9b09bcc2c6d6060e21488d2ac14149da6e0ab30e; reason: tooling or agent control surface -->
+
+
 # Skill: OCEL Patterns
 
 ## Purpose

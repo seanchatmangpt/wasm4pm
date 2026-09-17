@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/predict_outcome.md; source-sha256: 3119ccad8dcf58e8e22c527e39f18ce21d4953abeef0525276aab99da0fa9ff6; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Outcome Prediction
 
 ## Metadata

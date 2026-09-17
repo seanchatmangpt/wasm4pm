@@ -1,37 +1,13 @@
-# Algorithm Evaluation: streaming_log
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/streaming_log.md; source-sha256: 57f1c66a994dda5c5110f30a639acddbee851fc877097481c973f126ffc7663c; reason: historical, generated, status, or evidence narrative -->
 
-## Identification
-- **ID**: `streaming_log`
-- **Category**: `discovery`
-- **Status**: `Closed`
+# Archived documentation
 
-## Algorithmic Role
-`streaming_log` is a discovery analytics algorithm tailored for real-time monitoring and processing of high-volume event streams. It focuses on maintaining an efficient in-memory representation of the event log to support immediate discovery tasks without the overhead of full batch processing. It is a key component of the `wasm4pm` streaming execution profile.
+This document is retained as historical evidence and is not current product truth.
 
-## Support Profiles
-- `fast`
-- `balanced`
-- `quality`
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/streaming_log.md`](../../docs/archive/2026-08-02/artifacts/evaluations/streaming_log.md)
+- Original path: `artifacts/evaluations/streaming_log.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `57f1c66a994dda5c5110f30a639acddbee851fc877097481c973f126ffc7663c`
 
-## Reachability Status
-- **Registry**: `Present`
-- **Dispatch**: `Present`
-- **CLI**: `Present`
-- **WASM**: `Present`
-
-## Behavior Results
-- **Positive Case**: `Passed`
-- **Negative Case (Malformed Log)**: `Failed Correctly (MALFORMED_EVENT_LOG)`
-- **Negative Case (Empty Log)**: `Failed Correctly (EMPTY_EVENT_LOG)`
-- **Invariant Case (Deterministic Same Input)**: `Passed`
-
-## Evidence Binding
-- **Evidence Hash**: `b8f30f44590553102da6aa1bea21ead5948139ef55033c7c868a21c6f0795c90`
-- **Verification State**: `Closed`
-
-## Implementation Validation & Details
-- **Source Module**: `wasm4pm/src/probabilistic/streaming_log.rs`
-- **Core Function**: `StreamingLog::add_event`, `StreamingLog::estimate_dfg`
-- **Mechanism**: A strictly bounded-memory streaming log processor (~135KB total) combining several probabilistic data structures: `CountMinSketch` for edge/activity frequency, `HyperLogLog` for trace cardinality, and `BloomFilter` for trace deduplication.
-- **Optimization Strategy**: Memory remains constant O(1) regarding log size. Approximates full DFG edges using FNV-1a hashing into the sketches, falling back to an exact mapping via an interner for node frequencies where vocabulary constraints allow. 
-- **Safety Features**: Strict state boundaries to prevent cross-trace edge spillage (the `prev_activity_id` clearing guard). Handles duplicates efficiently without unbounded allocation.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/explanation/statistical-significance.md; source-sha256: dc5feebb0d7bd72381807069ed97dd065f5331d08af70ea3c6b6936824e2cf8d; reason: tooling or agent control surface -->
+
 # Are Benchmark Differences Meaningful?
 
 How to distinguish real performance differences from measurement noise when comparing 21 algorithms on the same hardware.

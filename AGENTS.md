@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/AGENTS.md; source-sha256: e6ffabe7f8708d29b75b40cb896634ea220e93ef13c861cbcde8fcff4a3d8f75; reason: path-local authority or entrypoint -->
+
 # AGENTS.md — Authoritative Agent Contract for wasm4pm
 
 This file is the repository-wide operating contract for every coding agent,

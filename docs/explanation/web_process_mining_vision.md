@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/web_process_mining_vision.md; source-sha256: a5985fd09a91ff40273ca9c284b485868b277b6b9f84ef234de929449b318da7; reason: tooling or agent control surface -->
+
 # Client-Side Process Intelligence
 
 ## What Wil van der Aalst would build with wasm4pm — a thesis on moving the mining engine to where the data already is

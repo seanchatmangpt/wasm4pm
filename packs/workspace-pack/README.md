@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/workspace-pack/README.md; source-sha256: 34a544e33f5e9e1f9391558ce3e5f1ab7e24819a1b79c8926026db2692de2086; reason: path-local authority or entrypoint -->
+
 # workspace-pack
 
 Cross-product pack: every wasm4pm Cargo-workspace crate x {README header

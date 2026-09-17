@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/contracts/README.md; source-sha256: 14ddb9e28634a5f7b076ad397da751b121f3e844edda0bd4feea7557b352bb28; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/contracts
 
 Runtime contracts, receipts, and cryptographic verification for process mining.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/first-model.md; source-sha256: d22353ca92eae5b80fa29240b5b06238bc61948ac142538bb5dd5613459bea4c; reason: tooling or agent control surface -->
+
 # Tutorial: Your First Process Model
 
 **Time to complete**: 5 minutes  

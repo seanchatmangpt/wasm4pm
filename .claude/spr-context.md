@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/spr-context.md; source-sha256: 99b4980fa7eba1cdc7957cbcd2fab8086ed45cc327c01fe498a9de899f68294b; reason: tooling or agent control surface -->
+
 # wasm4pm SPR — Latent Space Primer
 
 ## Identity

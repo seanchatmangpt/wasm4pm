@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/CLI_UX_IMPROVEMENTS_INTEGRATION.md; source-sha256: 12a7990328c1557e39cb748368eb337fca87b17ec56a70d6a9456e270d8f4d43; reason: tooling or agent control surface -->
+
 # CLI UX Improvements — Integration Guide
 
 **Iteration 4 deliverables & how to use them**

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/inductive_miner.md; source-sha256: 4e7f605620f2ba173569e3110abdd04380dc09bd096cda00d6ce79948ef56806; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Inductive Miner
 
 ## Metadata

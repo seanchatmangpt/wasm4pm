@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/tps-metrics/README-header.md; source-sha256: 40089513cf0c139d9e8f18db5084d1013ecc8b8b860c82601f9a41cb90057043; reason: tooling or agent control surface -->
+
 
 # tps-metrics
 

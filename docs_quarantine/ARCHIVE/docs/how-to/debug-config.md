@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/debug-config.md; source-sha256: aa4a5f90a0df895e715e4e123ae910aa3875a5c69533194b511f32e9c0fb6fcb; reason: tooling or agent control surface -->
+
 # How-To: Debug Configuration Errors
 
 **Time required**: 10 minutes  

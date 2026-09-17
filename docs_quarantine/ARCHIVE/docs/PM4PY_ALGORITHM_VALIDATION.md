@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PM4PY_ALGORITHM_VALIDATION.md; source-sha256: edc79dde33777d3bd6e409af1df5fbd99d55b2c77ab6aacdb123cd5125cf4cc7; reason: tooling or agent control surface -->
+
 # wasm4pm vs pm4py Algorithm Validation Report
 
 **Generated:** 2026-05-07

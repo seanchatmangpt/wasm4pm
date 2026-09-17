@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/survival.md; source-sha256: d5c08dd1c13b0628df1acc6126174dd8f62066c3aadf6f2d59c7525b943fd724; reason: tooling or agent control surface -->
+
 # Survival Analysis API
 
 Non-parametric and semi-parametric survival analysis methods. Call `await init()` before use.

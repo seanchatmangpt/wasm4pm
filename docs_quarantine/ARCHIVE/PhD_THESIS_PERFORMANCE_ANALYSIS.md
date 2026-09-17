@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/PhD_THESIS_PERFORMANCE_ANALYSIS.md; source-sha256: 808d526cd4159e0db140e2315f62dbe997f1ee2aebb4daf205ef0aaa08bff398; reason: tooling or agent control surface -->
+
 # PhD Thesis: Performance Analysis and Optimization of Process Mining Algorithms Across Heterogeneous Deployment Architectures
 
 **Author:** wasm4pm Research Team  

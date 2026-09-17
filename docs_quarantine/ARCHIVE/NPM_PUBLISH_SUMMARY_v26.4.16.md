@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/NPM_PUBLISH_SUMMARY_v26.4.16.md; source-sha256: eb8afe7bdd69eb5d0590e902985dfc105860f360a8773456d6b3e54d56cfa39b; reason: tooling or agent control surface -->
+
 # npm Publishing Preparation Summary — v26.4.16
 
 **Date**: 2026-04-16  

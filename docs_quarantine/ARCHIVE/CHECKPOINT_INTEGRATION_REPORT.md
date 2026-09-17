@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/CHECKPOINT_INTEGRATION_REPORT.md; source-sha256: 32665fc7347faa1436e1db45222f8a7f8f3afe20f51be00e0680ad22ef723a7e; reason: tooling or agent control surface -->
+
 # Checkpoint Integration Phase 1.5 - Complete Report
 
 **Date:** May 18, 2026  

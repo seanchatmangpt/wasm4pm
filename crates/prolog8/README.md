@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/crates/prolog8/README.md; source-sha256: 2262512d278bfd12521f2683587affd6665c5a8e8e71615ea9068f3ad5ae6e7a; reason: path-local authority or entrypoint -->
+
 # Prolog8 — Byte-Capped Proof Engine
 
 **A compact, deterministic inference engine for proof generation and receipt-chain validation.**

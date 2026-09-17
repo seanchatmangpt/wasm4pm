@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/QUICK_START.md; source-sha256: 3fb941fd2e3928eaaa18809c49fccae8e2cd83c0f7af2ec9d0cbef1fcb246667; reason: tooling or agent control surface -->
+
 # Quick Start (3-5 Minutes)
 
 Get up and running with wasm4pm in under 5 minutes.

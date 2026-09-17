@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/tutorials/cognition_sessions.md; source-sha256: be47c8f2aaa35932d48ec9642d8913ccb1080706d10aec72656042ad5605ecc3; reason: tooling or agent control surface -->
+
 # Tutorial: State-Carrying Cognition Sessions
 
 `wasm4pm-cognition` normally executes one old-AI breed per contract. Cognition sessions add a compound boundary for bounded domains that need evidence to accumulate across multiple observations without hidden mutable state.

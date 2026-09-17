@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/05-PROCESS-WORLD-FOUNDRY.md; source-sha256: 8f75c6d49f617b022ee5211cafcd746c47286f9cd0dd52d93421ace488b87e9b; reason: tooling or agent control surface -->
+
 # Agent 6 — Process-world foundry agent
 
 ## Mission

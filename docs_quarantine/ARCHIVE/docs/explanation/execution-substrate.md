@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/execution-substrate.md; source-sha256: e4b155e236166e0c6b72a69afbcf6a759bc32d8a3f564a11acd918656f54dd6f; reason: tooling or agent control surface -->
+
 # Explanation: The Execution Substrate
 
 **Time to read**: 20 minutes  

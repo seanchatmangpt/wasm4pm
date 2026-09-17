@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/observability/SPAN_CATALOG.md; source-sha256: 5409237de7afbf01b719929d078b3dc25b42c45051b6e24147286e964936438a; reason: tooling or agent control surface -->
+
 # OTEL Span Catalog — ML / RL / Prediction / Drift / Conformance
 
 Authoritative reference for span names and attributes emitted by the

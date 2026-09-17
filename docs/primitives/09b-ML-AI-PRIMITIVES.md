@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/09b-ML-AI-PRIMITIVES.md; source-sha256: 70c15315966a776d72708ef45528187406e9c65d25ff8664ff0a56ec42cf86ae; reason: tooling or agent control surface -->
+
 # 09b — ML / AI Primitives (Review + Correction Ledger)
 
 **Agent:** A10 — ML & AI Algorithm Review and Correction

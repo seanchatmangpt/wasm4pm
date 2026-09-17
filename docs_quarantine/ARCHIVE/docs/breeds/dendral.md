@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/dendral.md; source-sha256: 94efb2889b06b08f5a74328ee3ad4ed86d31c574714bd1183cd3b92fea2e5dc6; reason: tooling or agent control surface -->
+
 # DENDRAL
 
 ## Origin

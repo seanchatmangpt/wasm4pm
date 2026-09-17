@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/06-NEGATIVE-CORPUS.md; source-sha256: 50adc9c5c47bc99cf20fc5862ff9b951eba9cc05169f435ca97a765055ec1126; reason: tooling or agent control surface -->
+
 # Agent 7 — Negative fixture / sabotage corpus agent
 
 ## Mission

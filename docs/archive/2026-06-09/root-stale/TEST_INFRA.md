@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TEST_INFRA.md; source-sha256: 06db40a67f14cf263fb33228e8b86e234fdcfe120a18618ac298743d3a6169a4; reason: tooling or agent control surface -->
+
 # TEST_INFRA.md — E2E Test Infrastructure
 
 ## 1. Test Philosophy

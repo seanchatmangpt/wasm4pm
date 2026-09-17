@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/15-c4-component.md; source-sha256: 5edb6f220ef3bb1779a594f3c531c1699283e878072b3ce6985c32abc33e1952; reason: tooling or agent control surface -->
+
 # C4 Component: In-Container Collaboration
 
 **Pattern ID:** `15-c4-component`  

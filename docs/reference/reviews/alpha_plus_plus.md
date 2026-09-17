@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/alpha_plus_plus.md; source-sha256: 83f8cc57f8203b76aa948d42861d32f975d36540acb4760e97f1ff25eee20e97; reason: tooling or agent control surface -->
+
 # Algorithm Review: alpha_plus_plus
 
 ## Algorithm ID & Domain

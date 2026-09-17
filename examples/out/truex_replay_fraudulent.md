@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/out/truex_replay_fraudulent.md; source-sha256: 221ee4d8054aa81f836a876e1544ee31e1485760edbf0f6cf83758e49f87d681; reason: tooling or agent control surface -->
+
 
 # Truex Capture: App State to Admitted Execution Receipt
 **Run**: fraudulent  

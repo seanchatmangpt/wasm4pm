@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/transition_system.md; source-sha256: 9b64428fdede25890a9e772a54b28e7ad439db874c81fc7cafe55641b3fc7ea8; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Transition System Discovery
 
 ## Metadata

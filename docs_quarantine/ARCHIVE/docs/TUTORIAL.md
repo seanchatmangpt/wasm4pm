@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/TUTORIAL.md; source-sha256: 4313eae6b2bc15f162b6d5168ebbdc9c81708e6893bbe1c18d62a2db37361a64; reason: tooling or agent control surface -->
+
 # Tutorial - Learning Process Mining with wasm4pm
 
 By the end of these tutorials you will have loaded real event logs, discovered process models, checked conformance, explored variants and constraints, and processed a live stream of events — all running inside a single Node.js script with no external servers.

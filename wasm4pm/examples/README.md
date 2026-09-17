@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/examples/README.md; source-sha256: 2fa3e18204c764e4b8fb354ff12802459868bd09e621e7d628c303f170c703a0; reason: path-local authority or entrypoint -->
+
 # Examples for wasm4pm
 
 This directory contains working examples demonstrating how to use wasm4pm in different environments.

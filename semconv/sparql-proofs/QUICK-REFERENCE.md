@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/semconv/sparql-proofs/QUICK-REFERENCE.md; source-sha256: 09ba85beecc1d9a5b5e806a1a900c98864dde7c05bfdc70d801ef7fdee72885d; reason: tooling or agent control surface -->
+
 # SPARQL Proof Engine — Quick Reference Card
 
 **Location**: `/Users/sac/chatmangpt/wasm4pm/semconv/sparql-proofs/`  

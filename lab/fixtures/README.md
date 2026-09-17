@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/lab/fixtures/README.md; source-sha256: e4cf30e8c9fffe67edcfba689ac3c1c6cd4b2aaf09e29e3ec233a348f3dccfca; reason: path-local authority or entrypoint -->
+
 # lab/fixtures - Test Data and Baselines
 
 This directory contains sample event logs and expected result baselines used by the post-publication validation harness.

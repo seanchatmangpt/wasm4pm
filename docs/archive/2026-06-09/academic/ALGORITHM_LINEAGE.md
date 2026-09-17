@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/ALGORITHM_LINEAGE.md; source-sha256: fb6ee3f167c4747a0ffd1a0188e734041f23b33838df36eb34ccb8080d954c35; reason: tooling or agent control surface -->
+
 # Algorithm Historical Lineage — ACADEMIC-LINEAGE-001
 
 **Gate:** ACADEMIC-LINEAGE-001

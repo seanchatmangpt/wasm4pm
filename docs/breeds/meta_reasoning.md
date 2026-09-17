@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/meta_reasoning.md; source-sha256: a842748512821db60f53c46cfe71f85ed219fbdef60ec551c8f6458f14a549e7; reason: tooling or agent control surface -->
+
 # Meta-Reasoning — Conflict Detection + Confidence-Weighted Vote
 
 ## 1. Identity

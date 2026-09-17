@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cognition-build.md; source-sha256: 6257931219f2fdaf8d2719f93d81cd7c2ffd4f54e28ff6ad378e6577327e3284; reason: tooling or agent control surface -->
+
 # Cognition Build Pipeline
 
 Architecture diagrams: #11 (Phase 1 Tear-Down/Rebuild), #12 (Rust-to-TS Build Pipeline).

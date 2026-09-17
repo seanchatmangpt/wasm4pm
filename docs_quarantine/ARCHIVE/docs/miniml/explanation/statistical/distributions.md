@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/statistical/distributions.md; source-sha256: 656a2f40e62b3e75f27ab60b38a1345c6c964c9e801b650e23d4241d448eefe1; reason: tooling or agent control surface -->
+
 # Probability Distributions
 
 Probability distributions describe how random variables are spread across possible values. They are the building blocks of statistical inference, machine learning, and stochastic modeling. This reference covers the most important distributions, their properties, and the relationships between them.

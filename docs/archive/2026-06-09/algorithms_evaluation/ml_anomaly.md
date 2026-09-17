@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ml_anomaly.md; source-sha256: 0eb4540d57ed5f809048fe7e3293b2177c5233c2ea11d7038775f6fbd192b7c1; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: ML Anomaly Detection
 
 ## Metadata

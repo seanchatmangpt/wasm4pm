@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/diataxis/explanation/hot_kernels_thesis.md; source-sha256: 6c13fd24f4609263a299589c1f8a4790ef9b62beb25a30f60a70339c9fb79f54; reason: tooling or agent control surface -->
+
 # Hot Kernels Thesis: Allocation-Free, Deterministic Process Conformance at 8-Tick Constant
 
 **A van der Aalst-grade process mining runtime unlocking fixed-hop, stack-only, hot-path optimized conformance checking (conditional moves, loop unrolling, popcount-based similarity).**

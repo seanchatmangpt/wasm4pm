@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/prolog8/README-header.md; source-sha256: 98ed3c7050e1de062c8356dc02a05e37b6b4c42fcb8245ef2f6db3f640049a92; reason: tooling or agent control surface -->
+
 
 # prolog8
 

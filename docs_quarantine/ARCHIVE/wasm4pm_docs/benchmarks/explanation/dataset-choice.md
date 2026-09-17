@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/explanation/dataset-choice.md; source-sha256: ed85475fc0114a3450ec00e55260ea7a7ca846834a76dc940426ca3f963b39d2; reason: tooling or agent control surface -->
+
 # Why BPI 2020 Travel Permits?
 
 The dataset behind every benchmark number in wasm4pm, and why it was chosen over alternatives.

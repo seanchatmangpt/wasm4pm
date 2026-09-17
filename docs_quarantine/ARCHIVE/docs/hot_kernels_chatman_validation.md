@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/hot_kernels_chatman_validation.md; source-sha256: 20f3993c9adbf216c19f91eb7de47e30eabac54ce11558d0b3e3fb3f30d122bb; reason: tooling or agent control surface -->
+
 # Hot Kernels: Chatman Constant Constitutional Validation
 
 **The 8-tick bound is logical, not physical.** This document validates `hot_kernels` against the constitutional criteria, not cache claims.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/scripts/README.md; source-sha256: 79277486e37803ac4aff36bfaf7082479258d2345a5b9b40bf008694c3d06103; reason: path-local authority or entrypoint -->
+
 # GitHub Actions Scripts
 
 This directory contains helper scripts used by GitHub Actions workflows for testing, building, and releasing wasm4pm.

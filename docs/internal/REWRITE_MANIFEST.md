@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/internal/REWRITE_MANIFEST.md; source-sha256: 7ae6d5ab1b3e7f1c62ba6df2697a6428d62225fb1810b4aef7e94b3745958328; reason: tooling or agent control surface -->
+
 # Documentation Rewrite — 2026-06-09
 
 ## Motivation

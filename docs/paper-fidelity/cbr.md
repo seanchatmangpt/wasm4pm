@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/paper-fidelity/cbr.md; source-sha256: 4f3f1dc46e00df9c7013897446f66f7fcabba517e549d79d22269dbac12c2ba7; reason: tooling or agent control surface -->
+
 # Cbr -- Paper Fidelity
 
 <!--

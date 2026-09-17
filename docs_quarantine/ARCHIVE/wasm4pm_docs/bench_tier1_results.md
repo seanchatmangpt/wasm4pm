@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/bench_tier1_results.md; source-sha256: 6386f1797483079b4b9d3b1db9484d56f3537da073d4b586b72ee2cbdd881c85; reason: tooling or agent control surface -->
+
 # Tier 1 Discovery Algorithm Benchmarks
 
 **Date:** 2026-04-10

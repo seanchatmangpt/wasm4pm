@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/analyze_process_speedup.md; source-sha256: 28b9d7ec27d9fe80fd5f5d88d84e5a11fbb0de2d069e228584806dd06cf1c99a; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Process Speedup Analysis
 
 ## Metadata

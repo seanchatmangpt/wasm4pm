@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/process-model-comparison.md; source-sha256: ddd883dad15617ebe6e23894b44e1e4d053ae8704da222500cb733f9f8a5a302; reason: tooling or agent control surface -->
+
 # Explanation: Process Model Comparison
 
 **Time to read**: 12 minutes

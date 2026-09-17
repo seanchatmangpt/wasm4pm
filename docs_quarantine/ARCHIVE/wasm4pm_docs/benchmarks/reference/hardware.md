@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/hardware.md; source-sha256: 67f1f3f45907c06d7bfc2ae41125df9d632e6eca1b4ff082f17ed62e425e28c5; reason: tooling or agent control surface -->
+
 # Benchmark Hardware Specification
 
 ## Primary Benchmark Platform

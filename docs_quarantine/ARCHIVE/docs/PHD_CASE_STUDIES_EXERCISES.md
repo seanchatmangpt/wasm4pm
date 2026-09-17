@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PHD_CASE_STUDIES_EXERCISES.md; source-sha256: e3be3da151eccc7ea701d66e198153e0b82cbcf00ce51ecb570be09d4a248b95; reason: tooling or agent control surface -->
+
 # Ph.D. Case Studies & Practical Exercises
 
 This document provides the foundational case studies and hands-on exercises for the *Ph.D. in Process Intelligence and Autonomous Systems Architecture*. These scenarios map directly to the modules in the full syllabus and are designed to test the limits of the `wasm4pm`, `Prolog8`, and `MCPP` ecosystem under combinatorial maximalist conditions.

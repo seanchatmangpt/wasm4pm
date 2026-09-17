@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/analytics/prediction-intervals.md; source-sha256: 88b0ec80edab1c578a6409d0efa2d0cb50ef383525821c27c8db8060e0bcbce3; reason: tooling or agent control surface -->
+
 # Compute Prediction Intervals
 
 Quantify uncertainty in your predictions using bootstrap confidence intervals and Gaussian Process prediction intervals.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/mycin.md; source-sha256: eff1cbae67f1b895efcef8affcffa74ab7fc8f972b1ce1976c8a5cb3b019ab62; reason: tooling or agent control surface -->
+
 # MYCIN
 
 ## Origin

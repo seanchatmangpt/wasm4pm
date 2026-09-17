@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/hearsay.md; source-sha256: 3e861bcd2e800f0df2504e52f85ead6840728f1b565a400ce9a61a25118b9d64; reason: tooling or agent control surface -->
+
 # Hearsay-II
 
 ## Origin

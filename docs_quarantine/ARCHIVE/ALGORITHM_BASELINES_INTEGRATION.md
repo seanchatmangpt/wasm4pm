@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/ALGORITHM_BASELINES_INTEGRATION.md; source-sha256: 6468875a3a762ba0f4a239ab9a136b83eecbf459bf74662dcbf3d0377d2dc3a9; reason: tooling or agent control surface -->
+
 # Algorithm Performance Baselines — Integration Guide
 
 **Status:** Iteration 20a - New module implemented and tested  

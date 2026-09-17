@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/qualitative_reason.md; source-sha256: 47e8b47d6de340e8143a41573ee3f2541007dd212d5e5fc7029034d2aa2774b8; reason: tooling or agent control surface -->
+
 # qualitative_reason — Confluence Envisionment
 
 ## 1. Identity & Lineage

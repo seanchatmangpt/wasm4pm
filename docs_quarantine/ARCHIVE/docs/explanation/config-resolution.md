@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/config-resolution.md; source-sha256: c7a589b802387a8ec4fa9fa974ec5e7ccba8e7bd10e5c8c6ac849ca7531118da; reason: tooling or agent control surface -->
+
 # Explanation: Configuration Resolution
 
 **Time to read**: 15 minutes  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/thesis/manufactured-reason/thesis.md; source-sha256: 7b5a8c20e01b6d2bb391b24f76dda918056ef672c9c2d1e20493e9863657abea; reason: tooling or agent control surface -->
+
 # Manufactured Reason
 
 ## Adversarial Verification as the Production Function for Machine-Written Software

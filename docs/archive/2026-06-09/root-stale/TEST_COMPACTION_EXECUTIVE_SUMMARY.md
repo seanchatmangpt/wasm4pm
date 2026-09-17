@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TEST_COMPACTION_EXECUTIVE_SUMMARY.md; source-sha256: 73619408e09ab2ffb1faba6463df2979c72ef60e6dcb02a2aaf58dd20e51081b; reason: tooling or agent control surface -->
+
 # Test Compaction: Executive Summary
 
 **Objective:** Reduce test suite runtime from 20-30 seconds to **5 seconds maximum**

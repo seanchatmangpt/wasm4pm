@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/concept_drift_math.md; source-sha256: 2719c4c16577bb5ad306b50aab4856d05103e42e8b0eb91dd93de349d7ab5135; reason: tooling or agent control surface -->
+
 # Explanation: Concept Drift Mathematics
 
 Concept drift in process mining refers to the phenomenon where the underlying business process changes over time (e.g., due to a new law, a seasonal shift, or a system failure). 

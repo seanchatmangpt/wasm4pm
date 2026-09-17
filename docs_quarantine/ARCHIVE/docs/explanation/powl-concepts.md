@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanation/powl-concepts.md; source-sha256: 51a45e377eafbd6f5b2d63f024d64ce821d42041428486701f093c2738d3bcd1; reason: tooling or agent control surface -->
+
 # POWL Concepts — Partially Ordered Workflow Language
 
 POWL (Partially Ordered Workflow Language) is a process model notation that natively represents **concurrent activities** using partial orders. Unlike block-structured notations (Process Trees) or marking-based notations (Petri Nets), POWL makes concurrency a first-class citizen.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/statistical/hypothesis-testing.md; source-sha256: e36b31e5c12ef23c04638d5954e571f03b0f8ca8e71f10d76808bbfd7f0a3d2e; reason: tooling or agent control surface -->
+
 # Hypothesis Testing
 
 Hypothesis testing provides a formal framework for making decisions about population parameters based on sample data. It is the backbone of scientific experimentation, A/B testing, and model validation in machine learning. Understanding what hypothesis tests can and cannot tell us is essential for sound statistical reasoning.

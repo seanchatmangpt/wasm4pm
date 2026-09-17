@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/tutorials/observability-setup.md; source-sha256: d07e53f34abc4eda89828a1fc0bdd16895af857bf9582d46888c24b12eb39e5b; reason: tooling or agent control surface -->
+
 # Tutorial: Setting Up Observability
 
 **Time to complete**: 20 minutes  

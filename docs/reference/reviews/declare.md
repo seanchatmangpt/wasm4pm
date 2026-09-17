@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/declare.md; source-sha256: 3c57124c0b33b9a5d39185e5c5cd1be20917b9330e617fc8a8da971228afbb29; reason: tooling or agent control surface -->
+
 # Algorithm Review: declare
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/strips.md; source-sha256: 94e4720407c59d5a3b2478ab90f6664ff903946c97aa6a5a966521ce181cf971; reason: tooling or agent control surface -->
+
 # STRIPS
 
 ## Origin

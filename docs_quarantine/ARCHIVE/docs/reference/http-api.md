@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/http-api.md; source-sha256: 4982477ab02a0886b3da0ee8a0d166c542f06346f73bc3f6bc4843c2ca7f7981; reason: tooling or agent control surface -->
+
 # HTTP API Reference
 
 wasm4pm exposes all 18 tools as HTTP endpoints through the Kubernetes service.

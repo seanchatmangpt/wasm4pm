@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/bench_conformance_results.md; source-sha256: f7c8f320a4085304c888a0f6a9b3a9226d142e0585dac748b71294766341fd81; reason: tooling or agent control surface -->
+
 # Conformance Checking Benchmark Results
 
 **Date:** 2026-04-10

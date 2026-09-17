@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/30-venn.md; source-sha256: 9f47a68fb6198c14fa282029d59b744e3b1994398a90f9f0a6f7366f33234953; reason: tooling or agent control surface -->
+
 # Venn Diagram: Set Overlap And Distinction
 
 **Pattern ID:** `30-venn`  

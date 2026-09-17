@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/breeds_thesis.md; source-sha256: 5a6b6f2aca7e10da6684d2c1927c27c250429fe3bb1f0a5e19680d8041b0c1b9; reason: tooling or agent control surface -->
+
 # A Periodic Table of Mechanized Reasoning
 
 ## A thesis on the wasm4pm cognition breeds — what they are, what each provides, and what their union makes possible that nothing else does

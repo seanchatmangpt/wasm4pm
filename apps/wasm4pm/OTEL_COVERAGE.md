@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/wasm4pm/OTEL_COVERAGE.md; source-sha256: 817cf90223a6ec092a452b380b3996930354a55c1668f233a977c68b01ea9d5d; reason: tooling or agent control surface -->
+
 # OTEL & Receipt Coverage Matrix
 
 **Plan E (Phase A):** OTEL spans + BLAKE3 receipts wired for the 5 core

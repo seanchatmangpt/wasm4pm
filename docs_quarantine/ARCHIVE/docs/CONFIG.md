@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/CONFIG.md; source-sha256: 5c1f91ee8b41ac6f1a6baeb12a74b417f58a6ce8e1386e240f3feea800306d55; reason: tooling or agent control surface -->
+
 # Configuration Guide
 
 Complete reference for configuring wasm4pm via files, environment variables, and CLI arguments.

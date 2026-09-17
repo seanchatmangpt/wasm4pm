@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/RELEASE_NOTES.md; source-sha256: da513e2516763ac3f5afd8c7ccb09b11e120acc0ad7428fa5ababc15f4c862f2; reason: tooling or agent control surface -->
+
 # wasm4pm v26.4.10 Release Notes
 
 **Release Date:** April 12, 2026  

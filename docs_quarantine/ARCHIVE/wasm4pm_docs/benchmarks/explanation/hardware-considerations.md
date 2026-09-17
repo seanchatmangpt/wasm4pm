@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/explanation/hardware-considerations.md; source-sha256: 413ef73b15699583bef0b1574709470da1db7e164681d67f7285cca881f63c7e; reason: tooling or agent control surface -->
+
 # Apple M3 Max Hardware Considerations
 
 How the hardware we benchmark on affects our results, and what to expect when running wasm4pm on different machines.

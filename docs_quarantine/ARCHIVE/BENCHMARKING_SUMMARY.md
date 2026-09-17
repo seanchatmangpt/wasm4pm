@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/BENCHMARKING_SUMMARY.md; source-sha256: 90eb6380ba90ecde7d85ffaafbbc2b2e5690afbec087d4a1b5967d7d93359744; reason: tooling or agent control surface -->
+
 # ML Algorithm Benchmarking Infrastructure — Delivery Summary
 
 **Mandate Agent:** Agent 5 (ML algorithm performance benchmarking)  

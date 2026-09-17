@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TRACK_B1_SUMMARY.md; source-sha256: 9046797777bcddff7de30d20d489d8b758b554c5b6a0161aff0aaacc634e26ba; reason: tooling or agent control surface -->
+
 # Track B-1: parsePayload() === null Fix Design — Summary
 
 **Deliverable:** Root cause analysis + fix design for 9 failing MCPP admission gate tests

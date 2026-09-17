@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/FORWARD_DEPLOYMENT.md; source-sha256: d555e1eb8d0156f8dece156db815e1d6c53a1275680a23b5387ad2cd46516b88; reason: tooling or agent control surface -->
+
 # Forward Deployment Context
 
 This repository is part of the **Chatman Ecosystem**, a portfolio built to make forward deployment repeatable, governed, and evidence-bearing.

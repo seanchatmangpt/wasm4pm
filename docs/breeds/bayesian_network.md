@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/bayesian_network.md; source-sha256: 1d74c00952c22227de227a148d169c0294dfc3d6d6bb9b27b1297a7f9fecf0df; reason: tooling or agent control surface -->
+
 # BAYESIAN_NETWORK
 
 ## Origin

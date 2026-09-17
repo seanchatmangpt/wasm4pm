@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PHD_IRB_PROTOCOL.md; source-sha256: b912a45038f6dc8edc1659b560aa90c9a6a85a5a58d4069a191c01813a2b2e42; reason: tooling or agent control surface -->
+
 # Institutional Review Board (IRB) Protocol & Ethical Guidelines
 **Focus Area: Socio-Technical Deployment of Autonomous Process Systems (Layer L7)**
 

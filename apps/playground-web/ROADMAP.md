@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/apps/playground-web/ROADMAP.md; source-sha256: f3ce71f234cdb918c5df9469714ca9b3b8687142bab9a60eca110fe5105740a2; reason: tooling or agent control surface -->
+
 # wasm4pm Playground — 12-Month Roadmap
 *Generated: June 2026 | Branch: enterprise/fortune5-readiness*
 

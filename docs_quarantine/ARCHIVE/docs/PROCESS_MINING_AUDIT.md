@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PROCESS_MINING_AUDIT.md; source-sha256: 40734656893dc0f79a0c4068302d6dc711c845112249573ca0a3c3048b80dbd6; reason: tooling or agent control surface -->
+
 # Process Mining Conformance Audit — Agent 5 Implementation
 
 **Date**: 2026-04-10

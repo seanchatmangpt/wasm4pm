@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/graph/shortest-path.md; source-sha256: c958ef89a1441b963560ab32b908601d615b874280f5262f67b92cb48dcd4fa2; reason: tooling or agent control surface -->
+
 # Shortest Path
 
 Find the shortest distances from a source node to all other nodes using Dijkstra's algorithm.

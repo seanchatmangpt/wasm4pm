@@ -5,6 +5,9 @@ paths: ["wasm4pm/", "crates/**/*.rs"]
 type: skill
 ---
 
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/skills/wasm-build.md; source-sha256: f4468aa7d0b243abdb44169cad063602d0424fd9dd635a9ba704e7d77dce82de; reason: tooling or agent control surface -->
+
+
 # Skill: WASM Build Workflow
 
 ## Purpose

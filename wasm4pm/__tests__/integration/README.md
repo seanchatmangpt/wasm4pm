@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/__tests__/integration/README.md; source-sha256: fadeb90bd00aa199d751d5639014bed3625daad1e8c36a23e3955567fa539f7b; reason: path-local authority or entrypoint -->
+
 # Integration Tests for process_mining_wasm
 
 This directory contains comprehensive integration tests for the process_mining_wasm library in both Node.js and browser environments.

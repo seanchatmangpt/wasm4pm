@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/oracle-specs/allen_temporal.md; source-sha256: 573c01a9d190ef478d53638f8166ba36152953132e4b2fafc37a80d79f89c4dc; reason: tooling or agent control surface -->
+
 # allen_temporal — Allen Interval Algebra (Allen 1983)
 
 Source of truth: `crates/wasm4pm-cognition/src/breeds/allen_temporal.rs`, fixture `tests/fixtures/papers/allen_temporal.json`, oracle `src/breeds/support/oracle_impls/logic.rs`, OCPN `ocel/models/l1/allen_temporal.ocpn.json`.

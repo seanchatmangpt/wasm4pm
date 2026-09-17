@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/probabilistic/mcmc.md; source-sha256: b13198de0ec28323c29f0564d5290699d94383c4926a153f0f3e995799bf68d1; reason: tooling or agent control surface -->
+
 # MCMC Theory
 
 Markov Chain Monte Carlo (MCMC) methods construct a Markov chain whose stationary distribution is a target distribution we want to sample from. When direct sampling is impossible -- because the distribution is only known up to a normalizing constant, or because it lives in a high-dimensional space -- MCMC provides a practical way to generate dependent samples that are (asymptotically) from the target distribution.

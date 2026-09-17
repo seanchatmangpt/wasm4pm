@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/fixtures/conformance/README.md; source-sha256: 5e916375ebf6dd3ca17e4eb93ab649c87ca99811fe11d9c208da8c04e783ada7; reason: path-local authority or entrypoint -->
+
 # fixtures/conformance
 
 Conformance-checking fixtures for the ggen (process-law oracle) lifecycle. These XES event logs

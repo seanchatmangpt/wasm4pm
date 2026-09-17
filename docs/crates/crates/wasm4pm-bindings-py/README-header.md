@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/wasm4pm-bindings-py/README-header.md; source-sha256: ee104fcc077b9c6ee7f8aad333e28b969045f706ff37dddb42407cfd5f3ed749; reason: tooling or agent control surface -->
+
 
 # wasm4pm-bindings-py
 

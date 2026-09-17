@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/rl-system.md; source-sha256: 8f11fbf2e6f26d63fe3de952d29ac180978e3c2f1fe382aa5774e45fbd91e055; reason: tooling or agent control surface -->
+
 # RL System Guide
 
 The wasm4pm reinforcement-learning subsystem provides autonomous monitoring and

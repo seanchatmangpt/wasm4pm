@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/dendral.md; source-sha256: 191a8a29eb8fb385491e122ecf6c5990f276360767edba48203c1a8ff49cd57b; reason: tooling or agent control surface -->
+
 # dendral — Constraint-Based Candidate Enumeration
 
 ## 1. Identity & Lineage

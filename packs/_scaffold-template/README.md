@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/_scaffold-template/README.md; source-sha256: 12af6d08e01d33e8ab41a36b111454426f3583801c24bd234f7535a7b4418915; reason: path-local authority or entrypoint -->
+
 # _scaffold-template
 
 Generic starting point for a **new** combinatorial ggen pack: one ontology

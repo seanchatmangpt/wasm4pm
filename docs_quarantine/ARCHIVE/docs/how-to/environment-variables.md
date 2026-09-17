@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/environment-variables.md; source-sha256: fc034e194046c75c6441e5e7c64de3dd51fee40264016787740b3fd0039bca69; reason: tooling or agent control surface -->
+
 # How-To: Set Environment Variables
 
 **Time required**: 5 minutes  

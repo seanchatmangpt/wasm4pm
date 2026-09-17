@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/README.md; source-sha256: 349e5b5f45cdcefd70a8ff69427c3148e8c45c51e46cc0279bb201ae9f9fa7e2; reason: path-local authority or entrypoint -->
+
 # wasm4pm — Process Mining for WebAssembly
 
 High-performance process mining algorithms compiled to WebAssembly for browsers and Node.js.

@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/DOCUMENTATION_POLICY.md; source-sha256: 651945384fd0b2bf595d5c689056f0217929170f1cfb1be8483cac680c4aec9f; reason: canonical documentation governance -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/DOCUMENTATION_POLICY.md; source-sha256: 78ac6845f8b46032334fd60456768e0607cbe5ba810fd71328de714c13eaf377; reason: tooling or agent control surface -->
 
 # Documentation policy
 

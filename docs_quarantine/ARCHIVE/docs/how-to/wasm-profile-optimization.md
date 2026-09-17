@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/wasm-profile-optimization.md; source-sha256: 0940ede7395b0e2b05716e844608938426db33517741021959715aba560b9a27; reason: tooling or agent control surface -->
+
 # WASM Profile Optimization Guide
 
 **Version:** 1.0  

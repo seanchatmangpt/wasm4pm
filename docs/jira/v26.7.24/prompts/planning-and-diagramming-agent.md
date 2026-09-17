@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/jira/v26.7.24/prompts/planning-and-diagramming-agent.md; source-sha256: a4fa2bbfc45b94420c261931ca5f50c7c9afb431d67659595fb1008da6d5325e; reason: tooling or agent control surface -->
+
 # Cloud agent prompt: finish the v26.7.24 planning + diagramming work
 
 Copy everything below the line into the cloud agent's task/prompt field.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/explanations/engine-state-machine-deep-dive.md; source-sha256: 18241a0f3e52ec8b40dacbbfb53a8cbab10beee46cd6550cfe01c7bcac06793b; reason: tooling or agent control surface -->
+
 # Engine State Machine Deep Dive
 
 **Last Updated:** April 2026  

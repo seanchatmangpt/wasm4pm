@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/validation/VALIDATION_PLAN_ADVANCED_ALGORITHMS.md; source-sha256: 68b0829f8cae8dbe807a307926db688d5b6f18a4928b9a67078749b198044b97; reason: tooling or agent control surface -->
+
 # Validation Plan: Advanced Algorithms & Parsers (Real Data)
 
 ## Objective

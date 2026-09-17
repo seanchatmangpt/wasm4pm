@@ -5,6 +5,9 @@ paths: ["wasm4pm/src/mcp_server.ts"]
 type: skill
 ---
 
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.claude/skills/mcp-tools.md; source-sha256: 4286f8da246350cb22e9dca192b6fed848df93504cf75cbb7e54c91585ce9595; reason: tooling or agent control surface -->
+
+
 # Skill: MCP Tool Patterns
 
 ## Purpose

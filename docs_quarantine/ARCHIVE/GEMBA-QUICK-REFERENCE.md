@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/GEMBA-QUICK-REFERENCE.md; source-sha256: 95fdb88a2c55ac57c448458093f4936512af704655aa2b8175ab4ce0c21969f5; reason: tooling or agent control surface -->
+
 # Gemba Enforcement — Quick Reference
 
 **When:** Always

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/thesis/periodic-table-of-reason/README.md; source-sha256: 84d7eb464c8528ea356ca994bcbc3c6af2324cd5d61de6ea66347b350cdaeee5; reason: path-local authority or entrypoint -->
+
 # The Periodic Table of Reason
 
 **Operational Falsifiability, Epistemological Geometry, and the Breed Validation Certificate for Manufactured Intelligence**

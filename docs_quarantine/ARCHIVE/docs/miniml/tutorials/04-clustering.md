@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/tutorials/04-clustering.md; source-sha256: e4fd2e9d5b3571f67f91958c6ebadc9c5470f86e56b3caa40db31e8e5e7b02c0; reason: tooling or agent control surface -->
+
 # Customer Clustering
 
 Segment customers with K-Means, K-Means++, and silhouette scoring.

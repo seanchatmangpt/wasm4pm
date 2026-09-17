@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/API.md; source-sha256: 2b1c0d2f7f3ab6f8fdd7561193a71bce24e2dc96d281e0914b0b3b66017f62bf; reason: tooling or agent control surface -->
+
 # API Reference — wasm4pm v26.4.10
 
 Complete reference for all 153 exported functions in the wasm4pm JavaScript API, organized by category.

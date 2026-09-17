@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/algorithms/comparison.md; source-sha256: 14ec85d6958727ba4c4e59a9b831421771068bbb3c4c2b241b9da031d7ade3b7; reason: tooling or agent control surface -->
+
 # Algorithm Comparison
 
 When to use which algorithm. Decision guides organized by task type.

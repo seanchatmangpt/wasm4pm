@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/benchmark-algorithms.md; source-sha256: fdbf09aa4e3029ef9f32eeb8666b793cba7a5aef4728cd5cee8b6510cb763e8c; reason: tooling or agent control surface -->
+
 # How-To: Benchmark Algorithms Against Your Event Log
 
 **Time required**: 10 minutes

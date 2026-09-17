@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/__tests__/data/fixtures/README.md; source-sha256: 8ce49088be3ad78ae4048f1318c5f26392c3f6bf924c0debe7390116f12e01cb; reason: path-local authority or entrypoint -->
+
 # Test Fixtures
 
 This directory contains test data files for integration testing the process_mining_wasm library.

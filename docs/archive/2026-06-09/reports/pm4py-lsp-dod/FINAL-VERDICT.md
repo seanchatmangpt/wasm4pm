@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-dod/FINAL-VERDICT.md; source-sha256: f3d02ed21d96c4a0d14a48d255413d5e374bb32b57864a9907bb0c69eb35add9; reason: tooling or agent control surface -->
+
 # PM4PY-LSP-004 Final Verdict
 
 **Doctrine:** PM4PY-LSP-004_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates, and the receipt taxonomy gap is declared closed.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/testing/src/eslint-rules/README.md; source-sha256: 3495ebc731a9d025b2336fcdba96e00b29ce9349c04b787b4c3745ff4f02470b; reason: path-local authority or entrypoint -->
+
 # ESLint Custom Rules for wasm4pm
 
 Rules in this directory provide Gemba enforcement for the wasm4pm test suite.

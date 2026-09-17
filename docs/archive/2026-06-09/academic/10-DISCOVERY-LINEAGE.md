@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/10-DISCOVERY-LINEAGE.md; source-sha256: 647d68ee092552a0c2adc162793c8a7bd4dfcf17f87efc6519772eea97653c14; reason: tooling or agent control surface -->
+
 # Classical Discovery Algorithms — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

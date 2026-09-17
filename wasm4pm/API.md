@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/API.md; source-sha256: 5755117690f99aeb8888d1f215f01597103c0cadb6bfb16f926e3b74cef24b42; reason: tooling or agent control surface -->
+
 # wasm4pm API Reference
 
 All functions are exported from the WASM module. Import the module before calling any function.

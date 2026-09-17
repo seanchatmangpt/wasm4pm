@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/performance/simd.md; source-sha256: aeaaf6b520a81c52188a2963ea21a9fd9acd981e2cbc604dbb680deeba0eb795; reason: tooling or agent control surface -->
+
 # SIMD Acceleration
 
 SIMD (Single Instruction, Multiple Data) is a processor feature that applies the same operation to multiple data elements simultaneously. In miniml, WASM SIMD instructions accelerate the most computationally intensive operations -- distance calculations, matrix multiplications, and preprocessing transforms -- without any code changes from the user.

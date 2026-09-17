@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/cognition/chains/socratic-diagnosis/README.md; source-sha256: 175080be3cff2a89921315bf19168d9de7079dfa025125d2571834ab244f74d9; reason: path-local authority or entrypoint -->
+
 # Socratic Diagnosis — Breed Chain Case Study
 
 A 7-stage clinical reasoning pipeline that mirrors the complete Socratic diagnostic method: interview, semantic parsing, affect modeling, differential diagnosis, treatment planning, plan sequencing, and case retention.

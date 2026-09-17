@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/observability/README.md; source-sha256: 655e7f3b3da228859ef9350daeab5081dbb2d4a6d16361265d0d82d9aa5de8d1; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/observability
 
 Non-blocking three-layer observability system with optional OpenTelemetry support.

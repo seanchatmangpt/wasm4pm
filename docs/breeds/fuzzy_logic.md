@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/fuzzy_logic.md; source-sha256: 75f50768e4a6193209c755808590e617492fba9580bb906e7a2a7ddf98f5f138; reason: tooling or agent control surface -->
+
 # fuzzy_logic — Fuzzy Controller
 
 ## 1. Identity & Lineage

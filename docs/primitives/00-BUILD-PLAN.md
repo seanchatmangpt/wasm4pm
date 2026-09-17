@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/00-BUILD-PLAN.md; source-sha256: aec8871b402b2863e18788829178b78b5cd06c6c29e16229d02154b5b546c35a; reason: tooling or agent control surface -->
+
 # 00 — wasm4pm Process-Primitive Kernel: Build Plan & Dependency DAG
 
 **Agent:** A-SYNTH (final synthesizer) · **Branch:** `finish-wip-primitives` · **Date:** 2026-05-30

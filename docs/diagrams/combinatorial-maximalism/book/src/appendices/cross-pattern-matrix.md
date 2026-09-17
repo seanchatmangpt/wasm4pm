@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/appendices/cross-pattern-matrix.md; source-sha256: a2d6ba3f9e74a47c7953ab4bca3acc9f025f3463cbff5424a63e5309b5bb05ea; reason: tooling or agent control surface -->
+
 # Cross-pattern matrix
 
 | Question | Primary pattern | Confirm with |

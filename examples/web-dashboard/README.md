@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/web-dashboard/README.md; source-sha256: 2eaf9765f113ba606b7cc5239efc11e5e380df45361bf45b3ef86399e7b2d259; reason: path-local authority or entrypoint -->
+
 # wasm4pm — Browser Dashboard (Client-Side Receipted Process Intelligence)
 
 A runnable Vite dashboard that proves wasm4pm's cognition kernel performs

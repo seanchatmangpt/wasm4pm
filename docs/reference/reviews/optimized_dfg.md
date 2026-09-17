@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/optimized_dfg.md; source-sha256: 93596be03825c0267b0b85ed834ac148d75fa4a625147fcbf4c7e87659bcca59; reason: tooling or agent control surface -->
+
 # Algorithm Review: optimized_dfg
 
 ## Algorithm ID & Domain

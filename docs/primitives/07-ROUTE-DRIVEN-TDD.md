@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/primitives/07-ROUTE-DRIVEN-TDD.md; source-sha256: 0e844fc0c42ef56c37dfc7d1768281f3121186726259648f322b9bec7a44a99c; reason: tooling or agent control surface -->
+
 # Agent 8 — Route-driven TDD primitive agent
 
 ## Mission

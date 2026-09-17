@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/05-state.md; source-sha256: 570e123fd3ba7bd13c0351f86a5046e67ff118a800c2058935f0ce8aab762d0c; reason: tooling or agent control surface -->
+
 # State Diagram: Standing Transition Law
 
 **Pattern ID:** `05-state`  

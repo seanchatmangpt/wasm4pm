@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/ml_classify.md; source-sha256: c0bcb93e46ea25517c94800063b4ded89f0f4bd382d3c78e33774fc79c4e0c82; reason: tooling or agent control surface -->
+
 # Algorithm Review: ml_classify
 
 ## Algorithm ID & Domain

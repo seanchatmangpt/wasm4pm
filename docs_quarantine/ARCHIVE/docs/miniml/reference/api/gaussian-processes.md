@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/api/gaussian-processes.md; source-sha256: 86269fa52ef1b20be3c7b04803e9e65909e90bc819eaf78ceb544aa624ba4a7c; reason: tooling or agent control surface -->
+
 # Gaussian Process API
 
 Gaussian process regression for non-parametric supervised learning with uncertainty quantification. Call `await init()` before use.

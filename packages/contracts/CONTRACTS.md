@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/contracts/CONTRACTS.md; source-sha256: bf499fe9f01ff2c534e9abc207c5fe62130c24eb07e81ca3c82b1c2377593967; reason: tooling or agent control surface -->
+
 # wasm4pm Contracts - PRD §19-22
 
 Defines the interface contracts for source connectors, sink adapters, and platform compatibility matrices.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/prediction-config.md; source-sha256: 1c9e7522630b6c10c9bcd036fc5aae5f05201d854daa8cd593f6f9da4672e871; reason: tooling or agent control surface -->
+
 # Reference: Prediction Configuration
 
 **Version**: 26.4.6

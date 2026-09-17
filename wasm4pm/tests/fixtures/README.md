@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/tests/fixtures/README.md; source-sha256: f8e94bde7b7e1c947ea8e3df154dd94b65602cc7a19cc927249bdbdbae4fd71b; reason: path-local authority or entrypoint -->
+
 # wasm4pm Benchmark Fixtures
 
 Process mining event logs for benchmarking wasm4pm's discovery and conformance algorithms.

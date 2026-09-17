@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/testing/GEMBA.md; source-sha256: c13d2961cb1f67cb6c593985b9401966e2b3e3191e89645dceb557fe572c82fc; reason: tooling or agent control surface -->
+
 # Gemba Enforcement in @wasm4pm/testing
 
 **Principle:** Go to where the work actually happens. Integration tests must be real.

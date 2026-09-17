@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/ORIGINAL_REQUEST.md; source-sha256: fa2b0bd7969117e90f8dfb410b9299e9aeb2377927369fcd88f7ef8d5cce0952; reason: tooling or agent control surface -->
+
 # Original User Request
 
 ## Initial Request — 2026-06-10T15:22:35-07:00

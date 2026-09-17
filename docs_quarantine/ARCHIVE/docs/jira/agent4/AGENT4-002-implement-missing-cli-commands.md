@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent4/AGENT4-002-implement-missing-cli-commands.md; source-sha256: 711b9e4d060a470d5fd69befe934ca4fef82d89fcf7d570ccd39cb8c523e30b9; reason: tooling or agent control surface -->
+
 # AGENT4-002: Implement 14 Missing CLI Commands
 
 **Status:** 🔴 BLOCKER  

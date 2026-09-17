@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/compute_activity_transition_matrix.md; source-sha256: dc930ca58b88914035f6cf338287585d2ba44a6ca9a6934da5082d084d8780bc; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Activity Transition Matrix
 
 ## Metadata

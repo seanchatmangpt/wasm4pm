@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ml_cluster.md; source-sha256: efb13b61757ddd22a4a9e57bd1883a9ecaf4f4f5d5dffcd8c7ed8629171f8cbf; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: ML Trace Clustering
 
 ## Metadata

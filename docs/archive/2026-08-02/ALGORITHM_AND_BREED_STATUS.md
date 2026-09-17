@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: ALGORITHM_AND_BREED_STATUS.md; source-sha256: deferred-to-full-tree-migration; reason: superseded fixed-count capability and reachability ledger -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-08-02/ALGORITHM_AND_BREED_STATUS.md; source-sha256: 3c846ee874e65fa617e1f590d68ef1885f7928c93c1bce5b390a27e986ea8d84; reason: tooling or agent control surface -->
 
 # Archived algorithm and breed validation ledger
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/agent-02-boundary.md; source-sha256: 81538d6e7f722efe87fb70e7a1166e436470a0c779d22d74ccea44eb61b26af1; reason: tooling or agent control surface -->
+
 # Boundary Agent Investigation Report
 
 **Role**: Boundary Agent (`boundary`)  

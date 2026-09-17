@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PHD_FULL_COURSE_SYLLABI.md; source-sha256: a73e7bd9e4b374416833010c9a185992eda0f3d47297f942628df6079a46a271; reason: tooling or agent control surface -->
+
 # Full Course Syllabi: Ph.D. in Process Intelligence and Autonomous Systems Architecture
 
 This document provides the detailed, module-by-module breakdown of all required courses and lab practicals for the 4-year doctoral program. Each course is designed to span a standard 14-week semester, condensed here into 4 core thematic modules.

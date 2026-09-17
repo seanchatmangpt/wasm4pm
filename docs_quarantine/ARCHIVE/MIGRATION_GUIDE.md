@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/MIGRATION_GUIDE.md; source-sha256: c6e814092d9aa2bba7875f21e4bfe1bb8e740196d59ec1d876d62f55abecb51a; reason: tooling or agent control surface -->
+
 # wasm4pm v26.4.5 Migration Guide
 
 ## Overview

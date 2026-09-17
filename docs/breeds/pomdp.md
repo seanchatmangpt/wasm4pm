@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/pomdp.md; source-sha256: 1fee3d96477f7cff9f239d7e314892ff57dbedd20b7de573794244006e4fd75f; reason: tooling or agent control surface -->
+
 # POMDP — Exact Bayes Filter + Bounded PBVI
 
 ## 1. Identity

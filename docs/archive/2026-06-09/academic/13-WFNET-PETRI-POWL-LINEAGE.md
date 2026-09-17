@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/13-WFNET-PETRI-POWL-LINEAGE.md; source-sha256: f73c33b4d134573c6b6808624cd325b7fca4026e410cd242ffb43531d964b815; reason: tooling or agent control surface -->
+
 # WF-net / Petri net / POWL — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

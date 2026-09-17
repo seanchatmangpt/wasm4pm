@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/ltl_monitor.md; source-sha256: 03740f8c484eea25a01aee4d01f55558cb03867ee426979d1537598e22df29ad; reason: tooling or agent control surface -->
+
 # ltl_monitor — Linear Temporal Logic Monitor
 
 ## 1. Identity & Lineage

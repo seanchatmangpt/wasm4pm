@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/README.md; source-sha256: a4c6b9e19ff1c996be1faf1bc20e4aecd39967d8873f69a450dd7a761d8a4049; reason: path-local authority or entrypoint -->
+
 # Benchmarks
 
 Performance data, methodology, and reproducibility guides for the wasm4pm WASM process mining engine (21 algorithms, compiled to WebAssembly). All results are from Apple M3 Max (16P/4E, 36GB unified memory), median of 7 runs.

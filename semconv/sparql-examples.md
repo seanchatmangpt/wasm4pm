@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/semconv/sparql-examples.md; source-sha256: 80d10be4e22d275637f4f7c006a00b22f2d06587196613dbf85724c78d7f0897; reason: tooling or agent control surface -->
+
 # SPARQL Query Examples for wasm4pm RDF Proofs
 
 > **Purpose**: Demonstrate SPARQL patterns for querying wasm4pm proof artifacts stored as RDF triples.

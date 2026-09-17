@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/ML_GUIDE.md; source-sha256: c03b7df74bfb803bdc91e120064116b8547a219c2eb5dcb4bfd2f0cac15a8c49; reason: tooling or agent control surface -->
+
 # Nanosecond ML: High-Performance Analytics Kernels
 
 This guide documents the "Nanosecond ML" breakthrough in `wasm4pm`, where traditional machine learning families are implemented as zero-allocation, hot-path optimized (conditional moves, loop unrolling, popcount-based similarity), and cache-efficient kernels designed for sub-microsecond execution in resource-constrained environments.

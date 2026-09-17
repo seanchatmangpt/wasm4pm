@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/bench_data/README.md; source-sha256: 29d5cea6829dcca8be6019ea0521493847749400c102d30890e4ef01f2f0501a; reason: path-local authority or entrypoint -->
+
 # Benchmark Datasets
 
 Real-world process mining datasets for wasm4pm benchmarks.

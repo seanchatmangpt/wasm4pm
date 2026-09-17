@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/yawl_export.md; source-sha256: fcf972d6f2a35bf1853debffb6486b9c123d76c0e126e8df2ba297d60d8ada4e; reason: tooling or agent control surface -->
+
 # Algorithm Review: yawl_export
 
 ## Algorithm ID & Domain

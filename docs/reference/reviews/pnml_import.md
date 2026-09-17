@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/pnml_import.md; source-sha256: b277923f563b76063658f1be6df6732f307f9ccaddcac514f72ca74190e8ed94; reason: tooling or agent control surface -->
+
 # Algorithm Review: pnml_import
 
 ## Algorithm ID & Domain

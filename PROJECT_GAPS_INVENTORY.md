@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/PROJECT_GAPS_INVENTORY.md; source-sha256: 18dfad56c5eab9732acab61625a563838e6709992be666017a5955cc33994853; reason: tooling or agent control surface -->
+
 # wasm4pm Project Gaps Inventory
 
 **Date:** June 11, 2026

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packs/wasm4pm-compat-ts/README.md; source-sha256: 36be8638e3d3fa08d0c28b6d0e03cc4680a52f2366f1b21c1464272f4f6ee9c0; reason: path-local authority or entrypoint -->
+
 # wasm4pm-compat-ts (ggen pack)
 
 A **self-contained ggen pack** that renders the wasm4pm-compat domain type law as

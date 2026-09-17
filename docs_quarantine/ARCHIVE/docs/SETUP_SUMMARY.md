@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/SETUP_SUMMARY.md; source-sha256: a9b396d3d06ae7d65cab8f283c0ceec6675bbf73ea48f2794e3db675fb5a980e; reason: tooling or agent control surface -->
+
 # Process Mining WASM - Complete Setup Summary
 
 This document summarizes the complete npm build pipeline, CI/CD configuration, and documentation that has been set up for the process_mining_wasm package.

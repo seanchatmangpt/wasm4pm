@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/breeds/eliza.md; source-sha256: 8517f5f12bfdd4adbe817ce572c6c2952ac57b70f1606371ec9b5bb351377248; reason: tooling or agent control surface -->
+
 # ELIZA
 
 ## Origin

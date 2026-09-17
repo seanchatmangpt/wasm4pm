@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/jira/v26.7.24/prompts/kickoff-branch-start.md; source-sha256: 7d8f44902d8f05eeb327c8f76ba20a8b7f2fc4733a75915c95f40e5cccdbb2d8; reason: tooling or agent control surface -->
+
 # Cloud agent prompt: kickoff — start work on a dedicated branch
 
 Copy everything below the line into the cloud agent's task/prompt field, after it has been briefed

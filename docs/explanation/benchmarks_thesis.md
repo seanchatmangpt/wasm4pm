@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/explanation/benchmarks_thesis.md; source-sha256: 5ebce6e18ebd75f81f1a3464b16aa38ea6570425ae54121956f9a8cb78d37de2; reason: tooling or agent control surface -->
+
 # What the Benchmarks Say
 
 ## A thesis on the wasm4pm cognition benchmarks — the what, the why, the how, and a vision for 2030

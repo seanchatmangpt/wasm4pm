@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/workspace-crate-registry.md; source-sha256: 5711c208131c182719844be765f3f302494431414358b39769bfb62c02493284; reason: tooling or agent control surface -->
+
 
 # wasm4pm Workspace Crate Registry
 

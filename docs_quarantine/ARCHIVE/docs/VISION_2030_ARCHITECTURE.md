@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/VISION_2030_ARCHITECTURE.md; source-sha256: 4b8c0e1e1457238aee20390f3e5b46095b114d9b5a836df89dfeb66b8542a06b; reason: tooling or agent control surface -->
+
 # Vision 2030 Architecture — MAPE-K Autonomic Loop
 
 **Operational Truth Through Autonomous Process Mining**

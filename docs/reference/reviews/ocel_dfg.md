@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/ocel_dfg.md; source-sha256: 2583fb46362266543e28d885ec36632597034357a31eab299e95afd97410d062; reason: tooling or agent control surface -->
+
 # Algorithm Review: ocel_dfg
 
 ## Algorithm ID & Domain

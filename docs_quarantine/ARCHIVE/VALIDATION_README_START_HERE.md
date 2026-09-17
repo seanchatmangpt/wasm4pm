@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/VALIDATION_README_START_HERE.md; source-sha256: ec9e6d4553c3a2bc9078d8a3266a058f1256719c41d2616d0691e7c5d7cede45; reason: tooling or agent control surface -->
+
 # START HERE: wasm4pm vs pm4py Algorithm Validation
 
 **Complete validation framework for all 36 algorithms**

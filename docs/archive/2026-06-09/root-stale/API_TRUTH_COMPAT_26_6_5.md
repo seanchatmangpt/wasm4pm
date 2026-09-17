@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/API_TRUTH_COMPAT_26_6_5.md; source-sha256: af3c1e86889ff22844ba802b4256e1fa2fe3bda4ed9aeff440793cd7f0da09ac; reason: tooling or agent control surface -->
+
 # API Truth Inventory: wasm4pm-compat v26.6.5
 
 This document maps conceptual process-mining needs to the actual exported symbols in the `wasm4pm-compat` v26.6.5 crate.

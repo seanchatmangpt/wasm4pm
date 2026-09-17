@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cm_thesis/FULL_THESIS.md; source-sha256: ed13dd02bccd689ff7b3e8123f7b5d45fc8a5552052d6eb2610dff6e0b47d59d; reason: tooling or agent control surface -->
+
 # Pushing the Limits: A Combinatorial Maximalist Analysis of Nanosecond Process Intelligence
 
 **A Dissertation Submitted in Partial Fulfillment of the Requirements for the Degree of Doctor of Philosophy**

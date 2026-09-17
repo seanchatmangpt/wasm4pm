@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/JTBD_TESTS.md; source-sha256: a58f1725897fd08879d9b9affb578f12418f5e13b79d3aa6f483be021fee0f93; reason: tooling or agent control surface -->
+
 # JTBD End-to-End Tests — Real Business Challenges
 
 **Adversarial E2E testing where the LLM cannot know the answer.**

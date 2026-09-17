@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/THESIS-V2.md; source-sha256: 5f6f20802cc36486778b9a54c8890aaa0e36ea761a3f8c3f39cfd8e264ab439b; reason: tooling or agent control surface -->
+
 # wasm4pm v26.4.8: Partially Ordered Workflow Discovery, Predictive Analytics, Deployment Profiles, and the Democratization of Process Mining via WebAssembly
 
 ## PhD Thesis

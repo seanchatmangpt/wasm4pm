@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/lab/reports/TEST_EXECUTION_GUIDE.md; source-sha256: 83a7bde27b4eabeab26072a3cded1fbe16b850dd7060942c9d364a051e948e50; reason: tooling or agent control surface -->
+
 # CLI Validation Test Execution Guide
 
 ## Test Suite Overview

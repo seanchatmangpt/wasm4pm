@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/benchmarks.md; source-sha256: f26b765ab136fa4e76554be3644adf6796ade851cafb2a907938c4172201cf99; reason: tooling or agent control surface -->
+
 # Performance Benchmarks
 
 All 18 wasm4pm tools are benchmarked against a standard 500-event XES log

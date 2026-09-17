@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/working_together_network.md; source-sha256: b5d7960e8396f456e77aa9a255d2dcce62dd31c7ef65959ad7a6e3488c827e09; reason: tooling or agent control surface -->
+
 # Algorithm Review: working_together_network
 
 ## Algorithm ID & Domain

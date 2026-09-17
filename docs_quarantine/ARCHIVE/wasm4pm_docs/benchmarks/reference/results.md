@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/results.md; source-sha256: 8ee4cb727ead0cb46883a14f706725a4f8e6c58825b1b6253ab759ba7e4be7f8; reason: tooling or agent control surface -->
+
 # Benchmark Results
 
 **Version:** wasm4pm v26.4.9

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/CERTIFICATE_VALIDATION.md; source-sha256: c5ed67d2b3db8a7cc4620b94ca07db955986fd459ba26ab61bdefa41f0c0d718; reason: tooling or agent control surface -->
+
 # Release Certificate Validation Guide
 
 This document provides step-by-step commands to independently verify every field in

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/jira/agent7/AGENT7-001-create-prediction-benchmarks.md; source-sha256: 139e463ba01ef13483ec54af01ea76d7656bbfff2330a3115230f6a7325b143f; reason: tooling or agent control surface -->
+
 # AGENT7-001: Create Prediction Task Benchmarks
 
 **Status:** 🔴 BLOCKER  

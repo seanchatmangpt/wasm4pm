@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/unverified/reference/receipt_format.md; source-sha256: f09eae1ecbe1f2f69dbbc41f1ab4b76119bdd5e472493d23513a08445f782ffb; reason: tooling or agent control surface -->
+
 # Reference: BLAKE3 Receipt Format
 
 Every successful run generates a deterministic, unforgeable receipt.

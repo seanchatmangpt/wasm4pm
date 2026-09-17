@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/how-to/cicd-integration.md; source-sha256: b545b877cfea16fcd3c7b00b36f549fe4bd95e3e22ad7891ed7545dd1cabc76e; reason: tooling or agent control surface -->
+
 # Set Up CI/CD Benchmark Regression Detection
 
 **Problem:** You want to automatically detect performance regressions in your CI/CD pipeline so that a PR which makes an algorithm significantly slower fails the build or triggers a warning.

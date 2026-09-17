@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/benchmark-results.md; source-sha256: bd369e6a9d74c9c5cf671519fa4f4057c9ba6cff068b28c99cdbfd3d86693484; reason: tooling or agent control surface -->
+
 # Algorithm Performance Benchmarks
 
 > Generated: 2026-05-05T20:46:02.000Z

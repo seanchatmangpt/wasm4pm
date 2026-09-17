@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/reference/config-schema.md; source-sha256: 7662ec97c46adcb6cdbcb5d80f62b840bae772bd8e427cd9f3ca64a7bad84411; reason: tooling or agent control surface -->
+
 # Reference: Configuration Schema
 
 **Format**: TOML or JSON

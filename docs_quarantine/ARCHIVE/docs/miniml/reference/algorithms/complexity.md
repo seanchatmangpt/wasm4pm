@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/reference/algorithms/complexity.md; source-sha256: ed23bf4bf9eefd6ab03f367647c9652ef8d01f893a25f588e4a4923a2278e296; reason: tooling or agent control surface -->
+
 # Algorithm Complexity
 
 Time and space complexity for all miniml algorithms. Big-O notation, where n = number of samples, d = number of features, k = number of classes/clusters/neighbors, and T = number of iterations.

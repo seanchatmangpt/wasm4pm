@@ -1,31 +1,13 @@
-# Algorithm Evaluation: predict_remaining_time
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/predict_remaining_time.md; source-sha256: f83ffb4c5ec6ec48e6f29cbfdd764e94cb3923d08ad8a2b6127a33a86ad1b436; reason: historical, generated, status, or evidence narrative -->
 
-## Metadata
-- **Algorithm ID:** `predict_remaining_time`
-- **Category:** `discovery`
-- **Profiles Supported:** `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Status
-- **Registry:** `true`
-- **Dispatch:** `true`
-- **CLI:** `true`
-- **WASM:** `true`
+This document is retained as historical evidence and is not current product truth.
 
-## Behavioral Evidence
-- **Positive Cases:** 1 passed
-- **Negative Cases:** 2 failed correctly (`PREDICTION_FEATURES_REQUIRED`, `EMPTY_EVENT_LOG`)
-- **Invariant Cases:** 1 passed (Deterministic)
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/predict_remaining_time.md`](../../docs/archive/2026-08-02/artifacts/evaluations/predict_remaining_time.md)
+- Original path: `artifacts/evaluations/predict_remaining_time.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `f83ffb4c5ec6ec48e6f29cbfdd764e94cb3923d08ad8a2b6127a33a86ad1b436`
 
-## Evidence Hash
-`d7aa0ad0a897aaf43579c23402845c6e2225d2a0738f242c67dee9cc6aea1176`
-
-## Verification State
-**Closed**
-
-## Summary
-`predict_remaining_time` (Remaining Time Prediction) estimates the time remaining until a process instance reaches a terminal state. It utilizes statistical bucket models and Weibull distributions derived from historical trace durations. The algorithm provides both a point estimate (in milliseconds) and a confidence score, enabling better resource planning and SLA management.
-
-## Implementation Validation & Details
-- **Source Code Path:** `wasm4pm/src/prediction_remaining_time.rs`.
-- **Core Logic:** The model builds statistical summaries grouped by `(last_activity, prefix_length)` buckets. For each bucket, it records the empirical distribution (mean and standard deviation) of the remaining time in milliseconds. Furthermore, it fits a Weibull survival model using method-of-moments to estimate the overall hazard rate of case completion. 
-- **Dispatch Mechanism:** Model training is invoked via the `build_remaining_time_model` WASM export, and point estimates for a running case prefix are generated via the `predict_case_duration` export.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

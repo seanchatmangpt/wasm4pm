@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/default_logic.md; source-sha256: d640ff316c501b0fa911d45516a3afc203b22438f214b3279ead199f2294c575; reason: tooling or agent control surface -->
+
 # Default Logic
 
 ## Origin

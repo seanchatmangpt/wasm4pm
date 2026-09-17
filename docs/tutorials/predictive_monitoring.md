@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/tutorials/predictive_monitoring.md; source-sha256: d8fd068d24216a7e9de5021df18cc0da57a87a5a5a9a54d341ca81f40f6c8637; reason: tooling or agent control surface -->
+
 # Tutorial: Predictive Process Monitoring
 
 ## Learning Objectives

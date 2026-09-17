@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/explanation/algorithms/regression.md; source-sha256: 2d9278369b0a6c75b95b298fda406ccdea59f7f15bbce24cc14a5dbee7dee84a; reason: tooling or agent control surface -->
+
 # Regression Analysis
 
 Regression predicts continuous numeric values from input features. Where classification assigns discrete labels, regression fits a function f(X) that maps features to a real-valued output. miniml implements eight regression algorithms spanning linear models, polynomial models, and nonlinear models.

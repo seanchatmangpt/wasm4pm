@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: README.md; source-sha256: 1a81394bdf1c4e82b8cf7e6b5cc9850ccbb506cb03541f1769dba2d0be48c34d; reason: canonical product entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/README.md; source-sha256: 1a81394bdf1c4e82b8cf7e6b5cc9850ccbb506cb03541f1769dba2d0be48c34d; reason: path-local authority or entrypoint -->
 
 # wasm4pm
 

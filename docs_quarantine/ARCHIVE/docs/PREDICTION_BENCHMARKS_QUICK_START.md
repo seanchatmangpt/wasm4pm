@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PREDICTION_BENCHMARKS_QUICK_START.md; source-sha256: ebd4842838ae354ee79df3a177c861b2f88e4f80a76d3ab2acad355cf815425f; reason: tooling or agent control surface -->
+
 # Quick Start: Prediction Benchmarks
 
 ## 30-Second Overview

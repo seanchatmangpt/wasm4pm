@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ocel_petri_net.md; source-sha256: 5464cde8b9c54c749a39ced222909aeb627bb9061367af4aa033abc4a54c110b; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: OC-Petri Net Discovery
 
 ## Metadata

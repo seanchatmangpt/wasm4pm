@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/process_skeleton.md; source-sha256: 25af2c5ff1770b3f4cf30486d60567884e0a1c245dc94d650bd847ccc72cacb0; reason: tooling or agent control surface -->
+
 # Algorithm Review: process_skeleton
 
 ## Algorithm ID & Domain

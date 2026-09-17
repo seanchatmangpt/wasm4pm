@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/SUMMARY.md; source-sha256: b31ee29b0a8c76b1ef3c74789fd34354634f2f57a364f6754b859fa800105ff7; reason: tooling or agent control surface -->
+
 # Design for Combinatorial Maximalism using all Mermaid
 
 > An Alexander-style pattern language in which every Mermaid diagram family supplies a distinct, composable projection of wasm4pm.

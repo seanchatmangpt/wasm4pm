@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TEST_COMPACTION_INDEX.md; source-sha256: 642ac8fbb7e4d337270f10b814aab11e4bf0c0481d890baedca270d8f66a94f8; reason: tooling or agent control surface -->
+
 # Test Compaction Strategy: Complete Documentation Index
 
 **Objective:** Reduce test suite runtime from 20-30 seconds to <5 seconds

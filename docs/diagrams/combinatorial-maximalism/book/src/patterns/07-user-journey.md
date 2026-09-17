@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/07-user-journey.md; source-sha256: 403938044fd6b7fb4f4eb8f8306faddaf840a3cd2df0ab25fe59bd0ab0a0c5a8; reason: tooling or agent control surface -->
+
 # User Journey: Human Effort And Confidence
 
 **Pattern ID:** `07-user-journey`  

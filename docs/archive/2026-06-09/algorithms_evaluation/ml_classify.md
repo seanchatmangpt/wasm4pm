@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ml_classify.md; source-sha256: 67c18b09da20486729ee5e67af0dcf56560957849174ffecc47e0f47634f5ac2; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: ML Trace Classification
 
 ## Metadata

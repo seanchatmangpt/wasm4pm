@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/generalization.md; source-sha256: 9cf4a8605a7172e0041cae2b2d3702a921b5c60396e7cbeed6d0b8f7ce6d46f8; reason: tooling or agent control surface -->
+
 # Algorithm Review: generalization
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/bayesian/regression.md; source-sha256: 053046f8be7e8849deacfa718b9e6ecfb0f7e82e0f55f7c5815f504695bc93d7; reason: tooling or agent control surface -->
+
 # Bayesian Linear Regression
 
 Fit a linear regression with uncertainty estimates using conjugate priors.

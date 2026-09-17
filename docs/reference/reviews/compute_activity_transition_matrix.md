@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/compute_activity_transition_matrix.md; source-sha256: 5257181e8fca1caf1bed31c02be88bc6fe0687126b0abd8338c527eb1a9b76a7; reason: tooling or agent control surface -->
+
 # Algorithm Review: compute_activity_transition_matrix
 
 ## Algorithm ID & Domain

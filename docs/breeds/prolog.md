@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/prolog.md; source-sha256: 91bf35618be85c3a7b4f49390b9a656618e8c354e1ef495be425b5c5c5b0ddc9; reason: tooling or agent control surface -->
+
 # prolog — SLD Resolution Inference
 
 ## 1. Identity & Lineage

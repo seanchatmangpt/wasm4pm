@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/csp_ac3.md; source-sha256: c7e1947320edcbc9ec20fbcfefedbf260a52dee4baa4b832cf01f53481fdb203; reason: tooling or agent control surface -->
+
 # CSP AC-3
 
 ## Origin

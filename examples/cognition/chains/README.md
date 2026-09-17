@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/cognition/chains/README.md; source-sha256: 55ab1076accd7f2954f2d0a791c7b561e5a60b544dd804dd7978c2b193a73c44; reason: path-local authority or entrypoint -->
+
 # Breed Chains — Combinatorial Maximalism
 
 Breed chains wire multiple cognition breeds end-to-end so that **each breed's output becomes the next breed's input**. This is combinatorial maximalism: no breed is run in isolation; every breed's output must be parseable as a lawful contract for the next breed in the sequence.

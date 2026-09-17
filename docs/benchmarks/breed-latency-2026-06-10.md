@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/benchmarks/breed-latency-2026-06-10.md; source-sha256: 395c2a98e8d6d9cd3c309468b5acac4da474ca58213ac9dc38756f24f198df5c; reason: tooling or agent control surface -->
+
 # Cognition Breed Latency — 2026-06-10
 
 Consolidated Criterion median wall-clock per breed `run()` on representative paper-fixture-sized input. Measured on the `periodic/integration` branch (52 PARTIAL_ALIVE breeds) via `cargo bench -p wasm4pm-cognition --bench breed_latency`. Budget: global median ≤ 100µs.

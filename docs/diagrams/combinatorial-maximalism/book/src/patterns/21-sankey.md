@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/diagrams/combinatorial-maximalism/book/src/patterns/21-sankey.md; source-sha256: d5e18f04331a3cc5e6c2443300c56179aa81416e35063e083892e48684323b69; reason: tooling or agent control surface -->
+
 # Sankey Diagram: Flow Volume And Loss
 
 **Pattern ID:** `21-sankey`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/examples/README.md; source-sha256: f4d9dc40e1a09f5e1470e0f70e03c96d3f86b43e78ff31f7d95dfc8ff73bee7d; reason: path-local authority or entrypoint -->
+
 # wasm4pm Examples
 
 ## Runner (single entry point)

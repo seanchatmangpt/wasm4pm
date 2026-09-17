@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/ocel_encode.md; source-sha256: 3108a4255ccae0ad40f1473c4a77cd357c2a7822f926d2a6daf2c18ceb88aa43; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: OCEL Text Encoding
 
 ## Metadata

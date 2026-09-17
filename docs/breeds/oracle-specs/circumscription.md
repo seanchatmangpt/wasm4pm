@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/oracle-specs/circumscription.md; source-sha256: c0602c240f83a4d59f0578580fad39c55fc8f8626d627862d1beffda5813d37b; reason: tooling or agent control surface -->
+
 # circumscription — Circumscription (McCarthy 1980)
 
 Source of truth: `crates/wasm4pm-cognition/src/breeds/circumscription.rs`, `tests/fixtures/papers/circumscription.json`, oracle in `src/breeds/support/oracle_impls/logic.rs` (lines 239–286), `ocel/models/l1/circumscription.ocpn.json`, `breeds/registry.json`.

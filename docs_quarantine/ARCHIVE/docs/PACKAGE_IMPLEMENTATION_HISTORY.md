@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PACKAGE_IMPLEMENTATION_HISTORY.md; source-sha256: 59c715a4857373056b818c603204ad1dbe303bf5969745fac7b8e153ef43fff7; reason: tooling or agent control surface -->
+
 # Package Implementation History
 
 Historical record of package implementations across the wasm4pm monorepo.

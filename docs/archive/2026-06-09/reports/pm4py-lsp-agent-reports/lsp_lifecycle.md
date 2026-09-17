@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/lsp_lifecycle.md; source-sha256: ce4584e904ed680f0d78baec0b67cf11e1b3d3a90f0aecfad195a87350d5fae6; reason: tooling or agent control surface -->
+
 # LSP Lifecycle Investigation Report
 
 **Role**: LSP Lifecycle Agent (`lsp-lifecycle`)  

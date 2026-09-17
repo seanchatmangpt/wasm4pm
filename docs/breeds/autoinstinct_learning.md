@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/autoinstinct_learning.md; source-sha256: 1e7e531304fbc3bc007ab9888e14448f01af2b0e06a95aef0c5d70a0f79c6d7c; reason: tooling or agent control surface -->
+
 # autoinstinct_learning — Autoinstinct Learning Engine
 
 ## 1. Identity & Lineage

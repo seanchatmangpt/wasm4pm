@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/miniml/how_to/survival/kaplan-meier.md; source-sha256: b448a1687f921c03727980fc5389dc92653a643cfba1d531df3f19949b8a2a80; reason: tooling or agent control surface -->
+
 # Kaplan-Meier Survival Curves
 
 Estimate survival probabilities over time from time-to-event data.

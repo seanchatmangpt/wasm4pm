@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/observability/OBSERVABILITY.md; source-sha256: 78abc9c61ea24d710ce40f7b7578e5d577ca11fc1b46baf0e7cd8f8a46b7fd51; reason: tooling or agent control surface -->
+
 # OTEL Observability Integration - Phase 2
 
 **Status:** ✅ Complete - Phase 2 Integration: OTEL observability wiring

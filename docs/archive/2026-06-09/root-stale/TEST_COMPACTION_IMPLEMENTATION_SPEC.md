@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TEST_COMPACTION_IMPLEMENTATION_SPEC.md; source-sha256: bae1bfa21c1bcbe9d9b443a09c3792c5e731333f2c39db3a48d3123c9ef3c161; reason: tooling or agent control surface -->
+
 # Test Compaction: Detailed Implementation Specification
 
 **Audience:** Backend/Test Infrastructure Engineers  

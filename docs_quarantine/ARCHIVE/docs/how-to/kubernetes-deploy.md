@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/kubernetes-deploy.md; source-sha256: 7e0ede51ad86fec688d1fc7da48fbea4d0700f75ed2aca081a92492f5980678a; reason: tooling or agent control surface -->
+
 # How-To: Kubernetes Deployment
 
 **Time required**: 20 minutes  

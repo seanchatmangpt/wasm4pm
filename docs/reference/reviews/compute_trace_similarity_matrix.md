@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/reference/reviews/compute_trace_similarity_matrix.md; source-sha256: 0da7cf9a8442d60534111c1ab707f79ba24abb018d19558840c1ca7b93759320; reason: tooling or agent control surface -->
+
 # Algorithm Review: compute_trace_similarity_matrix
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/lab/README.md; source-sha256: 5cc7c794acd1e141614ca2bdd2162b60503cc597ec3978809b2d0db6a4f72e44; reason: path-local authority or entrypoint -->
+
 # lab/
 
 Post-release user behavior validation. Unlike `playground/` (which runs against local source),

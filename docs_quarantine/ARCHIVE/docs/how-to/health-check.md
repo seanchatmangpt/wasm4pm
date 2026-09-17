@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/how-to/health-check.md; source-sha256: 5726ec9d6feab32647865adce8e7a606d5853e7c004067fd20da91dfb0d800d6; reason: tooling or agent control surface -->
+
 # How-To: Diagnose wasm4pm Environment Issues
 
 **Time required**: 2 minutes

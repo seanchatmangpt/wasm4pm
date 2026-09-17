@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TRACK-B1-SUMMARY.md; source-sha256: 961ff4a0993e0e907c3d97a7e25be0b656047aaf09e905e28201428c802d1399; reason: tooling or agent control surface -->
+
 # Track B-1: Planning Summary
 
 **Goal:** Design a triage framework to classify the remaining ~692 test failures (beyond Track A's parsePayload fix).

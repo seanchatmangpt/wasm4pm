@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/unverified/tutorials/custom_event_logs.md; source-sha256: aee93ab83573359c0b41f4e9732d84fdf3f9176c1c86acf3cf2958b4203d3e5c; reason: tooling or agent control surface -->
+
 # Tutorial: Parsing Custom Event Logs
 
 ## Learning Objectives

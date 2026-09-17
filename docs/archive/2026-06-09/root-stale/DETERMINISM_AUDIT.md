@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/DETERMINISM_AUDIT.md; source-sha256: 43005dec2412c7da4c8a58164e4025b69b3bbf83175019ee6f80497c99cc0f7d; reason: tooling or agent control surface -->
+
 # Process Mining Algorithm Determinism Audit
 
 **Date:** 2026-05-18  

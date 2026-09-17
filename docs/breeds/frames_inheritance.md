@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/frames_inheritance.md; source-sha256: b67652cb7e56a37419efc7b68a44f50ebecb22e879a2f51b0ea0a3840f07ed6d; reason: tooling or agent control surface -->
+
 # Frames Inheritance
 
 ## 1. Identity & Lineage

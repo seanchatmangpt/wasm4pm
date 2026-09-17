@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/CRATES_STRUCTURE.md; source-sha256: 15b29279920a8e7bb8848bd7b5faae3104724e6ae3aff5e921fb98e655b8c5dc; reason: tooling or agent control surface -->
+
 # wasm4pm Crates Structure
 
 ## Overview

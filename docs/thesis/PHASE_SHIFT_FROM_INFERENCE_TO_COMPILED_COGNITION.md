@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/thesis/PHASE_SHIFT_FROM_INFERENCE_TO_COMPILED_COGNITION.md; source-sha256: 3e9aec8d0a147f0d67496096af35222be31d6b893adb784f29b7ce8b1ff742d7; reason: tooling or agent control surface -->
+
 # From Inference as a Service to Compiled Cognition as Infrastructure
 ## A Benchmark-Grounded Thesis on the Phase Shift Exposed by wasm4pm-cognition
 

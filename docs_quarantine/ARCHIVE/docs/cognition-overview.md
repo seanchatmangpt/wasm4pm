@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/cognition-overview.md; source-sha256: 4413a1e7f93f177fbcb0de7e668721a526b9a65f1ec9498ed886fe930ad16136; reason: tooling or agent control surface -->
+
 # Cognition Overview
 
 wasm4pm ships a **real Rust cognition kernel** — 9 classical AI algorithms from the foundational literature, implemented in production Rust, compiled to WebAssembly, and surfaced through the `wpm cognition` CLI. This primer covers what the kernel is, why it exists, and how to use it in the first 15 minutes.

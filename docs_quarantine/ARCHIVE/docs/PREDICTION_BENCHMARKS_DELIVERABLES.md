@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/PREDICTION_BENCHMARKS_DELIVERABLES.md; source-sha256: 93db8461ffb09e6bbff98760abb7f28cc4a31ab5c7920c0d6ab7e1e679f4ddb0; reason: tooling or agent control surface -->
+
 # Agent 7: Prediction Benchmarking — Deliverables Summary
 
 **Date:** 2026-05-05  

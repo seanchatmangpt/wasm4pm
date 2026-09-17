@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/breeds/abductive_lp.md; source-sha256: dff21ceb607592c10945feae8b192edeef0b5104cd0f530b1c4353e38bf24de3; reason: tooling or agent control surface -->
+
 # Abductive Logic Programming (ALP)
 
 ## Origin

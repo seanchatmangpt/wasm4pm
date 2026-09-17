@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/how-to/supabase_integration.md; source-sha256: 233c175a9d45ad33ce2d386e7cbad657ee1aeba855d677a1bdcc9c7fd644cc8f; reason: tooling or agent control surface -->
+
 # Supabase Integration
 
 Sync **wpm command receipts** and **TrueX OCEL 2.0 envelopes** to a Supabase project with optional offline queue flush and Edge Function ingest.

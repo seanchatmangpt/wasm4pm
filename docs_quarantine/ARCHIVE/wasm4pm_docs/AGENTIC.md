@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/AGENTIC.md; source-sha256: 92c9f04dd7b195114770a0491aa8841071f86498a354e70a87908ac15212ec52; reason: tooling or agent control surface -->
+
 # Agentic Control Primitives
 
 ## Quickstart

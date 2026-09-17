@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/how-to/edge_deployment.md; source-sha256: ca675640d769a9385ca529de0615db2606ec340e2bed052c49f44922affa9514; reason: tooling or agent control surface -->
+
 # How-To: Deploy on Edge Devices
 
 ## Goal

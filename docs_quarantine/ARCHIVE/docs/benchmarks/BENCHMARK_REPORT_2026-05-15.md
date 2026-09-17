@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/docs/benchmarks/BENCHMARK_REPORT_2026-05-15.md; source-sha256: adfc9576483a405b4b462463d038f314fb6bf8ccda29779103ba0ead5ca02a70; reason: tooling or agent control surface -->
+
 # Benchmark Report — New Code (Last 24 Hours)
 **Generated:** 2026-05-15 | **Platform:** Darwin 25.2 (Apple Silicon) | **Mode:** Fast (100 cases)
 

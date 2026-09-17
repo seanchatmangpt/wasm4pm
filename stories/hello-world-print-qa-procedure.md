@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/stories/hello-world-print-qa-procedure.md; source-sha256: 00e72b32fc1887a7c325ace24893566614f7388bc91e4fe363c17d100f3ab75c; reason: tooling or agent control surface -->
+
 
 # QA Procedure: Hello World Print
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/streaming_log.md; source-sha256: 517531462653986191c836bca3b5d5fa3ba871eb32b17fd658161a9e55ef5681; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Streaming Log (Probabilistic)
 
 ## Metadata

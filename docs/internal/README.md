@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/internal/README.md; source-sha256: bb46df8bf6ac16c5a79112571491fc6cff9cbbb988b0bea19b2440b72ca7abdb; reason: path-local authority or entrypoint -->
+
 # docs/internal/
 
 Operational records for the wasm4pm project. These are not user documentation.

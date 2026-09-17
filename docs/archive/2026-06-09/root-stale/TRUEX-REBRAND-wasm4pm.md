@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TRUEX-REBRAND-wasm4pm.md; source-sha256: a9490c29a7abd13a7e3ade3d505e6fa50fe8e777521f970b98b1d4e34a3dcb4e; reason: tooling or agent control surface -->
+
 # TRUEX ARCHITECTURAL REBRAND: wasm4pm
 
 ## 1. TRUEX CLASSIFICATION

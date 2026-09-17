@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/how-to/browser-benchmarks.md; source-sha256: 3ba7c5e26f82605857364712e8a3c88062779bcd1991f59481e51aa1fbef5802; reason: tooling or agent control surface -->
+
 # Run Browser Benchmarks
 
 **Problem:** You want to test WASM performance in a real browser environment, because your users will run wpm algorithms in the browser and you need to know how they will perform there.

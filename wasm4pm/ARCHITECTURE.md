@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/wasm4pm/ARCHITECTURE.md; source-sha256: c4601e0b75b153ac7abff870cbc191377abbf8b4e8b5c6221ef9917d009177a2; reason: tooling or agent control surface -->
+
 # Architecture of wasm4pm
 
 Design, structure, and internals of the wasm4pm module.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/algorithms_evaluation/detect_drift.md; source-sha256: 318a7cb1dfac89cccbe2b0410536c0c8dd19c122968e139de7edadcb2e10ea6f; reason: tooling or agent control surface -->
+
 # Algorithm Evaluation: Process Drift Detection
 
 ## Metadata

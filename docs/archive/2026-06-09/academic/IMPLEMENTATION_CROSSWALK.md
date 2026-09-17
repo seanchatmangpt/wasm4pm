@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/IMPLEMENTATION_CROSSWALK.md; source-sha256: 74f7b93ff81222a9ffa33f9e1963aaa8026587f4e68d1fb79539a1ddd4e51cc7; reason: tooling or agent control surface -->
+
 # Implementation Crosswalk — wasm4pm Algorithm Registry
 
 **Document:** IMPLEMENTATION_CROSSWALK.md

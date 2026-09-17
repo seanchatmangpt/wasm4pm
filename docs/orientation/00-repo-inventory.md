@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/orientation/00-repo-inventory.md; source-sha256: db70e7955780a3d49820bf9142d340b35979f9a5ef27da8ec8750060f9d4eb7c; reason: tooling or agent control surface -->
+
 # Phase 0: Repository Inventory
 
 | Area | Evidence | Files | Confidence | Notes |

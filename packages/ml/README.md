@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/packages/ml/README.md; source-sha256: 3ed7a944fc44f3463ebf744fe622758eb54230c4961ea02bcaedae16e01b5534; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/ml
 
 Native, dependency-free ML for process mining. Six algorithms hand-tuned for

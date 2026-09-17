@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/root-stale/TEST_REDUNDANCY_AUDIT.md; source-sha256: 340bfb5f92fbe1f1346fc9eff9e941e5f823cdd61ac12917267d7348c9632cf9; reason: tooling or agent control surface -->
+
 # Test Suite Redundancy Audit Report — wasm4pm
 
 **Date:** 2026-05-29  

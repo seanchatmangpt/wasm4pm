@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/VALIDATION_REPORT.md; source-sha256: f7d5464a3915874eaaa5225bb76da8a2c2636aaf924d1677f52ba2740f7f0ab8; reason: tooling or agent control surface -->
+
 # wasm4pm Hooks Validation Report
 
 **Date:** 2026-04-11  

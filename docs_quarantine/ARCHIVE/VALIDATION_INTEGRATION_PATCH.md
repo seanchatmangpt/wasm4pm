@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/VALIDATION_INTEGRATION_PATCH.md; source-sha256: 3a871cafa677fc1d8628b82f0e7b822c3a75f10d31b64e99971c2265bdcafb9c; reason: tooling or agent control surface -->
+
 # SHACL Validation Gatekeeper Integration
 
 ## Overview

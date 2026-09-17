@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/lab/REQUIREMENTS.md; source-sha256: e16c81cf57aed587716328f0c7c8227e3576ca3982b328049ff20d6abf8613c9; reason: tooling or agent control surface -->
+
 # lab/ — Test Infrastructure Requirements
 
 > As of 2026-04-27, the test suite in `lab/` requires the following prerequisites

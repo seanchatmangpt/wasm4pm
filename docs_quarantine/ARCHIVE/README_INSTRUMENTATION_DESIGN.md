@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/README_INSTRUMENTATION_DESIGN.md; source-sha256: e8e1d1f4eed1ec9cee47b250efb4c13d847cd6228033adde823df261f9b47ac4; reason: tooling or agent control surface -->
+
 # OTEL Cross-Layer Trace Correlation — Design Analysis
 
 **Date:** 2026-05-18  

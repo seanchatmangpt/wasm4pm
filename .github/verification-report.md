@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/.github/verification-report.md; source-sha256: ba622dd7685bad347ac9ae81572de778b9d534735765cc7bd7e5ededa18e50b0; reason: tooling or agent control surface -->
+
 # Release Verification Report
 
 Generated: $(date -u +'%Y-%m-%dT%H:%M:%SZ')

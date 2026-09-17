@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/REINFORCEMENT_INSTRUMENTATION_REPORT.md; source-sha256: 73d738004bf7b8c75f953351e26e54954a3e206a2d20d0a0b68773a3794ea6be; reason: tooling or agent control surface -->
+
 # reinforcement.rs Instrumentation — Phase 2 Complete
 
 **Status:** ✅ COMPLETE  

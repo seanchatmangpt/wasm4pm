@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/archive/2026-06-09/academic/16-SIMULATION-SOCIAL-LINEAGE.md; source-sha256: 8448a00323c3ef2234dcdc6912a9f8328219bd893d3db28ec7dd0b84c9f2b897; reason: tooling or agent control surface -->
+
 # Simulation and Social Network Mining — Historical Lineage
 
 *Generated 2026-05-30 — static knowledge base, no network calls.*

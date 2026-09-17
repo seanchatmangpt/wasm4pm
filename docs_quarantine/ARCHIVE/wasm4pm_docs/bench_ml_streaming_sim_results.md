@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/wasm4pm_docs/bench_ml_streaming_sim_results.md; source-sha256: e24604e6e78fac3c100992573cf0ffe5141d809726d8d79f50e64b05fa8e0333; reason: tooling or agent control surface -->
+
 # ML, Streaming, Simulation, and OCEL Benchmark Results
 
 **Benchmark:** `ml_streaming_sim_bench`  

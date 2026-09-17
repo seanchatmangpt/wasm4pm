@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs/crates/crates/miniml-core/README-header.md; source-sha256: d846273fcc3f2decdba4ee04bc507532275953b3cf9aea9037e045ca4aaa8e62; reason: tooling or agent control surface -->
+
 
 # miniml
 

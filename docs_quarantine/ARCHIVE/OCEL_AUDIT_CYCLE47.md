@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/worktrees/wf_99470ccd-c7b-1/docs_quarantine/ARCHIVE/OCEL_AUDIT_CYCLE47.md; source-sha256: 8897cce6cbd283b6c0542f9906509e9c0a8d25ce4f0b44830a7bbe26c0a9ba77; reason: tooling or agent control surface -->
+
 # OCEL Object-Centric Mining Audit — Cycle 47 Final Report
 
 **Date:** 2026-05-17  
