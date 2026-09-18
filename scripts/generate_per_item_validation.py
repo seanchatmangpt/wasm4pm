@@ -143,10 +143,28 @@ describe('algorithm contract registry closure', () => {
         "mycin": "production_rules",
     }
 
+    # The universal anti-cheat generator only emits hardcode locks for values
+    # that are structurally lockable. autoinstinct_vision's canonical published
+    # pointer is the one-character value "B", so the upstream lock audit
+    # intentionally emits no anti-cheat function for that breed.
+    ANTICHEAT_EXEMPTIONS = {
+        "autoinstinct_vision": 'published pointer "B" is not hardcode-lockable',
+    }
+
     modules: list[str] = []
     for breed_id in BREEDS:
         source_file = BREED_SOURCE_FILE.get(breed_id, breed_id)
         modules.append(f'#[path = "breed_contracts/{breed_id}.rs"]\nmod {breed_id};')
+        if breed_id in ANTICHEAT_EXEMPTIONS:
+            anticheat_contract = (
+                f'    assert!(!ANTICHEAT.contains("anticheat_{breed_id}_"), '
+                f'"{breed_id}: explicit non-lockable anti-cheat exemption drifted");'
+            )
+        else:
+            anticheat_contract = (
+                f'    assert!(ANTICHEAT.contains("anticheat_{breed_id}_"), '
+                f'"{breed_id}: missing generated anti-cheat oracle");'
+            )
         focused_test = f'''const SOURCE: &str = include_str!("../../src/breeds/{source_file}.rs");
 const PAPER_POINTERS: &str = include_str!("../paper_pointers_generated.rs");
 const ANTICHEAT: &str = include_str!("../universal_anticheat_generated.rs");
@@ -161,7 +179,7 @@ fn {breed_id}_has_source_runtime_contract_and_oracles() {{
     assert!(!SOURCE.contains("unimplemented!"), "{breed_id}: unimplemented macro present");
     assert!(!SOURCE.contains("todo!"), "{breed_id}: todo macro present");
     assert!(PAPER_POINTERS.contains("{breed_id}"), "{breed_id}: missing generated paper-pointer oracle");
-    assert!(ANTICHEAT.contains("anticheat_{breed_id}_"), "{breed_id}: missing generated anti-cheat oracle");
+{anticheat_contract}
 }}
 '''
         emit(f"crates/wasm4pm-cognition/tests/breed_contracts/{breed_id}.rs", focused_test, check, drift)
@@ -183,6 +201,7 @@ fn {breed_id}_has_source_runtime_contract_and_oracles() {{
                 "algorithm_focused_tests": 60,
                 "breed_source_files": 55,
                 "breed_focused_tests": 55,
+                "breed_anticheat_exemptions": ANTICHEAT_EXEMPTIONS,
                 "generated_registration_surfaces_modified": False,
             },
             indent=2,
