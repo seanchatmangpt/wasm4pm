@@ -533,11 +533,7 @@ fn percentile(request_json: &str) -> String {
 /// # Safety
 /// See `crate`'s module-level ABI contract.
 #[unsafe(export_name = "wasm4pm_ex4pm_percentile_v1")]
-pub unsafe extern "C" fn percentile_v1(
-    ptr: *const u8,
-    len: usize,
-    out_len: *mut usize,
-) -> *mut u8 {
+pub unsafe extern "C" fn percentile_v1(ptr: *const u8, len: usize, out_len: *mut usize) -> *mut u8 {
     let input = unsafe { read_input(ptr, len) };
     write_output(percentile(&input), out_len)
 }
