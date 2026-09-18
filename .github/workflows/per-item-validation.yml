@@ -77,7 +77,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - name: Install focused-test dependencies without unrelated workspace postinstalls
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm --filter wasm4pm exec vitest run src/__tests__/algorithm-contracts
 
   breed-tests:
