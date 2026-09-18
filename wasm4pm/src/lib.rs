@@ -313,10 +313,10 @@ pub mod algorithms;
 #[cfg(feature = "conformance_basic")]
 pub mod analysis;
 pub mod binary_format;
-pub mod causal;
 pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
+pub mod causal;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
 #[cfg(feature = "conformance_basic")]
