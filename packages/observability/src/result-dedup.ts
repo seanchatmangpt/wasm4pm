@@ -60,10 +60,25 @@ export class ResultDeduplicator {
   private readonly defaultTtlMs: number;
   /** Optional OTEL span emitter. Set via `setSpanEmitter()`. Non-blocking. */
   private spanEmitter: ((event: OtelEvent) => void) | null = null;
+  /**
+   * Real clock by default; overridable via `setClock()` so tests can seed
+   * TTL expiry deterministically instead of racing a real sleep against a
+   * real TTL window. This injects real time control, not a mock of the
+   * dedup logic itself.
+   */
+  private clock: () => number = () => Date.now();
 
   constructor(dedupDbPath: string = '.wasm4pm/deduplicate.jsonl', defaultTtlMs: number = 24 * 60 * 60 * 1000) {
     this.dedup_db_path = dedupDbPath;
     this.defaultTtlMs = defaultTtlMs;
+  }
+
+  /**
+   * Override the clock used for timestamps and TTL/age checks.
+   * Used in tests to make TTL expiration deterministic (no real sleeps).
+   */
+  public setClock(clock: () => number): void {
+    this.clock = clock;
   }
 
   /**
@@ -127,13 +142,14 @@ export class ResultDeduplicator {
       }
 
       // Find result for this algorithm, check TTL
-      const now = Date.now();
+      const now = this.clock();
       for (const result of results) {
         if (result.algorithm === algorithm) {
           const age = now - result.timestamp;
           if (age <= result.ttl_ms) {
             this.deduplicatedCount++;
             this.lastHitTime = now;
+
             // Emit OTEL dedup hit span
             this.tryEmit(
               Instrumentation.createDedupHitEvent(logFilePath, algorithm, age)
@@ -169,7 +185,7 @@ export class ResultDeduplicator {
         log_content_hash: contentHash,
         log_path: logFilePath,
         algorithm,
-        timestamp: Date.now(),
+        timestamp: this.clock(),
         ttl_ms: ttl,
         result,
         config_hash: configHash,
@@ -214,7 +230,7 @@ export class ResultDeduplicator {
       const content = await fsReadFile(this.dedup_db_path, 'utf-8');
 
       const lines = content.split('\n').filter((line) => line.trim().length > 0);
-      const now = Date.now();
+      const now = this.clock();
 
       for (const line of lines) {
         try {
@@ -271,7 +287,7 @@ export class ResultDeduplicator {
   public clearMemory(): void {
     this.index.clear();
     this.deduplicatedCount = 0;
-    this.lastClearTime = Date.now();
+    this.lastClearTime = this.clock();
   }
 
   /**
@@ -291,7 +307,7 @@ export class ResultDeduplicator {
    * Returns the number of entries removed.
    */
   public purgeExpired(): number {
-    const now = Date.now();
+    const now = this.clock();
     let removed = 0;
 
     for (const [contentHash, results] of this.index.entries()) {

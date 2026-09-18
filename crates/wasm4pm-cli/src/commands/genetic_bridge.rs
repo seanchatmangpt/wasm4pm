@@ -81,7 +81,10 @@ mod tests {
         let (dfg, fitness) = discover_genetic_real(&log, "concept:name")
             .expect("genetic algorithm should discover a DFG without panicking");
 
-        assert!(!dfg.nodes.is_empty(), "expected a non-empty DFG, got {dfg:?}");
+        assert!(
+            !dfg.nodes.is_empty(),
+            "expected a non-empty DFG, got {dfg:?}"
+        );
         assert!(
             fitness > 0.0,
             "expected the evolved population to reach positive fitness on a log with \

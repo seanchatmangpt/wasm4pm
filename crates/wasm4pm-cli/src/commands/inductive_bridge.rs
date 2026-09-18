@@ -31,10 +31,7 @@ use wasm4pm_compat::process_tree::ProcessTree;
 /// Inductive Miner's output is a tree of XOR/Sequence/Parallel/Loop
 /// operators over leaf activities, which is what callers (e.g. a future
 /// `mining.rs` integration) should print/serialize directly.
-pub fn discover_inductive(
-    log: &CompatEventLog,
-    activity_key: &str,
-) -> anyhow::Result<ProcessTree> {
+pub fn discover_inductive(log: &CompatEventLog, activity_key: &str) -> anyhow::Result<ProcessTree> {
     // wasm4pm::models::EventLog has a `From<wasm4pm_compat::event_log::EventLog>`
     // impl already (see wasm4pm/src/models.rs), so this is a real structural
     // conversion (attributes + traces + events), not a stub.
@@ -44,8 +41,7 @@ pub fn discover_inductive(
     // (= `Evidence<EventLog, Admitted, W>`). `Admission::new(..).into_evidence()`
     // is the standard unwitnessed admission path used elsewhere in this
     // workspace (see wasm4pm/src/more_discovery.rs `discover_inductive_miner`).
-    let admitted =
-        wasm4pm_compat::admission::Admission::<_, ()>::new(native_log).into_evidence();
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(native_log).into_evidence();
 
     let typed_tree = wasm4pm::more_discovery::InductiveMiner::discover(&admitted, activity_key)
         .map_err(|e| anyhow::anyhow!(e))

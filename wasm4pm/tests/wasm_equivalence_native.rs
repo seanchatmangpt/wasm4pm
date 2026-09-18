@@ -47,8 +47,7 @@ fn output_path() -> std::path::PathBuf {
 #[test]
 fn native_dfg_and_stats_output_for_cross_target_diff() {
     let fixture_raw = fs::read_to_string(fixture_path()).expect("fixture_log.json must exist");
-    let log: EventLog =
-        serde_json::from_str(&fixture_raw).expect("fixture must parse as EventLog");
+    let log: EventLog = serde_json::from_str(&fixture_raw).expect("fixture must parse as EventLog");
 
     // Sanity: fixture is what we think it is (3 cases, 9 events total).
     assert_eq!(log.case_count(), 3);

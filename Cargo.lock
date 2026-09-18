@@ -218,7 +218,7 @@ checksum = "c8fa2134f07705399d0ff44d30447305cd1a13c9389298ef2d703805a78769db"
 dependencies = [
  "bcinr-api",
  "bcinr-core",
- "bcinr-logic",
+ "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -227,7 +227,7 @@ version = "26.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a95dd80866783974469ceb0f7593b066ecbdecdf8bc5c772fd055139a2a842bb"
 dependencies = [
- "bcinr-logic",
+ "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -236,7 +236,17 @@ version = "26.7.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7aa454f03b50b6990c672fd72a4e2bc3ec3af63bed5d4dfae02dee5ca30ba19"
 dependencies = [
- "bcinr-logic",
+ "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "bcinr-cmca"
+version = "26.7.28"
+source = "git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462#b76dcb377b297cb8826a5256b55f8b57a6b76462"
+dependencies = [
+ "bcinr-logic 26.7.28 (git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462)",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -246,7 +256,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c2c16c6d4f7e1f8d6b681159ee1d12c071c5bee6d1610bfc9bffb984c58b32"
 dependencies = [
  "bcinr-api",
- "bcinr-logic",
+ "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -254,6 +264,11 @@ name = "bcinr-logic"
 version = "26.7.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0be283759631eeff5f9be7313a699ae8efde493ab5b2ba2b5308d86030287b79"
+
+[[package]]
+name = "bcinr-logic"
+version = "26.7.28"
+source = "git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462#b76dcb377b297cb8826a5256b55f8b57a6b76462"
 
 [[package]]
 name = "bcinr-mfw-ir"
@@ -270,8 +285,8 @@ version = "26.7.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "825ef986f0f2908fedfdf14e59446d90df1f962f5ab86bd13f33de4a5508f508"
 dependencies = [
- "bcinr-cmca",
- "bcinr-logic",
+ "bcinr-cmca 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcinr-mfw-ir",
  "blake3",
  "serde",
@@ -4032,6 +4047,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm4pm-cmca"
+version = "26.7.23"
+dependencies = [
+ "bcinr-cmca 26.7.28 (git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462)",
+ "blake3",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "wasm4pm-cognition"
 version = "26.7.23"
 dependencies = [
@@ -4072,6 +4099,19 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "wasm4pm-ex4pm-bindings"
+version = "26.8.27"
+dependencies = [
+ "miniml",
+ "ocpq",
+ "prolog8",
+ "serde",
+ "serde_json",
+ "wasm4pm",
+ "wasm4pm-cognition",
 ]
 
 [[package]]

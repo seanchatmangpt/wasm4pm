@@ -316,13 +316,14 @@ pub mod binary_format;
 pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
+pub mod causal;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
-/// W4PM-LEAN-GALL-010: Rust<->Lean correspondence harnesses.
-pub mod correspondence;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance_guards;
 pub mod conformance_reporting;
+/// W4PM-LEAN-GALL-010: Rust<->Lean correspondence harnesses.
+pub mod correspondence;
 #[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 #[cfg(feature = "streaming_basic")]
@@ -484,14 +485,28 @@ pub mod declare_conformance;
 pub mod simd_token_replay;
 #[cfg(feature = "conformance_basic")]
 pub mod temporal_profile;
+// ETConformance precision (Munoz-Gama & Carmona prefix-automaton escaping-edges
+// metric) is a self-contained token-replay computation over models::EventLog /
+// models::PetriNet only (see the module's own doc comment) -- it does not depend
+// on the A*/LP alignment machinery (alignments, marking_equation,
+// align_etconformance) that the other conformance_full-only modules below
+// require. Re-gated here under conformance_basic (moved down from
+// conformance_full) because discover_ilp_petri_net_from_log in ilp_discovery.rs
+// -- gated only by discovery_advanced, not conformance_full -- calls
+// etconformance_precision::compute_precision unconditionally; building with
+// discovery_advanced + conformance_basic but without conformance_full (e.g.
+// open-ontologies's dependency features) failed with "cannot find
+// etconformance_precision in crate". conformance_full already implies
+// conformance_basic (see its feature declaration below), so this is additive
+// only: every existing conformance_full consumer still gets this module.
+#[cfg(feature = "conformance_basic")]
+pub mod etconformance_precision;
 
 // SIMD inner loop optimizations (always compiled, feature-gated at runtime)
 pub mod simd_inner_loops;
 
 #[cfg(feature = "conformance_full")]
 pub mod alignments;
-#[cfg(feature = "conformance_full")]
-pub mod etconformance_precision;
 #[cfg(feature = "conformance_full")]
 pub mod marking_equation;
 #[cfg(feature = "conformance_full")]

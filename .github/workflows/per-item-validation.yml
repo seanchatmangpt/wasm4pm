@@ -47,7 +47,7 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add \
+          git add -f \
             packages/kernel/src/algorithm-contracts \
             packages/kernel/src/__tests__/algorithm-contracts \
             crates/wasm4pm-cognition/tests/breed_contracts \
@@ -67,14 +67,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-python@v6
         with:
-          version: 9
+          python-version: '3.13'
+      - name: Generate exact files
+        run: python3 scripts/generate_per_item_validation.py
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - name: Install focused-test dependencies without unrelated workspace postinstalls
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm --filter wasm4pm exec vitest run src/__tests__/algorithm-contracts
 
   breed-tests:
@@ -85,6 +89,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Generate exact files
+        run: python3 scripts/generate_per_item_validation.py
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-08-04

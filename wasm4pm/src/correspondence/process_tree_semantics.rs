@@ -247,9 +247,18 @@ pub fn enumerate_trees(max_leaves: usize) -> Vec<RestrictedTree> {
             let rights = trees_with_n_leaves(right_n, alphabet);
             for l in &lefts {
                 for r in &rights {
-                    out.push(RestrictedTree::Seq(Box::new(l.clone()), Box::new(r.clone())));
-                    out.push(RestrictedTree::Xor(Box::new(l.clone()), Box::new(r.clone())));
-                    out.push(RestrictedTree::Par(Box::new(l.clone()), Box::new(r.clone())));
+                    out.push(RestrictedTree::Seq(
+                        Box::new(l.clone()),
+                        Box::new(r.clone()),
+                    ));
+                    out.push(RestrictedTree::Xor(
+                        Box::new(l.clone()),
+                        Box::new(r.clone()),
+                    ));
+                    out.push(RestrictedTree::Par(
+                        Box::new(l.clone()),
+                        Box::new(r.clone()),
+                    ));
                 }
             }
         }
@@ -275,29 +284,44 @@ mod tests {
         let mut checked = 0usize;
         for t in &trees {
             let r = compare_language(t);
-            assert!(r.agree, "disagreement on tree {t:?}: lean={:?} rust={:?}", r.lean, r.rust);
+            assert!(
+                r.agree,
+                "disagreement on tree {t:?}: lean={:?} rust={:?}",
+                r.lean, r.rust
+            );
             checked += 1;
         }
-        eprintln!("exhaustive_small_trees_all_agree: checked {checked} trees (MAX_LEAVES={MAX_LEAVES})");
+        eprintln!(
+            "exhaustive_small_trees_all_agree: checked {checked} trees (MAX_LEAVES={MAX_LEAVES})"
+        );
     }
 
     #[test]
     fn sequence_is_concatenation() {
-        let t = RestrictedTree::Seq(Box::new(RestrictedTree::Leaf(0)), Box::new(RestrictedTree::Leaf(1)));
+        let t = RestrictedTree::Seq(
+            Box::new(RestrictedTree::Leaf(0)),
+            Box::new(RestrictedTree::Leaf(1)),
+        );
         let lang = lean_language_exact(&t);
         assert_eq!(lang, BTreeSet::from([vec![0, 1]]));
     }
 
     #[test]
     fn exclusive_choice_is_union() {
-        let t = RestrictedTree::Xor(Box::new(RestrictedTree::Leaf(0)), Box::new(RestrictedTree::Leaf(1)));
+        let t = RestrictedTree::Xor(
+            Box::new(RestrictedTree::Leaf(0)),
+            Box::new(RestrictedTree::Leaf(1)),
+        );
         let lang = lean_language_exact(&t);
         assert_eq!(lang, BTreeSet::from([vec![0], vec![1]]));
     }
 
     #[test]
     fn parallel_is_all_interleavings() {
-        let t = RestrictedTree::Par(Box::new(RestrictedTree::Leaf(0)), Box::new(RestrictedTree::Leaf(1)));
+        let t = RestrictedTree::Par(
+            Box::new(RestrictedTree::Leaf(0)),
+            Box::new(RestrictedTree::Leaf(1)),
+        );
         let lang = lean_language_exact(&t);
         assert_eq!(lang, BTreeSet::from([vec![0, 1], vec![1, 0]]));
     }
@@ -308,15 +332,24 @@ mod tests {
         // includes the reversed order must disagree with the real
         // sequence semantics (sequence is NOT commutative, unlike
         // exclusive choice/parallel's union/interleaving).
-        let t = RestrictedTree::Seq(Box::new(RestrictedTree::Leaf(0)), Box::new(RestrictedTree::Leaf(1)));
+        let t = RestrictedTree::Seq(
+            Box::new(RestrictedTree::Leaf(0)),
+            Box::new(RestrictedTree::Leaf(1)),
+        );
         let correct = lean_language_exact(&t);
         let tampered_commutative = BTreeSet::from([vec![0, 1], vec![1, 0]]);
-        assert_ne!(correct, tampered_commutative, "sequence must not be commutative like xor/par are");
+        assert_ne!(
+            correct, tampered_commutative,
+            "sequence must not be commutative like xor/par are"
+        );
     }
 
     #[test]
     fn lean_file_hash_matches_citation() {
-        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mfact/procint/ProcInt/Models/ProcessTree.lean");
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../mfact/procint/ProcInt/Models/ProcessTree.lean"
+        );
         let Ok(contents) = std::fs::read(path) else {
             eprintln!("lean_file_hash_matches_citation: SKIPPED — {path} not found (mfact not checked out)");
             return;
@@ -339,11 +372,20 @@ mod tests {
             .stdout(Stdio::piped())
             .spawn()
             .and_then(|mut child| {
-                child.stdin.take().unwrap().write_all(data).expect("write to shasum stdin");
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(data)
+                    .expect("write to shasum stdin");
                 child.wait_with_output()
             });
         match output {
-            Ok(out) => String::from_utf8_lossy(&out.stdout).split_whitespace().next().unwrap_or("").to_string(),
+            Ok(out) => String::from_utf8_lossy(&out.stdout)
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .to_string(),
             Err(_) => {
                 eprintln!("sha256_hex: `shasum` not available, skipping");
                 String::new()

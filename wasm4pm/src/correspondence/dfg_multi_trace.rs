@@ -56,7 +56,7 @@
 /// `receipts/W4PM-LEAN-GALL-023-dfg-multi-trace-closure.md`). Re-hash the
 /// real file before trusting this citation if mfact has since moved.
 pub const LEAN_FILE_SHA256: &str =
-    "0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e";
+    "9ec70e3ac8122664df29fec6e7d3cd804dc00aa021077db3604c2e101b01a29b";
 
 /// mfact revision this harness cites. Updated from the prior
 /// `801abf7933dabf5c95f9fb18ff21a7a8a1f6a564` pin once this checkpoint's
@@ -253,11 +253,7 @@ mod tests {
         let (a, b) = (1u32, 2u32);
         let per_trace_sum: u64 = log
             .iter()
-            .map(|t| {
-                t.windows(2)
-                    .filter(|w| w[0] == a && w[1] == b)
-                    .count() as u64
-            })
+            .map(|t| t.windows(2).filter(|w| w[0] == a && w[1] == b).count() as u64)
             .sum();
         let whole_log_weight = lean_dfg_of_log_weight(&log, a, b);
         assert_eq!(

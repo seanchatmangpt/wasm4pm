@@ -439,15 +439,15 @@ mod tests {
     }
 
     use crate::models::{Event, Trace};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     fn mk_ev(t: i64) -> Event {
-        let mut a = HashMap::new();
+        let mut a = BTreeMap::new();
         a.insert("time:timestamp".to_string(), AttributeValue::Int(t));
         Event { attributes: a }
     }
     fn mk_trace(ts: &[i64], cohort: Option<&str>) -> Trace {
-        let mut tattrs = HashMap::new();
+        let mut tattrs = BTreeMap::new();
         if let Some(c) = cohort {
             tattrs.insert("cohort".to_string(), AttributeValue::String(c.to_string()));
         }

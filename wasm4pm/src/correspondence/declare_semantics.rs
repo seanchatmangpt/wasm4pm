@@ -110,7 +110,10 @@ mod tests {
         for &a in activities {
             let mut event = Event::default();
             let mut attrs = BTreeMap::new();
-            attrs.insert("concept:name".to_string(), AttributeValue::String(a.to_string()));
+            attrs.insert(
+                "concept:name".to_string(),
+                AttributeValue::String(a.to_string()),
+            );
             event.attributes = attrs;
             trace.events.push(event);
         }
@@ -118,7 +121,10 @@ mod tests {
     }
 
     fn make_log(traces: &[&[&str]]) -> EventLog {
-        EventLog { traces: traces.iter().map(|t| make_trace(t)).collect(), attributes: BTreeMap::new() }
+        EventLog {
+            traces: traces.iter().map(|t| make_trace(t)).collect(),
+            attributes: BTreeMap::new(),
+        }
     }
 
     fn constraint(template: &str, activities: &[&str]) -> DeclareConstraint {
@@ -134,8 +140,12 @@ mod tests {
     /// whether the trace satisfies the constraint (0 violations).
     fn rust_satisfies(template: &str, activities: &[&str], trace: &[&str]) -> bool {
         let log = make_log(&[trace]);
-        let json_str = check_declare_conformance_pure(&log, &[constraint(template, activities)], "concept:name")
-            .expect("pure core must not error on well-formed input");
+        let json_str = check_declare_conformance_pure(
+            &log,
+            &[constraint(template, activities)],
+            "concept:name",
+        )
+        .expect("pure core must not error on well-formed input");
         let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
         let violations = parsed["constraints"][0]["violations"].as_u64().unwrap();
         violations == 0
@@ -349,7 +359,10 @@ mod tests {
 
     #[test]
     fn lean_file_hash_matches_citation() {
-        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mfact/procint/ProcInt/Models/Declare.lean");
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../mfact/procint/ProcInt/Models/Declare.lean"
+        );
         let Ok(contents) = std::fs::read(path) else {
             eprintln!("lean_file_hash_matches_citation: SKIPPED — {path} not found (mfact not checked out)");
             return;
@@ -372,11 +385,20 @@ mod tests {
             .stdout(Stdio::piped())
             .spawn()
             .and_then(|mut child| {
-                child.stdin.take().unwrap().write_all(data).expect("write to shasum stdin");
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(data)
+                    .expect("write to shasum stdin");
                 child.wait_with_output()
             });
         match output {
-            Ok(out) => String::from_utf8_lossy(&out.stdout).split_whitespace().next().unwrap_or("").to_string(),
+            Ok(out) => String::from_utf8_lossy(&out.stdout)
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .to_string(),
             Err(_) => {
                 eprintln!("sha256_hex: `shasum` not available, skipping");
                 String::new()
