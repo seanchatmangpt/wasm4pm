@@ -80,6 +80,9 @@ jobs:
       - name: Rust compile
         run: cargo check --workspace --all-targets --locked
 
+      - name: Command projection exact falsifiers
+        run: cargo test -p wasm4pm-cognition --test command_projection --locked
+
       - name: Rust tests
         run: cargo test --workspace --locked
 
