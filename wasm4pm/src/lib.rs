@@ -112,6 +112,8 @@ pub mod error;
 pub mod foundry;
 /// Graduation intake module bridging the baseline.
 pub mod graduation;
+/// GALL ex4pm portable-artifact verification and subject bridge.
+pub mod gall_ex4pm_bridge;
 /// GALL-021..023 portable process qualification courts.
 pub mod gall_process_portability;
 /// Event log I/O utilities (XES import/export, binary format).
