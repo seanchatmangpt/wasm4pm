@@ -110,6 +110,8 @@ pub mod error;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
+/// GALL-021..023 deterministic portable process qualification courts.
+pub mod gall_process_courts;
 /// Graduation intake module bridging the baseline.
 pub mod graduation;
 /// GALL-021..023 portable process qualification courts.
