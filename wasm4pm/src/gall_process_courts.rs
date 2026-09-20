@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest as ShaDigest, Sha256};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -370,11 +370,17 @@ mod tests {
         )
         .expect("admitted ex4pm artifact");
 
-        assert_eq!(subject.source_digest, artifact["artifact_digest"]);
-        assert_eq!(subject.process_digest, artifact["payload_digest"]);
+        assert_eq!(
+            subject.source_digest,
+            artifact["artifact_digest"].as_str().expect("artifact digest")
+        );
+        assert_eq!(
+            subject.process_digest,
+            artifact["payload_digest"].as_str().expect("payload digest")
+        );
         assert_eq!(
             subject.parameters["ex4pm_corpus_digest"],
-            artifact["corpus_digest"]
+            artifact["corpus_digest"].as_str().expect("corpus digest")
         );
         assert_eq!(
             subject.parameters["ex4pm_producer_repository"],
