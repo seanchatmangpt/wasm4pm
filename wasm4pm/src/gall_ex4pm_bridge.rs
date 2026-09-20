@@ -127,45 +127,22 @@ fn canonical_jcs_subset(value: &Value) -> Result<String, Ex4pmBridgeRefusal> {
         Value::Object(values) => {
             let mut keys: Vec<&String> = values.keys().collect();
             keys.sort();
+            let mut pairs = Vec::with_capacity(keys.len());
 
-            let pairs = keys
-                .into_iter()
-                .map(|key| {
-                    let key = serde_json::to_string(key)
-                        .map_err(|error| Ex4pmBridgeRefusal::InvalidJson(error.to_string()))?;
-                    let value = canonical_jcs_subset(&values[&key[1..key.len() - 1]])?;
-                    Ok(format!("{key}:{value}"))
-                })
-                .collect::<Result<Vec<_>, Ex4pmBridgeRefusal>>()?;
+            for key in keys {
+                let encoded_key = serde_json::to_string(key)
+                    .map_err(|error| Ex4pmBridgeRefusal::InvalidJson(error.to_string()))?;
+                let encoded_value = canonical_jcs_subset(&values[key])?;
+                pairs.push(format!("{encoded_key}:{encoded_value}"));
+            }
 
             Ok(format!("{{{}}}", pairs.join(",")))
         }
     }
 }
 
-fn canonical_object(value: &Value) -> Result<String, Ex4pmBridgeRefusal> {
-    validate_jcs_subset(value)?;
-
-    if let Value::Object(values) = value {
-        let mut keys: Vec<&String> = values.keys().collect();
-        keys.sort();
-        let mut pairs = Vec::with_capacity(keys.len());
-
-        for key in keys {
-            let encoded_key = serde_json::to_string(key)
-                .map_err(|error| Ex4pmBridgeRefusal::InvalidJson(error.to_string()))?;
-            let encoded_value = canonical_jcs_subset(&values[key])?;
-            pairs.push(format!("{encoded_key}:{encoded_value}"));
-        }
-
-        Ok(format!("{{{}}}", pairs.join(",")))
-    } else {
-        canonical_jcs_subset(value)
-    }
-}
-
 fn digest_value(value: &Value) -> Result<String, Ex4pmBridgeRefusal> {
-    Ok(sha256(canonical_object(value)?.as_bytes()))
+    Ok(sha256(canonical_jcs_subset(value)?.as_bytes()))
 }
 
 fn required_string<'a>(
