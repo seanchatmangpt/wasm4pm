@@ -332,7 +332,7 @@ pub struct OcpqCanonicalResult {
 
 impl OcpqCanonicalResult {
     pub fn canonicalized(mut self) -> Self {
-        self.bindings.sort_by_key(digest_json);
+        self.bindings.sort_by_key(|binding| digest_json(binding));
         self.bindings.dedup();
         self.violations.sort();
         self.violations.dedup();
