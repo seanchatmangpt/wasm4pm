@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,9 +34,87 @@ pub enum CourtRefusal {
     UnsupportedPowlConstruct(String),
     UnsupportedOcpqOperator(String),
     MissingRelation(String),
+    InvalidUpstreamArtifact(String),
+    UpstreamDigestMismatch(String),
+    UpstreamAuthorityExpanded,
 }
 
 const FORBIDDEN_IMPORTS: &[&str] = &["clock", "time", "random", "filesystem", "network"];
+
+
+pub fn admit_ex4pm_portable_artifact(
+    artifact: &Value,
+    module_digest: &str,
+    runtime_id: &str,
+    mut parameters: BTreeMap<String, String>,
+) -> Result<PortableSubject, CourtRefusal> {
+    let object = artifact.as_object().ok_or_else(|| {
+        CourtRefusal::InvalidUpstreamArtifact("artifact must be an object".into())
+    })?;
+
+    require_string(object, "schema", Some("ex4pm.gall.portable/v26.9.18"))?;
+    require_string(object, "authority", Some("NONE"))
+        .map_err(|_| CourtRefusal::UpstreamAuthorityExpanded)?;
+
+    let producer = object
+        .get("producer")
+        .and_then(Value::as_object)
+        .ok_or_else(|| CourtRefusal::InvalidUpstreamArtifact("producer missing".into()))?;
+    let repository = require_string(producer, "repository", None)?;
+    if repository.split('/').count() != 2 {
+        return Err(CourtRefusal::InvalidUpstreamArtifact(
+            "producer repository must be owner/name".into(),
+        ));
+    }
+    let producer_sha = require_string(producer, "sha", None)?;
+    if !is_hex_digest(producer_sha, 40) {
+        return Err(CourtRefusal::InvalidUpstreamArtifact(
+            "producer sha must be exact 40-hex".into(),
+        ));
+    }
+
+    let corpus_digest = require_sha256(object, "corpus_digest")?;
+    let payload_digest = require_sha256(object, "payload_digest")?;
+    let artifact_digest = require_sha256(object, "artifact_digest")?;
+    let payload = object
+        .get("payload")
+        .ok_or_else(|| CourtRefusal::InvalidUpstreamArtifact("payload missing".into()))?;
+
+    let observed_payload = sha256_json(payload);
+    if observed_payload != payload_digest {
+        return Err(CourtRefusal::UpstreamDigestMismatch("payload_digest".into()));
+    }
+
+    let mut body = object.clone();
+    body.remove("artifact_digest");
+    let observed_artifact = sha256_json(&Value::Object(body));
+    if observed_artifact != artifact_digest {
+        return Err(CourtRefusal::UpstreamDigestMismatch("artifact_digest".into()));
+    }
+
+    if !is_content_digest(module_digest) {
+        return Err(CourtRefusal::InvalidUpstreamArtifact(
+            "module digest must be content-addressed".into(),
+        ));
+    }
+    if runtime_id.is_empty() {
+        return Err(CourtRefusal::InvalidUpstreamArtifact(
+            "runtime id is required".into(),
+        ));
+    }
+
+    parameters.insert("ex4pm_corpus_digest".into(), corpus_digest.into());
+    parameters.insert("ex4pm_producer_repository".into(), repository.into());
+    parameters.insert("ex4pm_producer_sha".into(), producer_sha.into());
+
+    Ok(PortableSubject {
+        source_digest: artifact_digest.into(),
+        process_digest: payload_digest.into(),
+        module_digest: module_digest.into(),
+        runtime_id: runtime_id.into(),
+        parameters,
+    })
+}
 
 pub fn gall_021_portable_result(
     subject: &PortableSubject,
@@ -101,6 +180,67 @@ pub fn gall_023_ocpq_bindings(
         &Value::Array(canonical),
         vec!["binding_order_permutation", "missing_relation", "unsupported_operator"],
     ))
+}
+
+
+fn require_string<'a>(
+    object: &'a serde_json::Map<String, Value>,
+    field: &str,
+    expected: Option<&str>,
+) -> Result<&'a str, CourtRefusal> {
+    let value = object
+        .get(field)
+        .and_then(Value::as_str)
+        .ok_or_else(|| CourtRefusal::InvalidUpstreamArtifact(format!("{field} missing")))?;
+    if value.is_empty() {
+        return Err(CourtRefusal::InvalidUpstreamArtifact(format!("{field} empty")));
+    }
+    if let Some(expected) = expected {
+        if value != expected {
+            return Err(CourtRefusal::InvalidUpstreamArtifact(format!(
+                "{field} mismatch"
+            )));
+        }
+    }
+    Ok(value)
+}
+
+fn require_sha256<'a>(
+    object: &'a serde_json::Map<String, Value>,
+    field: &str,
+) -> Result<&'a str, CourtRefusal> {
+    let value = require_string(object, field, None)?;
+    if value
+        .strip_prefix("sha256:")
+        .is_some_and(|hex| is_hex_digest(hex, 64))
+    {
+        Ok(value)
+    } else {
+        Err(CourtRefusal::InvalidUpstreamArtifact(format!(
+            "{field} must be sha256:<64hex>"
+        )))
+    }
+}
+
+fn is_content_digest(value: &str) -> bool {
+    ["sha256:", "blake3:"].iter().any(|prefix| {
+        value
+            .strip_prefix(prefix)
+            .is_some_and(|hex| is_hex_digest(hex, 64))
+    })
+}
+
+fn is_hex_digest(value: &str, len: usize) -> bool {
+    value.len() == len
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn sha256_json(value: &Value) -> String {
+    let canonical = canonical_json(value);
+    let digest = Sha256::digest(canonical.as_bytes());
+    format!("sha256:{:x}", digest)
 }
 
 fn receipt(
@@ -193,6 +333,91 @@ mod tests {
             runtime_id: "wasmtime:test".into(),
             parameters: BTreeMap::new(),
         }
+    }
+
+    fn ex4pm_artifact(payload: Value) -> Value {
+        let payload_digest = sha256_json(&payload);
+        let mut body = serde_json::json!({
+            "schema": "ex4pm.gall.portable/v26.9.18",
+            "kind": "powl",
+            "producer": {
+                "repository": "seanchatmangpt/ex4pm",
+                "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "corpus_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "payload": payload,
+            "payload_digest": payload_digest,
+            "evidence_class": "normative-process-law",
+            "authority": "NONE"
+        });
+        let artifact_digest = sha256_json(&body);
+        body.as_object_mut()
+            .expect("object")
+            .insert("artifact_digest".into(), Value::String(artifact_digest));
+        body
+    }
+
+    #[test]
+    fn ex4pm_portable_artifact_is_verified_before_gall_021_subject_construction() {
+        let artifact = ex4pm_artifact(json!({
+            "model": {"type": "partial_order", "children": ["a", "b"], "order": []}
+        }));
+        let subject = admit_ex4pm_portable_artifact(
+            &artifact,
+            "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "wasmtime:26.9.18",
+            BTreeMap::new(),
+        )
+        .expect("admitted ex4pm artifact");
+
+        assert_eq!(
+            subject.source_digest,
+            artifact["artifact_digest"].as_str().expect("artifact digest")
+        );
+        assert_eq!(
+            subject.process_digest,
+            artifact["payload_digest"].as_str().expect("payload digest")
+        );
+        assert_eq!(
+            subject.parameters["ex4pm_corpus_digest"],
+            artifact["corpus_digest"].as_str().expect("corpus digest")
+        );
+        assert_eq!(
+            subject.parameters["ex4pm_producer_repository"],
+            "seanchatmangpt/ex4pm"
+        );
+
+        let receipt = gall_021_portable_result(&subject, &artifact["payload"], &[])
+            .expect("portable compute");
+        assert_eq!(receipt.checkpoint, "GALL-021");
+        assert_eq!(receipt.evidence_ceiling, "COMPUTE_ONLY");
+    }
+
+    #[test]
+    fn ex4pm_portable_admission_refuses_tamper_and_authority_expansion() {
+        let mut tampered = ex4pm_artifact(json!({"model": {"type": "sequence"}}));
+        tampered["payload"]["model"]["type"] = json!("choice");
+        assert_eq!(
+            admit_ex4pm_portable_artifact(
+                &tampered,
+                "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                "wasmtime:26.9.18",
+                BTreeMap::new(),
+            ),
+            Err(CourtRefusal::UpstreamDigestMismatch("payload_digest".into()))
+        );
+
+        let mut authority = ex4pm_artifact(json!({"model": {"type": "sequence"}}));
+        authority["authority"] = json!("DO");
+        assert_eq!(
+            admit_ex4pm_portable_artifact(
+                &authority,
+                "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                "wasmtime:26.9.18",
+                BTreeMap::new(),
+            ),
+            Err(CourtRefusal::UpstreamAuthorityExpanded)
+        );
     }
 
     #[test]
