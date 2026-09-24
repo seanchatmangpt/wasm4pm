@@ -122,7 +122,10 @@ pub struct DifferentialMoveCostResult {
 /// point is `Move.cost .silentModel = 0`, not `Move.cost (.modelOnly _) = 1`
 /// — this function resolves that reclassification explicitly rather than
 /// comparing against the wrong Lean constructor.
-pub fn compare_move_cost(kind: MoveKind, is_invisible_model_move: bool) -> DifferentialMoveCostResult {
+pub fn compare_move_cost(
+    kind: MoveKind,
+    is_invisible_model_move: bool,
+) -> DifferentialMoveCostResult {
     let lean_kind = if kind == MoveKind::ModelOnly && is_invisible_model_move {
         MoveKind::SilentModel
     } else {
@@ -180,7 +183,10 @@ mod tests {
             (MoveKind::SilentModel, false),
         ] {
             let cost = rust_move_cost(kind, invisible);
-            assert!(cost.is_finite(), "kind={kind:?} invisible={invisible} produced non-finite cost {cost}");
+            assert!(
+                cost.is_finite(),
+                "kind={kind:?} invisible={invisible} produced non-finite cost {cost}"
+            );
         }
     }
 
@@ -190,10 +196,17 @@ mod tests {
         // no float drift versus the exact integer Lean-side sum -- the
         // "rounding boundary" falsifier for this metric.
         let n = 1000u64;
-        let lean_total: u64 = (0..n).map(|_| lean_move_cost_exact(MoveKind::LogOnly)).sum();
-        let rust_total: f64 = (0..n).map(|_| rust_move_cost(MoveKind::LogOnly, false)).sum();
+        let lean_total: u64 = (0..n)
+            .map(|_| lean_move_cost_exact(MoveKind::LogOnly))
+            .sum();
+        let rust_total: f64 = (0..n)
+            .map(|_| rust_move_cost(MoveKind::LogOnly, false))
+            .sum();
         assert_eq!(lean_total, n);
-        assert_eq!(rust_total, n as f64, "f64 accumulation must not drift from the exact integer sum");
+        assert_eq!(
+            rust_total, n as f64,
+            "f64 accumulation must not drift from the exact integer sum"
+        );
     }
 
     #[test]
@@ -207,7 +220,10 @@ mod tests {
         let seq_b = [MoveKind::ModelOnly, MoveKind::Sync, MoveKind::LogOnly]; // reordered
         let cost_a: u64 = seq_a.iter().map(|&k| lean_move_cost_exact(k)).sum();
         let cost_b: u64 = seq_b.iter().map(|&k| lean_move_cost_exact(k)).sum();
-        assert_eq!(cost_a, cost_b, "total cost of the same multiset of moves must not depend on order");
+        assert_eq!(
+            cost_a, cost_b,
+            "total cost of the same multiset of moves must not depend on order"
+        );
     }
 
     #[test]
@@ -253,7 +269,12 @@ mod tests {
             .stdout(Stdio::piped())
             .spawn()
             .and_then(|mut child| {
-                child.stdin.take().unwrap().write_all(data).expect("write to shasum stdin");
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(data)
+                    .expect("write to shasum stdin");
                 child.wait_with_output()
             });
         match output {

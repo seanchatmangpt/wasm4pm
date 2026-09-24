@@ -107,7 +107,10 @@ mod tests {
         let (dfg, fitness) = discover_aco_real(&log, "concept:name")
             .expect("ACO discovery should discover a DFG without panicking");
 
-        assert!(!dfg.nodes.is_empty(), "expected a non-empty DFG, got {dfg:?}");
+        assert!(
+            !dfg.nodes.is_empty(),
+            "expected a non-empty DFG, got {dfg:?}"
+        );
         assert!(
             fitness > 0.0,
             "expected the best ant's edge set to reach positive fitness on a log with \

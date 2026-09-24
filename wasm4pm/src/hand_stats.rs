@@ -81,6 +81,7 @@ pub use DataContainer as Data_new;
 ///
 /// # Examples
 /// ```
+/// use wasm4pm::hand_stats::median;
 /// let mut data = vec![5.0, 2.0, 8.0, 1.0, 9.0];
 /// assert_eq!(median(&mut data), Some(5.0));
 /// ```
@@ -126,6 +127,7 @@ pub fn percentile_95(data: &mut [f64]) -> Option<f64> {
 ///
 /// # Examples
 /// ```
+/// use wasm4pm::hand_stats::percentile;
 /// let mut data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
 /// assert_eq!(percentile(&mut data, 95.0), Some(10.0));
 /// ```

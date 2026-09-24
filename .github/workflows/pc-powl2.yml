@@ -30,6 +30,6 @@ jobs:
       - name: Format
         run: cargo fmt --all -- --check
       - name: Compile and run PC-POWL2 verifier fixtures
-        run: cargo test -p wasm4pm pc_powl2
+        run: cargo test -p wasm4pm --features cloud pc_powl2
       - name: Clippy PC-POWL2 engine
-        run: cargo clippy -p wasm4pm --tests -- -D warnings
+        run: cargo clippy -p wasm4pm --features cloud --tests -- -D warnings

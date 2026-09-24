@@ -1,21 +1,47 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
-// Pins Turbopack's inferred workspace root to this package's own directory.
-// Without this, Next auto-detects a monorepo root by walking up for the
-// first lockfile it finds -- and finds an unrelated `/Users/sac/pnpm-lock.yaml`
-// (a stray file well outside this repo, not this project's), which made it
-// treat `/Users/sac` as the workspace root instead of
-// `examples/interview-assist`. That wrong root corrupted relative asset-path
-// resolution inside `.next/server` for any dependency shipping non-JS
-// assets next to its code (discovered running `next build`: blake3's WASM
-// fallback failed with `ENOENT .../node_modules/blake3/dist/wasm/nodejs/
-// blake3_js_bg.wasm` under a bogus `/ROOT/...` path) -- this is exactly the
-// scenario Next's own build warning names and its own docs point at this
-// config key to fix (https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory).
+// Pins Turbopack's inferred workspace root to THIS MONOREPO's root
+// (`/Users/sac/wasm4pm`, i.e. two levels up from `examples/interview-assist`).
+//
+// Two distinct failures bound this value from both sides, so neither the
+// auto-inferred root nor this package's own directory works:
+//
+//  1. Too high (the auto-inferred default): Next walks up for the first
+//     lockfile it finds and reaches an unrelated `/Users/sac/pnpm-lock.yaml`
+//     (a stray file well outside this repo), treating `/Users/sac` as the
+//     workspace root. That wrong root corrupted relative asset-path
+//     resolution inside `.next/server` for any dependency shipping non-JS
+//     assets next to its code (observed as blake3's WASM fallback failing
+//     with `ENOENT .../node_modules/blake3/dist/wasm/nodejs/
+//     blake3_js_bg.wasm` under a bogus `/ROOT/...` path). This is the
+//     scenario Next's own build warning names, and its docs point at this
+//     config key to fix it (https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory).
+//
+//  2. Too low (`path.resolve(__dirname)`, this package's own directory --
+//     what this was set to previously): correct only while this example had
+//     its own standalone `npm install`, which materialized real directories
+//     under `examples/interview-assist/node_modules`. Once the example is
+//     installed as part of the pnpm workspace (which is how `pnpm -r build`
+//     and CI run it), `node_modules/next` becomes a SYMLINK into the
+//     repo-root pnpm content store --
+//     `../../../node_modules/.pnpm/next@16.2.12_.../node_modules/next` --
+//     which lies OUTSIDE this package's directory. Turbopack refuses to
+//     traverse outside its root ("files outside of the project directory
+//     will not be compiled"), so package resolution failed at the first
+//     hop with `We couldn't find the Next.js package (next/package.json)
+//     from the project directory: .../examples/interview-assist/app`.
+//     Verified directly: `require.resolve("next/package.json")` from that
+//     same `app/` directory succeeds under plain Node and lands in
+//     `/Users/sac/wasm4pm/node_modules/.pnpm/...`, i.e. the package was
+//     always resolvable -- only the root pin was excluding it.
+//
+// The monorepo root is the narrowest value that contains both this package
+// and the pnpm store its symlinks point into, while still excluding the
+// stray `/Users/sac` lockfile that caused failure 1.
 const nextConfig: NextConfig = {
   turbopack: {
-    root: path.resolve(__dirname),
+    root: path.resolve(__dirname, "..", ".."),
   },
   // `blake3`'s Node build loads its WASM fallback via a computed relative
   // path (dist/node/hash-fn.js -> dist/wasm/nodejs/blake3_js_bg.wasm).

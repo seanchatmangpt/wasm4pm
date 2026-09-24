@@ -72,16 +72,14 @@ pub const LEAN_CORE_FILE_SHA256: &str =
 // correspondence::dfg_multi_trace for the new multi-trace harness this
 // checkpoint added, which cites the same file at the same hash.
 pub const LEAN_DFG_FILE_SHA256: &str =
-    "0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e";
+    "9ec70e3ac8122664df29fec6e7d3cd804dc00aa021077db3604c2e101b01a29b";
 pub const MFACT_REVISION: &str = "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564";
 
 /// Hand-transcription of `Ocel/Core.lean`'s `OCEL.TimeOrdered`:
 /// `es.Pairwise (fun a b => L.time a ≤ L.time b)` — every consecutive (and, since
 /// `Pairwise`, every non-consecutive) pair in arrival order must be non-decreasing in time.
 pub fn lean_time_ordered(timestamps_in_arrival_order: &[i64]) -> bool {
-    timestamps_in_arrival_order
-        .windows(2)
-        .all(|w| w[0] <= w[1])
+    timestamps_in_arrival_order.windows(2).all(|w| w[0] <= w[1])
 }
 
 /// Direct transcription of `validate_ocel_object_lifecycles`'s violation check
@@ -90,15 +88,14 @@ pub fn lean_time_ordered(timestamps_in_arrival_order: &[i64]) -> bool {
 /// cargo feature or a full `OCEL` fixture, since the real function's violation-detection
 /// logic operates purely on `(arrival_index, timestamp)` pairs per object.
 fn rust_has_violation(timestamps_in_arrival_order: &[i64]) -> bool {
-    timestamps_in_arrival_order
-        .windows(2)
-        .any(|w| w[1] < w[0])
+    timestamps_in_arrival_order.windows(2).any(|w| w[1] < w[0])
 }
 
 /// Compares the Lean predicate against wasm4pm's real violation-detection logic:
 /// agreement means `lean_time_ordered` is true exactly when no violation is reported.
 pub fn compare_time_ordered(timestamps_in_arrival_order: &[i64]) -> bool {
-    lean_time_ordered(timestamps_in_arrival_order) == !rust_has_violation(timestamps_in_arrival_order)
+    lean_time_ordered(timestamps_in_arrival_order)
+        == !rust_has_violation(timestamps_in_arrival_order)
 }
 
 /// Hand-transcription of `Models/Dfg.lean`'s `dfgOfTrace`:
@@ -272,7 +269,9 @@ mod tests {
         };
         for _ in 0..50 {
             let len = 1 + next() % 10;
-            let trace: Vec<&str> = (0..len).map(|_| alphabet[next() % alphabet.len()]).collect();
+            let trace: Vec<&str> = (0..len)
+                .map(|_| alphabet[next() % alphabet.len()])
+                .collect();
             assert!(
                 compare_dfg_of_trace(&trace),
                 "disagreement on trace {trace:?}"

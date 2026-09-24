@@ -398,11 +398,9 @@ fn run_validated_request(
     request: InterviewAssistRequest,
     identity: ResponseIdentity,
 ) -> InterviewAssistResponse {
-    if request
-        .confirmation
-        .as_ref()
-        .is_some_and(|confirmation| confirmation.choice == InterviewAssistConfirmationChoice::NotSure)
-    {
+    if request.confirmation.as_ref().is_some_and(|confirmation| {
+        confirmation.choice == InterviewAssistConfirmationChoice::NotSure
+    }) {
         return identity.refusal(refusal(
             "CONFIRMATION_ABSTAINED",
             "confirmation was explicitly deferred",
@@ -416,11 +414,17 @@ fn run_validated_request(
         text: event.text.clone(),
         retract_evidence_ids: event.retract_evidence_ids.clone(),
     });
-    let confirmation = request.confirmation.as_ref().map(|confirmation| Confirmation {
-        track_id: confirmation.track_id.clone(),
-        accepted: confirmation.choice == InterviewAssistConfirmationChoice::Yes,
-    });
-    let previous_state = request.previous_state.as_ref().map(|state| state.cognition.clone());
+    let confirmation = request
+        .confirmation
+        .as_ref()
+        .map(|confirmation| Confirmation {
+            track_id: confirmation.track_id.clone(),
+            accepted: confirmation.choice == InterviewAssistConfirmationChoice::Yes,
+        });
+    let previous_state = request
+        .previous_state
+        .as_ref()
+        .map(|state| state.cognition.clone());
 
     match run_session_turn(&SessionTurnInput {
         domain_pack,
@@ -434,7 +438,12 @@ fn run_validated_request(
                 summary: event.text.trim().to_string(),
             });
             let mut constraints = BTreeSet::new();
-            for evidence in output.state.evidence.iter().filter(|evidence| evidence.active) {
+            for evidence in output
+                .state
+                .evidence
+                .iter()
+                .filter(|evidence| evidence.active)
+            {
                 constraints.insert(evidence.proposition.clone());
             }
             let candidates = output
@@ -450,19 +459,20 @@ fn run_validated_request(
                     eliminated: candidate.eliminated,
                 })
                 .collect();
-            let confirmation_prompt = output
-                .projection
-                .pending_confirmation
-                .as_ref()
-                .map(|track_id| InterviewAssistConfirmationPrompt {
-                    track_id: track_id.clone(),
-                    question: format!("Should InterviewAssist commit to the {track_id} track?"),
-                    choices: vec![
-                        InterviewAssistConfirmationChoice::Yes,
-                        InterviewAssistConfirmationChoice::No,
-                        InterviewAssistConfirmationChoice::NotSure,
-                    ],
-                });
+            let confirmation_prompt =
+                output
+                    .projection
+                    .pending_confirmation
+                    .as_ref()
+                    .map(|track_id| InterviewAssistConfirmationPrompt {
+                        track_id: track_id.clone(),
+                        question: format!("Should InterviewAssist commit to the {track_id} track?"),
+                        choices: vec![
+                            InterviewAssistConfirmationChoice::Yes,
+                            InterviewAssistConfirmationChoice::No,
+                            InterviewAssistConfirmationChoice::NotSure,
+                        ],
+                    });
             let cognition_state = InterviewAssistCognitionState {
                 phase: output.projection.phase.clone(),
                 phase_label: output.projection.phase_label.clone(),
