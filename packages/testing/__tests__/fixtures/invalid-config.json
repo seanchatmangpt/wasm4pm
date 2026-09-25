@@ -1,9 +1,0 @@
-{
-  "discovery": {
-    "algorithm": "dfg",
-    "timeout": "not_a_number"
-  },
-  "source": {
-    "kind": "file"
-  }
-}
