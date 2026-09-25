@@ -24,7 +24,7 @@ regex = "1.10"
 prolog8 = { workspace = true }
 ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_core"], optional = true }
 rand_core = { version = "0.6", default-features = false, optional = true }
-rand = { version = "0.8", default-features = false, features = ["small_rng"] }
+rand = { version = "0.9", default-features = false, features = ["small_rng"] }
 
 # wasm bindings — gated behind a feature so the crate can be tested
 # natively with `cargo test` while still building as cdylib for browsers.
