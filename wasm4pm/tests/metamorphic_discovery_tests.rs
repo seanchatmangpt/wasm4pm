@@ -10,9 +10,9 @@
 //! - E3: More phases → larger DFG topology (activity diversity perturbation)
 
 use chrono::{Duration, Utc};
-use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
-use wasm4pm::discovery::discover_ocel_dfg_pure;
 use std::collections::HashMap;
+use wasm4pm::discovery::discover_ocel_dfg_pure;
+use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 
 // ============================================================================
 // Test Helper — OCEL Construction
@@ -40,9 +40,10 @@ fn build_test_ocel_with_phases(cycles: usize, phases: &[&str]) -> OCEL {
         // Create P phase events for this cycle
         for (j, phase) in phases.iter().enumerate() {
             let event_id = format!("{}_{}", obj_id, phase.to_lowercase());
-            let timestamp = (base_time + Duration::seconds((i as i64) * (phases.len() as i64) + (j as i64)))
-                .format("%Y-%m-%dT%H:%M:%S%.3fZ")
-                .to_string();
+            let timestamp = (base_time
+                + Duration::seconds((i as i64) * (phases.len() as i64) + (j as i64)))
+            .format("%Y-%m-%dT%H:%M:%S%.3fZ")
+            .to_string();
 
             events.push(OCELEvent {
                 id: event_id,
@@ -129,19 +130,28 @@ fn test_dfg_frequency_scales_linearly_with_object_count() {
             .collect();
 
         assert_eq!(
-            edges_map.get(&("Perception", "Decision")).copied().unwrap_or(0),
+            edges_map
+                .get(&("Perception", "Decision"))
+                .copied()
+                .unwrap_or(0),
             object_count,
             "Edge Perception→Decision frequency should equal object count ({})",
             object_count
         );
         assert_eq!(
-            edges_map.get(&("Decision", "Protection")).copied().unwrap_or(0),
+            edges_map
+                .get(&("Decision", "Protection"))
+                .copied()
+                .unwrap_or(0),
             object_count,
             "Edge Decision→Protection frequency should equal object count ({})",
             object_count
         );
         assert_eq!(
-            edges_map.get(&("Protection", "Optimization")).copied().unwrap_or(0),
+            edges_map
+                .get(&("Protection", "Optimization"))
+                .copied()
+                .unwrap_or(0),
             object_count,
             "Edge Protection→Optimization frequency should equal object count ({})",
             object_count

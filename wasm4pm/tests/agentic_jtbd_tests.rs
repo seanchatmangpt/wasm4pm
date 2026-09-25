@@ -1,5 +1,5 @@
-use wasm4pm::agentic::prelude::*;
 use std::collections::BTreeSet;
+use wasm4pm::agentic::prelude::*;
 
 fn make_task_context(
     title: &str,
@@ -41,7 +41,13 @@ fn make_task_context(
 #[test]
 fn role_selector_intake_maps_to_explorer() {
     let role_selector = DefaultRoleSelector;
-    let task = make_task_context("Intake", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Intake",
+        WorkflowPhase::Intake,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = role_selector.select_role(&task).unwrap();
     assert_eq!(result.selected_role, AgentRole::Explorer);
@@ -50,7 +56,13 @@ fn role_selector_intake_maps_to_explorer() {
 #[test]
 fn role_selector_triage_maps_to_reviewer() {
     let role_selector = DefaultRoleSelector;
-    let task = make_task_context("Triage", WorkflowPhase::Triage, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Triage",
+        WorkflowPhase::Triage,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = role_selector.select_role(&task).unwrap();
     assert_eq!(result.selected_role, AgentRole::Reviewer);
@@ -59,7 +71,13 @@ fn role_selector_triage_maps_to_reviewer() {
 #[test]
 fn role_selector_critical_risk_overrides_to_escalator() {
     let role_selector = DefaultRoleSelector;
-    let task = make_task_context("Triage", WorkflowPhase::Triage, RiskLevel::Critical, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Triage",
+        WorkflowPhase::Triage,
+        RiskLevel::Critical,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = role_selector.select_role(&task).unwrap();
     assert_eq!(result.selected_role, AgentRole::Escalator);
@@ -68,7 +86,13 @@ fn role_selector_critical_risk_overrides_to_escalator() {
 #[test]
 fn task_decomposer_low_risk_maps_to_single() {
     let decomposer = DefaultTaskDecomposer;
-    let task = make_task_context("Execute", WorkflowPhase::Execute, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Execute",
+        WorkflowPhase::Execute,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = decomposer.choose_topology(&task).unwrap();
     assert_eq!(result.topology, SwarmTopology::Single);
@@ -77,7 +101,13 @@ fn task_decomposer_low_risk_maps_to_single() {
 #[test]
 fn task_decomposer_validate_phase_maps_to_reviewloop() {
     let decomposer = DefaultTaskDecomposer;
-    let task = make_task_context("Validate", WorkflowPhase::Validate, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Validate",
+        WorkflowPhase::Validate,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = decomposer.choose_topology(&task).unwrap();
     assert_eq!(result.topology, SwarmTopology::ReviewLoop);
@@ -86,9 +116,19 @@ fn task_decomposer_validate_phase_maps_to_reviewloop() {
 #[test]
 fn evidence_sufficiency_all_present_is_sufficient() {
     let checker = DefaultEvidenceSufficiencyChecker;
-    let mut task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
-    task.evidence.required_evidence_classes.insert("log".to_string());
-    task.evidence.available_evidence_classes.insert("log".to_string());
+    let mut task = make_task_context(
+        "Test",
+        WorkflowPhase::Intake,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
+    task.evidence
+        .required_evidence_classes
+        .insert("log".to_string());
+    task.evidence
+        .available_evidence_classes
+        .insert("log".to_string());
 
     let result = checker.is_sufficient(&task).unwrap();
     assert!(result);
@@ -97,7 +137,13 @@ fn evidence_sufficiency_all_present_is_sufficient() {
 #[test]
 fn evidence_sufficiency_low_confidence_is_insufficient() {
     let checker = DefaultEvidenceSufficiencyChecker;
-    let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::Low, DriftStatus::Stable);
+    let task = make_task_context(
+        "Test",
+        WorkflowPhase::Intake,
+        RiskLevel::Low,
+        ConfidenceBand::Low,
+        DriftStatus::Stable,
+    );
 
     let result = checker.is_sufficient(&task).unwrap();
     assert!(!result);
@@ -106,7 +152,13 @@ fn evidence_sufficiency_low_confidence_is_insufficient() {
 #[test]
 fn escalation_engine_critical_risk_escalates() {
     let engine = DefaultEscalationEngine;
-    let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Critical, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Test",
+        WorkflowPhase::Intake,
+        RiskLevel::Critical,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = engine.evaluate_escalation(&task).unwrap();
     assert!(result.should_escalate);
@@ -116,7 +168,13 @@ fn escalation_engine_critical_risk_escalates() {
 #[test]
 fn escalation_engine_out_of_control_drift_escalates() {
     let engine = DefaultEscalationEngine;
-    let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::OutOfControl);
+    let task = make_task_context(
+        "Test",
+        WorkflowPhase::Intake,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::OutOfControl,
+    );
 
     let result = engine.evaluate_escalation(&task).unwrap();
     assert!(result.should_escalate);
@@ -127,14 +185,24 @@ fn artifact_dispatcher_explorer_artifacts() {
     let dispatcher = DefaultArtifactDispatcher;
     let request = ArtifactRequest {
         artifact_families: vec![],
-        task: make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable),
+        task: make_task_context(
+            "Test",
+            WorkflowPhase::Intake,
+            RiskLevel::Low,
+            ConfidenceBand::High,
+            DriftStatus::Stable,
+        ),
         selected_role: Some(AgentRole::Explorer),
         selected_topology: None,
     };
 
     let result = dispatcher.plan_artifacts(&request).unwrap();
-    assert!(result.artifact_families.contains(&ArtifactFamily::SystemPrompt));
-    assert!(result.artifact_families.contains(&ArtifactFamily::TaskPrompt));
+    assert!(result
+        .artifact_families
+        .contains(&ArtifactFamily::SystemPrompt));
+    assert!(result
+        .artifact_families
+        .contains(&ArtifactFamily::TaskPrompt));
 }
 
 #[test]
@@ -143,7 +211,13 @@ fn handoff_validator_allows_delegatable_to_allowed_role() {
     let req = HandoffRequest {
         from_agent: "agent-1".to_string(),
         to_role: AgentRole::Explorer,
-        task: make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable),
+        task: make_task_context(
+            "Test",
+            WorkflowPhase::Intake,
+            RiskLevel::Low,
+            ConfidenceBand::High,
+            DriftStatus::Stable,
+        ),
         attached_evidence: EvidenceEnvelope {
             receipt_refs: vec![],
             required_evidence_classes: BTreeSet::new(),
@@ -163,7 +237,13 @@ fn handoff_validator_allows_delegatable_to_allowed_role() {
 #[test]
 fn prompt_binding_compiler_includes_role_and_topology() {
     let compiler = DefaultPromptBindingCompiler;
-    let task = make_task_context("Test", WorkflowPhase::Plan, RiskLevel::Medium, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Test",
+        WorkflowPhase::Plan,
+        RiskLevel::Medium,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = compiler.compile_bindings(&task).unwrap();
     assert!(result.selected_role.is_some());
@@ -175,7 +255,13 @@ fn prompt_binding_compiler_includes_role_and_topology() {
 #[test]
 fn counterfactual_evaluator_selects_highest_reward_option() {
     let evaluator = DefaultCounterfactualEvaluator;
-    let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
+    let task = make_task_context(
+        "Test",
+        WorkflowPhase::Intake,
+        RiskLevel::Low,
+        ConfidenceBand::High,
+        DriftStatus::Stable,
+    );
 
     let result = evaluator.evaluate_options(&task).unwrap();
     assert!(!result.options.is_empty());
@@ -188,7 +274,13 @@ fn jtbd_runner_checks_role_assertion() {
     let case = JtbdCase {
         case_id: "jtbd-role-001".to_string(),
         job_statement: "When intake arrives, route to explorer".to_string(),
-        task: make_task_context("Intake task", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable),
+        task: make_task_context(
+            "Intake task",
+            WorkflowPhase::Intake,
+            RiskLevel::Low,
+            ConfidenceBand::High,
+            DriftStatus::Stable,
+        ),
         expected_role: Some(AgentRole::Explorer),
         expected_topology: None,
         expected_disposition: None,
@@ -198,7 +290,10 @@ fn jtbd_runner_checks_role_assertion() {
 
     let result = runner.run_case(&case).unwrap();
     assert!(result.passed);
-    assert!(result.assertions.iter().any(|a| a.name == "expected_role" && a.passed));
+    assert!(result
+        .assertions
+        .iter()
+        .any(|a| a.name == "expected_role" && a.passed));
 }
 
 #[test]
@@ -207,7 +302,13 @@ fn jtbd_runner_full_case_with_all_assertions() {
     let case = JtbdCase {
         case_id: "jtbd-full-001".to_string(),
         job_statement: "Full job card for planning phase".to_string(),
-        task: make_task_context("Plan task", WorkflowPhase::Plan, RiskLevel::Medium, ConfidenceBand::High, DriftStatus::Stable),
+        task: make_task_context(
+            "Plan task",
+            WorkflowPhase::Plan,
+            RiskLevel::Medium,
+            ConfidenceBand::High,
+            DriftStatus::Stable,
+        ),
         expected_role: Some(AgentRole::Planner),
         expected_topology: Some(SwarmTopology::Pipeline),
         expected_disposition: Some(DecisionDisposition::Allow),

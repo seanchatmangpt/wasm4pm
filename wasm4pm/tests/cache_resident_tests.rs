@@ -2,8 +2,8 @@
 // Run with: cargo test --test cache_resident_tests
 
 use wasm4pm::cache_resident::{
-    encode_rl_state, decode_rl_state, QTable, VariantMap, QEntry, CycleSnapshot,
-    ActionRecommendation, VariantEntry,
+    decode_rl_state, encode_rl_state, ActionRecommendation, CycleSnapshot, QEntry, QTable,
+    VariantEntry, VariantMap,
 };
 use wasm4pm::RlState;
 
@@ -124,7 +124,11 @@ fn test_qtable_load_factor() {
     }
 
     let load = table.load_factor();
-    assert!(load > 0.05 && load < 0.20, "Unexpected load factor: {}", load);
+    assert!(
+        load > 0.05 && load < 0.20,
+        "Unexpected load factor: {}",
+        load
+    );
 }
 
 #[test]
@@ -221,12 +225,20 @@ fn test_state_encoding_all_states_unique() {
                     cycle_phase: 0,
                 };
                 let idx = encode_rl_state(&state);
-                assert!(indices.insert(idx), "Duplicate index for state: {:?}", state);
+                assert!(
+                    indices.insert(idx),
+                    "Duplicate index for state: {:?}",
+                    state
+                );
             }
         }
     }
 
-    assert!(indices.len() > 100, "Expected >100 unique indices, got {}", indices.len());
+    assert!(
+        indices.len() > 100,
+        "Expected >100 unique indices, got {}",
+        indices.len()
+    );
 }
 
 #[test]
@@ -239,7 +251,11 @@ fn test_variant_map_load_factor() {
     }
 
     let load = map.load_factor();
-    assert!(load > 0.05 && load < 0.15, "Unexpected load factor: {}", load);
+    assert!(
+        load > 0.05 && load < 0.15,
+        "Unexpected load factor: {}",
+        load
+    );
 }
 
 #[test]

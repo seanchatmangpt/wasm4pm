@@ -208,9 +208,12 @@ impl<S: WorkflowState, A: WorkflowAction> Default for QLearning<S, A> {
 impl QLearning<crate::RlState, crate::RlAction> {
     /// Export Q-table as serialized format for persistence.
     #[allow(dead_code)]
-    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+    pub fn export_as_serialized(
+        &self,
+        agent_type: u8,
+    ) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
         use std::collections::HashMap;
-        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
 
         let q_table = self.q_table.borrow();
         let mut state_values = HashMap::new();
@@ -237,7 +240,10 @@ impl QLearning<crate::RlState, crate::RlAction> {
 
     /// Restore Q-table from serialized format.
     #[allow(dead_code)]
-    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+    pub fn restore_from_serialized(
+        &self,
+        table: crate::rl_state_serialization::SerializedAgentQTable,
+    ) {
         use crate::rl_state_serialization::decode_rl_state_key;
 
         let mut q_table = self.q_table.borrow_mut();
@@ -383,9 +389,12 @@ impl<S: WorkflowState, A: WorkflowAction> Default for SARSAAgent<S, A> {
 impl SARSAAgent<crate::RlState, crate::RlAction> {
     /// Export Q-table as serialized format for persistence.
     #[allow(dead_code)]
-    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+    pub fn export_as_serialized(
+        &self,
+        agent_type: u8,
+    ) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
         use std::collections::HashMap;
-        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
 
         let q_table = self.q_table.borrow();
         let mut state_values = HashMap::new();
@@ -412,7 +421,10 @@ impl SARSAAgent<crate::RlState, crate::RlAction> {
 
     /// Restore Q-table from serialized format.
     #[allow(dead_code)]
-    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+    pub fn restore_from_serialized(
+        &self,
+        table: crate::rl_state_serialization::SerializedAgentQTable,
+    ) {
         use crate::rl_state_serialization::decode_rl_state_key;
 
         let mut q_table = self.q_table.borrow_mut();
@@ -624,9 +636,12 @@ impl<S: WorkflowState, A: WorkflowAction> Default for DoubleQLearning<S, A> {
 impl DoubleQLearning<crate::RlState, crate::RlAction> {
     /// Export Q-tables as serialized format for persistence (uses merged Q_A + Q_B).
     #[allow(dead_code)]
-    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+    pub fn export_as_serialized(
+        &self,
+        agent_type: u8,
+    ) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
         use std::collections::HashMap;
-        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
 
         let qa = self.q_a.borrow();
         let _qb = self.q_b.borrow();
@@ -655,7 +670,10 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
 
     /// Restore Q-table from serialized format.
     #[allow(dead_code)]
-    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+    pub fn restore_from_serialized(
+        &self,
+        table: crate::rl_state_serialization::SerializedAgentQTable,
+    ) {
         use crate::rl_state_serialization::decode_rl_state_key;
 
         let mut qa = self.q_a.borrow_mut();
@@ -818,9 +836,12 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
 impl ExpectedSARSAAgent<crate::RlState, crate::RlAction> {
     /// Export Q-table as serialized format for persistence.
     #[allow(dead_code)]
-    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+    pub fn export_as_serialized(
+        &self,
+        agent_type: u8,
+    ) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
         use std::collections::HashMap;
-        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
 
         let q_table = self.q_table.borrow();
         let mut state_values = HashMap::new();
@@ -847,7 +868,10 @@ impl ExpectedSARSAAgent<crate::RlState, crate::RlAction> {
 
     /// Restore Q-table from serialized format.
     #[allow(dead_code)]
-    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+    pub fn restore_from_serialized(
+        &self,
+        table: crate::rl_state_serialization::SerializedAgentQTable,
+    ) {
         use crate::rl_state_serialization::decode_rl_state_key;
 
         let mut q_table = self.q_table.borrow_mut();
@@ -1031,9 +1055,12 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
 impl ReinforceAgent<crate::RlState, crate::RlAction> {
     /// Export policy weights (theta) as serialized format for persistence.
     #[allow(dead_code)]
-    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+    pub fn export_as_serialized(
+        &self,
+        agent_type: u8,
+    ) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use crate::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
         use std::collections::HashMap;
-        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
 
         let theta = self.theta.borrow();
         let mut state_values = HashMap::new();
@@ -1060,7 +1087,10 @@ impl ReinforceAgent<crate::RlState, crate::RlAction> {
 
     /// Restore policy weights (theta) from serialized format.
     #[allow(dead_code)]
-    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+    pub fn restore_from_serialized(
+        &self,
+        table: crate::rl_state_serialization::SerializedAgentQTable,
+    ) {
         use crate::rl_state_serialization::decode_rl_state_key;
 
         let mut theta = self.theta.borrow_mut();
@@ -1093,6 +1123,7 @@ impl<S: WorkflowState, A: WorkflowAction> Default for ReinforceAgent<S, A> {
 pub trait Agent<S: WorkflowState, A: WorkflowAction> {
     fn select_action(&self, state: &S) -> A;
     fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool);
+    fn reset(&self);
 }
 
 /// Metadata trait for agent introspection
@@ -1113,6 +1144,8 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for QLearning<S, A> {
     fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         QLearning::update(self, state, action, reward, next_state, done)
     }
+
+    fn reset(&self) {}
 }
 
 impl<S: WorkflowState, A: WorkflowAction> AgentMeta for QLearning<S, A> {
@@ -1133,6 +1166,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
         *self.last_action.borrow_mut() = Some(action.clone());
         action
     }
+    fn reset(&self) {}
     fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         if done {
             // Terminal: use standard Q-update with zero future value
@@ -1177,6 +1211,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for DoubleQLearning<S, A> 
     fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         DoubleQLearning::update(self, state, action, reward, next_state, done)
     }
+    fn reset(&self) {}
 }
 
 impl<S: WorkflowState, A: WorkflowAction> AgentMeta for DoubleQLearning<S, A> {
@@ -1198,6 +1233,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ExpectedSARSAAgent<S, 
     fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         ExpectedSARSAAgent::update(self, state, action, reward, next_state, done)
     }
+    fn reset(&self) {}
 }
 
 impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ExpectedSARSAAgent<S, A> {
@@ -1216,6 +1252,7 @@ impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ReinforceAgent<S, A> {
     fn select_action(&self, state: &S) -> A {
         ReinforceAgent::select_action(self, state)
     }
+    fn reset(&self) {}
     fn update(&self, state: &S, action: &A, reward: f32, _next_state: &S, _done: bool) {
         // REINFORCE ignores next_state and done in online mode.
         // Uses the immediate reward as the 1-step return.

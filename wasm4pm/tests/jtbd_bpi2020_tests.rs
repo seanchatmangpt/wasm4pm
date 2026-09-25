@@ -9,9 +9,9 @@
 //! Oracle: Rank 2 (Domain Contract) — real processes have measurable health and
 //! RL agents should handle large feature spaces without panics or NaN values.
 
+use std::fs;
 use wasm4pm::rl_orchestrator::RlOrchestrator;
 use wasm4pm::RlState;
-use std::fs;
 
 const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
@@ -62,14 +62,14 @@ fn features_from_bpi_metrics(event_count: usize, trace_count: usize) -> [f32; 8]
     let activity_count_norm = 0.5; // Mid-range for government processes
 
     [
-        event_rate_norm,        // health_level proxy
-        event_rate_norm,        // event_rate_q
-        activity_count_norm,    // activity_count_q
-        0.0,                    // spc_alert_level (start healthy)
-        0.0,                    // drift_status (no drift at start)
-        trace_rate_norm,        // rework_ratio_q
-        0.0,                    // circuit_state (closed)
-        0.0,                    // cycle_phase
+        event_rate_norm,     // health_level proxy
+        event_rate_norm,     // event_rate_q
+        activity_count_norm, // activity_count_q
+        0.0,                 // spc_alert_level (start healthy)
+        0.0,                 // drift_status (no drift at start)
+        trace_rate_norm,     // rework_ratio_q
+        0.0,                 // circuit_state (closed)
+        0.0,                 // cycle_phase
     ]
 }
 
@@ -163,11 +163,7 @@ fn jtbd_rl_orchestrator_handles_bpi_scale_features() {
         );
 
         // Validate action is non-empty
-        assert!(
-            !action.is_empty(),
-            "Cycle {}: action must be non-empty",
-            i
-        );
+        assert!(!action.is_empty(), "Cycle {}: action must be non-empty", i);
 
         rewards.push(reward);
     }
@@ -199,10 +195,8 @@ fn jtbd_domestic_vs_international_health_comparison() {
     // Oracle Rank 3 (Metamorphic): Process metrics should be comparable across
     // different event logs. Larger logs have more events but similar health logic.
 
-    let (domestic_events, domestic_traces) =
-        parse_bpi_log("BPI_2020_DomesticDeclarations.xes");
-    let (intl_events, intl_traces) =
-        parse_bpi_log("BPI_2020_InternationalDeclarations.xes");
+    let (domestic_events, domestic_traces) = parse_bpi_log("BPI_2020_DomesticDeclarations.xes");
+    let (intl_events, intl_traces) = parse_bpi_log("BPI_2020_InternationalDeclarations.xes");
 
     // Both should be large real-world datasets
     assert!(
@@ -282,8 +276,15 @@ fn jtbd_reward_computation_on_real_features() {
         cycle_phase: 0,
     };
 
-    let (_, reward_stable) =
-        orch.run_cycle(&features, &state_stable, &state_stable, 0, true, true, false);
+    let (_, reward_stable) = orch.run_cycle(
+        &features,
+        &state_stable,
+        &state_stable,
+        0,
+        true,
+        true,
+        false,
+    );
 
     // Scenario B: Degradation (health 0→2)
     let state_degraded = RlState {
@@ -297,16 +298,26 @@ fn jtbd_reward_computation_on_real_features() {
         cycle_phase: 0,
     };
 
-    let (_, reward_degraded) =
-        orch.run_cycle(
-            &features, &state_stable, &state_degraded, 2, false,
-            true,
-            false,
-        );
+    let (_, reward_degraded) = orch.run_cycle(
+        &features,
+        &state_stable,
+        &state_degraded,
+        2,
+        false,
+        true,
+        false,
+    );
 
     // Scenario C: Improvement (health 2→0)
-    let (_, reward_improved) =
-        orch.run_cycle(&features, &state_degraded, &state_stable, 0, true, true, false);
+    let (_, reward_improved) = orch.run_cycle(
+        &features,
+        &state_degraded,
+        &state_stable,
+        0,
+        true,
+        true,
+        false,
+    );
 
     // Validate reward monotonicity
     assert!(

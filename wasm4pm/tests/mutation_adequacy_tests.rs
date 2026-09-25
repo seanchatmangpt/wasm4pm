@@ -19,7 +19,9 @@
 //! 4. Zero step counter in circuit breaker (step counter never advances)
 
 use wasm4pm::reinforcement::QLearning;
-use wasm4pm::self_healing::{advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState};
+use wasm4pm::self_healing::{
+    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
+};
 use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
 use wasm4pm::RlAction;
 use wasm4pm::RlState;
@@ -204,13 +206,17 @@ fn test_mutation_2_spc_historical_vs_oneshot_detected() {
     // Verify Rule 1 (out-of-control) does NOT fire (all within limits)
     let alerts = check_western_electric_rules(&data);
     assert!(
-        !alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+        !alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
         "Sanity: Rule 1 must NOT fire when all values are within control limits"
     );
 
     // THE KEY ASSERTION: Rule 3 (Trend) MUST fire despite all values being in-control.
     // This proves SPC evaluates historical patterns, not just one-shot thresholds.
-    let trend_alert = alerts.iter().find(|a| matches!(a, SpecialCause::Trend { .. }));
+    let trend_alert = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::Trend { .. }));
     assert!(
         trend_alert.is_some(),
         "MUTATION 2 DETECTION: Trend rule must fire on gradual drift within control limits. \
@@ -287,8 +293,7 @@ fn test_mutation_3_event_count_not_string_length_detected() {
          (possibly using string length instead). The existing \
          test_quantization_event_rate_is_monotonic in \
          feature_normalization_tests.rs would catch this.",
-        state_low.event_rate_q,
-        state_high.event_rate_q
+        state_low.event_rate_q, state_high.event_rate_q
     );
 
     // Assert the ordering is correct: higher event rate -> higher quantized value
@@ -321,7 +326,8 @@ fn test_mutation_3_event_count_not_string_length_detected() {
         "1500 events (features[0]=0.15) should quantize to bucket 2 (1001..=2000)"
     );
     assert!(
-        state_low.event_rate_q < state_mid.event_rate_q && state_mid.event_rate_q < state_high.event_rate_q,
+        state_low.event_rate_q < state_mid.event_rate_q
+            && state_mid.event_rate_q < state_high.event_rate_q,
         "MUTATION 3 DETECTION: Monotonicity must hold: low({}) < mid({}) < high({})",
         state_low.event_rate_q,
         state_mid.event_rate_q,
@@ -387,9 +393,17 @@ fn test_mutation_4_circuit_breaker_step_counter_detected() {
 
     // Step 3: Drive to Open
     breaker.record_failure();
-    assert_eq!(breaker.state(), CircuitState::Closed, "Sanity: should be Closed after 1 failure");
+    assert_eq!(
+        breaker.state(),
+        CircuitState::Closed,
+        "Sanity: should be Closed after 1 failure"
+    );
     breaker.record_failure();
-    assert_eq!(breaker.state(), CircuitState::Open, "Sanity: should be Open after 2 failures (threshold=2)");
+    assert_eq!(
+        breaker.state(),
+        CircuitState::Open,
+        "Sanity: should be Open after 2 failures (threshold=2)"
+    );
 
     // Verify allow_request returns false immediately (timeout not elapsed)
     assert!(
@@ -458,7 +472,7 @@ fn test_h1_plus_to_minus_operator_mutation_detected() {
     // If mutation existed: reward_improve < reward_stable, assertion would FAIL.
 
     let reward_improve = compute_reward(3, 1, 0, true, true, false); // health 3→1 (improvement)
-    let reward_stable = compute_reward(2, 2, 0, true, true, false);  // health 2→2 (stable)
+    let reward_stable = compute_reward(2, 2, 0, true, true, false); // health 2→2 (stable)
 
     assert!(
         reward_improve > reward_stable,
@@ -500,7 +514,7 @@ fn test_h2_spc_rule2_fires_at_9_not_8_detected() {
     let make_above = |t: &str| -> ChartData {
         ChartData {
             timestamp: t.to_string(),
-            value: 5.5,  // above CL=5.0
+            value: 5.5, // above CL=5.0
             ucl: 8.0,
             cl: 5.0,
             lcl: 2.0,
@@ -514,7 +528,9 @@ fn test_h2_spc_rule2_fires_at_9_not_8_detected() {
 
     // Note: check_western_electric_rules returns early if data.len() < 9,
     // so with 8 points, no Rule 2 alert should fire.
-    let has_shift_8 = alerts_8.iter().any(|a| matches!(a, SpecialCause::Shift { .. }));
+    let has_shift_8 = alerts_8
+        .iter()
+        .any(|a| matches!(a, SpecialCause::Shift { .. }));
     assert!(
         !has_shift_8,
         "H2 MUTATION DETECTION: Rule 2 (Shift) must NOT fire with only 8 points above CL. \
@@ -526,7 +542,9 @@ fn test_h2_spc_rule2_fires_at_9_not_8_detected() {
     let data_9: Vec<ChartData> = (0..9).map(|i| make_above(&format!("t{}", i))).collect();
     let alerts_9 = check_western_electric_rules(&data_9);
 
-    let has_shift_9 = alerts_9.iter().any(|a| matches!(a, SpecialCause::Shift { .. }));
+    let has_shift_9 = alerts_9
+        .iter()
+        .any(|a| matches!(a, SpecialCause::Shift { .. }));
     assert!(
         has_shift_9,
         "H2 MUTATION DETECTION: Rule 2 (Shift) MUST fire with exactly 9 consecutive \

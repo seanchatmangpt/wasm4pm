@@ -19,10 +19,10 @@
 //! oc_petri_net.rs, and oc_conformance.rs).
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use wasm4pm::models::*;
-use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
+use wasm4pm::models::*;
+use wasm4pm::state::{get_or_init_state, StoredObject};
 
 // ---------------------------------------------------------------------------
 // Deterministic RNG (LCG -- same as helpers.rs)

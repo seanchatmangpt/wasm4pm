@@ -214,7 +214,8 @@ fn test_run_cycle_updates_telemetry() {
     let state = make_test_state(2);
     let next_state = make_test_state(2);
 
-    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
+    let (action_label, reward) =
+        orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
     assert!(!action_label.is_empty());
     assert_eq!(orch.telemetry().cycle_count, 1);
@@ -273,14 +274,14 @@ fn test_run_cycle_with_linucb_selection() {
 fn test_create_rl_state_direct() {
     // Test direct construction with all 8 fields
     let state = wasm4pm::create_rl_state(
-        2,  // health_level: Degraded
-        3,  // event_rate_q
-        4,  // activity_count_q
-        1,  // spc_alert_level
-        0,  // drift_status
-        2,  // rework_ratio_q
-        1,  // circuit_state: open
-        1,  // cycle_phase: Learning
+        2, // health_level: Degraded
+        3, // event_rate_q
+        4, // activity_count_q
+        1, // spc_alert_level
+        0, // drift_status
+        2, // rework_ratio_q
+        1, // circuit_state: open
+        1, // cycle_phase: Learning
     );
 
     assert_eq!(state.health_level, 2);
@@ -333,8 +334,8 @@ fn test_rl_state_from_features_short_slice() {
 #[test]
 fn test_rl_state_health_level_getter() {
     let state = wasm4pm::create_rl_state(
-        3,  // health_level: Critical
-        0, 0, 0, 0, 0, 0, 0  // other fields irrelevant
+        3, // health_level: Critical
+        0, 0, 0, 0, 0, 0, 0, // other fields irrelevant
     );
 
     let health = wasm4pm::rl_state_health_level(&state);
@@ -375,16 +376,26 @@ fn test_policy_reward_stable_under_sustained_degraded_health() {
 
     // Run 50 cycles at health=3
     for _ in 0..50 {
-        let (_action, reward) = orch.run_cycle(&features, &state_degraded, &state_degraded, 0, true, true, false);
+        let (_action, reward) = orch.run_cycle(
+            &features,
+            &state_degraded,
+            &state_degraded,
+            0,
+            true,
+            true,
+            false,
+        );
         rewards.push(reward);
     }
 
     // Compute mean and std dev of rewards in second half (cycles 25-50)
     let second_half: Vec<f32> = rewards[25..50].to_vec();
     let mean_reward: f32 = second_half.iter().sum::<f32>() / second_half.len() as f32;
-    let variance: f32 = second_half.iter()
+    let variance: f32 = second_half
+        .iter()
         .map(|r| (r - mean_reward).powi(2))
-        .sum::<f32>() / second_half.len() as f32;
+        .sum::<f32>()
+        / second_half.len() as f32;
     let std_dev = variance.sqrt();
 
     // Assert: reward stabilizes in second half (std_dev < 2.0 indicates convergence)
@@ -408,7 +419,15 @@ fn test_policy_recovers_from_terminal_health_state() {
     let state_terminal = make_test_state(4);
     let mut phase1_rewards = Vec::new();
     for _ in 0..10 {
-        let (_action, reward) = orch.run_cycle(&features, &state_terminal, &state_terminal, 0, true, true, false);
+        let (_action, reward) = orch.run_cycle(
+            &features,
+            &state_terminal,
+            &state_terminal,
+            0,
+            true,
+            true,
+            false,
+        );
         phase1_rewards.push(reward);
     }
     let phase1_avg_reward: f32 = phase1_rewards.iter().sum::<f32>() / phase1_rewards.len() as f32;
@@ -417,7 +436,15 @@ fn test_policy_recovers_from_terminal_health_state() {
     let state_recovered = make_test_state(0);
     let mut phase2_rewards = Vec::new();
     for _ in 0..10 {
-        let (_action, reward) = orch.run_cycle(&features, &state_recovered, &state_recovered, 0, true, true, false);
+        let (_action, reward) = orch.run_cycle(
+            &features,
+            &state_recovered,
+            &state_recovered,
+            0,
+            true,
+            true,
+            false,
+        );
         phase2_rewards.push(reward);
     }
     let phase2_avg_reward: f32 = phase2_rewards.iter().sum::<f32>() / phase2_rewards.len() as f32;

@@ -50,8 +50,7 @@ pub struct AndonMetrics {
 
 /// Analyze andon status from repository
 pub fn analyze_andon(repo_path: &str) -> Result<AndonMetrics> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open git repository")?;
 
     // Analyze recent commits for build success rate
     let build_success_rate = analyze_build_success(&repo)?;
@@ -130,8 +129,8 @@ fn analyze_deploy_status(repo: &Repository) -> Result<(String, f64)> {
                 // Try to peel the tag to get the commit
                 if let Ok(target) = reference.peel_to_commit() {
                     let time = target.time();
-                    let tag_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0)
-                        .unwrap_or_default();
+                    let tag_date =
+                        DateTime::<Utc>::from_timestamp(time.seconds(), 0).unwrap_or_default();
 
                     if latest_tag_time.is_none() || Some(tag_date) > latest_tag_time {
                         latest_tag_time = Some(tag_date);
@@ -294,7 +293,10 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     report.push_str(&"\nComponent Status:\n".bold());
 
     // Build status
-    report.push_str(&format!("  Build Success Rate: {:.1}%\n", metrics.build_success_rate));
+    report.push_str(&format!(
+        "  Build Success Rate: {:.1}%\n",
+        metrics.build_success_rate
+    ));
     let build_status = if metrics.build_success_rate >= 95.0 {
         "✅".green()
     } else if metrics.build_success_rate >= 80.0 {
@@ -305,19 +307,25 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     report.push_str(&format!("    Status: {}\n", build_status));
 
     // Deploy status
-    report.push_str(&format!("  Last Deploy: {} ({:.1} hours ago)\n",
-        metrics.last_deploy_status, metrics.last_deploy_hours_ago));
-    let deploy_status = if metrics.last_deploy_status == "success" && metrics.last_deploy_hours_ago < 24.0 {
-        "✅".green()
-    } else if metrics.last_deploy_status == "success" {
-        "⚠️".yellow()
-    } else {
-        "❌".red()
-    };
+    report.push_str(&format!(
+        "  Last Deploy: {} ({:.1} hours ago)\n",
+        metrics.last_deploy_status, metrics.last_deploy_hours_ago
+    ));
+    let deploy_status =
+        if metrics.last_deploy_status == "success" && metrics.last_deploy_hours_ago < 24.0 {
+            "✅".green()
+        } else if metrics.last_deploy_status == "success" {
+            "⚠️".yellow()
+        } else {
+            "❌".red()
+        };
     report.push_str(&format!("    Status: {}\n", deploy_status));
 
     // Test status
-    report.push_str(&format!("  Test Pass Rate: {:.1}%\n", metrics.test_pass_rate));
+    report.push_str(&format!(
+        "  Test Pass Rate: {:.1}%\n",
+        metrics.test_pass_rate
+    ));
     let test_status = if metrics.test_pass_rate >= 95.0 {
         "✅".green()
     } else if metrics.test_pass_rate >= 80.0 {
@@ -328,7 +336,10 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     report.push_str(&format!("    Status: {}\n", test_status));
 
     // Warnings
-    report.push_str(&format!("  Compiler Warnings: {}\n", metrics.compiler_warnings));
+    report.push_str(&format!(
+        "  Compiler Warnings: {}\n",
+        metrics.compiler_warnings
+    ));
     let warning_status = if metrics.compiler_warnings == 0 {
         "✅".green()
     } else if metrics.compiler_warnings < 5 {
@@ -361,8 +372,10 @@ pub fn generate_report(metrics: &AndonMetrics) -> String {
     }
 
     if metrics.compiler_warnings > 5 {
-        let msg = format!("  • {} warnings present. Fix warnings to improve quality.\n",
-            metrics.compiler_warnings);
+        let msg = format!(
+            "  • {} warnings present. Fix warnings to improve quality.\n",
+            metrics.compiler_warnings
+        );
         report.push_str(&msg.yellow());
     }
 

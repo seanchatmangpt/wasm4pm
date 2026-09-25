@@ -1,9 +1,9 @@
 /// Criterion benchmarks for ML-based analysis algorithms.
 /// ML operations typically scale O(n) to O(n log n) with moderate constant factors.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::time::Duration;
 use wasm4pm::fast_discovery::{analyze_trace_variants, cluster_traces, detect_concept_drift};
 use wasm4pm::prediction::build_ngram_predictor;
-use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;

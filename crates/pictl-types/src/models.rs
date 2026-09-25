@@ -9,7 +9,10 @@ pub struct DFGNode {
 
 impl DFGNode {
     pub fn new(activity: String, frequency: usize) -> Self {
-        DFGNode { activity, frequency }
+        DFGNode {
+            activity,
+            frequency,
+        }
     }
 }
 

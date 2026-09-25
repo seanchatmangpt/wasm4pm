@@ -1,10 +1,10 @@
 /// Criterion benchmarks for POWL (Process-Oriented Workflow Language) discovery.
 /// POWL is a hierarchical process model language with soundness guarantees.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use wasm4pm::models::EventLog;
-use wasm4pm::powl_api::discover_powl_from_log;
 use serde_json::json;
 use std::time::Duration;
+use wasm4pm::models::EventLog;
+use wasm4pm::powl_api::discover_powl_from_log;
 
 #[path = "helpers.rs"]
 mod helpers;

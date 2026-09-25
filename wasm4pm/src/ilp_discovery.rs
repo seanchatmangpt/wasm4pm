@@ -49,10 +49,7 @@ pub fn wasm_compute_simplicity(places: usize, transitions: usize, arcs: usize) -
 /// This is the testable core of `discover_ilp_petri_net`. Integration tests
 /// on native targets cannot call `#[wasm_bindgen]` functions, so they use
 /// this instead and then store the PetriNet in state manually.
-pub fn discover_ilp_petri_net_from_log(
-    log: &EventLog,
-    activity_key: &str,
-) -> (PetriNet, f64, f64) {
+pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (PetriNet, f64, f64) {
     let activities = log.get_activities(activity_key);
     let directly_follows_vec = log.get_directly_follows(activity_key);
 
@@ -140,8 +137,7 @@ pub fn discover_ilp_petri_net_from_log(
     let mut end_activities = HashSet::new();
     for trace in &log.traces {
         if !trace.events.is_empty() {
-            if let Some(AttributeValue::String(last_act)) = trace.events
-                [trace.events.len() - 1]
+            if let Some(AttributeValue::String(last_act)) = trace.events[trace.events.len() - 1]
                 .attributes
                 .get(activity_key)
             {
@@ -338,7 +334,11 @@ pub fn discover_ilp_petri_net(
             None => Err(JsValue::from_str("EventLog not found")),
         })?;
     // Lock released here — safe to store.
-    let simplicity = compute_simplicity(petri_net.places.len(), petri_net.transitions.len(), petri_net.arcs.len());
+    let simplicity = compute_simplicity(
+        petri_net.places.len(),
+        petri_net.transitions.len(),
+        petri_net.arcs.len(),
+    );
     let handle = get_or_init_state()
         .store_object(StoredObject::PetriNet(petri_net.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store Petri net"))?;
@@ -369,7 +369,7 @@ pub fn discover_optimized_dfg(
     let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             // Create nodes for all activities
             for activity in &activities {
@@ -454,7 +454,7 @@ pub fn discover_optimized_dfg(
     })?;
     // Lock released here — safe to store.
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .store_object(StoredObject::DFG(dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({

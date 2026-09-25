@@ -49,23 +49,20 @@ pub struct LeadTimeMetrics {
 
 /// Analyze lead time from git repository
 pub fn analyze_lead_time(repo_path: &str, days: usize) -> Result<LeadTimeMetrics> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open git repository")?;
 
     let cutoff_date = Utc::now() - Duration::days(days as i64);
 
     // Get main branch reference
-    let head = repo.head()
-        .context("Failed to get HEAD")?;
-    let head_oid = head.target()
+    let head = repo.head().context("Failed to get HEAD")?;
+    let head_oid = head
+        .target()
         .ok_or_else(|| anyhow::anyhow!("HEAD has no target"))?;
 
     // Walk commits and measure lead time
-    let mut revwalk = repo.revwalk()
-        .context("Failed to create revwalk")?;
+    let mut revwalk = repo.revwalk().context("Failed to create revwalk")?;
 
-    revwalk.push(head_oid)
-        .context("Failed to push HEAD")?;
+    revwalk.push(head_oid).context("Failed to push HEAD")?;
 
     let mut lead_times: Vec<f64> = Vec::new(); // in hours
     let mut fast_merges = 0usize;
@@ -76,8 +73,7 @@ pub fn analyze_lead_time(repo_path: &str, days: usize) -> Result<LeadTimeMetrics
         let commit = repo.find_commit(oid)?;
 
         let time = commit.time();
-        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0)
-            .unwrap_or_default();
+        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0).unwrap_or_default();
 
         if commit_date < cutoff_date {
             break;
@@ -172,7 +168,10 @@ pub fn generate_report(metrics: &LeadTimeMetrics) -> String {
 
     // Overall metrics
     report.push_str(&"Time from Commit to Merge:\n".bold());
-    report.push_str(&format!("  Average: {:.2} hours (target: <24h)\n", metrics.average_hours));
+    report.push_str(&format!(
+        "  Average: {:.2} hours (target: <24h)\n",
+        metrics.average_hours
+    ));
 
     let avg_status = if metrics.average_hours < 24.0 {
         "✅".green()
@@ -184,13 +183,20 @@ pub fn generate_report(metrics: &LeadTimeMetrics) -> String {
     report.push_str(&format!("    Status: {}\n", avg_status));
 
     report.push_str(&format!("  Median: {:.2} hours\n", metrics.median_hours));
-    report.push_str(&format!("  P95: {:.2} hours (worst 5%%)\n", metrics.p95_hours));
+    report.push_str(&format!(
+        "  P95: {:.2} hours (worst 5%%)\n",
+        metrics.p95_hours
+    ));
 
     report.push_str(&"\nMerge Speed:\n".bold());
-    report.push_str(&format!("  Fast merges (<1h): {:.1}% ({} commits)\n",
-        metrics.fast_merge_percent, metrics.fast_merge_count));
-    report.push_str(&format!("  Slow merges (>48h): {:.1}% ({} commits)\n",
-        metrics.slow_merge_percent, metrics.slow_merge_count));
+    report.push_str(&format!(
+        "  Fast merges (<1h): {:.1}% ({} commits)\n",
+        metrics.fast_merge_percent, metrics.fast_merge_count
+    ));
+    report.push_str(&format!(
+        "  Slow merges (>48h): {:.1}% ({} commits)\n",
+        metrics.slow_merge_percent, metrics.slow_merge_count
+    ));
 
     // Interpretation
     report.push_str(&"\nLead Time Categories:\n".bold());
@@ -213,8 +219,10 @@ pub fn generate_report(metrics: &LeadTimeMetrics) -> String {
     }
 
     if metrics.slow_merge_percent > 10.0 {
-        let msg = format!("  • {:.1}% commits take >48h. Investigate blocking PRs.\n",
-            metrics.slow_merge_percent);
+        let msg = format!(
+            "  • {:.1}% commits take >48h. Investigate blocking PRs.\n",
+            metrics.slow_merge_percent
+        );
         report.push_str(&msg.yellow());
     }
 

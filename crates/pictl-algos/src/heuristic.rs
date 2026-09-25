@@ -27,7 +27,9 @@ pub fn discover_heuristic(log: &EventLog, activity_key: &str) -> Result<DFG> {
         *start_activities.entry(activities[0].clone()).or_insert(0) += 1;
 
         // Record end activity
-        *end_activities.entry(activities[activities.len() - 1].clone()).or_insert(0) += 1;
+        *end_activities
+            .entry(activities[activities.len() - 1].clone())
+            .or_insert(0) += 1;
 
         // Process nodes and edges
         for (i, activity) in activities.iter().enumerate() {
@@ -59,7 +61,8 @@ pub fn discover_heuristic(log: &EventLog, activity_key: &str) -> Result<DFG> {
     for ((from_id, to_id), frequency) in edge_counts.iter() {
         let from = &dfg.nodes[*from_id].activity;
         let to = &dfg.nodes[*to_id].activity;
-        dfg.edges.push(DFGEdge::new(from.clone(), to.clone(), *frequency));
+        dfg.edges
+            .push(DFGEdge::new(from.clone(), to.clone(), *frequency));
     }
 
     // Set start and end activities in DFG
@@ -76,21 +79,32 @@ mod tests {
     #[test]
     fn test_heuristic_miner_simple() {
         let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs_a.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
 
         let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+        attrs_b.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
 
         let mut attrs_c = std::collections::HashMap::new();
-        attrs_c.insert("concept:name".to_string(), AttributeValue::String("C".to_string()));
+        attrs_c.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("C".to_string()),
+        );
 
         let log = EventLog::new(
-            vec![
-                Trace::new(
-                    "case1".to_string(),
-                    vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone()), Event::new(attrs_c.clone())],
-                ),
-            ],
+            vec![Trace::new(
+                "case1".to_string(),
+                vec![
+                    Event::new(attrs_a.clone()),
+                    Event::new(attrs_b.clone()),
+                    Event::new(attrs_c.clone()),
+                ],
+            )],
             std::collections::HashMap::new(),
         );
 
@@ -104,15 +118,27 @@ mod tests {
     #[test]
     fn test_heuristic_miner_parallel() {
         let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs_a.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
 
         let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+        attrs_b.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
 
         let log = EventLog::new(
             vec![
-                Trace::new("case1".to_string(), vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone())]),
-                Trace::new("case2".to_string(), vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone())]),
+                Trace::new(
+                    "case1".to_string(),
+                    vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone())],
+                ),
+                Trace::new(
+                    "case2".to_string(),
+                    vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone())],
+                ),
             ],
             std::collections::HashMap::new(),
         );

@@ -17,8 +17,16 @@ impl TopologyPolicy {
         // Risk level drives primary candidate set
         let mut topologies = match task.risk_level {
             RiskLevel::Critical => vec![SwarmTopology::Debate, SwarmTopology::ReviewLoop],
-            RiskLevel::High => vec![SwarmTopology::ReviewLoop, SwarmTopology::Pipeline, SwarmTopology::Debate],
-            RiskLevel::Medium => vec![SwarmTopology::Pipeline, SwarmTopology::ReviewLoop, SwarmTopology::Single],
+            RiskLevel::High => vec![
+                SwarmTopology::ReviewLoop,
+                SwarmTopology::Pipeline,
+                SwarmTopology::Debate,
+            ],
+            RiskLevel::Medium => vec![
+                SwarmTopology::Pipeline,
+                SwarmTopology::ReviewLoop,
+                SwarmTopology::Single,
+            ],
             RiskLevel::Low => vec![SwarmTopology::Single, SwarmTopology::Pipeline],
         };
 

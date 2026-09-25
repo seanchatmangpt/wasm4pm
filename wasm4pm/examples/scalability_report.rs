@@ -11,12 +11,12 @@
 //!
 //! output_dir defaults to .pictl/benchmarks relative to cwd.
 
-use wasm4pm::discovery::discover_dfg;
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use wasm4pm::state::{get_or_init_state, StoredObject};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::time::Instant;
+use wasm4pm::discovery::discover_dfg;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::state::{get_or_init_state, StoredObject};
 
 const ACTIVITY_KEY: &str = "concept:name";
 const TIMESTAMP_KEY: &str = "time:timestamp";

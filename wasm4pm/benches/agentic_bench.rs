@@ -12,9 +12,9 @@
 //! - JtbdRunner: full JTBD case execution
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use wasm4pm::agentic::prelude::*;
 use std::collections::BTreeSet;
 use std::time::Duration;
+use wasm4pm::agentic::prelude::*;
 
 fn make_task_context(
     phase: WorkflowPhase,
@@ -66,9 +66,7 @@ fn bench_role_selector(c: &mut Criterion) {
         DriftStatus::Stable,
     );
 
-    group.bench_function("select_role", |b| {
-        b.iter(|| selector.select_role(&task))
-    });
+    group.bench_function("select_role", |b| b.iter(|| selector.select_role(&task)));
     group.finish();
 }
 
@@ -106,9 +104,7 @@ fn bench_evidence_sufficiency(c: &mut Criterion) {
         DriftStatus::Stable,
     );
 
-    group.bench_function("is_sufficient", |b| {
-        b.iter(|| checker.is_sufficient(&task))
-    });
+    group.bench_function("is_sufficient", |b| b.iter(|| checker.is_sufficient(&task)));
 
     group.bench_function("summarize_gaps", |b| {
         b.iter(|| checker.summarize_gaps(&task))
@@ -257,9 +253,7 @@ fn bench_jtbd_runner(c: &mut Criterion) {
         notes: vec![],
     };
 
-    group.bench_function("run_case", |b| {
-        b.iter(|| runner.run_case(&case))
-    });
+    group.bench_function("run_case", |b| b.iter(|| runner.run_case(&case)));
     group.finish();
 }
 

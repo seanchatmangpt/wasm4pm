@@ -15,10 +15,10 @@
 //!   G5 Report    -- metrics: fitness, deviations, activity stats, utilization
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use wasm4pm::models::*;
-use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 use std::collections::HashMap;
 use std::time::Duration;
+use wasm4pm::models::*;
+use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 
 #[path = "../helpers.rs"]
 mod helpers;

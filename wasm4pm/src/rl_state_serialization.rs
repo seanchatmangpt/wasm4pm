@@ -19,30 +19,37 @@ use std::collections::HashMap;
 /// - Bits 23-25: circuit_state
 /// - Bits 26-29: cycle_phase
 #[allow(clippy::too_many_arguments)]
-pub fn encode_rl_state_key(health_level: u8, event_rate_q: u8, activity_count_q: u8,
-                           spc_alert_level: u8, drift_status: u8, rework_ratio_q: u8,
-                           circuit_state: u8, cycle_phase: u8) -> u64 {
-    ((health_level & 0x0F) as u64) |
-    (((event_rate_q & 0x0F) as u64) << 4) |
-    (((activity_count_q & 0x0F) as u64) << 8) |
-    (((spc_alert_level & 0x0F) as u64) << 12) |
-    (((drift_status & 0x07) as u64) << 16) |
-    (((rework_ratio_q & 0x0F) as u64) << 19) |
-    (((circuit_state & 0x07) as u64) << 23) |
-    (((cycle_phase & 0x0F) as u64) << 26)
+pub fn encode_rl_state_key(
+    health_level: u8,
+    event_rate_q: u8,
+    activity_count_q: u8,
+    spc_alert_level: u8,
+    drift_status: u8,
+    rework_ratio_q: u8,
+    circuit_state: u8,
+    cycle_phase: u8,
+) -> u64 {
+    ((health_level & 0x0F) as u64)
+        | (((event_rate_q & 0x0F) as u64) << 4)
+        | (((activity_count_q & 0x0F) as u64) << 8)
+        | (((spc_alert_level & 0x0F) as u64) << 12)
+        | (((drift_status & 0x07) as u64) << 16)
+        | (((rework_ratio_q & 0x0F) as u64) << 19)
+        | (((circuit_state & 0x07) as u64) << 23)
+        | (((cycle_phase & 0x0F) as u64) << 26)
 }
 
 /// Decode a u64 key back into RlState components.
 pub fn decode_rl_state_key(key: u64) -> (u8, u8, u8, u8, u8, u8, u8, u8) {
     (
-        (key & 0x0F) as u8,                       // health_level
-        ((key >> 4) & 0x0F) as u8,               // event_rate_q
-        ((key >> 8) & 0x0F) as u8,               // activity_count_q
-        ((key >> 12) & 0x0F) as u8,              // spc_alert_level
-        ((key >> 16) & 0x07) as u8,              // drift_status
-        ((key >> 19) & 0x0F) as u8,              // rework_ratio_q
-        ((key >> 23) & 0x07) as u8,              // circuit_state
-        ((key >> 26) & 0x0F) as u8,              // cycle_phase
+        (key & 0x0F) as u8,         // health_level
+        ((key >> 4) & 0x0F) as u8,  // event_rate_q
+        ((key >> 8) & 0x0F) as u8,  // activity_count_q
+        ((key >> 12) & 0x0F) as u8, // spc_alert_level
+        ((key >> 16) & 0x07) as u8, // drift_status
+        ((key >> 19) & 0x0F) as u8, // rework_ratio_q
+        ((key >> 23) & 0x07) as u8, // circuit_state
+        ((key >> 26) & 0x0F) as u8, // cycle_phase
     )
 }
 

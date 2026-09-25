@@ -381,11 +381,11 @@ fn action_restart(_context: &ExecutionContext) -> DispatchResult {
     crate::SPC_HISTORY.with(|h| h.borrow_mut().clear());
 
     // Reset circuit breaker to closed state
-    crate::CIRCUIT_BREAKER.with(|cb| {
-        *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new()
-    });
+    crate::CIRCUIT_BREAKER.with(|cb| *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new());
 
-    Ok(DispatchOutcome::RestartInitiated { state_cleared: true })
+    Ok(DispatchOutcome::RestartInitiated {
+        state_cleared: true,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -472,7 +472,7 @@ mod tests {
 
         if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
             assert_eq!(attempt, 3); // next attempt
-            // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
+                                    // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
             assert_eq!(delay_ms, 4500);
         } else {
             panic!("Expected RetryInitiated outcome");
@@ -536,7 +536,9 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
-            DispatchOutcome::RestartInitiated { state_cleared: true }
+            DispatchOutcome::RestartInitiated {
+                state_cleared: true
+            }
         );
     }
 
@@ -576,7 +578,10 @@ mod tests {
 
     #[test]
     fn test_dispatch_outcome_description() {
-        assert_eq!(DispatchOutcome::NoOp.description(), "No operation performed");
+        assert_eq!(
+            DispatchOutcome::NoOp.description(),
+            "No operation performed"
+        );
         assert_eq!(
             DispatchOutcome::Scaled {
                 memory_mb: 256,

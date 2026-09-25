@@ -238,7 +238,11 @@ fn test_zero_reward_bad_next_state_decreases_q() {
     // Seed Q(S, a) to a positive value
     agent.update(&state, &action, 2.0, &health_state(0), false);
     let q_before = agent.get_q_value(&state, &action);
-    assert!(q_before > 0.0, "Sanity: Q(S,a) should be positive: {}", q_before);
+    assert!(
+        q_before > 0.0,
+        "Sanity: Q(S,a) should be positive: {}",
+        q_before
+    );
 
     // Update with r=0.0, next_state=health4 (terminal, Q=0 for all actions)
     // target = 0.0 + 0.99 * 0.0 = 0.0 (terminal, no bootstrap)
@@ -307,7 +311,9 @@ fn test_metamorphic_health_degradation_monotonic() {
     assert!(
         (reward_degraded_mild - reward_degraded_moderate).abs() < 1e-6,
         "All non-terminal degradation should produce identical rewards (flat category penalty): \
-         mild={}, moderate={}", reward_degraded_mild, reward_degraded_moderate
+         mild={}, moderate={}",
+        reward_degraded_mild,
+        reward_degraded_moderate
     );
 
     // Contract 3: non-terminal degradation > terminal degradation
@@ -323,7 +329,8 @@ fn test_metamorphic_health_degradation_monotonic() {
     assert!(
         (terminal_extra_penalty - 2.0).abs() < 1e-6,
         "Terminal state should add exactly -2.0 extra penalty vs non-terminal degradation, \
-         got delta={}", terminal_extra_penalty
+         got delta={}",
+        terminal_extra_penalty
     );
 }
 
@@ -611,21 +618,34 @@ fn test_a4_discount_factor_affects_q_update_magnitude() {
     let q_next_high = agent_high_gamma.get_q_value(&next_state, &action);
     let q_next_low = agent_low_gamma.get_q_value(&next_state, &action);
     // They differ because gamma differs in the self-bootstrap, but both are positive.
-    assert!(q_next_high > 0.0, "Q(next_state) must be positive for high gamma agent");
-    assert!(q_next_low > 0.0, "Q(next_state) must be positive for low gamma agent");
+    assert!(
+        q_next_high > 0.0,
+        "Q(next_state) must be positive for high gamma agent"
+    );
+    assert!(
+        q_next_low > 0.0,
+        "Q(next_state) must be positive for low gamma agent"
+    );
     // High gamma agent bootstraps more aggressively, so q_next_high >= q_next_low
     assert!(
         q_next_high >= q_next_low,
         "Higher gamma should yield higher Q(next_state) after self-bootstrap: \
          high={:.4}, low={:.4}",
-        q_next_high, q_next_low
+        q_next_high,
+        q_next_low
     );
 
     // Now update the SAME (state, action) with r=0.0 in both agents.
     let q_before_high = agent_high_gamma.get_q_value(&state, &action);
     let q_before_low = agent_low_gamma.get_q_value(&state, &action);
-    assert_eq!(q_before_high, 0.0, "state must be unvisited for high-gamma agent");
-    assert_eq!(q_before_low, 0.0, "state must be unvisited for low-gamma agent");
+    assert_eq!(
+        q_before_high, 0.0,
+        "state must be unvisited for high-gamma agent"
+    );
+    assert_eq!(
+        q_before_low, 0.0,
+        "state must be unvisited for low-gamma agent"
+    );
 
     agent_high_gamma.update(&state, &action, 0.0, &next_state, false);
     agent_low_gamma.update(&state, &action, 0.0, &next_state, false);
@@ -640,7 +660,8 @@ fn test_a4_discount_factor_affects_q_update_magnitude() {
         delta_high > delta_low,
         "Higher γ (0.99) should produce larger Q-update magnitude than lower γ (0.50) \
          given the same next_state Q-values. delta_high={:.6}, delta_low={:.6}",
-        delta_high, delta_low
+        delta_high,
+        delta_low
     );
 }
 
@@ -669,8 +690,14 @@ fn test_a5_learning_rate_scales_q_update_magnitude() {
 
     let q_before_large = agent_large_alpha.get_q_value(&state, &action);
     let q_before_small = agent_small_alpha.get_q_value(&state, &action);
-    assert_eq!(q_before_large, 0.0, "state must be unvisited for large-alpha agent");
-    assert_eq!(q_before_small, 0.0, "state must be unvisited for small-alpha agent");
+    assert_eq!(
+        q_before_large, 0.0,
+        "state must be unvisited for large-alpha agent"
+    );
+    assert_eq!(
+        q_before_small, 0.0,
+        "state must be unvisited for small-alpha agent"
+    );
 
     // Terminal update with positive reward: target = r = 1.0 (no bootstrap)
     agent_large_alpha.update(&state, &action, 1.0, &next_state, true);
@@ -686,7 +713,8 @@ fn test_a5_learning_rate_scales_q_update_magnitude() {
         delta_large > delta_small,
         "Larger α (0.5) should produce larger Q-update magnitude than smaller α (0.01). \
          delta_large={:.4}, delta_small={:.4}",
-        delta_large, delta_small
+        delta_large,
+        delta_small
     );
 
     // Verify exact magnitudes
@@ -696,11 +724,13 @@ fn test_a5_learning_rate_scales_q_update_magnitude() {
     assert!(
         (delta_large - expected_large).abs() < 1e-5,
         "Large-alpha delta should be exactly alpha*target={:.4}: got {:.6}",
-        expected_large, delta_large
+        expected_large,
+        delta_large
     );
     assert!(
         (delta_small - expected_small).abs() < 1e-5,
         "Small-alpha delta should be exactly alpha*target={:.4}: got {:.6}",
-        expected_small, delta_small
+        expected_small,
+        delta_small
     );
 }

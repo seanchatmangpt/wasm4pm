@@ -10,9 +10,9 @@
 //! Budget: 34 nanoseconds per cycle (target: 30.6ns with 10% margin)
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::time::Duration;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::RlState;
-use std::time::Duration;
 
 // =========================================================================
 // Benchmark: Perception (Encode 8D state to state_id)

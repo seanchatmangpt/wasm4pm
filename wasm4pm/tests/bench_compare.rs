@@ -1,6 +1,8 @@
 //! Quick batch vs streaming comparison using synthetic data.
 //! Run: cargo test --test bench_compare -- --nocapture
 
+use std::collections::HashMap;
+use std::time::Instant;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::fast_discovery::{discover_astar, discover_hill_climbing};
 use wasm4pm::incremental_dfg::{IncrementalDFG, StreamingDFG};
@@ -14,8 +16,6 @@ use wasm4pm::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
 use wasm4pm::streaming::streaming_inductive::StreamingInductiveBuilder;
 use wasm4pm::streaming::streaming_noise_filtered_dfg::StreamingNoiseFilteredDfgBuilder;
 use wasm4pm::streaming::StreamingAlgorithm;
-use std::collections::HashMap;
-use std::time::Instant;
 
 fn make_log(cases: usize) -> String {
     let activities = ["Start", "A", "B", "C", "D", "End"];

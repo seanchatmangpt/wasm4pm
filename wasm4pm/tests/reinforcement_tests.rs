@@ -6,11 +6,11 @@
 //!
 //! Extracted from embedded #[cfg(test)] block in src/reinforcement.rs.
 
+use std::hash::Hash;
 use wasm4pm::reinforcement::{
     Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     WorkflowAction, WorkflowState,
 };
-use std::hash::Hash;
 
 // ---------------------------------------------------------------------------
 // Shared test types
@@ -353,7 +353,10 @@ fn test_expected_sarsa_seeded_determinism() {
     for _ in 0..100 {
         let a1 = agent1.select_action(&state);
         let a2 = agent2.select_action(&state);
-        assert_eq!(a1, a2, "Seeded Expected SARSA must produce identical actions");
+        assert_eq!(
+            a1, a2,
+            "Seeded Expected SARSA must produce identical actions"
+        );
     }
 }
 
@@ -388,7 +391,10 @@ fn test_different_seeds_produce_different_actions() {
     }
     // With 2 actions and uniform random, expect ~50% match by chance.
     // If same_count == 100, the seeds are not producing different sequences.
-    assert!(same_count < 100, "Different seeds should produce different action sequences");
+    assert!(
+        same_count < 100,
+        "Different seeds should produce different action sequences"
+    );
 }
 
 // ---------------------------------------------------------------------------

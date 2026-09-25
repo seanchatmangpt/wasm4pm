@@ -17,12 +17,12 @@
 //! 13. Counterfactual bandwidth: multiple candidates → parallel scoring → top action
 //! 14. Benchmark challenge map: challenge-response pairs verified
 
+use std::collections::BTreeSet;
 use wasm4pm::agentic::prelude::*;
 use wasm4pm::hot_kernels::{marking_enabled4, marking_fire4, Marking4, Transition4};
 use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
 use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
 use wasm4pm::RlState;
-use std::collections::BTreeSet;
 
 /// Helper to create test RlState with reasonable defaults
 fn make_test_state(health_level: u8) -> RlState {
@@ -135,16 +135,28 @@ fn e2e_pipeline_event_stream_to_prompt_bindings() {
     let mut orch = RlOrchestrator::new();
     orch.set_linucb_selection(true);
     let next_state = make_test_state(1);
-    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
+    let (action_label, reward) =
+        orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     assert!(!action_label.is_empty(), "RL must produce an action label");
     assert!(!reward.is_nan(), "Reward must be a real number");
     assert_eq!(orch.telemetry().cycle_count, 1);
 
     // Step 4: Petri net validates the resulting transition (T_execute: p0→p1)
-    let m = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t_execute = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let enabled = marking_enabled4(m, t_execute);
     assert_eq!(enabled, 1, "Transition must be enabled given a token in p0");
@@ -159,12 +171,25 @@ fn e2e_pipeline_event_stream_to_prompt_bindings() {
         ConfidenceBand::High,
         DriftStatus::Stable,
     );
-    let sufficient = DefaultEvidenceSufficiencyChecker.is_sufficient(&task).unwrap();
-    assert!(sufficient, "Evidence must be sufficient before compiling bindings");
+    let sufficient = DefaultEvidenceSufficiencyChecker
+        .is_sufficient(&task)
+        .unwrap();
+    assert!(
+        sufficient,
+        "Evidence must be sufficient before compiling bindings"
+    );
 
-    let bindings = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
-    assert!(bindings.selected_role.is_some(), "Bindings must include selected role");
-    assert!(bindings.topology.is_some(), "Bindings must include topology");
+    let bindings = DefaultPromptBindingCompiler
+        .compile_bindings(&task)
+        .unwrap();
+    assert!(
+        bindings.selected_role.is_some(),
+        "Bindings must include selected role"
+    );
+    assert!(
+        bindings.topology.is_some(),
+        "Bindings must include topology"
+    );
     assert!(bindings.bindings.contains_key("task_id"));
     assert!(bindings.bindings.contains_key("phase"));
     assert!(bindings.bindings.contains_key("risk_level"));
@@ -172,7 +197,10 @@ fn e2e_pipeline_event_stream_to_prompt_bindings() {
     assert!(bindings.bindings.contains_key("drift_status"));
 
     // Step 6: Receipt chain — telemetry proves a cycle completed
-    assert!(orch.telemetry().cycle_count > 0, "At least one cycle must be recorded");
+    assert!(
+        orch.telemetry().cycle_count > 0,
+        "At least one cycle must be recorded"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -184,10 +212,21 @@ fn e2e_pipeline_event_stream_to_prompt_bindings() {
 #[test]
 fn e2e_cpu_hot_path_marking_sequence() {
     // Tick 7: Marking Enabled (guard check)
-    let m = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let enabled = marking_enabled4(m, t);
     assert_eq!(enabled, 1, "Marking enabled when input place has token");
@@ -202,7 +241,12 @@ fn e2e_cpu_hot_path_marking_sequence() {
     assert!(reward > 0.0, "Positive reward for health improvement");
 
     // Blocked marking produces no state change
-    let m_blocked = Marking4 { p0: 0, p1: 0, p2: 0, p3: 0 };
+    let m_blocked = Marking4 {
+        p0: 0,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let enabled_blocked = marking_enabled4(m_blocked, t);
     assert_eq!(enabled_blocked, 0, "No token in p0 = marking disabled");
     let m_unchanged = marking_fire4(m_blocked, t, enabled_blocked);
@@ -213,10 +257,21 @@ fn e2e_cpu_hot_path_marking_sequence() {
 /// Saturating arithmetic: firing into a full place does not overflow.
 #[test]
 fn e2e_cpu_hot_path_saturating_arithmetic() {
-    let m_full = Marking4 { p0: u32::MAX, p1: 0, p2: 0, p3: 0 };
+    let m_full = Marking4 {
+        p0: u32::MAX,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t_subtract = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 0, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 0,
+        out2: 0,
+        out3: 0,
     };
     let en = marking_enabled4(m_full, t_subtract);
     assert_eq!(en, 1);
@@ -247,17 +302,33 @@ fn e2e_autonomic_state_machine_happy_path() {
     assert_eq!(topo.topology, SwarmTopology::Single);
 
     // VALIDATE: evidence sufficient, no escalation
-    let sufficient = DefaultEvidenceSufficiencyChecker.is_sufficient(&task).unwrap();
+    let sufficient = DefaultEvidenceSufficiencyChecker
+        .is_sufficient(&task)
+        .unwrap();
     assert!(sufficient);
 
     let escalation = DefaultEscalationEngine.evaluate_escalation(&task).unwrap();
-    assert!(!escalation.should_escalate, "Low-risk stable task must not escalate");
+    assert!(
+        !escalation.should_escalate,
+        "Low-risk stable task must not escalate"
+    );
 
     // EXECUTE: Petri marking fires
-    let m = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let en = marking_enabled4(m, t);
     assert_eq!(en, 1);
@@ -291,21 +362,38 @@ fn e2e_autonomic_state_machine_escalation_path() {
 
     // DECIDE: escalation engine triggers
     let escalation = DefaultEscalationEngine.evaluate_escalation(&task).unwrap();
-    assert!(escalation.should_escalate, "OutOfControl drift must escalate");
+    assert!(
+        escalation.should_escalate,
+        "OutOfControl drift must escalate"
+    );
     assert_eq!(escalation.target_role, Some(AgentRole::Escalator));
 
     // EXECUTE is skipped: marking stays at p0 (no token consumed)
-    let m = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t_execute = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     // Escalation blocks execution — simulate by not firing
     let _enabled = marking_enabled4(m, t_execute);
     // (In real system, escalation decision prevents calling marking_fire4)
     // Verify marking unchanged
     let m_unchanged = marking_fire4(m, t_execute, 0u8); // enabled=0 = blocked
-    assert_eq!(m_unchanged.p0, 1, "Marking unchanged when execution is blocked");
+    assert_eq!(
+        m_unchanged.p0, 1,
+        "Marking unchanged when execution is blocked"
+    );
     assert_eq!(m_unchanged.p1, 0);
 
     // LEARN: negative reward for drift
@@ -331,7 +419,9 @@ fn e2e_ml_challenge_spc_rule1_out_of_control() {
 
     let alerts = check_western_electric_rules(&data);
     assert!(
-        alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+        alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
         "Rule 1 must detect a point beyond UCL"
     );
 }
@@ -349,7 +439,9 @@ fn e2e_ml_challenge_spc_rule2_consecutive_shift() {
 
     let alerts = check_western_electric_rules(&data);
     assert!(
-        alerts.iter().any(|a| matches!(a, SpecialCause::Shift { .. })),
+        alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Shift { .. })),
         "Rule 2 must detect 9 consecutive same-side points"
     );
 }
@@ -366,7 +458,11 @@ fn e2e_ml_challenge_spc_rule3_monotone_trend() {
     let data: Vec<ChartData> = (0..9)
         .map(|i| {
             let value = if i < 3 {
-                if i % 2 == 0 { cl + 1.0 } else { cl - 1.0 }
+                if i % 2 == 0 {
+                    cl + 1.0
+                } else {
+                    cl - 1.0
+                }
             } else {
                 cl + (i as f64 - 2.0) // 1, 2, 3, 4, 5, 6 — strictly increasing
             };
@@ -377,7 +473,13 @@ fn e2e_ml_challenge_spc_rule3_monotone_trend() {
     let alerts = check_western_electric_rules(&data);
     assert!(
         alerts.iter().any(|a| {
-            matches!(a, SpecialCause::Trend { direction: TrendDirection::Increasing, .. })
+            matches!(
+                a,
+                SpecialCause::Trend {
+                    direction: TrendDirection::Increasing,
+                    ..
+                }
+            )
         }),
         "Rule 3 must detect 6 consecutive increasing points"
     );
@@ -398,8 +500,24 @@ fn e2e_ml_challenge_feature_sparsity_entropy() {
     let state = make_test_state(1);
     let next_state = make_test_state(1);
 
-    let (action_high, _) = orch.run_cycle(&high_entropy_features, &state, &next_state, 0, true, true, false);
-    let (action_low, _) = orch.run_cycle(&low_entropy_features, &state, &next_state, 0, true, true, false);
+    let (action_high, _) = orch.run_cycle(
+        &high_entropy_features,
+        &state,
+        &next_state,
+        0,
+        true,
+        true,
+        false,
+    );
+    let (action_low, _) = orch.run_cycle(
+        &low_entropy_features,
+        &state,
+        &next_state,
+        0,
+        true,
+        true,
+        false,
+    );
 
     // Both must produce valid action labels (contextual bandit responds to features)
     assert!(!action_high.is_empty());
@@ -422,7 +540,10 @@ fn e2e_rl_challenge_ucb_exploration_bonus() {
 
     for features in &[sparse, dense, mixed] {
         let agent = orch.linucb_select_agent(features);
-        assert!((agent as u8) < AgentType::COUNT as u8, "LinUCB must return valid agent index");
+        assert!(
+            (agent as u8) < AgentType::COUNT as u8,
+            "LinUCB must return valid agent index"
+        );
     }
 }
 
@@ -437,7 +558,10 @@ fn e2e_rl_challenge_bounded_reward_kernel() {
 
     assert!(min_reward > -20.0, "Reward floor must be bounded");
     assert!(max_reward < 5.0, "Reward ceiling must be bounded");
-    assert!(min_reward < max_reward, "Best outcome must beat worst outcome");
+    assert!(
+        min_reward < max_reward,
+        "Best outcome must beat worst outcome"
+    );
 }
 
 /// Challenge: slow convergence. Control: persistent state across cycles.
@@ -453,7 +577,11 @@ fn e2e_rl_challenge_persistent_state_across_cycles() {
     for i in 1..=10 {
         let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         cumulative += reward;
-        assert_eq!(orch.telemetry().cycle_count, i, "Cycle counter must persist");
+        assert_eq!(
+            orch.telemetry().cycle_count,
+            i,
+            "Cycle counter must persist"
+        );
         assert!(
             (orch.telemetry().cumulative_reward - cumulative).abs() < 1e-4,
             "Cumulative reward must track correctly"
@@ -471,9 +599,15 @@ fn e2e_rl_challenge_lawful_action_clipping() {
     allowed.insert(ActionClass::Validate);
 
     let task = make_task_with_actions(allowed);
-    let result = DefaultCounterfactualEvaluator.evaluate_options(&task).unwrap();
+    let result = DefaultCounterfactualEvaluator
+        .evaluate_options(&task)
+        .unwrap();
 
-    assert_eq!(result.options.len(), 2, "Only 2 lawful actions should be evaluated");
+    assert_eq!(
+        result.options.len(),
+        2,
+        "Only 2 lawful actions should be evaluated"
+    );
     // Every returned option must be in {Execute, Validate}
     for option in &result.options {
         assert!(
@@ -482,7 +616,10 @@ fn e2e_rl_challenge_lawful_action_clipping() {
             option.option_id
         );
     }
-    assert!(result.selected_option_id.is_some(), "A best option must be selected");
+    assert!(
+        result.selected_option_id.is_some(),
+        "A best option must be selected"
+    );
 }
 
 /// Challenge: state aliasing. Control: 8-feature contextual state.
@@ -527,8 +664,14 @@ fn e2e_rl_all_agents_run_without_panic() {
         orch.switch_agent(agent_type);
         let next_state = make_test_state(2);
         let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
-        assert!(!label.is_empty(), "Agent {agent_type:?} must produce a label");
-        assert!(!reward.is_nan(), "Agent {agent_type:?} must produce a real reward");
+        assert!(
+            !label.is_empty(),
+            "Agent {agent_type:?} must produce a label"
+        );
+        assert!(
+            !reward.is_nan(),
+            "Agent {agent_type:?} must produce a real reward"
+        );
     }
 }
 
@@ -546,7 +689,10 @@ fn e2e_gpu_cpu_fallback_always_produces_valid_action() {
     // Even with no GPU available, CPU LinUCB must return a valid agent
     let features = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5f32];
     let agent = orch.linucb_select_agent(&features);
-    assert!((agent as u8) < AgentType::COUNT as u8, "CPU fallback must produce valid action");
+    assert!(
+        (agent as u8) < AgentType::COUNT as u8,
+        "CPU fallback must produce valid action"
+    );
 }
 
 /// Batch size sensitivity: small batches should use CPU path (no GPU overhead).
@@ -588,9 +734,13 @@ fn e2e_agentic_control_pipeline_full_sequence() {
     assert_eq!(topo.topology, SwarmTopology::Pipeline);
 
     // Stage 3: Evidence sufficiency gate
-    let sufficient = DefaultEvidenceSufficiencyChecker.is_sufficient(&task).unwrap();
+    let sufficient = DefaultEvidenceSufficiencyChecker
+        .is_sufficient(&task)
+        .unwrap();
     assert!(sufficient);
-    let gaps = DefaultEvidenceSufficiencyChecker.summarize_gaps(&task).unwrap();
+    let gaps = DefaultEvidenceSufficiencyChecker
+        .summarize_gaps(&task)
+        .unwrap();
     assert!(gaps.is_empty(), "No gaps on high-confidence stable task");
 
     // Stage 4: Escalation gate
@@ -606,8 +756,12 @@ fn e2e_agentic_control_pipeline_full_sequence() {
         selected_topology: Some(topo.topology.clone()),
     };
     let artifacts = DefaultArtifactDispatcher.plan_artifacts(&art_req).unwrap();
-    assert!(artifacts.artifact_families.contains(&ArtifactFamily::TaskPrompt));
-    assert!(artifacts.artifact_families.contains(&ArtifactFamily::DelegationPrompt));
+    assert!(artifacts
+        .artifact_families
+        .contains(&ArtifactFamily::TaskPrompt));
+    assert!(artifacts
+        .artifact_families
+        .contains(&ArtifactFamily::DelegationPrompt));
 
     // Stage 6: Handoff validation
     let handoff = HandoffRequest {
@@ -622,13 +776,20 @@ fn e2e_agentic_control_pipeline_full_sequence() {
     assert_eq!(decision.disposition, DecisionDisposition::Allow);
 
     // Stage 7: Prompt binding compilation
-    let bindings = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
+    let bindings = DefaultPromptBindingCompiler
+        .compile_bindings(&task)
+        .unwrap();
     assert!(bindings.selected_role.is_some());
     assert!(bindings.topology.is_some());
-    assert_eq!(bindings.bindings.get("phase").map(String::as_str), Some("Plan"));
+    assert_eq!(
+        bindings.bindings.get("phase").map(String::as_str),
+        Some("Plan")
+    );
 
     // Stage 8: Counterfactual evaluation
-    let cf = DefaultCounterfactualEvaluator.evaluate_options(&task).unwrap();
+    let cf = DefaultCounterfactualEvaluator
+        .evaluate_options(&task)
+        .unwrap();
     assert!(!cf.options.is_empty());
     assert!(cf.selected_option_id.is_some());
 
@@ -644,10 +805,17 @@ fn e2e_agentic_control_pipeline_full_sequence() {
         notes: vec!["E2E pipeline test".to_string()],
     };
     let result = DefaultJtbdRunner.run_case(&case).unwrap();
-    assert!(result.passed, "JTBD case must pass for well-defined plan task");
+    assert!(
+        result.passed,
+        "JTBD case must pass for well-defined plan task"
+    );
     assert_eq!(result.assertions.len(), 4); // role + topology + disposition + artifacts
     for assertion in &result.assertions {
-        assert!(assertion.passed, "Assertion {:?} failed: {:?}", assertion.name, assertion.details);
+        assert!(
+            assertion.passed,
+            "Assertion {:?} failed: {:?}",
+            assertion.name, assertion.details
+        );
     }
 }
 
@@ -666,13 +834,21 @@ fn e2e_decision_gate_insufficient_evidence_escalates() {
         DriftStatus::OutOfControl,
     );
 
-    let sufficient = DefaultEvidenceSufficiencyChecker.is_sufficient(&task).unwrap();
-    assert!(!sufficient, "Low confidence + OOC drift = insufficient evidence");
+    let sufficient = DefaultEvidenceSufficiencyChecker
+        .is_sufficient(&task)
+        .unwrap();
+    assert!(
+        !sufficient,
+        "Low confidence + OOC drift = insufficient evidence"
+    );
 
-    let gaps = DefaultEvidenceSufficiencyChecker.summarize_gaps(&task).unwrap();
+    let gaps = DefaultEvidenceSufficiencyChecker
+        .summarize_gaps(&task)
+        .unwrap();
     assert!(!gaps.is_empty(), "Gaps must be reported");
     assert!(
-        gaps.iter().any(|g| g.contains("confidence band insufficient")),
+        gaps.iter()
+            .any(|g| g.contains("confidence band insufficient")),
         "Gap must mention confidence band"
     );
     assert!(
@@ -682,7 +858,10 @@ fn e2e_decision_gate_insufficient_evidence_escalates() {
 
     // Escalation engine also fires
     let escalation = DefaultEscalationEngine.evaluate_escalation(&task).unwrap();
-    assert!(escalation.should_escalate, "OOC drift must trigger escalation");
+    assert!(
+        escalation.should_escalate,
+        "OOC drift must trigger escalation"
+    );
     assert!(escalation.reason_codes.iter().any(|r| r.contains("drift")));
 }
 
@@ -697,7 +876,9 @@ fn e2e_decision_gate_sufficient_evidence_compiles_bindings() {
     );
 
     // Evidence gate passes
-    assert!(DefaultEvidenceSufficiencyChecker.is_sufficient(&task).unwrap());
+    assert!(DefaultEvidenceSufficiencyChecker
+        .is_sufficient(&task)
+        .unwrap());
 
     // Role and topology are lawful
     let role = DefaultRoleSelector.select_role(&task).unwrap();
@@ -707,7 +888,9 @@ fn e2e_decision_gate_sufficient_evidence_compiles_bindings() {
     assert_eq!(topo.topology, SwarmTopology::Single);
 
     // Compile gate produces bindings
-    let bindings = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
+    let bindings = DefaultPromptBindingCompiler
+        .compile_bindings(&task)
+        .unwrap();
     assert_eq!(
         bindings.bindings.get("phase").map(String::as_str),
         Some("Execute")
@@ -718,27 +901,55 @@ fn e2e_decision_gate_sufficient_evidence_compiles_bindings() {
 #[test]
 fn e2e_decision_gate_disabled_marking_rejects_transition() {
     // No token in p0 — marking is disabled
-    let m_empty = Marking4 { p0: 0, p1: 0, p2: 0, p3: 0 };
+    let m_empty = Marking4 {
+        p0: 0,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let enabled = marking_enabled4(m_empty, t);
-    assert_eq!(enabled, 0, "Marking must be disabled when input place is empty");
+    assert_eq!(
+        enabled, 0,
+        "Marking must be disabled when input place is empty"
+    );
 
     // Fire is a no-op when disabled
     let m_after = marking_fire4(m_empty, t, enabled);
-    assert_eq!(m_after, m_empty, "Disabled fire must leave marking unchanged");
+    assert_eq!(
+        m_after, m_empty,
+        "Disabled fire must leave marking unchanged"
+    );
 }
 
 /// Receipt chain: after a successful fire, the RL orchestrator has a receipt
 /// in the form of persisted telemetry (cycle_count > 0, reward recorded).
 #[test]
 fn e2e_decision_gate_successful_execution_produces_receipt() {
-    let m = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let en = marking_enabled4(m, t);
     assert_eq!(en, 1);
@@ -802,7 +1013,9 @@ fn e2e_prompt_foundry_all_inputs_reflected_in_bindings() {
         metadata: Default::default(),
     };
 
-    let bindings = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
+    let bindings = DefaultPromptBindingCompiler
+        .compile_bindings(&task)
+        .unwrap();
 
     // Ontology: phase, risk, confidence, drift
     assert_eq!(bindings.bindings["phase"], "Validate");
@@ -823,9 +1036,20 @@ fn e2e_prompt_foundry_all_inputs_reflected_in_bindings() {
     assert_eq!(bindings.forbidden_actions.len(), 1);
 
     // Bindings map has all 8 keys
-    for key in ["task_id", "title", "phase", "risk_level", "confidence_band",
-                "drift_status", "selected_role", "topology"] {
-        assert!(bindings.bindings.contains_key(key), "Missing binding key: {key}");
+    for key in [
+        "task_id",
+        "title",
+        "phase",
+        "risk_level",
+        "confidence_band",
+        "drift_status",
+        "selected_role",
+        "topology",
+    ] {
+        assert!(
+            bindings.bindings.contains_key(key),
+            "Missing binding key: {key}"
+        );
     }
 }
 
@@ -847,7 +1071,9 @@ fn e2e_closed_claw_deterministic_vs_llm_proxy() {
 
     let role = DefaultRoleSelector.select_role(&task).unwrap();
     let topo = DefaultTaskDecomposer.choose_topology(&task).unwrap();
-    let bindings = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
+    let bindings = DefaultPromptBindingCompiler
+        .compile_bindings(&task)
+        .unwrap();
 
     // All three decisions are deterministic and produce the same results every time
     assert_eq!(role.selected_role, AgentRole::Executor);
@@ -857,8 +1083,14 @@ fn e2e_closed_claw_deterministic_vs_llm_proxy() {
     // Run twice to verify determinism
     let role2 = DefaultRoleSelector.select_role(&task).unwrap();
     let topo2 = DefaultTaskDecomposer.choose_topology(&task).unwrap();
-    assert_eq!(role.selected_role, role2.selected_role, "Role selection is deterministic");
-    assert_eq!(topo.topology, topo2.topology, "Topology selection is deterministic");
+    assert_eq!(
+        role.selected_role, role2.selected_role,
+        "Role selection is deterministic"
+    );
+    assert_eq!(
+        topo.topology, topo2.topology,
+        "Topology selection is deterministic"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -876,7 +1108,9 @@ fn e2e_health_state_watch_triggered_by_spc_shift() {
         .collect();
     let alerts = check_western_electric_rules(&data);
     assert!(
-        alerts.iter().any(|a| matches!(a, SpecialCause::Shift { .. })),
+        alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Shift { .. })),
         "Persistent above-CL rewards signal a Watch state"
     );
 }
@@ -895,7 +1129,15 @@ fn e2e_health_state_adaptive_after_shift() {
 
     // Subsequent cycle with no alerts — RL adapts
     let next_state_2 = make_test_state(0);
-    let (_, reward) = orch.run_cycle(&features, &make_test_state(1), &next_state_2, 0, true, true, false);
+    let (_, reward) = orch.run_cycle(
+        &features,
+        &make_test_state(1),
+        &next_state_2,
+        0,
+        true,
+        true,
+        false,
+    );
     assert_eq!(orch.telemetry().last_spc_alert_count, 0);
     assert_eq!(orch.telemetry().cycle_count, 2);
     assert!(!reward.is_nan());
@@ -913,18 +1155,35 @@ fn e2e_health_state_escalation_from_adaptive() {
     );
 
     let escalation = DefaultEscalationEngine.evaluate_escalation(&task).unwrap();
-    assert!(escalation.should_escalate, "Critical risk must escalate from adaptive state");
-    assert!(escalation.reason_codes.iter().any(|r| r.contains("risk:Critical")));
+    assert!(
+        escalation.should_escalate,
+        "Critical risk must escalate from adaptive state"
+    );
+    assert!(escalation
+        .reason_codes
+        .iter()
+        .any(|r| r.contains("risk:Critical")));
 }
 
 /// Adaptive → Blocked: marking disabled prevents further state transitions.
 #[test]
 fn e2e_health_state_blocked_on_disabled_marking() {
     // All input places empty = blocked
-    let m_blocked = Marking4 { p0: 0, p1: 0, p2: 0, p3: 0 };
+    let m_blocked = Marking4 {
+        p0: 0,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let en = marking_enabled4(m_blocked, t);
     assert_eq!(en, 0, "No tokens = Blocked state");
@@ -938,10 +1197,21 @@ fn e2e_health_state_blocked_on_disabled_marking() {
 #[test]
 fn e2e_health_state_recovery_from_blocked() {
     // Was blocked; now a token arrives in p0
-    let m_recovered = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m_recovered = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let en = marking_enabled4(m_recovered, t);
     assert_eq!(en, 1, "Token restored = recovered from Blocked");
@@ -962,49 +1232,110 @@ fn e2e_health_state_recovery_from_blocked() {
 #[test]
 fn e2e_petri_net_four_place_token_flow() {
     // P0 (Evidence Ready) — initial marking
-    let m0 = Marking4 { p0: 1, p1: 0, p2: 0, p3: 0 };
+    let m0 = Marking4 {
+        p0: 1,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
 
     // T0: Select Role — consumes p0, produces p1
     let t0 = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let e0 = marking_enabled4(m0, t0);
     assert_eq!(e0, 1, "T0 enabled: evidence is ready");
     let m1 = marking_fire4(m0, t0, e0);
-    assert_eq!(m1, Marking4 { p0: 0, p1: 1, p2: 0, p3: 0 }, "P1: Role Selected");
+    assert_eq!(
+        m1,
+        Marking4 {
+            p0: 0,
+            p1: 1,
+            p2: 0,
+            p3: 0
+        },
+        "P1: Role Selected"
+    );
 
     // T1: Choose Topology — consumes p1, produces p2
     let t1 = Transition4 {
-        in0: 0, in1: 1, in2: 0, in3: 0,
-        out0: 0, out1: 0, out2: 1, out3: 0,
+        in0: 0,
+        in1: 1,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 0,
+        out2: 1,
+        out3: 0,
     };
     let e1 = marking_enabled4(m1, t1);
     assert_eq!(e1, 1, "T1 enabled: role is selected");
     let m2 = marking_fire4(m1, t1, e1);
-    assert_eq!(m2, Marking4 { p0: 0, p1: 0, p2: 1, p3: 0 }, "P2: Topology Selected");
+    assert_eq!(
+        m2,
+        Marking4 {
+            p0: 0,
+            p1: 0,
+            p2: 1,
+            p3: 0
+        },
+        "P2: Topology Selected"
+    );
 
     // T2: Select Action — consumes p2, produces p3
     let t2 = Transition4 {
-        in0: 0, in1: 0, in2: 1, in3: 0,
-        out0: 0, out1: 0, out2: 0, out3: 1,
+        in0: 0,
+        in1: 0,
+        in2: 1,
+        in3: 0,
+        out0: 0,
+        out1: 0,
+        out2: 0,
+        out3: 1,
     };
     let e2 = marking_enabled4(m2, t2);
     assert_eq!(e2, 1, "T2 enabled: topology is selected");
     let m3 = marking_fire4(m2, t2, e2);
-    assert_eq!(m3, Marking4 { p0: 0, p1: 0, p2: 0, p3: 1 }, "P3: Lawful Action Available");
+    assert_eq!(
+        m3,
+        Marking4 {
+            p0: 0,
+            p1: 0,
+            p2: 0,
+            p3: 1
+        },
+        "P3: Lawful Action Available"
+    );
 
     // T3: Validate (consumes p3, no output = terminal) — marks receipt written
     let t3_validate = Transition4 {
-        in0: 0, in1: 0, in2: 0, in3: 1,
-        out0: 0, out1: 0, out2: 0, out3: 0,
+        in0: 0,
+        in1: 0,
+        in2: 0,
+        in3: 1,
+        out0: 0,
+        out1: 0,
+        out2: 0,
+        out3: 0,
     };
     let e3 = marking_enabled4(m3, t3_validate);
     assert_eq!(e3, 1, "T3 enabled: action is available");
     let m_final = marking_fire4(m3, t3_validate, e3);
     assert_eq!(
         m_final,
-        Marking4 { p0: 0, p1: 0, p2: 0, p3: 0 },
+        Marking4 {
+            p0: 0,
+            p1: 0,
+            p2: 0,
+            p3: 0
+        },
         "All tokens consumed — receipt sealed"
     );
 }
@@ -1013,27 +1344,52 @@ fn e2e_petri_net_four_place_token_flow() {
 #[test]
 fn e2e_petri_net_deadlock_prevention() {
     // P1 has a token but T0 requires p0 — T0 is disabled (ordering violation)
-    let m = Marking4 { p0: 0, p1: 1, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 0,
+        p1: 1,
+        p2: 0,
+        p3: 0,
+    };
     let t0 = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
     let en = marking_enabled4(m, t0);
     assert_eq!(en, 0, "Cannot skip steps — T0 disabled without p0 token");
 
     // Firing a disabled transition is a safe no-op
     let m_after = marking_fire4(m, t0, en);
-    assert_eq!(m_after, m, "Disabled fire is a no-op — no deadlock, no corruption");
+    assert_eq!(
+        m_after, m,
+        "Disabled fire is a no-op — no deadlock, no corruption"
+    );
 }
 
 /// Multi-token concurrency: two independent tokens can flow simultaneously.
 #[test]
 fn e2e_petri_net_concurrent_tokens() {
     // Two tokens in p0 (two concurrent tasks)
-    let m = Marking4 { p0: 2, p1: 0, p2: 0, p3: 0 };
+    let m = Marking4 {
+        p0: 2,
+        p1: 0,
+        p2: 0,
+        p3: 0,
+    };
     let t = Transition4 {
-        in0: 1, in1: 0, in2: 0, in3: 0,
-        out0: 0, out1: 1, out2: 0, out3: 0,
+        in0: 1,
+        in1: 0,
+        in2: 0,
+        in3: 0,
+        out0: 0,
+        out1: 1,
+        out2: 0,
+        out3: 0,
     };
 
     // First fire
@@ -1070,14 +1426,27 @@ fn e2e_counterfactual_bandwidth_multi_candidate_scoring() {
     }
 
     let task = make_task_with_actions(allowed);
-    let result = DefaultCounterfactualEvaluator.evaluate_options(&task).unwrap();
+    let result = DefaultCounterfactualEvaluator
+        .evaluate_options(&task)
+        .unwrap();
 
-    assert_eq!(result.options.len(), 5, "All 5 candidates must be evaluated");
-    assert!(result.selected_option_id.is_some(), "Best option must be identified");
+    assert_eq!(
+        result.options.len(),
+        5,
+        "All 5 candidates must be evaluated"
+    );
+    assert!(
+        result.selected_option_id.is_some(),
+        "Best option must be identified"
+    );
 
     // Selected option has the maximum estimated reward
     let selected_id = result.selected_option_id.as_ref().unwrap();
-    let selected = result.options.iter().find(|o| &o.option_id == selected_id).unwrap();
+    let selected = result
+        .options
+        .iter()
+        .find(|o| &o.option_id == selected_id)
+        .unwrap();
     for option in &result.options {
         assert!(
             selected.estimated_reward >= option.estimated_reward,
@@ -1091,9 +1460,17 @@ fn e2e_counterfactual_bandwidth_multi_candidate_scoring() {
 #[test]
 fn e2e_counterfactual_empty_action_set_returns_none() {
     let task = make_task_with_actions(BTreeSet::new());
-    let result = DefaultCounterfactualEvaluator.evaluate_options(&task).unwrap();
-    assert!(result.options.is_empty(), "No candidates when allowed_actions is empty");
-    assert!(result.selected_option_id.is_none(), "No selection when options is empty");
+    let result = DefaultCounterfactualEvaluator
+        .evaluate_options(&task)
+        .unwrap();
+    assert!(
+        result.options.is_empty(),
+        "No candidates when allowed_actions is empty"
+    );
+    assert!(
+        result.selected_option_id.is_none(),
+        "No selection when options is empty"
+    );
 }
 
 /// Reason codes are produced for each candidate (health transition annotated).
@@ -1104,10 +1481,15 @@ fn e2e_counterfactual_reason_codes_annotated() {
     allowed.insert(ActionClass::Validate);
 
     let task = make_task_with_actions(allowed);
-    let result = DefaultCounterfactualEvaluator.evaluate_options(&task).unwrap();
+    let result = DefaultCounterfactualEvaluator
+        .evaluate_options(&task)
+        .unwrap();
 
     for option in &result.options {
-        assert!(!option.reason_codes.is_empty(), "Each option must carry reason codes");
+        assert!(
+            !option.reason_codes.is_empty(),
+            "Each option must carry reason codes"
+        );
         assert!(
             option.reason_codes[0].starts_with("health:"),
             "Reason code must encode health transition"
@@ -1172,7 +1554,10 @@ fn e2e_challenge_unsafe_handoff_blocked_role_rejected() {
     let decision = DefaultHandoffValidator.validate_handoff(&req).unwrap();
     assert!(!decision.allowed, "Blocked role must be denied");
     assert_eq!(decision.disposition, DecisionDisposition::Deny);
-    assert!(decision.reason_codes.iter().any(|r: &String| r.contains("blocked")));
+    assert!(decision
+        .reason_codes
+        .iter()
+        .any(|r: &String| r.contains("blocked")));
 }
 
 /// Challenge: multi-agent decomposition. Response: role + topology microbench.
@@ -1180,19 +1565,60 @@ fn e2e_challenge_unsafe_handoff_blocked_role_rejected() {
 #[test]
 fn e2e_challenge_role_topology_all_phases_bounded() {
     let phases = [
-        (WorkflowPhase::Intake,    AgentRole::Explorer,  SwarmTopology::Single),
-        (WorkflowPhase::Triage,    AgentRole::Reviewer,  SwarmTopology::Single),
-        (WorkflowPhase::Analyze,   AgentRole::Explorer,  SwarmTopology::Single),
-        (WorkflowPhase::Plan,      AgentRole::Planner,   SwarmTopology::Single),
-        (WorkflowPhase::Execute,   AgentRole::Executor,  SwarmTopology::Single),
-        (WorkflowPhase::Validate,  AgentRole::Validator, SwarmTopology::ReviewLoop),
-        (WorkflowPhase::Escalate,  AgentRole::Escalator, SwarmTopology::Debate),
-        (WorkflowPhase::Complete,  AgentRole::Auditor,   SwarmTopology::Single),
-        (WorkflowPhase::Failed,    AgentRole::Escalator, SwarmTopology::Single),
+        (
+            WorkflowPhase::Intake,
+            AgentRole::Explorer,
+            SwarmTopology::Single,
+        ),
+        (
+            WorkflowPhase::Triage,
+            AgentRole::Reviewer,
+            SwarmTopology::Single,
+        ),
+        (
+            WorkflowPhase::Analyze,
+            AgentRole::Explorer,
+            SwarmTopology::Single,
+        ),
+        (
+            WorkflowPhase::Plan,
+            AgentRole::Planner,
+            SwarmTopology::Single,
+        ),
+        (
+            WorkflowPhase::Execute,
+            AgentRole::Executor,
+            SwarmTopology::Single,
+        ),
+        (
+            WorkflowPhase::Validate,
+            AgentRole::Validator,
+            SwarmTopology::ReviewLoop,
+        ),
+        (
+            WorkflowPhase::Escalate,
+            AgentRole::Escalator,
+            SwarmTopology::Debate,
+        ),
+        (
+            WorkflowPhase::Complete,
+            AgentRole::Auditor,
+            SwarmTopology::Single,
+        ),
+        (
+            WorkflowPhase::Failed,
+            AgentRole::Escalator,
+            SwarmTopology::Single,
+        ),
     ];
 
     for (phase, expected_role, expected_topo) in phases {
-        let task = make_task(phase.clone(), RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
+        let task = make_task(
+            phase.clone(),
+            RiskLevel::Low,
+            ConfidenceBand::High,
+            DriftStatus::Stable,
+        );
         let role = DefaultRoleSelector.select_role(&task).unwrap();
         let topo = DefaultTaskDecomposer.choose_topology(&task).unwrap();
         assert_eq!(
@@ -1226,7 +1652,10 @@ fn e2e_challenge_streaming_event_pressure() {
         }
     }
 
-    assert_eq!(valid_cycles, 1000, "All 1000 event cycles must complete successfully");
+    assert_eq!(
+        valid_cycles, 1000,
+        "All 1000 event cycles must complete successfully"
+    );
     assert_eq!(orch.telemetry().cycle_count, 1000);
     assert!(!orch.telemetry().cumulative_reward.is_nan());
 }
@@ -1243,10 +1672,17 @@ fn e2e_challenge_prompt_drift_stable_bindings() {
     );
 
     // Compile 10 times — bindings must be identical every time
-    let reference = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
+    let reference = DefaultPromptBindingCompiler
+        .compile_bindings(&task)
+        .unwrap();
     for _ in 0..9 {
-        let b = DefaultPromptBindingCompiler.compile_bindings(&task).unwrap();
-        assert_eq!(b.bindings, reference.bindings, "Prompt bindings must be stable");
+        let b = DefaultPromptBindingCompiler
+            .compile_bindings(&task)
+            .unwrap();
+        assert_eq!(
+            b.bindings, reference.bindings,
+            "Prompt bindings must be stable"
+        );
         assert_eq!(b.selected_role, reference.selected_role);
         assert_eq!(b.topology, reference.topology);
     }
@@ -1269,11 +1705,19 @@ fn e2e_challenge_llm_replacement_bounded_decision_budget() {
     for _ in 0..10_000 {
         let role = DefaultRoleSelector.select_role(&task).unwrap();
         let _ = DefaultTaskDecomposer.choose_topology(&task).unwrap();
-        let _ = DefaultEvidenceSufficiencyChecker.is_sufficient(&task).unwrap();
-        assert_ne!(role.selected_role, AgentRole::Custom("unreachable".to_string()));
+        let _ = DefaultEvidenceSufficiencyChecker
+            .is_sufficient(&task)
+            .unwrap();
+        assert_ne!(
+            role.selected_role,
+            AgentRole::Custom("unreachable".to_string())
+        );
         decision_count += 1;
     }
-    assert_eq!(decision_count, 10_000, "All 10K decisions completed in bounded time");
+    assert_eq!(
+        decision_count, 10_000,
+        "All 10K decisions completed in bounded time"
+    );
 }
 
 /// Challenge: adversarial distribution. Response: RL orchestrator rewards
@@ -1289,6 +1733,9 @@ fn e2e_challenge_adversarial_reward_distribution() {
         assert!(!r.is_nan(), "Reward must never be NaN");
         assert!(!r.is_infinite(), "Reward must never be infinite");
         assert!(*r > -50.0, "Reward floor must hold under adversarial input");
-        assert!(*r < 10.0, "Reward ceiling must hold under adversarial input");
+        assert!(
+            *r < 10.0,
+            "Reward ceiling must hold under adversarial input"
+        );
     }
 }

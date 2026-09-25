@@ -436,7 +436,7 @@ mod tests {
         let mut agent = LinUCBAgent::new();
         let features = [0.3_f32; N_FEATURES];
         // Weights start at zero; update with reward=0 should not move them
-        agent.update(&features, 3, 0.0);  // Changed from 5 to 3 (valid for N_ACTIONS=5)
+        agent.update(&features, 3, 0.0); // Changed from 5 to 3 (valid for N_ACTIONS=5)
         let w3 = agent.weight_vector(3);
         // With W=0 and reward=0, δ = 0 - 0 = 0 → no change
         for (j, &wj) in w3.iter().enumerate() {
@@ -481,7 +481,7 @@ mod tests {
         let features = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6];
         // Reward only action 3 repeatedly
         for _ in 0..500 {
-            agent.update(&features, 3, 1.0);  // Changed from 7 to 3 (valid for N_ACTIONS=5)
+            agent.update(&features, 3, 1.0); // Changed from 7 to 3 (valid for N_ACTIONS=5)
         }
         let (best, _) = agent.select(&features);
         assert_eq!(
@@ -504,7 +504,7 @@ mod tests {
 
         for _ in 0..300 {
             agent.update(&ctx_a, 2, 1.0);
-            agent.update(&ctx_b, 4, 1.0);  // Changed from 15 to 4
+            agent.update(&ctx_b, 4, 1.0); // Changed from 15 to 4
         }
 
         let (best_a, _) = agent.select(&ctx_a);
@@ -512,7 +512,8 @@ mod tests {
 
         assert_eq!(best_a, 2, "context A should select action 2, got {best_a}");
         assert_eq!(
-            best_b, 4,  // Changed from 15 to 4
+            best_b,
+            4, // Changed from 15 to 4
             "context B should select action 4, got {best_b}"
         );
     }

@@ -25,10 +25,7 @@ impl EscalationEngine for DefaultEscalationEngine {
         }
 
         // Phase-based escalation
-        if matches!(
-            task.phase,
-            WorkflowPhase::Failed | WorkflowPhase::Escalate
-        ) {
+        if matches!(task.phase, WorkflowPhase::Failed | WorkflowPhase::Escalate) {
             should_escalate = true;
             reason_codes.push(format!("phase:{:?}", task.phase));
         }

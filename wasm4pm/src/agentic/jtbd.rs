@@ -5,10 +5,7 @@ use crate::agentic::types::*;
 pub struct DefaultJtbdRunner;
 
 impl DefaultJtbdRunner {
-    fn check_role_assertion(
-        case: &JtbdCase,
-        expected_role: &AgentRole,
-    ) -> JtbdAssertion {
+    fn check_role_assertion(case: &JtbdCase, expected_role: &AgentRole) -> JtbdAssertion {
         use crate::agentic::prelude::*;
 
         let selector = DefaultRoleSelector;
@@ -22,9 +19,7 @@ impl DefaultJtbdRunner {
         JtbdAssertion {
             name: "expected_role".to_string(),
             passed,
-            details: result
-                .ok()
-                .map(|d| format!("got {:?}", d.selected_role)),
+            details: result.ok().map(|d| format!("got {:?}", d.selected_role)),
         }
     }
 
@@ -45,9 +40,7 @@ impl DefaultJtbdRunner {
         JtbdAssertion {
             name: "expected_topology".to_string(),
             passed,
-            details: result
-                .ok()
-                .map(|d| format!("got {:?}", d.topology)),
+            details: result.ok().map(|d| format!("got {:?}", d.topology)),
         }
     }
 
@@ -58,10 +51,7 @@ impl DefaultJtbdRunner {
         use crate::agentic::prelude::*;
 
         // Construct a dummy handoff request to check disposition
-        let to_role = case
-            .expected_role
-            .clone()
-            .unwrap_or(AgentRole::Explorer);
+        let to_role = case.expected_role.clone().unwrap_or(AgentRole::Explorer);
         let handoff_req = HandoffRequest {
             from_agent: "test-agent".to_string(),
             to_role,
@@ -81,9 +71,7 @@ impl DefaultJtbdRunner {
         JtbdAssertion {
             name: "expected_disposition".to_string(),
             passed,
-            details: result
-                .ok()
-                .map(|d| format!("got {:?}", d.disposition)),
+            details: result.ok().map(|d| format!("got {:?}", d.disposition)),
         }
     }
 
@@ -107,9 +95,9 @@ impl DefaultJtbdRunner {
         let passed = result
             .as_ref()
             .map(|plan| {
-                expected_artifacts.iter().all(|exp| {
-                    plan.artifact_families.contains(exp)
-                })
+                expected_artifacts
+                    .iter()
+                    .all(|exp| plan.artifact_families.contains(exp))
             })
             .unwrap_or(false);
 
@@ -139,12 +127,18 @@ impl JtbdRunner for DefaultJtbdRunner {
 
         // Check disposition assertion if expected
         if let Some(expected_disposition) = &case.expected_disposition {
-            assertions.push(Self::check_disposition_assertion(case, expected_disposition));
+            assertions.push(Self::check_disposition_assertion(
+                case,
+                expected_disposition,
+            ));
         }
 
         // Check artifacts assertion if expected
         if !case.expected_artifacts.is_empty() {
-            assertions.push(Self::check_artifacts_assertion(case, &case.expected_artifacts));
+            assertions.push(Self::check_artifacts_assertion(
+                case,
+                &case.expected_artifacts,
+            ));
         }
 
         let all_passed = assertions.iter().all(|a| a.passed);

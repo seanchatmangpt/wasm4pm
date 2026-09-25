@@ -114,7 +114,11 @@ impl ProvenanceChain {
 
         for (name, hash) in hashes {
             if hash.len() != 64 {
-                return Err(format!("{} has incorrect length: {} (expected 64)", name, hash.len()));
+                return Err(format!(
+                    "{} has incorrect length: {} (expected 64)",
+                    name,
+                    hash.len()
+                ));
             }
             if !hash.chars().all(|c| c.is_ascii_hexdigit()) {
                 return Err(format!("{} contains non-hex characters", name));
@@ -198,7 +202,9 @@ impl ProvenanceChainBuilder {
             output_hash: self.output_hash.ok_or("output_hash is required")?,
             combined_hash: self.combined_hash.ok_or("combined_hash is required")?,
             algorithm_id: self.algorithm_id.ok_or("algorithm_id is required")?,
-            algorithm_version: self.algorithm_version.ok_or("algorithm_version is required")?,
+            algorithm_version: self
+                .algorithm_version
+                .ok_or("algorithm_version is required")?,
             backend_id: self.backend_id.ok_or("backend_id is required")?,
             kernel_version: self.kernel_version.ok_or("kernel_version is required")?,
             wasm_build_hash: self.wasm_build_hash.ok_or("wasm_build_hash is required")?,

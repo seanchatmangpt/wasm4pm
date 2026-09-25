@@ -20,7 +20,7 @@ pub fn discover_astar(
                 let directly_follows = log.get_directly_follows(activity_key);
 
                 // Initialize DFG with all edges from log
-                let mut best_dfg = DirectlyFollowsGraph::new();
+                let mut best_dfg = DFG::new();
                 for activity in &activities {
                     best_dfg.nodes.push(DFGNode {
                         id: activity.clone(),
@@ -44,7 +44,7 @@ pub fn discover_astar(
 
                     // Build candidate DFGs via iterator chain; heuristic is inlined,
                     // no separate complexity_penalty binding needed
-                    let new_candidates: Vec<(DirectlyFollowsGraph, f64)> = directly_follows
+                    let new_candidates: Vec<(DFG, f64)> = directly_follows
                         .iter()
                         .filter(|(from, to, _)| {
                             !current_dfg
@@ -80,7 +80,7 @@ pub fn discover_astar(
         })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -166,7 +166,7 @@ pub fn discover_hill_climbing(
             }
 
             // Materialise back to DFG
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
             dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
                 id: act.to_owned(),
                 label: act.to_owned(),
@@ -186,7 +186,7 @@ pub fn discover_hill_climbing(
     })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
+        .store_object(StoredObject::DFG(current_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -660,7 +660,7 @@ pub fn analyze_activity_cooccurrence(
 
 // Helper: Evaluate DFG fitness
 #[inline(always)]
-fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key: &str) -> f64 {
+fn evaluate_dfg_fitness(dfg: &DFG, log: &EventLog, activity_key: &str) -> f64 {
     // Build a borrowed edge set — no String allocations for keys or lookups.
     let edge_set: HashSet<(&str, &str)> = dfg
         .edges

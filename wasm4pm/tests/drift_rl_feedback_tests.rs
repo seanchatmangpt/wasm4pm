@@ -9,10 +9,10 @@
 //! different action distributions and reward trajectories compared to
 //! no-alert baselines, on real log data.
 
+use std::fs;
 use wasm4pm::models::EventLog;
 use wasm4pm::rl_orchestrator::{AgentType, RlOrchestrator};
 use wasm4pm::RlState;
-use std::fs;
 
 // ── Test Fixtures ───────────────────────────────────────────────────────
 
@@ -101,8 +101,14 @@ fn test_real_log_spc_alerts_lower_reward() {
 
     for i in 0..50 {
         let features = build_features_from_metrics(
-            event_count, trace_count, unique_activities,
-            health_level, 0, true, true, i as u64,
+            event_count,
+            trace_count,
+            unique_activities,
+            health_level,
+            0,
+            true,
+            true,
+            i as u64,
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, health_level, rework_ratio);
@@ -111,8 +117,14 @@ fn test_real_log_spc_alerts_lower_reward() {
 
     for i in 0..50 {
         let features = build_features_from_metrics(
-            event_count, trace_count, unique_activities,
-            health_level, 5, true, true, i as u64,
+            event_count,
+            trace_count,
+            unique_activities,
+            health_level,
+            5,
+            true,
+            true,
+            i as u64,
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, health_level, rework_ratio);
@@ -151,8 +163,14 @@ fn test_real_log_guard_failure_degrades_reward() {
 
     for i in 0..50 {
         let features = build_features_from_metrics(
-            event_count, trace_count, unique_activities,
-            health_level, 0, true, true, i as u64,
+            event_count,
+            trace_count,
+            unique_activities,
+            health_level,
+            0,
+            true,
+            true,
+            i as u64,
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, health_level, rework_ratio);
@@ -161,8 +179,14 @@ fn test_real_log_guard_failure_degrades_reward() {
 
     for i in 0..50 {
         let features = build_features_from_metrics(
-            event_count, trace_count, unique_activities,
-            health_level, 0, false, false, i as u64,
+            event_count,
+            trace_count,
+            unique_activities,
+            health_level,
+            0,
+            false,
+            false,
+            i as u64,
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         // Health degrades on failure
@@ -203,8 +227,14 @@ fn test_real_log_health_improves_with_consecutive_successes() {
         };
 
         let features = build_features_from_metrics(
-            event_count, trace_count, unique_activities,
-            health_level, 0, true, true, i as u64,
+            event_count,
+            trace_count,
+            unique_activities,
+            health_level,
+            0,
+            true,
+            true,
+            i as u64,
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, next_health, rework_ratio);
@@ -222,7 +252,8 @@ fn test_real_log_health_improves_with_consecutive_successes() {
     }
 
     assert_eq!(
-        orch.telemetry().last_health_state, 2,
+        orch.telemetry().last_health_state,
+        2,
         "Real log: health should have improved from 3 to 2 after 4 successful cycles"
     );
 }
@@ -238,56 +269,111 @@ fn test_real_log_features_encode_log_characteristics() {
 
     // Test 1: event_count normalization — feature[0] = event_count / 10000, capped at 1.0
     let f = build_features_from_metrics(5000, 10, 6, 0, 0, true, true, 0);
-    assert!((f[0] - 0.5).abs() < 0.01, "event_count=5000 → feature[0]=0.5, got {}", f[0]);
+    assert!(
+        (f[0] - 0.5).abs() < 0.01,
+        "event_count=5000 → feature[0]=0.5, got {}",
+        f[0]
+    );
 
     let f = build_features_from_metrics(25000, 10, 6, 0, 0, true, true, 0);
-    assert!((f[0] - 1.0).abs() < 0.01, "event_count=25000 → feature[0]=1.0 (capped), got {}", f[0]);
+    assert!(
+        (f[0] - 1.0).abs() < 0.01,
+        "event_count=25000 → feature[0]=1.0 (capped), got {}",
+        f[0]
+    );
 
     // Test 2: trace_count normalization — feature[1] = trace_count / 1000
     let f = build_features_from_metrics(100, 500, 6, 0, 0, true, true, 0);
-    assert!((f[1] - 0.5).abs() < 0.01, "trace_count=500 → feature[1]=0.5, got {}", f[1]);
+    assert!(
+        (f[1] - 0.5).abs() < 0.01,
+        "trace_count=500 → feature[1]=0.5, got {}",
+        f[1]
+    );
 
     // Test 3: unique_activities normalization — feature[2] = unique_activities / 100
     let f = build_features_from_metrics(100, 10, 50, 0, 0, true, true, 0);
-    assert!((f[2] - 0.5).abs() < 0.01, "unique_activities=50 → feature[2]=0.5, got {}", f[2]);
+    assert!(
+        (f[2] - 0.5).abs() < 0.01,
+        "unique_activities=50 → feature[2]=0.5, got {}",
+        f[2]
+    );
 
     // Test 4: health_level normalization — feature[3] = health_level / 4
     let f = build_features_from_metrics(100, 10, 6, 2, 0, true, true, 0);
-    assert!((f[3] - 0.5).abs() < 0.01, "health_level=2 → feature[3]=0.5, got {}", f[3]);
+    assert!(
+        (f[3] - 0.5).abs() < 0.01,
+        "health_level=2 → feature[3]=0.5, got {}",
+        f[3]
+    );
 
     // Test 5: spc_alert_count normalization — feature[4] = spc_alert_count / 10
     let f = build_features_from_metrics(100, 10, 6, 0, 5, true, true, 0);
-    assert!((f[4] - 0.5).abs() < 0.01, "spc_alert_count=5 → feature[4]=0.5, got {}", f[4]);
+    assert!(
+        (f[4] - 0.5).abs() < 0.01,
+        "spc_alert_count=5 → feature[4]=0.5, got {}",
+        f[4]
+    );
 
     // Test 6: guard_pass boolean encoding — feature[5]
     let f_pass = build_features_from_metrics(100, 10, 6, 0, 0, true, true, 0);
     let f_fail = build_features_from_metrics(100, 10, 6, 0, 0, false, true, 0);
-    assert!((f_pass[5] - 1.0).abs() < 0.01, "guard_pass=true → feature[5]=1.0, got {}", f_pass[5]);
-    assert!((f_fail[5] - 0.0).abs() < 0.01, "guard_pass=false → feature[5]=0.0, got {}", f_fail[5]);
+    assert!(
+        (f_pass[5] - 1.0).abs() < 0.01,
+        "guard_pass=true → feature[5]=1.0, got {}",
+        f_pass[5]
+    );
+    assert!(
+        (f_fail[5] - 0.0).abs() < 0.01,
+        "guard_pass=false → feature[5]=0.0, got {}",
+        f_fail[5]
+    );
 
     // Test 7: circuit_allowed boolean encoding — feature[6]
     let f_open = build_features_from_metrics(100, 10, 6, 0, 0, true, false, 0);
-    assert!((f_open[6] - 0.0).abs() < 0.01, "circuit_allowed=false → feature[6]=0.0, got {}", f_open[6]);
+    assert!(
+        (f_open[6] - 0.0).abs() < 0.01,
+        "circuit_allowed=false → feature[6]=0.0, got {}",
+        f_open[6]
+    );
 
     // Test 8: cycle_count normalization — feature[7] = cycle_count / 1000
     let f = build_features_from_metrics(100, 10, 6, 0, 0, true, true, 250);
-    assert!((f[7] - 0.25).abs() < 0.01, "cycle_count=250 → feature[7]=0.25, got {}", f[7]);
+    assert!(
+        (f[7] - 0.25).abs() < 0.01,
+        "cycle_count=250 → feature[7]=0.25, got {}",
+        f[7]
+    );
 
     // Test 9: all features in [0, 1] for extreme inputs
     let f = build_features_from_metrics(99999, 99999, 999, 4, 999, false, false, 99999);
     for (i, val) in f.iter().enumerate() {
-        assert!(*val >= 0.0 && *val <= 1.0, "feature[{}] should be in [0,1], got {}", i, val);
+        assert!(
+            *val >= 0.0 && *val <= 1.0,
+            "feature[{}] should be in [0,1], got {}",
+            i,
+            val
+        );
     }
 
     // Test 10: real log produces non-trivial features (at least 2 features > 0)
     let log = load_event_log_json("running-example.json");
-    let (event_count, trace_count, unique_activities, _) =
-        compute_log_metrics(&log, "activity");
+    let (event_count, trace_count, unique_activities, _) = compute_log_metrics(&log, "activity");
     let real_features = build_features_from_metrics(
-        event_count, trace_count, unique_activities, 0, 0, true, true, 0,
+        event_count,
+        trace_count,
+        unique_activities,
+        0,
+        0,
+        true,
+        true,
+        0,
     );
     let non_zero = real_features.iter().filter(|&&v| v > 0.0).count();
-    assert!(non_zero >= 2, "Real log features should have at least 2 non-zero values, got {}", non_zero);
+    assert!(
+        non_zero >= 2,
+        "Real log features should have at least 2 non-zero values, got {}",
+        non_zero
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -318,8 +404,14 @@ fn test_all_agents_respond_to_real_log_spc_alerts() {
 
         for i in 0..30 {
             let features = build_features_from_metrics(
-                event_count, trace_count, unique_activities,
-                health_level, 0, true, true, i as u64,
+                event_count,
+                trace_count,
+                unique_activities,
+                health_level,
+                0,
+                true,
+                true,
+                i as u64,
             );
             let state = RlState::from_features(&features, health_level, rework_ratio);
             let next_state = RlState::from_features(&features, health_level, rework_ratio);
@@ -328,8 +420,14 @@ fn test_all_agents_respond_to_real_log_spc_alerts() {
 
         for i in 0..30 {
             let features = build_features_from_metrics(
-                event_count, trace_count, unique_activities,
-                health_level, 4, true, true, i as u64,
+                event_count,
+                trace_count,
+                unique_activities,
+                health_level,
+                4,
+                true,
+                true,
+                i as u64,
             );
             let state = RlState::from_features(&features, health_level, rework_ratio);
             let next_state = RlState::from_features(&features, health_level, rework_ratio);

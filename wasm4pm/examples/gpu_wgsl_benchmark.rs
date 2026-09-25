@@ -19,9 +19,9 @@
 //!
 //! Output: `.pictl/benchmarks/benchmarks/gpu_wgsl_<timestamp>.json`
 
-use wasm4pm::ml::LinUCBAgent;
 use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use wasm4pm::ml::LinUCBAgent;
 
 // ─── Constants matching the WGSL kernel ───────────────────────────────────────
 

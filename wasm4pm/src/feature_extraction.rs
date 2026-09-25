@@ -429,10 +429,7 @@ pub fn export_features_json(
                 match target.as_str() {
                     "remaining_time" => {
                         // For a completed trace remaining time is 0
-                        feature_vec.insert(
-                            "remaining_time".to_string(),
-                            Value::Number(0.into()),
-                        );
+                        feature_vec.insert("remaining_time".to_string(), Value::Number(0.into()));
                     }
                     "outcome" => {
                         if let Some(last_event) = trace.events.last() {

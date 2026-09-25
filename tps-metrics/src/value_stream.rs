@@ -42,16 +42,13 @@ pub struct ValueStreamMetrics {
 
 /// Analyze value stream from git repository
 pub fn analyze_value_stream(repo_path: &str, days: usize) -> Result<ValueStreamMetrics> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open git repository")?;
 
     let cutoff_date = Utc::now() - Duration::days(days as i64);
 
-    let mut revwalk = repo.revwalk()
-        .context("Failed to create revwalk")?;
+    let mut revwalk = repo.revwalk().context("Failed to create revwalk")?;
 
-    revwalk.push_head()
-        .context("Failed to push HEAD")?;
+    revwalk.push_head().context("Failed to push HEAD")?;
 
     let mut coding_time_accum = 0.0;
     let mut wait_time_accum = 0.0;
@@ -62,8 +59,7 @@ pub fn analyze_value_stream(repo_path: &str, days: usize) -> Result<ValueStreamM
         let commit = repo.find_commit(oid)?;
 
         let time = commit.time();
-        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0)
-            .unwrap_or_default();
+        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0).unwrap_or_default();
 
         if commit_date < cutoff_date {
             break;
@@ -177,14 +173,25 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
 
     // Time breakdown
     report.push_str(&"Time Breakdown:\n".bold());
-    report.push_str(&format!("  Coding time: {:.2} hours (active work)\n", metrics.coding_time_hours));
-    report.push_str(&format!("  Wait time: {:.2} hours (review, test, deploy)\n", metrics.wait_time_hours));
-    report.push_str(&format!("  Total lead time: {:.2} hours\n", metrics.total_lead_time_hours));
+    report.push_str(&format!(
+        "  Coding time: {:.2} hours (active work)\n",
+        metrics.coding_time_hours
+    ));
+    report.push_str(&format!(
+        "  Wait time: {:.2} hours (review, test, deploy)\n",
+        metrics.wait_time_hours
+    ));
+    report.push_str(&format!(
+        "  Total lead time: {:.2} hours\n",
+        metrics.total_lead_time_hours
+    ));
 
     // Value-added ratio
     report.push_str(&"\nValue-Added Metrics:\n".bold());
-    report.push_str(&format!("  Value-added ratio: {:.1}% (coding / total)\n",
-        metrics.value_added_ratio * 100.0));
+    report.push_str(&format!(
+        "  Value-added ratio: {:.1}% (coding / total)\n",
+        metrics.value_added_ratio * 100.0
+    ));
 
     let ratio_status = if metrics.value_added_ratio >= 0.3 {
         "✅".green()
@@ -195,7 +202,10 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
     };
     report.push_str(&format!("    Status: {} (target: >30%)\n", ratio_status));
 
-    report.push_str(&format!("  Process efficiency: {:.1}%\n", metrics.process_efficiency * 100.0));
+    report.push_str(&format!(
+        "  Process efficiency: {:.1}%\n",
+        metrics.process_efficiency * 100.0
+    ));
 
     // Bottleneck
     report.push_str(&"\nBottleneck Analysis:\n".bold());
@@ -216,7 +226,8 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
     report.push_str(&"\nKaizen Recommendations:\n".bold());
 
     if metrics.value_added_ratio < 0.3 {
-        report.push_str(&"  • Value-added ratio below 30%. Reduce wait time in pipeline.\n".yellow());
+        report
+            .push_str(&"  • Value-added ratio below 30%. Reduce wait time in pipeline.\n".yellow());
     }
 
     if metrics.wait_time_hours > metrics.coding_time_hours * 2.0 {
@@ -237,12 +248,14 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
     report.push_str("  │ Idea → Coding → Review → Test → Deploy  │\n");
     report.push_str("  │   └───┬───────┬───────┬──────┬───────┘  │\n");
     report.push_str("  │     │       │       │      │       │\n");
-    report.push_str(&format!("  │   {:.1}h   {:.1}h    {:.1}h    {:.1}h    {:.1}h  │\n",
-        metrics.coding_time_hours * 0.1,  // Idea (small fraction)
-        metrics.coding_time_hours * 0.9,  // Coding
+    report.push_str(&format!(
+        "  │   {:.1}h   {:.1}h    {:.1}h    {:.1}h    {:.1}h  │\n",
+        metrics.coding_time_hours * 0.1, // Idea (small fraction)
+        metrics.coding_time_hours * 0.9, // Coding
         metrics.wait_time_hours * 0.3,   // Review
         metrics.wait_time_hours * 0.3,   // Test
-        metrics.wait_time_hours * 0.4)); // Deploy
+        metrics.wait_time_hours * 0.4
+    )); // Deploy
     report.push_str("  └────────────────────────────────────────────┘\n");
 
     report.push('\n');

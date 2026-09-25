@@ -4,9 +4,9 @@
 //! Gates: G1 Determinism, G5 Report
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
+use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 
 #[path = "../helpers.rs"]
 mod helpers;

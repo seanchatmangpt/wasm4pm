@@ -21,5 +21,6 @@ pub fn get_capabilities_json() -> String {
             "align_etconformance": cfg!(feature = "align_etconformance"),
             "montecarlo": cfg!(feature = "montecarlo"),
         }
-    }).to_string()
+    })
+    .to_string()
 }

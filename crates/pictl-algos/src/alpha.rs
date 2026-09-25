@@ -40,7 +40,11 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
                 if !activity_to_trans_id.contains_key(&activity) {
                     let trans_id = format!("t_{}", net.transitions.len());
                     activity_to_trans_id.insert(activity.clone(), trans_id.clone());
-                    net.transitions.push(PetriNetTransition::new(trans_id, activity.clone(), false));
+                    net.transitions.push(PetriNetTransition::new(
+                        trans_id,
+                        activity.clone(),
+                        false,
+                    ));
                 }
             }
         }
@@ -48,36 +52,53 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
 
     // Create source place (start) and sink place (end)
     let source_id = "p_source".to_string();
-    net.places.push(PetriNetPlace::new(source_id.clone(), "source".to_string()));
+    net.places
+        .push(PetriNetPlace::new(source_id.clone(), "source".to_string()));
 
     let sink_id = "p_sink".to_string();
-    net.places.push(PetriNetPlace::new(sink_id.clone(), "sink".to_string()));
+    net.places
+        .push(PetriNetPlace::new(sink_id.clone(), "sink".to_string()));
 
     // Connect source place to all start activities
     for trace in &log.traces {
-        if let Some(first_activity) = trace.events.first().and_then(|e| e.get_activity(activity_key)) {
+        if let Some(first_activity) = trace
+            .events
+            .first()
+            .and_then(|e| e.get_activity(activity_key))
+        {
             if let Some(trans_id) = activity_to_trans_id.get(&first_activity) {
-                net.arcs.push(PetriNetArc::new(source_id.clone(), trans_id.clone(), 1));
+                net.arcs
+                    .push(PetriNetArc::new(source_id.clone(), trans_id.clone(), 1));
             }
         }
     }
 
     // Connect all end activities to sink place
     for trace in &log.traces {
-        if let Some(last_activity) = trace.events.last().and_then(|e| e.get_activity(activity_key)) {
+        if let Some(last_activity) = trace
+            .events
+            .last()
+            .and_then(|e| e.get_activity(activity_key))
+        {
             if let Some(trans_id) = activity_to_trans_id.get(&last_activity) {
-                net.arcs.push(PetriNetArc::new(trans_id.clone(), sink_id.clone(), 1));
+                net.arcs
+                    .push(PetriNetArc::new(trans_id.clone(), sink_id.clone(), 1));
             }
         }
     }
 
     // Add arcs for causal relations (branchless: iterate and add)
     for (a, b) in &causality {
-        if let (Some(a_id), Some(b_id)) = (activity_to_trans_id.get(a), activity_to_trans_id.get(b)) {
+        if let (Some(a_id), Some(b_id)) = (activity_to_trans_id.get(a), activity_to_trans_id.get(b))
+        {
             // Create intermediate place for this relation
             let place_id = format!("p_{}", net.places.len());
-            net.places.push(PetriNetPlace::new(place_id.clone(), format!("{} → {}", a, b)));
-            net.arcs.push(PetriNetArc::new(a_id.clone(), place_id.clone(), 1));
+            net.places.push(PetriNetPlace::new(
+                place_id.clone(),
+                format!("{} → {}", a, b),
+            ));
+            net.arcs
+                .push(PetriNetArc::new(a_id.clone(), place_id.clone(), 1));
             net.arcs.push(PetriNetArc::new(place_id, b_id.clone(), 1));
         }
     }
@@ -92,10 +113,16 @@ mod tests {
     #[test]
     fn test_alpha_miner_simple() {
         let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs_a.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
 
         let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+        attrs_b.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
 
         let log = EventLog::new(
             vec![Trace::new(

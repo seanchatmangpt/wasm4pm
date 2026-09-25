@@ -19,7 +19,9 @@ impl HandoffValidator for DefaultHandoffValidator {
         }
 
         // Gate 2: Check if Delegate action is allowed (if any allowed_actions are specified)
-        if !policy.allowed_actions.is_empty() && !policy.allowed_actions.contains(&ActionClass::Delegate) {
+        if !policy.allowed_actions.is_empty()
+            && !policy.allowed_actions.contains(&ActionClass::Delegate)
+        {
             return Ok(HandoffDecision {
                 allowed: false,
                 disposition: DecisionDisposition::Deny,

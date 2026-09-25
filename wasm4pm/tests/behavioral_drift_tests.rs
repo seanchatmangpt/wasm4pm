@@ -12,13 +12,13 @@
 //! 5. EWMA smoothing distinguishing sustained drift from transient noise
 //! 6. Multi-rule detection priority (each rule fires on its own drift type)
 
-use wasm4pm::spc::{
-    check_western_electric_rules, spc_mean, spc_std_dev, ChartData, ShiftDirection,
-    SpecialCause, TrendDirection,
-};
-use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
 #[cfg(feature = "ml")]
 use wasm4pm::prediction_additions::ewma;
+use wasm4pm::spc::{
+    check_western_electric_rules, spc_mean, spc_std_dev, ChartData, ShiftDirection, SpecialCause,
+    TrendDirection,
+};
+use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -42,16 +42,13 @@ fn spc_point(timestamp: &str, value: f64, cl: f64, sigma: f64) -> ChartData {
 fn stable_data(cl: f64, sigma: f64, n: usize, offset: usize) -> Vec<ChartData> {
     // Predefined residuals that stay within 2-sigma (no false positives)
     const RESIDUALS: &[f64] = &[
-        0.1, -0.2, 0.15, -0.1, 0.25, -0.15, 0.05, -0.3, 0.2, -0.05,
-        0.3, -0.25, 0.1, -0.15, 0.2, -0.1, 0.0, 0.15, -0.2, 0.1,
-        -0.05, 0.25, -0.1, 0.15, -0.2, 0.1, 0.05, -0.15, 0.2, -0.1,
-        0.1, -0.2, 0.0, 0.15, -0.25, 0.1, -0.1, 0.2, -0.15, 0.05,
-        -0.2, 0.1, 0.15, -0.1, 0.25, -0.05, 0.0, -0.15, 0.1, -0.2,
-        0.2, -0.1, 0.05, -0.15, 0.1, 0.0, -0.2, 0.15, -0.1, 0.25,
-        -0.05, 0.1, -0.15, 0.2, -0.1, 0.15, 0.0, -0.2, 0.1, -0.05,
-        0.15, -0.1, 0.2, -0.15, 0.05, -0.2, 0.1, 0.0, -0.1, 0.15,
-        -0.2, 0.1, 0.25, -0.05, 0.0, -0.15, 0.2, -0.1, 0.1, -0.2,
-        0.15, -0.1, 0.0, 0.2, -0.15, 0.1, -0.05, 0.25, -0.1, 0.0,
+        0.1, -0.2, 0.15, -0.1, 0.25, -0.15, 0.05, -0.3, 0.2, -0.05, 0.3, -0.25, 0.1, -0.15, 0.2,
+        -0.1, 0.0, 0.15, -0.2, 0.1, -0.05, 0.25, -0.1, 0.15, -0.2, 0.1, 0.05, -0.15, 0.2, -0.1,
+        0.1, -0.2, 0.0, 0.15, -0.25, 0.1, -0.1, 0.2, -0.15, 0.05, -0.2, 0.1, 0.15, -0.1, 0.25,
+        -0.05, 0.0, -0.15, 0.1, -0.2, 0.2, -0.1, 0.05, -0.15, 0.1, 0.0, -0.2, 0.15, -0.1, 0.25,
+        -0.05, 0.1, -0.15, 0.2, -0.1, 0.15, 0.0, -0.2, 0.1, -0.05, 0.15, -0.1, 0.2, -0.15, 0.05,
+        -0.2, 0.1, 0.0, -0.1, 0.15, -0.2, 0.1, 0.25, -0.05, 0.0, -0.15, 0.2, -0.1, 0.1, -0.2, 0.15,
+        -0.1, 0.0, 0.2, -0.15, 0.1, -0.05, 0.25, -0.1, 0.0,
     ];
 
     (0..n)
@@ -111,7 +108,9 @@ fn test_sudden_drift_triggers_immediate_alert() {
     let alerts = check_western_electric_rules(&data);
 
     // Rule 1 must fire on the outlier
-    let ooc_alert = alerts.iter().find(|a| matches!(a, SpecialCause::OutOfControl { .. }));
+    let ooc_alert = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::OutOfControl { .. }));
     assert!(
         ooc_alert.is_some(),
         "Rule 1 (OutOfControl) must trigger on the injected outlier value={}",
@@ -160,7 +159,9 @@ fn test_gradual_drift_detected_by_trend_rule() {
         let window = &data[..window_end];
         let alerts = check_western_electric_rules(window);
 
-        let has_trend = alerts.iter().any(|a| matches!(a, SpecialCause::Trend { .. }));
+        let has_trend = alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Trend { .. }));
         if has_trend && trend_fired_at.is_none() {
             trend_fired_at = Some(window_end);
         }
@@ -348,7 +349,9 @@ fn test_spc_history_accumulates_and_detects_shift() {
 
     // Rule 2 (Shift) must fire: the last 9 points are all 8.0, which is
     // above the center line (6.8), so 9 consecutive same-side points.
-    let shift_alert = alerts.iter().find(|a| matches!(a, SpecialCause::Shift { .. }));
+    let shift_alert = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::Shift { .. }));
     assert!(
         shift_alert.is_some(),
         "Rule 2 (Shift) must detect 9 consecutive above-CL points in the shifted region. \
@@ -487,7 +490,9 @@ fn test_multiple_spc_rules_detect_different_drift_types() {
 
     let alerts_a = check_western_electric_rules(&data_a);
     assert!(
-        alerts_a.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+        alerts_a
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
         "Scenario A: Rule 1 must fire on point beyond 3-sigma"
     );
 
@@ -499,14 +504,20 @@ fn test_multiple_spc_rules_detect_different_drift_types() {
 
     let alerts_b = check_western_electric_rules(&data_b);
     assert!(
-        alerts_b
-            .iter()
-            .any(|a| matches!(a, SpecialCause::Shift { direction: ShiftDirection::Above, .. })),
+        alerts_b.iter().any(|a| matches!(
+            a,
+            SpecialCause::Shift {
+                direction: ShiftDirection::Above,
+                ..
+            }
+        )),
         "Scenario B: Rule 2 must fire on 9 consecutive above-CL points"
     );
     // Rule 1 must NOT fire (all values within control limits)
     assert!(
-        !alerts_b.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+        !alerts_b
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
         "Scenario B: Rule 1 must NOT fire (all values within control limits)"
     );
 
@@ -515,7 +526,11 @@ fn test_multiple_spc_rules_detect_different_drift_types() {
     let data_c: Vec<ChartData> = (0..9)
         .map(|i| {
             let value = if i < 3 {
-                if i % 2 == 0 { cl + 1.0 } else { cl - 1.0 }
+                if i % 2 == 0 {
+                    cl + 1.0
+                } else {
+                    cl - 1.0
+                }
             } else {
                 cl + (i as f64 - 2.0) // 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 above CL
             };
@@ -536,7 +551,9 @@ fn test_multiple_spc_rules_detect_different_drift_types() {
     );
     // Rule 1 must NOT fire (all values within control limits)
     assert!(
-        !alerts_c.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+        !alerts_c
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
         "Scenario C: Rule 1 must NOT fire (all values within control limits)"
     );
 }

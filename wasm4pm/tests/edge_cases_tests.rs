@@ -35,9 +35,9 @@ fn test_corrupted_json_state_graceful_recovery() {
     let corrupted_jsons = vec![
         r#"{"cycle_count": 5, "last_health_state": 1"#, // Truncated JSON
         r#"{"cycle_count": "not_a_number", "last_health_state": 1}"#, // Wrong type
-        r#"{"invalid_field": true}"#,                    // Unknown fields only
+        r#"{"invalid_field": true}"#,                   // Unknown fields only
         r#"{"cycle_count": -1, "last_health_state": 255}"#, // Out-of-range values
-        r#""#,                                            // Empty string
+        r#""#,                                          // Empty string
     ];
 
     for (idx, corrupted) in corrupted_jsons.iter().enumerate() {
@@ -50,7 +50,11 @@ fn test_corrupted_json_state_graceful_recovery() {
                 // Expected: deserialization failed gracefully
                 // System should recover by using default state
                 let fallback = wasm4pm::rl_orchestrator::CycleTelemetry::default();
-                assert_eq!(fallback.cycle_count, 0, "Corrupted JSON #{}: fallback should be fresh state", idx);
+                assert_eq!(
+                    fallback.cycle_count, 0,
+                    "Corrupted JSON #{}: fallback should be fresh state",
+                    idx
+                );
             }
             Ok(_) => {
                 // If it somehow parses, at least it shouldn't panic
@@ -66,7 +70,7 @@ fn test_corrupted_circuit_breaker_state_json() {
     let corrupted = vec![
         r#"{"state": 99, "failure_count": 5}"#, // Invalid state code
         r#"{"config": {"failure_threshold": -1}}"#, // Negative threshold
-        r#"{"state": "Open"}"#, // State as string instead of number
+        r#"{"state": "Open"}"#,                 // State as string instead of number
     ];
 
     for json_str in corrupted {
@@ -182,7 +186,10 @@ fn test_circuit_breaker_exhaustion_and_reset() {
     breaker.record_success();
     // After 2 successes, breaker should return to Closed
     assert_eq!(breaker.state(), CircuitState::Closed);
-    assert!(breaker.allow_request(), "Circuit should allow requests when Closed");
+    assert!(
+        breaker.allow_request(),
+        "Circuit should allow requests when Closed"
+    );
 
     // Verify counters reset
     assert_eq!(breaker.failure_count(), 0);
@@ -268,7 +275,11 @@ fn test_spc_history_150_cycles_overflow() {
     }
 
     // Verify buffer has exactly 100 items (oldest 50 evicted)
-    assert_eq!(history.history.len(), 100, "History should maintain exactly 100 snapshots");
+    assert_eq!(
+        history.history.len(),
+        100,
+        "History should maintain exactly 100 snapshots"
+    );
 
     // Verify oldest snapshot is cycle_50 (first 50 evicted)
     let first_snapshot = history.get_all_snapshots().first().cloned();
@@ -291,13 +302,7 @@ fn test_spc_history_clear() {
     let mut history = SpcHistory::new();
 
     for i in 0..20 {
-        let snapshot = SpcSnapshot::new(
-            format!("snap_{}", i),
-            5.0,
-            100.0,
-            3.0,
-            i as u8 % 5,
-        );
+        let snapshot = SpcSnapshot::new(format!("snap_{}", i), 5.0, 100.0, 3.0, i as u8 % 5);
         history.record_snapshot(snapshot);
     }
 
@@ -342,7 +347,10 @@ fn test_health_state_at_boundaries() {
 
     // Boundary: two activities with 19 events (Warning)
     let health = compute_health_state(19, 2, 2);
-    assert_eq!(health, 1, "two activities with <20 events should be Warning");
+    assert_eq!(
+        health, 1,
+        "two activities with <20 events should be Warning"
+    );
 
     // Healthy case
     let health = compute_health_state(1000, 100, 50);
@@ -377,7 +385,10 @@ fn test_health_level_boundary_rewards() {
 
     // Boundary: health_level = 4 (Failed)
     let reward = compute_reward(4, 4, 0, true, true, false);
-    assert!(reward < -1.0, "Stable at Failed should have terminal penalty");
+    assert!(
+        reward < -1.0,
+        "Stable at Failed should have terminal penalty"
+    );
 
     // Boundary: health transition 4 → 4 (failed stays failed)
     let reward = compute_reward(4, 4, 0, true, true, false);
@@ -439,14 +450,20 @@ fn test_orchestrator_health_zero_and_four() {
     let (action, reward) = orch.run_cycle(&features, &state0, &state0, 0, true, true, false);
     assert!(!action.is_empty(), "Should produce action at health=0");
     assert!(!reward.is_nan(), "Reward should not be NaN at health=0");
-    assert!(reward > 0.0, "Stable normal state should have positive reward");
+    assert!(
+        reward > 0.0,
+        "Stable normal state should have positive reward"
+    );
 
     // Cycle with health=4 (Failed → Failed)
     let state4 = make_test_state(4);
     let (action, reward) = orch.run_cycle(&features, &state4, &state4, 0, true, true, false);
     assert!(!action.is_empty(), "Should produce action at health=4");
     assert!(!reward.is_nan(), "Reward should not be NaN at health=4");
-    assert!(reward < -1.0, "Stable failed state should have large negative reward");
+    assert!(
+        reward < -1.0,
+        "Stable failed state should have large negative reward"
+    );
 }
 
 #[test]
@@ -473,11 +490,7 @@ fn test_orchestrator_many_cycles_no_panic() {
 
         assert!(!action.is_empty(), "Cycle {}: no action produced", cycle);
         assert!(!reward.is_nan(), "Cycle {}: reward is NaN", cycle);
-        assert!(
-            !reward.is_infinite(),
-            "Cycle {}: reward is infinite",
-            cycle
-        );
+        assert!(!reward.is_infinite(), "Cycle {}: reward is infinite", cycle);
     }
 
     assert_eq!(orch.telemetry().cycle_count, 1000);

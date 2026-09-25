@@ -25,7 +25,7 @@ pub fn get_capability_registry() -> Result<JsValue, JsValue> {
                         { "name": "eventlog_handle", "type": "string", "description": "Handle to loaded EventLog" },
                         { "name": "activity_key", "type": "string", "description": "Attribute key for activity names (e.g., 'concept:name')" }
                     ],
-                    "returns": "JsValue (DirectlyFollowsGraph JSON)",
+                    "returns": "JsValue (DFG JSON)",
                     "example": "discover_dfg(log_handle, 'concept:name')"
                 },
                 {
@@ -76,7 +76,7 @@ pub fn get_capability_registry() -> Result<JsValue, JsValue> {
                     "params": [
                         { "name": "ocel_handle", "type": "string", "description": "Handle to loaded OCEL" }
                     ],
-                    "returns": "JsValue (DirectlyFollowsGraph)",
+                    "returns": "JsValue (DFG)",
                     "example": "discover_ocel_dfg(ocel_handle)"
                 },
                 {

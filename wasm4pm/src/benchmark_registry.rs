@@ -11,8 +11,7 @@ pub struct BenchmarkSpec {
     pub label: &'static str,
 }
 
-pub const BENCHMARK_SPECS: &[BenchmarkSpec] = &[
-];
+pub const BENCHMARK_SPECS: &[BenchmarkSpec] = &[];
 
 impl BenchmarkSpec {
     pub fn all_names() -> Vec<&'static str> {

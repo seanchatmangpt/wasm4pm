@@ -9,9 +9,9 @@
 //! This is an 80/20 test: one comprehensive test that covers the full pipeline
 //! without testing every edge case.
 
+use std::collections::HashSet;
 use wasm4pm::rl_orchestrator::{compute_health_state, compute_reward, RlOrchestrator};
 use wasm4pm::RlState;
-use std::collections::HashSet;
 
 /// Helper to create test RlState with reasonable defaults
 fn make_test_state(health_level: u8) -> RlState {
@@ -71,14 +71,14 @@ fn load_xes_fixture() -> (u64, u64, u64, [f32; 8]) {
     // Feature vector: [trace_len, time_ratio, rework, activities, inter_event, size, entropy, variants]
     // For running-example, use reasonable synthetic values
     let features = [
-        trace_count_norm,           // trace_length (normalized)
-        0.3,                        // elapsed_time ratio (synthetic)
-        0.1,                        // rework_count ratio (synthetic)
-        unique_activities_norm,     // unique_activities / 100
-        0.2,                        // avg_inter_event_time / 3600 (synthetic)
-        1.0,                        // log_size_bin (non-trivial log)
-        0.7,                        // activity_entropy (Shannon / log2, synthetic)
-        0.5,                        // variant_ratio (synthetic)
+        trace_count_norm,       // trace_length (normalized)
+        0.3,                    // elapsed_time ratio (synthetic)
+        0.1,                    // rework_count ratio (synthetic)
+        unique_activities_norm, // unique_activities / 100
+        0.2,                    // avg_inter_event_time / 3600 (synthetic)
+        1.0,                    // log_size_bin (non-trivial log)
+        0.7,                    // activity_entropy (Shannon / log2, synthetic)
+        0.5,                    // variant_ratio (synthetic)
     ];
 
     (event_count, trace_count, unique_activities, features)
@@ -153,11 +153,11 @@ fn e2e_autonomic_loop_complete_pipeline() {
         let (action_label, reward) = orch.run_cycle(
             &features,
             &state,
-            &next_state,  // Health state AFTER cycle completes
+            &next_state, // Health state AFTER cycle completes
             spc_alerts,
             true,  // guard_pass
             true,  // circuit_allowed
-            false,  // latency_budget_exceeded
+            false, // latency_budget_exceeded
         );
 
         // Verify action selection
@@ -171,12 +171,14 @@ fn e2e_autonomic_loop_complete_pipeline() {
         assert!(
             !reward.is_nan(),
             "Cycle {}: Reward must not be NaN (got {})",
-            cycle_idx, reward
+            cycle_idx,
+            reward
         );
         assert!(
             !reward.is_infinite(),
             "Cycle {}: Reward must not be infinite (got {})",
-            cycle_idx, reward
+            cycle_idx,
+            reward
         );
 
         // Track results
@@ -211,7 +213,8 @@ fn e2e_autonomic_loop_complete_pipeline() {
         assert!(
             reward.is_finite(),
             "Reward at cycle {} must be finite (got {})",
-            idx, reward
+            idx,
+            reward
         );
     }
 
@@ -229,13 +232,17 @@ fn e2e_autonomic_loop_complete_pipeline() {
         assert!(
             health <= 4,
             "Health state at cycle {} must be <= 4 (got {})",
-            idx, health
+            idx,
+            health
         );
     }
 
     // Final telemetry verification
     let telem = orch.telemetry();
-    assert_eq!(telem.cycle_count, NUM_CYCLES, "Final cycle_count must be 10");
+    assert_eq!(
+        telem.cycle_count, NUM_CYCLES,
+        "Final cycle_count must be 10"
+    );
     assert!(
         telem.cumulative_reward.is_finite(),
         "Final cumulative_reward must be finite (got {})",
@@ -332,11 +339,7 @@ fn e2e_rl_orchestrator_all_agent_types() {
             "Agent {:?} must produce a finite reward",
             agent_type
         );
-        assert_eq!(
-            orch.active_agent(),
-            *agent_type,
-            "Active agent must match"
-        );
+        assert_eq!(orch.active_agent(), *agent_type, "Active agent must match");
     }
 }
 
@@ -370,13 +373,24 @@ fn e2e_reward_computation_bounds() {
             for spc_alerts in &[0, 1, 5, 10, 100] {
                 for &guard_pass in &[true, false] {
                     for &circuit_allowed in &[true, false] {
-                        let reward = compute_reward(from, to, *spc_alerts, guard_pass, circuit_allowed, false);
+                        let reward = compute_reward(
+                            from,
+                            to,
+                            *spc_alerts,
+                            guard_pass,
+                            circuit_allowed,
+                            false,
+                        );
 
                         // Reward must always be finite
                         assert!(
                             reward.is_finite(),
                             "Reward must be finite: from={}, to={}, spc={}, guard={}, circuit={}",
-                            from, to, spc_alerts, guard_pass, circuit_allowed
+                            from,
+                            to,
+                            spc_alerts,
+                            guard_pass,
+                            circuit_allowed
                         );
 
                         // Reasonable bounds (allow some margin for extreme cases)

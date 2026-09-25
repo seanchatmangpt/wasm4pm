@@ -11,8 +11,8 @@
 //! - Rank 3: Metamorphic (relationships between run count and event count)
 
 use chrono::{Duration, Utc};
-use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 use std::collections::{HashMap, HashSet};
+use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 
 // ============================================================================
 // Test Helper
@@ -61,7 +61,12 @@ fn build_test_ocel(cycles: usize) -> OCEL {
     }
 
     OCEL {
-        event_types: vec!["Perception".to_string(), "Decision".to_string(), "Protection".to_string(), "Optimization".to_string()],
+        event_types: vec![
+            "Perception".to_string(),
+            "Decision".to_string(),
+            "Protection".to_string(),
+            "Optimization".to_string(),
+        ],
         object_types: vec!["cycle_run".to_string()],
         events,
         objects,
@@ -100,21 +105,12 @@ fn test_all_four_phases_present_in_ocel() {
     // Oracle Rank 2: Domain contract — autonomic cycle has 4 stages
     let ocel = build_test_ocel(3);
 
-    let phases: HashSet<&str> = ocel
-        .events
-        .iter()
-        .map(|e| e.event_type.as_str())
-        .collect();
+    let phases: HashSet<&str> = ocel.events.iter().map(|e| e.event_type.as_str()).collect();
 
-    let expected: HashSet<&str> = [
-        "Perception",
-        "Decision",
-        "Protection",
-        "Optimization",
-    ]
-    .iter()
-    .copied()
-    .collect();
+    let expected: HashSet<&str> = ["Perception", "Decision", "Protection", "Optimization"]
+        .iter()
+        .copied()
+        .collect();
 
     assert_eq!(
         phases, expected,
@@ -216,12 +212,7 @@ fn test_phase_sequence_is_perception_decision_protection_optimization() {
 
     // Verify phase sequence per object
     for (obj_id, events) in &events_by_object {
-        assert_eq!(
-            events.len(),
-            4,
-            "Object '{}' should have 4 events",
-            obj_id
-        );
+        assert_eq!(events.len(), 4, "Object '{}' should have 4 events", obj_id);
 
         for (i, event) in events.iter().enumerate() {
             assert_eq!(

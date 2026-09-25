@@ -7,9 +7,9 @@
 //! Algorithm family: Reinforcement Learning (config sensitivity)
 //! Modules tested: rl_orchestrator, reinforcement agents
 
+use std::collections::HashSet;
 use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
 use wasm4pm::RlState;
-use std::collections::HashSet;
 
 /// Helper: create an RlState with dummy features and given health level.
 fn make_test_state(health_level: u8) -> RlState {
@@ -84,11 +84,13 @@ fn test_switching_agent_changes_behavior() {
 
     // Active agent names should differ
     assert_eq!(
-        orch_q.telemetry().active_agent_name, "QLearning",
+        orch_q.telemetry().active_agent_name,
+        "QLearning",
         "QLearning orchestrator should report QLearning agent"
     );
     assert_eq!(
-        orch_sarsa.telemetry().active_agent_name, "SARSA",
+        orch_sarsa.telemetry().active_agent_name,
+        "SARSA",
         "SARSA orchestrator should report SARSA agent"
     );
 }
@@ -142,7 +144,8 @@ fn test_linucb_toggle_changes_agent_selection() {
     // But the config toggle IS functional -- LinUCB selection path runs.
     // Verify the telemetry shows 20 cycles completed (path was exercised).
     assert_eq!(
-        orch_linucb.telemetry().cycle_count, 20,
+        orch_linucb.telemetry().cycle_count,
+        20,
         "LinUCB orchestrator should complete 20 cycles"
     );
 
@@ -194,7 +197,10 @@ fn test_exploration_decay_increases_action_stability() {
     }
 
     // Both windows should see at least one action
-    assert!(!early_actions.is_empty(), "Early window should have actions");
+    assert!(
+        !early_actions.is_empty(),
+        "Early window should have actions"
+    );
     assert!(!late_actions.is_empty(), "Late window should have actions");
 
     // With exploration decay from 1.0 to ~0.606 after 50 cycles,
@@ -236,14 +242,8 @@ fn test_reward_remains_bounded_under_extreme_inputs() {
             for &alerts in &spc_alerts {
                 for &circuit in &circuit_allowed {
                     for &guard in &guard_pass {
-                        let reward = compute_reward(
-                            prev_health,
-                            curr_health,
-                            alerts,
-                            guard,
-                            circuit,
-                            false,
-                        );
+                        let reward =
+                            compute_reward(prev_health, curr_health, alerts, guard, circuit, false);
 
                         // Must be finite
                         assert!(
@@ -303,7 +303,10 @@ fn test_reward_is_deterministic() {
     // Different inputs must give different outputs (or at least not crash)
     let r_a = compute_reward(0, 0, 0, true, true, false);
     let r_b = compute_reward(4, 4, 100, false, false, false);
-    assert_ne!(r_a, r_b, "Different inputs should produce different rewards");
+    assert_ne!(
+        r_a, r_b,
+        "Different inputs should produce different rewards"
+    );
 }
 
 // ===========================================================================
@@ -338,7 +341,8 @@ fn test_all_agents_have_distinct_decay_behavior() {
 
         // All 100 cycles should complete
         assert_eq!(
-            orch.telemetry().cycle_count, 100,
+            orch.telemetry().cycle_count,
+            100,
             "{:?} should complete 100 cycles",
             agent_type
         );
@@ -357,12 +361,11 @@ fn test_all_agents_have_distinct_decay_behavior() {
     }
 
     assert_eq!(
-        orch_reinforce.telemetry().cycle_count, 100,
+        orch_reinforce.telemetry().cycle_count,
+        100,
         "REINFORCE should complete 100 cycles"
     );
-    assert_eq!(
-        orch_reinforce.telemetry().active_agent_name, "REINFORCE"
-    );
+    assert_eq!(orch_reinforce.telemetry().active_agent_name, "REINFORCE");
 }
 
 // ===========================================================================
@@ -392,10 +395,16 @@ fn test_reward_component_breakdown() {
     let r_guard_fail = compute_reward(1, 1, 0, false, true, false);
     let r_circuit_fail = compute_reward(1, 1, 0, true, false, false);
     assert!(r_both_ok > r_guard_fail, "Both OK should beat guard fail");
-    assert!(r_both_ok > r_circuit_fail, "Both OK should beat circuit fail");
+    assert!(
+        r_both_ok > r_circuit_fail,
+        "Both OK should beat circuit fail"
+    );
 
     // 4. Terminal penalty
     let r_terminal = compute_reward(3, 4, 0, true, true, false);
     let r_non_terminal = compute_reward(3, 3, 0, true, true, false);
-    assert!(r_terminal < r_non_terminal, "Terminal should be worse than non-terminal");
+    assert!(
+        r_terminal < r_non_terminal,
+        "Terminal should be worse than non-terminal"
+    );
 }

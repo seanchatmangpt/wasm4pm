@@ -302,7 +302,10 @@ fn test_streaming_modules_conditional() {
         assert!(true, "Streaming full modules compiled with SIMD");
     }
 
-    #[cfg(not(any(feature = "feature-streaming-basic", feature = "feature-streaming-full")))]
+    #[cfg(not(any(
+        feature = "feature-streaming-basic",
+        feature = "feature-streaming-full"
+    )))]
     {
         assert!(true, "No streaming modules compiled");
     }

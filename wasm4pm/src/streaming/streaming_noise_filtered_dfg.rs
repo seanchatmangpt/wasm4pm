@@ -18,7 +18,7 @@
 //! - Memory-constrained environments (WASM, edge devices)
 //! - Real-time dashboards where "good enough" beats "perfect"
 
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
@@ -86,14 +86,14 @@ impl StreamingNoiseFilteredDfgBuilder {
     /// 1. Find the maximum edge frequency
     /// 2. Keep only edges where count/max_count >= noise_threshold
     /// 3. Materialise DFG from the filtered edge set
-    pub fn to_dfg(&self) -> DirectlyFollowsGraph {
+    pub fn to_dfg(&self) -> DFG {
         if self.edge_counts.is_empty() {
-            return DirectlyFollowsGraph::new();
+            return DFG::new();
         }
 
         let total_possible = self.event_count.saturating_sub(self.trace_count);
         if total_possible == 0 {
-            return DirectlyFollowsGraph::new();
+            return DFG::new();
         }
 
         // Filter: keep only edges above noise threshold
@@ -106,7 +106,7 @@ impl StreamingNoiseFilteredDfgBuilder {
             .collect();
 
         // Build DFG from filtered edges
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
 
         dfg.nodes = self
             .interner
@@ -145,7 +145,7 @@ impl StreamingNoiseFilteredDfgBuilder {
 }
 
 impl StreamingAlgorithm for StreamingNoiseFilteredDfgBuilder {
-    type Model = DirectlyFollowsGraph;
+    type Model = DFG;
 
     fn new() -> Self {
         Self::new()

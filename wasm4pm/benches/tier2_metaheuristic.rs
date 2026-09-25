@@ -12,11 +12,11 @@
 /// - A* Search (informed heuristic search)
 /// - Hill Climbing (greedy local optimization)
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::time::Duration;
 use wasm4pm::fast_discovery::{discover_astar, discover_hill_climbing};
 use wasm4pm::genetic_discovery::{discover_genetic_algorithm, discover_pso_algorithm};
 use wasm4pm::ilp_discovery::discover_ilp_petri_net;
 use wasm4pm::more_discovery::{discover_ant_colony, discover_simulated_annealing};
-use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;
