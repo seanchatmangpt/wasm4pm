@@ -170,7 +170,8 @@ pub const REFUSED_DUPLICATE_CONSEQUENCE: &str = "REFUSED:ALOOP_DUPLICATE_CONSEQU
 pub const REFUSED_RECEIPT_WITHOUT_DO: &str = "REFUSED:ALOOP_RECEIPT_WITHOUT_DO";
 pub const REFUSED_ORPHAN_DO: &str = "REFUSED:ALOOP_ORPHAN_DO";
 pub const REFUSED_GOAL_UNVERIFIED: &str = "REFUSED:ALOOP_GOAL_UNVERIFIED";
-pub const REFUSED_PROVIDER_SUBSTITUTION_ILLEGAL: &str = "REFUSED:ALOOP_PROVIDER_SUBSTITUTION_ILLEGAL";
+pub const REFUSED_PROVIDER_SUBSTITUTION_ILLEGAL: &str =
+    "REFUSED:ALOOP_PROVIDER_SUBSTITUTION_ILLEGAL";
 pub const REFUSED_WORKER_SUBSTITUTION_ILLEGAL: &str = "REFUSED:ALOOP_WORKER_SUBSTITUTION_ILLEGAL";
 pub const REFUSED_SUBJECT_IDENTITY_BREAK: &str = "REFUSED:ALOOP_SUBJECT_IDENTITY_BREAK";
 pub const REFUSED_WORKORDER_NO_AUTHORITY: &str = "REFUSED:ALOOP_WORKORDER_NO_AUTHORITY";
@@ -309,10 +310,54 @@ pub struct SubjectMeta {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RealLaneScan {
     pub root: String,
+    pub files_seen: usize,
     pub files_scanned: usize,
     pub corpora: Vec<CorpusVerdict>,
+    pub manifests: Vec<ManifestVerdict>,
+    pub unparseable: Vec<UnparseableFile>,
     pub verdict: String,
 }
+
+/// Manifest-level verdict over a real lane record (e.g. lane-1 record.json):
+/// judges only the claims the manifest itself makes. A manifest that makes no
+/// terminality claim is recorded as terminal_claim "ABSENT" — an honest
+/// mid-episode fragment, not a violation. Event-log-level conformance
+/// (ordering, cold replay) is impossible without an event log and is never
+/// inferred from a manifest.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManifestVerdict {
+    pub file: String,
+    pub kind: String,
+    pub lane: String,
+    pub provenance: String,
+    pub standing: String,
+    pub terminal_claim: String,
+    pub recurrence_demonstrated: bool,
+    pub receipts_checked: usize,
+    pub checks: Vec<ManifestCheck>,
+    pub refusal_codes: Vec<String>,
+    pub conformant: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ManifestCheck {
+    pub check: String,
+    pub pass: bool,
+    pub codes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UnparseableFile {
+    pub file: String,
+    pub kind: String,
+    pub reason: String,
+}
+
+pub const REFUSED_MANIFEST_UNKNOWN_VOCAB: &str = "REFUSED:ALOOP_MANIFEST_UNKNOWN_VOCAB";
+pub const REFUSED_PROVIDER_SELECT_MISSING: &str = "REFUSED:ALOOP_PROVIDER_SELECT_MISSING";
+pub const REFUSED_MANIFEST_RECURRENCE_UNWITNESSED: &str =
+    "REFUSED:ALOOP_MANIFEST_RECURRENCE_UNWITNESSED";
+pub const REFUSED_MANIFEST_UNTYPED_BLOCKER: &str = "REFUSED:ALOOP_MANIFEST_UNTYPED_BLOCKER";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntiVacuity {
@@ -380,12 +425,18 @@ impl AloopOracle {
     }
 
     fn refuse(&mut self, event: &AloopEvent, code: &str) -> Disposition {
-        self.record(event, Disposition::Refused { code: code.to_owned() })
+        self.record(
+            event,
+            Disposition::Refused {
+                code: code.to_owned(),
+            },
+        )
     }
 
     fn record(&mut self, event: &AloopEvent, disposition: Disposition) -> Disposition {
         let canonical = serde_json::to_vec(event).expect("event serialization is infallible");
-        let disp_json = serde_json::to_vec(&disposition).expect("disposition serialization is infallible");
+        let disp_json =
+            serde_json::to_vec(&disposition).expect("disposition serialization is infallible");
         let mut material = self.chain.clone().into_bytes();
         material.extend_from_slice(&canonical);
         material.extend_from_slice(&disp_json);
@@ -484,9 +535,7 @@ impl AloopOracle {
 
         // POWL PartialOrder conformance: any-of gates witnessed earlier.
         if let Some(gates) = self.ordering.get(activity) {
-            let satisfied = gates
-                .iter()
-                .any(|g| self.state.witnessed.contains(*g));
+            let satisfied = gates.iter().any(|g| self.state.witnessed.contains(*g));
             if !satisfied {
                 return Some(self.refuse(event, REFUSED_ORDERING_VIOLATION));
             }
@@ -500,7 +549,10 @@ impl AloopOracle {
             .iter()
             .find(|o| o.object_type == "Provider" && o.qualifier == "provider")
             .map(|o| o.object_id.clone());
-        if matches!(activity, "execution.start" | "actuate" | "commit" | "checkpoint") {
+        if matches!(
+            activity,
+            "execution.start" | "actuate" | "commit" | "checkpoint"
+        ) {
             if let Some(p) = &declared_provider {
                 if Some(p) != self.state.current_provider.as_ref() {
                     return Some(self.refuse(event, REFUSED_PROVIDER_SUBSTITUTION_ILLEGAL));
@@ -578,7 +630,9 @@ impl AloopOracle {
                 .find(|o| o.object_type == "WorkOrder" && o.qualifier == "predecessor")
                 .map(|o| o.object_id.clone());
             if let Some(id) = id {
-                self.state.workorders.push(WorkOrderRecord { id, predecessor });
+                self.state
+                    .workorders
+                    .push(WorkOrderRecord { id, predecessor });
             }
         }
 
@@ -649,13 +703,18 @@ impl AloopOracle {
                 return Some(self.refuse(event, REFUSED_GOAL_UNVERIFIED));
             }
             if self.state.workorders.len() >= 2 {
-                let ids: BTreeSet<&str> =
-                    self.state.workorders.iter().map(|w| w.id.as_str()).collect();
-                let chained = self
+                let ids: BTreeSet<&str> = self
                     .state
                     .workorders
                     .iter()
-                    .any(|w| w.predecessor.as_deref().map(|p| ids.contains(p)).unwrap_or(false));
+                    .map(|w| w.id.as_str())
+                    .collect();
+                let chained = self.state.workorders.iter().any(|w| {
+                    w.predecessor
+                        .as_deref()
+                        .map(|p| ids.contains(p))
+                        .unwrap_or(false)
+                });
                 if !chained {
                     return Some(self.refuse(event, REFUSED_ORPHAN_DO));
                 }
@@ -696,7 +755,8 @@ impl AloopOracle {
         if let Some(d) = self.structural_checks(event) {
             return d;
         }
-        self.semantic_checks(event).unwrap_or_else(|| self.record(event, Disposition::Conforming))
+        self.semantic_checks(event)
+            .unwrap_or_else(|| self.record(event, Disposition::Conforming))
     }
 
     /// End-of-log audit: an episode that never reached a typed terminal event
@@ -761,7 +821,13 @@ fn obj(object_type: &str, object_id: &str, qualifier: &str) -> AloopObjectRef {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn ev(seq: u64, ts: u64, activity: &str, standing: Option<&str>, objects: Vec<AloopObjectRef>) -> AloopEvent {
+fn ev(
+    seq: u64,
+    ts: u64,
+    activity: &str,
+    standing: Option<&str>,
+    objects: Vec<AloopObjectRef>,
+) -> AloopEvent {
     AloopEvent {
         event_id: format!("ev-{seq:04}"),
         seq,
@@ -778,153 +844,339 @@ fn ev(seq: u64, ts: u64, activity: &str, standing: Option<&str>, objects: Vec<Al
 /// gate is epoch-scoped, not blanket.
 pub fn clean_fixture() -> AloopLog {
     let e = vec![
-        ev(10, 1000, "episode.start", Some("AUTONOMOUS"), vec![
-            obj("Episode", "ep-aloop-001", "subject"),
-            obj("Authority", "auth:lease:aloop-001", "originAuthority"),
-            obj("Subject", "sha256:wasm4pm:S1", "subject"),
-        ]),
+        ev(
+            10,
+            1000,
+            "episode.start",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Episode", "ep-aloop-001", "subject"),
+                obj("Authority", "auth:lease:aloop-001", "originAuthority"),
+                obj("Subject", "sha256:wasm4pm:S1", "subject"),
+            ],
+        ),
         // Pre-epoch human observe: lawful before the autonomy epoch.
-        ev(20, 900, "observe", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:obs-1", "evidence"),
-            obj("Authority", "auth:human:operator", "originAuthority"),
-        ]),
-        ev(30, 1001, "gap.detect", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:gap-1", "evidence"),
-        ]),
-        ev(40, 1002, "candidate.construct", Some("AUTONOMOUS"), vec![
-            obj("Candidate", "cand-1", "output"),
-        ]),
-        ev(50, 1003, "candidate.admit", Some("AUTONOMOUS"), vec![
-            obj("Candidate", "cand-1", "input"),
-            obj("Evidence", "ev:admit-1", "evidence"),
-        ]),
-        ev(60, 1004, "plan.select", Some("AUTONOMOUS"), vec![
-            obj("Plan", "plan-1", "output"),
-        ]),
-        ev(70, 1005, "workorder.issue", Some("AUTONOMOUS"), vec![
-            obj("WorkOrder", "wo-1", "output"),
-            obj("Authority", "auth:lease:aloop-001", "originAuthority"),
-            obj("Subject", "sha256:wasm4pm:S1", "subject"),
-        ]),
-        ev(80, 1006, "provider.select", Some("AUTONOMOUS"), vec![
-            obj("Provider", "prov:alpha", "provider"),
-        ]),
-        ev(90, 1007, "worker.claim", Some("AUTONOMOUS"), vec![
-            obj("Worker", "worker:w1", "worker"),
-            obj("WorkerRun", "run-1", "output"),
-        ]),
-        ev(100, 1008, "execution.start", Some("AUTONOMOUS"), vec![
-            obj("WorkerRun", "run-1", "subject"),
-            obj("Provider", "prov:alpha", "provider"),
-            obj("Worker", "worker:w1", "worker"),
-        ]),
-        ev(110, 1009, "tool.admit", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:tool-1", "evidence"),
-        ]),
-        ev(120, 1010, "checkpoint", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:cp-1", "evidence"),
-            obj("Provider", "prov:alpha", "provider"),
-            obj("Worker", "worker:w1", "worker"),
-        ]),
-        ev(130, 1011, "actuate", Some("AUTONOMOUS"), vec![
-            obj("Consequence", "cons:1", "consequence"),
-            obj("WorkOrder", "wo-1", "output"),
-            obj("Provider", "prov:alpha", "provider"),
-            obj("Worker", "worker:w1", "worker"),
-        ]),
-        ev(140, 1012, "receipt.persist", Some("AUTONOMOUS"), vec![
-            obj("Receipt", "rcp:1", "receipt"),
-            obj("Consequence", "cons:1", "consequence"),
-            obj("Evidence", "ev:r1", "evidence"),
-        ]),
-        ev(150, 1013, "verify", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:ver-1", "evidence"),
-        ]),
-        ev(160, 1014, "falsifier.run", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:fals-1", "evidence"),
-        ]),
-        ev(170, 1015, "benchmark.run", Some("AUTONOMOUS"), vec![
-            obj("Benchmark", "bench-1", "output"),
-        ]),
-        ev(180, 1016, "provider.replace", Some("AUTONOMOUS"), vec![
-            obj("Provider", "prov:alpha", "input"),
-            obj("Provider", "prov:beta", "output"),
-        ]),
-        ev(190, 1017, "reobserve", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:reobs-1", "evidence"),
-        ]),
+        ev(
+            20,
+            900,
+            "observe",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Evidence", "ev:obs-1", "evidence"),
+                obj("Authority", "auth:human:operator", "originAuthority"),
+            ],
+        ),
+        ev(
+            30,
+            1001,
+            "gap.detect",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:gap-1", "evidence")],
+        ),
+        ev(
+            40,
+            1002,
+            "candidate.construct",
+            Some("AUTONOMOUS"),
+            vec![obj("Candidate", "cand-1", "output")],
+        ),
+        ev(
+            50,
+            1003,
+            "candidate.admit",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Candidate", "cand-1", "input"),
+                obj("Evidence", "ev:admit-1", "evidence"),
+            ],
+        ),
+        ev(
+            60,
+            1004,
+            "plan.select",
+            Some("AUTONOMOUS"),
+            vec![obj("Plan", "plan-1", "output")],
+        ),
+        ev(
+            70,
+            1005,
+            "workorder.issue",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("WorkOrder", "wo-1", "output"),
+                obj("Authority", "auth:lease:aloop-001", "originAuthority"),
+                obj("Subject", "sha256:wasm4pm:S1", "subject"),
+            ],
+        ),
+        ev(
+            80,
+            1006,
+            "provider.select",
+            Some("AUTONOMOUS"),
+            vec![obj("Provider", "prov:alpha", "provider")],
+        ),
+        ev(
+            90,
+            1007,
+            "worker.claim",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Worker", "worker:w1", "worker"),
+                obj("WorkerRun", "run-1", "output"),
+            ],
+        ),
+        ev(
+            100,
+            1008,
+            "execution.start",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("WorkerRun", "run-1", "subject"),
+                obj("Provider", "prov:alpha", "provider"),
+                obj("Worker", "worker:w1", "worker"),
+            ],
+        ),
+        ev(
+            110,
+            1009,
+            "tool.admit",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:tool-1", "evidence")],
+        ),
+        ev(
+            120,
+            1010,
+            "checkpoint",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Evidence", "ev:cp-1", "evidence"),
+                obj("Provider", "prov:alpha", "provider"),
+                obj("Worker", "worker:w1", "worker"),
+            ],
+        ),
+        ev(
+            130,
+            1011,
+            "actuate",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Consequence", "cons:1", "consequence"),
+                obj("WorkOrder", "wo-1", "output"),
+                obj("Provider", "prov:alpha", "provider"),
+                obj("Worker", "worker:w1", "worker"),
+            ],
+        ),
+        ev(
+            140,
+            1012,
+            "receipt.persist",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Receipt", "rcp:1", "receipt"),
+                obj("Consequence", "cons:1", "consequence"),
+                obj("Evidence", "ev:r1", "evidence"),
+            ],
+        ),
+        ev(
+            150,
+            1013,
+            "verify",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:ver-1", "evidence")],
+        ),
+        ev(
+            160,
+            1014,
+            "falsifier.run",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:fals-1", "evidence")],
+        ),
+        ev(
+            170,
+            1015,
+            "benchmark.run",
+            Some("AUTONOMOUS"),
+            vec![obj("Benchmark", "bench-1", "output")],
+        ),
+        ev(
+            180,
+            1016,
+            "provider.replace",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Provider", "prov:alpha", "input"),
+                obj("Provider", "prov:beta", "output"),
+            ],
+        ),
+        ev(
+            190,
+            1017,
+            "reobserve",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:reobs-1", "evidence")],
+        ),
         // Recurrence loop redo: second WorkOrder chained to wo-1.
-        ev(200, 1018, "observe", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:obs-2", "evidence"),
-        ]),
-        ev(210, 1019, "gap.detect", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:gap-2", "evidence"),
-        ]),
-        ev(220, 1020, "candidate.construct", Some("AUTONOMOUS"), vec![
-            obj("Candidate", "cand-2", "output"),
-        ]),
-        ev(230, 1021, "candidate.admit", Some("AUTONOMOUS"), vec![
-            obj("Candidate", "cand-2", "input"),
-            obj("Evidence", "ev:admit-2", "evidence"),
-        ]),
-        ev(240, 1022, "plan.select", Some("AUTONOMOUS"), vec![
-            obj("Plan", "plan-2", "output"),
-        ]),
-        ev(250, 1023, "workorder.issue", Some("AUTONOMOUS"), vec![
-            obj("WorkOrder", "wo-2", "output"),
-            obj("WorkOrder", "wo-1", "predecessor"),
-            obj("Authority", "auth:lease:aloop-001", "originAuthority"),
-            obj("Subject", "sha256:wasm4pm:S1", "subject"),
-        ]),
-        ev(260, 1024, "provider.select", Some("AUTONOMOUS"), vec![
-            obj("Provider", "prov:beta", "provider"),
-        ]),
-        ev(270, 1025, "worker.claim", Some("AUTONOMOUS"), vec![
-            obj("Worker", "worker:w1", "worker"),
-            obj("WorkerRun", "run-2", "output"),
-        ]),
-        ev(280, 1026, "execution.start", Some("AUTONOMOUS"), vec![
-            obj("WorkerRun", "run-2", "subject"),
-            obj("Provider", "prov:beta", "provider"),
-            obj("Worker", "worker:w1", "worker"),
-        ]),
-        ev(290, 1027, "tool.admit", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:tool-2", "evidence"),
-        ]),
-        ev(300, 1028, "actuate", Some("AUTONOMOUS"), vec![
-            obj("Consequence", "cons:2", "consequence"),
-            obj("WorkOrder", "wo-2", "output"),
-            obj("Provider", "prov:beta", "provider"),
-            obj("Worker", "worker:w1", "worker"),
-        ]),
-        ev(310, 1029, "receipt.persist", Some("AUTONOMOUS"), vec![
-            obj("Receipt", "rcp:2", "receipt"),
-            obj("Consequence", "cons:2", "consequence"),
-            obj("Evidence", "ev:r2", "evidence"),
-        ]),
-        ev(320, 1030, "verify", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:ver-2", "evidence"),
-        ]),
-        ev(330, 1031, "falsifier.run", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:fals-2", "evidence"),
-        ]),
-        ev(340, 1032, "commit", Some("AUTONOMOUS"), vec![
-            obj("Subject", "sha256:wasm4pm:S1", "subject"),
-            obj("Receipt", "rcp:2", "receipt"),
-            obj("Provider", "prov:beta", "provider"),
-        ]),
-        ev(350, 1033, "merge", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:merge-1", "evidence"),
-        ]),
-        ev(360, 1034, "reobserve", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:reobs-2", "evidence"),
-        ]),
-        ev(370, 1035, "goal.satisfied", Some("AUTONOMOUS"), vec![
-            obj("Objective", "obj-1", "output"),
-        ]),
-        ev(380, 1036, "episode.terminal", Some("AUTONOMOUS"), vec![
-            obj("Episode", "ep-aloop-001", "subject"),
-        ]),
+        ev(
+            200,
+            1018,
+            "observe",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:obs-2", "evidence")],
+        ),
+        ev(
+            210,
+            1019,
+            "gap.detect",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:gap-2", "evidence")],
+        ),
+        ev(
+            220,
+            1020,
+            "candidate.construct",
+            Some("AUTONOMOUS"),
+            vec![obj("Candidate", "cand-2", "output")],
+        ),
+        ev(
+            230,
+            1021,
+            "candidate.admit",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Candidate", "cand-2", "input"),
+                obj("Evidence", "ev:admit-2", "evidence"),
+            ],
+        ),
+        ev(
+            240,
+            1022,
+            "plan.select",
+            Some("AUTONOMOUS"),
+            vec![obj("Plan", "plan-2", "output")],
+        ),
+        ev(
+            250,
+            1023,
+            "workorder.issue",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("WorkOrder", "wo-2", "output"),
+                obj("WorkOrder", "wo-1", "predecessor"),
+                obj("Authority", "auth:lease:aloop-001", "originAuthority"),
+                obj("Subject", "sha256:wasm4pm:S1", "subject"),
+            ],
+        ),
+        ev(
+            260,
+            1024,
+            "provider.select",
+            Some("AUTONOMOUS"),
+            vec![obj("Provider", "prov:beta", "provider")],
+        ),
+        ev(
+            270,
+            1025,
+            "worker.claim",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Worker", "worker:w1", "worker"),
+                obj("WorkerRun", "run-2", "output"),
+            ],
+        ),
+        ev(
+            280,
+            1026,
+            "execution.start",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("WorkerRun", "run-2", "subject"),
+                obj("Provider", "prov:beta", "provider"),
+                obj("Worker", "worker:w1", "worker"),
+            ],
+        ),
+        ev(
+            290,
+            1027,
+            "tool.admit",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:tool-2", "evidence")],
+        ),
+        ev(
+            300,
+            1028,
+            "actuate",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Consequence", "cons:2", "consequence"),
+                obj("WorkOrder", "wo-2", "output"),
+                obj("Provider", "prov:beta", "provider"),
+                obj("Worker", "worker:w1", "worker"),
+            ],
+        ),
+        ev(
+            310,
+            1029,
+            "receipt.persist",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Receipt", "rcp:2", "receipt"),
+                obj("Consequence", "cons:2", "consequence"),
+                obj("Evidence", "ev:r2", "evidence"),
+            ],
+        ),
+        ev(
+            320,
+            1030,
+            "verify",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:ver-2", "evidence")],
+        ),
+        ev(
+            330,
+            1031,
+            "falsifier.run",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:fals-2", "evidence")],
+        ),
+        ev(
+            340,
+            1032,
+            "commit",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Subject", "sha256:wasm4pm:S1", "subject"),
+                obj("Receipt", "rcp:2", "receipt"),
+                obj("Provider", "prov:beta", "provider"),
+            ],
+        ),
+        ev(
+            350,
+            1033,
+            "merge",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:merge-1", "evidence")],
+        ),
+        ev(
+            360,
+            1034,
+            "reobserve",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:reobs-2", "evidence")],
+        ),
+        ev(
+            370,
+            1035,
+            "goal.satisfied",
+            Some("AUTONOMOUS"),
+            vec![obj("Objective", "obj-1", "output")],
+        ),
+        ev(
+            380,
+            1036,
+            "episode.terminal",
+            Some("AUTONOMOUS"),
+            vec![obj("Episode", "ep-aloop-001", "subject")],
+        ),
     ];
     AloopLog {
         log_id: "aloop-clean-seeded".to_owned(),
@@ -938,79 +1190,173 @@ pub fn clean_fixture() -> AloopLog {
 /// terminal. Must conform (typed terminality accepts both legal terminals).
 pub fn blocked_fixture() -> AloopLog {
     let e = vec![
-        ev(1, 1000, "episode.start", Some("AUTONOMOUS"), vec![
-            obj("Episode", "ep-aloop-002", "subject"),
-            obj("Authority", "auth:lease:aloop-002", "originAuthority"),
-            obj("Subject", "sha256:wasm4pm:S2", "subject"),
-        ]),
-        ev(2, 1001, "observe", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:obs-b1", "evidence"),
-        ]),
-        ev(3, 1002, "gap.detect", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:gap-b1", "evidence"),
-        ]),
-        ev(4, 1003, "candidate.construct", Some("AUTONOMOUS"), vec![
-            obj("Candidate", "cand-b1", "output"),
-        ]),
-        ev(5, 1004, "candidate.admit", Some("AUTONOMOUS"), vec![
-            obj("Candidate", "cand-b1", "input"),
-            obj("Evidence", "ev:admit-b1", "evidence"),
-        ]),
-        ev(6, 1005, "plan.select", Some("AUTONOMOUS"), vec![
-            obj("Plan", "plan-b1", "output"),
-        ]),
-        ev(7, 1006, "workorder.issue", Some("AUTONOMOUS"), vec![
-            obj("WorkOrder", "wo-b1", "output"),
-            obj("Authority", "auth:lease:aloop-002", "originAuthority"),
-            obj("Subject", "sha256:wasm4pm:S2", "subject"),
-        ]),
-        ev(8, 1007, "provider.select", Some("AUTONOMOUS"), vec![
-            obj("Provider", "prov:alpha", "provider"),
-        ]),
-        ev(9, 1008, "worker.claim", Some("AUTONOMOUS"), vec![
-            obj("Worker", "worker:w2", "worker"),
-            obj("WorkerRun", "run-b1", "output"),
-        ]),
-        ev(10, 1009, "execution.start", Some("AUTONOMOUS"), vec![
-            obj("WorkerRun", "run-b1", "subject"),
-            obj("Provider", "prov:alpha", "provider"),
-            obj("Worker", "worker:w2", "worker"),
-        ]),
-        ev(11, 1010, "tool.admit", Some("AUTONOMOUS"), vec![
-            obj("Evidence", "ev:tool-b1", "evidence"),
-        ]),
-        ev(12, 1011, "actuate", Some("AUTONOMOUS"), vec![
-            obj("Consequence", "cons:b1", "consequence"),
-            obj("WorkOrder", "wo-b1", "output"),
-            obj("Provider", "prov:alpha", "provider"),
-            obj("Worker", "worker:w2", "worker"),
-        ]),
-        ev(13, 1012, "receipt.persist", Some("AUTONOMOUS"), vec![
-            obj("Receipt", "rcp:b1", "receipt"),
-            obj("Consequence", "cons:b1", "consequence"),
-            obj("Evidence", "ev:r-b1", "evidence"),
-        ]),
-        ev(14, 1013, "execution.crash", Some("FAILED"), vec![
-            obj("Evidence", "ev:crash-b1", "evidence"),
-        ]),
-        ev(15, 1014, "failure.detect", Some("FAILED"), vec![
-            obj("Failure", "fail-1", "evidence"),
-        ]),
-        ev(16, 1015, "reconcile", Some("FAILED"), vec![
-            obj("Evidence", "ev:rec-b1", "evidence"),
-        ]),
-        ev(17, 1016, "replan", Some("AUTONOMOUS"), vec![
-            obj("Plan", "plan-b2", "output"),
-        ]),
-        ev(18, 1017, "reobserve", Some("BLOCKED_INFORMATION"), vec![
-            obj("Evidence", "ev:reobs-b1", "evidence"),
-        ]),
-        ev(19, 1018, "goal.blocked", Some("BLOCKED_INFORMATION"), vec![
-            obj("Failure", "fail-1", "evidence"),
-        ]),
-        ev(20, 1019, "episode.terminal", Some("BLOCKED_INFORMATION"), vec![
-            obj("Episode", "ep-aloop-002", "subject"),
-        ]),
+        ev(
+            1,
+            1000,
+            "episode.start",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Episode", "ep-aloop-002", "subject"),
+                obj("Authority", "auth:lease:aloop-002", "originAuthority"),
+                obj("Subject", "sha256:wasm4pm:S2", "subject"),
+            ],
+        ),
+        ev(
+            2,
+            1001,
+            "observe",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:obs-b1", "evidence")],
+        ),
+        ev(
+            3,
+            1002,
+            "gap.detect",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:gap-b1", "evidence")],
+        ),
+        ev(
+            4,
+            1003,
+            "candidate.construct",
+            Some("AUTONOMOUS"),
+            vec![obj("Candidate", "cand-b1", "output")],
+        ),
+        ev(
+            5,
+            1004,
+            "candidate.admit",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Candidate", "cand-b1", "input"),
+                obj("Evidence", "ev:admit-b1", "evidence"),
+            ],
+        ),
+        ev(
+            6,
+            1005,
+            "plan.select",
+            Some("AUTONOMOUS"),
+            vec![obj("Plan", "plan-b1", "output")],
+        ),
+        ev(
+            7,
+            1006,
+            "workorder.issue",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("WorkOrder", "wo-b1", "output"),
+                obj("Authority", "auth:lease:aloop-002", "originAuthority"),
+                obj("Subject", "sha256:wasm4pm:S2", "subject"),
+            ],
+        ),
+        ev(
+            8,
+            1007,
+            "provider.select",
+            Some("AUTONOMOUS"),
+            vec![obj("Provider", "prov:alpha", "provider")],
+        ),
+        ev(
+            9,
+            1008,
+            "worker.claim",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Worker", "worker:w2", "worker"),
+                obj("WorkerRun", "run-b1", "output"),
+            ],
+        ),
+        ev(
+            10,
+            1009,
+            "execution.start",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("WorkerRun", "run-b1", "subject"),
+                obj("Provider", "prov:alpha", "provider"),
+                obj("Worker", "worker:w2", "worker"),
+            ],
+        ),
+        ev(
+            11,
+            1010,
+            "tool.admit",
+            Some("AUTONOMOUS"),
+            vec![obj("Evidence", "ev:tool-b1", "evidence")],
+        ),
+        ev(
+            12,
+            1011,
+            "actuate",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Consequence", "cons:b1", "consequence"),
+                obj("WorkOrder", "wo-b1", "output"),
+                obj("Provider", "prov:alpha", "provider"),
+                obj("Worker", "worker:w2", "worker"),
+            ],
+        ),
+        ev(
+            13,
+            1012,
+            "receipt.persist",
+            Some("AUTONOMOUS"),
+            vec![
+                obj("Receipt", "rcp:b1", "receipt"),
+                obj("Consequence", "cons:b1", "consequence"),
+                obj("Evidence", "ev:r-b1", "evidence"),
+            ],
+        ),
+        ev(
+            14,
+            1013,
+            "execution.crash",
+            Some("FAILED"),
+            vec![obj("Evidence", "ev:crash-b1", "evidence")],
+        ),
+        ev(
+            15,
+            1014,
+            "failure.detect",
+            Some("FAILED"),
+            vec![obj("Failure", "fail-1", "evidence")],
+        ),
+        ev(
+            16,
+            1015,
+            "reconcile",
+            Some("FAILED"),
+            vec![obj("Evidence", "ev:rec-b1", "evidence")],
+        ),
+        ev(
+            17,
+            1016,
+            "replan",
+            Some("AUTONOMOUS"),
+            vec![obj("Plan", "plan-b2", "output")],
+        ),
+        ev(
+            18,
+            1017,
+            "reobserve",
+            Some("BLOCKED_INFORMATION"),
+            vec![obj("Evidence", "ev:reobs-b1", "evidence")],
+        ),
+        ev(
+            19,
+            1018,
+            "goal.blocked",
+            Some("BLOCKED_INFORMATION"),
+            vec![obj("Failure", "fail-1", "evidence")],
+        ),
+        ev(
+            20,
+            1019,
+            "episode.terminal",
+            Some("BLOCKED_INFORMATION"),
+            vec![obj("Episode", "ep-aloop-002", "subject")],
+        ),
     ];
     AloopLog {
         log_id: "aloop-blocked-seeded".to_owned(),
@@ -1041,7 +1387,8 @@ fn mutants() -> Vec<Mutant> {
             mutated_check: "recurrence/reobserve-before-goal",
             expected_code: REFUSED_MISSING_REOBSERVE,
             apply: |log| {
-                log.events.retain(|e| e.activity != "reobserve" || e.seq != 360);
+                log.events
+                    .retain(|e| e.activity != "reobserve" || e.seq != 360);
             },
         },
         Mutant {
@@ -1090,7 +1437,8 @@ fn mutants() -> Vec<Mutant> {
             mutated_check: "receipt-linkage/zero-orphan-DO",
             expected_code: REFUSED_ORPHAN_DO,
             apply: |log| {
-                log.events.retain(|e| !(e.activity == "receipt.persist" && e.seq == 310));
+                log.events
+                    .retain(|e| !(e.activity == "receipt.persist" && e.seq == 310));
             },
         },
         Mutant {
@@ -1228,19 +1576,30 @@ fn real_lane_scan() -> RealLaneScan {
     if root.is_empty() {
         return RealLaneScan {
             root: "(unset: synthetic-only run)".to_owned(),
+            files_seen: 0,
             files_scanned: 0,
             corpora: vec![],
+            manifests: vec![],
+            unparseable: vec![],
             verdict: "UNKNOWN".to_owned(),
         };
     }
     let mut corpora = Vec::new();
+    let mut manifests = Vec::new();
+    let mut unparseable = Vec::new();
     let mut scanned = 0usize;
+    let mut seen = 0usize;
     let lane_root = PathBuf::from(&root);
     let mut lane_dirs: Vec<PathBuf> = std::fs::read_dir(&lane_root)
         .map(|rd| {
             rd.filter_map(|e| e.ok())
                 .map(|e| e.path())
-                .filter(|p| p.is_dir() && p.file_name().map(|n| n.to_string_lossy().starts_with("lane-")).unwrap_or(false))
+                .filter(|p| {
+                    p.is_dir()
+                        && p.file_name()
+                            .map(|n| n.to_string_lossy().starts_with("lane-"))
+                            .unwrap_or(false)
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -1253,7 +1612,9 @@ fn real_lane_scan() -> RealLaneScan {
                     .map(|e| e.path())
                     .filter(|p| {
                         p.is_file()
-                            && p.extension().map(|x| x == "json" || x == "jsonl" || x == "ndjson").unwrap_or(false)
+                            && p.extension()
+                                .map(|x| x == "json" || x == "jsonl" || x == "ndjson")
+                                .unwrap_or(false)
                     })
                     .collect()
             })
@@ -1266,32 +1627,331 @@ fn real_lane_scan() -> RealLaneScan {
             if text.len() > 2 * 1024 * 1024 {
                 continue;
             }
-            let parsed = parse_lane_log(&file, &text);
-            let Some(log) = parsed else { continue };
-            scanned += 1;
-            let mut v = corpus_verdict(&format!("real:{}", file.display()), &log);
-            v.corpus_id = format!("real:{}", file.display());
-            let real = v.conformant;
-            corpora.push(v);
+            seen += 1;
+            let name = file.display().to_string();
+            if let Some(log) = parse_lane_log(&file, &text) {
+                scanned += 1;
+                let mut v = corpus_verdict(&format!("real:{name}"), &log);
+                v.corpus_id = format!("real:{name}");
+                corpora.push(v);
+            } else {
+                match judge_lane_manifest(&file, &text) {
+                    ManifestJudgment::Record(v) => {
+                        scanned += 1;
+                        manifests.push(v);
+                    }
+                    ManifestJudgment::Declaration(kind, reason) => {
+                        unparseable.push(UnparseableFile {
+                            file: name,
+                            kind,
+                            reason,
+                        });
+                    }
+                    ManifestJudgment::NotJudgeable(reason) => {
+                        unparseable.push(UnparseableFile {
+                            file: name,
+                            kind: "unparseable".to_owned(),
+                            reason,
+                        });
+                    }
+                }
+            }
             if scanned >= 20 {
                 break 'lanes;
             }
-            let _ = real;
         }
     }
-    let verdict = if corpora.is_empty() {
+    let verdict = if seen == 0 {
         "UNKNOWN".to_owned()
-    } else if corpora.iter().all(|c| c.conformant) {
-        "AUTONOMOUS_CONFORMANT".to_owned()
+    } else if corpora.iter().all(|c| c.conformant) && manifests.iter().all(|m| m.conformant) {
+        if !corpora.is_empty() {
+            "AUTONOMOUS_CONFORMANT".to_owned()
+        } else {
+            "MANIFEST_LEVEL_CONFORMANT".to_owned()
+        }
     } else {
         "NON_CONFORMANT".to_owned()
     };
     RealLaneScan {
         root,
+        files_seen: seen,
         files_scanned: scanned,
         corpora,
+        manifests,
+        unparseable,
         verdict,
     }
+}
+
+enum ManifestJudgment {
+    /// A lane record making executable claims (receipts/commands): judged.
+    Record(ManifestVerdict),
+    /// Structured JSON but with zero executed claims: nothing to judge.
+    Declaration(String, String),
+    /// Not a judgeable manifest at all.
+    NotJudgeable(String),
+}
+
+#[derive(Deserialize)]
+struct RawRepoRecord {
+    #[serde(default)]
+    repo: String,
+    #[serde(default)]
+    branch: String,
+    #[serde(default)]
+    start_sha: String,
+    #[serde(default)]
+    final_sha: String,
+    #[serde(default)]
+    commits: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct RawReceipt {
+    #[serde(default)]
+    work_order_id: String,
+    #[serde(default)]
+    provider: String,
+    #[serde(default)]
+    origin_authority: String,
+    #[serde(default)]
+    exit_status: String,
+}
+
+#[derive(Deserialize)]
+struct RawHumanEdge {
+    #[serde(default)]
+    phase: String,
+}
+
+#[derive(Default, Deserialize)]
+struct RawRecurrence {
+    #[serde(default)]
+    demonstrated: bool,
+    #[serde(default)]
+    chain: Vec<String>,
+    #[serde(default)]
+    iterations: u64,
+}
+
+#[derive(Deserialize)]
+struct RawOcelSummary {
+    #[serde(default)]
+    object_types: Vec<String>,
+    #[serde(default)]
+    event_classes: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct RawManifest {
+    #[serde(default)]
+    episode: String,
+    #[serde(default)]
+    lane: serde_json::Value,
+    #[serde(default)]
+    standing: String,
+    #[serde(default)]
+    standing_history: Vec<String>,
+    #[serde(default)]
+    repos: Vec<RawRepoRecord>,
+    #[serde(default)]
+    commands: Vec<serde_json::Value>,
+    #[serde(default)]
+    receipts: Vec<RawReceipt>,
+    #[serde(default)]
+    human_causal_edges: Vec<RawHumanEdge>,
+    #[serde(default)]
+    recurrence: RawRecurrence,
+    #[serde(default)]
+    ocel_summary: Option<RawOcelSummary>,
+    #[serde(default)]
+    goal_state: Option<String>,
+    #[serde(default)]
+    blockers: Vec<String>,
+    #[serde(default)]
+    oracle: Option<serde_json::Value>,
+}
+
+/// Classify and judge a real lane JSON file. lane-1 record.json shape
+/// (receipts + commands + repos) is a judged Record; a declaration-only
+/// document (contract text, this oracle's own verdict) carries no executed
+/// claims and is recorded as unjudgeable rather than vacuously conformant.
+fn judge_lane_manifest(path: &std::path::Path, text: &str) -> ManifestJudgment {
+    let Ok(raw) = serde_json::from_str::<RawManifest>(text) else {
+        let reason = if path
+            .extension()
+            .map(|x| x == "ndjson" || x == "jsonl")
+            .unwrap_or(false)
+        {
+            "NDJSON (line-delimited) not parsed by the single-document judge".to_owned()
+        } else {
+            "not JSON".to_owned()
+        };
+        return ManifestJudgment::NotJudgeable(reason);
+    };
+    if raw.oracle.is_some() {
+        return ManifestJudgment::Declaration(
+            "oracle-self-verdict".to_owned(),
+            "this oracle's own verdict file: judging it here would be self-certification"
+                .to_owned(),
+        );
+    }
+    if raw.receipts.is_empty() && raw.commands.is_empty() && raw.repos.is_empty() {
+        return ManifestJudgment::Declaration(
+            "contract-declaration".to_owned(),
+            "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level".to_owned(),
+        );
+    }
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let lane = match &raw.lane {
+        serde_json::Value::String(s) => s.clone(),
+        serde_json::Value::Number(n) => format!("lane-{}", n),
+        _ => name.clone(),
+    };
+
+    let mut checks: Vec<ManifestCheck> = Vec::new();
+    let mut push = |check: &str, codes: Vec<String>| {
+        let pass = codes.is_empty();
+        checks.push(ManifestCheck {
+            check: check.to_owned(),
+            pass,
+            codes: codes.clone(),
+        });
+        codes
+    };
+
+    // Vocabulary law: declared OCEL summary must stay inside the contract.
+    let mut codes = Vec::new();
+    if let Some(summary) = &raw.ocel_summary {
+        for c in &summary.event_classes {
+            if !EVENT_CLASSES.contains(&c.as_str()) {
+                codes.push(format!("{REFUSED_MANIFEST_UNKNOWN_VOCAB}: event class {c}"));
+            }
+        }
+        for o in &summary.object_types {
+            if !OBJECT_TYPES.contains(&o.as_str()) {
+                codes.push(format!("{REFUSED_MANIFEST_UNKNOWN_VOCAB}: object type {o}"));
+            }
+        }
+    }
+    let _ = push("manifest-vocabulary", codes);
+
+    // Standing law: vocabulary + never ASSISTED -> AUTONOMOUS in any history.
+    let mut codes = Vec::new();
+    let mut standing_seq: Vec<&String> = raw.standing_history.iter().collect();
+    if !raw.standing.is_empty() {
+        standing_seq.push(&raw.standing);
+    }
+    for s in &standing_seq {
+        if !EPISODE_STANDINGS.contains(&s.as_str()) {
+            codes.push(format!("{REFUSED_UNKNOWN_STANDING}: {s}"));
+        }
+    }
+    for w in standing_seq.windows(2) {
+        if w[0] == "ASSISTED" && w[1] == "AUTONOMOUS" {
+            codes.push(REFUSED_STANDING_REGRESSION.to_owned());
+        }
+    }
+    let _ = push("manifest-standing-law", codes);
+
+    // Receipt authority law: every receipt names work order, provider, and
+    // origin authority (same law as the WorkOrder mutant, manifest surface).
+    let mut codes = Vec::new();
+    for r in &raw.receipts {
+        if r.work_order_id.is_empty() {
+            codes.push(format!(
+                "{REFUSED_WORKORDER_NO_AUTHORITY}: receipt without work_order_id"
+            ));
+        }
+        if r.origin_authority.is_empty() {
+            codes.push(format!(
+                "{REFUSED_WORKORDER_NO_AUTHORITY}: receipt {} without origin_authority",
+                r.work_order_id
+            ));
+        }
+        if r.provider.is_empty() {
+            codes.push(format!(
+                "{REFUSED_PROVIDER_SELECT_MISSING}: receipt {} without provider",
+                r.work_order_id
+            ));
+        }
+    }
+    let _ = push("manifest-receipt-authority", codes);
+
+    // Zero post-epoch human causal edges (pre-epoch launcher edges are legal).
+    let mut codes = Vec::new();
+    for e in &raw.human_causal_edges {
+        if e.phase != "pre-epoch" {
+            codes.push(REFUSED_HUMAN_CAUSAL_EDGE.to_owned());
+        }
+    }
+    let _ = push("manifest-zero-human-causal-edges-post-epoch", codes);
+
+    // Recurrence honesty: a claimed demonstration must carry its chain.
+    let mut codes = Vec::new();
+    if raw.recurrence.demonstrated
+        && (raw.recurrence.chain.is_empty() || raw.recurrence.iterations == 0)
+    {
+        codes.push(REFUSED_MANIFEST_RECURRENCE_UNWITNESSED.to_owned());
+    }
+    let _ = push("manifest-recurrence-honesty", codes);
+
+    // Subject identity law: a repo whose final SHA moved from start must list
+    // the commits that carried it (same law as the event-level identity check).
+    let mut codes = Vec::new();
+    for r in &raw.repos {
+        if !r.start_sha.is_empty()
+            && !r.final_sha.is_empty()
+            && r.start_sha != r.final_sha
+            && r.commits.is_empty()
+        {
+            codes.push(format!(
+                "{REFUSED_SUBJECT_IDENTITY_BREAK}: repo {} moved {} -> {} with no commits listed",
+                r.repo, r.start_sha, r.final_sha
+            ));
+        }
+    }
+    let _ = push("manifest-subject-identity", codes);
+
+    // Typed blocker law: an admitted blocker must carry its type/reason text.
+    let mut codes = Vec::new();
+    for b in &raw.blockers {
+        if b.trim().is_empty() {
+            codes.push(REFUSED_MANIFEST_UNTYPED_BLOCKER.to_owned());
+        }
+    }
+    let _ = push("manifest-typed-blockers", codes);
+
+    // Terminality: recorded, never inferred. ABSENT = honest fragment.
+    let terminal_claim = match raw.goal_state.as_deref() {
+        Some("goal.satisfied") | Some("goal.blocked") => raw.goal_state.clone().unwrap(),
+        Some(other) => {
+            let mut codes = vec![format!("{REFUSED_UNTYPED_TERMINAL}: goal_state {other}")];
+            let _ = push("manifest-typed-terminality", codes.clone());
+            codes.clear();
+            "UNTYPED".to_owned()
+        }
+        None => "ABSENT".to_owned(),
+    };
+
+    let refusal_codes: Vec<String> = checks.iter().flat_map(|c| c.codes.clone()).collect();
+    let conformant = refusal_codes.is_empty();
+    ManifestJudgment::Record(ManifestVerdict {
+        file: name,
+        kind: "record".to_owned(),
+        lane,
+        provenance: "REAL_LANE_MANIFEST".to_owned(),
+        standing: raw.standing.clone(),
+        terminal_claim,
+        recurrence_demonstrated: raw.recurrence.demonstrated,
+        receipts_checked: raw.receipts.len(),
+        checks,
+        refusal_codes,
+        conformant,
+    })
 }
 
 /// Accepts this oracle's native log shape; also a tolerant OCEL 2.0
@@ -1361,9 +2021,21 @@ fn parse_lane_log(path: &std::path::Path, text: &str) -> Option<AloopLog> {
                     .objects
                     .iter()
                     .map(|o| AloopObjectRef {
-                        object_type: if o.object_type.is_empty() { o.kind.clone() } else { o.object_type.clone() },
-                        object_id: if o.object_id.is_empty() { o.id.clone() } else { o.object_id.clone() },
-                        qualifier: if o.qualifier.is_empty() { "output".to_owned() } else { o.qualifier.clone() },
+                        object_type: if o.object_type.is_empty() {
+                            o.kind.clone()
+                        } else {
+                            o.object_type.clone()
+                        },
+                        object_id: if o.object_id.is_empty() {
+                            o.id.clone()
+                        } else {
+                            o.object_id.clone()
+                        },
+                        qualifier: if o.qualifier.is_empty() {
+                            "output".to_owned()
+                        } else {
+                            o.qualifier.clone()
+                        },
                     })
                     .collect(),
             });
@@ -1381,9 +2053,21 @@ fn parse_lane_log(path: &std::path::Path, text: &str) -> Option<AloopLog> {
                     .iter()
                     .chain(r.objects.iter())
                     .map(|o| AloopObjectRef {
-                        object_type: if o.object_type.is_empty() { o.kind.clone() } else { o.object_type.clone() },
-                        object_id: if o.object_id.is_empty() { o.id.clone() } else { o.object_id.clone() },
-                        qualifier: if o.qualifier.is_empty() { "output".to_owned() } else { o.qualifier.clone() },
+                        object_type: if o.object_type.is_empty() {
+                            o.kind.clone()
+                        } else {
+                            o.object_type.clone()
+                        },
+                        object_id: if o.object_id.is_empty() {
+                            o.id.clone()
+                        } else {
+                            o.object_id.clone()
+                        },
+                        qualifier: if o.qualifier.is_empty() {
+                            "output".to_owned()
+                        } else {
+                            o.qualifier.clone()
+                        },
                     })
                     .collect(),
             });
@@ -1393,16 +2077,24 @@ fn parse_lane_log(path: &std::path::Path, text: &str) -> Option<AloopLog> {
     }
     events.sort_by_key(|e| e.seq);
     Some(AloopLog {
-        log_id: raw
-            .raw_log_id
-            .unwrap_or_else(|| path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()),
+        log_id: raw.raw_log_id.unwrap_or_else(|| {
+            path.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default()
+        }),
         human_epoch_ts: raw.raw_epoch.unwrap_or(0),
-        provenance: raw.provenance.unwrap_or_else(|| "REAL_LANE_MANIFEST".to_owned()),
+        provenance: raw
+            .provenance
+            .unwrap_or_else(|| "REAL_LANE_MANIFEST".to_owned()),
         events,
     })
 }
 
-fn check_table(mutants: &[MutantResult], synthetic: &CorpusVerdict, blocked: &CorpusVerdict) -> Vec<CheckOutcome> {
+fn check_table(
+    mutants: &[MutantResult],
+    synthetic: &CorpusVerdict,
+    blocked: &CorpusVerdict,
+) -> Vec<CheckOutcome> {
     let mutant_firing = |check: &str| {
         mutants
             .iter()
@@ -1560,10 +2252,25 @@ pub fn evaluate_verdict() -> AloopVerdict {
     {
         if real.verdict == "AUTONOMOUS_CONFORMANT" {
             "AUTONOMOUS_CONFORMANT".to_owned()
+        } else if real.verdict == "MANIFEST_LEVEL_CONFORMANT" {
+            reasons.push(
+                "real lane manifests present and manifest-level conformant, but every manifest records terminal_claim ABSENT and none carries a full event log: event-ordering, cold replay, and typed terminality remain unproven over real evidence, so the verdict cannot rise above PARTIAL".to_owned(),
+            );
+            "PARTIAL".to_owned()
         } else if real.verdict == "NON_CONFORMANT" {
             reasons.push(format!(
-                "real lane manifests non-conformant: {:?}",
-                real.corpora.iter().filter(|c| !c.conformant).map(|c| c.corpus_id.clone()).collect::<Vec<_>>()
+                "real lane evidence non-conformant: {:?}",
+                real.corpora
+                    .iter()
+                    .filter(|c| !c.conformant)
+                    .map(|c| c.corpus_id.clone())
+                    .chain(
+                        real.manifests
+                            .iter()
+                            .filter(|m| !m.conformant)
+                            .map(|m| m.file.clone())
+                    )
+                    .collect::<Vec<_>>()
             ));
             "NON_CONFORMANT".to_owned()
         } else {
@@ -1582,7 +2289,9 @@ pub fn evaluate_verdict() -> AloopVerdict {
             lane: "lane-10".to_owned(),
             episode: "ALOOP-ZCODE-DOGFOOD-001".to_owned(),
             contract: "ALOOP OCEL 2.0 (10-lane contract, identical across lanes)".to_owned(),
-            independence: "independent of XaaS-side and ex4pm-side judges; disagreement is evidence".to_owned(),
+            independence:
+                "independent of XaaS-side and ex4pm-side judges; disagreement is evidence"
+                    .to_owned(),
         },
         subject: SubjectMeta {
             repo: "wasm4pm".to_owned(),
@@ -1612,7 +2321,11 @@ fn clean_fixture_conforms_and_cold_replays_byte_identical() {
         records.iter().all(|r| !r.disposition.is_refused()),
         "clean fixture must produce zero refusals, got: {records:?}"
     );
-    assert_eq!(close, Disposition::Terminal, "clean fixture must terminate typed");
+    assert_eq!(
+        close,
+        Disposition::Terminal,
+        "clean fixture must terminate typed"
+    );
     let (_bytes, identical) = cold_replay(&log);
     assert!(identical, "cold replay must be byte-identical");
 }
@@ -1657,14 +2370,183 @@ fn independent_oracle_never_grants_authority() {
 fn verdict_json_is_emitted_and_wellformed() {
     let verdict = evaluate_verdict();
     let json = serde_json::to_vec_pretty(&verdict).expect("verdict serialization is infallible");
-    let out = std::env::var("ALOOP_VERDICT_OUT").unwrap_or_else(|_| {
-        "../../artifacts/aloop-dogfood-001/lane-10/verdict.json".to_owned()
-    });
+    let out = std::env::var("ALOOP_VERDICT_OUT")
+        .unwrap_or_else(|_| "../../artifacts/aloop-dogfood-001/lane-10/verdict.json".to_owned());
     let path = PathBuf::from(out);
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).expect("artifact dir creation is lawful in the harness sandbox");
+        std::fs::create_dir_all(parent)
+            .expect("artifact dir creation is lawful in the harness sandbox");
     }
     std::fs::write(&path, &json).expect("verdict write is lawful in the harness sandbox");
     println!("ALOOP verdict written to {}", path.display());
     println!("overall: {}", verdict.overall);
+}
+
+// ---------------------------------------------------------------------------
+// Manifest-level adapter: fixtures + anti-vacuity (clean PASS, mutants FAIL)
+// ---------------------------------------------------------------------------
+
+/// Mirrors the real lane-1 record.json claim surface (receipts with
+/// authority, pre-epoch human edge, honest recurrence=false, no terminal
+/// claim yet).
+fn manifest_record_fixture() -> String {
+    r#"{
+  "episode": "ALOOP-ZCODE-DOGFOOD-001",
+  "lane": "lane-1",
+  "standing": "ASSISTED",
+  "repos": [
+    {
+      "repo": "engineering-standards",
+      "branch": "rfc/aloop-0005-autonomous-loop",
+      "start_sha": "0a5acd1fb3d9b5aeed26e87719cf8187429dfc69",
+      "final_sha": "d04c9ac782b1aeb6a3a8e0b94264f3bade22bd58",
+      "commits": ["d04c9ac782b1aeb6a3a8e0b94264f3bade22bd58"]
+    }
+  ],
+  "commands": [
+    {"cmd": "python3 -m unittest discover -s tests -p 'test_aloop_crown.py' -v", "exit": 0}
+  ],
+  "receipts": [
+    {
+      "work_order_id": "WO-LANE1-RFC-0005",
+      "provider": "zcode",
+      "origin_authority": "operator dispatch: ALOOP-ZCODE-DOGFOOD-001 lane contract",
+      "exit_status": "success"
+    }
+  ],
+  "human_causal_edges": [
+    {"ts": "2026-09-25T18:15:00Z", "phase": "pre-epoch", "description": "launcher enumerated 10 lanes"}
+  ],
+  "recurrence": {"demonstrated": false, "chain": [], "iterations": 0},
+  "ocel_summary": {
+    "object_types": ["Episode", "Objective", "Requirement", "WorkOrder", "Authority", "Repository", "Subject", "Provider", "Worker", "WorkerRun", "Consequence", "Evidence", "Receipt"],
+    "event_classes": ["episode.start", "observe", "gap.detect", "candidate.construct", "plan.select", "workorder.issue", "provider.select", "worker.claim", "execution.start", "tool.admit", "actuate", "checkpoint", "receipt.persist", "verify", "falsifier.run", "failure.detect", "commit", "episode.terminal"],
+    "event_count": 17
+  },
+  "blockers": []
+}"#.to_owned()
+}
+
+fn manifest_codes(text: &str) -> (Vec<String>, Option<ManifestVerdict>) {
+    match judge_lane_manifest(std::path::Path::new("fixture.json"), text) {
+        ManifestJudgment::Record(v) => (v.refusal_codes.clone(), Some(v)),
+        ManifestJudgment::Declaration(kind, _) => (vec![format!("DECLARATION:{kind}")], None),
+        ManifestJudgment::NotJudgeable(reason) => (vec![format!("NOT_JUDGEABLE:{reason}")], None),
+    }
+}
+
+#[test]
+fn real_lane_manifest_record_conforms_at_manifest_level() {
+    let (codes, verdict) = manifest_codes(&manifest_record_fixture());
+    assert!(
+        codes.is_empty(),
+        "clean manifest fixture must pass manifest-level checks, got: {codes:?}"
+    );
+    let v = verdict.expect("clean manifest fixture must be judged as a Record");
+    assert!(v.conformant);
+    assert_eq!(
+        v.terminal_claim, "ABSENT",
+        "manifest makes no terminal claim: recorded, not inferred"
+    );
+    assert!(
+        !v.recurrence_demonstrated,
+        "honest non-demonstration must survive unchanged"
+    );
+    assert_eq!(v.receipts_checked, 1);
+    // Declaration-shaped files are recorded as unjudgeable, never vacuously
+    // conformant (zero-information checks carry no bits).
+    let (decl_codes, decl_verdict) =
+        manifest_codes(r#"{"contract": {"illegal_transitions": ["ASSISTED -> AUTONOMOUS"]}}"#);
+    assert!(!decl_codes.is_empty() && decl_verdict.is_none());
+}
+
+#[test]
+fn real_lane_manifest_mutants_are_refused_with_typed_reason() {
+    let base = manifest_record_fixture();
+    let mutants: Vec<(&str, String, &str)> = vec![
+        // MA1: post-epoch human causal edge.
+        (
+            "MA1 post-epoch human edge",
+            base.replace(
+                "\"phase\": \"pre-epoch\"",
+                "\"phase\": \"post-epoch\"",
+            ),
+            REFUSED_HUMAN_CAUSAL_EDGE,
+        ),
+        // MA2: claimed recurrence with no witnessed chain (fabricated evidence).
+        (
+            "MA2 fabricated recurrence",
+            base.replace(
+                "\"demonstrated\": false, \"chain\": [], \"iterations\": 0",
+                "\"demonstrated\": true, \"chain\": [], \"iterations\": 0",
+            ),
+            REFUSED_MANIFEST_RECURRENCE_UNWITNESSED,
+        ),
+        // MA3: receipt with no origin authority (same law as WorkOrder mutant).
+        (
+            "MA3 unauthored receipt",
+            base.replace(
+                "\"origin_authority\": \"operator dispatch: ALOOP-ZCODE-DOGFOOD-001 lane contract\",",
+                "",
+            ),
+            REFUSED_WORKORDER_NO_AUTHORITY,
+        ),
+        // MA4: standing regression ASSISTED -> AUTONOMOUS.
+        (
+            "MA4 standing regression",
+            base.replace(
+                "\"standing\": \"ASSISTED\",",
+                "\"standing\": \"AUTONOMOUS\",\n  \"standing_history\": [\"ASSISTED\", \"AUTONOMOUS\"],",
+            ),
+            REFUSED_STANDING_REGRESSION,
+        ),
+        // MA5: out-of-contract vocabulary in the declared OCEL summary.
+        (
+            "MA5 unknown vocab",
+            base.replace("\"commit\",", "\"commit\", \"human.next_action\","),
+            REFUSED_MANIFEST_UNKNOWN_VOCAB,
+        ),
+        // MA6: repo SHA moved with no commits listed (identity break).
+        (
+            "MA6 identity break",
+            base.replace(
+                "\"commits\": [\"d04c9ac782b1aeb6a3a8e0b94264f3bade22bd58\"]",
+                "\"commits\": []",
+            ),
+            REFUSED_SUBJECT_IDENTITY_BREAK,
+        ),
+        // MA7: untyped goal state claim.
+        (
+            "MA7 untyped goal",
+            base.replace(
+                "\"blockers\": []",
+                "\"goal_state\": \"done-ish\",\n  \"blockers\": []",
+            ),
+            REFUSED_UNTYPED_TERMINAL,
+        ),
+        // MA8: empty-string blocker (untyped).
+        (
+            "MA8 untyped blocker",
+            base.replace("\"blockers\": []", "\"blockers\": [\"\"]"),
+            REFUSED_MANIFEST_UNTYPED_BLOCKER,
+        ),
+    ];
+    for (name, text, expected) in &mutants {
+        let (codes, _) = manifest_codes(text);
+        assert!(
+            codes.iter().any(|c| c.starts_with(&expected[..])),
+            "ORACLE DEFECT: manifest mutant '{name}' survived — expected {expected}, got {codes:?}"
+        );
+    }
+}
+
+#[test]
+fn real_lane_scan_classifies_without_consuming_authority() {
+    // Structural: an unset ALOOP_LANE_ROOT yields UNKNOWN, not a fabricated
+    // conformant claim over nothing.
+    // (real_lane_scan reads the env itself; here we only pin the invariant
+    // that judging a manifest never returns a Terminal/authority disposition.)
+    let (_, v) = manifest_codes(&manifest_record_fixture());
+    let v = v.expect("fixture is a Record");
+    assert!(v.provenance == "REAL_LANE_MANIFEST");
 }

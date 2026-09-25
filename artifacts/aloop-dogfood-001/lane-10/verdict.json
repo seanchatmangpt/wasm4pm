@@ -9,7 +9,7 @@
   "subject": {
     "repo": "wasm4pm",
     "branch": "feat/aloop-dogfood-lane10-replay-oracle",
-    "head_sha": "ef418ebc16c6ff23b2e3c223071e1953db8cb49c"
+    "head_sha": "476a5889bfe0960251e07ee2d49ad76fc451daf9"
   },
   "synthetic_corpus": {
     "corpus_id": "synthetic-clean-seeded",
@@ -31,9 +31,195 @@
   },
   "real_lane_manifests": {
     "root": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001",
-    "files_scanned": 0,
+    "files_seen": 9,
+    "files_scanned": 3,
     "corpora": [],
-    "verdict": "UNKNOWN"
+    "manifests": [
+      {
+        "file": "record-run1.json",
+        "kind": "record",
+        "lane": "lane-1",
+        "provenance": "REAL_LANE_MANIFEST",
+        "standing": "ASSISTED",
+        "terminal_claim": "ABSENT",
+        "recurrence_demonstrated": false,
+        "receipts_checked": 2,
+        "checks": [
+          {
+            "check": "manifest-vocabulary",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-standing-law",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-receipt-authority",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-zero-human-causal-edges-post-epoch",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-recurrence-honesty",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-typed-blockers",
+            "pass": true,
+            "codes": []
+          }
+        ],
+        "refusal_codes": [],
+        "conformant": true
+      },
+      {
+        "file": "record.json",
+        "kind": "record",
+        "lane": "lane-1",
+        "provenance": "REAL_LANE_MANIFEST",
+        "standing": "ASSISTED",
+        "terminal_claim": "ABSENT",
+        "recurrence_demonstrated": false,
+        "receipts_checked": 2,
+        "checks": [
+          {
+            "check": "manifest-vocabulary",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-standing-law",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-receipt-authority",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-zero-human-causal-edges-post-epoch",
+            "pass": false,
+            "codes": [
+              "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE"
+            ]
+          },
+          {
+            "check": "manifest-recurrence-honesty",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-typed-blockers",
+            "pass": true,
+            "codes": []
+          }
+        ],
+        "refusal_codes": [
+          "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE"
+        ],
+        "conformant": false
+      },
+      {
+        "file": "run.ndjson",
+        "kind": "record",
+        "lane": "lane-8",
+        "provenance": "REAL_LANE_MANIFEST",
+        "standing": "",
+        "terminal_claim": "ABSENT",
+        "recurrence_demonstrated": false,
+        "receipts_checked": 0,
+        "checks": [
+          {
+            "check": "manifest-vocabulary",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-standing-law",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-receipt-authority",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-zero-human-causal-edges-post-epoch",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-recurrence-honesty",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-typed-blockers",
+            "pass": true,
+            "codes": []
+          }
+        ],
+        "refusal_codes": [],
+        "conformant": true
+      }
+    ],
+    "unparseable": [
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/run.ndjson",
+        "kind": "unparseable",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/verdict.json",
+        "kind": "oracle-self-verdict",
+        "reason": "this oracle's own verdict file: judging it here would be self-certification"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-4/run-records.ndjson",
+        "kind": "contract-declaration",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/lane-7.manifest.json",
+        "kind": "unparseable",
+        "reason": "not JSON"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/runs.ndjson",
+        "kind": "unparseable",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/golden_case.dag.json",
+        "kind": "contract-declaration",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      }
+    ],
+    "verdict": "NON_CONFORMANT"
   },
   "mutants": [
     {
@@ -298,8 +484,8 @@
     "mutant_survivors": [],
     "cold_replay_byte_identical": true
   },
-  "overall": "PARTIAL",
+  "overall": "NON_CONFORMANT",
   "reasons": [
-    "no real lane manifests were available to this run: verdict rests on the RECONSTRUCTED synthetic corpus only"
+    "real lane evidence non-conformant: [\"record.json\"]"
   ]
 }
