@@ -1,4 +1,0 @@
-{
-  "powl_expression": "PO=(nodes={A, B}, order={})",
-  "required_activities": ["A", "B"]
-}
