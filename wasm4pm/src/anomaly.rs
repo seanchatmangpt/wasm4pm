@@ -27,7 +27,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
         .map_err(|e| JsValue::from_str(&format!("Invalid activities JSON: {}", e)))?;
 
     get_or_init_state().with_object(dfg_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             if activities.len() < 2 {
                 return Ok(JsValue::from_f64(0.0));
             }
@@ -58,7 +58,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
             }
             Ok(JsValue::from_f64(cost_sum / steps as f64))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
+        Some(_) => Err(JsValue::from_str("Handle is not a DFG")),
         None => Err(JsValue::from_str("DFG handle not found")),
     })
 }
@@ -80,13 +80,13 @@ pub fn score_log_anomalies(
     // Collect DFG edge frequencies
     let edge_data: Vec<(String, String, usize)> =
         get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(dfg
+            Some(StoredObject::DFG(dfg)) => Ok(dfg
                 .edges
                 .iter()
                 .map(|e| (e.from.clone(), e.to.clone(), e.frequency))
                 .collect()),
             Some(_) => Err(JsValue::from_str(
-                "dfg_handle is not a DirectlyFollowsGraph",
+                "dfg_handle is not a DFG",
             )),
             None => Err(JsValue::from_str("DFG handle not found")),
         })?;

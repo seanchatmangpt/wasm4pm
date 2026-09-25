@@ -114,7 +114,7 @@ pub fn discover_genetic_algorithm(
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -237,7 +237,7 @@ pub fn discover_pso_algorithm(
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -251,9 +251,9 @@ pub fn discover_pso_algorithm(
     }))
 }
 
-// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
-fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+// Helper: Materialize a DFG from edge set and vocabulary
+fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DFG {
+    let mut dfg = DFG::new();
 
     // Add all activities as nodes
     for activity in vocab.iter() {
@@ -519,7 +519,7 @@ pub fn discover_aco_algorithm(
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({

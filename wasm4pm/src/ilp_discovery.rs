@@ -369,7 +369,7 @@ pub fn discover_optimized_dfg(
     let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             // Create nodes for all activities
             for activity in &activities {
@@ -454,7 +454,7 @@ pub fn discover_optimized_dfg(
     })?;
     // Lock released here — safe to store.
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .store_object(StoredObject::DFG(dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({

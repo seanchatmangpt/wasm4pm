@@ -349,7 +349,7 @@ pub fn discover_simulated_annealing(
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -373,7 +373,7 @@ pub fn extract_process_skeleton(
             let activities = log.get_activities(activity_key);
             let directly_follows_vec = log.get_directly_follows(activity_key);
 
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             for activity in &activities {
                 dfg.nodes.push(DFGNode {
@@ -410,7 +410,7 @@ pub fn extract_process_skeleton(
     })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .store_object(StoredObject::DFG(dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -552,9 +552,9 @@ pub fn analyze_case_attributes(
 /// Marked inline(always) so the compiler can specialise it at each call site
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
-fn edge_set_to_dfg(edge_set: &HashSet<(u32, u32)>, vocab: &[String]) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+// Helper: Materialize a DFG from edge set and vocabulary
+fn edge_set_to_dfg(edge_set: &HashSet<(u32, u32)>, vocab: &[String]) -> DFG {
+    let mut dfg = DFG::new();
 
     // Add all activities as nodes
     for activity in vocab.iter() {

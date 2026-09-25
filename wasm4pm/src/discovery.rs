@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             // Single-pass columnar DFG construction:
             //   1. to_columnar() encodes activities as u32 IDs into a flat Vec<u32>
@@ -96,7 +96,7 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
     let dfg =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
-                let mut dfg = DirectlyFollowsGraph::new();
+                let mut dfg = DFG::new();
 
                 let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
                     .unwrap_or_else(|| {
@@ -159,17 +159,17 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
             )),
         })?;
 
-    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;
     Ok(JsValue::from_str(&handle))
 }
 
-/// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
+/// Pure-Rust OCEL DFG discovery: returns DFG without wasm-bindgen.
 ///
 /// This is the testable core of `discover_ocel_dfg`. Integration tests
 /// on native targets cannot call `#[wasm_bindgen]` functions, so they use
 /// this instead.
-pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
+    let mut dfg = DFG::new();
 
     // Get event types
     for event_type in &ocel.event_types {
@@ -260,11 +260,11 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
+            let mut result: FxHashMap<String, DFG> = FxHashMap::default();
 
             // For each object type, discover a separate DFG
             for obj_type in &ocel.object_types {
-                let mut dfg = DirectlyFollowsGraph::new();
+                let mut dfg = DFG::new();
 
                 // Initialize nodes for activities
                 let mut activity_nodes: FxHashMap<String, bool> = FxHashMap::default();

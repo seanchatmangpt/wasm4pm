@@ -22,7 +22,7 @@ pub fn discover_heuristic_miner(
     // Compute inside closure, store outside (avoids mutex re-entry).
     let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             // Single-pass columnar approach: integer-keyed follows/precedes maps
             // are ~6× smaller than (String,String) maps and hash in O(1).
@@ -97,7 +97,7 @@ pub fn discover_heuristic_miner(
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
     to_js_str(&json!({

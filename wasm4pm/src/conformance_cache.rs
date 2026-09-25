@@ -56,7 +56,7 @@ impl ConformanceCache {
     ///
     /// Edges are sorted before hashing to ensure determinism regardless of
     /// insertion order.
-    pub fn hash_model(dfg: &crate::models::DirectlyFollowsGraph) -> u64 {
+    pub fn hash_model(dfg: &crate::models::DFG) -> u64 {
         use rustc_hash::FxHasher;
         use std::hash::{Hash, Hasher};
 
@@ -218,7 +218,7 @@ pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
 /// Hash a DFG model for use as a cache key.
 #[wasm_bindgen]
 pub fn conformance_cache_hash_model(dfg_json: &str) -> Result<JsValue, JsValue> {
-    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: crate::models::DFG = serde_json::from_str(dfg_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid DFG JSON: {}", e)))?;
     let hash = ConformanceCache::hash_model(&dfg);
     serde_wasm_bindgen::to_value(&json!({ "hash": hash }))
@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     fn test_hash_model_deterministic() {
-        let mut dfg = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg = crate::models::DFG::new();
         dfg.nodes.push(crate::models::DFGNode {
             id: "A".to_string(),
             label: "A".to_string(),

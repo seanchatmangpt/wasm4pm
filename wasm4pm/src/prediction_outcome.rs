@@ -18,7 +18,7 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
         .map_err(|e| JsValue::from_str(&format!("Invalid trace JSON: {}", e)))?;
 
     get_or_init_state().with_object(model_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             if activities.len() < 2 {
                 let result = json!({
                     "score": 0.0,
@@ -63,7 +63,7 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
                 &serde_json::to_string(&result).map_err(|e| JsValue::from_str(&e.to_string()))?,
             ))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
+        Some(_) => Err(JsValue::from_str("Handle is not a DFG")),
         None => Err(JsValue::from_str("DFG handle not found")),
     })
 }

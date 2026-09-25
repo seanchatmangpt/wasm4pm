@@ -14,7 +14,7 @@
 use std::collections::{HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 #[cfg(feature = "streaming_basic")]
 use crate::streaming::{ActivityInterner, Interner};
 
@@ -216,7 +216,7 @@ impl Default for ConvergenceMonitor {
 /// optimized_dfg) benefit because the DFG is built only on first access.
 struct FusedMultiPass {
     /// Cached DFG, if one has been computed
-    dfg_cache: Option<DirectlyFollowsGraph>,
+    dfg_cache: Option<DFG>,
     /// Fingerprint of the log that produced the cached DFG
     dfg_log_hash: u64,
     /// Number of times `compute_dfg` was called (first call does real work)
@@ -247,7 +247,7 @@ impl FusedMultiPass {
     /// the cached DFG is returned without recomputation.
     ///
     /// Returns a reference to the internally cached DFG.
-    fn compute_dfg(&mut self, traces: &[Vec<String>]) -> &DirectlyFollowsGraph {
+    fn compute_dfg(&mut self, traces: &[Vec<String>]) -> &DFG {
         self.dfg_compute_calls += 1;
         let hash = Self::hash_traces(traces);
 
@@ -305,7 +305,7 @@ impl FusedMultiPass {
             });
         }
 
-        let dfg = DirectlyFollowsGraph {
+        let dfg = DFG {
             nodes,
             edges,
             start_activities: start_counts,
@@ -352,7 +352,7 @@ impl FusedMultiPass {
                     .cloned()
                     .collect();
 
-                let skeleton = DirectlyFollowsGraph {
+                let skeleton = DFG {
                     nodes: filtered_nodes,
                     edges: filtered_edges,
                     start_activities: dfg.start_activities.clone(),
@@ -432,7 +432,7 @@ impl FusedMultiPassStreaming {
         FusedMultiPass::hash_traces(traces)
     }
 
-    fn compute_dfg(&mut self, traces: &[Vec<String>]) -> &DirectlyFollowsGraph {
+    fn compute_dfg(&mut self, traces: &[Vec<String>]) -> &DFG {
         self.inner.dfg_compute_calls += 1;
         let hash = Self::hash_traces(traces);
 
@@ -509,7 +509,7 @@ impl FusedMultiPassStreaming {
             }
         }
 
-        let dfg = DirectlyFollowsGraph {
+        let dfg = DFG {
             nodes,
             edges,
             start_activities,
@@ -550,7 +550,7 @@ impl FusedMultiPassStreaming {
                     .cloned()
                     .collect();
 
-                let skeleton = DirectlyFollowsGraph {
+                let skeleton = DFG {
                     nodes: filtered_nodes,
                     edges: filtered_edges,
                     start_activities: dfg.start_activities.clone(),
