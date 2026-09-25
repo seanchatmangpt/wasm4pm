@@ -1,6 +1,6 @@
 use wasm4pm_cmca::{
-    allocate_native, replay_receipt, CmcaAllocationRequest, CmcaLens, CmcaSemanticState,
-    AUTHORITY, BCINR_CMCA_PACKAGE, BCINR_CMCA_VERSION, BCINR_SOURCE_SHA,
+    allocate_native, replay_receipt, CmcaAllocationRequest, CmcaLens, CmcaSemanticState, AUTHORITY,
+    BCINR_CMCA_PACKAGE, BCINR_CMCA_VERSION, BCINR_SOURCE_SHA,
 };
 
 fn request() -> CmcaAllocationRequest {
@@ -10,10 +10,19 @@ fn request() -> CmcaAllocationRequest {
             factors_q16: [65_536; 10],
         }),
         lenses: [
-            CmcaLens { id: 0, q_q16: 131_072 },
-            CmcaLens { id: 1, q_q16: 65_536 },
+            CmcaLens {
+                id: 0,
+                q_q16: 131_072,
+            },
+            CmcaLens {
+                id: 1,
+                q_q16: 65_536,
+            },
             CmcaLens { id: 2, q_q16: 0 },
-            CmcaLens { id: 3, q_q16: -65_536 },
+            CmcaLens {
+                id: 3,
+                q_q16: -65_536,
+            },
         ],
         measure: 0,
         lens_index: 1,

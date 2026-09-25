@@ -39,7 +39,10 @@ pub fn handle_cognition_command(command: &CognitionCommands) -> Result<()> {
 }
 
 fn run_list() -> Result<()> {
-    println!("{} legally-admitted cognitive breeds:\n", BreedId::ALL.len());
+    println!(
+        "{} legally-admitted cognitive breeds:\n",
+        BreedId::ALL.len()
+    );
     for id in BreedId::ALL {
         println!("  {}", id);
     }
@@ -62,8 +65,12 @@ fn run_breed_cmd(breed: &str, input_path: &PathBuf, format: &str) -> Result<()> 
 
     let raw = std::fs::read_to_string(input_path)
         .with_context(|| format!("failed to read input file: {}", input_path.display()))?;
-    let input: BreedInput = serde_json::from_str(&raw)
-        .with_context(|| format!("failed to parse {} as BreedInput JSON", input_path.display()))?;
+    let input: BreedInput = serde_json::from_str(&raw).with_context(|| {
+        format!(
+            "failed to parse {} as BreedInput JSON",
+            input_path.display()
+        )
+    })?;
 
     let output = dispatch_breed(&id.to_string(), &input)
         .map_err(|e| anyhow::anyhow!("breed '{}' failed: {}", id, e))?;

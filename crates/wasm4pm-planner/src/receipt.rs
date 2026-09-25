@@ -4,9 +4,7 @@
 //! policy-aware entry point is authoritative; the permissive entry point remains only
 //! for compatibility with pre-GMRW callers.
 
-use crate::admission::{
-    admit_plan_labels, admit_plan_labels_with_policy, PlanAdmissionPolicy,
-};
+use crate::admission::{admit_plan_labels, admit_plan_labels_with_policy, PlanAdmissionPolicy};
 use crate::ground::{find_temporal_plan, ground_domain, PlanStep, TemporalPlan};
 use crate::parse::{domain_from_pddl, problem_from_pddl, Domain, Problem};
 use crate::schedule::max_parallelism;

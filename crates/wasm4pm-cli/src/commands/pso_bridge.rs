@@ -85,7 +85,10 @@ mod tests {
         let (dfg, fitness) = discover_pso_real(&log, "concept:name")
             .expect("PSO discovery should discover a DFG without panicking");
 
-        assert!(!dfg.nodes.is_empty(), "expected a non-empty DFG, got {dfg:?}");
+        assert!(
+            !dfg.nodes.is_empty(),
+            "expected a non-empty DFG, got {dfg:?}"
+        );
         assert!(
             fitness > 0.0,
             "expected the swarm's global best to reach positive fitness on a log with \

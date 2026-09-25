@@ -584,11 +584,8 @@ pub fn discover_aco_algorithm_from_log(
     // directly-follows relation was found" answer, not a fabricated result.
     best_solution.map(|(edges, fitness)| {
         let (final_edges, final_fitness) = if edges.is_empty() {
-            let fallback_fitness = evaluate_edges_fitness(
-                &edge_vocab.iter().copied().collect(),
-                &col,
-                vocab_len,
-            );
+            let fallback_fitness =
+                evaluate_edges_fitness(&edge_vocab.iter().copied().collect(), &col, vocab_len);
             (
                 edge_vocab.iter().copied().collect::<EdgeSet>(),
                 if fallback_fitness.is_finite() {

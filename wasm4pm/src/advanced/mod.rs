@@ -1,8 +1,8 @@
 pub mod alphappp;
-pub mod wasm4auto;
 pub mod oc_declare;
 pub mod ocdfg;
 pub mod ocla;
+pub mod wasm4auto;
 
 pub use alphappp::{discover_alpha_ppp, AlphaPPPConfig};
 pub use oc_declare::{discover_oc_declare, OCDeclareOptions, OCDeclareRule, OCDeclareTemplate};
