@@ -46,9 +46,9 @@ fn tampered_state_is_refused() {
     InterviewAssistScenario::continuing_from(&first)
         .mutate(|request| {
             let state = request.previous_state.as_mut().expect("previous state");
-            state.cognition.turn += 1;
-            state.revision += 1;
-            request.state.revision = state.revision;
+            // `phase` is hashed but not structurally checked; mutating `turn`
+            // would trip the turn/ledger-length invariant (INVALID_STATE) first.
+            state.cognition.phase = "tampered_phase".to_string();
         })
         .run()
         .assert_refusal("STATE_HASH_MISMATCH");
