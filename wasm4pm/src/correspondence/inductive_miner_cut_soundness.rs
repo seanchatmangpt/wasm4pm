@@ -68,7 +68,7 @@ pub fn tree_shape(node: &serde_json::Value) -> String {
     format!("{}({})", ty, children.join(","))
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "discovery_advanced"))]
 mod tests {
     use super::*;
     use crate::models::{AttributeValue, Event, EventLog, Trace};

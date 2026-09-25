@@ -8,6 +8,8 @@
 //! and assert post-update `Q(s, a)` matches the closed-form Bellman target.
 //! Compile gate: `--features cloud` (rl_orchestrator is `#[cfg(feature = "cloud")]`).
 
+#![cfg(feature = "cloud")]
+
 use wasm4pm::reinforcement::QLearning;
 use wasm4pm::rl_orchestrator::{AgentType, RlOrchestrator};
 use wasm4pm::rl_state_serialization::{encode_rl_state_key, SerializedAgentQTable};
