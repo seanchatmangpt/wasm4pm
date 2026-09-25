@@ -73,7 +73,10 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
     }
 
     // Observed agreement (diagonal)
-    let po: f64 = (0..n_classes).map(|i| observed[i * n_classes + i] as f64).sum::<f64>() / n as f64;
+    let po: f64 = (0..n_classes)
+        .map(|i| observed[i * n_classes + i] as f64)
+        .sum::<f64>()
+        / n as f64;
 
     // Expected agreement (chance)
     let mut pe = 0.0;

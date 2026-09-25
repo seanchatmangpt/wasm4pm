@@ -328,7 +328,10 @@ mod tests {
 
     #[test]
     fn lean_files_hash_matches_citation() {
-        let base = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mfact/procint/ProcInt/Petri");
+        let base = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../mfact/procint/ProcInt/Petri"
+        );
         for (file, expected) in [
             ("Net.lean", LEAN_NET_FILE_SHA256),
             ("Firing.lean", LEAN_FIRING_FILE_SHA256),
@@ -360,7 +363,12 @@ mod tests {
             .stdout(Stdio::piped())
             .spawn()
             .and_then(|mut child| {
-                child.stdin.take().unwrap().write_all(data).expect("write to shasum stdin");
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(data)
+                    .expect("write to shasum stdin");
                 child.wait_with_output()
             });
         match output {

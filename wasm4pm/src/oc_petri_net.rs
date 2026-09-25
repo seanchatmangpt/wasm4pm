@@ -70,10 +70,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
         "shared_transitions".to_string(),
         json!(discovered.shared_transitions),
     );
-    result.insert(
-        "variable_arcs".to_string(),
-        json!(discovered.variable_arcs),
-    );
+    result.insert("variable_arcs".to_string(), json!(discovered.variable_arcs));
 
     // Return as JSON
     to_js(&result)
@@ -110,8 +107,10 @@ pub fn discover_oc_petri_net_pure(
 
     for obj_type in &ocel.object_types {
         // Flatten OCEL to EventLog for this object type
-        let flattened_log = flatten_ocel_to_eventlog_for_type(ocel, obj_type)
-            .map_err(|e| e.as_string().unwrap_or_else(|| "flatten failed".to_string()))?;
+        let flattened_log = flatten_ocel_to_eventlog_for_type(ocel, obj_type).map_err(|e| {
+            e.as_string()
+                .unwrap_or_else(|| "flatten failed".to_string())
+        })?;
 
         let net = discover_petri_net_for_log_pure(&flattened_log, algorithm)?;
         nets.insert(obj_type.clone(), net);

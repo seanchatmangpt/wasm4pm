@@ -272,8 +272,7 @@ fn refuses_tampered_state_hash() {
     assert_eq!(
         error,
         SessionError::InvalidState {
-            reason: "persisted turn number must equal the non-empty turn ledger length"
-                .to_string(),
+            reason: "persisted turn number must equal the non-empty turn ledger length".to_string(),
         }
     );
 }

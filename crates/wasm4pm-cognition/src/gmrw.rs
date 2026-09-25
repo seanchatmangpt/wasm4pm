@@ -399,16 +399,16 @@ fn diagnose_one(
     capability_ids.dedup();
 
     let (status, obligation) = match (exact, inverse, capability_ids.is_empty()) {
-        (true, true, _) => (SemanticStatus::Inconsistent, ObligationKind::ResolveConflict),
+        (true, true, _) => (
+            SemanticStatus::Inconsistent,
+            ObligationKind::ResolveConflict,
+        ),
         (true, false, _) => (SemanticStatus::Satisfied, ObligationKind::None),
         (false, true, _) => (
             SemanticStatus::NonConformant,
             ObligationKind::RepairViolation,
         ),
-        (false, false, false) => (
-            SemanticStatus::Missing,
-            ObligationKind::ExecuteCapability,
-        ),
+        (false, false, false) => (SemanticStatus::Missing, ObligationKind::ExecuteCapability),
         (false, false, true) if requirement.mode == RequirementMode::ClosedWorld => (
             SemanticStatus::Unsupported,
             ObligationKind::RegisterCapability,
@@ -529,9 +529,7 @@ pub fn select_operators(
         .filter(|operator| input_statement_count <= operator.max_input_statements)
         .filter(|operator| {
             operator.trigger_predicates.is_empty()
-                || !operator
-                    .trigger_predicates
-                    .is_disjoint(observed_predicates)
+                || !operator.trigger_predicates.is_disjoint(observed_predicates)
         })
         .cloned()
         .collect();

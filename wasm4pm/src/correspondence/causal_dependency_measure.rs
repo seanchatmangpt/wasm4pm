@@ -187,12 +187,18 @@ mod tests {
         // definitely not equal to the real (0,1) result under any sane
         // convention. Assert the real result is well-defined and nonzero-
         // denominator, which the tampered variant could not produce.
-        assert!(correct_den > 0, "the real formula's +1 keeps the denominator strictly positive even at ab=ba=0");
+        assert!(
+            correct_den > 0,
+            "the real formula's +1 keeps the denominator strictly positive even at ab=ba=0"
+        );
     }
 
     #[test]
     fn lean_file_hash_matches_citation() {
-        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mfact/procint/ProcInt/Models/CausalNet.lean");
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../mfact/procint/ProcInt/Models/CausalNet.lean"
+        );
         let Ok(contents) = std::fs::read(path) else {
             eprintln!("lean_file_hash_matches_citation: SKIPPED — {path} not found (mfact not checked out)");
             return;
@@ -293,11 +299,20 @@ mod tests {
             .stdout(Stdio::piped())
             .spawn()
             .and_then(|mut child| {
-                child.stdin.take().unwrap().write_all(data).expect("write to shasum stdin");
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(data)
+                    .expect("write to shasum stdin");
                 child.wait_with_output()
             });
         match output {
-            Ok(out) => String::from_utf8_lossy(&out.stdout).split_whitespace().next().unwrap_or("").to_string(),
+            Ok(out) => String::from_utf8_lossy(&out.stdout)
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .to_string(),
             Err(_) => {
                 eprintln!("sha256_hex: `shasum` not available, skipping");
                 String::new()

@@ -253,11 +253,7 @@ mod tests {
         let (a, b) = (1u32, 2u32);
         let per_trace_sum: u64 = log
             .iter()
-            .map(|t| {
-                t.windows(2)
-                    .filter(|w| w[0] == a && w[1] == b)
-                    .count() as u64
-            })
+            .map(|t| t.windows(2).filter(|w| w[0] == a && w[1] == b).count() as u64)
             .sum();
         let whole_log_weight = lean_dfg_of_log_weight(&log, a, b);
         assert_eq!(
