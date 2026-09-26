@@ -33,6 +33,7 @@ fn ttl_is_load_bearing_for_the_standing_lattice() {
     // The executable classifier's epistemic-missing vocabulary must be declared
     // by the ontology. This makes the TTL a court input rather than decoration.
     for code in [
+        "IndependentEvidenceMissing",
         "ExpectedOCELMissing",
         "ObservedOCELMissing",
         "BoundaryEvidenceMissing",
@@ -305,4 +306,85 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
         receipt["process_evidence"],
         "receipts/v26.9.26/chatman-equilibrium-standing.ocel.json"
     );
+}
+
+
+#[test]
+fn empty_algorithm_set_is_unknown_not_admitted() {
+    let candidate = json!({
+        "commit": BASE_SHA,
+        "algorithms": []
+    });
+
+    let report = ReceiptDoctor::verify_with_audience(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+    );
+    assert_eq!(report.state, VerificationState::Unknown);
+
+    let standing = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    assert_eq!(standing.state, VerificationState::Unknown);
+}
+
+#[test]
+fn independently_evidenced_exact_subject_can_reach_admitted() {
+    let candidate = json!({
+        "commit": BASE_SHA,
+        "algorithms": [{
+            "id": "positive-evidence",
+            "expected_path": {
+                "expected_ocel2": {
+                    "events": [{
+                        "id": "expected-1",
+                        "type": "expected.step",
+                        "timestamp": "2026-09-26T18:00:00Z"
+                    }],
+                    "objects": [{"id": "case-1", "type": "Case"}]
+                }
+            },
+            "observed_path": {
+                "observed_ocel2": {
+                    "events": [{
+                        "id": "observed-1",
+                        "type": "observed.step",
+                        "timestamp": "2026-09-26T18:00:01Z"
+                    }],
+                    "objects": [{"id": "case-1", "type": "Case"}]
+                }
+            },
+            "boundary_evidence": {
+                "exit_code": 0,
+                "command": "wpm receipt doctor"
+            }
+        }]
+    });
+
+    let report = ReceiptDoctor::verify_with_audience(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+    );
+    assert_eq!(
+        report.state,
+        VerificationState::Admitted,
+        "positive evidence fixture should have no deny findings: {:?}",
+        report.operator_private.findings
+    );
+
+    let standing = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    assert_eq!(standing.state, VerificationState::Admitted);
+    assert!(ReceiptDoctor::verify_standing_replay(&standing));
+    assert_eq!(standing.authority, "NONE");
+    assert!(!standing.do_authority);
 }
