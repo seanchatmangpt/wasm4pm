@@ -75,3 +75,23 @@ test('standing SHACL rejects missing exact subject and replay evidence', async (
   assert.ok(report.errors.some((error) => error.context?.field === 'exactSubject'));
   assert.ok(report.errors.some((error) => error.context?.field === 'replayDigest'));
 });
+
+
+test('standing SHACL rejects invented states mutable subjects and malformed digests', async () => {
+  const validator = await SHACLValidator.create(shapesPath);
+
+  for (const [field, value] of [
+    ['state', 'Maybe'],
+    ['subject_binding', 'TRUST_ME'],
+    ['exact_subject', 'seanchatmangpt/wasm4pm@main'],
+    ['candidate_receipt_sha256', 'abc'],
+    ['doctor_report_hash', 'G'.repeat(64)],
+    ['replay_digest', '0'.repeat(63)],
+  ]) {
+    const report = await validator.validateResult(
+      'standing_receipt',
+      standing({ [field]: value }),
+    );
+    assert.equal(report.valid, false, `${field} mutant must be rejected`);
+  }
+});
