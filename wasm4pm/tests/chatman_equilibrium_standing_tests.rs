@@ -259,6 +259,8 @@ const PROCESS_OCEL: &str =
     include_str!("../../receipts/v26.9.26/chatman-equilibrium-standing.ocel.json");
 const RUN_RECEIPT: &str =
     include_str!("../../receipts/v26.9.26/chatman-equilibrium-standing.receipt.json");
+const SHACL_COURT_RECEIPT: &str =
+    include_str!("../../receipts/v26.9.26/chatman-equilibrium-shacl-court.receipt.json");
 
 #[test]
 fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
@@ -635,4 +637,34 @@ fn evidence_absence_cannot_promote_and_subject_absence_cannot_hide_refusal() {
     )
     .unwrap();
     assert_eq!(refused_cross_subject.state, VerificationState::Refused);
+}
+
+
+#[test]
+fn shacl_court_receipt_is_provenance_bound_and_zero_authority() {
+    let receipt: serde_json::Value = serde_json::from_str(SHACL_COURT_RECEIPT).unwrap();
+
+    assert_eq!(
+        receipt["subject"],
+        format!("{REPOSITORY}@{BASE_SHA}")
+    );
+    assert_eq!(receipt["validator"]["path"], "src/validate-shacl.mjs");
+    assert_eq!(
+        receipt["validator"]["blob_sha"],
+        "17f7aaede8020528696d033582c6561be5f537b9"
+    );
+    assert_eq!(receipt["shapes"]["path"], "semconv/wasm4pm-shapes.ttl");
+    assert_eq!(
+        receipt["shapes"]["blob_sha"],
+        "cbd30db93c8888475e92c88d24ee2a8f8b540bfc"
+    );
+    assert_eq!(receipt["execution"]["killed"], 9);
+    assert_eq!(receipt["execution"]["total"], 9);
+    assert_eq!(receipt["authority"], "NONE");
+    assert_eq!(receipt["do_authority"], false);
+    assert_eq!(receipt["standing"], "ALIVE");
+    assert_eq!(
+        receipt["standing_scope"],
+        "exact-source-shacl-core-logic"
+    );
 }
