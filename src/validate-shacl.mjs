@@ -123,6 +123,8 @@ class PropertyConstraint {
     this.maxInclusive = rule.maxInclusive;
     this.minCount = rule.minCount;
     this.hasValue = rule.hasValue;
+    this.inValues = rule.inValues;
+    this.pattern = rule.pattern;
     this.severity = rule.severity || 'error'; // 'error' or 'warning'
     this.message = rule.message;
   }
@@ -220,6 +222,30 @@ class PropertyConstraint {
           severity: this.severity,
           message: `${this.path}: ${value} < ${this.minInclusive}`,
           expected: `>= ${this.minInclusive}`,
+          actual: value,
+        };
+      }
+    }
+
+    // Enumeration assertion
+    if (this.inValues && !this.inValues.includes(value)) {
+      return {
+        field: this.path,
+        severity: this.severity,
+        message: `${this.path}: value is outside admitted enumeration`,
+        expected: this.inValues,
+        actual: value,
+      };
+    }
+
+    // Pattern assertion
+    if (this.pattern !== undefined) {
+      if (typeof value !== 'string' || !new RegExp(this.pattern).test(value)) {
+        return {
+          field: this.path,
+          severity: this.severity,
+          message: `${this.path}: value does not match admitted pattern`,
+          expected: this.pattern,
           actual: value,
         };
       }
@@ -392,6 +418,18 @@ export class SHACLValidator {
       constraint.hasValue = stringHasValue[1];
     } else if (booleanHasValue) {
       constraint.hasValue = booleanHasValue[1] === 'true';
+    }
+
+    // Extract sh:in string enumerations.
+    const inMatch = block.match(/sh:in\s+\(([^)]*)\)/s);
+    if (inMatch) {
+      constraint.inValues = [...inMatch[1].matchAll(/"([^"]*)"/g)].map((match) => match[1]);
+    }
+
+    // Extract regex pattern constraints.
+    const patternMatch = block.match(/sh:pattern\s+"([^"]*)"/);
+    if (patternMatch) {
+      constraint.pattern = patternMatch[1];
     }
 
     // Extract severity
