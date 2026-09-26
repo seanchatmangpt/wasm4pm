@@ -179,6 +179,20 @@ pub const REFUSED_UNTYPED_TERMINAL: &str = "REFUSED:ALOOP_UNTYPED_TERMINAL";
 pub const REFUSED_MISSING_REOBSERVE: &str = "REFUSED:ALOOP_MISSING_REOBSERVE";
 pub const REFUSED_POST_TERMINAL_EVENT: &str = "REFUSED:ALOOP_POST_TERMINAL_EVENT";
 pub const REFUSED_NO_TERMINAL_EVENT: &str = "REFUSED:ALOOP_NO_TERMINAL_EVENT";
+/// Evidence discipline: era (post-epoch) timestamps are monotone non-decreasing
+/// in sequence order. A permuted/backdated era timestamp is evidence tampering.
+pub const REFUSED_TS_NOT_MONOTONIC: &str = "REFUSED:ALOOP_TS_NOT_MONOTONIC";
+// Typed codes for the malformed / non-judgeable manifest paths. A file this
+// scan cannot judge is never silently dropped and never vacuously conformant:
+// every skip carries its REFUSED_* code.
+pub const REFUSED_MANIFEST_NOT_JSON: &str = "REFUSED:ALOOP_MANIFEST_NOT_JSON";
+pub const REFUSED_MANIFEST_NDJSON_UNPARSED: &str = "REFUSED:ALOOP_MANIFEST_NDJSON_UNPARSED";
+pub const REFUSED_MANIFEST_ORACLE_SELF_VERDICT: &str = "REFUSED:ALOOP_MANIFEST_ORACLE_SELF_VERDICT";
+pub const REFUSED_MANIFEST_NO_EXECUTED_CLAIMS: &str = "REFUSED:ALOOP_MANIFEST_NO_EXECUTED_CLAIMS";
+pub const REFUSED_MANIFEST_UNREADABLE: &str = "REFUSED:ALOOP_MANIFEST_UNREADABLE";
+/// A repo record whose claimed final SHA is not witnessed by its own commit
+/// list: the lane's end-state digest does not match its evidence.
+pub const REFUSED_MANIFEST_DIGEST_MISMATCH: &str = "REFUSED:ALOOP_MANIFEST_DIGEST_MISMATCH";
 
 // ---------------------------------------------------------------------------
 // Log model (the evidence shape this lane consumes)
@@ -350,6 +364,8 @@ pub struct ManifestCheck {
 pub struct UnparseableFile {
     pub file: String,
     pub kind: String,
+    /// Typed refusal code (REFUSED:ALOOP_MANIFEST_*); never a bare string.
+    pub code: String,
     pub reason: String,
 }
 
@@ -392,6 +408,7 @@ struct AloopOracleState {
     last_receipt_seq: Option<u64>,
     last_reobserve_seq: Option<u64>,
     last_seq: Option<u64>,
+    last_era_ts: Option<u64>,
     event_ids: BTreeSet<String>,
     witnessed: BTreeSet<String>,
     witnessed_authorities: BTreeSet<String>,
@@ -462,6 +479,18 @@ impl AloopOracle {
         }
         if !self.state.event_ids.insert(event.event_id.clone()) {
             return Some(self.refuse(event, REFUSED_DUPLICATE_EVENT_ID));
+        }
+        // Era timestamp integrity: post-epoch timestamps are monotone
+        // non-decreasing in sequence order; a permuted or backdated era
+        // timestamp is evidence tampering. Pre-epoch events (ts < epoch) are
+        // exempt: their ts legitimately predates the epoch.
+        if event.ts >= self.log.human_epoch_ts {
+            if let Some(prev) = self.state.last_era_ts {
+                if event.ts < prev {
+                    return Some(self.refuse(event, REFUSED_TS_NOT_MONOTONIC));
+                }
+            }
+            self.state.last_era_ts = Some(event.ts);
         }
         // Authority check precedes class validation on purpose: an inserted
         // human causal edge must be typed as such even when its activity is
@@ -1548,6 +1577,25 @@ fn mutants() -> Vec<Mutant> {
                 }
             },
         },
+        Mutant {
+            id: "M12",
+            name: "permute era timestamps (backdate a post-epoch event)",
+            mutated_check: "timestamp-monotonicity",
+            expected_code: REFUSED_TS_NOT_MONOTONIC,
+            apply: |log| {
+                // Swap the era timestamps of seq 320 (ts 1030) and seq 350
+                // (ts 1033): from seq 330 onward the witnessed era maximum
+                // (1033) exceeds the observed ts — tampering must be typed.
+                for e in log.events.iter_mut() {
+                    if e.seq == 320 {
+                        e.ts = 1033;
+                    }
+                    if e.seq == 350 {
+                        e.ts = 1030;
+                    }
+                }
+            },
+        },
     ]
 }
 
@@ -1621,14 +1669,30 @@ fn real_lane_scan() -> RealLaneScan {
             .unwrap_or_default();
         files.sort();
         for file in files.into_iter().take(50) {
+            let name = file.display().to_string();
             let Ok(text) = std::fs::read_to_string(&file) else {
+                // Malformed path, typed: an unreadable file is never silently
+                // skipped — it is recorded with its REFUSED_* code.
+                seen += 1;
+                unparseable.push(UnparseableFile {
+                    file: name,
+                    kind: "unreadable".to_owned(),
+                    code: REFUSED_MANIFEST_UNREADABLE.to_owned(),
+                    reason: "file is not valid UTF-8 (or unreadable to this scan)".to_owned(),
+                });
                 continue;
             };
             if text.len() > 2 * 1024 * 1024 {
+                seen += 1;
+                unparseable.push(UnparseableFile {
+                    file: name,
+                    kind: "oversized".to_owned(),
+                    code: REFUSED_MANIFEST_UNREADABLE.to_owned(),
+                    reason: "file exceeds the 2 MiB bounded-scan limit".to_owned(),
+                });
                 continue;
             }
             seen += 1;
-            let name = file.display().to_string();
             if let Some(log) = parse_lane_log(&file, &text) {
                 scanned += 1;
                 let mut v = corpus_verdict(&format!("real:{name}"), &log);
@@ -1640,17 +1704,19 @@ fn real_lane_scan() -> RealLaneScan {
                         scanned += 1;
                         manifests.push(v);
                     }
-                    ManifestJudgment::Declaration(kind, reason) => {
+                    ManifestJudgment::Declaration { kind, code, reason } => {
                         unparseable.push(UnparseableFile {
                             file: name,
                             kind,
+                            code,
                             reason,
                         });
                     }
-                    ManifestJudgment::NotJudgeable(reason) => {
+                    ManifestJudgment::NotJudgeable { code, reason } => {
                         unparseable.push(UnparseableFile {
                             file: name,
                             kind: "unparseable".to_owned(),
+                            code,
                             reason,
                         });
                     }
@@ -1661,7 +1727,12 @@ fn real_lane_scan() -> RealLaneScan {
             }
         }
     }
-    let verdict = if seen == 0 {
+    // The scan verdict is lane-manifest-driven: it is computed only over
+    // JUDGED evidence (event-log corpora + record manifests). Declarations and
+    // malformed files are typed and visible but never fabricate conformance;
+    // with zero judged objects the verdict is UNKNOWN, never conformant.
+    let judged = corpora.len() + manifests.len();
+    let verdict = if seen == 0 || judged == 0 {
         "UNKNOWN".to_owned()
     } else if corpora.iter().all(|c| c.conformant) && manifests.iter().all(|m| m.conformant) {
         if !corpora.is_empty() {
@@ -1687,9 +1758,14 @@ enum ManifestJudgment {
     /// A lane record making executable claims (receipts/commands): judged.
     Record(ManifestVerdict),
     /// Structured JSON but with zero executed claims: nothing to judge.
-    Declaration(String, String),
-    /// Not a judgeable manifest at all.
-    NotJudgeable(String),
+    /// Typed, never vacuously conformant.
+    Declaration {
+        kind: String,
+        code: String,
+        reason: String,
+    },
+    /// Not a judgeable manifest at all. Typed, never silently dropped.
+    NotJudgeable { code: String, reason: String },
 }
 
 #[derive(Deserialize)]
@@ -1778,29 +1854,38 @@ struct RawManifest {
 /// claims and is recorded as unjudgeable rather than vacuously conformant.
 fn judge_lane_manifest(path: &std::path::Path, text: &str) -> ManifestJudgment {
     let Ok(raw) = serde_json::from_str::<RawManifest>(text) else {
-        let reason = if path
+        let (code, reason) = if path
             .extension()
             .map(|x| x == "ndjson" || x == "jsonl")
             .unwrap_or(false)
         {
-            "NDJSON (line-delimited) not parsed by the single-document judge".to_owned()
+            (
+                REFUSED_MANIFEST_NDJSON_UNPARSED,
+                "NDJSON (line-delimited) not parsed by the single-document judge",
+            )
         } else {
-            "not JSON".to_owned()
+            (REFUSED_MANIFEST_NOT_JSON, "not JSON")
         };
-        return ManifestJudgment::NotJudgeable(reason);
+        return ManifestJudgment::NotJudgeable {
+            code: code.to_owned(),
+            reason: reason.to_owned(),
+        };
     };
     if raw.oracle.is_some() {
-        return ManifestJudgment::Declaration(
-            "oracle-self-verdict".to_owned(),
-            "this oracle's own verdict file: judging it here would be self-certification"
+        return ManifestJudgment::Declaration {
+            kind: "oracle-self-verdict".to_owned(),
+            code: REFUSED_MANIFEST_ORACLE_SELF_VERDICT.to_owned(),
+            reason: "this oracle's own verdict file: judging it here would be self-certification"
                 .to_owned(),
-        );
+        };
     }
     if raw.receipts.is_empty() && raw.commands.is_empty() && raw.repos.is_empty() {
-        return ManifestJudgment::Declaration(
-            "contract-declaration".to_owned(),
-            "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level".to_owned(),
-        );
+        return ManifestJudgment::Declaration {
+            kind: "contract-declaration".to_owned(),
+            code: REFUSED_MANIFEST_NO_EXECUTED_CLAIMS.to_owned(),
+            reason: "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+                .to_owned(),
+        };
     }
     let name = path
         .file_name()
@@ -1915,6 +2000,26 @@ fn judge_lane_manifest(path: &std::path::Path, text: &str) -> ManifestJudgment {
         }
     }
     let _ = push("manifest-subject-identity", codes);
+
+    // Digest law: a repo record that moved must witness its claimed final SHA
+    // inside its own commit list. A final digest absent from the listed
+    // commits is a manifest digest mismatch (the claimed end-state evidence
+    // does not compose).
+    let mut codes = Vec::new();
+    for r in &raw.repos {
+        if !r.start_sha.is_empty()
+            && !r.final_sha.is_empty()
+            && r.start_sha != r.final_sha
+            && !r.commits.is_empty()
+            && !r.commits.iter().any(|c| c == &r.final_sha)
+        {
+            codes.push(format!(
+                "{REFUSED_MANIFEST_DIGEST_MISMATCH}: repo {} final_sha {} not among listed commits",
+                r.repo, r.final_sha
+            ));
+        }
+    }
+    let _ = push("manifest-final-sha-witnessed", codes);
 
     // Typed blocker law: an admitted blocker must carry its type/reason text.
     let mut codes = Vec::new();
@@ -2184,6 +2289,12 @@ fn check_table(
             mutant_firing("event-class-vocabulary"),
             synthetic.conformant,
         ),
+        mk(
+            "timestamp-integrity",
+            "era (post-epoch) timestamps are monotone non-decreasing in seq order; permutation is tampering",
+            mutant_firing("timestamp-monotonicity"),
+            synthetic.conformant && blocked.conformant,
+        ),
     ]
 }
 
@@ -2428,10 +2539,16 @@ fn manifest_record_fixture() -> String {
 }
 
 fn manifest_codes(text: &str) -> (Vec<String>, Option<ManifestVerdict>) {
-    match judge_lane_manifest(std::path::Path::new("fixture.json"), text) {
+    manifest_codes_named("fixture.json", text)
+}
+
+fn manifest_codes_named(name: &str, text: &str) -> (Vec<String>, Option<ManifestVerdict>) {
+    match judge_lane_manifest(std::path::Path::new(name), text) {
         ManifestJudgment::Record(v) => (v.refusal_codes.clone(), Some(v)),
-        ManifestJudgment::Declaration(kind, _) => (vec![format!("DECLARATION:{kind}")], None),
-        ManifestJudgment::NotJudgeable(reason) => (vec![format!("NOT_JUDGEABLE:{reason}")], None),
+        ManifestJudgment::Declaration { kind, code, .. } => {
+            (vec![format!("{code}:DECLARATION:{kind}")], None)
+        }
+        ManifestJudgment::NotJudgeable { code, .. } => (vec![code], None),
     }
 }
 
@@ -2549,4 +2666,99 @@ fn real_lane_scan_classifies_without_consuming_authority() {
     let (_, v) = manifest_codes(&manifest_record_fixture());
     let v = v.expect("fixture is a Record");
     assert!(v.provenance == "REAL_LANE_MANIFEST");
+}
+
+// ---------------------------------------------------------------------------
+// Falsifier corpus (lane contract): every falsifier below MUST fire. A
+// surviving falsifier is an oracle defect, never a pass.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn falsifier_log_and_manifest_mutations_are_refused() {
+    // F1: permute two era (post-epoch) timestamps in the clean log ->
+    // tampering must be typed REFUSED:ALOOP_TS_NOT_MONOTONIC.
+    let mut f1 = clean_fixture();
+    for e in f1.events.iter_mut() {
+        if e.seq == 320 {
+            e.ts = 1033;
+        }
+        if e.seq == 350 {
+            e.ts = 1030;
+        }
+    }
+    let (records, _, _) = run_log(&f1);
+    let codes = refusal_codes(&records);
+    assert!(
+        codes.iter().any(|c| c == REFUSED_TS_NOT_MONOTONIC),
+        "FALSIFIER F1 SURVIVED: permuted era timestamps not refused, got {codes:?}"
+    );
+
+    // F2: drop one event (the receipt closing cons:2) -> orphan DO must be
+    // typed REFUSED:ALOOP_ORPHAN_DO.
+    let mut f2 = clean_fixture();
+    f2.events
+        .retain(|e| !(e.activity == "receipt.persist" && e.seq == 310));
+    let (records, _, close) = run_log(&f2);
+    let mut codes = refusal_codes(&records);
+    if let Disposition::Refused { code } = close {
+        codes.push(code);
+    }
+    assert!(
+        codes.iter().any(|c| c == REFUSED_ORPHAN_DO),
+        "FALSIFIER F2 SURVIVED: dropped receipt not refused, got {codes:?}"
+    );
+
+    // F3: lane manifest whose claimed final digest is absent from its own
+    // commit list -> REFUSED:ALOOP_MANIFEST_DIGEST_MISMATCH.
+    let text = manifest_record_fixture().replace(
+        "\"commits\": [\"d04c9ac782b1aeb6a3a8e0b94264f3bade22bd58\"]",
+        "\"commits\": [\"1111111111111111111111111111111111111111\"]",
+    );
+    let (codes, _) = manifest_codes(&text);
+    assert!(
+        codes
+            .iter()
+            .any(|c| c.starts_with(REFUSED_MANIFEST_DIGEST_MISMATCH)),
+        "FALSIFIER F3 SURVIVED: wrong manifest digest not refused, got {codes:?}"
+    );
+}
+
+#[test]
+fn malformed_manifest_paths_carry_typed_refusal_codes() {
+    // Not JSON at all -> typed, never a bare prose reason.
+    let (codes, v) = manifest_codes("this is not json {{{");
+    assert!(
+        codes.iter().any(|c| c == REFUSED_MANIFEST_NOT_JSON),
+        "expected {REFUSED_MANIFEST_NOT_JSON}, got {codes:?}"
+    );
+    assert!(v.is_none());
+    // NDJSON (line-delimited) is not a single JSON document -> typed.
+    let (codes, v) =
+        manifest_codes_named("run.ndjson", "{\"a\":1}\n{\"a\":2}\n");
+    assert!(
+        codes.iter().any(|c| c == REFUSED_MANIFEST_NDJSON_UNPARSED),
+        "expected {REFUSED_MANIFEST_NDJSON_UNPARSED}, got {codes:?}"
+    );
+    assert!(v.is_none());
+    // The oracle's own verdict file is self-certification -> typed.
+    let (codes, v) = manifest_codes(r#"{"oracle": {"name": "aloop-replay-oracle"}}"#);
+    assert!(
+        codes
+            .iter()
+            .any(|c| c.starts_with(REFUSED_MANIFEST_ORACLE_SELF_VERDICT)),
+        "expected {REFUSED_MANIFEST_ORACLE_SELF_VERDICT}, got {codes:?}"
+    );
+    assert!(v.is_none());
+    // Declaration-only document (no executed claims) -> typed, never
+    // vacuously conformant.
+    let (codes, v) = manifest_codes(
+        r#"{"contract": {"illegal_transitions": ["ASSISTED -> AUTONOMOUS"]}}"#,
+    );
+    assert!(
+        codes
+            .iter()
+            .any(|c| c.starts_with(REFUSED_MANIFEST_NO_EXECUTED_CLAIMS)),
+        "expected {REFUSED_MANIFEST_NO_EXECUTED_CLAIMS}, got {codes:?}"
+    );
+    assert!(v.is_none());
 }

@@ -9,7 +9,7 @@
   "subject": {
     "repo": "wasm4pm",
     "branch": "feat/aloop-dogfood-lane10-replay-oracle",
-    "head_sha": "476a5889bfe0960251e07ee2d49ad76fc451daf9"
+    "head_sha": "c3040b98a2c54a6c9e4adff4e9c05104d74f614e"
   },
   "synthetic_corpus": {
     "corpus_id": "synthetic-clean-seeded",
@@ -31,7 +31,7 @@
   },
   "real_lane_manifests": {
     "root": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001",
-    "files_seen": 9,
+    "files_seen": 13,
     "files_scanned": 3,
     "corpora": [],
     "manifests": [
@@ -72,6 +72,11 @@
           },
           {
             "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-final-sha-witnessed",
             "pass": true,
             "codes": []
           },
@@ -127,6 +132,11 @@
             "codes": []
           },
           {
+            "check": "manifest-final-sha-witnessed",
+            "pass": true,
+            "codes": []
+          },
+          {
             "check": "manifest-typed-blockers",
             "pass": true,
             "codes": []
@@ -138,11 +148,11 @@
         "conformant": false
       },
       {
-        "file": "run.ndjson",
+        "file": "run-record.json",
         "kind": "record",
-        "lane": "lane-8",
+        "lane": "lane-6",
         "provenance": "REAL_LANE_MANIFEST",
-        "standing": "",
+        "standing": "PARTIAL_ALIVE",
         "terminal_claim": "ABSENT",
         "recurrence_demonstrated": false,
         "receipts_checked": 0,
@@ -154,8 +164,10 @@
           },
           {
             "check": "manifest-standing-law",
-            "pass": true,
-            "codes": []
+            "pass": false,
+            "codes": [
+              "REFUSED:ALOOP_UNKNOWN_STANDING: PARTIAL_ALIVE"
+            ]
           },
           {
             "check": "manifest-receipt-authority",
@@ -178,45 +190,82 @@
             "codes": []
           },
           {
+            "check": "manifest-final-sha-witnessed",
+            "pass": true,
+            "codes": []
+          },
+          {
             "check": "manifest-typed-blockers",
             "pass": true,
             "codes": []
           }
         ],
-        "refusal_codes": [],
-        "conformant": true
+        "refusal_codes": [
+          "REFUSED:ALOOP_UNKNOWN_STANDING: PARTIAL_ALIVE"
+        ],
+        "conformant": false
       }
     ],
     "unparseable": [
       {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/run.ndjson",
         "kind": "unparseable",
+        "code": "REFUSED:ALOOP_MANIFEST_NDJSON_UNPARSED",
         "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       },
       {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/verdict.json",
         "kind": "oracle-self-verdict",
+        "code": "REFUSED:ALOOP_MANIFEST_ORACLE_SELF_VERDICT",
         "reason": "this oracle's own verdict file: judging it here would be self-certification"
       },
       {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-4/run-records.ndjson",
         "kind": "contract-declaration",
+        "code": "REFUSED:ALOOP_MANIFEST_NO_EXECUTED_CLAIMS",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-6/dogfood-scan.json",
+        "kind": "contract-declaration",
+        "code": "REFUSED:ALOOP_MANIFEST_NO_EXECUTED_CLAIMS",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-6/receipt.json",
+        "kind": "contract-declaration",
+        "code": "REFUSED:ALOOP_MANIFEST_NO_EXECUTED_CLAIMS",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
       },
       {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/lane-7.manifest.json",
         "kind": "unparseable",
+        "code": "REFUSED:ALOOP_MANIFEST_NOT_JSON",
         "reason": "not JSON"
       },
       {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/runs.ndjson",
         "kind": "unparseable",
+        "code": "REFUSED:ALOOP_MANIFEST_NDJSON_UNPARSED",
         "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       },
       {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/golden_case.dag.json",
         "kind": "contract-declaration",
+        "code": "REFUSED:ALOOP_MANIFEST_NO_EXECUTED_CLAIMS",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/run.ndjson",
+        "kind": "unparseable",
+        "code": "REFUSED:ALOOP_MANIFEST_NDJSON_UNPARSED",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-9/run-record.ndjson",
+        "kind": "unparseable",
+        "code": "REFUSED:ALOOP_MANIFEST_NDJSON_UNPARSED",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       }
     ],
     "verdict": "NON_CONFORMANT"
@@ -242,7 +291,9 @@
       "expected_code": "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE",
       "refused": true,
       "observed_codes": [
-        "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE"
+        "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE",
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC",
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -327,7 +378,9 @@
       "expected_code": "REFUSED:ALOOP_UNKNOWN_EVENT_CLASS",
       "refused": true,
       "observed_codes": [
-        "REFUSED:ALOOP_UNKNOWN_EVENT_CLASS"
+        "REFUSED:ALOOP_UNKNOWN_EVENT_CLASS",
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC",
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -386,6 +439,20 @@
         "REFUSED:ALOOP_STANDING_REGRESSION",
         "REFUSED:ALOOP_STANDING_REGRESSION",
         "REFUSED:ALOOP_STANDING_REGRESSION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M12",
+      "name": "permute era timestamps (backdate a post-epoch event)",
+      "mutated_check": "timestamp-monotonicity",
+      "expected_code": "REFUSED:ALOOP_TS_NOT_MONOTONIC",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC",
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC",
+        "REFUSED:ALOOP_TS_NOT_MONOTONIC"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -475,6 +542,13 @@
       "witnessed_clean": true,
       "witnessed_by_mutant": "M9",
       "pass": true
+    },
+    {
+      "check": "timestamp-integrity",
+      "description": "era (post-epoch) timestamps are monotone non-decreasing in seq order; permutation is tampering",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M12",
+      "pass": true
     }
   ],
   "anti_vacuity": {
@@ -486,6 +560,6 @@
   },
   "overall": "NON_CONFORMANT",
   "reasons": [
-    "real lane evidence non-conformant: [\"record.json\"]"
+    "real lane evidence non-conformant: [\"record.json\", \"run-record.json\"]"
   ]
 }
