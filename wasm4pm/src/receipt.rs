@@ -33,6 +33,7 @@ pub const FORBIDDEN_EVIDENCE_MARKERS: &[&str] = &[
 pub enum ReceiptTruthRefusal {
     ObservedOCELMissing,
     ExpectedOCELMissing,
+    IndependentEvidenceMissing,
     PathHashOnlyReceipt,
     ObservedTraceMutationWithoutBoundary,
     RuntimeObserverMissing,
@@ -226,6 +227,7 @@ fn evidence_incomplete(code: ReceiptTruthRefusal) -> bool {
         code,
         ReceiptTruthRefusal::ExpectedOCELMissing
             | ReceiptTruthRefusal::ObservedOCELMissing
+            | ReceiptTruthRefusal::IndependentEvidenceMissing
             | ReceiptTruthRefusal::BoundaryEvidenceMissing
             | ReceiptTruthRefusal::RuntimeObserverMissing
             | ReceiptTruthRefusal::ChallengeNonceMissing
@@ -487,6 +489,16 @@ impl OCELReceiptLinter {
                 return findings;
             }
         };
+
+        if algorithms.is_empty() {
+            findings.push(ReceiptFinding {
+                code: ReceiptTruthRefusal::IndependentEvidenceMissing,
+                json_path: "$.algorithms".to_string(),
+                message: "At least one independently evidenced algorithm is required".to_string(),
+                severity: FindingSeverity::Deny,
+            });
+            return findings;
+        }
 
         for (algo_idx, algo) in algorithms.iter().enumerate() {
             let algo_path_prefix = format!("$.algorithms[{algo_idx}]");
@@ -1332,6 +1344,7 @@ impl ReceiptDoctor {
                         }
                         ReceiptTruthRefusal::ExpectedOCELMissing
                         | ReceiptTruthRefusal::ObservedOCELMissing
+                        | ReceiptTruthRefusal::IndependentEvidenceMissing
                         | ReceiptTruthRefusal::ChallengeNonceMismatch => {
                             refusal_class = RefusalClass::EvidenceIncomplete;
                         }
