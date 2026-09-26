@@ -92,6 +92,9 @@ class SHACLShape {
     if (this.targetClass.includes('ObjectCentric')) {
       return result && result.businessObjects !== undefined;
     }
+    if (this.targetClass.includes('StandingReceipt')) {
+      return result && result.schema === 'wasm4pm.chatman-equilibrium-standing/1';
+    }
     return false;
   }
 
@@ -292,8 +295,11 @@ export class SHACLValidator {
     // Extracts shape definitions with constraints
     const lines = content.split('\n');
     let currentShape = null;
+    let offset = 0;
 
     for (const line of lines) {
+      const lineOffset = offset;
+      offset += line.length + 1;
       const trimmed = line.trim();
 
       // Skip empty lines and comments
@@ -312,7 +318,7 @@ export class SHACLValidator {
       // Detect property constraint
       if (currentShape && trimmed.startsWith('sh:property')) {
         // Extract property details from multi-line block
-        const propBlock = this.extractPropertyBlock(content, content.indexOf(trimmed));
+        const propBlock = this.extractPropertyBlock(content, lineOffset);
         const constraint = this.parsePropertyConstraint(propBlock);
         if (constraint) {
           currentShape.properties.push(constraint);
@@ -377,6 +383,16 @@ export class SHACLValidator {
     // Extract minCount
     const minCountMatch = block.match(/sh:minCount\s+(\d+)/);
     if (minCountMatch) constraint.minCount = parseInt(minCountMatch[1], 10);
+
+    // Extract sh:hasValue. The runtime validator already supports this field;
+    // parsing it makes the Turtle assertion load-bearing.
+    const stringHasValue = block.match(/sh:hasValue\s+"([^"]*)"/);
+    const booleanHasValue = block.match(/sh:hasValue\s+(true|false)\b/);
+    if (stringHasValue) {
+      constraint.hasValue = stringHasValue[1];
+    } else if (booleanHasValue) {
+      constraint.hasValue = booleanHasValue[1] === 'true';
+    }
 
     // Extract severity
     constraint.severity = block.includes('sh:severity sh:Warning') ? 'warning' : 'error';
