@@ -248,3 +248,61 @@ fn all_24_semantic_key_permutations_have_one_standing_digest() {
     assert_eq!(doctor_hashes.len(), 1, "verifier digest depends on key order");
     assert_eq!(replay_digests.len(), 1, "replay digest depends on key order");
 }
+
+
+const PROCESS_OCEL: &str =
+    include_str!("../../receipts/v26.9.26/chatman-equilibrium-standing.ocel.json");
+const RUN_RECEIPT: &str =
+    include_str!("../../receipts/v26.9.26/chatman-equilibrium-standing.receipt.json");
+
+#[test]
+fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
+    let ocel: serde_json::Value = serde_json::from_str(PROCESS_OCEL).unwrap();
+    let receipt: serde_json::Value = serde_json::from_str(RUN_RECEIPT).unwrap();
+
+    assert_eq!(ocel["ocel:version"], "2.0");
+    assert_eq!(
+        receipt["subject"],
+        format!("{REPOSITORY}@{BASE_SHA}")
+    );
+    assert_eq!(receipt["authority"], "NONE");
+    assert_eq!(receipt["do_authority"], false);
+    assert_eq!(receipt["evidence"]["cargo_execution"]["standing"], "UNKNOWN");
+    assert_eq!(receipt["evidence"]["hosted_ci"]["standing"], "UNKNOWN");
+    assert_eq!(receipt["standing"], "PARTIAL_ALIVE");
+
+    let objects = ocel["objects"].as_array().unwrap();
+    let known_ids = objects
+        .iter()
+        .filter_map(|object| object["id"].as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+
+    let events = ocel["events"].as_array().unwrap();
+    let expected_types = [
+        "subject.reconstruct",
+        "dod.freeze",
+        "standing.mutate",
+        "falsifier.run",
+        "replay.verify",
+        "pr.open",
+    ];
+    assert_eq!(events.len(), expected_types.len());
+
+    let mut previous = "";
+    for (event, expected_type) in events.iter().zip(expected_types) {
+        assert_eq!(event["type"], expected_type);
+        let timestamp = event["time"].as_str().unwrap();
+        assert!(previous <= timestamp, "OCEL events must be monotonically ordered");
+        previous = timestamp;
+
+        for relationship in event["relationships"].as_array().unwrap() {
+            let object_id = relationship["objectId"].as_str().unwrap();
+            assert!(known_ids.contains(object_id), "dangling OCEL object reference");
+        }
+    }
+
+    assert_eq!(
+        receipt["process_evidence"],
+        "receipts/v26.9.26/chatman-equilibrium-standing.ocel.json"
+    );
+}
