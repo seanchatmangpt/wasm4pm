@@ -223,7 +223,10 @@ mod tests {
 
         assert!(lean_working_together_edge(&resources, "A", "C"));
         let tampered_wt = false;
-        assert_ne!(lean_working_together_edge(&resources, "A", "C"), tampered_wt);
+        assert_ne!(
+            lean_working_together_edge(&resources, "A", "C"),
+            tampered_wt
+        );
     }
 
     #[test]

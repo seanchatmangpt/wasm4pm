@@ -110,10 +110,7 @@ fn interval_order(steps: &[&crate::ground::PlanStep]) -> Vec<Vec<bool>> {
 
 fn is_cover_edge(source: usize, target: usize, order: &[Vec<bool>]) -> bool {
     !(0..order.len()).any(|middle| {
-        middle != source
-            && middle != target
-            && order[source][middle]
-            && order[middle][target]
+        middle != source && middle != target && order[source][middle] && order[middle][target]
     })
 }
 

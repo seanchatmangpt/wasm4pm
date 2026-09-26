@@ -259,19 +259,20 @@ pub fn allocate_json(request_json: &str) -> Result<String, String> {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen(js_name = cmcaAllocate)]
 pub fn cmca_allocate(request: JsValue) -> Result<JsValue, JsValue> {
-    let request: CmcaAllocationRequest = serde_wasm_bindgen::from_value(request).map_err(|error| {
-        JsValue::from_str(
-            &serde_json::json!({
-                "schema": SCHEMA,
-                "code": "CMCA_INPUT_REFUSED",
-                "message": error.to_string(),
-                "bcinr_source_sha": BCINR_SOURCE_SHA,
-                "authority": AUTHORITY,
-                "actuation_performed": false
-            })
-            .to_string(),
-        )
-    })?;
+    let request: CmcaAllocationRequest =
+        serde_wasm_bindgen::from_value(request).map_err(|error| {
+            JsValue::from_str(
+                &serde_json::json!({
+                    "schema": SCHEMA,
+                    "code": "CMCA_INPUT_REFUSED",
+                    "message": error.to_string(),
+                    "bcinr_source_sha": BCINR_SOURCE_SHA,
+                    "authority": AUTHORITY,
+                    "actuation_performed": false
+                })
+                .to_string(),
+            )
+        })?;
 
     match allocate_native(&request) {
         Ok(response) => serde_wasm_bindgen::to_value(&response)

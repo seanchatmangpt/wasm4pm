@@ -97,7 +97,12 @@ fn gcd(a: u64, b: u64) -> u64 {
 /// Lean's semantics exactly rather than wasm4pm's own `.max(1)` denominator
 /// guard (see `compare_trace_fitness` for why the two strategies coincide
 /// on the one case they can actually differ on).
-pub fn lean_fitness_exact(missing: u64, consumed: u64, remaining: u64, produced: u64) -> ExactRational {
+pub fn lean_fitness_exact(
+    missing: u64,
+    consumed: u64,
+    remaining: u64,
+    produced: u64,
+) -> ExactRational {
     let missing_term = if consumed == 0 {
         // x / 0 = 0 in Lean's ℚ, so (1 - 0) = 1.
         ExactRational::new(1, 1)
@@ -139,11 +144,15 @@ pub struct DifferentialResult {
 /// forced to 1) and Lean computes `1 - 0 = 1` (division-by-zero convention)
 /// — same answer, different mechanism. This is verified by test case 4
 /// below, not assumed.
-pub fn compare_trace_fitness(missing: u64, consumed: u64, remaining: u64, produced: u64) -> DifferentialResult {
+pub fn compare_trace_fitness(
+    missing: u64,
+    consumed: u64,
+    remaining: u64,
+    produced: u64,
+) -> DifferentialResult {
     let c = (consumed as f64).max(1.0);
     let p = (produced as f64).max(1.0);
-    let rust_trace_fitness =
-        0.5 * (1.0 - missing as f64 / c) + 0.5 * (1.0 - remaining as f64 / p);
+    let rust_trace_fitness = 0.5 * (1.0 - missing as f64 / c) + 0.5 * (1.0 - remaining as f64 / p);
 
     let lean_fitness = lean_fitness_exact(missing, consumed, remaining, produced);
     let lean_fitness_as_f64 = lean_fitness.as_f64();

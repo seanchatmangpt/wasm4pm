@@ -71,10 +71,8 @@ pub fn admit_plan_labels_with_policy(
     });
 
     let mut kernel = Kernel::new(catalog);
-    let permitted_labels: Vec<&String> = labels
-        .iter()
-        .filter(|label| policy.allows(label))
-        .collect();
+    let permitted_labels: Vec<&String> =
+        labels.iter().filter(|label| policy.allows(label)).collect();
     let term_ids: Vec<_> = permitted_labels
         .iter()
         .map(|label| kernel.catalog.intern_term((*label).clone()))

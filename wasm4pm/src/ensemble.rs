@@ -711,7 +711,8 @@ mod tests {
 
         // (1) ensemble.rs quality_score heuristic — no precision/recall term at all,
         // penalizes structural complexity deviation instead.
-        let ensemble_quality_score = fitness * (1.0 - (complexity_ratio - 1.0).abs().min(1.0) * 0.2);
+        let ensemble_quality_score =
+            fitness * (1.0 - (complexity_ratio - 1.0).abs().min(1.0) * 0.2);
 
         // (2) benchmarks/benchmark.rs::compute_quality_metrics's f_measure formula
         // (process-model F-measure over fitness/precision).

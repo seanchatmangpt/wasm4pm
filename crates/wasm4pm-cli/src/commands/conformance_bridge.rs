@@ -34,14 +34,18 @@
 use anyhow::Context;
 use std::collections::BTreeMap;
 
+use wasm4pm::align_etconformance::{
+    compute_align_etconformance_precision, AlignETConformanceConfig,
+};
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
     self as wm, AttributeValue as WmAttributeValue, PetriNet, PetriNetArc, PetriNetPlace,
     PetriNetTransition,
 };
-use wasm4pm::align_etconformance::{compute_align_etconformance_precision, AlignETConformanceConfig};
 
-use wasm4pm_compat::event_log::{AttributeValue as CompatAttributeValue, EventLog as CompatEventLog};
+use wasm4pm_compat::event_log::{
+    AttributeValue as CompatAttributeValue, EventLog as CompatEventLog,
+};
 use wasm4pm_compat::models::DFG;
 
 const START_PLACE: &str = "__bridge_start__";
@@ -185,7 +189,10 @@ mod tests {
     }
 
     fn trace(case_id: &str, activities: &[&str]) -> CTrace {
-        CTrace::new(case_id.to_string(), activities.iter().map(|a| ev(a)).collect())
+        CTrace::new(
+            case_id.to_string(),
+            activities.iter().map(|a| ev(a)).collect(),
+        )
     }
 
     fn sequential_dfg() -> DFG {
@@ -213,7 +220,10 @@ mod tests {
         let (fitness, precision) =
             check_conformance_real(&log, &dfg, "concept:name").expect("conformance check runs");
 
-        assert_eq!(fitness, 1.0, "trace exactly matching the model must be perfectly fit");
+        assert_eq!(
+            fitness, 1.0,
+            "trace exactly matching the model must be perfectly fit"
+        );
         assert!(precision.is_some());
         let precision = precision.unwrap();
         assert!((0.0..=1.0).contains(&precision));

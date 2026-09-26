@@ -1,6 +1,7 @@
 # PRD v26.9.18 — GALL-022: POWL Language Preservation
 
-**Status:** DRAFT IMPLEMENTATION SPEC  
+**Status:** FINAL_SPEC — closed for v26.9.24  
+**Implementation standing:** OPEN in PR #627  
 **Release:** v26.9.18  
 **Repository:** `seanchatmangpt/wasm4pm`  
 **Owner:** wasm4pm  

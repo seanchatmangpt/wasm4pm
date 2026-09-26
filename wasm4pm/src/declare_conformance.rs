@@ -17,149 +17,149 @@ pub fn check_declare_conformance_pure(
     activity_key: &str,
 ) -> Result<String, String> {
     let total = log.traces.len();
-        // violations[i] = # traces violating constraint i
-        let mut violations: Vec<usize> = vec![0; constraints.len()];
+    // violations[i] = # traces violating constraint i
+    let mut violations: Vec<usize> = vec![0; constraints.len()];
 
-        for trace in &log.traces {
-            let acts: Vec<&str> = trace
-                .events
-                .iter()
-                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                .collect();
-
-            // Shared sub-checks — Succession is defined as Response ∧ Precedence
-            // both holding (mirrors the miner's definition at discovery.rs:616-628),
-            // so both must be computable standalone and reused, not duplicated.
-            let response_violates = |a: &str, b: &str| -> bool {
-                for (i, &act) in acts.iter().enumerate() {
-                    if act == a && !acts[i + 1..].contains(&b) {
-                        return true;
-                    }
-                }
-                false
-            };
-            let precedence_violates = |a: &str, b: &str| -> bool {
-                let mut a_seen = false;
-                for &act in &acts {
-                    if act == a {
-                        a_seen = true;
-                    }
-                    if act == b && !a_seen {
-                        return true;
-                    }
-                }
-                false
-            };
-
-            for (ci, constraint) in constraints.iter().enumerate() {
-                let violated = match constraint.template.as_str() {
-                    "Response" if constraint.activities.len() == 2 => {
-                        response_violates(&constraint.activities[0], &constraint.activities[1])
-                    }
-                    "Existence" if constraint.activities.len() == 1 => {
-                        let a = constraint.activities[0].as_str();
-                        !acts.contains(&a)
-                    }
-                    "Absence" if constraint.activities.len() == 1 => {
-                        let a = constraint.activities[0].as_str();
-                        acts.contains(&a)
-                    }
-                    "Init" if constraint.activities.len() == 1 => {
-                        let a = constraint.activities[0].as_str();
-                        acts.first().map_or(true, |&x| x != a)
-                    }
-                    "Precedence" if constraint.activities.len() == 2 => {
-                        precedence_violates(&constraint.activities[0], &constraint.activities[1])
-                    }
-                    // CoExistence(a,b): a occurs iff b occurs (both or neither).
-                    // Violated when exactly one of the two is present.
-                    "CoExistence" if constraint.activities.len() == 2 => {
-                        let a = constraint.activities[0].as_str();
-                        let b = constraint.activities[1].as_str();
-                        acts.contains(&a) != acts.contains(&b)
-                    }
-                    // NotCoExistence(a,b): a and b never both occur.
-                    // Violated when both are present (mirrors discovery.rs:578-587).
-                    "NotCoExistence" if constraint.activities.len() == 2 => {
-                        let a = constraint.activities[0].as_str();
-                        let b = constraint.activities[1].as_str();
-                        acts.contains(&a) && acts.contains(&b)
-                    }
-                    // Succession(a,b): Response(a,b) AND Precedence(a,b) both hold
-                    // (discovery.rs:616-628 mines it as exactly this conjunction).
-                    "Succession" if constraint.activities.len() == 2 => {
-                        let a = constraint.activities[0].as_str();
-                        let b = constraint.activities[1].as_str();
-                        response_violates(a, b) || precedence_violates(a, b)
-                    }
-                    // ChainResponse(a,b): every occurrence of a must be
-                    // IMMEDIATELY followed by b (discovery.rs:630-641).
-                    "ChainResponse" if constraint.activities.len() == 2 => {
-                        let a = constraint.activities[0].as_str();
-                        let b = constraint.activities[1].as_str();
-                        let mut violates = false;
-                        for (i, &act) in acts.iter().enumerate() {
-                            if act == a && acts.get(i + 1) != Some(&b) {
-                                violates = true;
-                                break;
-                            }
-                        }
-                        violates
-                    }
-                    // ChainPrecedence(a,b): every occurrence of b must be
-                    // IMMEDIATELY preceded by a (discovery.rs:643-654).
-                    "ChainPrecedence" if constraint.activities.len() == 2 => {
-                        let a = constraint.activities[0].as_str();
-                        let b = constraint.activities[1].as_str();
-                        let mut violates = false;
-                        for (i, &act) in acts.iter().enumerate() {
-                            if act == b && (i == 0 || acts[i - 1] != a) {
-                                violates = true;
-                                break;
-                            }
-                        }
-                        violates
-                    }
-                    // Fail-closed: a genuinely unrecognized template (malformed
-                    // data, or a template the miner may add before the checker
-                    // is updated) must never silently report "no violation" —
-                    // that is the exact defect this match arm previously had.
-                    _ => true,
-                };
-                if violated {
-                    violations[ci] += 1;
-                }
-            }
-        }
-
-        let constraint_results: Vec<serde_json::Value> = constraints
+    for trace in &log.traces {
+        let acts: Vec<&str> = trace
+            .events
             .iter()
-            .zip(violations.iter())
-            .map(|(c, &v)| {
-                let fitness = if total == 0 {
-                    1.0
-                } else {
-                    1.0 - v as f64 / total as f64
-                };
-                json!({
-                    "template": c.template,
-                    "activities": c.activities,
-                    "support": c.support,
-                    "violations": v,
-                    "fitness": fitness,
-                })
-            })
+            .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
             .collect();
 
-        let avg_fitness = if constraint_results.is_empty() {
-            1.0_f64
-        } else {
-            constraint_results
-                .iter()
-                .map(|r| r["fitness"].as_f64().unwrap_or(1.0))
-                .sum::<f64>()
-                / constraint_results.len() as f64
+        // Shared sub-checks — Succession is defined as Response ∧ Precedence
+        // both holding (mirrors the miner's definition at discovery.rs:616-628),
+        // so both must be computable standalone and reused, not duplicated.
+        let response_violates = |a: &str, b: &str| -> bool {
+            for (i, &act) in acts.iter().enumerate() {
+                if act == a && !acts[i + 1..].contains(&b) {
+                    return true;
+                }
+            }
+            false
         };
+        let precedence_violates = |a: &str, b: &str| -> bool {
+            let mut a_seen = false;
+            for &act in &acts {
+                if act == a {
+                    a_seen = true;
+                }
+                if act == b && !a_seen {
+                    return true;
+                }
+            }
+            false
+        };
+
+        for (ci, constraint) in constraints.iter().enumerate() {
+            let violated = match constraint.template.as_str() {
+                "Response" if constraint.activities.len() == 2 => {
+                    response_violates(&constraint.activities[0], &constraint.activities[1])
+                }
+                "Existence" if constraint.activities.len() == 1 => {
+                    let a = constraint.activities[0].as_str();
+                    !acts.contains(&a)
+                }
+                "Absence" if constraint.activities.len() == 1 => {
+                    let a = constraint.activities[0].as_str();
+                    acts.contains(&a)
+                }
+                "Init" if constraint.activities.len() == 1 => {
+                    let a = constraint.activities[0].as_str();
+                    acts.first().map_or(true, |&x| x != a)
+                }
+                "Precedence" if constraint.activities.len() == 2 => {
+                    precedence_violates(&constraint.activities[0], &constraint.activities[1])
+                }
+                // CoExistence(a,b): a occurs iff b occurs (both or neither).
+                // Violated when exactly one of the two is present.
+                "CoExistence" if constraint.activities.len() == 2 => {
+                    let a = constraint.activities[0].as_str();
+                    let b = constraint.activities[1].as_str();
+                    acts.contains(&a) != acts.contains(&b)
+                }
+                // NotCoExistence(a,b): a and b never both occur.
+                // Violated when both are present (mirrors discovery.rs:578-587).
+                "NotCoExistence" if constraint.activities.len() == 2 => {
+                    let a = constraint.activities[0].as_str();
+                    let b = constraint.activities[1].as_str();
+                    acts.contains(&a) && acts.contains(&b)
+                }
+                // Succession(a,b): Response(a,b) AND Precedence(a,b) both hold
+                // (discovery.rs:616-628 mines it as exactly this conjunction).
+                "Succession" if constraint.activities.len() == 2 => {
+                    let a = constraint.activities[0].as_str();
+                    let b = constraint.activities[1].as_str();
+                    response_violates(a, b) || precedence_violates(a, b)
+                }
+                // ChainResponse(a,b): every occurrence of a must be
+                // IMMEDIATELY followed by b (discovery.rs:630-641).
+                "ChainResponse" if constraint.activities.len() == 2 => {
+                    let a = constraint.activities[0].as_str();
+                    let b = constraint.activities[1].as_str();
+                    let mut violates = false;
+                    for (i, &act) in acts.iter().enumerate() {
+                        if act == a && acts.get(i + 1) != Some(&b) {
+                            violates = true;
+                            break;
+                        }
+                    }
+                    violates
+                }
+                // ChainPrecedence(a,b): every occurrence of b must be
+                // IMMEDIATELY preceded by a (discovery.rs:643-654).
+                "ChainPrecedence" if constraint.activities.len() == 2 => {
+                    let a = constraint.activities[0].as_str();
+                    let b = constraint.activities[1].as_str();
+                    let mut violates = false;
+                    for (i, &act) in acts.iter().enumerate() {
+                        if act == b && (i == 0 || acts[i - 1] != a) {
+                            violates = true;
+                            break;
+                        }
+                    }
+                    violates
+                }
+                // Fail-closed: a genuinely unrecognized template (malformed
+                // data, or a template the miner may add before the checker
+                // is updated) must never silently report "no violation" —
+                // that is the exact defect this match arm previously had.
+                _ => true,
+            };
+            if violated {
+                violations[ci] += 1;
+            }
+        }
+    }
+
+    let constraint_results: Vec<serde_json::Value> = constraints
+        .iter()
+        .zip(violations.iter())
+        .map(|(c, &v)| {
+            let fitness = if total == 0 {
+                1.0
+            } else {
+                1.0 - v as f64 / total as f64
+            };
+            json!({
+                "template": c.template,
+                "activities": c.activities,
+                "support": c.support,
+                "violations": v,
+                "fitness": fitness,
+            })
+        })
+        .collect();
+
+    let avg_fitness = if constraint_results.is_empty() {
+        1.0_f64
+    } else {
+        constraint_results
+            .iter()
+            .map(|r| r["fitness"].as_f64().unwrap_or(1.0))
+            .sum::<f64>()
+            / constraint_results.len() as f64
+    };
 
     serde_json::to_string(&json!({
         "total_traces": total,

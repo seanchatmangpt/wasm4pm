@@ -503,11 +503,11 @@ mod tests {
 
         if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
             assert_eq!(attempt, 3); // next attempt
-            // Bounded Rank-1 oracle: delay must lie inside the closed
-            // [exponential, exponential + base_backoff_ms] window. This is
-            // strictly stronger than the old hardcoded 4500 check (which
-            // only sampled one point of the distribution) AND survives
-            // re-seeding refactors.
+                                    // Bounded Rank-1 oracle: delay must lie inside the closed
+                                    // [exponential, exponential + base_backoff_ms] window. This is
+                                    // strictly stronger than the old hardcoded 4500 check (which
+                                    // only sampled one point of the distribution) AND survives
+                                    // re-seeding refactors.
             assert!(
                 (4000..=5000).contains(&delay_ms),
                 "delay_ms={} outside Bellman-style backoff envelope [4000, 5000]",

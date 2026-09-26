@@ -294,7 +294,11 @@ pub fn compare_soundness(net: &WfNetCarrier) -> DifferentialSoundnessResult {
         && lean.option_to_complete == rust.option_to_complete
         && lean.proper_completion == rust.proper_completion
         && lean.is_sound == rust.is_sound;
-    DifferentialSoundnessResult { lean, rust, clauses_agree }
+    DifferentialSoundnessResult {
+        lean,
+        rust,
+        clauses_agree,
+    }
 }
 
 #[cfg(test)]
@@ -334,10 +338,10 @@ mod tests {
             source: 0,
             sink: 3,
             t_pre: vec![
-                vec![0], // t0a: source -> a
-                vec![0], // t0b: source -> b
-                vec![1], // t1: a -> sink
-                vec![2], // t2: b -> sink
+                vec![0],    // t0a: source -> a
+                vec![0],    // t0b: source -> b
+                vec![1],    // t1: a -> sink
+                vec![2],    // t2: b -> sink
                 vec![1, 2], // t_dead: needs a AND b simultaneously
             ],
             t_post: vec![vec![1], vec![2], vec![3], vec![3], vec![3]],
@@ -434,7 +438,10 @@ mod tests {
         };
         let correct = lean_sound_exact(&net);
         assert!(correct.is_sound);
-        let tampered = WfSoundnessResult { is_sound: false, ..correct.clone() };
+        let tampered = WfSoundnessResult {
+            is_sound: false,
+            ..correct.clone()
+        };
         assert_ne!(
             correct, tampered,
             "a tampered 'unsound' verdict on a genuinely sound net must be distinguishable"
@@ -469,7 +476,10 @@ mod tests {
 
     #[test]
     fn lean_files_hash_matches_citation() {
-        let base = concat!(env!("CARGO_MANIFEST_DIR"), "/../../mfact/procint/ProcInt/Workflow");
+        let base = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../mfact/procint/ProcInt/Workflow"
+        );
         for (file, expected) in [
             ("WfNet.lean", LEAN_WFNET_FILE_SHA256),
             ("Soundness.lean", LEAN_SOUNDNESS_FILE_SHA256),
@@ -501,7 +511,12 @@ mod tests {
             .stdout(Stdio::piped())
             .spawn()
             .and_then(|mut child| {
-                child.stdin.take().unwrap().write_all(data).expect("write to shasum stdin");
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(data)
+                    .expect("write to shasum stdin");
                 child.wait_with_output()
             });
         match output {

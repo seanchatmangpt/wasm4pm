@@ -320,11 +320,11 @@ pub mod cache;
 pub mod capability_registry;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
-/// W4PM-LEAN-GALL-010: Rust<->Lean correspondence harnesses.
-pub mod correspondence;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance_guards;
 pub mod conformance_reporting;
+/// W4PM-LEAN-GALL-010: Rust<->Lean correspondence harnesses.
+pub mod correspondence;
 #[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 #[cfg(feature = "streaming_basic")]
