@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { SHACLValidator } from '../src/validate-shacl.mjs';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const shapesPath = path.join(here, '..', 'semconv', 'chatman-equilibrium-standing-shapes.ttl');
 
 function standing(overrides = {}) {
   return {
@@ -23,7 +18,7 @@ function standing(overrides = {}) {
 }
 
 test('standing SHACL parses every repeated property block distinctly', async () => {
-  const validator = await SHACLValidator.create(shapesPath);
+  const validator = await SHACLValidator.create();
   const shape = validator.shapes.find((candidate) => candidate.name === 'StandingReceiptShape');
   assert.ok(shape, 'StandingReceiptShape must be parsed');
 
@@ -44,7 +39,7 @@ test('standing SHACL parses every repeated property block distinctly', async () 
 });
 
 test('standing SHACL admits bounded receipt and kills authority laundering', async () => {
-  const validator = await SHACLValidator.create(shapesPath);
+  const validator = await SHACLValidator.create();
 
   const admitted = await validator.validateResult('standing_receipt', standing());
   assert.equal(admitted.valid, true);
@@ -65,7 +60,7 @@ test('standing SHACL admits bounded receipt and kills authority laundering', asy
 });
 
 test('standing SHACL rejects missing exact subject and replay evidence', async () => {
-  const validator = await SHACLValidator.create(shapesPath);
+  const validator = await SHACLValidator.create();
   const candidate = standing();
   delete candidate.exact_subject;
   delete candidate.replay_digest;
@@ -78,7 +73,7 @@ test('standing SHACL rejects missing exact subject and replay evidence', async (
 
 
 test('standing SHACL rejects invented states mutable subjects and malformed digests', async () => {
-  const validator = await SHACLValidator.create(shapesPath);
+  const validator = await SHACLValidator.create();
 
   for (const [field, value] of [
     ['state', 'Maybe'],
