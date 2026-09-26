@@ -231,7 +231,8 @@ fn verify_ocel2(args: &VerifyOcel2Args) -> Result<()> {
     let has_ocel_issue = report.findings.iter().any(|f| {
         matches!(
             f.code,
-            wasm4pm::receipt::ReceiptTruthRefusal::ObservedOCELMissing
+            wasm4pm::receipt::ReceiptTruthRefusal::IndependentEvidenceMissing
+                | wasm4pm::receipt::ReceiptTruthRefusal::ObservedOCELMissing
                 | wasm4pm::receipt::ReceiptTruthRefusal::ExpectedOCELMissing
                 | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected
         )
