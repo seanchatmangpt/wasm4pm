@@ -38,6 +38,49 @@ export interface ICheckpointStore {
   deleteByRunId(runId: string): Promise<number>;
 }
 
+
+export class CheckpointSequenceConflictError extends Error {
+  constructor(sequenceNumber: number, ids: string[]) {
+    super(
+      `CHECKPOINT_SEQUENCE_CONFLICT: sequence ${sequenceNumber} has multiple candidates: ${ids.sort().join(',')}`
+    );
+    this.name = 'CheckpointSequenceConflictError';
+  }
+}
+
+export function filterAndOrderCheckpointMetadata(
+  entries: CheckpointMetadata[],
+  filter?: RunFilter
+): CheckpointMetadata[] {
+  return entries
+    .filter((item) => !filter?.runId || item.runId === filter.runId)
+    .filter((item) => filter?.minSequence === undefined || item.sequenceNumber >= filter.minSequence)
+    .filter((item) => filter?.maxSequence === undefined || item.sequenceNumber <= filter.maxSequence)
+    .filter((item) => filter?.beforeDate === undefined || item.createdAt < filter.beforeDate)
+    .filter((item) => filter?.afterDate === undefined || item.createdAt > filter.afterDate)
+    .sort((left, right) =>
+      left.sequenceNumber - right.sequenceNumber
+      || left.createdAt.getTime() - right.createdAt.getTime()
+      || left.id.localeCompare(right.id)
+    );
+}
+
+export function selectLatestCheckpointMetadata(
+  entries: CheckpointMetadata[]
+): CheckpointMetadata | undefined {
+  if (entries.length === 0) return undefined;
+  const ordered = filterAndOrderCheckpointMetadata(entries);
+  const latestSequence = ordered[ordered.length - 1]!.sequenceNumber;
+  const candidates = ordered.filter((item) => item.sequenceNumber === latestSequence);
+  if (candidates.length !== 1) {
+    throw new CheckpointSequenceConflictError(
+      latestSequence,
+      candidates.map((item) => item.id)
+    );
+  }
+  return candidates[0];
+}
+
 export class MemoryCheckpointStore implements ICheckpointStore {
   private store = new Map<string, Checkpoint>();
 
@@ -50,11 +93,7 @@ export class MemoryCheckpointStore implements ICheckpointStore {
   }
 
   async list(filter?: RunFilter): Promise<CheckpointMetadata[]> {
-    let checkpoints = Array.from(this.store.values());
-    if (filter?.runId) {
-      checkpoints = checkpoints.filter((cp) => cp.runId === filter.runId);
-    }
-    return checkpoints.map((cp) => ({
+    const entries = Array.from(this.store.values()).map((cp) => ({
       id: cp.id,
       runId: cp.runId,
       sequenceNumber: cp.sequenceNumber,
@@ -63,6 +102,7 @@ export class MemoryCheckpointStore implements ICheckpointStore {
       progress: cp.progress,
       sizeBytes: JSON.stringify(cp).length,
     }));
+    return filterAndOrderCheckpointMetadata(entries, filter);
   }
 
   async delete(id: string): Promise<void> {
@@ -193,11 +233,8 @@ export class FileCheckpointStore implements ICheckpointStore {
 
         Promise.all(promises)
           .then((results) => {
-            let checkpoints = results.filter((m) => m !== null) as CheckpointMetadata[];
-            if (filter?.runId) {
-              checkpoints = checkpoints.filter((m) => m.runId === filter.runId);
-            }
-            resolve(checkpoints.sort((a, b) => a.sequenceNumber - b.sequenceNumber));
+            const checkpoints = results.filter((m) => m !== null) as CheckpointMetadata[];
+            resolve(filterAndOrderCheckpointMetadata(checkpoints, filter));
           })
           .catch(reject);
       });
