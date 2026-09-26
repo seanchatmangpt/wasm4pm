@@ -59,6 +59,8 @@ bcinr = { workspace = true, optional = true }
 bcinr-powl = { workspace = true, optional = true }
 blake3 = { workspace = true }
 sha2 = { workspace = true }
+wasm-encoder = "0.252"
+wasmparser = "0.252"
 ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_core"] }
 getrandom = { version = "0.2", features = ["js"] }
 wasm4pm-cognition = { workspace = true, default-features = false, optional = true }
@@ -89,6 +91,10 @@ miniml = { workspace = true }
 
 [[bench]]
 name = "fast_algorithms"
+harness = false
+
+[[bench]]
+name = "gall_process_portability"
 harness = false
 
 [[bench]]
