@@ -20,6 +20,17 @@
     "hosted_ci": {
       "standing": "UNKNOWN",
       "reason": "out of scope; not consulted"
+    },
+    "shacl_core_logic": {
+      "standing": "ALIVE",
+      "killed": 9,
+      "total": 9,
+      "receipt": "receipts/v26.9.26/chatman-equilibrium-shacl-court.receipt.json",
+      "scope": "exact-source-shacl-core-logic"
+    },
+    "node_module_execution": {
+      "standing": "UNKNOWN",
+      "reason": "Node runtime exists, but exact repository module graph was not materialized as a filesystem checkout"
     }
   },
   "process_evidence": "receipts/v26.9.26/chatman-equilibrium-standing.ocel.json",
