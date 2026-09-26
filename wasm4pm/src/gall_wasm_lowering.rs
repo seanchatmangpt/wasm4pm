@@ -260,6 +260,11 @@ impl PowlSubject {
     /// `task | sequence | partial_order | choice | loop | hierarchy`. Unknown
     /// kinds and unknown fields (e.g. choice conditions) are typed-refused.
     pub fn from_gall016_json(bytes: &[u8]) -> Result<Self, PortabilityRefusal> {
+        // Nesting beyond what a MAX_POWL_DEPTH model can produce is a typed
+        // depth refusal, not an opaque serde recursion error.
+        if json_nesting(bytes) > 2 * MAX_POWL_DEPTH - 1 {
+            return Err(PortabilityRefusal::PowlDepthExceeded);
+        }
         let value: Value = serde_json::from_slice(bytes)
             .map_err(|e| PortabilityRefusal::InvalidPowlInput(e.to_string()))?;
         let mut arena = PowlArena::new();
@@ -322,6 +327,34 @@ impl PowlSubject {
             .ok()
             .map(|i| i as u8)
     }
+}
+
+/// Maximum `{`/`[` nesting of JSON text, ignoring brackets inside strings.
+/// Linear and non-recursive, so it is safe on adversarial input.
+fn json_nesting(bytes: &[u8]) -> usize {
+    let (mut depth, mut max) = (0usize, 0usize);
+    let (mut in_string, mut escaped) = (false, false);
+    for &b in bytes {
+        if in_string {
+            match (escaped, b) {
+                (true, _) => escaped = false,
+                (false, b'\\') => escaped = true,
+                (false, b'"') => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match b {
+            b'"' => in_string = true,
+            b'{' | b'[' => {
+                depth += 1;
+                max = max.max(depth);
+            }
+            b'}' | b']' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    max
 }
 
 fn identity_of(value: &Value) -> Option<String> {

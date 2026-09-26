@@ -2,13 +2,13 @@
   "schema": "wasm4pm.bench-receipt/1",
   "checkpoint": "GALL-021..023",
   "pr": "seanchatmangpt/wasm4pm#627",
-  "parent_subject": "6bb8982f79d969907cfd393825b531624fc38d45",
+  "parent_subject": "504689d4052aa9d1eb42515aaa0622fd9590cc7f",
   "command": "cargo bench -p wasm4pm --bench gall_process_portability -- --noplot --warm-up-time 1 --measurement-time 3",
   "bench_source": "wasm4pm/benches/gall_process_portability.rs",
   "bench_source_sha256": "sha256:3ba31fe425ba115f2f7ab6fcd154cd52e78deefeaffc47ff8499c05ec3fb8398",
   "module_sha256": {
-    "wasm4pm/src/gall_process_portability.rs": "sha256:de1d91cc280d3482ab97499dd6db5577728710218c629727155cf499a339b184",
-    "wasm4pm/src/gall_wasm_lowering.rs": "sha256:cce3573570b90519c5500758d3ff408806a326c6c29bd0c6eea38e72e30daa3d",
+    "wasm4pm/src/gall_process_portability.rs": "sha256:8507f192b2b42c10bbae6f8f1b529b68605183c8dbfb24a0b85ea7fb77fec0fd",
+    "wasm4pm/src/gall_wasm_lowering.rs": "sha256:8e053a6b5799e38464386cc2f20b761d73025cdd244cd62c16d398c3673d5850",
     "wasm4pm/src/gall_runtime_harness.rs": "sha256:ac1939e6958d9f86128245fdc99336edd71ddc2a108de3bd21f3f9909a421139"
   },
   "corpus": {
@@ -27,31 +27,33 @@
   "recorded": "2026-09-26",
   "unit": "criterion median point estimate",
   "results": {
-    "gall022_lower_powl/3": "770.2 us",
-    "gall022_lower_powl/5": "3.62 ms",
-    "gall022_lower_powl/7": "34.18 ms",
-    "gall022_reference_language/w3/6": "5.64 us",
-    "gall022_reference_language/w5/5": "43.6 us",
-    "gall021_execute/cranelift": "15.32 ms",
-    "gall021_execute/v8": "66.59 ms",
-    "gall021_execute/javascriptcore": "60.35 ms",
-    "gall021_qualify": "386.3 us",
-    "gall022_verify": "7.09 ms",
-    "gall023_canonical_sort/ord_sort/1000": "323.4 us",
-    "gall023_canonical_sort/digest_key_sort/1000": "25.95 ms",
-    "gall023_canonical_sort/ord_sort/10000": "2.04 ms",
-    "gall023_canonical_sort/digest_key_sort/10000": "228.9 ms",
-    "gall023_reference_evaluate/100": "12.27 us",
-    "gall023_reference_evaluate/1000": "121.9 us"
+    "gall022_lower_powl/3": "457.20 us",
+    "gall022_lower_powl/5": "2.2578 ms",
+    "gall022_lower_powl/7": "20.647 ms",
+    "gall022_reference_language/w3/6": "3.3713 us",
+    "gall022_reference_language/w5/5": "31.191 us",
+    "gall021_execute/cranelift": "15.313 ms",
+    "gall021_execute/v8": "74.576 ms",
+    "gall021_execute/javascriptcore": "94.604 ms",
+    "gall021_qualify": "268.98 us",
+    "gall022_verify": "4.3955 ms",
+    "gall023_canonical_sort/ord_sort/1000": "196.11 us",
+    "gall023_canonical_sort/digest_key_sort/1000": "17.191 ms",
+    "gall023_canonical_sort/ord_sort/10000": "2.1265 ms",
+    "gall023_canonical_sort/digest_key_sort/10000": "247.45 ms",
+    "gall023_reference_evaluate/100": "12.361 us",
+    "gall023_reference_evaluate/1000": "142.03 us"
   },
   "findings": [
-    "gall021_execute is dominated by engine process start + module instantiate (Cranelift 15 ms, V8 67 ms, JSC 60 ms per execution of a 55987-trace probe, bound 6); the courts themselves cost 0.39 ms (GALL-021) and 7.1 ms (GALL-022, including rebuild of the module).",
-    "POWL lowering cost grows with partial-order width (residual automaton is the interleaving product): 0.77 ms at 3 concurrent tasks, 34 ms at 7.",
-    "Canonical binding sort by total order is 80x (n=1000) and 112x (n=10000) faster than the pre-hardening digest-keyed sort on the typed Gall017Binding. The previous receipt's 38x-at-10k figure (BTreeMap bindings, digest per comparison) did not reproduce on rerun (about 22x); that binding type is retired."
+    "gall021_execute is dominated by engine process start + module instantiate (Cranelift 15.313 ms, V8 74.576 ms, JSC 94.604 ms per execution); the courts themselves cost 268.98 us (GALL-021) and 4.3955 ms (GALL-022, including rebuild of the module).",
+    "POWL lowering cost grows with partial-order width (residual automaton is the interleaving product): 457.20 us at 3 concurrent tasks, 20.647 ms at 7.",
+    "Canonical binding sort by total order vs digest-keyed sort on the typed Gall017Binding: see results at n=1000 and n=10000; the >=5x bound at n=10000 is enforced by a test, not by this receipt.",
+    "MAX_POWL_DEPTH lowered 256 -> 64 so every admitted subject's gall.powl.skeleton section re-parses under serde_json's 127-level nesting (tests/gall_022_depth_fence_bounds.rs); the benches are shallow and unaffected in shape."
   ],
   "regression_bounds": [
     "test gall_023_canonical_sort_regression_bound_vs_digest_key_sort (tests/gall_021_023_portable_execution.rs): ord sort >= 5x faster than digest-keyed sort at n=10000, enforced on every cargo test run"
   ],
   "evidence_ceiling": "LOCAL_BENCH_RUN",
-  "authority": "NONE"
+  "authority": "NONE",
+  "host_load": "load average about 200 during the run (shared host); absolute times are noisy, ratios are the claim"
 }

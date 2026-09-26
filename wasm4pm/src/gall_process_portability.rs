@@ -44,9 +44,22 @@ pub(crate) fn valid_digest(value: &str) -> bool {
     })
 }
 
-/// Maximum admitted POWL nesting depth. Deeper models are refused, never
-/// walked, so adversarial input cannot overflow the stack.
-pub const MAX_POWL_DEPTH: usize = 256;
+/// Maximum admitted POWL nesting depth (root = level 1, leaf included).
+/// Deeper models are refused, never walked, so adversarial input cannot
+/// overflow the stack.
+///
+/// The bound is tied to replay: partial-order and choice levels cost two JSON
+/// nesting levels (object + `children` array) in both the GALL-016 input
+/// dialect and the `gall.powl.skeleton` module section, so a depth-D model
+/// serializes at nesting `2*D - 1`. serde_json admits at most
+/// [`MAX_JSON_NESTING`] = 127 levels, hence D <= 64. A larger bound would admit
+/// subjects whose own module section cannot be read back by `inspect_module`.
+pub const MAX_POWL_DEPTH: usize = 64;
+
+/// Deepest JSON nesting serde_json parses with its default recursion limit.
+pub const MAX_JSON_NESTING: usize = 127;
+
+const _: () = assert!(2 * MAX_POWL_DEPTH - 1 <= MAX_JSON_NESTING);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PortabilityRefusal {
@@ -106,7 +119,10 @@ pub enum PortabilityRefusal {
 // Host capability fence (derived from module imports)
 // ---------------------------------------------------------------------------
 
+/// Unknown capability names are refused at the parse boundary (fail closed):
+/// a capability this fence does not model cannot be silently dropped.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct HostCapabilityFence {
     #[serde(default)]
     pub clock: bool,
