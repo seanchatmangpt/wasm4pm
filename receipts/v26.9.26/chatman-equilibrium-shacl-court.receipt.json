@@ -1,0 +1,80 @@
+{
+  "schema": "wasm4pm.chatman-equilibrium-shacl-court/1",
+  "calver": "v26.9.26",
+  "subject": "seanchatmangpt/wasm4pm@9fc4f1ae3cc99cf65a5f014580db8e1ea3d08b55",
+  "observed_branch_head": "2c89656be83d69dbf7d06769327c9cbdce56a060",
+  "validator": {
+    "path": "src/validate-shacl.mjs",
+    "blob_sha": "17f7aaede8020528696d033582c6561be5f537b9"
+  },
+  "shapes": {
+    "path": "semconv/wasm4pm-shapes.ttl",
+    "blob_sha": "cbd30db93c8888475e92c88d24ee2a8f8b540bfc",
+    "shape": "pm:StandingReceiptShape"
+  },
+  "execution": {
+    "engine": "Code Mode V8 isolate",
+    "bootstrap_transform": [
+      "remove ESM import declarations",
+      "remove __dirname filesystem bootstrap",
+      "remove export keywords"
+    ],
+    "semantic_methods_executed": [
+      "SHACLValidator.parseShapesTTL",
+      "SHACLValidator.validateResult"
+    ],
+    "good_receipt": {
+      "valid": true,
+      "errors": 0
+    },
+    "mutants": {
+      "authority": {
+        "valid": false,
+        "field": "authority"
+      },
+      "do_authority": {
+        "valid": false,
+        "field": "doAuthority"
+      },
+      "invented_state": {
+        "valid": false,
+        "field": "state"
+      },
+      "mutable_subject": {
+        "valid": false,
+        "field": "exactSubject"
+      },
+      "invented_binding": {
+        "valid": false,
+        "field": "subjectBinding"
+      },
+      "candidate_digest": {
+        "valid": false,
+        "field": "candidateReceiptSha256"
+      },
+      "doctor_digest": {
+        "valid": false,
+        "field": "doctorReportHash"
+      },
+      "replay_digest": {
+        "valid": false,
+        "field": "replayDigest"
+      },
+      "missing_subject": {
+        "valid": false,
+        "field": "exactSubject"
+      }
+    },
+    "killed": 9,
+    "total": 9
+  },
+  "authority": "NONE",
+  "do_authority": false,
+  "standing": "ALIVE",
+  "standing_scope": "exact-source-shacl-core-logic",
+  "exclusions": [
+    "Node filesystem/module bootstrap not executed",
+    "Rust/Cargo tests not executed",
+    "hosted CI not consulted"
+  ]
+}
