@@ -194,3 +194,57 @@ fn semantic_key_order_does_not_change_evidence_or_replay_digest() {
     assert_eq!(l.replay_digest, r.replay_digest);
     assert_eq!(l.state, VerificationState::Unknown);
 }
+
+
+fn permutations<T: Clone>(items: &[T]) -> Vec<Vec<T>> {
+    if items.is_empty() {
+        return vec![Vec::new()];
+    }
+    let mut out = Vec::new();
+    for index in 0..items.len() {
+        let mut rest = items.to_vec();
+        let head = rest.remove(index);
+        for mut tail in permutations(&rest) {
+            let mut permutation = vec![head.clone()];
+            permutation.append(&mut tail);
+            out.push(permutation);
+        }
+    }
+    out
+}
+
+#[test]
+fn all_24_semantic_key_permutations_have_one_standing_digest() {
+    let entries = vec![
+        ("commit".to_string(), json!(BASE_SHA)),
+        ("a".to_string(), json!(1)),
+        ("m".to_string(), json!("stable")),
+        ("z".to_string(), json!(true)),
+    ];
+
+    let mut candidate_hashes = std::collections::BTreeSet::new();
+    let mut doctor_hashes = std::collections::BTreeSet::new();
+    let mut replay_digests = std::collections::BTreeSet::new();
+
+    for order in permutations(&entries) {
+        let mut map = serde_json::Map::new();
+        for (key, value) in order {
+            map.insert(key, value);
+        }
+        let standing = ReceiptDoctor::qualify_exact_subject(
+            &serde_json::Value::Object(map),
+            DiagnosticAudience::OperatorPrivate,
+            REPOSITORY,
+            BASE_SHA,
+        )
+        .unwrap();
+        assert_eq!(standing.state, VerificationState::Unknown);
+        candidate_hashes.insert(standing.candidate_receipt_sha256);
+        doctor_hashes.insert(standing.doctor_report_hash);
+        replay_digests.insert(standing.replay_digest);
+    }
+
+    assert_eq!(candidate_hashes.len(), 1, "candidate digest depends on key order");
+    assert_eq!(doctor_hashes.len(), 1, "verifier digest depends on key order");
+    assert_eq!(replay_digests.len(), 1, "replay digest depends on key order");
+}
