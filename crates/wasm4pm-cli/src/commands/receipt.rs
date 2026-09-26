@@ -142,7 +142,7 @@ fn doctor(args: &DoctorArgs) -> Result<()> {
         let doctor_report = ReceiptDoctor::audit(&receipt);
         !doctor_report.findings.is_empty()
     } else {
-        report.state == VerificationState::Refused
+        report.state != VerificationState::Admitted
     };
 
     if args.format.to_lowercase() == "json" {
@@ -161,6 +161,9 @@ fn doctor(args: &DoctorArgs) -> Result<()> {
         println!("\n{}", "=== RECEIPT DOCTOR AUDIT REPORT ===".bold().cyan());
         println!("{:<25} {}", "Audience Profile:", args.audience.yellow());
         match report.state {
+            VerificationState::Unknown => {
+                println!("{:<25} {}", "Admission Status:", "UNKNOWN".yellow().bold());
+            }
             VerificationState::Admitted => {
                 println!("{:<25} {}", "Admission Status:", "ADMITTED".green().bold());
             }
@@ -212,7 +215,7 @@ fn doctor(args: &DoctorArgs) -> Result<()> {
 
     if has_findings {
         return Err(anyhow!(
-            "Receipt Doctor refused admission for the provided receipt."
+            "Receipt Doctor did not admit the provided receipt (UNKNOWN or REFUSED)."
         ));
     }
 
