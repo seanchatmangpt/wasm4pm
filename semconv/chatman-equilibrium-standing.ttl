@@ -1,0 +1,84 @@
+@prefix ce: <https://seanchatman.dev/chatman-equilibrium#> .
+@prefix pm: <http://purl.org/pm/ontology#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# v26.9.26 load-bearing standing vocabulary for wasm4pm receipt verification.
+ce:Standing a rdfs:Class .
+ce:EvidenceClass a rdfs:Class .
+ce:Falsifier a rdfs:Class .
+ce:AuthorityCeiling a rdfs:Class .
+ce:ReplayObligation a rdfs:Class .
+ce:ExactSubject a rdfs:Class .
+
+ce:UNKNOWN a ce:Standing ;
+  rdfs:comment "Evidence is incomplete. UNKNOWN is not ADMITTED and is not a contradiction." .
+ce:REFUSED a ce:Standing ;
+  rdfs:comment "Observed evidence falsifies or violates an admission obligation." .
+ce:ADMITTED a ce:Standing ;
+  rdfs:comment "All bounded repository-local verification obligations are admitted." .
+
+ce:IndependentPositiveEvidence a ce:EvidenceClass .
+ce:EvidenceIncomplete a ce:EvidenceClass ;
+  ce:mapsToStanding ce:UNKNOWN .
+ce:ContradictoryEvidence a ce:EvidenceClass ;
+  ce:mapsToStanding ce:REFUSED .
+ce:SyntheticEvidence a ce:EvidenceClass ;
+  ce:mapsToStanding ce:REFUSED .
+ce:ExactSubjectMismatch a ce:EvidenceClass ;
+  ce:mapsToStanding ce:REFUSED .
+ce:RepositoryIdentityMissing a ce:EvidenceIncomplete .
+ce:RepositoryIdentityMismatch a ce:ExactSubjectMismatch .
+ce:CommitIdentityMissing a ce:EvidenceIncomplete .
+ce:CommitIdentityMismatch a ce:ExactSubjectMismatch .
+
+ce:IndependentEvidenceMissing a ce:EvidenceIncomplete .
+ce:ExpectedOCELMissing a ce:EvidenceIncomplete .
+ce:ObservedOCELMissing a ce:EvidenceIncomplete .
+ce:BoundaryEvidenceMissing a ce:EvidenceIncomplete .
+ce:RuntimeObserverMissing a ce:EvidenceIncomplete .
+ce:ChallengeNonceMissing a ce:EvidenceIncomplete .
+
+ce:ReceiptHashMismatch a ce:ContradictoryEvidence .
+ce:OCELCanonicalHashMismatch a ce:ContradictoryEvidence .
+ce:ExpectedObservedCloneDetected a ce:SyntheticEvidence .
+ce:PlaceholderEvidenceDetected a ce:SyntheticEvidence .
+ce:ObservedTraceNotChallengeBound a ce:ContradictoryEvidence .
+
+ce:RepositoryLocalVerification a ce:AuthorityCeiling ;
+  ce:authority "NONE" ;
+  ce:doAuthority false ;
+  ce:standingScope "repository-local-receipt-verification" .
+
+ce:DeterministicStandingReplay a ce:ReplayObligation ;
+  ce:commitsField "exact_subject" ,
+                  "subject_binding" ,
+                  "state" ,
+                  "candidate_receipt_sha256" ,
+                  "doctor_report_hash" ,
+                  "authority" ,
+                  "do_authority" ;
+  ce:hashAlgorithm "SHA-256" .
+
+ce:ExactSubjectQualification a rdfs:Class ;
+  ce:enforcedBy pm:StandingReceiptShape ;
+  ce:requires ce:IndependentPositiveEvidence ,
+              ce:DeterministicStandingReplay ,
+              ce:RepositoryLocalVerification ;
+  ce:requiresImmutableRepository true ;
+  ce:requiresImmutableCommit true .
+
+ce:CrossSubjectReuse a ce:Falsifier ;
+  ce:expectedStanding ce:REFUSED .
+ce:ForgedReceiptHash a ce:Falsifier ;
+  ce:expectedStanding ce:REFUSED .
+ce:SyntheticEvidenceInjection a ce:Falsifier ;
+  ce:expectedStanding ce:REFUSED .
+ce:ReplayDigestMutation a ce:Falsifier ;
+  ce:expectedStanding ce:REFUSED .
+ce:AuthorityLaundering a ce:Falsifier ;
+  ce:expectedStanding ce:REFUSED .
+ce:MissingIndependentEvidence a ce:Falsifier ;
+  ce:expectedStanding ce:UNKNOWN .
