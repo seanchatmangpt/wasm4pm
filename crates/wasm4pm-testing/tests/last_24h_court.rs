@@ -7,11 +7,10 @@ use wasm4pm_testing::last_24h::{
     HotPathCandidate, InteractionModel, ProcessAnalytics, ProviderCapability, ProviderContract,
     ProviderProfile, PublicationEvidence, RecoveryStep, RecoveryTrace, RepositoryRole,
     SemanticSourceKind, SemanticSourceRecord, SourceStanding, TransitionKind, VerifierVerdict,
-    REFUSED_BLIND_RETRY, REFUSED_BRCE_EXECUTION_GRANT_REQUIRED,
-    REFUSED_BUNDLE_IDENTITY_INCOMPLETE, REFUSED_ENTERPRISE_EVIDENCE_INCOMPLETE,
-    REFUSED_HOT_PATH_AUTHORITY_ESCALATION, REFUSED_HOT_PATH_NOT_EMPIRICAL,
-    REFUSED_PROCESS_EVIDENCE_AS_AUTHORITY, REFUSED_PROVIDER_CAPABILITY_ESCAPE,
-    REFUSED_WHOLESALE_LAB_COPY,
+    REFUSED_BLIND_RETRY, REFUSED_BRCE_EXECUTION_GRANT_REQUIRED, REFUSED_BUNDLE_IDENTITY_INCOMPLETE,
+    REFUSED_ENTERPRISE_EVIDENCE_INCOMPLETE, REFUSED_HOT_PATH_AUTHORITY_ESCALATION,
+    REFUSED_HOT_PATH_NOT_EMPIRICAL, REFUSED_PROCESS_EVIDENCE_AS_AUTHORITY,
+    REFUSED_PROVIDER_CAPABILITY_ESCAPE, REFUSED_WHOLESALE_LAB_COPY,
 };
 
 const LAB_SHA: &str = "1111111111111111111111111111111111111111";
@@ -25,11 +24,23 @@ fn canonical_topology_preserves_the_five_role_control_plane() {
         .map(|node| (node.repository, node.role))
         .collect::<BTreeMap<_, _>>();
     assert_eq!(roles.len(), 5);
-    assert_eq!(roles["seanchatmangpt/autofde-lab"], RepositoryRole::ExploreAdmit);
+    assert_eq!(
+        roles["seanchatmangpt/autofde-lab"],
+        RepositoryRole::ExploreAdmit
+    );
     assert_eq!(roles["seanchatmangpt/ggen"], RepositoryRole::Manufacture);
-    assert_eq!(roles["seanchatmangpt/autofde"], RepositoryRole::ProductionRuntime);
-    assert_eq!(roles["seanchatmangpt/gymact"], RepositoryRole::WorldExecution);
-    assert_eq!(roles["seanchatmangpt/wasm4pm"], RepositoryRole::ProcessEvidence);
+    assert_eq!(
+        roles["seanchatmangpt/autofde"],
+        RepositoryRole::ProductionRuntime
+    );
+    assert_eq!(
+        roles["seanchatmangpt/gymact"],
+        RepositoryRole::WorldExecution
+    );
+    assert_eq!(
+        roles["seanchatmangpt/wasm4pm"],
+        RepositoryRole::ProcessEvidence
+    );
 
     assert!(transition_is_lawful(
         RepositoryRole::ExploreAdmit,
@@ -72,7 +83,10 @@ fn production_promotion_requires_extracted_digest_bound_bundle_not_lab_copy() {
 
     let mut unbound = valid;
     unbound.lab_subject_sha = "main".to_owned();
-    assert_eq!(unbound.disposition(), Err(REFUSED_BUNDLE_IDENTITY_INCOMPLETE));
+    assert_eq!(
+        unbound.disposition(),
+        Err(REFUSED_BUNDLE_IDENTITY_INCOMPLETE)
+    );
 }
 
 #[test]
@@ -167,7 +181,9 @@ fn hot_candidate() -> HotPathCandidate {
 #[test]
 fn hot_compilation_requires_empirical_closure_complete_identity_and_no_authority() {
     let baseline = hot_candidate();
-    let digest = baseline.compile().expect("empirical HOT route must compile");
+    let digest = baseline
+        .compile()
+        .expect("empirical HOT route must compile");
     assert_eq!(digest.len(), 64);
 
     let mut warm = baseline.clone();
@@ -180,7 +196,10 @@ fn hot_compilation_requires_empirical_closure_complete_identity_and_no_authority
 
     let mut authority = baseline.clone();
     authority.carries_authority = true;
-    assert_eq!(authority.compile(), Err(REFUSED_HOT_PATH_AUTHORITY_ESCALATION));
+    assert_eq!(
+        authority.compile(),
+        Err(REFUSED_HOT_PATH_AUTHORITY_ESCALATION)
+    );
 
     let mut changed_environment = baseline;
     changed_environment.environment_identity = "different-environment".to_owned();
@@ -271,7 +290,10 @@ fn provider_contracts_preserve_real_blast_radius_and_independent_verification() 
 
     let mut escaped_plan = plan_only;
     escaped_plan.capabilities.insert(ProviderCapability::Apply);
-    assert_eq!(escaped_plan.validate(), Err(REFUSED_PROVIDER_CAPABILITY_ESCAPE));
+    assert_eq!(
+        escaped_plan.validate(),
+        Err(REFUSED_PROVIDER_CAPABILITY_ESCAPE)
+    );
 
     let local_apply = ProviderContract {
         profile: ProviderProfile::TerraformLocalDockerApply,
