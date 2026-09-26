@@ -10,8 +10,10 @@
   "evidence": {
     "source_ttl_contract": {
       "standing": "ALIVE",
-      "checks": 9,
-      "passed": 9
+      "checks": 32,
+      "passed": 32,
+      "observed_head": "7d75f1075a91d6cfe4edabe271993776d4498d0f",
+      "scope": "exact-branch source/TTL/SHACL/process contract reconstruction"
     },
     "cargo_execution": {
       "standing": "UNKNOWN",
@@ -38,5 +40,10 @@
     "cargo test -p wasm4pm --test chatman_equilibrium_standing_tests",
     "cargo test -p wasm4pm receipt"
   ],
-  "standing": "PARTIAL_ALIVE"
+  "standing": "PARTIAL_ALIVE",
+  "remaining_gradient": [
+    "cargo test -p wasm4pm --test chatman_equilibrium_standing_tests",
+    "cargo test -p wasm4pm receipt",
+    "node --test tests/chatman-equilibrium-standing-shacl.test.mjs"
+  ]
 }
