@@ -28,6 +28,10 @@ ce:SyntheticEvidence a ce:EvidenceClass ;
   ce:mapsToStanding ce:REFUSED .
 ce:ExactSubjectMismatch a ce:EvidenceClass ;
   ce:mapsToStanding ce:REFUSED .
+ce:RepositoryIdentityMissing a ce:EvidenceIncomplete .
+ce:RepositoryIdentityMismatch a ce:ExactSubjectMismatch .
+ce:CommitIdentityMissing a ce:EvidenceIncomplete .
+ce:CommitIdentityMismatch a ce:ExactSubjectMismatch .
 
 ce:IndependentEvidenceMissing a ce:EvidenceIncomplete .
 ce:ExpectedOCELMissing a ce:EvidenceIncomplete .
@@ -49,6 +53,7 @@ ce:RepositoryLocalVerification a ce:AuthorityCeiling ;
 
 ce:DeterministicStandingReplay a ce:ReplayObligation ;
   ce:commitsField "exact_subject" ,
+                  "subject_binding" ,
                   "state" ,
                   "candidate_receipt_sha256" ,
                   "doctor_report_hash" ,
