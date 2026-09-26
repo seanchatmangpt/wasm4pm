@@ -187,6 +187,7 @@ pub struct VerificationReport {
 pub struct EquilibriumStandingReceipt {
     pub schema: String,
     pub exact_subject: String,
+    pub subject_binding: String,
     pub verification_scope: String,
     pub state: VerificationState,
     pub authority: String,
@@ -200,6 +201,7 @@ pub struct EquilibriumStandingReceipt {
 struct EquilibriumStandingBody<'a> {
     schema: &'a str,
     exact_subject: &'a str,
+    subject_binding: &'a str,
     verification_scope: &'a str,
     state: VerificationState,
     authority: &'a str,
@@ -295,6 +297,7 @@ fn canonical_findings_hash(findings: &[ReceiptFinding]) -> String {
 
 fn standing_replay_digest(
     exact_subject: &str,
+    subject_binding: &str,
     state: VerificationState,
     candidate_receipt_sha256: &str,
     doctor_report_hash: &str,
@@ -302,6 +305,7 @@ fn standing_replay_digest(
     let body = EquilibriumStandingBody {
         schema: "wasm4pm.chatman-equilibrium-standing/1",
         exact_subject,
+        subject_binding,
         verification_scope: "repository-local-receipt-verification",
         state,
         authority: "NONE",
@@ -1427,11 +1431,39 @@ impl ReceiptDoctor {
 
         let report = Self::verify_with_audience(receipt, audience);
         let mut state = report.state;
+        let mut subject_binding = "BOUND";
+
+        let receipt_repository = receipt
+            .get("repository_identity")
+            .or_else(|| receipt.get("repository"))
+            .and_then(|value| value.as_str());
+
+        match receipt_repository {
+            None | Some("") => {
+                if state != VerificationState::Refused {
+                    state = VerificationState::Unknown;
+                }
+                subject_binding = "UNKNOWN_REPOSITORY";
+            }
+            Some(candidate_repository) if candidate_repository != repository => {
+                state = VerificationState::Refused;
+                subject_binding = "REFUSED_REPOSITORY_MISMATCH";
+            }
+            Some(_) => {}
+        }
 
         match receipt.get("commit").and_then(|value| value.as_str()) {
-            None | Some("") => state = VerificationState::Unknown,
+            None | Some("") => {
+                if state != VerificationState::Refused {
+                    state = VerificationState::Unknown;
+                }
+                if subject_binding == "BOUND" {
+                    subject_binding = "UNKNOWN_COMMIT";
+                }
+            }
             Some(commit) if !commit.eq_ignore_ascii_case(base_sha) => {
-                state = VerificationState::Refused
+                state = VerificationState::Refused;
+                subject_binding = "REFUSED_COMMIT_MISMATCH";
             }
             Some(_) => {}
         }
@@ -1441,6 +1473,7 @@ impl ReceiptDoctor {
         let doctor_report_hash = canonical_findings_hash(&report.operator_private.findings);
         let replay_digest = standing_replay_digest(
             &exact_subject,
+            subject_binding,
             state,
             &candidate_receipt_sha256,
             &doctor_report_hash,
@@ -1449,6 +1482,7 @@ impl ReceiptDoctor {
         Ok(EquilibriumStandingReceipt {
             schema: "wasm4pm.chatman-equilibrium-standing/1".to_string(),
             exact_subject,
+            subject_binding: subject_binding.to_string(),
             verification_scope: "repository-local-receipt-verification".to_string(),
             state,
             authority: "NONE".to_string(),
@@ -1466,6 +1500,7 @@ impl ReceiptDoctor {
             && receipt.replay_digest
                 == standing_replay_digest(
                     &receipt.exact_subject,
+                    &receipt.subject_binding,
                     receipt.state,
                     &receipt.candidate_receipt_sha256,
                     &receipt.doctor_report_hash,
