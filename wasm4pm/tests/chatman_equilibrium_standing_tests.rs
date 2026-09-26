@@ -276,6 +276,10 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
     assert_eq!(receipt["do_authority"], false);
     assert_eq!(receipt["evidence"]["cargo_execution"]["standing"], "UNKNOWN");
     assert_eq!(receipt["evidence"]["hosted_ci"]["standing"], "UNKNOWN");
+    assert_eq!(receipt["evidence"]["shacl_core_logic"]["standing"], "ALIVE");
+    assert_eq!(receipt["evidence"]["shacl_core_logic"]["killed"], 9);
+    assert_eq!(receipt["evidence"]["shacl_core_logic"]["total"], 9);
+    assert_eq!(receipt["evidence"]["node_module_execution"]["standing"], "UNKNOWN");
     assert_eq!(receipt["standing"], "PARTIAL_ALIVE");
 
     let objects = ocel["objects"].as_array().unwrap();
@@ -292,6 +296,7 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
         "falsifier.run",
         "replay.verify",
         "pr.open",
+        "court.execute",
     ];
     assert_eq!(events.len(), expected_types.len());
 
