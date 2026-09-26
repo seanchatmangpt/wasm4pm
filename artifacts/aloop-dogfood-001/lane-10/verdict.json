@@ -1,0 +1,491 @@
+{
+  "oracle": {
+    "name": "aloop-replay-oracle",
+    "lane": "lane-10",
+    "episode": "ALOOP-ZCODE-DOGFOOD-001",
+    "contract": "ALOOP OCEL 2.0 (10-lane contract, identical across lanes)",
+    "independence": "independent of XaaS-side and ex4pm-side judges; disagreement is evidence"
+  },
+  "subject": {
+    "repo": "wasm4pm",
+    "branch": "feat/aloop-dogfood-lane10-replay-oracle",
+    "head_sha": "476a5889bfe0960251e07ee2d49ad76fc451daf9"
+  },
+  "synthetic_corpus": {
+    "corpus_id": "synthetic-clean-seeded",
+    "provenance": "RECONSTRUCTED",
+    "event_count": 38,
+    "transitions_hash": "0f7033fe650fbc746db71b276f5f4de746a286822a2a3888467d51470e54ae70",
+    "cold_replay_byte_identical": true,
+    "refusal_codes": [],
+    "conformant": true
+  },
+  "blocked_corpus": {
+    "corpus_id": "synthetic-blocked-seeded",
+    "provenance": "RECONSTRUCTED",
+    "event_count": 20,
+    "transitions_hash": "ad6147ec471d225d000127eeeb156951d34ef844bf0fda685b32fa3e2ccf9649",
+    "cold_replay_byte_identical": true,
+    "refusal_codes": [],
+    "conformant": true
+  },
+  "real_lane_manifests": {
+    "root": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001",
+    "files_seen": 9,
+    "files_scanned": 3,
+    "corpora": [],
+    "manifests": [
+      {
+        "file": "record-run1.json",
+        "kind": "record",
+        "lane": "lane-1",
+        "provenance": "REAL_LANE_MANIFEST",
+        "standing": "ASSISTED",
+        "terminal_claim": "ABSENT",
+        "recurrence_demonstrated": false,
+        "receipts_checked": 2,
+        "checks": [
+          {
+            "check": "manifest-vocabulary",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-standing-law",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-receipt-authority",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-zero-human-causal-edges-post-epoch",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-recurrence-honesty",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-typed-blockers",
+            "pass": true,
+            "codes": []
+          }
+        ],
+        "refusal_codes": [],
+        "conformant": true
+      },
+      {
+        "file": "record.json",
+        "kind": "record",
+        "lane": "lane-1",
+        "provenance": "REAL_LANE_MANIFEST",
+        "standing": "ASSISTED",
+        "terminal_claim": "ABSENT",
+        "recurrence_demonstrated": false,
+        "receipts_checked": 2,
+        "checks": [
+          {
+            "check": "manifest-vocabulary",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-standing-law",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-receipt-authority",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-zero-human-causal-edges-post-epoch",
+            "pass": false,
+            "codes": [
+              "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE"
+            ]
+          },
+          {
+            "check": "manifest-recurrence-honesty",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-typed-blockers",
+            "pass": true,
+            "codes": []
+          }
+        ],
+        "refusal_codes": [
+          "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE"
+        ],
+        "conformant": false
+      },
+      {
+        "file": "run.ndjson",
+        "kind": "record",
+        "lane": "lane-8",
+        "provenance": "REAL_LANE_MANIFEST",
+        "standing": "",
+        "terminal_claim": "ABSENT",
+        "recurrence_demonstrated": false,
+        "receipts_checked": 0,
+        "checks": [
+          {
+            "check": "manifest-vocabulary",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-standing-law",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-receipt-authority",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-zero-human-causal-edges-post-epoch",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-recurrence-honesty",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-subject-identity",
+            "pass": true,
+            "codes": []
+          },
+          {
+            "check": "manifest-typed-blockers",
+            "pass": true,
+            "codes": []
+          }
+        ],
+        "refusal_codes": [],
+        "conformant": true
+      }
+    ],
+    "unparseable": [
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/run.ndjson",
+        "kind": "unparseable",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/verdict.json",
+        "kind": "oracle-self-verdict",
+        "reason": "this oracle's own verdict file: judging it here would be self-certification"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-4/run-records.ndjson",
+        "kind": "contract-declaration",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/lane-7.manifest.json",
+        "kind": "unparseable",
+        "reason": "not JSON"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/runs.ndjson",
+        "kind": "unparseable",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/golden_case.dag.json",
+        "kind": "contract-declaration",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      }
+    ],
+    "verdict": "NON_CONFORMANT"
+  },
+  "mutants": [
+    {
+      "id": "M1",
+      "name": "delete reobserve event",
+      "mutated_check": "recurrence/reobserve-before-goal",
+      "expected_code": "REFUSED:ALOOP_MISSING_REOBSERVE",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_MISSING_REOBSERVE",
+        "REFUSED:ALOOP_UNTYPED_TERMINAL"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M2",
+      "name": "insert human.next_action post-epoch",
+      "mutated_check": "zero-human-causal-edges-post-epoch",
+      "expected_code": "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_HUMAN_CAUSAL_EDGE"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M3",
+      "name": "duplicate DO (same consequence id)",
+      "mutated_check": "zero-duplicate-consequence",
+      "expected_code": "REFUSED:ALOOP_DUPLICATE_CONSEQUENCE",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_DUPLICATE_CONSEQUENCE"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M4",
+      "name": "drop receipt after DO",
+      "mutated_check": "receipt-linkage/zero-orphan-DO",
+      "expected_code": "REFUSED:ALOOP_ORPHAN_DO",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_ORPHAN_DO"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M5",
+      "name": "change provider without provider.replace",
+      "mutated_check": "provider-substitution-legality",
+      "expected_code": "REFUSED:ALOOP_PROVIDER_SUBSTITUTION_ILLEGAL",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_PROVIDER_SUBSTITUTION_ILLEGAL"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M6",
+      "name": "change subject SHA mid-chain",
+      "mutated_check": "object-identity/subject-SHA",
+      "expected_code": "REFUSED:ALOOP_SUBJECT_IDENTITY_BREAK",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_SUBJECT_IDENTITY_BREAK",
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M7",
+      "name": "invent WorkOrder with no originAuthority",
+      "mutated_check": "workorder-originAuthority",
+      "expected_code": "REFUSED:ALOOP_WORKORDER_NO_AUTHORITY",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_WORKORDER_NO_AUTHORITY"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M8",
+      "name": "terminate before typed goal (no goal.satisfied)",
+      "mutated_check": "typed-terminality",
+      "expected_code": "REFUSED:ALOOP_UNTYPED_TERMINAL",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_UNTYPED_TERMINAL"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M9",
+      "name": "rogue unknown event class post-epoch",
+      "mutated_check": "event-class-vocabulary",
+      "expected_code": "REFUSED:ALOOP_UNKNOWN_EVENT_CLASS",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_UNKNOWN_EVENT_CLASS"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M10",
+      "name": "worker swap mid-run without re-claim",
+      "mutated_check": "worker-substitution-legality",
+      "expected_code": "REFUSED:ALOOP_WORKER_SUBSTITUTION_ILLEGAL",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_WORKER_SUBSTITUTION_ILLEGAL",
+        "REFUSED:ALOOP_RECEIPT_WITHOUT_DO"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M11",
+      "name": "standing regression ASSISTED then AUTONOMOUS",
+      "mutated_check": "standing-law/never-ASSISTED-to-AUTONOMOUS",
+      "expected_code": "REFUSED:ALOOP_STANDING_REGRESSION",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_STANDING_REGRESSION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    }
+  ],
+  "checks": [
+    {
+      "check": "event-ordering",
+      "description": "episode.start->observe->...->receipt.persist->reobserve->goal->terminal partial order holds",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M1",
+      "pass": true
+    },
+    {
+      "check": "object-identity",
+      "description": "episode subject SHA immutable across all events",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M6",
+      "pass": true
+    },
+    {
+      "check": "recurrence",
+      "description": "receipt.persist->reobserve->predecessor-linked successor WorkOrder chain",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M1",
+      "pass": true
+    },
+    {
+      "check": "receipt-linkage",
+      "description": "every DO (actuate) closed by a receipt.persist on the same consequence",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M4",
+      "pass": true
+    },
+    {
+      "check": "provider-substitution",
+      "description": "provider changes only via provider.replace(input=current,output=new)",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M5",
+      "pass": true
+    },
+    {
+      "check": "worker-substitution",
+      "description": "WorkerRun bound to claimed worker; change requires worker.claim",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M10",
+      "pass": true
+    },
+    {
+      "check": "typed-terminality",
+      "description": "episode.terminal requires goal.satisfied or goal.blocked (with Failure evidence)",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M8",
+      "pass": true
+    },
+    {
+      "check": "zero-human-causal-edges",
+      "description": "post-epoch events carry zero human originAuthority edges",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M2",
+      "pass": true
+    },
+    {
+      "check": "zero-orphan-do",
+      "description": "no unreceipted DO at goal or terminal",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M4",
+      "pass": true
+    },
+    {
+      "check": "zero-duplicate-consequence",
+      "description": "consequence ids are never reused across DOs",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M3",
+      "pass": true
+    },
+    {
+      "check": "standing-law",
+      "description": "never ASSISTED -> AUTONOMOUS",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M11",
+      "pass": true
+    },
+    {
+      "check": "event-class-vocabulary",
+      "description": "all activities are contract event classes",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M9",
+      "pass": true
+    }
+  ],
+  "anti_vacuity": {
+    "clean_fixture_passes": true,
+    "blocked_fixture_passes": true,
+    "all_mutants_refused": true,
+    "mutant_survivors": [],
+    "cold_replay_byte_identical": true
+  },
+  "overall": "NON_CONFORMANT",
+  "reasons": [
+    "real lane evidence non-conformant: [\"record.json\"]"
+  ]
+}
