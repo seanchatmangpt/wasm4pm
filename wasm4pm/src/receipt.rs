@@ -212,7 +212,9 @@ struct EquilibriumStandingBody<'a> {
 
 fn immutable_git_sha(value: &str) -> bool {
     (value.len() == 40 || value.len() == 64)
-        && value.bytes().all(|b| b.is_ascii_hexdigit())
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
 }
 
 fn repository_identity(value: &str) -> bool {
@@ -1461,7 +1463,7 @@ impl ReceiptDoctor {
                     subject_binding = "UNKNOWN_COMMIT";
                 }
             }
-            Some(commit) if !commit.eq_ignore_ascii_case(base_sha) => {
+            Some(commit) if commit != base_sha => {
                 state = VerificationState::Refused;
                 subject_binding = "REFUSED_COMMIT_MISMATCH";
             }
