@@ -375,7 +375,6 @@ pub struct AntiVacuity {
 #[derive(Debug, Clone)]
 struct PendingDo {
     consequence_id: String,
-    workorder_id: String,
 }
 
 #[derive(Debug, Clone)]
@@ -415,10 +414,20 @@ pub struct AloopOracle {
 
 impl AloopOracle {
     pub fn new(log: AloopLog) -> Self {
+        Self::with_ordering(log, ordering_gates())
+    }
+
+    /// Construct the oracle over an explicit POWL PartialOrder table. Only the
+    /// anti-vacuity court uses a non-canonical table: it proves the ordering
+    /// mutants are refused *because of* the table, not incidentally.
+    pub fn with_ordering(
+        log: AloopLog,
+        ordering: BTreeMap<&'static str, Vec<&'static str>>,
+    ) -> Self {
         Self {
             log,
             state: AloopOracleState::default(),
-            ordering: ordering_gates(),
+            ordering,
             records: Vec::new(),
             chain: blake3::hash(b"aloop-oracle-genesis").to_hex().to_string(),
         }
@@ -648,15 +657,8 @@ impl AloopOracle {
                 if !self.state.used_consequences.insert(cons.clone()) {
                     return Some(self.refuse(event, REFUSED_DUPLICATE_CONSEQUENCE));
                 }
-                let wo = event
-                    .objects
-                    .iter()
-                    .find(|o| o.object_type == "WorkOrder")
-                    .map(|o| o.object_id.clone())
-                    .unwrap_or_default();
                 self.state.open_dos.push(PendingDo {
                     consequence_id: cons,
-                    workorder_id: wo,
                 });
             }
         }
@@ -782,7 +784,15 @@ impl AloopOracle {
 /// Execute the model over a log; returns transition records plus the final
 /// blake3 chain hash (the replay identity of the run).
 pub fn run_log(log: &AloopLog) -> (Vec<TransitionRecord>, String, Disposition) {
-    let mut oracle = AloopOracle::new(log.clone());
+    run_log_with_ordering(log, ordering_gates())
+}
+
+/// `run_log` over an explicit ordering table (anti-vacuity court only).
+pub fn run_log_with_ordering(
+    log: &AloopLog,
+    ordering: BTreeMap<&'static str, Vec<&'static str>>,
+) -> (Vec<TransitionRecord>, String, Disposition) {
+    let mut oracle = AloopOracle::with_ordering(log.clone(), ordering);
     for event in &log.events {
         oracle.observe(event);
     }
@@ -1548,7 +1558,50 @@ fn mutants() -> Vec<Mutant> {
                 }
             },
         },
+        // POWL PartialOrder mutants. Each inserts one activity immediately
+        // after episode.start, where only `episode.start` is witnessed, so the
+        // ordering table is the only check that can refuse it.
+        Mutant {
+            id: "M12",
+            name: "merge before any commit",
+            mutated_check: ORDERING_CHECK,
+            expected_code: REFUSED_ORDERING_VIOLATION,
+            apply: |log| insert_after_start(log, "merge"),
+        },
+        Mutant {
+            id: "M13",
+            name: "actuate before execution.start",
+            mutated_check: ORDERING_CHECK,
+            expected_code: REFUSED_ORDERING_VIOLATION,
+            apply: |log| insert_after_start(log, "actuate"),
+        },
+        Mutant {
+            id: "M14",
+            name: "goal.satisfied before any reobserve",
+            mutated_check: ORDERING_CHECK,
+            expected_code: REFUSED_ORDERING_VIOLATION,
+            apply: |log| insert_after_start(log, "goal.satisfied"),
+        },
+        Mutant {
+            id: "M15",
+            name: "replan without reconcile",
+            mutated_check: ORDERING_CHECK,
+            expected_code: REFUSED_ORDERING_VIOLATION,
+            apply: |log| insert_after_start(log, "replan"),
+        },
     ]
+}
+
+/// Mutated-check id carried by every POWL PartialOrder mutant.
+const ORDERING_CHECK: &str = "event-ordering/powl-partial-order";
+
+/// Insert `activity` (no objects) directly after the first event
+/// (`episode.start`, seq 10) at seq 11; only `episode.start` is witnessed there.
+fn insert_after_start(log: &mut AloopLog, activity: &str) {
+    let ts = log.events[0].ts;
+    log.events
+        .push(ev(11, ts, activity, Some("AUTONOMOUS"), Vec::new()));
+    log.events.sort_by_key(|e| e.seq);
 }
 
 // ---------------------------------------------------------------------------
@@ -1697,8 +1750,6 @@ struct RawRepoRecord {
     #[serde(default)]
     repo: String,
     #[serde(default)]
-    branch: String,
-    #[serde(default)]
     start_sha: String,
     #[serde(default)]
     final_sha: String,
@@ -1714,8 +1765,6 @@ struct RawReceipt {
     provider: String,
     #[serde(default)]
     origin_authority: String,
-    #[serde(default)]
-    exit_status: String,
 }
 
 #[derive(Deserialize)]
@@ -1744,8 +1793,6 @@ struct RawOcelSummary {
 
 #[derive(Deserialize)]
 struct RawManifest {
-    #[serde(default)]
-    episode: String,
     #[serde(default)]
     lane: serde_json::Value,
     #[serde(default)]
@@ -1982,8 +2029,6 @@ fn parse_lane_log(path: &std::path::Path, text: &str) -> Option<AloopLog> {
         activity: Option<String>,
         #[serde(default, rename = "seq")]
         raw_seq: Option<u64>,
-        #[serde(default, rename = "ocel:timestamp")]
-        ocel_timestamp: Option<String>,
         #[serde(default)]
         ts: Option<u64>,
         #[serde(default)]
@@ -2040,7 +2085,8 @@ fn parse_lane_log(path: &std::path::Path, text: &str) -> Option<AloopLog> {
                     .collect(),
             });
         }
-    } else if let Some(map) = raw.ocel_events {
+    } else {
+        let map = raw.ocel_events?;
         for (i, (key, r)) in map.iter().enumerate() {
             events.push(AloopEvent {
                 event_id: key.clone(),
@@ -2072,8 +2118,6 @@ fn parse_lane_log(path: &std::path::Path, text: &str) -> Option<AloopLog> {
                     .collect(),
             });
         }
-    } else {
-        return None;
     }
     events.sort_by_key(|e| e.seq);
     Some(AloopLog {
@@ -2115,7 +2159,7 @@ fn check_table(
         mk(
             "event-ordering",
             "episode.start->observe->...->receipt.persist->reobserve->goal->terminal partial order holds",
-            mutant_firing("recurrence/reobserve-before-goal"),
+            mutant_firing(ORDERING_CHECK),
             synthetic.conformant && blocked.conformant,
         ),
         mk(
@@ -2370,9 +2414,16 @@ fn independent_oracle_never_grants_authority() {
 fn verdict_json_is_emitted_and_wellformed() {
     let verdict = evaluate_verdict();
     let json = serde_json::to_vec_pretty(&verdict).expect("verdict serialization is infallible");
-    let out = std::env::var("ALOOP_VERDICT_OUT")
-        .unwrap_or_else(|_| "../../artifacts/aloop-dogfood-001/lane-10/verdict.json".to_owned());
-    let path = PathBuf::from(out);
+    // Default output is the cargo per-target tmp dir: a plain `cargo test`
+    // must not overwrite the tracked artifact (whose real-lane scan was taken
+    // with ALOOP_LANE_ROOT set) with a synthetic-only verdict. Regenerating
+    // artifacts/aloop-dogfood-001/lane-10/verdict.json is explicit:
+    // ALOOP_VERDICT_OUT=<path> ALOOP_LANE_ROOT=<dir> ALOOP_SUBJECT_BRANCH=..
+    // ALOOP_SUBJECT_SHA=.. cargo test --test aloop_replay_oracle.
+    let path = std::env::var("ALOOP_VERDICT_OUT").map_or_else(
+        |_| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("aloop-lane10-verdict.json"),
+        PathBuf::from,
+    );
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
             .expect("artifact dir creation is lawful in the harness sandbox");
@@ -2549,4 +2600,103 @@ fn real_lane_scan_classifies_without_consuming_authority() {
     let (_, v) = manifest_codes(&manifest_record_fixture());
     let v = v.expect("fixture is a Record");
     assert!(v.provenance == "REAL_LANE_MANIFEST");
+}
+
+#[test]
+fn every_ordering_edge_is_load_bearing() {
+    // For every PartialOrder edge whose gates exclude `episode.start`, the
+    // activity placed directly after episode.start must be refused with the
+    // ordering code. Guards against an edge that no check ever consults.
+    let start = clean_fixture().events[0].clone();
+    let epoch = clean_fixture().human_epoch_ts;
+    let table = ordering_gates();
+    let mut tested = 0usize;
+    for (activity, gates) in &table {
+        if gates.contains(&"episode.start") {
+            continue;
+        }
+        let log = AloopLog {
+            log_id: format!("edge-{activity}"),
+            human_epoch_ts: epoch,
+            provenance: "RECONSTRUCTED".to_owned(),
+            events: vec![
+                start.clone(),
+                ev(11, start.ts, activity, Some("AUTONOMOUS"), Vec::new()),
+            ],
+        };
+        let (records, _hash, _close) = run_log(&log);
+        assert_eq!(
+            records[1].disposition,
+            Disposition::Refused {
+                code: REFUSED_ORDERING_VIOLATION.to_owned()
+            },
+            "ordering edge {activity} <- {gates:?} is not load-bearing"
+        );
+        tested += 1;
+    }
+    let seeded_by_start = table
+        .values()
+        .filter(|g| g.contains(&"episode.start"))
+        .count();
+    assert_eq!(tested + seeded_by_start, table.len());
+    assert!(
+        tested >= 20,
+        "ordering table shrank to {tested} gated edges"
+    );
+}
+
+#[test]
+fn ordering_mutants_are_refused_because_of_the_table() {
+    // Anti-vacuity: with the PartialOrder table emptied, every ordering
+    // mutant must SURVIVE (its expected code disappears). If one is still
+    // refused, the refusal comes from some other check and the ordering
+    // table is not what the corpus witnesses.
+    let ordering: Vec<Mutant> = mutants()
+        .into_iter()
+        .filter(|m| m.mutated_check == ORDERING_CHECK)
+        .collect();
+    assert!(ordering.len() >= 4, "ordering mutant corpus shrank");
+    for m in &ordering {
+        let mut log = clean_fixture();
+        (m.apply)(&mut log);
+        let (with_table, _, _) = run_log(&log);
+        assert!(
+            refusal_codes(&with_table)
+                .iter()
+                .any(|c| c == m.expected_code),
+            "{} not refused by the canonical table",
+            m.id
+        );
+        let (without_table, _, _) = run_log_with_ordering(&log, BTreeMap::new());
+        assert!(
+            !refusal_codes(&without_table)
+                .iter()
+                .any(|c| c == m.expected_code),
+            "{} refused with {} even without the ordering table",
+            m.id,
+            m.expected_code
+        );
+    }
+}
+
+#[test]
+fn event_ordering_check_is_witnessed_by_an_ordering_mutant() {
+    let verdict = evaluate_verdict();
+    let check = verdict
+        .checks
+        .iter()
+        .find(|c| c.check == "event-ordering")
+        .expect("event-ordering check present");
+    let by = check
+        .witnessed_by_mutant
+        .as_deref()
+        .expect("event-ordering witnessed by a mutant");
+    let witness = verdict
+        .mutants
+        .iter()
+        .find(|m| m.id == by)
+        .expect("witness mutant present");
+    assert_eq!(witness.mutated_check, ORDERING_CHECK);
+    assert_eq!(witness.expected_code, REFUSED_ORDERING_VIOLATION);
+    assert!(check.pass);
 }
