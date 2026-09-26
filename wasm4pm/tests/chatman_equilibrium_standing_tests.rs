@@ -160,3 +160,37 @@ fn malformed_mutable_subjects_are_not_qualifiable() {
         "immutable_base_sha_invalid"
     );
 }
+
+
+#[test]
+fn semantic_key_order_does_not_change_evidence_or_replay_digest() {
+    let mut left = serde_json::Map::new();
+    left.insert("z".to_string(), json!(1));
+    left.insert("commit".to_string(), json!(BASE_SHA));
+    left.insert("a".to_string(), json!(2));
+
+    let mut right = serde_json::Map::new();
+    right.insert("a".to_string(), json!(2));
+    right.insert("commit".to_string(), json!(BASE_SHA));
+    right.insert("z".to_string(), json!(1));
+
+    let l = ReceiptDoctor::qualify_exact_subject(
+        &serde_json::Value::Object(left),
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    let r = ReceiptDoctor::qualify_exact_subject(
+        &serde_json::Value::Object(right),
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    assert_eq!(l.candidate_receipt_sha256, r.candidate_receipt_sha256);
+    assert_eq!(l.doctor_report_hash, r.doctor_report_hash);
+    assert_eq!(l.replay_digest, r.replay_digest);
+    assert_eq!(l.state, VerificationState::Unknown);
+}
