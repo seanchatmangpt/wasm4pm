@@ -9,7 +9,7 @@
   "subject": {
     "repo": "wasm4pm",
     "branch": "v26926/wasm4pm-land-aloop-lane10-replay-oracle",
-    "head_sha": "b407c87bb7c42a2834db7c7426fe436c4cfda9d9"
+    "head_sha": "unknown"
   },
   "synthetic_corpus": {
     "corpus_id": "synthetic-clean-seeded",
@@ -30,7 +30,7 @@
     "conformant": true
   },
   "real_lane_manifests": {
-    "root": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001",
+    "root": "lane-root:aloop-dogfood-001",
     "files_seen": 13,
     "files_scanned": 3,
     "corpora": [],
@@ -193,52 +193,52 @@
     ],
     "unparseable": [
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/run.ndjson",
+        "file": "lane-10/run.ndjson",
         "kind": "unparseable",
         "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-10/verdict.json",
+        "file": "lane-10/verdict.json",
         "kind": "oracle-self-verdict",
         "reason": "this oracle's own verdict file: judging it here would be self-certification"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-4/run-records.ndjson",
+        "file": "lane-4/run-records.ndjson",
         "kind": "contract-declaration",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-6/dogfood-scan.json",
+        "file": "lane-6/dogfood-scan.json",
         "kind": "contract-declaration",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-6/receipt.json",
+        "file": "lane-6/receipt.json",
         "kind": "contract-declaration",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/lane-7.manifest.json",
+        "file": "lane-7/lane-7.manifest.json",
         "kind": "unparseable",
         "reason": "not JSON"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/runs.ndjson",
+        "file": "lane-7/runs.ndjson",
         "kind": "unparseable",
         "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/golden_case.dag.json",
+        "file": "lane-8/golden_case.dag.json",
         "kind": "contract-declaration",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/run.ndjson",
+        "file": "lane-8/run.ndjson",
         "kind": "unparseable",
         "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       },
       {
-        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-9/run-record.ndjson",
+        "file": "lane-9/run-record.ndjson",
         "kind": "unparseable",
         "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       }
@@ -254,7 +254,8 @@
       "refused": true,
       "observed_codes": [
         "REFUSED:ALOOP_MISSING_REOBSERVE",
-        "REFUSED:ALOOP_UNTYPED_TERMINAL"
+        "REFUSED:ALOOP_UNTYPED_TERMINAL",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -290,7 +291,8 @@
       "expected_code": "REFUSED:ALOOP_ORPHAN_DO",
       "refused": true,
       "observed_codes": [
-        "REFUSED:ALOOP_ORPHAN_DO"
+        "REFUSED:ALOOP_ORPHAN_DO",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -339,7 +341,8 @@
       "expected_code": "REFUSED:ALOOP_UNTYPED_TERMINAL",
       "refused": true,
       "observed_codes": [
-        "REFUSED:ALOOP_UNTYPED_TERMINAL"
+        "REFUSED:ALOOP_UNTYPED_TERMINAL",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -409,7 +412,8 @@
         "REFUSED:ALOOP_STANDING_REGRESSION",
         "REFUSED:ALOOP_STANDING_REGRESSION",
         "REFUSED:ALOOP_STANDING_REGRESSION",
-        "REFUSED:ALOOP_STANDING_REGRESSION"
+        "REFUSED:ALOOP_STANDING_REGRESSION",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
       ],
       "cold_replay_byte_identical": true,
       "survived": false
@@ -457,6 +461,186 @@
       "expected_code": "REFUSED:ALOOP_ORDERING_VIOLATION",
       "refused": true,
       "observed_codes": [
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M16",
+      "name": "sequence number goes backwards",
+      "mutated_check": "structural/seq-monotonic",
+      "expected_code": "REFUSED:ALOOP_SEQ_NOT_MONOTONIC",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_SEQ_NOT_MONOTONIC"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M17",
+      "name": "event id reused",
+      "mutated_check": "structural/event-id-unique",
+      "expected_code": "REFUSED:ALOOP_DUPLICATE_EVENT_ID",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_DUPLICATE_EVENT_ID"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M18",
+      "name": "second episode.start",
+      "mutated_check": "episode-bracketing/single-start",
+      "expected_code": "REFUSED:ALOOP_DUPLICATE_EPISODE_START",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_DUPLICATE_EPISODE_START"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M19",
+      "name": "episode.start deleted",
+      "mutated_check": "episode-bracketing/start-first",
+      "expected_code": "REFUSED:ALOOP_MISSING_EPISODE_START",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_MISSING_EPISODE_START",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M20",
+      "name": "event after episode.terminal",
+      "mutated_check": "episode-bracketing/nothing-after-terminal",
+      "expected_code": "REFUSED:ALOOP_POST_TERMINAL_EVENT",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_POST_TERMINAL_EVENT"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M21",
+      "name": "episode.terminal deleted",
+      "mutated_check": "episode-bracketing/terminal-required",
+      "expected_code": "REFUSED:ALOOP_NO_TERMINAL_EVENT",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M22",
+      "name": "receipt names a consequence no DO opened",
+      "mutated_check": "receipt-linkage/receipt-closes-a-DO",
+      "expected_code": "REFUSED:ALOOP_RECEIPT_WITHOUT_DO",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_RECEIPT_WITHOUT_DO",
+        "REFUSED:ALOOP_ORDERING_VIOLATION",
+        "REFUSED:ALOOP_ORDERING_VIOLATION",
+        "REFUSED:ALOOP_ORDERING_VIOLATION",
+        "REFUSED:ALOOP_ORDERING_VIOLATION",
+        "REFUSED:ALOOP_ORPHAN_DO",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M23",
+      "name": "goal.satisfied with no falsifier run",
+      "mutated_check": "goal-verified/falsifier-before-goal",
+      "expected_code": "REFUSED:ALOOP_GOAL_UNVERIFIED",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_GOAL_UNVERIFIED",
+        "REFUSED:ALOOP_UNTYPED_TERMINAL",
+        "REFUSED:ALOOP_NO_TERMINAL_EVENT"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M24",
+      "name": "unknown object type",
+      "mutated_check": "object-vocabulary/type",
+      "expected_code": "REFUSED:ALOOP_UNKNOWN_OBJECT_TYPE",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_UNKNOWN_OBJECT_TYPE",
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M25",
+      "name": "unknown qualifier",
+      "mutated_check": "object-vocabulary/qualifier",
+      "expected_code": "REFUSED:ALOOP_UNKNOWN_QUALIFIER",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_UNKNOWN_QUALIFIER",
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M26",
+      "name": "unknown standing",
+      "mutated_check": "standing-law/vocabulary",
+      "expected_code": "REFUSED:ALOOP_UNKNOWN_STANDING",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_UNKNOWN_STANDING",
         "REFUSED:ALOOP_ORDERING_VIOLATION"
       ],
       "cold_replay_byte_identical": true,
@@ -546,6 +730,41 @@
       "description": "all activities are contract event classes",
       "witnessed_clean": true,
       "witnessed_by_mutant": "M9",
+      "pass": true
+    },
+    {
+      "check": "seq-monotonic",
+      "description": "event sequence numbers strictly increase",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M16",
+      "pass": true
+    },
+    {
+      "check": "event-id-unique",
+      "description": "no event id is reused",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M17",
+      "pass": true
+    },
+    {
+      "check": "episode-bracketing",
+      "description": "exactly one episode.start first, typed terminal last, nothing after it",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M21",
+      "pass": true
+    },
+    {
+      "check": "goal-verified",
+      "description": "goal.satisfied requires a witnessed falsifier run",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M23",
+      "pass": true
+    },
+    {
+      "check": "object-vocabulary",
+      "description": "object types, qualifiers and standings are contract vocabulary",
+      "witnessed_clean": true,
+      "witnessed_by_mutant": "M24",
       "pass": true
     }
   ],

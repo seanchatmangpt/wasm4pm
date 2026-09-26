@@ -23,7 +23,8 @@
 //! evidence). Standing law: never ASSISTED -> AUTONOMOUS.
 //!
 //! Evidence discipline: transition hashing (blake3 chain) + cold replay must
-//! be byte-identical; every mutant must be REFUSED with its exact typed code
+//! be byte-identical and must commit to dispositions; every mutant must be
+//! REFUSED with its exact typed code, and every typed code must have a mutant
 //! (a surviving mutant is an oracle defect = harness failure). This oracle
 //! carries zero actuation authority, like every oracle in this crate.
 
@@ -359,6 +360,41 @@ pub const REFUSED_MANIFEST_RECURRENCE_UNWITNESSED: &str =
     "REFUSED:ALOOP_MANIFEST_RECURRENCE_UNWITNESSED";
 pub const REFUSED_MANIFEST_UNTYPED_BLOCKER: &str = "REFUSED:ALOOP_MANIFEST_UNTYPED_BLOCKER";
 
+/// Every typed refusal code this oracle can emit. The coverage court
+/// (`every_refusal_code_is_witnessed_by_a_mutant`) requires each entry to be
+/// the expected code of at least one event-level or manifest-level mutant,
+/// and requires this registry to list every `REFUSED_*` constant in the file:
+/// a code with no firing mutant is a zero-information check.
+pub const ALL_REFUSAL_CODES: [&str; 27] = [
+    REFUSED_UNKNOWN_EVENT_CLASS,
+    REFUSED_UNKNOWN_OBJECT_TYPE,
+    REFUSED_UNKNOWN_QUALIFIER,
+    REFUSED_UNKNOWN_STANDING,
+    REFUSED_STANDING_REGRESSION,
+    REFUSED_HUMAN_CAUSAL_EDGE,
+    REFUSED_MISSING_EPISODE_START,
+    REFUSED_DUPLICATE_EPISODE_START,
+    REFUSED_SEQ_NOT_MONOTONIC,
+    REFUSED_DUPLICATE_EVENT_ID,
+    REFUSED_ORDERING_VIOLATION,
+    REFUSED_DUPLICATE_CONSEQUENCE,
+    REFUSED_RECEIPT_WITHOUT_DO,
+    REFUSED_ORPHAN_DO,
+    REFUSED_GOAL_UNVERIFIED,
+    REFUSED_PROVIDER_SUBSTITUTION_ILLEGAL,
+    REFUSED_WORKER_SUBSTITUTION_ILLEGAL,
+    REFUSED_SUBJECT_IDENTITY_BREAK,
+    REFUSED_WORKORDER_NO_AUTHORITY,
+    REFUSED_UNTYPED_TERMINAL,
+    REFUSED_MISSING_REOBSERVE,
+    REFUSED_POST_TERMINAL_EVENT,
+    REFUSED_NO_TERMINAL_EVENT,
+    REFUSED_MANIFEST_UNKNOWN_VOCAB,
+    REFUSED_PROVIDER_SELECT_MISSING,
+    REFUSED_MANIFEST_RECURRENCE_UNWITNESSED,
+    REFUSED_MANIFEST_UNTYPED_BLOCKER,
+];
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntiVacuity {
     pub clean_fixture_passes: bool,
@@ -469,6 +505,9 @@ impl AloopOracle {
                 return Some(self.refuse(event, REFUSED_SEQ_NOT_MONOTONIC));
             }
         }
+        // The high-water mark advances only for an in-order event; without
+        // this the monotonicity check above never has a predecessor to test.
+        self.state.last_seq = Some(event.seq);
         if !self.state.event_ids.insert(event.event_id.clone()) {
             return Some(self.refuse(event, REFUSED_DUPLICATE_EVENT_ID));
         }
@@ -816,6 +855,17 @@ fn refusal_codes(records: &[TransitionRecord]) -> Vec<String> {
         .iter()
         .filter_map(|r| r.disposition.code().map(str::to_owned))
         .collect()
+}
+
+/// Refusal codes of a whole run: per-event refusals plus the end-of-log
+/// audit (`close`). Without the close code a log that never reaches a typed
+/// terminal event would be judged conformant.
+fn run_refusal_codes(records: &[TransitionRecord], close: &Disposition) -> Vec<String> {
+    let mut codes = refusal_codes(records);
+    if let Some(c) = close.code() {
+        codes.push(c.to_owned());
+    }
+    codes
 }
 
 // ---------------------------------------------------------------------------
@@ -1589,7 +1639,140 @@ fn mutants() -> Vec<Mutant> {
             expected_code: REFUSED_ORDERING_VIOLATION,
             apply: |log| insert_after_start(log, "replan"),
         },
+        // Structural and bracketing mutants: one per event-level refusal code
+        // that the corpus above does not already witness.
+        Mutant {
+            id: "M16",
+            name: "sequence number goes backwards",
+            mutated_check: "structural/seq-monotonic",
+            expected_code: REFUSED_SEQ_NOT_MONOTONIC,
+            apply: |log| set_seq(log, 200, 185),
+        },
+        Mutant {
+            id: "M17",
+            name: "event id reused",
+            mutated_check: "structural/event-id-unique",
+            expected_code: REFUSED_DUPLICATE_EVENT_ID,
+            apply: |log| {
+                for e in log.events.iter_mut() {
+                    if e.seq == 210 {
+                        e.event_id = "ev-0200".to_owned();
+                    }
+                }
+            },
+        },
+        Mutant {
+            id: "M18",
+            name: "second episode.start",
+            mutated_check: "episode-bracketing/single-start",
+            expected_code: REFUSED_DUPLICATE_EPISODE_START,
+            apply: |log| {
+                let mut dup = log.events[0].clone();
+                dup.seq = 15;
+                dup.event_id = "ev-0015".to_owned();
+                log.events.push(dup);
+                log.events.sort_by_key(|e| e.seq);
+            },
+        },
+        Mutant {
+            id: "M19",
+            name: "episode.start deleted",
+            mutated_check: "episode-bracketing/start-first",
+            expected_code: REFUSED_MISSING_EPISODE_START,
+            apply: |log| log.events.retain(|e| e.activity != "episode.start"),
+        },
+        Mutant {
+            id: "M20",
+            name: "event after episode.terminal",
+            mutated_check: "episode-bracketing/nothing-after-terminal",
+            expected_code: REFUSED_POST_TERMINAL_EVENT,
+            apply: |log| {
+                log.events.push(ev(
+                    390,
+                    1037,
+                    "observe",
+                    Some("AUTONOMOUS"),
+                    vec![obj("Evidence", "ev:obs-late", "evidence")],
+                ));
+            },
+        },
+        Mutant {
+            id: "M21",
+            name: "episode.terminal deleted",
+            mutated_check: "episode-bracketing/terminal-required",
+            expected_code: REFUSED_NO_TERMINAL_EVENT,
+            apply: |log| log.events.retain(|e| e.activity != "episode.terminal"),
+        },
+        Mutant {
+            id: "M22",
+            name: "receipt names a consequence no DO opened",
+            mutated_check: "receipt-linkage/receipt-closes-a-DO",
+            expected_code: REFUSED_RECEIPT_WITHOUT_DO,
+            apply: |log| {
+                for e in log.events.iter_mut() {
+                    if e.seq == 140 {
+                        for o in e.objects.iter_mut() {
+                            if o.object_type == "Consequence" {
+                                o.object_id = "cons:ghost".to_owned();
+                            }
+                        }
+                    }
+                }
+            },
+        },
+        Mutant {
+            id: "M23",
+            name: "goal.satisfied with no falsifier run",
+            mutated_check: "goal-verified/falsifier-before-goal",
+            expected_code: REFUSED_GOAL_UNVERIFIED,
+            apply: |log| log.events.retain(|e| e.activity != "falsifier.run"),
+        },
+        Mutant {
+            id: "M24",
+            name: "unknown object type",
+            mutated_check: "object-vocabulary/type",
+            expected_code: REFUSED_UNKNOWN_OBJECT_TYPE,
+            apply: |log| add_object(log, 150, obj("Gremlin", "g-1", "evidence")),
+        },
+        Mutant {
+            id: "M25",
+            name: "unknown qualifier",
+            mutated_check: "object-vocabulary/qualifier",
+            expected_code: REFUSED_UNKNOWN_QUALIFIER,
+            apply: |log| add_object(log, 150, obj("Evidence", "ev:side-1", "sidecar")),
+        },
+        Mutant {
+            id: "M26",
+            name: "unknown standing",
+            mutated_check: "standing-law/vocabulary",
+            expected_code: REFUSED_UNKNOWN_STANDING,
+            apply: |log| {
+                for e in log.events.iter_mut() {
+                    if e.seq == 150 {
+                        e.standing = Some("SEMI_AUTONOMOUS".to_owned());
+                    }
+                }
+            },
+        },
     ]
+}
+
+/// Rewrite one event's seq in place without re-sorting, so the log order is
+/// preserved and only the sequence number is wrong.
+fn set_seq(log: &mut AloopLog, from: u64, to: u64) {
+    for e in log.events.iter_mut() {
+        if e.seq == from {
+            e.seq = to;
+        }
+    }
+}
+
+fn add_object(log: &mut AloopLog, seq: u64, o: AloopObjectRef) {
+    for e in log.events.iter_mut() {
+        if e.seq == seq {
+            e.objects.push(o.clone());
+        }
+    }
 }
 
 /// Mutated-check id carried by every POWL PartialOrder mutant.
@@ -1609,9 +1792,9 @@ fn insert_after_start(log: &mut AloopLog, activity: &str) {
 // ---------------------------------------------------------------------------
 
 fn corpus_verdict(corpus_id: &str, log: &AloopLog) -> CorpusVerdict {
-    let (records, hash, _close) = run_log(log);
+    let (records, hash, close) = run_log(log);
     let (_bytes, identical) = cold_replay(log);
-    let codes = refusal_codes(&records);
+    let codes = run_refusal_codes(&records, &close);
     let conformant = codes.is_empty();
     CorpusVerdict {
         corpus_id: corpus_id.to_owned(),
@@ -1681,7 +1864,14 @@ fn real_lane_scan() -> RealLaneScan {
                 continue;
             }
             seen += 1;
-            let name = file.display().to_string();
+            // Relative to the lane root, so the tracked verdict carries no
+            // host path and regenerates byte-identically on any machine
+            // that holds the same lane evidence.
+            let name = file
+                .strip_prefix(&lane_root)
+                .unwrap_or(&file)
+                .display()
+                .to_string();
             if let Some(log) = parse_lane_log(&file, &text) {
                 scanned += 1;
                 let mut v = corpus_verdict(&format!("real:{name}"), &log);
@@ -1726,7 +1916,7 @@ fn real_lane_scan() -> RealLaneScan {
         "NON_CONFORMANT".to_owned()
     };
     RealLaneScan {
-        root,
+        root: lane_root_label(&lane_root),
         files_seen: seen,
         files_scanned: scanned,
         corpora,
@@ -1734,6 +1924,16 @@ fn real_lane_scan() -> RealLaneScan {
         unparseable,
         verdict,
     }
+}
+
+/// Host-independent label for the scanned lane root: only its final path
+/// component (the episode directory), never the operator's home path.
+fn lane_root_label(lane_root: &std::path::Path) -> String {
+    let leaf = lane_root
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    format!("lane-root:{leaf}")
 }
 
 enum ManifestJudgment {
@@ -2228,6 +2428,36 @@ fn check_table(
             mutant_firing("event-class-vocabulary"),
             synthetic.conformant,
         ),
+        mk(
+            "seq-monotonic",
+            "event sequence numbers strictly increase",
+            mutant_firing("structural/seq-monotonic"),
+            synthetic.conformant && blocked.conformant,
+        ),
+        mk(
+            "event-id-unique",
+            "no event id is reused",
+            mutant_firing("structural/event-id-unique"),
+            synthetic.conformant && blocked.conformant,
+        ),
+        mk(
+            "episode-bracketing",
+            "exactly one episode.start first, typed terminal last, nothing after it",
+            mutant_firing("episode-bracketing/terminal-required"),
+            synthetic.conformant && blocked.conformant,
+        ),
+        mk(
+            "goal-verified",
+            "goal.satisfied requires a witnessed falsifier run",
+            mutant_firing("goal-verified/falsifier-before-goal"),
+            synthetic.conformant,
+        ),
+        mk(
+            "object-vocabulary",
+            "object types, qualifiers and standings are contract vocabulary",
+            mutant_firing("object-vocabulary/type"),
+            synthetic.conformant,
+        ),
     ]
 }
 
@@ -2241,9 +2471,9 @@ pub fn evaluate_verdict() -> AloopVerdict {
     for m in mutants() {
         let mut log = clean_fixture();
         (m.apply)(&mut log);
-        let (records, _hash, _close) = run_log(&log);
+        let (records, _hash, close) = run_log(&log);
         let (_bytes, identical) = cold_replay(&log);
-        let codes = refusal_codes(&records);
+        let codes = run_refusal_codes(&records, &close);
         let refused = codes.iter().any(|c| c == m.expected_code);
         let survived = !refused;
         mutant_results.push(MutantResult {
@@ -2511,10 +2741,10 @@ fn real_lane_manifest_record_conforms_at_manifest_level() {
     assert!(!decl_codes.is_empty() && decl_verdict.is_none());
 }
 
-#[test]
-fn real_lane_manifest_mutants_are_refused_with_typed_reason() {
+/// Manifest-level mutant corpus: (name, mutated manifest text, expected code).
+fn manifest_mutants() -> Vec<(&'static str, String, &'static str)> {
     let base = manifest_record_fixture();
-    let mutants: Vec<(&str, String, &str)> = vec![
+    vec![
         // MA1: post-epoch human causal edge.
         (
             "MA1 post-epoch human edge",
@@ -2581,8 +2811,18 @@ fn real_lane_manifest_mutants_are_refused_with_typed_reason() {
             base.replace("\"blockers\": []", "\"blockers\": [\"\"]"),
             REFUSED_MANIFEST_UNTYPED_BLOCKER,
         ),
-    ];
-    for (name, text, expected) in &mutants {
+        // MA9: receipt that names no provider (provider.select unwitnessed).
+        (
+            "MA9 receipt without provider",
+            base.replace("\"provider\": \"zcode\",", ""),
+            REFUSED_PROVIDER_SELECT_MISSING,
+        ),
+    ]
+}
+
+#[test]
+fn real_lane_manifest_mutants_are_refused_with_typed_reason() {
+    for (name, text, expected) in &manifest_mutants() {
         let (codes, _) = manifest_codes(text);
         assert!(
             codes.iter().any(|c| c.starts_with(&expected[..])),
@@ -2699,4 +2939,154 @@ fn event_ordering_check_is_witnessed_by_an_ordering_mutant() {
     assert_eq!(witness.mutated_check, ORDERING_CHECK);
     assert_eq!(witness.expected_code, REFUSED_ORDERING_VIOLATION);
     assert!(check.pass);
+}
+
+#[test]
+fn every_refusal_code_is_witnessed_by_a_mutant() {
+    // Registry completeness: every REFUSED_* constant declared in this file
+    // is listed in ALL_REFUSAL_CODES (a new code cannot dodge the court).
+    let source = include_str!("aloop_replay_oracle.rs");
+    let declared = source
+        .lines()
+        .filter(|l| l.starts_with("pub const REFUSED_"))
+        .count();
+    assert_eq!(
+        declared,
+        ALL_REFUSAL_CODES.len(),
+        "ALL_REFUSAL_CODES is out of date with the REFUSED_* constants"
+    );
+    let unique: BTreeSet<&str> = ALL_REFUSAL_CODES.iter().copied().collect();
+    assert_eq!(unique.len(), ALL_REFUSAL_CODES.len(), "duplicate code");
+
+    // Every event-level mutant fires its code on the real oracle.
+    let verdict = evaluate_verdict();
+    let mut witnessed: BTreeSet<String> = BTreeSet::new();
+    for m in &verdict.mutants {
+        assert!(!m.survived, "mutant {} survived", m.id);
+        witnessed.insert(m.expected_code.clone());
+    }
+    // Every manifest-level mutant fires its code on the real judge.
+    for (name, text, expected) in &manifest_mutants() {
+        let (codes, _) = manifest_codes(text);
+        assert!(
+            codes.iter().any(|c| c.starts_with(&expected[..])),
+            "manifest mutant '{name}' survived: expected {expected}, got {codes:?}"
+        );
+        witnessed.insert((*expected).to_owned());
+    }
+    let unwitnessed: Vec<&str> = ALL_REFUSAL_CODES
+        .iter()
+        .copied()
+        .filter(|c| !witnessed.contains(*c))
+        .collect();
+    assert!(
+        unwitnessed.is_empty(),
+        "zero-information refusal codes (no firing mutant): {unwitnessed:?}"
+    );
+}
+
+#[test]
+fn structural_mutants_are_refused_by_their_own_check() {
+    // Each structural/bracketing mutant must be refused with its code as the
+    // FIRST refusal of the run: the named check is what fires, not a
+    // downstream check that happens to notice the damage later.
+    for m in mutants() {
+        if !(m.mutated_check.starts_with("structural/")
+            || m.mutated_check.starts_with("episode-bracketing/")
+            || m.mutated_check.starts_with("object-vocabulary/")
+            || m.mutated_check == "standing-law/vocabulary")
+        {
+            continue;
+        }
+        let mut log = clean_fixture();
+        (m.apply)(&mut log);
+        let (records, _hash, close) = run_log(&log);
+        let codes = run_refusal_codes(&records, &close);
+        assert_eq!(
+            codes.first().map(String::as_str),
+            Some(m.expected_code),
+            "{} ({}) first refusal was {:?}",
+            m.id,
+            m.name,
+            codes
+        );
+    }
+}
+
+#[test]
+fn transitions_hash_commits_to_dispositions() {
+    // Same event bytes, different dispositions (ordering table present vs
+    // emptied) must give different chain hashes: a conforming/refused flip
+    // has to be visible in the replay identity, not only in the full records.
+    let mutant = mutants()
+        .into_iter()
+        .find(|m| m.id == "M12")
+        .expect("M12 ordering mutant present");
+    let mut log = clean_fixture();
+    (mutant.apply)(&mut log);
+    let (with_table, h_with, _) = run_log(&log);
+    let (without_table, h_without, _) = run_log_with_ordering(&log, BTreeMap::new());
+    assert_ne!(
+        with_table[1].disposition, without_table[1].disposition,
+        "precondition: the two runs must disagree on event 11"
+    );
+    assert_ne!(
+        with_table[1].chain_hash, without_table[1].chain_hash,
+        "chain hash at the flipped event ignores the disposition"
+    );
+    assert_ne!(
+        h_with, h_without,
+        "final transitions hash ignores dispositions"
+    );
+    // Events before the flip are judged identically, so their links agree.
+    assert_eq!(with_table[0].chain_hash, without_table[0].chain_hash);
+}
+
+/// Parts of the tracked verdict that do not depend on the operator's lane
+/// directory or on the subject env vars. A plain `cargo test` recomputes them
+/// and must reproduce the committed bytes exactly.
+fn host_independent(v: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!({
+        "oracle": v["oracle"],
+        "synthetic_corpus": v["synthetic_corpus"],
+        "blocked_corpus": v["blocked_corpus"],
+        "mutants": v["mutants"],
+        "checks": v["checks"],
+        "anti_vacuity": v["anti_vacuity"],
+    })
+}
+
+#[test]
+fn tracked_artifact_is_bound_to_current_oracle() {
+    // Named so that `cargo test verdict_json` (the regeneration command)
+    // does not select it: it reads the file that regeneration writes.
+    let tracked = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../artifacts/aloop-dogfood-001/lane-10/verdict.json");
+    let text = std::fs::read_to_string(&tracked)
+        .unwrap_or_else(|e| panic!("tracked verdict {} unreadable: {e}", tracked.display()));
+    let committed: serde_json::Value =
+        serde_json::from_str(&text).expect("tracked verdict is JSON");
+    let fresh = serde_json::to_value(evaluate_verdict()).expect("verdict serializes");
+    assert_eq!(
+        host_independent(&committed),
+        host_independent(&fresh),
+        "tracked verdict.json is stale: regenerate it (see README)"
+    );
+    // No host paths in the tracked artifact.
+    assert!(
+        !text.contains("/Users/") && !text.contains("/home/"),
+        "tracked verdict carries an absolute host path"
+    );
+    // The committed real-lane section is well-formed and its overall
+    // verdict follows from it with the same rule the oracle uses.
+    let real = &committed["real_lane_manifests"];
+    let real_verdict = real["verdict"].as_str().expect("real verdict string");
+    let overall = committed["overall"].as_str().expect("overall string");
+    if real_verdict == "NON_CONFORMANT" {
+        assert_eq!(overall, "NON_CONFORMANT");
+    }
+    assert!(real["root"]
+        .as_str()
+        .map(|r| r.starts_with("lane-root:") || r.starts_with("(unset"))
+        .unwrap_or(false));
 }
