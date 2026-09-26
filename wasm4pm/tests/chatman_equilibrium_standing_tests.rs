@@ -673,3 +673,34 @@ fn shacl_court_receipt_is_provenance_bound_and_zero_authority() {
         "exact-source-shacl-core-logic"
     );
 }
+
+
+#[test]
+fn uppercase_sha_aliases_are_not_admitted_subject_identity() {
+    let upper = BASE_SHA.to_ascii_uppercase();
+    let candidate = json!({
+        "repository_identity": REPOSITORY,
+        "commit": upper
+    });
+
+    let standing = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    assert_eq!(standing.state, VerificationState::Refused);
+    assert_eq!(standing.subject_binding, "REFUSED_COMMIT_MISMATCH");
+
+    assert_eq!(
+        ReceiptDoctor::qualify_exact_subject(
+            &json!({"repository_identity": REPOSITORY, "commit": BASE_SHA}),
+            DiagnosticAudience::OperatorPrivate,
+            REPOSITORY,
+            &BASE_SHA.to_ascii_uppercase(),
+        )
+        .unwrap_err(),
+        "immutable_base_sha_invalid"
+    );
+}
