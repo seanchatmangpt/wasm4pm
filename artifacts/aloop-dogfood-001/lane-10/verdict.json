@@ -8,8 +8,8 @@
   },
   "subject": {
     "repo": "wasm4pm",
-    "branch": "feat/aloop-dogfood-lane10-replay-oracle",
-    "head_sha": "476a5889bfe0960251e07ee2d49ad76fc451daf9"
+    "branch": "v26926/wasm4pm-land-aloop-lane10-replay-oracle",
+    "head_sha": "b407c87bb7c42a2834db7c7426fe436c4cfda9d9"
   },
   "synthetic_corpus": {
     "corpus_id": "synthetic-clean-seeded",
@@ -31,7 +31,7 @@
   },
   "real_lane_manifests": {
     "root": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001",
-    "files_seen": 9,
+    "files_seen": 13,
     "files_scanned": 3,
     "corpora": [],
     "manifests": [
@@ -138,11 +138,11 @@
         "conformant": false
       },
       {
-        "file": "run.ndjson",
+        "file": "run-record.json",
         "kind": "record",
-        "lane": "lane-8",
+        "lane": "lane-6",
         "provenance": "REAL_LANE_MANIFEST",
-        "standing": "",
+        "standing": "PARTIAL_ALIVE",
         "terminal_claim": "ABSENT",
         "recurrence_demonstrated": false,
         "receipts_checked": 0,
@@ -154,8 +154,10 @@
           },
           {
             "check": "manifest-standing-law",
-            "pass": true,
-            "codes": []
+            "pass": false,
+            "codes": [
+              "REFUSED:ALOOP_UNKNOWN_STANDING: PARTIAL_ALIVE"
+            ]
           },
           {
             "check": "manifest-receipt-authority",
@@ -183,8 +185,10 @@
             "codes": []
           }
         ],
-        "refusal_codes": [],
-        "conformant": true
+        "refusal_codes": [
+          "REFUSED:ALOOP_UNKNOWN_STANDING: PARTIAL_ALIVE"
+        ],
+        "conformant": false
       }
     ],
     "unparseable": [
@@ -204,6 +208,16 @@
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
       },
       {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-6/dogfood-scan.json",
+        "kind": "contract-declaration",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-6/receipt.json",
+        "kind": "contract-declaration",
+        "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-7/lane-7.manifest.json",
         "kind": "unparseable",
         "reason": "not JSON"
@@ -217,6 +231,16 @@
         "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/golden_case.dag.json",
         "kind": "contract-declaration",
         "reason": "no executed claims (receipts/commands/repos empty): nothing to judge at manifest level"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-8/run.ndjson",
+        "kind": "unparseable",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
+      },
+      {
+        "file": "/Users/sac/.zcode/workspace/default/aloop-dogfood-001/lane-9/run-record.ndjson",
+        "kind": "unparseable",
+        "reason": "NDJSON (line-delimited) not parsed by the single-document judge"
       }
     ],
     "verdict": "NON_CONFORMANT"
@@ -389,6 +413,54 @@
       ],
       "cold_replay_byte_identical": true,
       "survived": false
+    },
+    {
+      "id": "M12",
+      "name": "merge before any commit",
+      "mutated_check": "event-ordering/powl-partial-order",
+      "expected_code": "REFUSED:ALOOP_ORDERING_VIOLATION",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M13",
+      "name": "actuate before execution.start",
+      "mutated_check": "event-ordering/powl-partial-order",
+      "expected_code": "REFUSED:ALOOP_ORDERING_VIOLATION",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M14",
+      "name": "goal.satisfied before any reobserve",
+      "mutated_check": "event-ordering/powl-partial-order",
+      "expected_code": "REFUSED:ALOOP_ORDERING_VIOLATION",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
+    },
+    {
+      "id": "M15",
+      "name": "replan without reconcile",
+      "mutated_check": "event-ordering/powl-partial-order",
+      "expected_code": "REFUSED:ALOOP_ORDERING_VIOLATION",
+      "refused": true,
+      "observed_codes": [
+        "REFUSED:ALOOP_ORDERING_VIOLATION"
+      ],
+      "cold_replay_byte_identical": true,
+      "survived": false
     }
   ],
   "checks": [
@@ -396,7 +468,7 @@
       "check": "event-ordering",
       "description": "episode.start->observe->...->receipt.persist->reobserve->goal->terminal partial order holds",
       "witnessed_clean": true,
-      "witnessed_by_mutant": "M1",
+      "witnessed_by_mutant": "M12",
       "pass": true
     },
     {
@@ -486,6 +558,6 @@
   },
   "overall": "NON_CONFORMANT",
   "reasons": [
-    "real lane evidence non-conformant: [\"record.json\"]"
+    "real lane evidence non-conformant: [\"record.json\", \"run-record.json\"]"
   ]
 }
