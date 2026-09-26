@@ -1,0 +1,31 @@
+{
+  "schema": "wasm4pm.chatman-equilibrium-run-receipt/1",
+  "calver": "v26.9.26",
+  "subject": "seanchatmangpt/wasm4pm@9fc4f1ae3cc99cf65a5f014580db8e1ea3d08b55",
+  "branch": "verify/v26.9.26-tristate-standing",
+  "pr": 641,
+  "authority": "NONE",
+  "do_authority": false,
+  "scope": "repository-local-receipt-verification",
+  "evidence": {
+    "source_ttl_contract": {
+      "standing": "ALIVE",
+      "checks": 9,
+      "passed": 9
+    },
+    "cargo_execution": {
+      "standing": "UNKNOWN",
+      "reason": "execution container cannot resolve github.com for exact-head checkout"
+    },
+    "hosted_ci": {
+      "standing": "UNKNOWN",
+      "reason": "out of scope; not consulted"
+    }
+  },
+  "process_evidence": "receipts/v26.9.26/chatman-equilibrium-standing.ocel.json",
+  "replay": [
+    "cargo test -p wasm4pm --test chatman_equilibrium_standing_tests",
+    "cargo test -p wasm4pm receipt"
+  ],
+  "standing": "PARTIAL_ALIVE"
+}
