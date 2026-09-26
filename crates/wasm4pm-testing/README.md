@@ -83,6 +83,52 @@ A wasm4pm-backed adapter must bind exact engine/WASM/model identities and must n
 wasm4pm refusal into success. A missing optional process runtime is `UNSUPPORTED`/`BLOCKED`; it
 does not make the GymAct core unavailable.
 
+## ALOOP lane-10 replay/conformance oracle
+
+`tests/aloop_replay_oracle.rs` is an independent ALOOP OCEL 2.0 conformance oracle
+(ALOOP-ZCODE-DOGFOOD-001 lane 10). It is deliberately independent of the XaaS-side and
+ex4pm-side judges: a disagreement between them is evidence, not an error to hide.
+
+- POWL process model: a table-driven PartialOrder (`ordering_gates`), the redo loop
+  `receipt.persist -> reobserve -> predecessor-linked WorkOrder`, XOR optional branches and
+  the crash/failure/replan branch.
+- Laws: zero post-epoch human causal edges, every `actuate` closed by a `receipt.persist` on
+  the same consequence, no duplicate consequence, typed terminality, never
+  `ASSISTED -> AUTONOMOUS`, contract vocabulary.
+- Replay: every transition extends a blake3 hash chain; a cold replay must be byte-identical.
+- Anti-vacuity: the clean and blocked fixtures conform; every mutant (M1-M26) is refused with
+  its exact typed `REFUSED:ALOOP_*` code. The ordering mutants (M12-M15) must survive when the
+  PartialOrder table is emptied, and every gated edge of the table is individually
+  load-bearing, so removing the table fails the court.
+- Code coverage court: `ALL_REFUSAL_CODES` must list every `REFUSED_*` constant, and each code
+  must be the expected code of an event-level mutant (M1-M26) or a manifest mutant (MA1-MA9).
+  Structural mutants (M16-M26) must be refused first by their own check.
+- Replay identity: `transitions_hash` commits to dispositions, not only event bytes; flipping
+  one event from conforming to refused changes the hash.
+- Real lanes: `ALOOP_LANE_ROOT=<dir>` judges lane manifests and event logs found there. File
+  names are recorded relative to that root and the root as `lane-root:<leaf>`, so the verdict
+  carries no host path.
+
+A plain `cargo test` writes the verdict under `CARGO_TARGET_TMPDIR`. The tracked
+`artifacts/aloop-dogfood-001/lane-10/verdict.json` is regenerated only explicitly:
+
+```bash
+ALOOP_VERDICT_OUT=$PWD/artifacts/aloop-dogfood-001/lane-10/verdict.json \
+ALOOP_LANE_ROOT=<lane root> ALOOP_SUBJECT_BRANCH=<branch> ALOOP_SUBJECT_SHA=<sha> \
+  cargo test --manifest-path crates/wasm4pm-testing/Cargo.toml --test aloop_replay_oracle
+```
+
+`tracked_artifact_is_bound_to_current_oracle` recomputes every host-independent section of
+the tracked verdict (fixtures, mutants, checks, anti-vacuity) and fails when the committed file
+is stale. Its name does not match `verdict_json`, so `cargo test ... verdict_json` regenerates
+without reading the file it writes.
+
+This crate declares its own `[workspace]` and is not a member of the root workspace, so
+`cargo test -p wasm4pm-testing` from the repository root fails with "did not match any
+packages". Use `--manifest-path crates/wasm4pm-testing/Cargo.toml` or run from the crate dir.
+
+The oracle carries zero actuation authority.
+
 ## Focused verification
 
 ```bash

@@ -13,19 +13,14 @@ use serde::{Deserialize, Serialize};
 pub const REFUSED_TOPOLOGY_VIOLATION: &str = "REFUSED:TOPOLOGY_VIOLATION";
 pub const REFUSED_WHOLESALE_LAB_COPY: &str = "REFUSED:WHOLESALE_LAB_COPY";
 pub const REFUSED_BUNDLE_IDENTITY_INCOMPLETE: &str = "REFUSED:BUNDLE_IDENTITY_INCOMPLETE";
-pub const REFUSED_BRCE_EXECUTION_GRANT_REQUIRED: &str =
-    "REFUSED:BRCE_EXECUTION_GRANT_REQUIRED";
-pub const REFUSED_PROCESS_EVIDENCE_AS_AUTHORITY: &str =
-    "REFUSED:PROCESS_EVIDENCE_AS_AUTHORITY";
+pub const REFUSED_BRCE_EXECUTION_GRANT_REQUIRED: &str = "REFUSED:BRCE_EXECUTION_GRANT_REQUIRED";
+pub const REFUSED_PROCESS_EVIDENCE_AS_AUTHORITY: &str = "REFUSED:PROCESS_EVIDENCE_AS_AUTHORITY";
 pub const REFUSED_HOT_PATH_NOT_EMPIRICAL: &str = "REFUSED:HOT_PATH_NOT_EMPIRICAL";
-pub const REFUSED_HOT_PATH_IDENTITY_INCOMPLETE: &str =
-    "REFUSED:HOT_PATH_IDENTITY_INCOMPLETE";
-pub const REFUSED_HOT_PATH_AUTHORITY_ESCALATION: &str =
-    "REFUSED:HOT_PATH_AUTHORITY_ESCALATION";
+pub const REFUSED_HOT_PATH_IDENTITY_INCOMPLETE: &str = "REFUSED:HOT_PATH_IDENTITY_INCOMPLETE";
+pub const REFUSED_HOT_PATH_AUTHORITY_ESCALATION: &str = "REFUSED:HOT_PATH_AUTHORITY_ESCALATION";
 pub const REFUSED_BLIND_RETRY: &str = "REFUSED:BLIND_RETRY";
 pub const REFUSED_PROVIDER_CAPABILITY_ESCAPE: &str = "REFUSED:PROVIDER_CAPABILITY_ESCAPE";
-pub const REFUSED_ENTERPRISE_EVIDENCE_INCOMPLETE: &str =
-    "REFUSED:ENTERPRISE_EVIDENCE_INCOMPLETE";
+pub const REFUSED_ENTERPRISE_EVIDENCE_INCOMPLETE: &str = "REFUSED:ENTERPRISE_EVIDENCE_INCOMPLETE";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum RepositoryRole {
@@ -121,7 +116,6 @@ pub struct CapabilityBundlePromotion {
 }
 
 impl CapabilityBundlePromotion {
-    #[must_use]
     pub fn disposition(&self) -> Result<(), &'static str> {
         if self.copied_lab_wholesale {
             return Err(REFUSED_WHOLESALE_LAB_COPY);
@@ -161,7 +155,6 @@ pub struct ExecutionAttempt {
 }
 
 impl ExecutionAttempt {
-    #[must_use]
     pub fn can_execute(&self) -> Result<bool, &'static str> {
         match self.lane {
             ActionLane::Select | ActionLane::Construct => Ok(false),
@@ -199,7 +192,6 @@ pub struct RecoveryTrace {
 }
 
 impl RecoveryTrace {
-    #[must_use]
     pub fn allows_retry(&self) -> Result<bool, &'static str> {
         if self.consequence_state == ConsequenceState::Known {
             return Ok(self.steps.contains(&RecoveryStep::Retry));
@@ -252,7 +244,6 @@ pub struct HotPathCandidate {
 }
 
 impl HotPathCandidate {
-    #[must_use]
     pub fn compile(&self) -> Result<String, &'static str> {
         if self.regime != CognitionRegime::Hot || !self.empirical_competitor_closure {
             return Err(REFUSED_HOT_PATH_NOT_EMPIRICAL);
@@ -275,8 +266,7 @@ impl HotPathCandidate {
         if !self.candidate_only || self.carries_authority {
             return Err(REFUSED_HOT_PATH_AUTHORITY_ESCALATION);
         }
-        let bytes =
-            serde_json::to_vec(self).expect("HotPathCandidate serialization is infallible");
+        let bytes = serde_json::to_vec(self).expect("HotPathCandidate serialization is infallible");
         Ok(blake3::hash(&bytes).to_hex().to_string())
     }
 }
@@ -437,7 +427,6 @@ pub struct ProviderContract {
 }
 
 impl ProviderContract {
-    #[must_use]
     pub fn validate(&self) -> Result<(), &'static str> {
         match self.profile {
             ProviderProfile::TerraformPlanOnly => {
@@ -465,8 +454,7 @@ impl ProviderContract {
             | ProviderProfile::McpClientSession
             | ProviderProfile::BrowserGym => {}
         }
-        if self.capabilities.contains(&ProviderCapability::Apply)
-            && !self.independent_verification
+        if self.capabilities.contains(&ProviderCapability::Apply) && !self.independent_verification
         {
             return Err(REFUSED_PROVIDER_CAPABILITY_ESCAPE);
         }
@@ -531,7 +519,6 @@ pub struct EnterpriseAdmission {
 }
 
 impl EnterpriseAdmission {
-    #[must_use]
     pub fn enterprise_alive(&self) -> Result<bool, &'static str> {
         if !self.technical_alive || self.adopted_decisions != 1 {
             return Err(REFUSED_ENTERPRISE_EVIDENCE_INCOMPLETE);
