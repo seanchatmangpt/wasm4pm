@@ -89,6 +89,9 @@ export type { Checkpoint } from './checkpointing.js';
 export {
   MemoryCheckpointStore,
   FileCheckpointStore,
+  CheckpointSequenceConflictError,
+  filterAndOrderCheckpointMetadata,
+  selectLatestCheckpointMetadata,
   type ICheckpointStore,
   type CheckpointMetadata,
   type RunFilter,
