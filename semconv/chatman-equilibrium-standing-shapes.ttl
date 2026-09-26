@@ -14,17 +14,20 @@ pm:StandingReceiptShape a sh:NodeShape ;
   sh:property [
     sh:path pm:exactSubject ;
     sh:minCount 1 ;
-    sh:message "exact_subject is required"
+    sh:pattern "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}([0-9a-f]{24})?$" ;
+    sh:message "exact_subject must be repository@immutable-sha"
   ] ;
   sh:property [
     sh:path pm:subjectBinding ;
     sh:minCount 1 ;
-    sh:message "subject_binding is required"
+    sh:in ("BOUND" "UNKNOWN_REPOSITORY" "UNKNOWN_COMMIT" "REFUSED_REPOSITORY_MISMATCH" "REFUSED_COMMIT_MISMATCH") ;
+    sh:message "subject_binding must use the admitted binding vocabulary"
   ] ;
   sh:property [
     sh:path pm:state ;
     sh:minCount 1 ;
-    sh:message "standing state is required"
+    sh:in ("Unknown" "Admitted" "Refused") ;
+    sh:message "standing state must be Unknown, Admitted, or Refused"
   ] ;
   sh:property [
     sh:path pm:authority ;
@@ -41,15 +44,18 @@ pm:StandingReceiptShape a sh:NodeShape ;
   sh:property [
     sh:path pm:candidateReceiptSha256 ;
     sh:minCount 1 ;
-    sh:message "candidate evidence digest is required"
+    sh:pattern "^[0-9a-f]{64}$" ;
+    sh:message "candidate evidence digest must be lowercase sha256"
   ] ;
   sh:property [
     sh:path pm:doctorReportHash ;
     sh:minCount 1 ;
-    sh:message "independent verifier digest is required"
+    sh:pattern "^[0-9a-f]{64}$" ;
+    sh:message "independent verifier digest must be 64 lowercase hex"
   ] ;
   sh:property [
     sh:path pm:replayDigest ;
     sh:minCount 1 ;
-    sh:message "replay digest is required"
+    sh:pattern "^[0-9a-f]{64}$" ;
+    sh:message "replay digest must be lowercase sha256"
   ] .
