@@ -250,6 +250,47 @@ fn verification_state_from_report(report: &ReceiptDoctorReport) -> VerificationS
     }
 }
 
+fn canonical_json_value(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Object(map) => {
+            let mut keys = map.keys().collect::<Vec<_>>();
+            keys.sort();
+            let mut canonical = serde_json::Map::new();
+            for key in keys {
+                canonical.insert(key.clone(), canonical_json_value(&map[key]));
+            }
+            serde_json::Value::Object(canonical)
+        }
+        serde_json::Value::Array(items) => {
+            serde_json::Value::Array(items.iter().map(canonical_json_value).collect())
+        }
+        _ => value.clone(),
+    }
+}
+
+fn canonical_json(value: &serde_json::Value) -> String {
+    serde_json::to_string(&canonical_json_value(value)).unwrap_or_default()
+}
+
+fn canonical_findings_hash(findings: &[ReceiptFinding]) -> String {
+    let mut canonical = findings.to_vec();
+    canonical.sort_by(|left, right| {
+        (
+            format!("{:?}", left.code),
+            &left.json_path,
+            &left.message,
+            format!("{:?}", left.severity),
+        )
+            .cmp(&(
+                format!("{:?}", right.code),
+                &right.json_path,
+                &right.message,
+                format!("{:?}", right.severity),
+            ))
+    });
+    compute_blake3_hash(&serde_json::to_string(&canonical).unwrap_or_default())
+}
+
 fn standing_replay_digest(
     exact_subject: &str,
     state: VerificationState,
@@ -1337,9 +1378,7 @@ impl ReceiptDoctor {
             .collect::<Vec<_>>();
 
         // Compute a doctor report hash for integrity
-        let serialized_findings =
-            serde_json::to_string(&doctor_report.findings).unwrap_or_default();
-        let doctor_report_hash = compute_blake3_hash(&serialized_findings);
+        let doctor_report_hash = canonical_findings_hash(&doctor_report.findings);
 
         let operator_private = OperatorPrivateReport {
             state,
@@ -1385,9 +1424,8 @@ impl ReceiptDoctor {
         }
 
         let exact_subject = format!("{repository}@{}", base_sha.to_ascii_lowercase());
-        let candidate_receipt_sha256 =
-            compute_sha256_hash(&serde_json::to_string(receipt).unwrap_or_default());
-        let doctor_report_hash = report.operator_private.doctor_report_hash;
+        let candidate_receipt_sha256 = compute_sha256_hash(&canonical_json(receipt));
+        let doctor_report_hash = canonical_findings_hash(&report.operator_private.findings);
         let replay_digest = standing_replay_digest(
             &exact_subject,
             state,
