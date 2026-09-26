@@ -9,7 +9,7 @@
   "subject": {
     "repo": "wasm4pm",
     "branch": "v26926/wasm4pm-land-aloop-lane10-replay-oracle",
-    "head_sha": "unknown"
+    "head_sha": "a10bb5e88d74a0dfa7758b9bfd4db62b814edb84"
   },
   "synthetic_corpus": {
     "corpus_id": "synthetic-clean-seeded",
