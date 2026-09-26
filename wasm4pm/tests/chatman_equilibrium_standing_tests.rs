@@ -20,6 +20,10 @@ fn ttl_is_load_bearing_for_the_standing_lattice() {
         "ce:EvidenceIncomplete",
         "ce:IndependentPositiveEvidence",
         "ce:ExactSubjectMismatch",
+        "ce:RepositoryIdentityMissing",
+        "ce:RepositoryIdentityMismatch",
+        "ce:CommitIdentityMissing",
+        "ce:CommitIdentityMismatch",
         "ce:RepositoryLocalVerification",
         "ce:DeterministicStandingReplay",
         "ce:CrossSubjectReuse",
@@ -335,6 +339,7 @@ fn empty_algorithm_set_is_unknown_not_admitted() {
 #[test]
 fn independently_evidenced_exact_subject_can_reach_admitted() {
     let candidate = json!({
+        "repository_identity": REPOSITORY,
         "commit": BASE_SHA,
         "algorithms": [{
             "id": "positive-evidence",
@@ -387,4 +392,75 @@ fn independently_evidenced_exact_subject_can_reach_admitted() {
     assert!(ReceiptDoctor::verify_standing_replay(&standing));
     assert_eq!(standing.authority, "NONE");
     assert!(!standing.do_authority);
+}
+
+
+#[test]
+fn same_commit_from_another_repository_is_refused() {
+    let candidate = json!({
+        "repository_identity": "seanchatmangpt/not-wasm4pm",
+        "commit": BASE_SHA
+    });
+    let standing = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    assert_eq!(standing.state, VerificationState::Refused);
+    assert_eq!(standing.subject_binding, "REFUSED_REPOSITORY_MISMATCH");
+}
+
+#[test]
+fn missing_subject_identity_never_downgrades_existing_refusal_to_unknown() {
+    let forged = json!({
+        "receipt_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    });
+    let standing = ReceiptDoctor::qualify_exact_subject(
+        &forged,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    assert_eq!(standing.state, VerificationState::Refused);
+    assert_eq!(standing.subject_binding, "UNKNOWN_REPOSITORY");
+    assert!(ReceiptDoctor::verify_standing_replay(&standing));
+}
+
+#[test]
+fn positive_admission_is_lost_when_repository_binding_is_removed() {
+    let candidate = json!({
+        "commit": BASE_SHA,
+        "algorithms": [{
+            "id": "positive-evidence",
+            "expected_path": {
+                "expected_ocel2": {
+                    "events": [{"id": "expected-1", "type": "expected.step", "timestamp": "2026-09-26T18:00:00Z"}],
+                    "objects": [{"id": "case-1", "type": "Case"}]
+                }
+            },
+            "observed_path": {
+                "observed_ocel2": {
+                    "events": [{"id": "observed-1", "type": "observed.step", "timestamp": "2026-09-26T18:00:01Z"}],
+                    "objects": [{"id": "case-1", "type": "Case"}]
+                }
+            },
+            "boundary_evidence": {"exit_code": 0, "command": "wpm receipt doctor"}
+        }]
+    });
+
+    let standing = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    assert_eq!(standing.state, VerificationState::Unknown);
+    assert_eq!(standing.subject_binding, "UNKNOWN_REPOSITORY");
 }
