@@ -29,6 +29,7 @@ ce:SyntheticEvidence a ce:EvidenceClass ;
 ce:ExactSubjectMismatch a ce:EvidenceClass ;
   ce:mapsToStanding ce:REFUSED .
 
+ce:IndependentEvidenceMissing a ce:EvidenceIncomplete .
 ce:ExpectedOCELMissing a ce:EvidenceIncomplete .
 ce:ObservedOCELMissing a ce:EvidenceIncomplete .
 ce:BoundaryEvidenceMissing a ce:EvidenceIncomplete .
