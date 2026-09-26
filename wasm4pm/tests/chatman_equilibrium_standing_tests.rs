@@ -276,6 +276,9 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
     assert_eq!(receipt["do_authority"], false);
     assert_eq!(receipt["evidence"]["cargo_execution"]["standing"], "UNKNOWN");
     assert_eq!(receipt["evidence"]["hosted_ci"]["standing"], "UNKNOWN");
+    assert_eq!(receipt["evidence"]["source_ttl_contract"]["standing"], "ALIVE");
+    assert_eq!(receipt["evidence"]["source_ttl_contract"]["checks"], 32);
+    assert_eq!(receipt["evidence"]["source_ttl_contract"]["passed"], 32);
     assert_eq!(receipt["evidence"]["shacl_core_logic"]["standing"], "ALIVE");
     assert_eq!(receipt["evidence"]["shacl_core_logic"]["killed"], 9);
     assert_eq!(receipt["evidence"]["shacl_core_logic"]["total"], 9);
@@ -297,6 +300,7 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
         "replay.verify",
         "pr.open",
         "court.execute",
+        "contract.rerun",
     ];
     assert_eq!(events.len(), expected_types.len());
 
