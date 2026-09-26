@@ -110,10 +110,10 @@ pub mod error;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
-/// Graduation intake module bridging the baseline.
-pub mod graduation;
 /// GALL-021..023 portable process qualification courts.
 pub mod gall_process_portability;
+/// Graduation intake module bridging the baseline.
+pub mod graduation;
 /// Event log I/O utilities (XES import/export, binary format).
 pub mod io;
 /// Lifecycle State Machine module — WASM4PM autonomic control flow.
