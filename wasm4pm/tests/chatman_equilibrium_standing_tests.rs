@@ -464,3 +464,72 @@ fn positive_admission_is_lost_when_repository_binding_is_removed() {
     assert_eq!(standing.state, VerificationState::Unknown);
     assert_eq!(standing.subject_binding, "UNKNOWN_REPOSITORY");
 }
+
+
+#[test]
+fn recomputed_hash_cannot_launder_incoherent_admitted_subject_binding() {
+    let candidate = json!({
+        "repository_identity": REPOSITORY,
+        "commit": BASE_SHA
+    });
+    let mut forged = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    // The original sparse candidate is UNKNOWN. Forge an ADMITTED state with an
+    // unbound repository and then recompute the public integrity hash.
+    forged.state = VerificationState::Admitted;
+    forged.subject_binding = "UNKNOWN_REPOSITORY".to_string();
+    forged.replay_digest = ReceiptDoctor::recompute_standing_replay_digest(&forged);
+
+    assert!(
+        !ReceiptDoctor::verify_standing_replay(&forged),
+        "hash equality must not substitute for semantic admission"
+    );
+}
+
+#[test]
+fn replay_verifier_rejects_schema_scope_subject_and_digest_shape_tampering() {
+    let candidate = json!({
+        "repository_identity": REPOSITORY,
+        "commit": BASE_SHA
+    });
+    let original = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    let mut schema = original.clone();
+    schema.schema = "attacker.schema/1".to_string();
+    schema.replay_digest = ReceiptDoctor::recompute_standing_replay_digest(&schema);
+    assert!(!ReceiptDoctor::verify_standing_replay(&schema));
+
+    let mut scope = original.clone();
+    scope.verification_scope = "production".to_string();
+    scope.replay_digest = ReceiptDoctor::recompute_standing_replay_digest(&scope);
+    assert!(!ReceiptDoctor::verify_standing_replay(&scope));
+
+    let mut subject = original.clone();
+    subject.exact_subject = "seanchatmangpt/wasm4pm@main".to_string();
+    subject.replay_digest = ReceiptDoctor::recompute_standing_replay_digest(&subject);
+    assert!(!ReceiptDoctor::verify_standing_replay(&subject));
+
+    let mut candidate_digest = original.clone();
+    candidate_digest.candidate_receipt_sha256 = "abc".to_string();
+    candidate_digest.replay_digest =
+        ReceiptDoctor::recompute_standing_replay_digest(&candidate_digest);
+    assert!(!ReceiptDoctor::verify_standing_replay(&candidate_digest));
+
+    let mut verifier_digest = original;
+    verifier_digest.doctor_report_hash = "G".repeat(64);
+    verifier_digest.replay_digest =
+        ReceiptDoctor::recompute_standing_replay_digest(&verifier_digest);
+    assert!(!ReceiptDoctor::verify_standing_replay(&verifier_digest));
+}
