@@ -1493,18 +1493,57 @@ impl ReceiptDoctor {
         })
     }
 
+    /// Recompute the public deterministic replay digest. This is an integrity
+    /// primitive, not an authority primitive: callers can recompute it, so
+    /// verify_standing_replay/1 also enforces semantic coherence independently.
+    pub fn recompute_standing_replay_digest(receipt: &EquilibriumStandingReceipt) -> String {
+        standing_replay_digest(
+            &receipt.exact_subject,
+            &receipt.subject_binding,
+            receipt.state,
+            &receipt.candidate_receipt_sha256,
+            &receipt.doctor_report_hash,
+        )
+    }
+
     /// Deterministic replay verification for repository-local standing.
     pub fn verify_standing_replay(receipt: &EquilibriumStandingReceipt) -> bool {
-        receipt.authority == "NONE"
+        let subject_ok = receipt
+            .exact_subject
+            .rsplit_once('@')
+            .map(|(repository, sha)| repository_identity(repository) && immutable_git_sha(sha))
+            .unwrap_or(false);
+
+        let binding_ok = matches!(
+            receipt.subject_binding.as_str(),
+            "BOUND"
+                | "UNKNOWN_REPOSITORY"
+                | "UNKNOWN_COMMIT"
+                | "REFUSED_REPOSITORY_MISMATCH"
+                | "REFUSED_COMMIT_MISMATCH"
+        );
+
+        let state_binding_ok =
+            receipt.state != VerificationState::Admitted || receipt.subject_binding == "BOUND";
+
+        receipt.schema == "wasm4pm.chatman-equilibrium-standing/1"
+            && receipt.verification_scope == "repository-local-receipt-verification"
+            && subject_ok
+            && binding_ok
+            && state_binding_ok
+            && receipt.authority == "NONE"
             && !receipt.do_authority
-            && receipt.replay_digest
-                == standing_replay_digest(
-                    &receipt.exact_subject,
-                    &receipt.subject_binding,
-                    receipt.state,
-                    &receipt.candidate_receipt_sha256,
-                    &receipt.doctor_report_hash,
-                )
+            && receipt.candidate_receipt_sha256.len() == 64
+            && receipt
+                .candidate_receipt_sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+            && receipt.doctor_report_hash.len() == 64
+            && receipt
+                .doctor_report_hash
+                .bytes()
+                .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+            && receipt.replay_digest == Self::recompute_standing_replay_digest(receipt)
     }
 
 }
