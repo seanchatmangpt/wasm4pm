@@ -1,187 +1,169 @@
-//! Criterion benchmarks for the GALL-021..023 portable process qualification
-//! courts (`wasm4pm::gall_process_portability`).
+//! Criterion benchmarks for GALL-021..023 portable process execution.
 //!
-//! These courts qualify already-observed result digests and canonical result
-//! sets; they never read event logs, so the inputs here are structural
-//! qualification subjects (digests, POWL trees, OCPQ binding sets), not
-//! synthetic process data.
-//!
-//! `ocpq_canonicalize/digest_key_sort` re-implements the pre-hardening
-//! canonicalization (sort each binding by its SHA-256 JSON digest) as the
-//! comparison baseline for the Ord-based sort that replaced it.
+//! * `gall022_lower_powl` — POWL -> minimal DFA -> WASM module (compiler).
+//! * `gall022_reference_language` — generative reference language (oracle).
+//! * `gall021_execute` — one real execution per installed engine (process
+//!   spawn + engine instantiate + run); skipped per engine when not installed.
+//! * `gall021_qualify` / `gall022_verify` — court cost over real witnesses
+//!   (includes module inspection and, for GALL-022, the rebuild check).
+//! * `gall023_canonical_sort` — Ord sort of canonical bindings vs the
+//!   pre-hardening digest-keyed sort (regression bound: >= 5x at n = 10000,
+//!   enforced by `gall_023_canonical_sort_regression_bound_vs_digest_key_sort`).
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
 use std::time::Duration;
 use wasm4pm::gall_process_portability::{
-    powl_preservation_witness, qualify_ocpq, qualify_portable_execution, verify_powl_preservation,
-    HostCapabilityFence, OcpqCanonicalResult, OcpqViolation, PortableProcessSubject, PowlNode,
-    RuntimeWitness,
+    qualify_portable_execution, verify_powl_preservation, PortableProcessSubject,
+};
+use wasm4pm::gall_runtime_harness::{discover_runtimes, witness_powl_probe};
+use wasm4pm::gall_wasm_lowering::{
+    gall017_reference_evaluate, lower_powl, powl_reference_language, Gall017Binding, Gall017Event,
+    Gall017Ocel, Gall017Query, LanguageProbe, PowlSubject,
 };
 
-fn d(i: u64) -> String {
-    format!("sha256:{:064x}", i)
+fn sha(bytes: &[u8]) -> String {
+    format!("sha256:{:x}", Sha256::digest(bytes))
 }
 
-fn subject() -> PortableProcessSubject {
-    PortableProcessSubject {
-        source_digest: d(1),
-        process_digest: d(2),
-        module_digest: d(3),
-        parameters_digest: d(4),
+/// `width` tasks in a partial order with a chain over the first half, nested
+/// in a hierarchy, in choice with a loop.
+fn model(width: usize) -> PowlSubject {
+    let tasks: Vec<String> = (0..width).map(|i| format!("\"t{i}\"")).collect();
+    let chain: Vec<String> = (1..width / 2)
+        .map(|i| format!("[\"t{}\",\"t{}\"]", i - 1, i))
+        .collect();
+    let json = format!(
+        r#"{{"type":"choice","children":[{{"type":"hierarchy","id":"h","child":{{"type":"partial_order","children":[{}],"order":[{}]}}}},{{"type":"loop","body":"lb","redo":"lr"}}]}}"#,
+        tasks.join(","),
+        chain.join(",")
+    );
+    PowlSubject::from_gall016_json(json.as_bytes()).expect("bench model")
+}
+
+fn bench_lowering(c: &mut Criterion) {
+    let mut g = c.benchmark_group("gall022_lower_powl");
+    g.measurement_time(Duration::from_secs(3));
+    for width in [3usize, 5, 7] {
+        let subject = model(width);
+        g.bench_with_input(BenchmarkId::from_parameter(width), &subject, |b, s| {
+            b.iter(|| lower_powl(black_box(s)).unwrap())
+        });
     }
-}
+    g.finish();
 
-fn witnesses(n: usize) -> Vec<RuntimeWitness> {
-    (0..n)
-        .map(|i| RuntimeWitness {
-            runtime_id: format!("runtime-{i}"),
-            semantic_result_digest: d(99),
-            performance_measurement_digest: Some(d(1000 + i as u64)),
-            host_fence: HostCapabilityFence::default(),
-        })
-        .collect()
-}
-
-/// Balanced POWL tree mixing every supported construct; `width` children per
-/// partial order, `depth` levels of hierarchy.
-fn powl(depth: usize, width: usize, next: &mut usize) -> PowlNode {
-    if depth == 0 {
-        *next += 1;
-        return PowlNode::Task {
-            id: format!("t{next}"),
-        };
+    let mut g = c.benchmark_group("gall022_reference_language");
+    g.measurement_time(Duration::from_secs(3));
+    for width in [3usize, 5] {
+        let subject = model(width);
+        let bound = LanguageProbe::for_subject(&subject).bound();
+        g.bench_with_input(
+            BenchmarkId::new(format!("w{width}"), bound),
+            &subject,
+            |b, s| b.iter(|| powl_reference_language(black_box(s), bound).unwrap()),
+        );
     }
-    let children: Vec<PowlNode> = (0..width).map(|_| powl(depth - 1, width, next)).collect();
-    let first_ids: Vec<String> = children
+    g.finish();
+}
+
+fn bench_execution(c: &mut Criterion) {
+    let hosts = discover_runtimes();
+    let subject = model(3);
+    let module = lower_powl(&subject).unwrap();
+    let probe = LanguageProbe::for_subject(&subject);
+    let mut g = c.benchmark_group("gall021_execute");
+    g.sample_size(10);
+    g.measurement_time(Duration::from_secs(5));
+    for host in &hosts {
+        g.bench_function(host.engine.as_str(), |b| {
+            b.iter(|| witness_powl_probe(host, &module, &probe).unwrap())
+        });
+    }
+    g.finish();
+    if hosts.len() < 2 {
+        eprintln!("SKIP gall021_qualify/gall022_verify: fewer than 2 engines installed");
+        return;
+    }
+    let witnesses: Vec<_> = hosts
         .iter()
-        .filter_map(|c| match c {
-            PowlNode::Task { id } | PowlNode::Hierarchy { id, .. } => Some(id.clone()),
-            _ => None,
+        .map(|h| witness_powl_probe(h, &module, &probe).unwrap())
+        .collect();
+    let s =
+        PortableProcessSubject::new(subject.source_digest(), &module, probe.input(), &sha(b"{}"));
+    c.bench_function("gall021_qualify", |b| {
+        b.iter(|| {
+            qualify_portable_execution(black_box(&s), &module, black_box(&witnesses)).unwrap()
         })
-        .collect();
-    let edges = first_ids
-        .windows(2)
-        .map(|w| (w[0].clone(), w[1].clone()))
-        .collect();
-    *next += 1;
-    PowlNode::Hierarchy {
-        id: format!("h{next}"),
-        child: Box::new(PowlNode::Choice {
-            children: vec![
-                PowlNode::PartialOrder { children, edges },
-                PowlNode::Loop {
-                    body: Box::new(PowlNode::Task {
-                        id: format!("lb{next}"),
-                    }),
-                    redo: Box::new(PowlNode::Task {
-                        id: format!("lr{next}"),
-                    }),
-                },
-            ],
-        }),
-    }
+    });
+    c.bench_function("gall022_verify", |b| {
+        b.iter(|| {
+            verify_powl_preservation(black_box(&subject), &module, &probe, black_box(&witnesses))
+                .unwrap()
+        })
+    });
 }
 
-fn bindings(n: usize) -> Vec<BTreeMap<String, String>> {
+fn bindings(n: usize) -> Vec<Gall017Binding> {
     (0..n)
         .rev()
-        .map(|i| {
-            let mut m = BTreeMap::new();
-            m.insert("order".to_string(), format!("o{i:07}"));
-            m.insert("item".to_string(), format!("i{:07}", (i * 7919) % n.max(1)));
-            m
+        .map(|i| Gall017Binding {
+            event_id: format!("e{i:07}"),
+            activity: Some("ship".into()),
+            sequence: Some(i as i64),
+            objects: vec![(
+                format!("i{:07}", (i * 7919) % n.max(1)),
+                "item".into(),
+                "contains".into(),
+            )],
         })
         .collect()
-}
-
-fn digest_key_sort(mut b: Vec<BTreeMap<String, String>>) -> Vec<BTreeMap<String, String>> {
-    b.sort_by_key(|x| {
-        format!(
-            "sha256:{:x}",
-            Sha256::digest(serde_json::to_vec(x).unwrap())
-        )
-    });
-    b.dedup();
-    b
-}
-
-fn bench_portable_execution(c: &mut Criterion) {
-    let mut g = c.benchmark_group("gall021_qualify_portable_execution");
-    g.measurement_time(Duration::from_secs(3));
-    for n in [2usize, 8, 64] {
-        let ws = witnesses(n);
-        let s = subject();
-        g.throughput(Throughput::Elements(n as u64));
-        g.bench_with_input(BenchmarkId::from_parameter(n), &ws, |b, ws| {
-            b.iter(|| qualify_portable_execution(black_box(&s), black_box(ws)).unwrap())
-        });
-    }
-    g.finish();
-}
-
-fn bench_powl(c: &mut Criterion) {
-    let mut g = c.benchmark_group("gall022_powl_preservation");
-    g.measurement_time(Duration::from_secs(3));
-    for (depth, width) in [(2usize, 4usize), (3, 4), (4, 4)] {
-        let mut next = 0;
-        let model = powl(depth, width, &mut next);
-        let label = format!("d{depth}w{width}_n{next}");
-        g.throughput(Throughput::Elements(next as u64));
-        g.bench_with_input(BenchmarkId::new("witness", &label), &model, |b, m| {
-            b.iter(|| powl_preservation_witness(&d(1), &d(2), &d(3), black_box(m)).unwrap())
-        });
-        let w = powl_preservation_witness(&d(1), &d(2), &d(3), &model).unwrap();
-        g.bench_with_input(BenchmarkId::new("verify", &label), &w, |b, w| {
-            b.iter(|| verify_powl_preservation(black_box(w), black_box(w)).unwrap())
-        });
-    }
-    g.finish();
 }
 
 fn bench_ocpq(c: &mut Criterion) {
-    let mut g = c.benchmark_group("gall023_ocpq_canonicalize");
+    let mut g = c.benchmark_group("gall023_canonical_sort");
     g.measurement_time(Duration::from_secs(3));
     for n in [1_000usize, 10_000] {
         let b = bindings(n);
         g.throughput(Throughput::Elements(n as u64));
         g.bench_with_input(BenchmarkId::new("ord_sort", n), &b, |bn, b| {
             bn.iter(|| {
-                OcpqCanonicalResult {
-                    bindings: black_box(b.clone()),
-                    violations: vec![],
-                }
-                .canonicalized()
+                let mut v = black_box(b.clone());
+                v.sort();
+                v
             })
         });
         g.bench_with_input(BenchmarkId::new("digest_key_sort", n), &b, |bn, b| {
-            bn.iter(|| digest_key_sort(black_box(b.clone())))
-        });
-        let violations: Vec<OcpqViolation> = (0..n / 10)
-            .map(|i| OcpqViolation {
-                class: "missing_relation".into(),
-                subject: format!("o{i}"),
+            bn.iter(|| {
+                let mut v = black_box(b.clone());
+                v.sort_by_key(|x| sha(&serde_json::to_vec(x).unwrap()));
+                v
             })
-            .collect();
-        let reference = OcpqCanonicalResult {
-            bindings: b.clone(),
-            violations: violations.clone(),
-        };
-        let mut portable = reference.clone();
-        portable.bindings.reverse();
-        portable.violations.reverse();
-        g.bench_with_input(
-            BenchmarkId::new("qualify", n),
-            &(reference, portable),
-            |bn, (r, p)| {
-                bn.iter(|| {
-                    qualify_ocpq(&d(1), &d(2), black_box(r.clone()), black_box(p.clone())).unwrap()
+        });
+    }
+    g.finish();
+
+    let mut g = c.benchmark_group("gall023_reference_evaluate");
+    g.measurement_time(Duration::from_secs(3));
+    for n in [100usize, 1_000] {
+        let ocel = Gall017Ocel {
+            events: (0..n)
+                .map(|i| Gall017Event {
+                    id: format!("e{i}"),
+                    activity: Some(if i % 2 == 0 { "create" } else { "ship" }.into()),
+                    sequence: Some(i as i64),
+                    objects: vec![(format!("o{i}"), "item".into(), "contains".into())],
                 })
-            },
-        );
+                .collect(),
+        };
+        let query = Gall017Query::from_json(
+            br#"{"activity":"ship","object_type":"item","after_activity":"create"}"#,
+        )
+        .unwrap();
+        g.bench_with_input(BenchmarkId::from_parameter(n), &ocel, |b, o| {
+            b.iter(|| gall017_reference_evaluate(black_box(o), &query))
+        });
     }
     g.finish();
 }
 
-criterion_group!(benches, bench_portable_execution, bench_powl, bench_ocpq);
+criterion_group!(benches, bench_lowering, bench_execution, bench_ocpq);
 criterion_main!(benches);

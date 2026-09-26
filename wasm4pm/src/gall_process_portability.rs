@@ -1,21 +1,41 @@
 //! GALL-021..023 portable process qualification courts.
 //!
-//! These types qualify already-observed computation results. They do not
-//! execute host I/O and expose no external consequence capability.
+//! The courts admit only evidence that was produced by executing an exact
+//! WASM artifact:
+//!
+//! * [`RuntimeWitness`] values cannot be constructed outside this crate; the
+//!   native harness (`gall_runtime_harness`) is the only producer, and it
+//!   records the engine family, the runtime version reported by the host
+//!   binary, the module digest and the input digest of the run.
+//! * Host capabilities are derived from the module's import section
+//!   ([`crate::gall_wasm_lowering::inspect_module`]), never asserted.
+//! * GALL-022 compares executed acceptor verdicts against a generative
+//!   reference language (trace-set probe), checks the hierarchy skeleton read
+//!   back from module bytes, and rebuilds the module to bind compiler identity.
+//! * GALL-023 compares executed OCPQ results against the ex4pm reference
+//!   evaluator.
+//!
+//! This module performs no I/O and exposes no external consequence
+//! capability (authority NONE; evidence ceiling COMPUTE).
 
+use crate::gall_wasm_lowering::{
+    gall017_reference_evaluate, inspect_module, lower_gall017_query, lower_powl, Gall017Ocel,
+    Gall017Query, Gall017Result, LanguageProbe, ModuleInspection, PortableModule, PowlSubject,
+    KIND_GALL017_OCPQ, KIND_POWL_ACCEPTOR,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-fn sha256(bytes: &[u8]) -> String {
+pub(crate) fn sha256(bytes: &[u8]) -> String {
     format!("sha256:{:x}", Sha256::digest(bytes))
 }
 
-fn digest_json<T: Serialize>(value: &T) -> String {
+pub(crate) fn digest_json<T: Serialize>(value: &T) -> String {
     sha256(&serde_json::to_vec(value).expect("serializable qualification subject"))
 }
 
-fn valid_digest(value: &str) -> bool {
+pub(crate) fn valid_digest(value: &str) -> bool {
     value.strip_prefix("sha256:").is_some_and(|hex| {
         hex.len() == 64
             && hex
@@ -24,20 +44,278 @@ fn valid_digest(value: &str) -> bool {
     })
 }
 
+/// Maximum admitted POWL nesting depth. Deeper models are refused, never
+/// walked, so adversarial input cannot overflow the stack.
+pub const MAX_POWL_DEPTH: usize = 256;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PortabilityRefusal {
+    InvalidDigest(String),
+    NeedTwoIndependentRuntimes,
+    /// Two witnesses come from the same engine family (e.g. two V8 hosts).
+    DuplicateRuntimeIdentity,
+    UnboundHostCapability(String),
+    /// The module imports something outside the qualified WASI surface.
+    UnsupportedHostImport(String),
+    SemanticResultMismatch,
+    UnsupportedPowlConstruct(String),
+    InvalidPowlInput(String),
+    /// Source and module skeleton / alphabet differ (hierarchy, boundary or
+    /// construct structure was not preserved).
+    PowlPreservationMismatch,
+    /// Module names a different admitted POWL/query subject
+    /// (ARD: source digest mismatch => REFUSED).
+    SourceDigestMismatch,
+    /// Executed acceptor verdicts diverge from the reference language
+    /// (ARD: semantic probe divergence => FAIL).
+    SemanticProbeDivergence,
+    /// A partial-order edge names an endpoint that is not a direct child, is a
+    /// self-loop, or the declared edges contain a cycle.
+    MalformedPartialOrder(String),
+    /// POWL nesting exceeds [`MAX_POWL_DEPTH`].
+    PowlDepthExceeded,
+    /// The POWL automaton or reference language exceeds its admitted budget.
+    PowlStateSpaceExceeded,
+    OcpqReferenceMismatch,
+    MissingRelationBecamePass,
+    UnsupportedOcpqOperator(String),
+    InvalidOcpqQuery(String),
+    InvalidOcel(String),
+    /// A receipt's `receipt_digest` does not match its recomputed digest.
+    ReceiptDigestMismatch,
+    /// Module bytes fail validation or lack the GALL sections.
+    InvalidModule(String),
+    /// Module kind does not match the court it was presented to.
+    ModuleKindMismatch(String),
+    /// Rebuilding the subject with the current compiler does not reproduce
+    /// the presented module bytes (compiler identity / determinism).
+    ModuleIdentityMismatch,
+    /// A witness ran a different module or input than the subject names.
+    WitnessSubjectMismatch,
+    /// The probe was built for a different subject.
+    ProbeSubjectMismatch,
+    /// A runtime's output does not have the lowered module's output shape.
+    PortableOutputMalformed(String),
+    /// The requested runtime is not installed on this host (UNSUPPORTED).
+    RuntimeUnavailable(String),
+    /// The runtime failed to execute the module (trap, crash, timeout).
+    RuntimeFailure(String),
+}
+
+// ---------------------------------------------------------------------------
+// Host capability fence (derived from module imports)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct HostCapabilityFence {
+    #[serde(default)]
+    pub clock: bool,
+    #[serde(default)]
+    pub randomness: bool,
+    #[serde(default)]
+    pub filesystem: bool,
+    #[serde(default)]
+    pub network: bool,
+}
+
+impl HostCapabilityFence {
+    /// Every capability present must be explicitly bound into the subject.
+    pub fn validate(&self, explicitly_bound: &BTreeSet<String>) -> Result<(), PortabilityRefusal> {
+        for (name, present) in [
+            ("clock", self.clock),
+            ("randomness", self.randomness),
+            ("filesystem", self.filesystem),
+            ("network", self.network),
+        ] {
+            if present && !explicitly_bound.contains(name) {
+                return Err(PortabilityRefusal::UnboundHostCapability(name.into()));
+            }
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Runtime witnesses (harness-produced only)
+// ---------------------------------------------------------------------------
+
+/// Engine family. Independence is decided by engine, not by label spelling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RuntimeEngine {
+    /// wasmtime (Cranelift code generator).
+    Cranelift,
+    /// V8 (node).
+    V8,
+    /// JavaScriptCore (bun).
+    JavaScriptCore,
+}
+
+impl RuntimeEngine {
+    pub const ALL: [RuntimeEngine; 3] = [
+        RuntimeEngine::Cranelift,
+        RuntimeEngine::V8,
+        RuntimeEngine::JavaScriptCore,
+    ];
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RuntimeEngine::Cranelift => "cranelift",
+            RuntimeEngine::V8 => "v8",
+            RuntimeEngine::JavaScriptCore => "javascriptcore",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct RuntimeIdentity {
+    pub engine: RuntimeEngine,
+    pub version: String,
+}
+
+/// Observation of one execution of an exact module over an exact input.
+/// Fields are private and there is no public constructor or `Deserialize`:
+/// only the in-crate harness can produce a witness.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct RuntimeWitness {
+    engine: RuntimeEngine,
+    runtime_version: String,
+    module_digest: String,
+    input_digest: String,
+    canonical_result: Vec<u8>,
+    /// Performance is recorded but never part of semantic identity.
+    wall_nanos: u128,
+}
+
+impl RuntimeWitness {
+    pub(crate) fn observed(
+        engine: RuntimeEngine,
+        runtime_version: String,
+        module_digest: String,
+        input_digest: String,
+        canonical_result: Vec<u8>,
+        wall_nanos: u128,
+    ) -> Self {
+        Self {
+            engine,
+            runtime_version,
+            module_digest,
+            input_digest,
+            canonical_result,
+            wall_nanos,
+        }
+    }
+
+    pub fn engine(&self) -> RuntimeEngine {
+        self.engine
+    }
+
+    pub fn identity(&self) -> RuntimeIdentity {
+        RuntimeIdentity {
+            engine: self.engine,
+            version: self.runtime_version.clone(),
+        }
+    }
+
+    pub fn module_digest(&self) -> &str {
+        &self.module_digest
+    }
+
+    pub fn input_digest(&self) -> &str {
+        &self.input_digest
+    }
+
+    pub fn canonical_result(&self) -> &[u8] {
+        &self.canonical_result
+    }
+
+    pub fn semantic_result_digest(&self) -> String {
+        sha256(&self.canonical_result)
+    }
+
+    pub fn wall_nanos(&self) -> u128 {
+        self.wall_nanos
+    }
+}
+
+/// Admit >= 2 witnesses from distinct engines that ran exactly
+/// (`module_digest`, `input_digest`) and agree on the canonical result.
+fn admit_witnesses<'a>(
+    module_digest: &str,
+    input_digest: &str,
+    witnesses: &'a [RuntimeWitness],
+) -> Result<(Vec<RuntimeIdentity>, &'a [u8]), PortabilityRefusal> {
+    if witnesses.len() < 2 {
+        return Err(PortabilityRefusal::NeedTwoIndependentRuntimes);
+    }
+    let mut engines = BTreeSet::new();
+    let mut runtimes = Vec::new();
+    for w in witnesses {
+        if w.module_digest != module_digest || w.input_digest != input_digest {
+            return Err(PortabilityRefusal::WitnessSubjectMismatch);
+        }
+        if !engines.insert(w.engine) {
+            return Err(PortabilityRefusal::DuplicateRuntimeIdentity);
+        }
+        runtimes.push(w.identity());
+    }
+    let first = &witnesses[0].canonical_result;
+    if witnesses.iter().any(|w| &w.canonical_result != first) {
+        return Err(PortabilityRefusal::SemanticResultMismatch);
+    }
+    runtimes.sort();
+    Ok((runtimes, first))
+}
+
+fn replay_check<T: Serialize + Clone>(
+    value: &T,
+    clear: impl FnOnce(&mut T) -> String,
+) -> Result<(), PortabilityRefusal> {
+    let mut unsigned = value.clone();
+    let claimed = clear(&mut unsigned);
+    if digest_json(&unsigned) != claimed {
+        return Err(PortabilityRefusal::ReceiptDigestMismatch);
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// GALL-021 portable process execution
+// ---------------------------------------------------------------------------
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PortableProcessSubject {
-    pub source_digest: String,
+    /// Admitted process source (POWL source digest, query digest, ...).
     pub process_digest: String,
     pub module_digest: String,
+    pub input_digest: String,
     pub parameters_digest: String,
+    /// Host capabilities the subject explicitly binds (empty = fully fenced).
+    #[serde(default)]
+    pub explicitly_bound: BTreeSet<String>,
 }
 
 impl PortableProcessSubject {
+    pub fn new(
+        process_digest: &str,
+        module: &PortableModule,
+        input: &[u8],
+        parameters_digest: &str,
+    ) -> Self {
+        Self {
+            process_digest: process_digest.into(),
+            module_digest: module.digest().into(),
+            input_digest: sha256(input),
+            parameters_digest: parameters_digest.into(),
+            explicitly_bound: BTreeSet::new(),
+        }
+    }
+
     pub fn validate(&self) -> Result<(), PortabilityRefusal> {
         for (name, value) in [
-            ("source_digest", &self.source_digest),
             ("process_digest", &self.process_digest),
             ("module_digest", &self.module_digest),
+            ("input_digest", &self.input_digest),
             ("parameters_digest", &self.parameters_digest),
         ] {
             if !valid_digest(value) {
@@ -52,72 +330,16 @@ impl PortableProcessSubject {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct HostCapabilityFence {
-    #[serde(default)]
-    pub clock: bool,
-    #[serde(default)]
-    pub randomness: bool,
-    #[serde(default)]
-    pub filesystem: bool,
-    #[serde(default)]
-    pub network: bool,
-    #[serde(default)]
-    pub explicitly_bound: BTreeSet<String>,
-}
-
-impl HostCapabilityFence {
-    pub fn validate(&self) -> Result<(), PortabilityRefusal> {
-        for (name, present) in [
-            ("clock", self.clock),
-            ("randomness", self.randomness),
-            ("filesystem", self.filesystem),
-            ("network", self.network),
-        ] {
-            if present && !self.explicitly_bound.contains(name) {
-                return Err(PortabilityRefusal::UnboundHostCapability(name.into()));
-            }
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RuntimeWitness {
-    pub runtime_id: String,
-    pub semantic_result_digest: String,
-    pub performance_measurement_digest: Option<String>,
-    pub host_fence: HostCapabilityFence,
-}
-
-impl RuntimeWitness {
-    fn validate(&self) -> Result<(), PortabilityRefusal> {
-        if self.runtime_id.trim().is_empty() {
-            return Err(PortabilityRefusal::MissingRuntimeIdentity);
-        }
-        if !valid_digest(&self.semantic_result_digest) {
-            return Err(PortabilityRefusal::InvalidDigest(
-                "semantic_result_digest".into(),
-            ));
-        }
-        if let Some(perf) = &self.performance_measurement_digest {
-            if !valid_digest(perf) {
-                return Err(PortabilityRefusal::InvalidDigest(
-                    "performance_measurement_digest".into(),
-                ));
-            }
-        }
-        self.host_fence.validate()
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PortableExecutionReceipt {
     pub schema: String,
     pub checkpoint: String,
     pub subject_digest: String,
+    pub module_digest: String,
+    pub input_digest: String,
     pub semantic_result_digest: String,
-    pub runtimes: Vec<String>,
+    pub runtimes: Vec<RuntimeIdentity>,
+    pub host_imports: Vec<(String, String)>,
     pub falsifiers: Vec<String>,
     pub authority: String,
     pub evidence_ceiling: String,
@@ -128,98 +350,38 @@ impl PortableExecutionReceipt {
     /// Replay check: recompute the digest over every field except
     /// `receipt_digest` and refuse on mismatch.
     pub fn verify_digest(&self) -> Result<(), PortabilityRefusal> {
-        let mut unsigned = self.clone();
-        unsigned.receipt_digest = String::new();
-        if digest_json(&unsigned) != self.receipt_digest {
-            return Err(PortabilityRefusal::ReceiptDigestMismatch);
-        }
-        Ok(())
+        replay_check(self, |r| std::mem::take(&mut r.receipt_digest))
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PortabilityRefusal {
-    InvalidDigest(String),
-    MissingRuntimeIdentity,
-    NeedTwoIndependentRuntimes,
-    DuplicateRuntimeIdentity,
-    UnboundHostCapability(String),
-    SemanticResultMismatch,
-    UnsupportedPowlConstruct(String),
-    PowlPreservationMismatch,
-    OcpqReferenceMismatch,
-    MissingRelationBecamePass,
-    /// Runtime identity carries surrounding whitespace or control characters,
-    /// so two "independent" runtimes could be the same host spelled twice.
-    NonCanonicalRuntimeIdentity(String),
-    /// Source and lowered witnesses name different admitted POWL subjects
-    /// (GALL-022 ARD: source POWL digest mismatch => REFUSED).
-    SourceDigestMismatch,
-    /// Canonical semantic probes of source and lowered POWL diverge
-    /// (GALL-022 ARD: semantic probe divergence => FAIL).
-    SemanticProbeDivergence,
-    /// A partial-order edge names an endpoint absent from its subtree, is a
-    /// self-loop, or the declared edges contain a cycle.
-    MalformedPartialOrder(String),
-    /// POWL nesting exceeds [`MAX_POWL_DEPTH`]; refused before recursion can
-    /// exhaust the stack.
-    PowlDepthExceeded,
-    /// A receipt's `receipt_digest` does not match the recomputed digest of its
-    /// own fields (replay mismatch / tampering).
-    ReceiptDigestMismatch,
-}
-
-/// Maximum admitted POWL nesting depth. Deeper models are refused, never
-/// walked, so adversarial input cannot overflow the stack.
-pub const MAX_POWL_DEPTH: usize = 256;
-
-fn runtime_identity_key(id: &str) -> Result<String, PortabilityRefusal> {
-    if id.trim().is_empty() {
-        return Err(PortabilityRefusal::MissingRuntimeIdentity);
-    }
-    if id.trim() != id || id.chars().any(char::is_control) {
-        return Err(PortabilityRefusal::NonCanonicalRuntimeIdentity(id.into()));
-    }
-    Ok(id.to_ascii_lowercase())
-}
-
+/// Qualify one exact module execution across independent engines.
 pub fn qualify_portable_execution(
     subject: &PortableProcessSubject,
+    module: &PortableModule,
     witnesses: &[RuntimeWitness],
 ) -> Result<PortableExecutionReceipt, PortabilityRefusal> {
     subject.validate()?;
-    if witnesses.len() < 2 {
-        return Err(PortabilityRefusal::NeedTwoIndependentRuntimes);
+    if module.digest() != subject.module_digest {
+        return Err(PortabilityRefusal::WitnessSubjectMismatch);
     }
-
-    let mut runtimes = BTreeSet::new();
-    let mut identity_keys = BTreeSet::new();
-    for witness in witnesses {
-        witness.validate()?;
-        let key = runtime_identity_key(&witness.runtime_id)?;
-        if !identity_keys.insert(key) {
-            return Err(PortabilityRefusal::DuplicateRuntimeIdentity);
-        }
-        runtimes.insert(witness.runtime_id.clone());
-    }
-
-    let semantic = &witnesses[0].semantic_result_digest;
-    if witnesses
-        .iter()
-        .any(|w| &w.semantic_result_digest != semantic)
-    {
-        return Err(PortabilityRefusal::SemanticResultMismatch);
-    }
+    let inspection = inspect_module(module)?;
+    inspection.host_fence.validate(&subject.explicitly_bound)?;
+    let (runtimes, canonical) =
+        admit_witnesses(&subject.module_digest, &subject.input_digest, witnesses)?;
 
     let mut receipt = PortableExecutionReceipt {
-        schema: "gall.portable-process-execution-receipt/1".into(),
+        schema: "gall.portable-process-execution-receipt/2".into(),
         checkpoint: "GALL-021".into(),
         subject_digest: subject.digest(),
-        semantic_result_digest: semantic.clone(),
-        runtimes: runtimes.into_iter().collect(),
+        module_digest: subject.module_digest.clone(),
+        input_digest: subject.input_digest.clone(),
+        semantic_result_digest: sha256(canonical),
+        runtimes,
+        host_imports: inspection.imports,
         falsifiers: vec![
-            "cross-runtime-semantic-equality".into(),
-            "unbound-host-capability-refused".into(),
+            "cross-engine-semantic-equality(executed)".into(),
+            "witness-bound-to-module-and-input".into(),
+            "host-fence-derived-from-imports".into(),
             "performance-excluded-from-semantic-identity".into(),
         ],
         authority: "NONE".into(),
@@ -230,371 +392,131 @@ pub fn qualify_portable_execution(
     Ok(receipt)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum PowlNode {
-    Task {
-        id: String,
-    },
-    Sequence {
-        children: Vec<PowlNode>,
-    },
-    PartialOrder {
-        children: Vec<PowlNode>,
-        edges: Vec<(String, String)>,
-    },
-    Choice {
-        children: Vec<PowlNode>,
-    },
-    Loop {
-        body: Box<PowlNode>,
-        redo: Box<PowlNode>,
-    },
-    Hierarchy {
-        id: String,
-        child: Box<PowlNode>,
-    },
-    Unsupported {
-        construct: String,
-    },
-}
+// ---------------------------------------------------------------------------
+// GALL-022 POWL language preservation
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PowlPreservationWitness {
+pub struct PowlPreservationReceipt {
+    pub schema: String,
+    pub checkpoint: String,
     pub source_digest: String,
     pub compiler_digest: String,
     pub module_digest: String,
-    pub semantic_probe_digest: String,
-    pub construct_families: BTreeSet<String>,
-    pub hierarchy_ids: BTreeSet<String>,
-    pub partial_order_edges: BTreeSet<(String, String)>,
-    /// Every task/activity identity in the model; a lowering that renames or
-    /// drops a task changes this set.
-    #[serde(default)]
-    pub task_ids: BTreeSet<String>,
+    pub skeleton_digest: String,
+    pub probe_bound: usize,
+    pub probe_traces: usize,
+    pub probe_accepted: usize,
+    pub probe_input_digest: String,
+    pub verdict_digest: String,
+    pub runtimes: Vec<RuntimeIdentity>,
+    pub falsifiers: Vec<String>,
+    pub authority: String,
+    pub evidence_ceiling: String,
+    pub receipt_digest: String,
 }
 
-fn subtree_ids(node: &PowlNode, out: &mut BTreeSet<String>) {
-    match node {
-        PowlNode::Task { id } => {
-            out.insert(id.clone());
-        }
-        PowlNode::Hierarchy { id, child } => {
-            out.insert(id.clone());
-            subtree_ids(child, out);
-        }
-        PowlNode::Sequence { children }
-        | PowlNode::Choice { children }
-        | PowlNode::PartialOrder { children, .. } => {
-            for child in children {
-                subtree_ids(child, out);
-            }
-        }
-        PowlNode::Loop { body, redo } => {
-            subtree_ids(body, out);
-            subtree_ids(redo, out);
-        }
-        PowlNode::Unsupported { .. } => {}
+impl PowlPreservationReceipt {
+    pub fn verify_digest(&self) -> Result<(), PortabilityRefusal> {
+        replay_check(self, |r| std::mem::take(&mut r.receipt_digest))
     }
 }
 
-fn validate_partial_order(
-    children: &[PowlNode],
-    edges: &[(String, String)],
-) -> Result<(), PortabilityRefusal> {
-    let mut ids = BTreeSet::new();
-    for child in children {
-        subtree_ids(child, &mut ids);
-    }
-    let mut adjacency: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
-    for (from, to) in edges {
-        if from == to {
-            return Err(PortabilityRefusal::MalformedPartialOrder(format!(
-                "self-loop {from}"
-            )));
-        }
-        for endpoint in [from, to] {
-            if !ids.contains(endpoint) {
-                return Err(PortabilityRefusal::MalformedPartialOrder(format!(
-                    "unknown endpoint {endpoint}"
-                )));
-            }
-        }
-        adjacency
-            .entry(from.as_str())
-            .or_default()
-            .push(to.as_str());
-    }
-    // Kahn's algorithm: a partial order's edge relation must be acyclic.
-    let mut indegree: BTreeMap<&str, usize> = BTreeMap::new();
-    for (from, to) in edges {
-        indegree.entry(from.as_str()).or_insert(0);
-        *indegree.entry(to.as_str()).or_insert(0) += 1;
-    }
-    let mut ready: Vec<&str> = indegree
-        .iter()
-        .filter(|(_, d)| **d == 0)
-        .map(|(n, _)| *n)
-        .collect();
-    let mut seen = 0usize;
-    while let Some(node) = ready.pop() {
-        seen += 1;
-        if let Some(next) = adjacency.get(node) {
-            for target in next {
-                let d = indegree.get_mut(target).expect("endpoint indexed");
-                *d -= 1;
-                if *d == 0 {
-                    ready.push(target);
-                }
-            }
-        }
-    }
-    if seen != indegree.len() {
-        return Err(PortabilityRefusal::MalformedPartialOrder("cycle".into()));
+fn expect_kind(inspection: &ModuleInspection, kind: &str) -> Result<(), PortabilityRefusal> {
+    if inspection.subject.kind != kind {
+        return Err(PortabilityRefusal::ModuleKindMismatch(
+            inspection.subject.kind.clone(),
+        ));
     }
     Ok(())
 }
 
-/// Canonical semantic form: children of order-insensitive constructs
-/// (choice, partial order) and partial-order edges are sorted; sequence and
-/// loop structure is kept exactly.
-fn canonical_powl(node: &PowlNode) -> PowlNode {
-    fn sorted(children: &[PowlNode]) -> Vec<PowlNode> {
-        let mut keyed: Vec<(String, PowlNode)> = children
-            .iter()
-            .map(|c| {
-                let c = canonical_powl(c);
-                (digest_json(&c), c)
-            })
-            .collect();
-        keyed.sort_by(|a, b| a.0.cmp(&b.0));
-        keyed.into_iter().map(|(_, c)| c).collect()
-    }
-    match node {
-        PowlNode::Task { .. } | PowlNode::Unsupported { .. } => node.clone(),
-        PowlNode::Sequence { children } => PowlNode::Sequence {
-            children: children.iter().map(canonical_powl).collect(),
-        },
-        PowlNode::Choice { children } => PowlNode::Choice {
-            children: sorted(children),
-        },
-        PowlNode::PartialOrder { children, edges } => {
-            let mut edges = edges.clone();
-            edges.sort();
-            edges.dedup();
-            PowlNode::PartialOrder {
-                children: sorted(children),
-                edges,
-            }
-        }
-        PowlNode::Loop { body, redo } => PowlNode::Loop {
-            body: Box::new(canonical_powl(body)),
-            redo: Box::new(canonical_powl(redo)),
-        },
-        PowlNode::Hierarchy { id, child } => PowlNode::Hierarchy {
-            id: id.clone(),
-            child: Box::new(canonical_powl(child)),
-        },
-    }
-}
-
-fn powl_depth_within(node: &PowlNode, depth: usize) -> bool {
-    // Iterative so the depth check itself cannot overflow the stack.
-    let mut stack = vec![(node, depth)];
-    while let Some((node, depth)) = stack.pop() {
-        if depth > MAX_POWL_DEPTH {
-            return false;
-        }
-        match node {
-            PowlNode::Task { .. } | PowlNode::Unsupported { .. } => {}
-            PowlNode::Sequence { children }
-            | PowlNode::Choice { children }
-            | PowlNode::PartialOrder { children, .. } => {
-                stack.extend(children.iter().map(|c| (c, depth + 1)));
-            }
-            PowlNode::Loop { body, redo } => {
-                stack.push((body, depth + 1));
-                stack.push((redo, depth + 1));
-            }
-            PowlNode::Hierarchy { child, .. } => stack.push((child, depth + 1)),
-        }
-    }
-    true
-}
-
-fn walk_powl(
-    node: &PowlNode,
-    constructs: &mut BTreeSet<String>,
-    hierarchy: &mut BTreeSet<String>,
-    edges: &mut BTreeSet<(String, String)>,
-) -> Result<(), PortabilityRefusal> {
-    match node {
-        PowlNode::Task { .. } => {
-            constructs.insert("task".into());
-        }
-        PowlNode::Sequence { children } => {
-            constructs.insert("sequence".into());
-            for child in children {
-                walk_powl(child, constructs, hierarchy, edges)?;
-            }
-        }
-        PowlNode::PartialOrder {
-            children,
-            edges: declared,
-        } => {
-            constructs.insert("partial_order".into());
-            validate_partial_order(children, declared)?;
-            edges.extend(declared.iter().cloned());
-            for child in children {
-                walk_powl(child, constructs, hierarchy, edges)?;
-            }
-        }
-        PowlNode::Choice { children } => {
-            constructs.insert("choice".into());
-            for child in children {
-                walk_powl(child, constructs, hierarchy, edges)?;
-            }
-        }
-        PowlNode::Loop { body, redo } => {
-            constructs.insert("loop".into());
-            walk_powl(body, constructs, hierarchy, edges)?;
-            walk_powl(redo, constructs, hierarchy, edges)?;
-        }
-        PowlNode::Hierarchy { id, child } => {
-            constructs.insert("hierarchy".into());
-            hierarchy.insert(id.clone());
-            walk_powl(child, constructs, hierarchy, edges)?;
-        }
-        PowlNode::Unsupported { construct } => {
-            return Err(PortabilityRefusal::UnsupportedPowlConstruct(
-                construct.clone(),
-            ));
-        }
-    }
-    Ok(())
-}
-
-pub fn powl_preservation_witness(
-    source_digest: &str,
-    compiler_digest: &str,
-    module_digest: &str,
-    root: &PowlNode,
-) -> Result<PowlPreservationWitness, PortabilityRefusal> {
-    for (name, value) in [
-        ("source_digest", source_digest),
-        ("compiler_digest", compiler_digest),
-        ("module_digest", module_digest),
-    ] {
-        if !valid_digest(value) {
-            return Err(PortabilityRefusal::InvalidDigest(name.into()));
-        }
-    }
-
-    if !powl_depth_within(root, 1) {
-        return Err(PortabilityRefusal::PowlDepthExceeded);
-    }
-
-    let mut construct_families = BTreeSet::new();
-    let mut hierarchy_ids = BTreeSet::new();
-    let mut partial_order_edges = BTreeSet::new();
-    walk_powl(
-        root,
-        &mut construct_families,
-        &mut hierarchy_ids,
-        &mut partial_order_edges,
-    )?;
-
-    let mut task_ids = BTreeSet::new();
-    collect_task_ids(root, &mut task_ids);
-
-    let canonical = canonical_powl(root);
-    let probe_subject = (
-        &construct_families,
-        &hierarchy_ids,
-        &partial_order_edges,
-        &task_ids,
-        &canonical,
-    );
-    Ok(PowlPreservationWitness {
-        source_digest: source_digest.into(),
-        compiler_digest: compiler_digest.into(),
-        module_digest: module_digest.into(),
-        semantic_probe_digest: digest_json(&probe_subject),
-        construct_families,
-        hierarchy_ids,
-        partial_order_edges,
-        task_ids,
-    })
-}
-
-fn collect_task_ids(node: &PowlNode, out: &mut BTreeSet<String>) {
-    let mut stack = vec![node];
-    while let Some(node) = stack.pop() {
-        match node {
-            PowlNode::Task { id } => {
-                out.insert(id.clone());
-            }
-            PowlNode::Unsupported { .. } => {}
-            PowlNode::Sequence { children }
-            | PowlNode::Choice { children }
-            | PowlNode::PartialOrder { children, .. } => stack.extend(children.iter()),
-            PowlNode::Loop { body, redo } => {
-                stack.push(body);
-                stack.push(redo);
-            }
-            PowlNode::Hierarchy { child, .. } => stack.push(child),
-        }
-    }
-}
-
+/// Court for GALL-022. Order: identity -> structure -> executed language ->
+/// rebuild determinism, so each falsifier has its own typed refusal.
 pub fn verify_powl_preservation(
-    source: &PowlPreservationWitness,
-    lowered: &PowlPreservationWitness,
-) -> Result<String, PortabilityRefusal> {
-    if source.source_digest != lowered.source_digest {
+    subject: &PowlSubject,
+    module: &PortableModule,
+    probe: &LanguageProbe,
+    witnesses: &[RuntimeWitness],
+) -> Result<PowlPreservationReceipt, PortabilityRefusal> {
+    let inspection = inspect_module(module)?;
+    expect_kind(&inspection, KIND_POWL_ACCEPTOR)?;
+    inspection.host_fence.validate(&BTreeSet::new())?;
+    if inspection.subject.source_digest != subject.source_digest() {
         return Err(PortabilityRefusal::SourceDigestMismatch);
     }
-    if source.construct_families != lowered.construct_families
-        || source.hierarchy_ids != lowered.hierarchy_ids
-        || source.partial_order_edges != lowered.partial_order_edges
-        || source.task_ids != lowered.task_ids
+    if inspection.skeleton.as_ref() != Some(subject.skeleton())
+        || inspection.subject.symbols != subject.alphabet()
     {
         return Err(PortabilityRefusal::PowlPreservationMismatch);
     }
-    if source.semantic_probe_digest != lowered.semantic_probe_digest {
+    if probe.subject_digest() != subject.source_digest() {
+        return Err(PortabilityRefusal::ProbeSubjectMismatch);
+    }
+    let input_digest = sha256(probe.input());
+    let (runtimes, verdicts) = admit_witnesses(module.digest(), &input_digest, witnesses)?;
+    let expected = probe.expected_output(subject)?;
+    if verdicts != expected.as_slice() {
         return Err(PortabilityRefusal::SemanticProbeDivergence);
     }
-    Ok(digest_json(&(source, lowered)))
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct OcpqViolation {
-    pub class: String,
-    pub subject: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct OcpqCanonicalResult {
-    pub bindings: Vec<BTreeMap<String, String>>,
-    pub violations: Vec<OcpqViolation>,
-}
-
-impl OcpqCanonicalResult {
-    pub fn canonicalized(mut self) -> Self {
-        // BTreeMap<String, String> is totally ordered by its canonical
-        // (sorted-key) content, so this order is host-independent without
-        // hashing every binding on every comparison.
-        self.bindings.sort();
-        self.bindings.dedup();
-        self.violations.sort();
-        self.violations.dedup();
-        self
+    let rebuilt = lower_powl(subject)?;
+    if rebuilt != *module {
+        return Err(PortabilityRefusal::ModuleIdentityMismatch);
     }
 
-    pub fn digest(&self) -> String {
-        digest_json(&self.clone().canonicalized())
-    }
+    let mut receipt = PowlPreservationReceipt {
+        schema: "gall.powl-language-preservation-receipt/2".into(),
+        checkpoint: "GALL-022".into(),
+        source_digest: subject.source_digest().into(),
+        compiler_digest: inspection.subject.compiler_digest.clone(),
+        module_digest: module.digest().into(),
+        skeleton_digest: digest_json(subject.skeleton()),
+        probe_bound: probe.bound(),
+        probe_traces: probe.traces().len(),
+        probe_accepted: expected.iter().filter(|b| **b == b'1').count(),
+        probe_input_digest: input_digest,
+        verdict_digest: sha256(verdicts),
+        runtimes,
+        falsifiers: vec![
+            "source-digest-bound-in-module".into(),
+            "hierarchy-skeleton-read-from-module".into(),
+            "executed-trace-set-equals-reference-language".into(),
+            "rebuild-reproduces-module-bytes".into(),
+            "cross-engine-verdict-equality".into(),
+        ],
+        authority: "NONE".into(),
+        evidence_ceiling: "COMPILE/COMPUTE only".into(),
+        receipt_digest: String::new(),
+    };
+    receipt.receipt_digest = digest_json(&receipt);
+    Ok(receipt)
 }
+
+/// Language-level equality of two POWL subjects on every word of length
+/// <= `bound` (reference semantics, no structure comparison).
+pub fn powl_language_equivalent_within(
+    a: &PowlSubject,
+    b: &PowlSubject,
+    bound: usize,
+) -> Result<bool, PortabilityRefusal> {
+    let map = |s: &PowlSubject| -> Result<BTreeSet<Vec<String>>, PortabilityRefusal> {
+        Ok(
+            crate::gall_wasm_lowering::powl_reference_language(s, bound)?
+                .into_iter()
+                .map(|w| {
+                    w.iter()
+                        .map(|&x| s.alphabet()[x as usize].clone())
+                        .collect()
+                })
+                .collect(),
+        )
+    };
+    Ok(map(a)? == map(b)?)
+}
+
+// ---------------------------------------------------------------------------
+// GALL-023 OCPQ portability
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OcpqQualificationReceipt {
@@ -602,57 +524,79 @@ pub struct OcpqQualificationReceipt {
     pub checkpoint: String,
     pub query_digest: String,
     pub ocel_digest: String,
+    pub corpus_digest: String,
+    pub module_digest: String,
+    pub compiler_digest: String,
+    pub reference_evaluator: String,
     pub reference_result_digest: String,
     pub portable_result_digest: String,
+    pub runtimes: Vec<RuntimeIdentity>,
+    pub semantics: String,
     pub authority: String,
     pub receipt_digest: String,
 }
 
 impl OcpqQualificationReceipt {
-    /// Replay check: recompute the digest over every field except
-    /// `receipt_digest` and refuse on mismatch.
     pub fn verify_digest(&self) -> Result<(), PortabilityRefusal> {
-        let mut unsigned = self.clone();
-        unsigned.receipt_digest = String::new();
-        if digest_json(&unsigned) != self.receipt_digest {
-            return Err(PortabilityRefusal::ReceiptDigestMismatch);
-        }
-        Ok(())
+        replay_check(self, |r| std::mem::take(&mut r.receipt_digest))
     }
 }
 
-pub fn qualify_ocpq(
-    query_digest: &str,
-    ocel_digest: &str,
-    reference: OcpqCanonicalResult,
-    portable: OcpqCanonicalResult,
-) -> Result<OcpqQualificationReceipt, PortabilityRefusal> {
-    if !valid_digest(query_digest) {
-        return Err(PortabilityRefusal::InvalidDigest("query_digest".into()));
-    }
-    if !valid_digest(ocel_digest) {
-        return Err(PortabilityRefusal::InvalidDigest("ocel_digest".into()));
-    }
+/// Reference evaluator identity bound into GALL-023 receipts.
+pub const GALL017_REFERENCE: &str =
+    "ex4pm Ex4pm.Gall.Ocpq.evaluate/2 @ b74753fd70f270b9b31f0493cb026c6e38980ec2 (transcribed)";
 
-    let reference = reference.canonicalized();
-    let portable = portable.canonicalized();
+/// Court for GALL-023: executed portable result vs ex4pm reference result.
+pub fn qualify_ocpq(
+    query: &Gall017Query,
+    ocel: &Gall017Ocel,
+    corpus_digest: &str,
+    module: &PortableModule,
+    input: &[u8],
+    witnesses: &[RuntimeWitness],
+) -> Result<OcpqQualificationReceipt, PortabilityRefusal> {
+    if !valid_digest(corpus_digest) {
+        return Err(PortabilityRefusal::InvalidDigest("corpus_digest".into()));
+    }
+    let inspection = inspect_module(module)?;
+    expect_kind(&inspection, KIND_GALL017_OCPQ)?;
+    inspection.host_fence.validate(&BTreeSet::new())?;
+    if inspection.subject.source_digest != query.digest() {
+        return Err(PortabilityRefusal::SourceDigestMismatch);
+    }
+    if crate::gall_wasm_lowering::encode_gall017_input(query, ocel) != input {
+        return Err(PortabilityRefusal::WitnessSubjectMismatch);
+    }
+    let (runtimes, canonical) = admit_witnesses(module.digest(), &sha256(input), witnesses)?;
+    let portable: Gall017Result = serde_json::from_slice(canonical)
+        .map_err(|e| PortabilityRefusal::PortableOutputMalformed(e.to_string()))?;
+    let reference = gall017_reference_evaluate(ocel, query);
     if !reference.violations.is_empty()
-        && portable.violations.is_empty()
+        && portable.standing == "pass"
         && portable.bindings.is_empty()
     {
         return Err(PortabilityRefusal::MissingRelationBecamePass);
     }
-    if reference != portable {
+    if portable != reference {
         return Err(PortabilityRefusal::OcpqReferenceMismatch);
+    }
+    if lower_gall017_query(query)? != *module {
+        return Err(PortabilityRefusal::ModuleIdentityMismatch);
     }
 
     let mut receipt = OcpqQualificationReceipt {
-        schema: "gall.ocpq-portability-receipt/1".into(),
+        schema: "gall.ocpq-portability-receipt/2".into(),
         checkpoint: "GALL-023".into(),
-        query_digest: query_digest.into(),
-        ocel_digest: ocel_digest.into(),
+        query_digest: query.digest(),
+        ocel_digest: ocel.digest(),
+        corpus_digest: corpus_digest.into(),
+        module_digest: module.digest().into(),
+        compiler_digest: inspection.subject.compiler_digest.clone(),
+        reference_evaluator: GALL017_REFERENCE.into(),
         reference_result_digest: reference.digest(),
         portable_result_digest: portable.digest(),
+        runtimes,
+        semantics: "bag of event bindings (event ids unique; no dedup)".into(),
         authority: "NONE".into(),
         receipt_digest: String::new(),
     };
@@ -662,683 +606,432 @@ pub fn qualify_ocpq(
 
 #[cfg(test)]
 mod tests {
+    //! Court refusal paths that need no WASM runtime. Witnesses here are built
+    //! with the crate-private constructor to model adversarial evidence; the
+    //! executed positive paths live in `tests/gall_021_023_portable_execution.rs`.
     use super::*;
+    use crate::gall_wasm_lowering::{
+        canonical_powl_output, encode_gall017_input, fence_from_imports, powl_dfa, LanguageProbe,
+        PowlSkeleton,
+    };
 
-    fn d(seed: u8) -> String {
-        format!(
-            "sha256:{}",
-            std::iter::repeat(seed as char).take(64).collect::<String>()
+    fn powl(json: &str) -> PowlSubject {
+        PowlSubject::from_gall016_json(json.as_bytes()).unwrap()
+    }
+
+    fn witness(engine: RuntimeEngine, module: &str, input: &str, result: &[u8]) -> RuntimeWitness {
+        RuntimeWitness::observed(
+            engine,
+            "test".into(),
+            module.into(),
+            input.into(),
+            result.to_vec(),
+            1,
         )
     }
 
+    /// Model the acceptor's verdicts on the host (diagnostic automaton) to
+    /// build witness payloads without a runtime.
+    fn dfa_verdicts(subject: &PowlSubject, probe: &LanguageProbe) -> Vec<u8> {
+        let dfa = powl_dfa(subject).unwrap();
+        probe
+            .traces()
+            .iter()
+            .map(|t| if dfa.accepts(t) { b'1' } else { b'0' })
+            .collect()
+    }
+
+    const PARALLEL: &str = r#"{"type":"partial_order","children":["a","b"],"order":[]}"#;
+
     #[test]
-    fn gall_021_cross_runtime_identity_excludes_performance() {
-        let subject = PortableProcessSubject {
-            source_digest: d(b'a'),
-            process_digest: d(b'b'),
-            module_digest: d(b'c'),
-            parameters_digest: d(b'd'),
+    fn gall_022_same_language_different_structure_is_language_equal() {
+        let with = powl(
+            r#"{"type":"partial_order","children":["a","b","c"],"order":[["a","b"],["b","c"],["a","c"]]}"#,
+        );
+        let without = powl(
+            r#"{"type":"partial_order","children":["a","b","c"],"order":[["a","b"],["b","c"]]}"#,
+        );
+        let seq = powl(r#"{"type":"sequence","children":["a","b","c"]}"#);
+        assert!(powl_language_equivalent_within(&with, &without, 6).unwrap());
+        assert!(powl_language_equivalent_within(&with, &seq, 6).unwrap());
+        // Transitive closure makes the redundant edge structurally invisible.
+        assert_eq!(with.skeleton(), without.skeleton());
+        let par = powl(PARALLEL);
+        let ab = powl(r#"{"type":"sequence","children":["a","b"]}"#);
+        assert!(!powl_language_equivalent_within(&par, &ab, 4).unwrap());
+    }
+
+    #[test]
+    fn gall_022_edges_must_name_direct_children() {
+        let nested = r#"{"type":"partial_order","children":["a",{"type":"hierarchy","id":"h","child":{"type":"sequence","children":["b","c"]}}],"order":[["a","c"]]}"#;
+        assert_eq!(
+            PowlSubject::from_gall016_json(nested.as_bytes()).unwrap_err(),
+            PortabilityRefusal::MalformedPartialOrder("endpoint c is not a direct child".into())
+        );
+        let into_choice = r#"{"type":"partial_order","children":["a",{"type":"choice","children":["x","y"]}],"order":[["a","x"]]}"#;
+        assert_eq!(
+            PowlSubject::from_gall016_json(into_choice.as_bytes()).unwrap_err(),
+            PortabilityRefusal::MalformedPartialOrder("endpoint x is not a direct child".into())
+        );
+        let to_boundary = r#"{"type":"partial_order","children":["a",{"type":"hierarchy","id":"h","child":{"type":"sequence","children":["b","c"]}}],"order":[["a","h"]]}"#;
+        assert!(PowlSubject::from_gall016_json(to_boundary.as_bytes()).is_ok());
+        let cycle =
+            r#"{"type":"partial_order","children":["a","b"],"order":[["a","b"],["b","a"]]}"#;
+        assert_eq!(
+            PowlSubject::from_gall016_json(cycle.as_bytes()).unwrap_err(),
+            PortabilityRefusal::MalformedPartialOrder("cycle".into())
+        );
+    }
+
+    #[test]
+    fn gall_022_unknown_fields_and_kinds_are_refused_not_dropped() {
+        let cond = r#"{"type":"choice","children":["a","b"],"conditions":["x>1","else"]}"#;
+        assert_eq!(
+            PowlSubject::from_gall016_json(cond.as_bytes()).unwrap_err(),
+            PortabilityRefusal::UnsupportedPowlConstruct("choice.conditions".into())
+        );
+        assert_eq!(
+            PowlSubject::from_gall016_json(br#"{"type":"race","id":"x"}"#).unwrap_err(),
+            PortabilityRefusal::UnsupportedPowlConstruct("race".into())
+        );
+    }
+
+    #[test]
+    fn gall_022_forged_module_refusals_are_typed_in_court_order() {
+        let subject = powl(PARALLEL);
+        let module = lower_powl(&subject).unwrap();
+        let probe = LanguageProbe::for_subject(&subject);
+        let input = sha256(probe.input());
+        let good = dfa_verdicts(&subject, &probe);
+        let ws = |m: &PortableModule, v: &[u8]| {
+            vec![
+                witness(RuntimeEngine::Cranelift, m.digest(), &input, v),
+                witness(RuntimeEngine::V8, m.digest(), &input, v),
+            ]
         };
-        let semantic = d(b'e');
-        let a = RuntimeWitness {
-            runtime_id: "wasmtime@1".into(),
-            semantic_result_digest: semantic.clone(),
-            performance_measurement_digest: Some(d(b'f')),
-            host_fence: HostCapabilityFence::default(),
-        };
-        let b = RuntimeWitness {
-            runtime_id: "browser-v8@1".into(),
-            semantic_result_digest: semantic.clone(),
-            performance_measurement_digest: Some(d(b'0')),
-            host_fence: HostCapabilityFence::default(),
-        };
-        let receipt = qualify_portable_execution(&subject, &[a, b]).unwrap();
-        assert_eq!(receipt.semantic_result_digest, semantic);
-        assert_eq!(receipt.authority, "NONE");
-    }
+        assert!(verify_powl_preservation(&subject, &module, &probe, &ws(&module, &good)).is_ok());
 
-    #[test]
-    fn gall_021_refuses_unbound_nondeterminism_and_semantic_drift() {
-        let subject = PortableProcessSubject {
-            source_digest: d(b'a'),
-            process_digest: d(b'b'),
-            module_digest: d(b'c'),
-            parameters_digest: d(b'd'),
-        };
-        let bad = RuntimeWitness {
-            runtime_id: "host-a".into(),
-            semantic_result_digest: d(b'e'),
-            performance_measurement_digest: None,
-            host_fence: HostCapabilityFence {
-                clock: true,
-                ..Default::default()
-            },
-        };
+        // Module compiled from another subject.
+        let other = powl(r#"{"type":"sequence","children":["a","b"]}"#);
+        let other_module = lower_powl(&other).unwrap();
         assert_eq!(
-            qualify_portable_execution(
-                &subject,
-                &[
-                    bad.clone(),
-                    RuntimeWitness {
-                        runtime_id: "host-b".into(),
-                        ..bad.clone()
-                    }
-                ]
-            ),
-            Err(PortabilityRefusal::UnboundHostCapability("clock".into()))
-        );
-
-        let clean = HostCapabilityFence::default();
-        assert_eq!(
-            qualify_portable_execution(
-                &subject,
-                &[
-                    RuntimeWitness {
-                        runtime_id: "host-a".into(),
-                        semantic_result_digest: d(b'e'),
-                        performance_measurement_digest: None,
-                        host_fence: clean.clone()
-                    },
-                    RuntimeWitness {
-                        runtime_id: "host-b".into(),
-                        semantic_result_digest: d(b'f'),
-                        performance_measurement_digest: None,
-                        host_fence: clean
-                    },
-                ],
-            ),
-            Err(PortabilityRefusal::SemanticResultMismatch)
-        );
-    }
-
-    #[test]
-    fn gall_022_preserves_partial_order_hierarchy_choice_and_loop() {
-        let model = PowlNode::Hierarchy {
-            id: "order".into(),
-            child: Box::new(PowlNode::PartialOrder {
-                children: vec![
-                    PowlNode::Task { id: "a".into() },
-                    PowlNode::Choice {
-                        children: vec![
-                            PowlNode::Task { id: "b".into() },
-                            PowlNode::Loop {
-                                body: Box::new(PowlNode::Task { id: "c".into() }),
-                                redo: Box::new(PowlNode::Task { id: "r".into() }),
-                            },
-                        ],
-                    },
-                ],
-                edges: vec![("a".into(), "b".into())],
-            }),
-        };
-        let witness = powl_preservation_witness(&d(b'a'), &d(b'b'), &d(b'c'), &model).unwrap();
-        assert!(witness.construct_families.contains("partial_order"));
-        assert!(witness.construct_families.contains("choice"));
-        assert!(witness.construct_families.contains("loop"));
-        assert!(witness.hierarchy_ids.contains("order"));
-        assert!(witness
-            .partial_order_edges
-            .contains(&("a".into(), "b".into())));
-
-        let flattened = PowlNode::Sequence {
-            children: vec![
-                PowlNode::Task { id: "a".into() },
-                PowlNode::Task { id: "b".into() },
-            ],
-        };
-        let changed = powl_preservation_witness(&d(b'a'), &d(b'b'), &d(b'c'), &flattened).unwrap();
-        assert_eq!(
-            verify_powl_preservation(&witness, &changed),
-            Err(PortabilityRefusal::PowlPreservationMismatch)
-        );
-    }
-
-    #[test]
-    fn gall_022_refuses_unsupported_construct() {
-        let result = powl_preservation_witness(
-            &d(b'a'),
-            &d(b'b'),
-            &d(b'c'),
-            &PowlNode::Unsupported {
-                construct: "implicit-race".into(),
-            },
-        );
-        assert_eq!(
-            result,
-            Err(PortabilityRefusal::UnsupportedPowlConstruct(
-                "implicit-race".into()
-            ))
-        );
-    }
-
-    #[test]
-    fn gall_023_canonicalizes_binding_order_and_preserves_violations() {
-        let mut a = BTreeMap::new();
-        a.insert("o".into(), "o1".into());
-        let mut b = BTreeMap::new();
-        b.insert("o".into(), "o2".into());
-
-        let reference = OcpqCanonicalResult {
-            bindings: vec![a.clone(), b.clone()],
-            violations: vec![],
-        };
-        let portable = OcpqCanonicalResult {
-            bindings: vec![b, a],
-            violations: vec![],
-        };
-        let receipt = qualify_ocpq(&d(b'a'), &d(b'b'), reference, portable).unwrap();
-        assert_eq!(
-            receipt.reference_result_digest,
-            receipt.portable_result_digest
-        );
-
-        let missing = OcpqCanonicalResult {
-            bindings: vec![],
-            violations: vec![OcpqViolation {
-                class: "missing_relation".into(),
-                subject: "o1".into(),
-            }],
-        };
-        assert_eq!(
-            qualify_ocpq(&d(b'a'), &d(b'b'), missing, OcpqCanonicalResult::default()),
-            Err(PortabilityRefusal::MissingRelationBecamePass)
-        );
-    }
-
-    // ---- Hardening: boundary / negative / adversarial falsifiers ----
-
-    fn subject() -> PortableProcessSubject {
-        PortableProcessSubject {
-            source_digest: d(b'a'),
-            process_digest: d(b'b'),
-            module_digest: d(b'c'),
-            parameters_digest: d(b'd'),
-        }
-    }
-
-    fn witness(runtime: &str, semantic: &str) -> RuntimeWitness {
-        RuntimeWitness {
-            runtime_id: runtime.into(),
-            semantic_result_digest: semantic.into(),
-            performance_measurement_digest: None,
-            host_fence: HostCapabilityFence::default(),
-        }
-    }
-
-    #[test]
-    fn hardening_021_malformed_digests_refused() {
-        for bad in [
-            String::new(),
-            "sha256:".into(),
-            format!("sha256:{}", "A".repeat(64)),
-            format!("sha256:{}", "a".repeat(63)),
-            format!("sha256:{}", "a".repeat(65)),
-            format!("sha256:{}", "g".repeat(64)),
-            format!("sha512:{}", "a".repeat(64)),
-            format!(" sha256:{}", "a".repeat(64)),
-        ] {
-            let mut s = subject();
-            s.module_digest = bad.clone();
-            assert_eq!(
-                qualify_portable_execution(&s, &[witness("a", &d(b'e')), witness("b", &d(b'e'))]),
-                Err(PortabilityRefusal::InvalidDigest("module_digest".into())),
-                "digest {bad:?} must be refused"
-            );
-            assert_eq!(
-                qualify_portable_execution(&subject(), &[witness("a", &bad), witness("b", &bad)]),
-                Err(PortabilityRefusal::InvalidDigest(
-                    "semantic_result_digest".into()
-                ))
-            );
-        }
-    }
-
-    #[test]
-    fn hardening_021_single_or_zero_runtime_refused() {
-        assert_eq!(
-            qualify_portable_execution(&subject(), &[]),
-            Err(PortabilityRefusal::NeedTwoIndependentRuntimes)
-        );
-        assert_eq!(
-            qualify_portable_execution(&subject(), &[witness("a", &d(b'e'))]),
-            Err(PortabilityRefusal::NeedTwoIndependentRuntimes)
-        );
-    }
-
-    #[test]
-    fn hardening_021_duplicate_delivery_and_spelling_variants_refused() {
-        let w = witness("wasmtime@1", &d(b'e'));
-        assert_eq!(
-            qualify_portable_execution(&subject(), &[w.clone(), w.clone()]),
-            Err(PortabilityRefusal::DuplicateRuntimeIdentity)
-        );
-        assert_eq!(
-            qualify_portable_execution(&subject(), &[w.clone(), witness("WASMTIME@1", &d(b'e'))]),
-            Err(PortabilityRefusal::DuplicateRuntimeIdentity)
-        );
-        assert_eq!(
-            qualify_portable_execution(&subject(), &[w.clone(), witness("wasmtime@1 ", &d(b'e'))]),
-            Err(PortabilityRefusal::NonCanonicalRuntimeIdentity(
-                "wasmtime@1 ".into()
-            ))
-        );
-        assert_eq!(
-            qualify_portable_execution(&subject(), &[w, witness("wasm\ttime", &d(b'e'))]),
-            Err(PortabilityRefusal::NonCanonicalRuntimeIdentity(
-                "wasm\ttime".into()
-            ))
-        );
-        assert_eq!(
-            qualify_portable_execution(
-                &subject(),
-                &[witness("  ", &d(b'e')), witness("b", &d(b'e'))]
-            ),
-            Err(PortabilityRefusal::MissingRuntimeIdentity)
-        );
-    }
-
-    #[test]
-    fn hardening_021_every_host_capability_needs_explicit_binding() {
-        for cap in ["clock", "randomness", "filesystem", "network"] {
-            let mut fence = HostCapabilityFence::default();
-            match cap {
-                "clock" => fence.clock = true,
-                "randomness" => fence.randomness = true,
-                "filesystem" => fence.filesystem = true,
-                _ => fence.network = true,
-            }
-            let mut a = witness("a", &d(b'e'));
-            a.host_fence = fence.clone();
-            assert_eq!(
-                qualify_portable_execution(&subject(), &[a.clone(), witness("b", &d(b'e'))]),
-                Err(PortabilityRefusal::UnboundHostCapability(cap.into()))
-            );
-            // Binding a *different* capability name does not admit this one.
-            a.host_fence.explicitly_bound.insert("other".into());
-            assert!(
-                qualify_portable_execution(&subject(), &[a.clone(), witness("b", &d(b'e'))])
-                    .is_err()
-            );
-            a.host_fence.explicitly_bound.insert(cap.into());
-            assert!(qualify_portable_execution(&subject(), &[a, witness("b", &d(b'e'))]).is_ok());
-        }
-    }
-
-    #[test]
-    fn hardening_021_reordering_witnesses_yields_identical_receipt() {
-        let a = witness("wasmtime@1", &d(b'e'));
-        let b = witness("browser-v8@1", &d(b'e'));
-        let c = witness("wasmer@4", &d(b'e'));
-        let r1 =
-            qualify_portable_execution(&subject(), &[a.clone(), b.clone(), c.clone()]).unwrap();
-        let r2 = qualify_portable_execution(&subject(), &[c, a, b]).unwrap();
-        assert_eq!(r1, r2);
-        assert_eq!(r1.runtimes, vec!["browser-v8@1", "wasmer@4", "wasmtime@1"]);
-    }
-
-    #[test]
-    fn hardening_021_stale_subject_changes_receipt_identity() {
-        let ws = [witness("a", &d(b'e')), witness("b", &d(b'e'))];
-        let fresh = qualify_portable_execution(&subject(), &ws).unwrap();
-        let mut stale = subject();
-        stale.module_digest = d(b'9');
-        let other = qualify_portable_execution(&stale, &ws).unwrap();
-        assert_ne!(fresh.subject_digest, other.subject_digest);
-        assert_ne!(fresh.receipt_digest, other.receipt_digest);
-    }
-
-    #[test]
-    fn hardening_021_receipt_replay_detects_tampering() {
-        let receipt = qualify_portable_execution(
-            &subject(),
-            &[witness("a", &d(b'e')), witness("b", &d(b'e'))],
-        )
-        .unwrap();
-        assert_eq!(receipt.verify_digest(), Ok(()));
-        for tamper in 0..5 {
-            let mut t = receipt.clone();
-            match tamper {
-                0 => t.authority = "DO".into(),
-                1 => t.semantic_result_digest = d(b'f'),
-                2 => t.runtimes.push("ghost".into()),
-                3 => t.falsifiers.clear(),
-                _ => t.subject_digest = d(b'0'),
-            }
-            assert_eq!(
-                t.verify_digest(),
-                Err(PortabilityRefusal::ReceiptDigestMismatch)
-            );
-        }
-        // Replay over serialization round-trip is byte-stable.
-        let json = serde_json::to_string(&receipt).unwrap();
-        let back: PortableExecutionReceipt = serde_json::from_str(&json).unwrap();
-        assert_eq!(back.verify_digest(), Ok(()));
-        assert_eq!(serde_json::to_string(&back).unwrap(), json);
-    }
-
-    fn task(id: &str) -> PowlNode {
-        PowlNode::Task { id: id.into() }
-    }
-
-    fn pw(root: &PowlNode) -> Result<PowlPreservationWitness, PortabilityRefusal> {
-        powl_preservation_witness(&d(b'a'), &d(b'b'), &d(b'c'), root)
-    }
-
-    #[test]
-    fn hardening_022_source_digest_mismatch_refused() {
-        let model = PowlNode::Sequence {
-            children: vec![task("a"), task("b")],
-        };
-        let src = pw(&model).unwrap();
-        let other = powl_preservation_witness(&d(b'9'), &d(b'b'), &d(b'c'), &model).unwrap();
-        assert_eq!(
-            verify_powl_preservation(&src, &other),
+            verify_powl_preservation(&subject, &other_module, &probe, &ws(&other_module, &good)),
             Err(PortabilityRefusal::SourceDigestMismatch)
         );
-    }
 
-    #[test]
-    fn hardening_022_sequence_reorder_and_task_rename_are_divergence() {
-        let ab = pw(&PowlNode::Sequence {
-            children: vec![task("a"), task("b")],
-        })
-        .unwrap();
-        let ba = pw(&PowlNode::Sequence {
-            children: vec![task("b"), task("a")],
-        })
-        .unwrap();
-        let xy = pw(&PowlNode::Sequence {
-            children: vec![task("x"), task("y")],
-        })
-        .unwrap();
+        let section = crate::gall_wasm_lowering::inspect_module(&module)
+            .unwrap()
+            .subject;
+        // Flattening mutant, honest skeleton: structure court refuses.
+        let flat_dfa = powl_dfa(&other).unwrap();
+        let flat_skel =
+            crate::gall_wasm_lowering::emit_powl_module(&section, other.skeleton(), &flat_dfa)
+                .unwrap();
         assert_eq!(
-            verify_powl_preservation(&ab, &ba),
+            verify_powl_preservation(&subject, &flat_skel, &probe, &ws(&flat_skel, &good)),
+            Err(PortabilityRefusal::PowlPreservationMismatch)
+        );
+        // Flattening mutant stamped with the source skeleton: the executed
+        // language (one interleaving only) diverges from the reference.
+        let forged =
+            crate::gall_wasm_lowering::emit_powl_module(&section, subject.skeleton(), &flat_dfa)
+                .unwrap();
+        let flat_verdicts: Vec<u8> = probe
+            .traces()
+            .iter()
+            .map(|t| if flat_dfa.accepts(t) { b'1' } else { b'0' })
+            .collect();
+        assert_eq!(
+            verify_powl_preservation(&subject, &forged, &probe, &ws(&forged, &flat_verdicts)),
             Err(PortabilityRefusal::SemanticProbeDivergence)
         );
+        // Correct language but bytes the current compiler does not produce
+        // (forged compiler digest): rebuild court refuses.
+        let mut forged_section = section.clone();
+        forged_section.compiler_digest = format!("sha256:{}", "9".repeat(64));
+        let foreign = crate::gall_wasm_lowering::emit_powl_module(
+            &forged_section,
+            subject.skeleton(),
+            &powl_dfa(&subject).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
-            verify_powl_preservation(&ab, &xy),
-            Err(PortabilityRefusal::PowlPreservationMismatch)
+            verify_powl_preservation(&subject, &foreign, &probe, &ws(&foreign, &good)),
+            Err(PortabilityRefusal::ModuleIdentityMismatch)
         );
-        assert!(verify_powl_preservation(&ab, &ab.clone()).is_ok());
+        // Witnesses of another module or input are not evidence here.
+        assert_eq!(
+            verify_powl_preservation(&subject, &module, &probe, &ws(&other_module, &good)),
+            Err(PortabilityRefusal::WitnessSubjectMismatch)
+        );
+        // One engine counted twice is not independence.
+        let twice = vec![
+            witness(RuntimeEngine::V8, module.digest(), &input, &good),
+            witness(RuntimeEngine::V8, module.digest(), &input, &good),
+        ];
+        assert_eq!(
+            verify_powl_preservation(&subject, &module, &probe, &twice),
+            Err(PortabilityRefusal::DuplicateRuntimeIdentity)
+        );
+        // Probe of another subject.
+        let other_probe = LanguageProbe::for_subject(&other);
+        assert_eq!(
+            verify_powl_preservation(&subject, &module, &other_probe, &ws(&module, &good)),
+            Err(PortabilityRefusal::ProbeSubjectMismatch)
+        );
+        assert!(canonical_powl_output(&probe, b"01").is_err());
     }
 
     #[test]
-    fn hardening_022_order_insensitive_constructs_are_canonical() {
-        let c1 = PowlNode::Choice {
-            children: vec![task("a"), task("b")],
-        };
-        let c2 = PowlNode::Choice {
-            children: vec![task("b"), task("a")],
-        };
-        assert!(verify_powl_preservation(&pw(&c1).unwrap(), &pw(&c2).unwrap()).is_ok());
-        let p1 = PowlNode::PartialOrder {
-            children: vec![task("a"), task("b"), task("c")],
-            edges: vec![("a".into(), "b".into()), ("a".into(), "c".into())],
-        };
-        let p2 = PowlNode::PartialOrder {
-            children: vec![task("c"), task("a"), task("b")],
-            edges: vec![("a".into(), "c".into()), ("a".into(), "b".into())],
-        };
-        assert!(verify_powl_preservation(&pw(&p1).unwrap(), &pw(&p2).unwrap()).is_ok());
-        // Loop body/redo are not interchangeable.
-        let l1 = PowlNode::Loop {
-            body: Box::new(task("a")),
-            redo: Box::new(task("b")),
-        };
-        let l2 = PowlNode::Loop {
-            body: Box::new(task("b")),
-            redo: Box::new(task("a")),
-        };
-        assert!(verify_powl_preservation(&pw(&l1).unwrap(), &pw(&l2).unwrap()).is_err());
+    fn gall_022_hierarchy_boundary_is_part_of_the_skeleton() {
+        let nested = powl(
+            r#"{"type":"hierarchy","id":"parent","child":{"type":"sequence","children":["a","b"]}}"#,
+        );
+        let flat = powl(r#"{"type":"sequence","children":["a","b"]}"#);
+        assert!(powl_language_equivalent_within(&nested, &flat, 5).unwrap());
+        assert!(matches!(nested.skeleton(), PowlSkeleton::Boundary { id, .. } if id == "parent"));
+        assert_ne!(nested.skeleton(), flat.skeleton());
     }
 
     #[test]
-    fn hardening_022_partial_order_collapse_to_sequence_refused() {
-        let po = PowlNode::PartialOrder {
-            children: vec![task("a"), task("b")],
-            edges: vec![],
-        };
-        let seq = PowlNode::Sequence {
-            children: vec![task("a"), task("b")],
-        };
+    fn gall_021_fence_is_derived_from_imports() {
+        let wasi = |n: &str| ("wasi_snapshot_preview1".to_string(), n.to_string());
         assert_eq!(
-            verify_powl_preservation(&pw(&po).unwrap(), &pw(&seq).unwrap()),
-            Err(PortabilityRefusal::PowlPreservationMismatch)
+            fence_from_imports(&[wasi("fd_read"), wasi("clock_time_get")]).unwrap(),
+            HostCapabilityFence {
+                clock: true,
+                ..Default::default()
+            }
         );
-    }
-
-    #[test]
-    fn hardening_022_malformed_partial_orders_refused() {
-        let cyc = PowlNode::PartialOrder {
-            children: vec![task("a"), task("b"), task("c")],
-            edges: vec![
-                ("a".into(), "b".into()),
-                ("b".into(), "c".into()),
-                ("c".into(), "a".into()),
-            ],
-        };
+        let fence = fence_from_imports(&[wasi("random_get"), wasi("path_open"), wasi("sock_send")])
+            .unwrap();
+        assert!(fence.randomness && fence.filesystem && fence.network);
         assert_eq!(
-            pw(&cyc),
-            Err(PortabilityRefusal::MalformedPartialOrder("cycle".into()))
-        );
-        let selfloop = PowlNode::PartialOrder {
-            children: vec![task("a")],
-            edges: vec![("a".into(), "a".into())],
-        };
-        assert_eq!(
-            pw(&selfloop),
-            Err(PortabilityRefusal::MalformedPartialOrder(
-                "self-loop a".into()
+            fence.validate(&BTreeSet::new()),
+            Err(PortabilityRefusal::UnboundHostCapability(
+                "randomness".into()
             ))
         );
-        let dangling = PowlNode::PartialOrder {
-            children: vec![task("a")],
-            edges: vec![("a".into(), "z".into())],
-        };
+        let all: BTreeSet<String> = ["randomness", "filesystem", "network"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+        assert!(fence.validate(&all).is_ok());
         assert_eq!(
-            pw(&dangling),
-            Err(PortabilityRefusal::MalformedPartialOrder(
-                "unknown endpoint z".into()
+            fence_from_imports(&[("env".into(), "now".into())]),
+            Err(PortabilityRefusal::UnsupportedHostImport("env::now".into()))
+        );
+        assert_eq!(
+            fence_from_imports(&[wasi("proc_exit")]),
+            Err(PortabilityRefusal::UnsupportedHostImport(
+                "wasi_snapshot_preview1::proc_exit".into()
             ))
         );
     }
 
     #[test]
-    fn hardening_022_nested_unsupported_construct_refused() {
-        let model = PowlNode::Hierarchy {
-            id: "h".into(),
-            child: Box::new(PowlNode::Choice {
-                children: vec![
-                    task("a"),
-                    PowlNode::Unsupported {
-                        construct: "or-join".into(),
-                    },
-                ],
-            }),
-        };
-        assert_eq!(
-            pw(&model),
-            Err(PortabilityRefusal::UnsupportedPowlConstruct(
-                "or-join".into()
-            ))
+    fn gall_021_witnesses_bind_module_input_and_engine() {
+        let subject = powl(PARALLEL);
+        let module = lower_powl(&subject).unwrap();
+        let probe = LanguageProbe::for_subject(&subject);
+        let s = PortableProcessSubject::new(
+            subject.source_digest(),
+            &module,
+            probe.input(),
+            &sha256(b"{}"),
         );
-    }
-
-    #[test]
-    fn hardening_022_adversarial_depth_refused_without_stack_overflow() {
-        let mut node = task("leaf");
-        for i in 0..100_000 {
-            node = PowlNode::Hierarchy {
-                id: format!("h{i}"),
-                child: Box::new(node),
-            };
-        }
-        assert_eq!(pw(&node), Err(PortabilityRefusal::PowlDepthExceeded));
-        // Drop iteratively: the default recursive Drop of a 100k-deep Box chain
-        // would itself overflow the test thread's stack.
-        let mut cur = node;
-        while let PowlNode::Hierarchy { child, .. } = cur {
-            cur = *child;
-        }
-        let mut ok = task("leaf");
-        for i in 0..(MAX_POWL_DEPTH - 1) {
-            ok = PowlNode::Hierarchy {
-                id: format!("h{i}"),
-                child: Box::new(ok),
-            };
-        }
-        assert!(pw(&ok).is_ok());
-    }
-
-    #[test]
-    fn hardening_022_witness_is_deterministic_and_serde_roundtrips() {
-        let model = PowlNode::Hierarchy {
-            id: "order".into(),
-            child: Box::new(PowlNode::PartialOrder {
-                children: vec![task("a"), task("b")],
-                edges: vec![("a".into(), "b".into())],
-            }),
-        };
-        let a = pw(&model).unwrap();
-        let b = pw(&model).unwrap();
-        assert_eq!(a, b);
-        let json = serde_json::to_string(&model).unwrap();
-        let back: PowlNode = serde_json::from_str(&json).unwrap();
-        assert_eq!(pw(&back).unwrap(), a);
-        // Malformed JSON input (unknown kind) is refused at the parse boundary.
-        assert!(serde_json::from_str::<PowlNode>(r#"{"kind":"race","id":"x"}"#).is_err());
-    }
-
-    fn binding(o: &str) -> BTreeMap<String, String> {
-        let mut m = BTreeMap::new();
-        m.insert("o".into(), o.into());
-        m
-    }
-
-    #[test]
-    fn hardening_023_malformed_query_or_ocel_digest_refused() {
-        let r = OcpqCanonicalResult::default();
-        assert_eq!(
-            qualify_ocpq("sha256:x", &d(b'b'), r.clone(), r.clone()),
-            Err(PortabilityRefusal::InvalidDigest("query_digest".into()))
-        );
-        assert_eq!(
-            qualify_ocpq(&d(b'a'), "", r.clone(), r),
-            Err(PortabilityRefusal::InvalidDigest("ocel_digest".into()))
-        );
-    }
-
-    #[test]
-    fn hardening_023_dropped_or_extra_binding_is_mismatch() {
-        let reference = OcpqCanonicalResult {
-            bindings: vec![binding("o1"), binding("o2")],
-            violations: vec![],
-        };
-        let dropped = OcpqCanonicalResult {
-            bindings: vec![binding("o1")],
-            violations: vec![],
-        };
-        let extra = OcpqCanonicalResult {
-            bindings: vec![binding("o1"), binding("o2"), binding("o3")],
-            violations: vec![],
-        };
-        assert_eq!(
-            qualify_ocpq(&d(b'a'), &d(b'b'), reference.clone(), dropped),
-            Err(PortabilityRefusal::OcpqReferenceMismatch)
-        );
-        assert_eq!(
-            qualify_ocpq(&d(b'a'), &d(b'b'), reference, extra),
-            Err(PortabilityRefusal::OcpqReferenceMismatch)
-        );
-    }
-
-    #[test]
-    fn hardening_023_violation_class_change_is_mismatch() {
-        let v = |class: &str| OcpqViolation {
-            class: class.into(),
-            subject: "o1".into(),
-        };
-        let reference = OcpqCanonicalResult {
-            bindings: vec![],
-            violations: vec![v("missing_relation")],
-        };
-        let portable = OcpqCanonicalResult {
-            bindings: vec![],
-            violations: vec![v("cardinality")],
-        };
-        assert_eq!(
-            qualify_ocpq(&d(b'a'), &d(b'b'), reference, portable),
-            Err(PortabilityRefusal::OcpqReferenceMismatch)
-        );
-    }
-
-    #[test]
-    fn hardening_023_duplicate_delivery_and_permutation_are_set_identical() {
-        let v1 = OcpqViolation {
-            class: "missing_relation".into(),
-            subject: "o1".into(),
-        };
-        let v2 = OcpqViolation {
-            class: "missing_relation".into(),
-            subject: "o2".into(),
-        };
-        let reference = OcpqCanonicalResult {
-            bindings: vec![binding("o1"), binding("o2")],
-            violations: vec![v1.clone(), v2.clone()],
-        };
-        let portable = OcpqCanonicalResult {
-            bindings: vec![binding("o2"), binding("o1"), binding("o2")],
-            violations: vec![v2.clone(), v1.clone(), v2],
-        };
-        let r1 = qualify_ocpq(&d(b'a'), &d(b'b'), reference.clone(), portable.clone()).unwrap();
-        let r2 = qualify_ocpq(&d(b'a'), &d(b'b'), portable, reference).unwrap();
-        assert_eq!(r1.portable_result_digest, r2.portable_result_digest);
-        assert_eq!(r1.receipt_digest, r2.receipt_digest);
-    }
-
-    #[test]
-    fn hardening_023_receipt_replay_detects_tampering() {
-        let r = OcpqCanonicalResult {
-            bindings: vec![binding("o1")],
-            violations: vec![],
-        };
-        let receipt = qualify_ocpq(&d(b'a'), &d(b'b'), r.clone(), r).unwrap();
+        let out = dfa_verdicts(&subject, &probe);
+        let ok = vec![
+            witness(
+                RuntimeEngine::Cranelift,
+                &s.module_digest,
+                &s.input_digest,
+                &out,
+            ),
+            witness(
+                RuntimeEngine::JavaScriptCore,
+                &s.module_digest,
+                &s.input_digest,
+                &out,
+            ),
+        ];
+        let receipt = qualify_portable_execution(&s, &module, &ok).unwrap();
         assert_eq!(receipt.verify_digest(), Ok(()));
-        let mut t = receipt.clone();
-        t.ocel_digest = d(b'9');
-        assert_eq!(
-            t.verify_digest(),
-            Err(PortabilityRefusal::ReceiptDigestMismatch)
+        assert_eq!(receipt.authority, "NONE");
+
+        // Same witnesses do not qualify another subject.
+        let other = powl(r#"{"type":"sequence","children":["a","b"]}"#);
+        let other_module = lower_powl(&other).unwrap();
+        let s2 = PortableProcessSubject::new(
+            other.source_digest(),
+            &other_module,
+            probe.input(),
+            &sha256(b"{}"),
         );
-        let mut t = receipt;
+        assert_eq!(
+            qualify_portable_execution(&s2, &other_module, &ok),
+            Err(PortabilityRefusal::WitnessSubjectMismatch)
+        );
+        // Module bytes that are not the subject's module.
+        assert_eq!(
+            qualify_portable_execution(&s, &other_module, &ok),
+            Err(PortabilityRefusal::WitnessSubjectMismatch)
+        );
+        // Divergent semantics.
+        let mut bad = out.clone();
+        bad[0] = if bad[0] == b'1' { b'0' } else { b'1' };
+        let diverge = vec![
+            witness(
+                RuntimeEngine::Cranelift,
+                &s.module_digest,
+                &s.input_digest,
+                &out,
+            ),
+            witness(RuntimeEngine::V8, &s.module_digest, &s.input_digest, &bad),
+        ];
+        assert_eq!(
+            qualify_portable_execution(&s, &module, &diverge),
+            Err(PortabilityRefusal::SemanticResultMismatch)
+        );
+        assert_eq!(
+            qualify_portable_execution(&s, &module, &ok[..1]),
+            Err(PortabilityRefusal::NeedTwoIndependentRuntimes)
+        );
+        // Performance differs, semantic digest does not.
+        let slow = vec![
+            RuntimeWitness::observed(
+                RuntimeEngine::Cranelift,
+                "t".into(),
+                s.module_digest.clone(),
+                s.input_digest.clone(),
+                out.clone(),
+                999_999,
+            ),
+            ok[1].clone(),
+        ];
+        assert_eq!(
+            qualify_portable_execution(&s, &module, &slow)
+                .unwrap()
+                .semantic_result_digest,
+            receipt.semantic_result_digest
+        );
+        // Tampered receipt fails replay.
+        let mut t = receipt.clone();
         t.authority = "DO".into();
         assert_eq!(
             t.verify_digest(),
             Err(PortabilityRefusal::ReceiptDigestMismatch)
         );
+        // Malformed subject digests.
+        let mut m = s.clone();
+        m.parameters_digest = "sha256:x".into();
+        assert_eq!(
+            qualify_portable_execution(&m, &module, &ok),
+            Err(PortabilityRefusal::InvalidDigest(
+                "parameters_digest".into()
+            ))
+        );
     }
 
     #[test]
-    fn hardening_023_canonicalization_regression_bound() {
-        // Regression bound for the canonical binding sort (see
-        // benches/gall_process_portability.rs and receipts bench JSON). Debug
-        // build, generous ceiling: 20k bindings must canonicalize well under 5s.
-        let bindings: Vec<_> = (0..20_000u32)
-            .rev()
-            .map(|i| binding(&format!("o{i:06}")))
-            .collect();
-        let started = std::time::Instant::now();
-        let canon = OcpqCanonicalResult {
-            bindings,
+    fn gall_023_court_refuses_divergence_and_missing_relation_pass() {
+        let ocel = Gall017Ocel::from_json(
+            br#"{"events":[{"id":"e1","activity":"create","sequence":1,"objects":[["order:1","order","target"]]}]}"#,
+        )
+        .unwrap();
+        let query = Gall017Query::from_json(br#"{"activity":"never"}"#).unwrap();
+        let module = lower_gall017_query(&query).unwrap();
+        let input = encode_gall017_input(&query, &ocel);
+        let corpus = sha256(b"corpus");
+        let reference = gall017_reference_evaluate(&ocel, &query);
+        assert_eq!(reference.standing, "violation");
+        let w = |bytes: &[u8]| {
+            vec![
+                witness(
+                    RuntimeEngine::Cranelift,
+                    module.digest(),
+                    &sha256(&input),
+                    bytes,
+                ),
+                witness(RuntimeEngine::V8, module.digest(), &sha256(&input), bytes),
+            ]
+        };
+        let ok = reference.canonical_bytes();
+        let receipt = qualify_ocpq(&query, &ocel, &corpus, &module, &input, &w(&ok)).unwrap();
+        assert_eq!(receipt.verify_digest(), Ok(()));
+        assert_eq!(receipt.module_digest, module.digest());
+        assert_eq!(receipt.runtimes.len(), 2);
+
+        let pass = Gall017Result {
+            bindings: vec![],
             violations: vec![],
-        }
-        .canonicalized();
-        let elapsed = started.elapsed();
-        assert_eq!(canon.bindings.len(), 20_000);
-        assert!(canon.bindings.windows(2).all(|w| w[0] < w[1]));
-        assert!(
-            elapsed.as_secs_f64() < 5.0,
-            "canonicalization took {elapsed:?}"
+            standing: "pass".into(),
+        };
+        assert_eq!(
+            qualify_ocpq(
+                &query,
+                &ocel,
+                &corpus,
+                &module,
+                &input,
+                &w(&pass.canonical_bytes())
+            ),
+            Err(PortabilityRefusal::MissingRelationBecamePass)
         );
+        let q2 = Gall017Query::from_json(br#"{"activity":"create"}"#).unwrap();
+        let m2 = lower_gall017_query(&q2).unwrap();
+        assert_eq!(
+            qualify_ocpq(&query, &ocel, &corpus, &m2, &input, &w(&ok)),
+            Err(PortabilityRefusal::SourceDigestMismatch)
+        );
+        assert_eq!(
+            qualify_ocpq(&query, &ocel, "sha256:zz", &module, &input, &w(&ok)),
+            Err(PortabilityRefusal::InvalidDigest("corpus_digest".into()))
+        );
+        let other_ocel = Gall017Ocel::from_json(br#"{"events":[]}"#).unwrap();
+        assert_eq!(
+            qualify_ocpq(&query, &other_ocel, &corpus, &module, &input, &w(&ok)),
+            Err(PortabilityRefusal::WitnessSubjectMismatch)
+        );
+    }
+
+    #[test]
+    fn gall_023_unsupported_operator_and_malformed_ocel_are_typed() {
+        assert_eq!(
+            Gall017Query::from_json(br#"{"activity":"a","count":2}"#),
+            Err(PortabilityRefusal::UnsupportedOcpqOperator("count".into()))
+        );
+        assert!(matches!(
+            Gall017Query::from_json(br#"{"activity":3}"#),
+            Err(PortabilityRefusal::InvalidOcpqQuery(_))
+        ));
+        assert!(matches!(
+            Gall017Ocel::from_json(br#"{"events":[{"id":"e1"},{"id":"e1"}]}"#),
+            Err(PortabilityRefusal::InvalidOcel(_))
+        ));
+        assert!(matches!(
+            Gall017Ocel::from_json(br#"{"events":[{"id":"e1","objects":[["o","t"]]}]}"#),
+            Err(PortabilityRefusal::InvalidOcel(_))
+        ));
+    }
+
+    #[test]
+    fn gall_022_adversarial_depth_refused_without_stack_overflow() {
+        use crate::powl_arena::PowlArena;
+        let mut arena = PowlArena::new();
+        let mut idx = arena.add_transition(Some("leaf".into()));
+        for _ in 0..100_000 {
+            idx = arena.add_strict_partial_order(vec![idx]);
+        }
+        assert_eq!(
+            PowlSubject::from_arena(arena, idx).unwrap_err(),
+            PortabilityRefusal::PowlDepthExceeded
+        );
+        let mut arena = PowlArena::new();
+        let mut idx = arena.add_transition(Some("leaf".into()));
+        for _ in 0..(MAX_POWL_DEPTH - 1) {
+            idx = arena.add_strict_partial_order(vec![idx]);
+        }
+        assert!(PowlSubject::from_arena(arena, idx).is_ok());
     }
 }

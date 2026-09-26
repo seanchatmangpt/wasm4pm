@@ -2,39 +2,55 @@
   "schema": "wasm4pm.bench-receipt/1",
   "checkpoint": "GALL-021..023",
   "pr": "seanchatmangpt/wasm4pm#627",
-  "parent_subject": "74c255ed4a833e1df5dd6d86b1e3752de79d6182",
-  "command": "cargo bench -p wasm4pm --bench gall_process_portability -- --noplot",
+  "parent_subject": "6bb8982f79d969907cfd393825b531624fc38d45",
+  "command": "cargo bench -p wasm4pm --bench gall_process_portability -- --noplot --warm-up-time 1 --measurement-time 3",
   "bench_source": "wasm4pm/benches/gall_process_portability.rs",
-  "bench_source_sha256": "sha256:e1fbaae9cbe5a93e91a1a4efad1ccf73adc3ff7a121a007492756025901f71f2",
-  "module_sha256": "sha256:728e0413f667c9fea8a6e5fec09ea12acd461411424388388ed32e8eaa0019c1",
+  "bench_source_sha256": "sha256:3ba31fe425ba115f2f7ab6fcd154cd52e78deefeaffc47ff8499c05ec3fb8398",
+  "module_sha256": {
+    "wasm4pm/src/gall_process_portability.rs": "sha256:de1d91cc280d3482ab97499dd6db5577728710218c629727155cf499a339b184",
+    "wasm4pm/src/gall_wasm_lowering.rs": "sha256:cce3573570b90519c5500758d3ff408806a326c6c29bd0c6eea38e72e30daa3d",
+    "wasm4pm/src/gall_runtime_harness.rs": "sha256:ac1939e6958d9f86128245fdc99336edd71ddc2a108de3bd21f3f9909a421139"
+  },
+  "corpus": {
+    "path": "fixtures/gall/ex4pm-gall-015-017-corpus-v26.9.18.json",
+    "sha256": "sha256:28b321096d06eb83c4ac0f52d88d3e546e6c8fb0a6822dd78d9fd0dfe2df4387",
+    "provenance": "seanchatmangpt/ex4pm@b74753fd70f270b9b31f0493cb026c6e38980ec2 lib/ex4pm/gall.ex + test/gall_v26_9_18_test.exs"
+  },
+  "engines": [
+    "wasmtime 48.0.1 (7bac2c277 2026-08-24) [Cranelift]",
+    "node v26.8.1 [V8]",
+    "bun 1.3.7 [JavaScriptCore]"
+  ],
   "host": "Apple M3 Max, macOS Darwin 25.2.0",
   "toolchain": "rustc 1.97.0-nightly (a5c825cd8 2026-04-14)",
-  "profile": "bench (release)",
+  "profile": "bench (opt-level 3)",
   "recorded": "2026-09-26",
   "unit": "criterion median point estimate",
   "results": {
-    "gall021_qualify_portable_execution/2": "5.68 us",
-    "gall021_qualify_portable_execution/8": "8.88 us",
-    "gall021_qualify_portable_execution/64": "34.0 us",
-    "gall022_powl_preservation/witness/d2w4_n21": "72.7 us",
-    "gall022_powl_preservation/verify/d2w4_n21": "11.0 us",
-    "gall022_powl_preservation/witness/d3w4_n85": "368.8 us",
-    "gall022_powl_preservation/verify/d3w4_n85": "25.9 us",
-    "gall022_powl_preservation/witness/d4w4_n341": "1.94 ms",
-    "gall022_powl_preservation/verify/d4w4_n341": "101.1 us",
-    "gall023_ocpq_canonicalize/ord_sort/1000": "449.8 us",
-    "gall023_ocpq_canonicalize/digest_key_sort/1000": "9.99 ms",
-    "gall023_ocpq_canonicalize/qualify/1000": "2.31 ms",
-    "gall023_ocpq_canonicalize/ord_sort/10000": "6.53 ms",
-    "gall023_ocpq_canonicalize/digest_key_sort/10000": "249.4 ms",
-    "gall023_ocpq_canonicalize/qualify/10000": "77.0 ms"
+    "gall022_lower_powl/3": "770.2 us",
+    "gall022_lower_powl/5": "3.62 ms",
+    "gall022_lower_powl/7": "34.18 ms",
+    "gall022_reference_language/w3/6": "5.64 us",
+    "gall022_reference_language/w5/5": "43.6 us",
+    "gall021_execute/cranelift": "15.32 ms",
+    "gall021_execute/v8": "66.59 ms",
+    "gall021_execute/javascriptcore": "60.35 ms",
+    "gall021_qualify": "386.3 us",
+    "gall022_verify": "7.09 ms",
+    "gall023_canonical_sort/ord_sort/1000": "323.4 us",
+    "gall023_canonical_sort/digest_key_sort/1000": "25.95 ms",
+    "gall023_canonical_sort/ord_sort/10000": "2.04 ms",
+    "gall023_canonical_sort/digest_key_sort/10000": "228.9 ms",
+    "gall023_reference_evaluate/100": "12.27 us",
+    "gall023_reference_evaluate/1000": "121.9 us"
   },
   "findings": [
-    "Pre-hardening canonicalization sorted bindings by a SHA-256 JSON digest computed per comparison; replacing it with the BTreeMap total order is 22x faster at 1k and 38x faster at 10k bindings with identical set semantics."
+    "gall021_execute is dominated by engine process start + module instantiate (Cranelift 15 ms, V8 67 ms, JSC 60 ms per execution of a 55987-trace probe, bound 6); the courts themselves cost 0.39 ms (GALL-021) and 7.1 ms (GALL-022, including rebuild of the module).",
+    "POWL lowering cost grows with partial-order width (residual automaton is the interleaving product): 0.77 ms at 3 concurrent tasks, 34 ms at 7.",
+    "Canonical binding sort by total order is 80x (n=1000) and 112x (n=10000) faster than the pre-hardening digest-keyed sort on the typed Gall017Binding. The previous receipt's 38x-at-10k figure (BTreeMap bindings, digest per comparison) did not reproduce on rerun (about 22x); that binding type is retired."
   ],
   "regression_bounds": [
-    "test hardening_023_canonicalization_regression_bound: 20000 bindings canonicalize in < 5 s (debug profile)",
-    "bench: ord_sort must remain >= 5x faster than digest_key_sort at n=10000"
+    "test gall_023_canonical_sort_regression_bound_vs_digest_key_sort (tests/gall_021_023_portable_execution.rs): ord sort >= 5x faster than digest-keyed sort at n=10000, enforced on every cargo test run"
   ],
   "evidence_ceiling": "LOCAL_BENCH_RUN",
   "authority": "NONE"

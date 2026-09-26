@@ -1,0 +1,121 @@
+{
+  "schema": "wasm4pm.gall-portability-corpus/1",
+  "provenance": {
+    "repository": "seanchatmangpt/ex4pm",
+    "ref": "gall/v26.9.18-final-specs",
+    "commit": "b74753fd70f270b9b31f0493cb026c6e38980ec2",
+    "sources": [
+      "lib/ex4pm/gall.ex (Ex4pm.Gall.Corpus @fixtures, Ex4pm.Gall.Ocpq.evaluate/2)",
+      "test/gall_v26_9_18_test.exs (GALL-017 OCPQ expected verdicts)"
+    ],
+    "transcription": "Elixir atoms/tuples rendered as JSON strings/arrays; expected_bindings and expected_standing of the ocpq cases marked origin=ex4pm_test are the ex4pm test assertions; cases marked origin=ex4pm_semantics are derived by hand from Ex4pm.Gall.Ocpq.matches?/3."
+  },
+  "powl_fixtures": [
+    {
+      "id": "sequence",
+      "semantic": {"type": "sequence", "children": ["a", "b", "c"]},
+      "traces": [["a", "b", "c"]],
+      "language_complete": true
+    },
+    {
+      "id": "parallel",
+      "semantic": {"type": "partial_order", "children": ["a", "b"], "order": []},
+      "traces": [["a", "b"], ["b", "a"]],
+      "language_complete": true
+    },
+    {
+      "id": "choice",
+      "semantic": {"type": "choice", "children": ["a", "b"]},
+      "traces": [["a"], ["b"]],
+      "language_complete": true
+    },
+    {
+      "id": "loop",
+      "semantic": {"type": "loop", "body": "a", "redo": "b"},
+      "traces": [["a"], ["a", "b", "a"]],
+      "language_complete": false
+    },
+    {
+      "id": "hierarchy",
+      "semantic": {
+        "type": "hierarchy",
+        "id": "parent",
+        "child": {"type": "sequence", "children": ["a", "b"]}
+      },
+      "traces": [["a", "b"]],
+      "language_complete": true
+    },
+    {
+      "id": "invalid-order-cycle",
+      "semantic": {
+        "type": "partial_order",
+        "children": ["a", "b"],
+        "order": [["a", "b"], ["b", "a"]]
+      },
+      "expected_refusal": "cyclic_partial_order"
+    }
+  ],
+  "ocel": {
+    "id": "object-centric",
+    "events": [
+      {"id": "e1", "activity": "create", "sequence": 1, "objects": [["order:1", "order", "target"]]},
+      {
+        "id": "e2",
+        "activity": "ship",
+        "sequence": 2,
+        "objects": [["order:1", "order", "target"], ["item:1", "item", "contains"]]
+      }
+    ]
+  },
+  "ocpq_cases": [
+    {
+      "id": "positive-multi-object-temporal",
+      "origin": "ex4pm_test",
+      "query": {"activity": "ship", "object_type": "item", "qualifier": "contains", "after_activity": "create"},
+      "expected_standing": "pass",
+      "expected_bindings": ["e2"]
+    },
+    {
+      "id": "negative-missing-required-binding",
+      "origin": "ex4pm_test",
+      "query": {"activity": "never", "require_match": true},
+      "expected_standing": "violation",
+      "expected_bindings": []
+    },
+    {
+      "id": "negative-wrong-object-type",
+      "origin": "ex4pm_semantics",
+      "query": {"activity": "ship", "object_type": "invoice"},
+      "expected_standing": "violation",
+      "expected_bindings": []
+    },
+    {
+      "id": "negative-wrong-qualifier",
+      "origin": "ex4pm_semantics",
+      "query": {"activity": "create", "qualifier": "contains"},
+      "expected_standing": "violation",
+      "expected_bindings": []
+    },
+    {
+      "id": "negative-temporal-order",
+      "origin": "ex4pm_semantics",
+      "query": {"activity": "create", "after_activity": "ship"},
+      "expected_standing": "violation",
+      "expected_bindings": []
+    },
+    {
+      "id": "positive-multiplicity",
+      "origin": "ex4pm_semantics",
+      "query": {"object_type": "order"},
+      "expected_standing": "pass",
+      "expected_bindings": ["e1", "e2"]
+    },
+    {
+      "id": "optional-no-match-passes",
+      "origin": "ex4pm_semantics",
+      "query": {"activity": "never", "require_match": false},
+      "expected_standing": "pass",
+      "expected_bindings": []
+    }
+  ]
+}
