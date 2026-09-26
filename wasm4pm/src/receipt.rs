@@ -129,6 +129,7 @@ pub enum DiagnosticAudience {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VerificationState {
+    Unknown,
     Admitted,
     Refused,
 }
@@ -177,6 +178,95 @@ pub struct VerificationReport {
     pub state: VerificationState,
     pub producer_safe: ProducerSafeReport,
     pub operator_private: OperatorPrivateReport,
+}
+
+/// Repository-local standing receipt. This receipt is evidence about verification
+/// only: it carries no DO authority and no deployment/external-standing claim.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EquilibriumStandingReceipt {
+    pub schema: String,
+    pub exact_subject: String,
+    pub verification_scope: String,
+    pub state: VerificationState,
+    pub authority: String,
+    pub do_authority: bool,
+    pub candidate_receipt_sha256: String,
+    pub doctor_report_hash: String,
+    pub replay_digest: String,
+}
+
+#[derive(Debug, Serialize)]
+struct EquilibriumStandingBody<'a> {
+    schema: &'a str,
+    exact_subject: &'a str,
+    verification_scope: &'a str,
+    state: VerificationState,
+    authority: &'a str,
+    do_authority: bool,
+    candidate_receipt_sha256: &'a str,
+    doctor_report_hash: &'a str,
+}
+
+fn immutable_git_sha(value: &str) -> bool {
+    (value.len() == 40 || value.len() == 64)
+        && value.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+fn repository_identity(value: &str) -> bool {
+    let mut parts = value.split('/');
+    matches!((parts.next(), parts.next(), parts.next()), (Some(owner), Some(repo), None)
+        if !owner.is_empty()
+            && !repo.is_empty()
+            && owner.bytes().all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b))
+            && repo.bytes().all(|b| b.is_ascii_alphanumeric() || b"._-".contains(&b)))
+}
+
+fn evidence_incomplete(code: ReceiptTruthRefusal) -> bool {
+    matches!(
+        code,
+        ReceiptTruthRefusal::ExpectedOCELMissing
+            | ReceiptTruthRefusal::ObservedOCELMissing
+            | ReceiptTruthRefusal::BoundaryEvidenceMissing
+            | ReceiptTruthRefusal::RuntimeObserverMissing
+            | ReceiptTruthRefusal::ChallengeNonceMissing
+    )
+}
+
+fn verification_state_from_report(report: &ReceiptDoctorReport) -> VerificationState {
+    if report.state == ReceiptDoctorState::Admitted {
+        return VerificationState::Admitted;
+    }
+
+    let deny = report
+        .findings
+        .iter()
+        .filter(|finding| matches!(finding.severity, FindingSeverity::Deny))
+        .collect::<Vec<_>>();
+
+    if !deny.is_empty() && deny.iter().all(|finding| evidence_incomplete(finding.code)) {
+        VerificationState::Unknown
+    } else {
+        VerificationState::Refused
+    }
+}
+
+fn standing_replay_digest(
+    exact_subject: &str,
+    state: VerificationState,
+    candidate_receipt_sha256: &str,
+    doctor_report_hash: &str,
+) -> String {
+    let body = EquilibriumStandingBody {
+        schema: "wasm4pm.chatman-equilibrium-standing/1",
+        exact_subject,
+        verification_scope: "repository-local-receipt-verification",
+        state,
+        authority: "NONE",
+        do_authority: false,
+        candidate_receipt_sha256,
+        doctor_report_hash,
+    };
+    compute_sha256_hash(&serde_json::to_string(&body).unwrap_or_default())
 }
 
 /// Check if a field path is an evidence field.
@@ -1162,15 +1252,17 @@ impl ReceiptDoctor {
         audience: DiagnosticAudience,
     ) -> VerificationReport {
         let doctor_report = Self::audit(receipt);
-        let state = match doctor_report.state {
-            ReceiptDoctorState::Admitted => VerificationState::Admitted,
-            ReceiptDoctorState::Refused => VerificationState::Refused,
-        };
+        let state = verification_state_from_report(&doctor_report);
 
         // Determine coarse refusal class for LLM / ProducerSafe
         let mut refusal_class = RefusalClass::None;
         let mut allowed_next_action = AllowedNextAction::None;
         let mut retry_allowed = true;
+
+        if state == VerificationState::Unknown {
+            refusal_class = RefusalClass::EvidenceIncomplete;
+            allowed_next_action = AllowedNextAction::ReobserveBoundaryAndReemitReceipt;
+        }
 
         if state == VerificationState::Refused {
             allowed_next_action = AllowedNextAction::ReobserveBoundaryAndReemitReceipt;
@@ -1262,6 +1354,73 @@ impl ReceiptDoctor {
             operator_private,
         }
     }
+
+    /// Qualify receipt evidence against an immutable repository subject.
+    ///
+    /// Missing subject binding is UNKNOWN. A conflicting commit is REFUSED.
+    /// The returned replay digest commits to exact subject, candidate evidence,
+    /// verifier evidence, standing, and a zero-DO authority ceiling.
+    pub fn qualify_exact_subject(
+        receipt: &serde_json::Value,
+        audience: DiagnosticAudience,
+        repository: &str,
+        base_sha: &str,
+    ) -> Result<EquilibriumStandingReceipt, &'static str> {
+        if !repository_identity(repository) {
+            return Err("repository_identity_invalid");
+        }
+        if !immutable_git_sha(base_sha) {
+            return Err("immutable_base_sha_invalid");
+        }
+
+        let report = Self::verify_with_audience(receipt, audience);
+        let mut state = report.state;
+
+        match receipt.get("commit").and_then(|value| value.as_str()) {
+            None | Some("") => state = VerificationState::Unknown,
+            Some(commit) if !commit.eq_ignore_ascii_case(base_sha) => {
+                state = VerificationState::Refused
+            }
+            Some(_) => {}
+        }
+
+        let exact_subject = format!("{repository}@{}", base_sha.to_ascii_lowercase());
+        let candidate_receipt_sha256 =
+            compute_sha256_hash(&serde_json::to_string(receipt).unwrap_or_default());
+        let doctor_report_hash = report.operator_private.doctor_report_hash;
+        let replay_digest = standing_replay_digest(
+            &exact_subject,
+            state,
+            &candidate_receipt_sha256,
+            &doctor_report_hash,
+        );
+
+        Ok(EquilibriumStandingReceipt {
+            schema: "wasm4pm.chatman-equilibrium-standing/1".to_string(),
+            exact_subject,
+            verification_scope: "repository-local-receipt-verification".to_string(),
+            state,
+            authority: "NONE".to_string(),
+            do_authority: false,
+            candidate_receipt_sha256,
+            doctor_report_hash,
+            replay_digest,
+        })
+    }
+
+    /// Deterministic replay verification for repository-local standing.
+    pub fn verify_standing_replay(receipt: &EquilibriumStandingReceipt) -> bool {
+        receipt.authority == "NONE"
+            && !receipt.do_authority
+            && receipt.replay_digest
+                == standing_replay_digest(
+                    &receipt.exact_subject,
+                    receipt.state,
+                    &receipt.candidate_receipt_sha256,
+                    &receipt.doctor_report_hash,
+                )
+    }
+
 }
 
 #[cfg(test)]
