@@ -533,3 +533,106 @@ fn replay_verifier_rejects_schema_scope_subject_and_digest_shape_tampering() {
         ReceiptDoctor::recompute_standing_replay_digest(&verifier_digest);
     assert!(!ReceiptDoctor::verify_standing_replay(&verifier_digest));
 }
+
+
+#[test]
+fn every_single_nibble_commit_mutation_is_refused() {
+    let chars = BASE_SHA.as_bytes();
+    for index in 0..chars.len() {
+        let replacement = if chars[index] == b'0' { '1' } else { '0' };
+        let mut mutated = BASE_SHA.to_string();
+        mutated.replace_range(index..index + 1, &replacement.to_string());
+
+        let candidate = json!({
+            "repository_identity": REPOSITORY,
+            "commit": mutated
+        });
+        let standing = ReceiptDoctor::qualify_exact_subject(
+            &candidate,
+            DiagnosticAudience::OperatorPrivate,
+            REPOSITORY,
+            BASE_SHA,
+        )
+        .unwrap();
+
+        assert_eq!(
+            standing.state,
+            VerificationState::Refused,
+            "commit mutation at nibble {index} escaped exact-subject refusal"
+        );
+        assert_eq!(standing.subject_binding, "REFUSED_COMMIT_MISMATCH");
+    }
+}
+
+#[test]
+fn replay_is_stable_across_1024_requalifications() {
+    let candidate = json!({
+        "repository_identity": REPOSITORY,
+        "commit": BASE_SHA
+    });
+    let first = ReceiptDoctor::qualify_exact_subject(
+        &candidate,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+
+    for iteration in 0..1024 {
+        let observed = ReceiptDoctor::qualify_exact_subject(
+            &candidate,
+            DiagnosticAudience::OperatorPrivate,
+            REPOSITORY,
+            BASE_SHA,
+        )
+        .unwrap();
+        assert_eq!(
+            observed, first,
+            "deterministic qualification diverged at iteration {iteration}"
+        );
+        assert!(ReceiptDoctor::verify_standing_replay(&observed));
+    }
+}
+
+#[test]
+fn evidence_absence_cannot_promote_and_subject_absence_cannot_hide_refusal() {
+    let absent_evidence = json!({
+        "repository_identity": REPOSITORY,
+        "commit": BASE_SHA,
+        "algorithms": []
+    });
+    let unknown = ReceiptDoctor::qualify_exact_subject(
+        &absent_evidence,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    assert_eq!(unknown.state, VerificationState::Unknown);
+
+    let contradictory_without_subject = json!({
+        "receipt_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    });
+    let refused = ReceiptDoctor::qualify_exact_subject(
+        &contradictory_without_subject,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    assert_eq!(refused.state, VerificationState::Refused);
+
+    let cross_subject = json!({
+        "repository_identity": "seanchatmangpt/other",
+        "commit": BASE_SHA,
+        "algorithms": []
+    });
+    let refused_cross_subject = ReceiptDoctor::qualify_exact_subject(
+        &cross_subject,
+        DiagnosticAudience::OperatorPrivate,
+        REPOSITORY,
+        BASE_SHA,
+    )
+    .unwrap();
+    assert_eq!(refused_cross_subject.state, VerificationState::Refused);
+}
