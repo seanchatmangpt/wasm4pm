@@ -1,0 +1,41 @@
+{
+  "schema": "wasm4pm.bench-receipt/1",
+  "checkpoint": "GALL-021..023",
+  "pr": "seanchatmangpt/wasm4pm#627",
+  "parent_subject": "74c255ed4a833e1df5dd6d86b1e3752de79d6182",
+  "command": "cargo bench -p wasm4pm --bench gall_process_portability -- --noplot",
+  "bench_source": "wasm4pm/benches/gall_process_portability.rs",
+  "bench_source_sha256": "sha256:e1fbaae9cbe5a93e91a1a4efad1ccf73adc3ff7a121a007492756025901f71f2",
+  "module_sha256": "sha256:728e0413f667c9fea8a6e5fec09ea12acd461411424388388ed32e8eaa0019c1",
+  "host": "Apple M3 Max, macOS Darwin 25.2.0",
+  "toolchain": "rustc 1.97.0-nightly (a5c825cd8 2026-04-14)",
+  "profile": "bench (release)",
+  "recorded": "2026-09-26",
+  "unit": "criterion median point estimate",
+  "results": {
+    "gall021_qualify_portable_execution/2": "5.68 us",
+    "gall021_qualify_portable_execution/8": "8.88 us",
+    "gall021_qualify_portable_execution/64": "34.0 us",
+    "gall022_powl_preservation/witness/d2w4_n21": "72.7 us",
+    "gall022_powl_preservation/verify/d2w4_n21": "11.0 us",
+    "gall022_powl_preservation/witness/d3w4_n85": "368.8 us",
+    "gall022_powl_preservation/verify/d3w4_n85": "25.9 us",
+    "gall022_powl_preservation/witness/d4w4_n341": "1.94 ms",
+    "gall022_powl_preservation/verify/d4w4_n341": "101.1 us",
+    "gall023_ocpq_canonicalize/ord_sort/1000": "449.8 us",
+    "gall023_ocpq_canonicalize/digest_key_sort/1000": "9.99 ms",
+    "gall023_ocpq_canonicalize/qualify/1000": "2.31 ms",
+    "gall023_ocpq_canonicalize/ord_sort/10000": "6.53 ms",
+    "gall023_ocpq_canonicalize/digest_key_sort/10000": "249.4 ms",
+    "gall023_ocpq_canonicalize/qualify/10000": "77.0 ms"
+  },
+  "findings": [
+    "Pre-hardening canonicalization sorted bindings by a SHA-256 JSON digest computed per comparison; replacing it with the BTreeMap total order is 22x faster at 1k and 38x faster at 10k bindings with identical set semantics."
+  ],
+  "regression_bounds": [
+    "test hardening_023_canonicalization_regression_bound: 20000 bindings canonicalize in < 5 s (debug profile)",
+    "bench: ord_sort must remain >= 5x faster than digest_key_sort at n=10000"
+  ],
+  "evidence_ceiling": "LOCAL_BENCH_RUN",
+  "authority": "NONE"
+}

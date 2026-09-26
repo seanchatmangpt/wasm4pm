@@ -92,6 +92,10 @@ name = "fast_algorithms"
 harness = false
 
 [[bench]]
+name = "gall_process_portability"
+harness = false
+
+[[bench]]
 name = "medium_algorithms"
 harness = false
 
