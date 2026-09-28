@@ -11,7 +11,8 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 [[package]]
 name = "affidavit"
 version = "26.6.22"
-source = "git+https://github.com/seanchatmangpt/affidavit#383b41dc9c587f8a8a90fe280b9621ec55701a2c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e642793ef9dd697a720fd7e2d779a085c6c08cfa1087f9ece6c97e019757f72"
 dependencies = [
  "anyhow",
  "blake3",
