@@ -33,7 +33,10 @@ fn candidate(id: &str, score: ContinuationScore) -> ContinuationCandidate {
     ContinuationCandidate {
         id: id.to_string(),
         score,
-        evidence: vec![evidence(&format!("receipt-{id}"), EvidenceStanding::Admitted)],
+        evidence: vec![evidence(
+            &format!("receipt-{id}"),
+            EvidenceStanding::Admitted,
+        )],
     }
 }
 
@@ -58,7 +61,10 @@ fn viability_dominates_local_popularity_and_lower_dimensions() {
     let objective = CanonicalObjective::spaceship_earth();
     let candidates = vec![
         candidate("viable", score(100, 0, 0, 0, 0, 0)),
-        candidate("popular", score(99, 1_000_000, 1_000_000, 1_000_000, 1_000_000, 1_000_000)),
+        candidate(
+            "popular",
+            score(99, 1_000_000, 1_000_000, 1_000_000, 1_000_000, 1_000_000),
+        ),
     ];
     let preferences: Vec<ExternalSignal> = (0..128)
         .map(|index| ExternalSignal {
@@ -117,7 +123,10 @@ fn preference_and_claimed_authority_do_not_change_control_identity() {
     ];
 
     let with_signals = objective.select(&candidates, &signals).unwrap();
-    assert_eq!(baseline.selected_candidate_id, with_signals.selected_candidate_id);
+    assert_eq!(
+        baseline.selected_candidate_id,
+        with_signals.selected_candidate_id
+    );
     assert_eq!(baseline.subject_hash, with_signals.subject_hash);
 }
 
@@ -133,13 +142,19 @@ fn admitted_falsifier_can_overturn_the_current_best_model() {
         target_candidate_id: "alpha".to_string(),
         kind: ExternalSignalKind::Falsifier,
         statement: "Measured consequence violates the viability model".to_string(),
-        evidence: vec![evidence("receipt-consequence-42", EvidenceStanding::Verified)],
+        evidence: vec![evidence(
+            "receipt-consequence-42",
+            EvidenceStanding::Verified,
+        )],
     };
 
     let receipt = objective.select(&candidates, &[falsifier]).unwrap();
     assert_eq!(receipt.selected_candidate_id, "beta");
     assert_eq!(receipt.rejected_candidate_ids, vec!["alpha".to_string()]);
-    assert_eq!(receipt.admitted_falsifier_ids, vec!["falsifier-alpha-1".to_string()]);
+    assert_eq!(
+        receipt.admitted_falsifier_ids,
+        vec!["falsifier-alpha-1".to_string()]
+    );
 }
 
 #[test]
@@ -154,7 +169,10 @@ fn unsupported_falsifier_is_observed_but_cannot_promote_itself() {
         target_candidate_id: "alpha".to_string(),
         kind: ExternalSignalKind::Falsifier,
         statement: "Alpha is wrong".to_string(),
-        evidence: vec![evidence("unadmitted-observation", EvidenceStanding::Observed)],
+        evidence: vec![evidence(
+            "unadmitted-observation",
+            EvidenceStanding::Observed,
+        )],
     };
 
     assert_eq!(

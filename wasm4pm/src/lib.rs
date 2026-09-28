@@ -110,6 +110,10 @@ pub mod error;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
+/// GALL-021..023 exact-subject portable process correspondence court.
+pub mod gall_portable_execution;
+/// GALL-021..023 deterministic portable process qualification courts.
+pub mod gall_process_courts;
 /// GALL-021..023 portable process qualification courts.
 pub mod gall_process_portability;
 /// GALL-021 multi-runtime qualification harness (native hosts: wasmtime, node, bun).
@@ -119,10 +123,6 @@ pub mod gall_runtime_harness;
 pub mod gall_wasm_lowering;
 /// Graduation intake module bridging the baseline.
 pub mod graduation;
-/// GALL-021..023 exact-subject portable process correspondence court.
-pub mod gall_portable_execution;
-/// GALL-021..023 deterministic portable process qualification courts.
-pub mod gall_process_courts;
 /// Event log I/O utilities (XES import/export, binary format).
 pub mod io;
 /// Lifecycle State Machine module — WASM4PM autonomic control flow.

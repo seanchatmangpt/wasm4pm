@@ -82,10 +82,7 @@ fn cross_subject_reuse_is_refused_even_when_candidate_was_otherwise_unknown() {
     .unwrap();
 
     assert_eq!(standing.state, VerificationState::Refused);
-    assert_eq!(
-        standing.exact_subject,
-        format!("{REPOSITORY}@{BASE_SHA}")
-    );
+    assert_eq!(standing.exact_subject, format!("{REPOSITORY}@{BASE_SHA}"));
 }
 
 #[test]
@@ -166,7 +163,6 @@ fn malformed_mutable_subjects_are_not_qualifiable() {
     );
 }
 
-
 #[test]
 fn semantic_key_order_does_not_change_evidence_or_replay_digest() {
     let mut left = serde_json::Map::new();
@@ -199,7 +195,6 @@ fn semantic_key_order_does_not_change_evidence_or_replay_digest() {
     assert_eq!(l.replay_digest, r.replay_digest);
     assert_eq!(l.state, VerificationState::Unknown);
 }
-
 
 fn permutations<T: Clone>(items: &[T]) -> Vec<Vec<T>> {
     if items.is_empty() {
@@ -249,11 +244,22 @@ fn all_24_semantic_key_permutations_have_one_standing_digest() {
         replay_digests.insert(standing.replay_digest);
     }
 
-    assert_eq!(candidate_hashes.len(), 1, "candidate digest depends on key order");
-    assert_eq!(doctor_hashes.len(), 1, "verifier digest depends on key order");
-    assert_eq!(replay_digests.len(), 1, "replay digest depends on key order");
+    assert_eq!(
+        candidate_hashes.len(),
+        1,
+        "candidate digest depends on key order"
+    );
+    assert_eq!(
+        doctor_hashes.len(),
+        1,
+        "verifier digest depends on key order"
+    );
+    assert_eq!(
+        replay_digests.len(),
+        1,
+        "replay digest depends on key order"
+    );
 }
-
 
 const PROCESS_OCEL: &str =
     include_str!("../../receipts/v26.9.26/chatman-equilibrium-standing.ocel.json");
@@ -268,21 +274,27 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
     let receipt: serde_json::Value = serde_json::from_str(RUN_RECEIPT).unwrap();
 
     assert_eq!(ocel["ocel:version"], "2.0");
-    assert_eq!(
-        receipt["subject"],
-        format!("{REPOSITORY}@{BASE_SHA}")
-    );
+    assert_eq!(receipt["subject"], format!("{REPOSITORY}@{BASE_SHA}"));
     assert_eq!(receipt["authority"], "NONE");
     assert_eq!(receipt["do_authority"], false);
-    assert_eq!(receipt["evidence"]["cargo_execution"]["standing"], "UNKNOWN");
+    assert_eq!(
+        receipt["evidence"]["cargo_execution"]["standing"],
+        "UNKNOWN"
+    );
     assert_eq!(receipt["evidence"]["hosted_ci"]["standing"], "UNKNOWN");
-    assert_eq!(receipt["evidence"]["source_ttl_contract"]["standing"], "ALIVE");
+    assert_eq!(
+        receipt["evidence"]["source_ttl_contract"]["standing"],
+        "ALIVE"
+    );
     assert_eq!(receipt["evidence"]["source_ttl_contract"]["checks"], 32);
     assert_eq!(receipt["evidence"]["source_ttl_contract"]["passed"], 32);
     assert_eq!(receipt["evidence"]["shacl_core_logic"]["standing"], "ALIVE");
     assert_eq!(receipt["evidence"]["shacl_core_logic"]["killed"], 9);
     assert_eq!(receipt["evidence"]["shacl_core_logic"]["total"], 9);
-    assert_eq!(receipt["evidence"]["node_module_execution"]["standing"], "UNKNOWN");
+    assert_eq!(
+        receipt["evidence"]["node_module_execution"]["standing"],
+        "UNKNOWN"
+    );
     assert_eq!(receipt["standing"], "PARTIAL_ALIVE");
 
     let objects = ocel["objects"].as_array().unwrap();
@@ -308,12 +320,18 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
     for (event, expected_type) in events.iter().zip(expected_types) {
         assert_eq!(event["type"], expected_type);
         let timestamp = event["time"].as_str().unwrap();
-        assert!(previous <= timestamp, "OCEL events must be monotonically ordered");
+        assert!(
+            previous <= timestamp,
+            "OCEL events must be monotonically ordered"
+        );
         previous = timestamp;
 
         for relationship in event["relationships"].as_array().unwrap() {
             let object_id = relationship["objectId"].as_str().unwrap();
-            assert!(known_ids.contains(object_id), "dangling OCEL object reference");
+            assert!(
+                known_ids.contains(object_id),
+                "dangling OCEL object reference"
+            );
         }
     }
 
@@ -323,7 +341,6 @@ fn process_evidence_is_bounded_machine_readable_and_subject_bound() {
     );
 }
 
-
 #[test]
 fn empty_algorithm_set_is_unknown_not_admitted() {
     let candidate = json!({
@@ -331,10 +348,8 @@ fn empty_algorithm_set_is_unknown_not_admitted() {
         "algorithms": []
     });
 
-    let report = ReceiptDoctor::verify_with_audience(
-        &candidate,
-        DiagnosticAudience::OperatorPrivate,
-    );
+    let report =
+        ReceiptDoctor::verify_with_audience(&candidate, DiagnosticAudience::OperatorPrivate);
     assert_eq!(report.state, VerificationState::Unknown);
 
     let standing = ReceiptDoctor::qualify_exact_subject(
@@ -381,10 +396,8 @@ fn independently_evidenced_exact_subject_can_reach_admitted() {
         }]
     });
 
-    let report = ReceiptDoctor::verify_with_audience(
-        &candidate,
-        DiagnosticAudience::OperatorPrivate,
-    );
+    let report =
+        ReceiptDoctor::verify_with_audience(&candidate, DiagnosticAudience::OperatorPrivate);
     assert_eq!(
         report.state,
         VerificationState::Admitted,
@@ -404,7 +417,6 @@ fn independently_evidenced_exact_subject_can_reach_admitted() {
     assert_eq!(standing.authority, "NONE");
     assert!(!standing.do_authority);
 }
-
 
 #[test]
 fn same_commit_from_another_repository_is_refused() {
@@ -476,7 +488,6 @@ fn positive_admission_is_lost_when_repository_binding_is_removed() {
     assert_eq!(standing.subject_binding, "UNKNOWN_REPOSITORY");
 }
 
-
 #[test]
 fn recomputed_hash_cannot_launder_incoherent_admitted_subject_binding() {
     let candidate = json!({
@@ -544,7 +555,6 @@ fn replay_verifier_rejects_schema_scope_subject_and_digest_shape_tampering() {
         ReceiptDoctor::recompute_standing_replay_digest(&verifier_digest);
     assert!(!ReceiptDoctor::verify_standing_replay(&verifier_digest));
 }
-
 
 #[test]
 fn every_single_nibble_commit_mutation_is_refused() {
@@ -648,15 +658,11 @@ fn evidence_absence_cannot_promote_and_subject_absence_cannot_hide_refusal() {
     assert_eq!(refused_cross_subject.state, VerificationState::Refused);
 }
 
-
 #[test]
 fn shacl_court_receipt_is_provenance_bound_and_zero_authority() {
     let receipt: serde_json::Value = serde_json::from_str(SHACL_COURT_RECEIPT).unwrap();
 
-    assert_eq!(
-        receipt["subject"],
-        format!("{REPOSITORY}@{BASE_SHA}")
-    );
+    assert_eq!(receipt["subject"], format!("{REPOSITORY}@{BASE_SHA}"));
     assert_eq!(receipt["validator"]["path"], "src/validate-shacl.mjs");
     assert_eq!(
         receipt["validator"]["blob_sha"],
@@ -672,12 +678,8 @@ fn shacl_court_receipt_is_provenance_bound_and_zero_authority() {
     assert_eq!(receipt["authority"], "NONE");
     assert_eq!(receipt["do_authority"], false);
     assert_eq!(receipt["standing"], "ALIVE");
-    assert_eq!(
-        receipt["standing_scope"],
-        "exact-source-shacl-core-logic"
-    );
+    assert_eq!(receipt["standing_scope"], "exact-source-shacl-core-logic");
 }
-
 
 #[test]
 fn uppercase_sha_aliases_are_not_admitted_subject_identity() {

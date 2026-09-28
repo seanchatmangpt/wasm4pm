@@ -248,11 +248,16 @@ pub enum SelectionRefusal {
 impl fmt::Display for SelectionRefusal {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::EmptyCandidateSet => formatter.write_str("canonical selection requires candidates"),
+            Self::EmptyCandidateSet => {
+                formatter.write_str("canonical selection requires candidates")
+            }
             Self::MissingCandidateId => formatter.write_str("candidate id must not be empty"),
             Self::DuplicateCandidateId(id) => write!(formatter, "duplicate candidate id: {id}"),
             Self::UnadmittedCandidate(id) => {
-                write!(formatter, "candidate {id} contains evidence below Admitted standing")
+                write!(
+                    formatter,
+                    "candidate {id} contains evidence below Admitted standing"
+                )
             }
             Self::MissingCandidateEvidence(id) => {
                 write!(formatter, "candidate {id} has no evidence")
@@ -280,7 +285,9 @@ fn validate_candidates(candidates: &[ContinuationCandidate]) -> Result<(), Selec
             return Err(SelectionRefusal::DuplicateCandidateId(candidate.id.clone()));
         }
         if candidate.evidence.is_empty() {
-            return Err(SelectionRefusal::MissingCandidateEvidence(candidate.id.clone()));
+            return Err(SelectionRefusal::MissingCandidateEvidence(
+                candidate.id.clone(),
+            ));
         }
         if candidate
             .evidence

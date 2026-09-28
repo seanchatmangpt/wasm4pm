@@ -41,7 +41,6 @@ pub enum CourtRefusal {
 
 const FORBIDDEN_IMPORTS: &[&str] = &["clock", "time", "random", "filesystem", "network"];
 
-
 pub fn admit_ex4pm_portable_artifact(
     artifact: &Value,
     module_digest: &str,
@@ -82,14 +81,18 @@ pub fn admit_ex4pm_portable_artifact(
 
     let observed_payload = sha256_json(payload);
     if observed_payload != payload_digest {
-        return Err(CourtRefusal::UpstreamDigestMismatch("payload_digest".into()));
+        return Err(CourtRefusal::UpstreamDigestMismatch(
+            "payload_digest".into(),
+        ));
     }
 
     let mut body = object.clone();
     body.remove("artifact_digest");
     let observed_artifact = sha256_json(&Value::Object(body));
     if observed_artifact != artifact_digest {
-        return Err(CourtRefusal::UpstreamDigestMismatch("artifact_digest".into()));
+        return Err(CourtRefusal::UpstreamDigestMismatch(
+            "artifact_digest".into(),
+        ));
     }
 
     if !is_content_digest(module_digest) {
@@ -133,7 +136,11 @@ pub fn gall_021_portable_result(
         "GALL-021",
         subject,
         semantic_result,
-        vec!["input_order_permutation", "unbound_host_import", "module_mutation"],
+        vec![
+            "input_order_permutation",
+            "unbound_host_import",
+            "module_mutation",
+        ],
     ))
 }
 
@@ -153,7 +160,11 @@ pub fn gall_022_powl_preservation(
         "GALL-022",
         subject,
         canonical_powl,
-        vec!["partial_order_flattening", "hierarchy_flattening", "unsupported_construct"],
+        vec![
+            "partial_order_flattening",
+            "hierarchy_flattening",
+            "unsupported_construct",
+        ],
     ))
 }
 
@@ -178,10 +189,13 @@ pub fn gall_023_ocpq_bindings(
         "GALL-023",
         subject,
         &Value::Array(canonical),
-        vec!["binding_order_permutation", "missing_relation", "unsupported_operator"],
+        vec![
+            "binding_order_permutation",
+            "missing_relation",
+            "unsupported_operator",
+        ],
     ))
 }
-
 
 fn require_string<'a>(
     object: &'a serde_json::Map<String, Value>,
@@ -193,7 +207,9 @@ fn require_string<'a>(
         .and_then(Value::as_str)
         .ok_or_else(|| CourtRefusal::InvalidUpstreamArtifact(format!("{field} missing")))?;
     if value.is_empty() {
-        return Err(CourtRefusal::InvalidUpstreamArtifact(format!("{field} empty")));
+        return Err(CourtRefusal::InvalidUpstreamArtifact(format!(
+            "{field} empty"
+        )));
     }
     if let Some(expected) = expected {
         if value != expected {
@@ -299,7 +315,11 @@ fn canonical_json(value: &Value) -> String {
         Value::String(v) => serde_json::to_string(v).expect("string"),
         Value::Array(items) => format!(
             "[{}]",
-            items.iter().map(canonical_json).collect::<Vec<_>>().join(",")
+            items
+                .iter()
+                .map(canonical_json)
+                .collect::<Vec<_>>()
+                .join(",")
         ),
         Value::Object(map) => {
             let mut entries = map.iter().collect::<Vec<_>>();
@@ -372,7 +392,9 @@ mod tests {
 
         assert_eq!(
             subject.source_digest,
-            artifact["artifact_digest"].as_str().expect("artifact digest")
+            artifact["artifact_digest"]
+                .as_str()
+                .expect("artifact digest")
         );
         assert_eq!(
             subject.process_digest,
@@ -404,7 +426,9 @@ mod tests {
                 "wasmtime:26.9.18",
                 BTreeMap::new(),
             ),
-            Err(CourtRefusal::UpstreamDigestMismatch("payload_digest".into()))
+            Err(CourtRefusal::UpstreamDigestMismatch(
+                "payload_digest".into()
+            ))
         );
 
         let mut authority = ex4pm_artifact(json!({"model": {"type": "sequence"}}));
@@ -425,8 +449,12 @@ mod tests {
         let a = json!({"b": 2, "a": 1});
         let b = json!({"a": 1, "b": 2});
         assert_eq!(
-            gall_021_portable_result(&subject(), &a, &[]).unwrap().result_digest,
-            gall_021_portable_result(&subject(), &b, &[]).unwrap().result_digest
+            gall_021_portable_result(&subject(), &a, &[])
+                .unwrap()
+                .result_digest,
+            gall_021_portable_result(&subject(), &b, &[])
+                .unwrap()
+                .result_digest
         );
     }
 

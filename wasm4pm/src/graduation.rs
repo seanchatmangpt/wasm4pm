@@ -24,7 +24,6 @@ mod protocol_runtime;
 pub use pc_powl2::{
     canonical_digest, replay_receipt, FiniteStateDomain, PcPowl2Broker, PcPowl2Checker, PcpResult,
     VerificationReport, VerificationStanding,
-<<<<<<< HEAD
 };
 
 // Verification and evidence shapes are safe to expose before the typed adapter:
@@ -32,8 +31,6 @@ pub use pc_powl2::{
 pub use protocol_runtime::{
     protocol_receipt_to_ocel_event, verify_receipt_chain, ProtocolReceipt, ReversiblePhase,
     ReversibleReceipt, RuntimeRefusal,
-=======
->>>>>>> origin/integration/finish-wip-v26.9.1-20260815
 };
 
 /// Intake a `GraduationCandidate` into the wasm4pm execution layer.

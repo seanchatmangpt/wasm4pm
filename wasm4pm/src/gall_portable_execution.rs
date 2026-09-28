@@ -116,8 +116,14 @@ fn validate_observation(
 
     for (field, digest) in [
         ("process_digest", observation.process_digest.as_str()),
-        ("powl_language_digest", observation.powl_language_digest.as_str()),
-        ("ocpq_binding_digest", observation.ocpq_binding_digest.as_str()),
+        (
+            "powl_language_digest",
+            observation.powl_language_digest.as_str(),
+        ),
+        (
+            "ocpq_binding_digest",
+            observation.ocpq_binding_digest.as_str(),
+        ),
         ("input_digest", observation.input_digest.as_str()),
         ("output_digest", observation.output_digest.as_str()),
     ] {

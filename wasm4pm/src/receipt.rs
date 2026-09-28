@@ -1547,7 +1547,6 @@ impl ReceiptDoctor {
                 .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
             && receipt.replay_digest == Self::recompute_standing_replay_digest(receipt)
     }
-
 }
 
 #[cfg(test)]
