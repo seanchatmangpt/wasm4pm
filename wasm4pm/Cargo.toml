@@ -30,7 +30,6 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
 wasm-bindgen-futures = "0.4.42"
@@ -478,7 +477,6 @@ gpu = ["dep:wgpu", "dep:pollster"]
 rayon = []
 powl = []
 serde = []
-
 
 # Utility features
 hand_rolled_stats = []

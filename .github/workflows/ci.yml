@@ -72,7 +72,19 @@ jobs:
           test "$(wasm-pack --version)" = "wasm-pack 0.13.1"
 
       - name: Install immutable JavaScript dependency graph
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee /tmp/pnpm-install.log
+
+      - name: Preserve pnpm install failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-install-failure-${{ github.run_id }}
+          path: /tmp/pnpm-install.log
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Rust format
         run: cargo fmt --all -- --check
