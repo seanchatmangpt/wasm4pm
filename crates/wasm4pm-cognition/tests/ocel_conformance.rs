@@ -291,9 +291,29 @@ fn assert_breed_conforming(breed: &str) {
 
         // Negative injection: shuffle the trace and ensure it's not 1.0 conforming
         if output.inference_trace.len() > 1 {
+            // A shuffle can return the identity permutation (50% for two
+            // steps), which would make the negative injection vacuous. Walk
+            // deterministic seeds from 42 until the order actually changes.
+            let step_order = |t: &[_]| {
+                t.iter()
+                    .map(|s: &wasm4pm_cognition::breeds::TraceStep| s.step)
+                    .collect::<Vec<_>>()
+            };
+            let original_order = step_order(&output.inference_trace);
             let mut shuffled_trace = output.inference_trace.clone();
-            let mut rng = SmallRng::seed_from_u64(42);
-            shuffled_trace.shuffle(&mut rng);
+            for seed in 42u64..142 {
+                shuffled_trace = output.inference_trace.clone();
+                shuffled_trace.shuffle(&mut SmallRng::seed_from_u64(seed));
+                if step_order(&shuffled_trace) != original_order {
+                    break;
+                }
+            }
+            assert_ne!(
+                step_order(&shuffled_trace),
+                original_order,
+                "{}: negative injection must actually permute the trace",
+                breed
+            );
 
             let shuffled_log = derive_ocel(breed, &run_id, &shuffled_trace);
             let shuffled_result = validate_ocel_alignment(&shuffled_log, model);

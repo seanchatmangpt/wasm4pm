@@ -53,5 +53,5 @@ fn tampered_state_is_refused() {
             state.cognition.phase = "tampered_phase".to_string();
         })
         .run()
-        .assert_refusal("INVALID_STATE");
+        .assert_refusal("STATE_HASH_MISMATCH");
 }
