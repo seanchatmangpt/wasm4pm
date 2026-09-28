@@ -101,14 +101,17 @@ jobs:
           WASM4PM_OTEL_ENDPOINT: http://127.0.0.1:9
           WASM4PM_SPANS_FILE: .wasm4pm/spans.jsonl
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          status=0
           node apps/wasm4pm/dist/bin/wpm.js \
             lab interview-assist \
             --workspace "$GITHUB_WORKSPACE" \
             --output "$GITHUB_WORKSPACE/.wasm4pm/interview-assist/latest.json" \
             --timeout-ms 150000 \
-            > /tmp/interview-assist-wpm.json
+            > /tmp/interview-assist-wpm.json || status=$?
+          # Always surface the command's JSON result, including refusals/errors.
           cat /tmp/interview-assist-wpm.json
+          exit "$status"
 
       - name: Independently verify emitted evidence
         shell: bash
