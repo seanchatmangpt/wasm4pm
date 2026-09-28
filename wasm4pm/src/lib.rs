@@ -701,9 +701,6 @@ pub mod trace_correlation;
 // RL Policy Persistence — Checkpoint save/load with BLAKE3 integrity verification (Gap-18)
 pub mod policy_persistence;
 
-// Advanced algorithms and structures (Gap-21)
-pub mod advanced;
-
 // Autonomic Audit Trail — Immutable append-only event log with Merkle chain (Gap-20)
 pub mod autonomic_audit_trail;
 pub mod oc_orchestrator;
