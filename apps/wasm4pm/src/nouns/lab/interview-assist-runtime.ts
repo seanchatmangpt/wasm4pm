@@ -247,7 +247,7 @@ export async function runInterviewAssistSession(options: InterviewAssistRunOptio
     process.execPath,
     [nextBinary, 'dev', '--hostname', '127.0.0.1', '--port', String(port)],
     {
-      cwd: options.workspace,
+      cwd: appDirectory,
       env: { ...options.env, NEXT_TELEMETRY_DISABLED: '1' },
       detached: process.platform !== 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
