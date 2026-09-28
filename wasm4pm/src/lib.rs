@@ -111,17 +111,22 @@ pub mod error;
 #[cfg(feature = "ocel")]
 pub mod foundry;
 /// GALL ex4pm portable-artifact verification and subject bridge.
+#[cfg(feature = "powl")]
 pub mod gall_ex4pm_bridge;
 /// GALL-021..023 exact-subject portable process correspondence court.
+#[cfg(feature = "powl")]
 pub mod gall_portable_execution;
 /// GALL-021..023 deterministic portable process qualification courts.
+#[cfg(feature = "powl")]
 pub mod gall_process_courts;
 /// GALL-021..023 portable process qualification courts.
+#[cfg(feature = "powl")]
 pub mod gall_process_portability;
 /// GALL-021 multi-runtime qualification harness (native hosts: wasmtime, node, bun).
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(feature = "powl", not(target_arch = "wasm32")))]
 pub mod gall_runtime_harness;
 /// GALL-022/023 lowering: POWL and GALL-017 OCPQ -> deterministic WASM modules.
+#[cfg(feature = "powl")]
 pub mod gall_wasm_lowering;
 /// Graduation intake module bridging the baseline.
 pub mod graduation;
