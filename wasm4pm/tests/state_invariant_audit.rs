@@ -193,6 +193,9 @@ fn test_invalid_p4_health_exceeds_max_bound() {
 /// **Detection:** Verify Open state rejects requests until timeout expires
 #[test]
 fn test_invalid_p5_circuit_open_allows_without_timeout() {
+    let _clock_guard = wasm4pm::self_healing::CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     use wasm4pm::self_healing::{advance_clock, reset_clock};
 
     reset_clock();
@@ -422,6 +425,9 @@ fn test_health_transitions_respect_monotonicity() {
 
 #[test]
 fn test_circuit_breaker_timeout_logic_integrity() {
+    let _clock_guard = wasm4pm::self_healing::CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     use wasm4pm::self_healing::{advance_clock, reset_clock};
 
     reset_clock();
