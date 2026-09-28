@@ -1,17 +1,20 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>wasm4pm DDUI prototype</title><link rel="stylesheet" href="./styles.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>wasm4pm Deterministic Dynamic UI</title><link rel="stylesheet" href="./styles.css"></head>
 <body>
+  <a class="skip" href="#screen">Skip to projected screen</a>
   <main class="shell">
-    <aside class="controls">
+    <aside class="controls" aria-label="Projection controls">
       <h2>Projection inputs</h2>
-      <label>Avatar<select id="avatar"><option>CEO</option><option>CFO</option><option>CTO</option><option>ENGINEER</option></select></label>
-      <label>Context<select id="context"><option value="normal">Normal</option><option value="incident">Incident</option><option value="board">Board</option></select></label>
+      <label>Avatar<select id="avatar"><option>CEO</option><option>CFO</option><option>CTO</option><option>ENGINEER</option><option>AUDITOR</option></select></label>
+      <label>Context<select id="context"><option value="normal">Operating</option><option value="incident">Incident</option><option value="board">Board</option><option value="audit">Audit</option></select></label>
       <label class="check"><input id="authority" type="checkbox">Admit governed authority fixture</label>
       <p>Runtime AI: <strong>none</strong></p><p>Projection: <code>UI_t=P(G_t,α,κ,ρ)</code></p>
-      <details><summary>Receipt</summary><pre id="receipt"></pre></details>
+      <details><summary>Screen receipt</summary><pre id="receipt"></pre></details>
+      <details><summary>Intent receipt</summary><pre id="intent-receipt">No intent manufactured.</pre></details>
+      <details><summary>Canonical Mermaid projection map</summary><pre id="mermaid-spec"></pre></details>
     </aside>
-    <section id="screen" class="screen" aria-live="polite"></section>
+    <section id="screen" class="screen" aria-live="polite" tabindex="-1"></section>
   </main>
   <script type="module" src="./app.mjs"></script>
 </body>

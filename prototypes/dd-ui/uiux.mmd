@@ -1,0 +1,58 @@
+flowchart TB
+  subgraph RESEARCH[Research / Doctrine]
+    R[Research] --> F[Chesterton fence]
+    F --> O[DDUI ontology]
+    O --> M[Mermaid interaction geometry]
+  end
+
+  subgraph DFCM[DfCM presentation calculus]
+    G[Admitted process world G_t] --> E[Enumerate lawful presentation candidates]
+    A[Avatar alpha] --> E
+    K[Context kappa] --> E
+    GR[Bounded grammar dd-ui/2] --> E
+    E --> P[Prune by role/context/grammar]
+    P --> PF[Pareto frontier]
+    PF --> RP[Reversible presentation selection]
+    RP --> S[Screen IR]
+  end
+
+  subgraph EXEC[Executive projection]
+    S --> EH[Executive health]
+    EH --> KP[KPI / plan / actual / variance / forecast]
+    EH --> RA[Risk / attention]
+    EH --> DE[Decisions required]
+    EH --> OP[Opportunity]
+    EH --> NA[No action required]
+  end
+
+  subgraph ADMIN[Admin / technical projection]
+    S --> ST[Standing]
+    S --> DP[Dependencies]
+    S --> EV[Evidence]
+    S --> RC[Receipts]
+    S --> FR[DfCM frontier inspection]
+  end
+
+  subgraph AUTH[Authority]
+    S --> I[Intent]
+    I --> SEL[SELECT]
+    I --> CON[CONSTRUCT]
+    I --> B[BRCE]
+    AUTHORITY[Admitted authority rho] --> B
+    B --> DO[DO]
+    S -. no direct actuation .-> DO
+    LLM[LLM / AGI] -. no runtime render authority .-> S
+  end
+
+  subgraph RECEIPT[Evidence / replay]
+    S --> SR[Screen receipt]
+    I --> IR[Intent receipt]
+    SR --> REPLAY[Replay]
+    IR --> REPLAY
+    REPLAY --> MATCH{Digest match?}
+    MATCH -->|yes| STAND[Standing preserved]
+    MATCH -->|no| REF[REFUSED_REPLAY_MISMATCH]
+  end
+
+  M --> GR
+  O --> G
