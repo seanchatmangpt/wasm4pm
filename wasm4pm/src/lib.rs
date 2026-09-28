@@ -110,6 +110,8 @@ pub mod error;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
+/// GALL ex4pm portable-artifact verification and subject bridge.
+pub mod gall_ex4pm_bridge;
 /// GALL-021..023 exact-subject portable process correspondence court.
 pub mod gall_portable_execution;
 /// GALL-021..023 deterministic portable process qualification courts.
