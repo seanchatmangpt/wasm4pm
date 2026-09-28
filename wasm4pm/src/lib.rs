@@ -121,6 +121,8 @@ pub mod gall_wasm_lowering;
 pub mod graduation;
 /// GALL-021..023 exact-subject portable process correspondence court.
 pub mod gall_portable_execution;
+/// GALL-021..023 deterministic portable process qualification courts.
+pub mod gall_process_courts;
 /// Event log I/O utilities (XES import/export, binary format).
 pub mod io;
 /// Lifecycle State Machine module — WASM4PM autonomic control flow.
