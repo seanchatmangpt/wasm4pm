@@ -87,7 +87,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build wpm runtime dependency closure
-        run: pnpm --filter @wasm4pm/cli... build
+        # @wasm4pm/engine and @wasm4pm/testing depend on each other; testing
+        # compiles without engine output, so build it first and serialize the
+        # rest to keep engine's tsc from racing testing's dist.
+        run: |
+          pnpm --filter @wasm4pm/testing build
+          pnpm --filter @wasm4pm/cli... --workspace-concurrency=1 build
 
       - name: Run built wpm binary through real InterviewAssist boundaries
         env:
