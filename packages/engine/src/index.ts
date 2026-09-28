@@ -89,6 +89,9 @@ export type { Checkpoint } from './checkpointing.js';
 export {
   MemoryCheckpointStore,
   FileCheckpointStore,
+  CheckpointSequenceConflictError,
+  filterAndOrderCheckpointMetadata,
+  selectLatestCheckpointMetadata,
   type ICheckpointStore,
   type CheckpointMetadata,
   type RunFilter,
@@ -99,6 +102,22 @@ export {
   type ProcessLock,
   type CrashDetectionResult,
 } from './crash-detector.js';
+
+export {
+  RecoveryArtifactSchema,
+  RecoveryFailureInjectionSchema,
+  checkpointSemanticDigest,
+  buildRecoveryArtifact,
+  admitRecoveryArtifact,
+  buildRecoveryFailureInjection,
+  qualifyProviderRecovery,
+} from './recovery-artifact.js';
+export type {
+  RecoveryArtifact,
+  RecoveryTransport,
+  RecoveryFailureInjection,
+  RecoveryAdmission,
+} from './recovery-artifact.js';
 
 // Signal handling and crash recovery (Phase 1.5)
 export { SignalHandler, type SignalHandlerConfig } from './signals.js';

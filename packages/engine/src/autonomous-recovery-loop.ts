@@ -6,7 +6,11 @@
 
 import { Engine } from './engine.js';
 import { CrashDetector, CrashDetectionResult } from './crash-detector.js';
-import { ICheckpointStore, CheckpointMetadata } from './checkpoint-store.js';
+import {
+  selectLatestCheckpointMetadata,
+  type ICheckpointStore,
+  type CheckpointMetadata,
+} from './checkpoint-store.js';
 import { CheckpointManager } from './checkpointing.js';
 import { ObservabilityLayer } from '@wasm4pm/observability';
 import { EngineState } from '@wasm4pm/contracts';
@@ -217,9 +221,9 @@ export class AutonomousRecoveryOrchestrator {
     if (health.checkpointAvailable) {
       try {
         const metadata = await this.checkpointStore.list({ runId: this.runId });
-        if (metadata.length > 0) {
-          // Select latest checkpoint (Rank-2: maximize recovery chances)
-          const latest = metadata[metadata.length - 1];
+        const latest = selectLatestCheckpointMetadata(metadata);
+        if (latest) {
+          // Highest semantic sequence, not store iteration order.
           checkpointId = latest.id;
         }
       } catch (error) {

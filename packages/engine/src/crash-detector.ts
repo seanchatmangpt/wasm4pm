@@ -6,7 +6,10 @@
 import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { ICheckpointStore } from './checkpoint-store.js';
+import {
+  selectLatestCheckpointMetadata,
+  type ICheckpointStore,
+} from './checkpoint-store.js';
 import type { Checkpoint } from './checkpointing.js';
 
 export const ProcessLockSchema = z.object({
@@ -210,8 +213,8 @@ export class AutonomicRecovery {
           runId: crashResult.lastLock.runId,
         });
 
-        if (metadata.length > 0) {
-          const latest = metadata[metadata.length - 1];
+        const latest = selectLatestCheckpointMetadata(metadata);
+        if (latest) {
           const checkpoint = await this.checkpointStore.load(latest.id);
           return checkpoint;
         }
