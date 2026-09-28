@@ -88,9 +88,10 @@ jobs:
 
       - name: Build wpm runtime dependency closure
         # @wasm4pm/engine and @wasm4pm/testing depend on each other; testing
-        # compiles without engine output, so build it first and serialize the
-        # rest to keep engine's tsc from racing testing's dist.
+        # needs only contracts' output, so build contracts then testing first
+        # and serialize the rest to keep engine's tsc from racing their dist.
         run: |
+          pnpm --filter @wasm4pm/contracts build
           pnpm --filter @wasm4pm/testing build
           pnpm --filter @wasm4pm/cli... --workspace-concurrency=1 build
 
