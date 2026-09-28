@@ -1,0 +1,49 @@
+{
+  "schema": "wasm4pm.chatman-equilibrium-run-receipt/1",
+  "calver": "v26.9.26",
+  "subject": "seanchatmangpt/wasm4pm@9fc4f1ae3cc99cf65a5f014580db8e1ea3d08b55",
+  "branch": "verify/v26.9.26-tristate-standing",
+  "pr": 641,
+  "authority": "NONE",
+  "do_authority": false,
+  "scope": "repository-local-receipt-verification",
+  "evidence": {
+    "source_ttl_contract": {
+      "standing": "ALIVE",
+      "checks": 32,
+      "passed": 32,
+      "observed_head": "7d75f1075a91d6cfe4edabe271993776d4498d0f",
+      "scope": "exact-branch source/TTL/SHACL/process contract reconstruction"
+    },
+    "cargo_execution": {
+      "standing": "UNKNOWN",
+      "reason": "execution container cannot resolve github.com for exact-head checkout"
+    },
+    "hosted_ci": {
+      "standing": "UNKNOWN",
+      "reason": "out of scope; not consulted"
+    },
+    "shacl_core_logic": {
+      "standing": "ALIVE",
+      "killed": 9,
+      "total": 9,
+      "receipt": "receipts/v26.9.26/chatman-equilibrium-shacl-court.receipt.json",
+      "scope": "exact-source-shacl-core-logic"
+    },
+    "node_module_execution": {
+      "standing": "UNKNOWN",
+      "reason": "Node runtime exists, but exact repository module graph was not materialized as a filesystem checkout"
+    }
+  },
+  "process_evidence": "receipts/v26.9.26/chatman-equilibrium-standing.ocel.json",
+  "replay": [
+    "cargo test -p wasm4pm --test chatman_equilibrium_standing_tests",
+    "cargo test -p wasm4pm receipt"
+  ],
+  "standing": "PARTIAL_ALIVE",
+  "remaining_gradient": [
+    "cargo test -p wasm4pm --test chatman_equilibrium_standing_tests",
+    "cargo test -p wasm4pm receipt",
+    "node --test tests/chatman-equilibrium-standing-shacl.test.mjs"
+  ]
+}
