@@ -106,7 +106,7 @@ fn heuristic(_trace_len: usize, _current_trace_index: usize) -> f64 {
 }
 
 /// Compute optimal alignment for a single trace using A*.
-fn compute_trace_alignment(
+pub fn compute_trace_alignment(
     trace_activities: &[String],
     petri_net: &PetriNet,
     sync_cost: f64,
