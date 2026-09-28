@@ -5,11 +5,9 @@
  * commands, and `wpm benchmark perf`. Validates the spec-mandated JSON
  * output shapes and flag behaviors under their noun/verb equivalents
  * (nouns/_removed.ts):
- *   - 'batch'  -> 'pipeline run'   (name-only absorption — see the big
- *                                   comment in batch-cli.test.ts; the
- *                                   multi-file/--continue-on-error/
- *                                   --parallel behavior tested here has NO
- *                                   replacement anywhere in the new surface)
+ *   - 'batch'  -> 'log batch' (restored as a real noun/verb; behavior is covered
+ *                        by log-batch-cli.test.ts. The tests below only prove the
+ *                        old top-level name still hard-redirects)
  *   - 'results' -> 'evidence report' (bridged unchanged — legacy envelope
  *                                     `{command,status,exit_code,payload,meta}`
  *                                     preserved verbatim on success)
@@ -96,7 +94,9 @@ describe("wpm batch — retired; 'wpm pipeline run' does not reimplement multi-f
       '--no-save',
     ]);
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toMatch(/'wpm batch' was removed — use 'wpm pipeline run'/);
+    expect(parseJsonOutput(result.stdout)).toMatchObject({
+      error: { message: "'wpm batch' was removed", action_template: { suggested_command: 'wpm log batch' } },
+    });
   });
 
   it("'--continue-on-error' and comma-separated multi-file '-i' also just hard-redirect (no replacement exists)", async () => {
@@ -114,7 +114,9 @@ describe("wpm batch — retired; 'wpm pipeline run' does not reimplement multi-f
       '--no-save',
     ]);
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toMatch(/'wpm batch' was removed/);
+    expect(parseJsonOutput(result.stdout)).toMatchObject({
+      error: { message: "'wpm batch' was removed" },
+    });
   });
 
   it("'--parallel' flag shape also just hard-redirects", async () => {
