@@ -268,24 +268,26 @@ describe('ResultDeduplicator', () => {
       const dedupPath = path.join(TEST_TMP, 'expire.jsonl');
       const dedup = new ResultDeduplicator(dedupPath);
 
+      // Seed a fixed "recorded at" instant via an injected clock, rather
+      // than racing a real sleep against a real TTL window.
+      const recordedAt = 1_000_000;
+      dedup.setClock(() => recordedAt);
+
       const logPath = createTestLog('test content');
       // Use 50ms TTL
       await dedup.recordResult(logPath, 'dfg', { nodes: 5 }, undefined, 50);
 
-      // Wait to ensure the entry is written to disk
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      // Reset and load from disk immediately - entry still valid
+      // Load from disk 10ms after recording - entry still valid
       const dedup2 = new ResultDeduplicator(dedupPath);
+      dedup2.setClock(() => recordedAt + 10);
       await dedup2.loadFromDisk();
       let stats = dedup2.stats();
       expect(stats.total_entries).toBeGreaterThan(0);
 
-      // Wait past TTL
-      await new Promise((resolve) => setTimeout(resolve, 60));
-
-      // Load again - entry should now be expired
+      // Load again 60ms after recording (past the 50ms TTL) - entry should
+      // now be expired.
       const dedup3 = new ResultDeduplicator(dedupPath);
+      dedup3.setClock(() => recordedAt + 60);
       await dedup3.loadFromDisk();
       stats = dedup3.stats();
       expect(stats.total_entries).toBe(0);

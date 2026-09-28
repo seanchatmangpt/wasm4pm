@@ -706,7 +706,7 @@ mod tests {
             "training_data":[0.0,0.0,0.0,0.0,0.0,0.0,0.0],"training_labels":[0.0],
             "n_trees":3,"max_depth":3,"min_samples_split":2,
             "activity_key":"concept:name","n_samples":1,"n_features":7}"#;
-        let snap: RfPredictorSnapshot = serde_json::from_str().expect("deserialise");
+        let snap: RfPredictorSnapshot = serde_json::from_str(snapshot_json).expect("deserialise");
         assert_eq!(snap.max_trace_len, 0);
         assert!((snap.max_case_ms - 1.0).abs() < 1e-9);
     }

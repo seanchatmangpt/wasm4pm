@@ -614,12 +614,12 @@ pub(crate) fn score_motion_automl_from_envelope(
 mod tests {
     use super::*;
     use crate::models::{Event, Trace};
-    use std::collections::HashMap;
+    use std::collections::BTreeMap;
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     fn make_event(activity: &str) -> Event {
-        let mut attrs = HashMap::new();
+        let mut attrs = BTreeMap::new();
         attrs.insert(
             "concept:name".to_string(),
             AttributeValue::String(activity.to_string()),
@@ -629,14 +629,14 @@ mod tests {
 
     fn make_trace(activities: &[&str]) -> Trace {
         Trace {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             events: activities.iter().map(|a| make_event(a)).collect(),
         }
     }
 
     fn make_log(traces: Vec<Trace>) -> EventLog {
         EventLog {
-            attributes: HashMap::new(),
+            attributes: BTreeMap::new(),
             traces,
         }
     }

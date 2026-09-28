@@ -57,7 +57,22 @@ export function assertFixtureLegalAgainstRealTable(log: readonly SessionEvent[])
   let phase: Phase = "CREATED";
   for (const event of log) {
     if (event.targetPhase === undefined) continue;
-    const legalTargets = PHASE_TRANSITIONS[phase] ?? [];
+    // Explicit annotation required, not cosmetic: without it `tsc --noEmit`
+    // reports TS7022 on this binding ("implicitly has type 'any' because it
+    // does not have a type annotation and is referenced directly or
+    // indirectly in its own initializer"). The annotation restates
+    // PHASE_TRANSITIONS' own real declared type
+    // (`Partial<Record<Phase, readonly Phase[]>>`, so an absent key yields
+    // `undefined` and the `?? []` fallback makes this `readonly Phase[]`) --
+    // it narrows nothing and widens nothing.
+    //
+    // Why here and not at the byte-identical `PHASE_TRANSITIONS[from] ?? []`
+    // in phase-transitions.ts's own `isLegalTransition`, which needs no
+    // annotation: there the index key is a `const` function parameter, while
+    // `phase` here is a `let` reassigned from `event.targetPhase` at the
+    // bottom of this same loop body, which puts its inferred type and this
+    // initializer's on a mutually-dependent cycle.
+    const legalTargets: readonly Phase[] = PHASE_TRANSITIONS[phase] ?? [];
     if (!legalTargets.includes(event.targetPhase)) {
       throw new Error(
         `fixture drift: ${phase} -> ${event.targetPhase} is not a real admitted transition-plan edge in phase-transitions.ts`,

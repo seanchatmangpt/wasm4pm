@@ -76,7 +76,7 @@ describe("cognition hypothesis confirmation (real WASM adapter + real reducer, n
     const outcome = await runCognition("hello there, nice weather today");
     expect(outcome.status).toBe("no-track-matched");
     if (outcome.status !== "no-track-matched") throw new Error("unreachable");
-    expect(outcome.reason).toContain("empty inference trace");
+    expect(outcome.reason).toContain("OCEL conformance failure");
     // No reducer call happens on this branch in the real UI -- the
     // starting state is exactly what a user would still see.
     expect(startingState.phase).toBe("CLARIFICATION");

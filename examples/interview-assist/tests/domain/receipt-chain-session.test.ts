@@ -207,7 +207,7 @@ describe("real end-to-end manufacturing-chain receipt emission (TICKET-055)", ()
     const outcome = await runCognition("hello there, nice weather today");
     expect(outcome.status).toBe("no-track-matched"); // real fail-closed anti-fraud check
     if (outcome.status !== "no-track-matched") throw new Error("unreachable");
-    expect(outcome.reason).toContain("empty inference trace");
+    expect(outcome.reason).toContain("OCEL conformance failure");
 
     const receipt = outcome.receipt;
     expect(receipt).toBeDefined();

@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "wasm4pm-planner": {
+      "command": "./target/release/wasm4pm-planner-mcp"
+    }
+  }
+}
