@@ -3896,8 +3896,10 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
+ "wasm-encoder",
  "wasm4pm-cognition",
  "wasm4pm-compat",
+ "wasmparser",
  "wgpu",
 ]
 
