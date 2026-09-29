@@ -136,3 +136,13 @@ PHD_THESIS.out
 # vitest temp configs
 vitest.config.ts.timestamp-*.mjs
 nul
+
+# Per-item algorithm/breed validation: deterministic generator output from
+# scripts/generate_per_item_validation.py, regenerated and committed by the
+# "manufacture" job in .github/workflows/per-item-validation.yml on the
+# purpose branch. Not hand-written source capital; CI regenerates it.
+packages/kernel/src/algorithm-contracts/
+packages/kernel/src/__tests__/algorithm-contracts/
+crates/wasm4pm-cognition/tests/breed_contracts/
+crates/wasm4pm-cognition/tests/breed_contracts.rs
+artifacts/validation/

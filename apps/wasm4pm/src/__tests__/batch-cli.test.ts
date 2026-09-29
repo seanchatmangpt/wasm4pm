@@ -7,7 +7,9 @@
  * `--timeout`, per-file JSON/CSV summaries).
  *
  * ═══════════════════════════════════════════════════════════════════════
- * GENUINE CAPABILITY RETIREMENT (not a renamed/reshaped equivalent) —
+ * NOTE: the multi-file capability was later restored as 'wpm log batch' (see
+ * log-batch-cli.test.ts); the text below records why 'pipeline run' was never
+ * an equivalent. GENUINE CAPABILITY RETIREMENT at the time (not a renamed equivalent) —
  * documented here rather than silently dropped:
  * ═══════════════════════════════════════════════════════════════════════
  *
@@ -68,9 +70,19 @@ const MIN_VALID_XES = `<?xml version="1.0" encoding="UTF-8"?>
   </trace>
 </log>`;
 
+/** The dispatcher's typed refusal for a retired command: JSON error envelope on stdout. */
+function expectRemovalRedirect(stdout: string): void {
+  const parsed = JSON.parse(stdout) as {
+    error: { code: string; message: string; action_template?: { suggested_command?: string } };
+  };
+  expect(parsed.error.code).toBe('COMMAND_NOT_FOUND');
+  expect(parsed.error.message).toMatch(/'wpm batch' was removed/);
+  expect(parsed.error.action_template?.suggested_command).toBe('wpm log batch');
+}
+
 const INVALID_XES = `not-xml-at-all {{ broken`;
 
-describe("wpm batch — retired; hard-redirects to 'wpm pipeline run'", () => {
+describe("wpm batch — retired; hard-redirects to 'wpm log batch'", () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
   let tmpDir: string;
 
@@ -88,25 +100,25 @@ describe("wpm batch — retired; hard-redirects to 'wpm pipeline run'", () => {
     }
   });
 
-  it('wpm batch <dir> prints the removal redirect to stderr and exits 1, regardless of directory contents', async () => {
+  it('wpm batch <dir> prints the removal redirect envelope and exits 1, regardless of directory contents', async () => {
     const filePath = path.join(tmpDir, 'log.xes');
     await fs.writeFile(filePath, MIN_VALID_XES);
 
     const result = await runCli(['batch', tmpDir, '--algorithm', 'dfg']);
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toMatch(/'wpm batch' was removed/);
-    expect(result.stderr).toMatch(/wpm pipeline run/);
+    expectRemovalRedirect(result.stdout);
   });
 
   it('wpm batch (no args) also hard-redirects (checkRemoved fires before argument parsing)', async () => {
     const result = await runCli(['batch']);
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toMatch(/'wpm batch' was removed/);
+    expectRemovalRedirect(result.stdout);
   });
 
-  it('stdout is empty on the removal path (the redirect message goes to stderr only)', async () => {
+  it('the removal path emits only the typed error envelope, never a result payload', async () => {
     const result = await runCli(['batch', tmpDir]);
-    expect(result.stdout.trim()).toBe('');
+    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+    expect(Object.keys(parsed)).toEqual(['error']);
   });
 
   it('every --workers/--parallel/--timeout/--continue-on-error flag shape still just hard-redirects', async () => {
@@ -122,7 +134,7 @@ describe("wpm batch — retired; hard-redirects to 'wpm pipeline run'", () => {
       '--output-dir', tmpDir,
     ]);
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toMatch(/'wpm batch' was removed/);
+    expectRemovalRedirect(result.stdout);
   });
 });
 

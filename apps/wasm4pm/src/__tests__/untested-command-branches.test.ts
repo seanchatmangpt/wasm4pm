@@ -155,8 +155,8 @@ describe('Untested Command Branches', () => {
   });
 
   describe('FM-5 Risk: Real vs Stubbed Code Paths', () => {
-    it('the batch/pipeline-run successor should actually be documented (not mock)', async () => {
-      // `batch` -> `pipeline run` (see `nouns/_removed.ts`). Unlike the bridged
+    it('the batch/log-batch successor should actually be documented (not mock)', async () => {
+      // `batch` -> `log batch` (see `nouns/_removed.ts`). Unlike the bridged
       // verbs elsewhere in this suite, `wpm batch` itself is hard-removed with
       // no bridge (`checkRemoved()` intercepts it before any dispatch, with an
       // empty stdout and a replacement hint on stderr) — so there is no
@@ -165,9 +165,9 @@ describe('Untested Command Branches', () => {
       // successor is real and actually describes itself.
       const removed = await runCli(['batch', '--help']);
       expect(removed.exitCode).toBe(EXIT_CODES.config_error);
-      expect(removed.stdout + removed.stderr).toMatch(/removed.*pipeline run/i);
+      expect(removed.stdout + removed.stderr).toMatch(/removed[\s\S]*wpm log batch/i);
 
-      const replacement = await runCli(['pipeline', 'run', '--help']);
+      const replacement = await runCli(['log', 'batch', '--help']);
       expect([EXIT_CODES.success, EXIT_CODES.config_error]).toContain(replacement.exitCode);
       expect(replacement.stdout.length).toBeGreaterThan(0);
     });

@@ -23,6 +23,7 @@ const EXAMPLES: readonly ExampleEntry[] = [
   { noun: 'log', verb: 'query', example: 'wpm log query --ocel world.ocel.json --query query.json' },
   { noun: 'log', verb: 'convert', example: 'wpm log convert v1-log.json -o v2-log.json' },
   { noun: 'log', verb: 'sample', example: 'wpm log sample event-log.xes --count 5' },
+  { noun: 'log', verb: 'batch', example: 'wpm log batch ./logs --algorithm dfg --workers 4' },
   { noun: 'model', verb: 'discover', example: 'wpm model discover event-log.xes --algorithm heuristic_miner' },
   { noun: 'model', verb: 'check', example: 'wpm model check event-log.xes --model net.pnml --mode replay' },
   { noun: 'model', verb: 'compare', example: 'wpm model compare dfg,heuristic_miner -i event-log.xes' },

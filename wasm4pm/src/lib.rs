@@ -110,6 +110,24 @@ pub mod error;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
+/// GALL ex4pm portable-artifact verification and subject bridge.
+#[cfg(feature = "powl")]
+pub mod gall_ex4pm_bridge;
+/// GALL-021..023 exact-subject portable process correspondence court.
+#[cfg(feature = "powl")]
+pub mod gall_portable_execution;
+/// GALL-021..023 deterministic portable process qualification courts.
+#[cfg(feature = "powl")]
+pub mod gall_process_courts;
+/// GALL-021..023 portable process qualification courts.
+#[cfg(feature = "powl")]
+pub mod gall_process_portability;
+/// GALL-021 multi-runtime qualification harness (native hosts: wasmtime, node, bun).
+#[cfg(all(feature = "powl", not(target_arch = "wasm32")))]
+pub mod gall_runtime_harness;
+/// GALL-022/023 lowering: POWL and GALL-017 OCPQ -> deterministic WASM modules.
+#[cfg(feature = "powl")]
+pub mod gall_wasm_lowering;
 /// Graduation intake module bridging the baseline.
 pub mod graduation;
 /// Event log I/O utilities (XES import/export, binary format).
@@ -316,6 +334,7 @@ pub mod binary_format;
 pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
+pub mod causal;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
 #[cfg(feature = "conformance_basic")]
@@ -385,6 +404,8 @@ pub mod ocel_tests;
 pub mod ocel_v2;
 
 // Advanced discovery algorithms (gated by discovery_advanced feature)
+#[cfg(feature = "discovery_advanced")]
+pub mod advanced;
 #[cfg(feature = "discovery_advanced")]
 pub mod advanced_algorithms;
 #[cfg(feature = "discovery_advanced")]
@@ -484,14 +505,28 @@ pub mod declare_conformance;
 pub mod simd_token_replay;
 #[cfg(feature = "conformance_basic")]
 pub mod temporal_profile;
+// ETConformance precision (Munoz-Gama & Carmona prefix-automaton escaping-edges
+// metric) is a self-contained token-replay computation over models::EventLog /
+// models::PetriNet only (see the module's own doc comment) -- it does not depend
+// on the A*/LP alignment machinery (alignments, marking_equation,
+// align_etconformance) that the other conformance_full-only modules below
+// require. Re-gated here under conformance_basic (moved down from
+// conformance_full) because discover_ilp_petri_net_from_log in ilp_discovery.rs
+// -- gated only by discovery_advanced, not conformance_full -- calls
+// etconformance_precision::compute_precision unconditionally; building with
+// discovery_advanced + conformance_basic but without conformance_full (e.g.
+// open-ontologies's dependency features) failed with "cannot find
+// etconformance_precision in crate". conformance_full already implies
+// conformance_basic (see its feature declaration below), so this is additive
+// only: every existing conformance_full consumer still gets this module.
+#[cfg(feature = "conformance_basic")]
+pub mod etconformance_precision;
 
 // SIMD inner loop optimizations (always compiled, feature-gated at runtime)
 pub mod simd_inner_loops;
 
 #[cfg(feature = "conformance_full")]
 pub mod alignments;
-#[cfg(feature = "conformance_full")]
-pub mod etconformance_precision;
 #[cfg(feature = "conformance_full")]
 pub mod marking_equation;
 #[cfg(feature = "conformance_full")]
@@ -689,9 +724,6 @@ pub mod trace_correlation;
 
 // RL Policy Persistence — Checkpoint save/load with BLAKE3 integrity verification (Gap-18)
 pub mod policy_persistence;
-
-// Advanced algorithms and structures (Gap-21)
-pub mod advanced;
 
 // Autonomic Audit Trail — Immutable append-only event log with Merkle chain (Gap-20)
 pub mod autonomic_audit_trail;

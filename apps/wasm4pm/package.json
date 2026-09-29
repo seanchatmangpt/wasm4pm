@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.7.23",
+  "version": "26.9.28",
   "description": "wasm4pm \u2014 High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -50,7 +50,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.5.0",
+    "@faker-js/faker": "^10.6.0",
     "@types/node": "^20.10.0",
     "@wasm4pm/testing": "workspace:*",
     "citty-test-utils": "^0.6.1",

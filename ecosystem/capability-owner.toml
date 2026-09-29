@@ -1,0 +1,15 @@
+schema = "chatman.federated-capability-owner.v1"
+version = "26.9.1"
+repository = "seanchatmangpt/wasm4pm"
+owner_id = "repository:wasm4pm"
+control_plane_repository = "seanchatmangpt/chatman-ecosystem"
+control_plane_subject = "git:7430dfc9b3ca138e703430d25de7c6f48a8d6ade"
+base_sha = "e999d225663c5a5951c2c2793e480626f648902b"
+release_component = "wasm4pm"
+release_role = "process-execution"
+release_dependencies = ["wasm4pm-compat"]
+allowed_authorities = ["observe", "classify", "persist_control_plane"]
+simulation_only = false
+do_mode = "none"
+ambient_do = false
+automatic_irreversible_do = false

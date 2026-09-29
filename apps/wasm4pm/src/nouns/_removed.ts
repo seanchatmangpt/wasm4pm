@@ -69,7 +69,7 @@ const ONE_TOKEN_ENTRIES: readonly RemovedEntry[] = [
   { old: 'cache', replacement: 'system cache' },
   { old: 'models', replacement: 'system models' },
   { old: 'deduplicate', replacement: 'log dedupe' },
-  { old: 'batch', replacement: 'pipeline run' },
+  { old: 'batch', replacement: 'log batch' },
   { old: 'supabase', replacement: 'lab supabase' },
   { old: 'wasm-server', replacement: 'lab wasm-server' },
   { old: 'trace', replacement: 'lab trace' },

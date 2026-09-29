@@ -12,11 +12,12 @@
 //!
 //! ## Modules
 //!
-//! - [`breeds::frame`] — Minsky-style frames (1974)
+//! - [`breeds::frame`] — Minsky-style frames / ELIZA reassembly (1974/1966)
 //! - [`breeds::production_rules`] — forward-chaining rule engine
 //! - [`breeds::prolog`] — Horn-clause backward chaining with Robinson unification
 //! - [`breeds::strips`] — STRIPS-style means-ends planner (Fikes & Nilsson 1971)
 //! - [`breeds::hearsay`] — Hearsay-II blackboard architecture (Erman & Lesser 1980)
+//! - [`command_projection`] — deterministic read-only human projection over admitted state
 //! - [`gmrw`] — ontology-addressed admission, diagnosis, and real-time operator scheduling
 //! - [`session`] — receipted, state-carrying compound cognition sessions
 //! - [`interview`] — InterviewAssist cognition runtime core
@@ -40,6 +41,7 @@ pub mod authority;
 pub mod autoinstinct;
 pub mod autosystems;
 pub mod breeds;
+pub mod command_projection;
 pub mod evidence;
 pub mod ghf;
 pub mod gmrw;

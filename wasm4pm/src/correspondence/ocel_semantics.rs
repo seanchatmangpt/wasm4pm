@@ -72,7 +72,7 @@ pub const LEAN_CORE_FILE_SHA256: &str =
 // correspondence::dfg_multi_trace for the new multi-trace harness this
 // checkpoint added, which cites the same file at the same hash.
 pub const LEAN_DFG_FILE_SHA256: &str =
-    "0270e4ea625bb41aaae76c43e953ad798b836c521636fdf10bf447befa81312e";
+    "9ec70e3ac8122664df29fec6e7d3cd804dc00aa021077db3604c2e101b01a29b";
 pub const MFACT_REVISION: &str = "801abf7933dabf5c95f9fb18ff21a7a8a1f6a564";
 
 /// Hand-transcription of `Ocel/Core.lean`'s `OCEL.TimeOrdered`:

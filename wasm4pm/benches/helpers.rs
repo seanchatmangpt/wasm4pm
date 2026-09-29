@@ -189,7 +189,7 @@ pub fn make_handle(shape: &LogShape) -> (String, usize) {
 /// Parse `node_count` and `edge_count` from an algorithm's JSON output
 /// using simd-json for fast deserialization.
 pub fn parse_model_stats(json: &str) -> (usize, usize) {
-    use simd_json::prelude::{ValueAsContainer, ValueAsScalar};
+    use simd_json::prelude::{ValueAsArray, ValueAsScalar};
     let mut bytes = json.as_bytes().to_vec();
     if let Ok(val) = simd_json::to_owned_value(&mut bytes) {
         let nodes = val["node_count"]

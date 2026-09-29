@@ -48,6 +48,37 @@ import type { TransitionReceipt } from "../domain/receipt";
 
 const nodeRequire = createRequire(import.meta.url);
 
+/** Segments of a real, fixed, deliberately-nonexistent package name used
+ * ONLY by `loadCognitionModule`'s force-unavailable branch, to provoke a
+ * genuine Node `MODULE_NOT_FOUND` (see that function's doc for why a real
+ * resolver failure, rather than a hand-thrown Error, is what the
+ * graceful-degradation path has to observe). Kept as segments, joined at
+ * runtime by `missingCognitionPackage()` below -- see that function's doc
+ * for the real build failure that forced this shape. */
+const MISSING_COGNITION_PACKAGE_SEGMENTS = [
+  "wasm4pm-cognition",
+  "deliberately",
+  "missing",
+  "for",
+  "tests",
+];
+
+/** Assembled at RUNTIME (`Array.prototype.join`) rather than written as a
+ * literal, specifically so Turbopack's compile-time analyzer cannot
+ * constant-fold it into a static module-graph edge. Both a plain literal
+ * and a module-level `const` holding the literal were tried first and
+ * empirically falsified against a real `next build` this pass: each
+ * produced a hard `Module not found: Can't resolve
+ * 'wasm4pm-cognition-deliberately-missing-for-tests'` build error for the
+ * whole `/api/cognition` route, because Turbopack statically resolves any
+ * `require` / `require.resolve` specifier it can fold to a constant --
+ * `serverExternalPackages` does NOT exempt it, since that option only
+ * externalizes packages that genuinely RESOLVE, and this name is
+ * deliberately nonexistent. */
+function missingCognitionPackage(): string {
+  return MISSING_COGNITION_PACKAGE_SEGMENTS.join("-");
+}
+
 interface CognitionWasmModule {
   cognition_run(input_json: string): string;
 }
@@ -151,7 +182,9 @@ function loadCognitionModule(forceUnavailable?: boolean): CognitionWasmModule {
     // name -- Node's own module resolution genuinely throws
     // MODULE_NOT_FOUND every time; never cached (a broken load never
     // succeeds, so there is nothing to cache).
-    return nodeRequire("wasm4pm-cognition-deliberately-missing-for-tests") as CognitionWasmModule;
+    return nodeRequire(
+      nodeRequire.resolve(missingCognitionPackage()),
+    ) as CognitionWasmModule;
   }
 
   cachedRealModule ??= nodeRequire("wasm4pm-cognition") as CognitionWasmModule;
@@ -246,7 +279,7 @@ export type CognitionOutcome =
   | CognitionRefusedOutcome
   | CognitionUnavailableOutcome;
 
-const NO_TRACK_MATCH_SIGNATURE = "postcondition failed: empty inference trace";
+const NO_TRACK_MATCH_SIGNATURE = "OCEL conformance failure";
 
 /** Maps a thrown `cognition_run` failure to a typed outcome (minus the
  * receipt -- attached by the caller, since only the caller knows the real

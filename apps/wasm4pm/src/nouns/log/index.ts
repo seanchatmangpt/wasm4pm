@@ -5,9 +5,10 @@ import { dedupeVerb } from './dedupe.js';
 import { queryVerb } from './query.js';
 import { convertVerb } from './convert.js';
 import { sampleVerb } from './sample.js';
+import { batchVerb } from './batch.js';
 
 export const logNoun = defineNoun({
   name: 'log',
-  description: 'Validate, profile, deduplicate, query, convert, and sample event logs',
-  verbs: [validateVerb, statsVerb, dedupeVerb, queryVerb, convertVerb, sampleVerb],
+  description: 'Validate, profile, deduplicate, query, convert, sample, and batch-discover event logs',
+  verbs: [validateVerb, statsVerb, dedupeVerb, queryVerb, convertVerb, sampleVerb, batchVerb],
 });
