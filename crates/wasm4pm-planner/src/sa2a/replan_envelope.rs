@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use super::Sa2aError;
 
@@ -9,17 +10,19 @@ pub const SA2A_REPLAN_CONTRACT_DIGEST: &str =
     "sha256:ff7643034ed101930e9c80df716df863b6ee6d14f3b29aff764209ad11dab80e";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct ReplanDecision {
     pub kind: String,
     pub reason: String,
     pub authority: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct ReplanEnvelope {
     pub schema: String,
     pub contract_digest: String,
-    pub exact_subject: String,
+    pub exact_subject: Value,
     pub receipt_id: String,
     pub consequence: String,
     pub decision: ReplanDecision,
@@ -41,7 +44,7 @@ impl ReplanEnvelope {
                 "SA2A_REPLAN_CONTRACT_DIGEST_MISMATCH".into(),
             ));
         }
-        if self.exact_subject.is_empty() {
+        if self.exact_subject.is_null() {
             return Err(Sa2aError::MissingSubject);
         }
         if self.receipt_id.is_empty() {
@@ -92,6 +95,7 @@ pub fn encode_replan_envelope(envelope: &ReplanEnvelope) -> Result<Vec<u8>, Sa2a
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     const GYMACT_UNKNOWN_OUTCOME: &str = r#"{
       "schema": "sa2a/replan-envelope/v1",
@@ -114,7 +118,7 @@ mod tests {
         let envelope =
             decode_replan_envelope(GYMACT_UNKNOWN_OUTCOME.as_bytes()).expect("canonical envelope");
 
-        assert_eq!(envelope.exact_subject, "urn:subject:1");
+        assert_eq!(envelope.exact_subject, json!("urn:subject:1"));
         assert_eq!(envelope.consequence, "unknown_outcome");
         assert_eq!(envelope.decision.kind, "replan");
         assert_eq!(envelope.decision.reason, "unknown_outcome_reconcile_first");
@@ -129,6 +133,45 @@ mod tests {
         let decoded = decode_replan_envelope(&encoded).unwrap();
 
         assert_eq!(decoded, envelope);
+    }
+
+    #[test]
+    fn structured_exact_subject_allowed_by_producer_schema_is_preserved() {
+        let raw = format!(
+            r#"{{"schema":"{SA2A_REPLAN_SCHEMA}","contract_digest":"{SA2A_REPLAN_CONTRACT_DIGEST}","exact_subject":{{"kind":"drive","serial":42}},"receipt_id":"r2","consequence":"executed","decision":{{"kind":"stop","reason":"executed","authority":"none"}},"provider":null,"projection_digest":null,"source_replay_key":"rk"}}"#
+        );
+        let envelope = decode_replan_envelope(raw.as_bytes()).unwrap();
+        assert_eq!(envelope.exact_subject, json!({"kind": "drive", "serial": 42}));
+    }
+
+    #[test]
+    fn null_exact_subject_is_refused() {
+        let raw = format!(
+            r#"{{"schema":"{SA2A_REPLAN_SCHEMA}","contract_digest":"{SA2A_REPLAN_CONTRACT_DIGEST}","exact_subject":null,"receipt_id":"r2","consequence":"executed","decision":{{"kind":"stop","reason":"executed","authority":"none"}},"provider":null,"projection_digest":null,"source_replay_key":"rk"}}"#
+        );
+        assert_eq!(
+            decode_replan_envelope(raw.as_bytes()),
+            Err(Sa2aError::MissingSubject)
+        );
+    }
+
+    #[test]
+    fn unknown_properties_are_refused_like_canonical_schema() {
+        let top_level = format!(
+            r#"{{"schema":"{SA2A_REPLAN_SCHEMA}","contract_digest":"{SA2A_REPLAN_CONTRACT_DIGEST}","exact_subject":"s","receipt_id":"r","consequence":"executed","decision":{{"kind":"stop","reason":"executed","authority":"none"}},"provider":null,"projection_digest":null,"source_replay_key":null,"ambient_do":true}}"#
+        );
+        assert!(matches!(
+            decode_replan_envelope(top_level.as_bytes()),
+            Err(Sa2aError::InvalidWire(_))
+        ));
+
+        let decision = format!(
+            r#"{{"schema":"{SA2A_REPLAN_SCHEMA}","contract_digest":"{SA2A_REPLAN_CONTRACT_DIGEST}","exact_subject":"s","receipt_id":"r","consequence":"executed","decision":{{"kind":"stop","reason":"executed","authority":"none","ambient_do":true}},"provider":null,"projection_digest":null,"source_replay_key":null}}"#
+        );
+        assert!(matches!(
+            decode_replan_envelope(decision.as_bytes()),
+            Err(Sa2aError::InvalidWire(_))
+        ));
     }
 
     #[test]
