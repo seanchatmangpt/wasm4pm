@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::effector::Effector;
 use crate::error::ActuatorRefusal;
 use crate::ledger::EffectLedger;
+use crate::resource::{ResourceBudget, ResourceEnvelope};
+use crate::resource_admission::ResourceAdmission;
 use crate::verifier::SecurityVerifier;
 use crate::wire::{ActuationCertificate, PreparedEffect};
 
@@ -30,12 +32,26 @@ pub struct Actuator<'a, L: EffectLedger, E: Effector> {
 }
 
 impl<'a, L: EffectLedger, E: Effector> Actuator<'a, L, E> {
-    pub fn execute(&self, effect: &PreparedEffect, cert: &ActuationCertificate) -> Result<ActuationReceipt, ActuatorRefusal> {
+    /// Consequential entrypoint. Resource admission is complete mediation:
+    /// no durable effect claim and therefore no DO is reachable before the
+    /// powerless allocation envelope is validated against exact effect identity.
+    pub fn execute(
+        &self,
+        effect: &PreparedEffect,
+        cert: &ActuationCertificate,
+        resources: &ResourceEnvelope,
+        requested: ResourceBudget,
+    ) -> Result<ActuationReceipt, ActuatorRefusal> {
         self.verifier.verify(effect, cert)?;
         if effect.capability != self.effector.capability() {
             return Err(ActuatorRefusal::EffectorMismatch);
         }
+
         let digest = effect.digest()?;
+        ResourceAdmission::admit(resources, &digest, cert.generation, requested)?;
+
+        // The claim is deliberately after resource admission. Moving this line
+        // above admission would re-open an unbudgeted consequential path.
         self.ledger.claim(&digest, cert.generation)?;
 
         match self.effector.perform(effect) {
