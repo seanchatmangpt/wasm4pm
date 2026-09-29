@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "io_over",
+  "ordinal": 9,
+  "law": "conservation",
+  "expected": "refuse"
+}

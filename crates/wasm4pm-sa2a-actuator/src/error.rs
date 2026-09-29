@@ -22,8 +22,15 @@ pub enum ActuatorRefusal {
     AlreadyClaimed,
     AlreadyExecuted,
     UnknownOutcome,
+    AllocationClaimMismatch,
     EffectorMismatch,
     PathRefused,
+    ResourceEnvelopeInvalid,
+    ResourceIdentityMismatch,
+    ResourceGenerationMismatch,
+    ResourceAmplification,
+    ResourceBudgetExceeded,
+    ResourceParentMismatch,
     LedgerIo(std::io::Error),
     LedgerEncoding(serde_json::Error),
     EffectFailed(String),
@@ -44,9 +51,13 @@ impl fmt::Display for ActuatorRefusal {
 impl std::error::Error for ActuatorRefusal {}
 
 impl From<std::io::Error> for ActuatorRefusal {
-    fn from(value: std::io::Error) -> Self { Self::LedgerIo(value) }
+    fn from(value: std::io::Error) -> Self {
+        Self::LedgerIo(value)
+    }
 }
 
 impl From<serde_json::Error> for ActuatorRefusal {
-    fn from(value: serde_json::Error) -> Self { Self::LedgerEncoding(value) }
+    fn from(value: serde_json::Error) -> Self {
+        Self::LedgerEncoding(value)
+    }
 }

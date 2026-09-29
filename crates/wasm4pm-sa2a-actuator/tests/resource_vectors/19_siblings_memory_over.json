@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "siblings_memory_over",
+  "ordinal": 19,
+  "law": "conservation",
+  "expected": "refuse"
+}

@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "overflow_fuel",
+  "ordinal": 25,
+  "law": "conservation",
+  "expected": "refuse"
+}

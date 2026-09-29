@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "claimed_unknown",
+  "ordinal": 27,
+  "law": "recovery",
+  "expected": "admit"
+}

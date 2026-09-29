@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "ocel_state",
+  "ordinal": 39,
+  "law": "receipt_ocel",
+  "expected": "admit"
+}

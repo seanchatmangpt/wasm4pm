@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "siblings_equal",
+  "ordinal": 17,
+  "law": "conservation",
+  "expected": "admit"
+}

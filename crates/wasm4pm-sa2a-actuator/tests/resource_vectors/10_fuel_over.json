@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "fuel_over",
+  "ordinal": 10,
+  "law": "conservation",
+  "expected": "refuse"
+}

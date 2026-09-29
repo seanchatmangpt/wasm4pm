@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "wrong_digest",
+  "ordinal": 2,
+  "law": "identity",
+  "expected": "refuse"
+}

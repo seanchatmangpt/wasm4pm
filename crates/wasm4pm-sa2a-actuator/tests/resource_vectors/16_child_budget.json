@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "child_budget",
+  "ordinal": 16,
+  "law": "conservation",
+  "expected": "refuse"
+}
