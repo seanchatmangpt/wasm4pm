@@ -51,3 +51,11 @@ pub mod policy;
 pub use policy::*;
 pub mod feedback;
 pub use feedback::*;
+
+/// Existing wasm4pm-planner algorithms exposed as a real candidate provider.
+pub mod wasm_provider;
+pub use wasm_provider::*;
+
+/// Exact cross-language consequence/replan envelope shared with GymAct.
+pub mod replan_envelope;
+pub use replan_envelope::*;
