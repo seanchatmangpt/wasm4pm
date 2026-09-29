@@ -1,0 +1,21 @@
+@prefix eco: <https://ggen.dev/ecosystem#> .
+@prefix w4: <https://wasm4pm.dev/ontology/castle-intake#> .
+
+w4:intake
+    a eco:CapabilityProjection ;
+    eco:projectionSource "seanchatmangpt/ggen-ecosystem@50fdfa20c84205a80c6eb94e916cffbedc4b816e" ;
+    eco:ownerRepository "seanchatmangpt/wasm4pm" ;
+    eco:ownerCapability "DETERMINISTIC_WASM_RUNTIME" ;
+    eco:projectionStanding "CANDIDATE" ;
+    eco:authorityCeiling "CONSTRUCT" ;
+    eco:forbidsCapability "RUNTIME_EXISTENCE", "CONSEQUENTIAL_ADMISSIBILITY" .
+
+w4:compat
+    a eco:ProjectedCapability ;
+    eco:sourceRepository "seanchatmangpt/wasm4pm-compat" ;
+    eco:sourceSha "c90e2d974c6bb9b2edc5bb25ac1d9e7364148a25" ;
+    eco:capability "PROCESS_EVIDENCE_COMPATIBILITY" ;
+    eco:disposition "CANDIDATE_WRAP" ;
+    eco:runtimePlacement "STRUCTURAL_COMPATIBILITY_BOUNDARY" ;
+    eco:projectionTarget w4:intake ;
+    eco:falsifier "Compatibility structures execute process logic, silently accept lossy projection, or become a second wasm4pm engine." .
