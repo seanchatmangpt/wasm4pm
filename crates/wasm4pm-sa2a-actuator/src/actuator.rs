@@ -21,6 +21,8 @@ pub struct ActuatorContext<'a> {
 pub struct ActuationReceipt {
     pub effect_digest: String,
     pub generation: u64,
+    pub allocation_id: String,
+    pub replay_key: String,
     pub result_digest: String,
     pub state: String,
 }
@@ -32,9 +34,12 @@ pub struct Actuator<'a, L: EffectLedger, E: Effector> {
 }
 
 impl<'a, L: EffectLedger, E: Effector> Actuator<'a, L, E> {
-    /// Consequential entrypoint. Resource admission is complete mediation:
-    /// no durable effect claim and therefore no DO is reachable before the
-    /// powerless allocation envelope is validated against exact effect identity.
+    /// Consequential entrypoint.
+    ///
+    /// Resource admission is complete mediation and the allocation binding is
+    /// stored atomically with the effect claim. A crash before the claim has no
+    /// durable budget consumption; a crash after the claim retains allocation
+    /// and replay identity and is recovered as unknown_outcome.
     pub fn execute(
         &self,
         effect: &PreparedEffect,
@@ -43,6 +48,7 @@ impl<'a, L: EffectLedger, E: Effector> Actuator<'a, L, E> {
         requested: ResourceBudget,
     ) -> Result<ActuationReceipt, ActuatorRefusal> {
         self.verifier.verify(effect, cert)?;
+
         if effect.capability != self.effector.capability() {
             return Err(ActuatorRefusal::EffectorMismatch);
         }
@@ -50,19 +56,30 @@ impl<'a, L: EffectLedger, E: Effector> Actuator<'a, L, E> {
         let digest = effect.digest()?;
         ResourceAdmission::admit(resources, &digest, cert.generation, requested)?;
 
-        // The claim is deliberately after resource admission. Moving this line
-        // above admission would re-open an unbudgeted consequential path.
-        self.ledger.claim(&digest, cert.generation)?;
+        // Allocation identity and the effect claim become one durable record.
+        // No DO is reachable until this create-new claim is durable.
+        self.ledger.claim_with_allocation(
+            &digest,
+            cert.generation,
+            resources,
+            requested,
+        )?;
 
         match self.effector.perform(effect) {
             Ok(outcome) => {
-                if let Err(error) = self.ledger.complete(&digest, cert.generation, &outcome.result_digest) {
+                if let Err(error) =
+                    self.ledger
+                        .complete(&digest, cert.generation, &outcome.result_digest)
+                {
                     let _ = self.ledger.mark_unknown(&digest, cert.generation);
                     return Err(error);
                 }
+
                 Ok(ActuationReceipt {
                     effect_digest: digest,
                     generation: cert.generation,
+                    allocation_id: resources.allocation_id.clone(),
+                    replay_key: resources.replay_key.clone(),
                     result_digest: outcome.result_digest,
                     state: "executed".into(),
                 })
