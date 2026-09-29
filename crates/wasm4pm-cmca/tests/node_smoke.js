@@ -3,9 +3,9 @@ const cmca = require('../pkg/wasm4pm_cmca.js');
 
 const contract = JSON.parse(cmca.cmcaContract());
 assert.equal(contract.schema, 'wasm4pm.cmca-allocation/v1');
-assert.equal(contract.bcinr_source_sha, 'b76dcb377b297cb8826a5256b55f8b57a6b76462');
+assert.equal(contract.bcinr_source_sha, 'da50f4706aef47c3720868f33f1f29d585dc6466');
 assert.equal(contract.package, 'bcinr-cmca');
-assert.equal(contract.version, '26.7.28');
+assert.equal(contract.version, '26.9.28');
 assert.equal(contract.authority, 'CONSTRUCT_ONLY');
 assert.equal(contract.actuation_performed, false);
 assert.deepEqual(contract.shape, { n: 8, f: 10, k: 4, q: 4 });
