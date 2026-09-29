@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      BCINR_SOURCE_SHA: b76dcb377b297cb8826a5256b55f8b57a6b76462
+      BCINR_SOURCE_SHA: da50f4706aef47c3720868f33f1f29d585dc6466
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,7 +100,7 @@ jobs:
             "canonical_cmca_repository": "https://github.com/seanchatmangpt/bcinr",
             "cmca_source_sha": "$BCINR_SOURCE_SHA",
             "cmca_package": "bcinr-cmca",
-            "cmca_version": "26.7.28",
+            "cmca_version": "26.9.28",
             "kernel": "bcinr_cmca::allocator::allocate_single_lens",
             "cargo_lock_sha256": "$lock_sha256",
             "wasm_sha256": "$wasm_sha256",

@@ -20,9 +20,9 @@ use wasm_bindgen::prelude::*;
 
 pub const SCHEMA: &str = "wasm4pm.cmca-allocation/v1";
 pub const BCINR_REPOSITORY: &str = "https://github.com/seanchatmangpt/bcinr";
-pub const BCINR_SOURCE_SHA: &str = "b76dcb377b297cb8826a5256b55f8b57a6b76462";
+pub const BCINR_SOURCE_SHA: &str = "da50f4706aef47c3720868f33f1f29d585dc6466";
 pub const BCINR_CMCA_PACKAGE: &str = "bcinr-cmca";
-pub const BCINR_CMCA_VERSION: &str = "26.7.28";
+pub const BCINR_CMCA_VERSION: &str = "26.9.28";
 pub const KERNEL: &str = "bcinr_cmca::allocator::allocate_single_lens";
 pub const AUTHORITY: &str = "CONSTRUCT_ONLY";
 
