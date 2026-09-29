@@ -1,0 +1,1 @@
+#[derive(Debug,Clone,PartialEq,Eq)] pub struct Capability{pub provider:String,pub formalism:String,pub candidate_only:bool} impl Capability{pub fn portable(provider:&str,formalism:&str)->Self{Self{provider:provider.into(),formalism:formalism.into(),candidate_only:true}}}

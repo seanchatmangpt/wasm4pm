@@ -1,0 +1,1 @@
+#[derive(Debug,Clone,PartialEq,Eq)] pub struct Trace{pub subject:String,pub effect_id:String,pub providers:Vec<String>} impl Trace{pub fn new(s:&str,e:&str)->Self{Self{subject:s.into(),effect_id:e.into(),providers:vec![]}}}
