@@ -1,0 +1,26 @@
+//! Portable SA2A consumer boundary. Consequence semantics arrive on the wire;
+//! wasm4pm validates identity, selects a provider and returns powerless candidates.
+pub mod candidate;
+pub mod contract;
+pub mod effect;
+pub mod error;
+pub mod failover;
+pub mod observation;
+pub mod outcome;
+pub mod provider;
+pub mod receipt;
+pub mod replay;
+pub mod stale;
+pub mod wire;
+pub use candidate::*;
+pub use contract::*;
+pub use effect::*;
+pub use error::*;
+pub use failover::*;
+pub use observation::*;
+pub use outcome::*;
+pub use provider::*;
+pub use receipt::*;
+pub use replay::*;
+pub use stale::*;
+pub use wire::*;
