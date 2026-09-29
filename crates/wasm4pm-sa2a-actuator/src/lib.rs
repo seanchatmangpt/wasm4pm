@@ -11,6 +11,7 @@ pub mod crypto;
 pub mod effector;
 pub mod error;
 pub mod ledger;
+pub mod trust_domain;
 pub mod verifier;
 pub mod wire;
 
@@ -18,5 +19,6 @@ pub use actuator::{ActuationReceipt, Actuator, ActuatorContext};
 pub use effector::{Effector, EffectorOutcome, Utf8FileWriteEffector};
 pub use error::ActuatorRefusal;
 pub use ledger::{EffectLedger, FileEffectLedger, LedgerState};
+pub use trust_domain::TrustDomainId;
 pub use verifier::{KeyRecord, KeyRegistry, KeyState, SecurityVerifier, SignatureAlgorithm};
 pub use wire::{ActuationCertificate, CertificateSignature, PreparedEffect};
