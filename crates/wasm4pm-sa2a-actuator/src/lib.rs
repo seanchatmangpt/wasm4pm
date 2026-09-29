@@ -1,14 +1,16 @@
 //! Independent SA2A actuator.
 //!
-//! Authority is external. Resource allocation is powerless input and is
-//! admitted before the durable actuator claim. Allocation identity is bound
-//! into the same durable record as the effect claim.
+//! Authority is external and signer quorum must span independent trust domains.
+//! Resource allocation is powerless input admitted before the durable actuator
+//! claim. Allocation identity is bound into the same durable record as the
+//! effect claim.
 
 pub mod actuator;
 pub mod crypto;
 pub mod effector;
 pub mod error;
 pub mod ledger;
+pub mod trust_domain;
 pub mod verifier;
 pub mod wire;
 pub mod resource;
@@ -21,6 +23,7 @@ pub use actuator::{ActuationReceipt, Actuator, ActuatorContext};
 pub use effector::{Effector, EffectorOutcome, Utf8FileWriteEffector};
 pub use error::ActuatorRefusal;
 pub use ledger::{EffectClaimRecord, EffectLedger, FileEffectLedger, LedgerState};
+pub use trust_domain::TrustDomainId;
 pub use verifier::{KeyRecord, KeyRegistry, KeyState, SecurityVerifier, SignatureAlgorithm};
 pub use wire::{ActuationCertificate, CertificateSignature, PreparedEffect};
 pub use resource::{ResourceEnvelope, ResourceBudget};

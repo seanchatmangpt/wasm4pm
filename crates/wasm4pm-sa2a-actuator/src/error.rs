@@ -18,6 +18,7 @@ pub enum ActuatorRefusal {
     CertificateOutsideValidity,
     InsufficientQuorum,
     CustodianIndependence,
+    TrustDomainIndependence,
     AlreadyClaimed,
     AlreadyExecuted,
     UnknownOutcome,
