@@ -1,0 +1,61 @@
+//! Portable SA2A consumer boundary. Consequence semantics arrive on the wire;
+//! wasm4pm validates identity, selects a provider and returns powerless candidates.
+pub mod candidate;
+pub mod contract;
+pub mod effect;
+pub mod error;
+pub mod failover;
+pub mod observation;
+pub mod outcome;
+pub mod provider;
+pub mod receipt;
+pub mod replay;
+pub mod stale;
+pub mod wire;
+pub use candidate::*;
+pub use contract::*;
+pub use effect::*;
+pub use error::*;
+pub use failover::*;
+pub use observation::*;
+pub use outcome::*;
+pub use provider::*;
+pub use receipt::*;
+pub use replay::*;
+pub use stale::*;
+pub use wire::*;
+
+pub mod reconcile;
+pub use reconcile::*;
+pub mod execution_fence;
+pub use execution_fence::*;
+pub mod telemetry;
+pub use telemetry::*;
+pub mod migration;
+pub use migration::*;
+pub mod limits;
+pub use limits::*;
+pub mod trace;
+pub use trace::*;
+pub mod capability;
+pub use capability::*;
+pub mod version;
+pub use version::*;
+pub mod digest;
+pub use digest::*;
+pub mod ocel;
+pub use ocel::*;
+pub mod advice;
+pub use advice::*;
+pub mod policy;
+pub use policy::*;
+pub mod feedback;
+pub use feedback::*;
+
+/// Existing wasm4pm-planner algorithms exposed as a real candidate provider.
+pub mod wasm_provider;
+pub use wasm_provider::*;
+
+/// Exact cross-language consequence/replan envelope shared with GymAct.
+pub mod replan_envelope;
+pub use replan_envelope::*;

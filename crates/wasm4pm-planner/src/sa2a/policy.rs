@@ -1,0 +1,1 @@
+use super::CandidatePlan; pub trait CandidatePolicy{fn choose<'a>(&self,candidates:&'a [CandidatePlan])->Option<&'a CandidatePlan>;} pub struct First; impl CandidatePolicy for First{fn choose<'a>(&self,c:&'a [CandidatePlan])->Option<&'a CandidatePlan>{c.first()}}
