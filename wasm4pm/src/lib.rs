@@ -101,6 +101,8 @@ pub mod admission;
 pub mod bcinr_compat;
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
+/// CASTLE projected compatibility intake.
+pub mod castle_capability_intake;
 /// Compile-checked API probe for wasm4pm-compat integration.
 pub mod compat_api_probe;
 /// Conformance Authority Module — A* alignment, fitness/precision metrics, admission gates (v30.1.2)
