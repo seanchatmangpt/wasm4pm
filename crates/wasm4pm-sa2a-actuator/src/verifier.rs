@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::crypto;
 use crate::error::ActuatorRefusal;
+use crate::trust_domain::TrustDomainId;
 use crate::wire::{ActuationCertificate, PreparedEffect};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -25,6 +26,7 @@ pub enum KeyState {
 pub struct KeyRecord {
     pub key_id: String,
     pub custodian_id: String,
+    pub trust_domain_id: TrustDomainId,
     pub algorithm: SignatureAlgorithm,
     pub public_key: Vec<u8>,
     pub state: KeyState,
@@ -84,27 +86,35 @@ impl<'a> SecurityVerifier<'a> {
         if self.now_ms < cert.not_before_ms || self.now_ms >= cert.expires_at_ms {
             return Err(ActuatorRefusal::CertificateOutsideValidity);
         }
+
         let message = cert.signing_message()?;
         let mut key_ids = BTreeSet::new();
         let mut custodians = BTreeSet::new();
-        let mut verified = 0usize;
+        let mut trust_domains = BTreeSet::new();
 
         for sig in &cert.signatures {
-            if !key_ids.insert(sig.key_id.clone()) {
-                return Err(ActuatorRefusal::InsufficientQuorum);
-            }
             let key = self.registry.resolve(&sig.key_id, self.now_ms, cert.revocation_epoch)?;
             if key.algorithm != sig.algorithm {
                 return Err(ActuatorRefusal::UnsupportedAlgorithm);
             }
+
+            // Independence is counted only after the exact certificate message
+            // has been cryptographically verified by the registered key.
             crypto::verify(key.algorithm, &key.public_key, &message, &sig.signature)?;
-            if custodians.insert(key.custodian_id.clone()) {
-                verified += 1;
-            }
+            key_ids.insert(key.key_id.clone());
+            custodians.insert(key.custodian_id.clone());
+            trust_domains.insert(key.trust_domain_id.clone());
         }
 
-        if verified < usize::from(cert.threshold) {
+        let threshold = usize::from(cert.threshold);
+        if key_ids.len() < threshold {
+            return Err(ActuatorRefusal::InsufficientQuorum);
+        }
+        if custodians.len() < threshold {
             return Err(ActuatorRefusal::CustodianIndependence);
+        }
+        if trust_domains.len() < threshold {
+            return Err(ActuatorRefusal::TrustDomainIndependence);
         }
         Ok(())
     }
