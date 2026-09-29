@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "executed_state",
+  "ordinal": 28,
+  "law": "recovery",
+  "expected": "admit"
+}

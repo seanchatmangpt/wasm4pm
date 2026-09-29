@@ -1,10 +1,7 @@
 //! Independent SA2A actuator.
 //!
-//! This crate is intentionally separate from WASM4PM planning/runtime code.
-//! It owns no authority signing key. It accepts only an exact PreparedEffect
-//! plus an independently issued ActuationCertificate, re-verifies the
-//! certificate locally, claims the effect in a durable local ledger, executes
-//! one typed effector, and records completion or unknown outcome.
+//! Authority is external. Resource allocation is powerless input and is
+//! admitted before the durable actuator claim.
 
 pub mod actuator;
 pub mod crypto;
@@ -13,6 +10,11 @@ pub mod error;
 pub mod ledger;
 pub mod verifier;
 pub mod wire;
+pub mod resource;
+pub mod resource_admission;
+pub mod resource_receipt;
+pub mod resource_ocel;
+pub mod resource_recovery;
 
 pub use actuator::{ActuationReceipt, Actuator, ActuatorContext};
 pub use effector::{Effector, EffectorOutcome, Utf8FileWriteEffector};
@@ -20,3 +22,8 @@ pub use error::ActuatorRefusal;
 pub use ledger::{EffectLedger, FileEffectLedger, LedgerState};
 pub use verifier::{KeyRecord, KeyRegistry, KeyState, SecurityVerifier, SignatureAlgorithm};
 pub use wire::{ActuationCertificate, CertificateSignature, PreparedEffect};
+pub use resource::{ResourceEnvelope, ResourceBudget};
+pub use resource_admission::ResourceAdmission;
+pub use resource_receipt::ResourceReceipt;
+pub use resource_ocel::ResourceOcelEvent;
+pub use resource_recovery::{ResourceRecovery, ResourceRecoveryState};

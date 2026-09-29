@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "exact_identity",
+  "ordinal": 1,
+  "law": "identity",
+  "expected": "admit"
+}

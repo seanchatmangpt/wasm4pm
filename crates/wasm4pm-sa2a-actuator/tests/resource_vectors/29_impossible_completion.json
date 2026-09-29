@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "impossible_completion",
+  "ordinal": 29,
+  "law": "recovery",
+  "expected": "refuse"
+}

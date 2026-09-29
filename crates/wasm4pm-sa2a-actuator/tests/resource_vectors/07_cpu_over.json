@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "cpu_over",
+  "ordinal": 7,
+  "law": "conservation",
+  "expected": "refuse"
+}

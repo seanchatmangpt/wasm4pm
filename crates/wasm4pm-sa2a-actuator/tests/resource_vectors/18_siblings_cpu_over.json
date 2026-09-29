@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "siblings_cpu_over",
+  "ordinal": 18,
+  "law": "conservation",
+  "expected": "refuse"
+}

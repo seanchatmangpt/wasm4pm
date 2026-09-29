@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "crash_after_do",
+  "ordinal": 42,
+  "law": "crash_window",
+  "expected": "admit"
+}

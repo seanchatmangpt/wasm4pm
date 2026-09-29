@@ -1,0 +1,7 @@
+{
+  "version": "sa2a/resource-vector/v1",
+  "case": "child_wrong_parent",
+  "ordinal": 12,
+  "law": "conservation",
+  "expected": "refuse"
+}
