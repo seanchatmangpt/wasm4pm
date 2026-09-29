@@ -42,10 +42,17 @@ pub struct KeyRegistry {
 
 impl KeyRegistry {
     pub fn new(records: impl IntoIterator<Item = KeyRecord>) -> Self {
-        Self { keys: records.into_iter().map(|r| (r.key_id.clone(), r)).collect() }
+        Self {
+            keys: records.into_iter().map(|r| (r.key_id.clone(), r)).collect(),
+        }
     }
 
-    fn resolve(&self, key_id: &str, now_ms: u64, revocation_epoch: u64) -> Result<&KeyRecord, ActuatorRefusal> {
+    fn resolve(
+        &self,
+        key_id: &str,
+        now_ms: u64,
+        revocation_epoch: u64,
+    ) -> Result<&KeyRecord, ActuatorRefusal> {
         let key = self.keys.get(key_id).ok_or(ActuatorRefusal::UnknownKey)?;
         if key.state == KeyState::Revoked || key.revocation_epoch > revocation_epoch {
             return Err(ActuatorRefusal::RevokedKey);
@@ -67,7 +74,11 @@ pub struct SecurityVerifier<'a> {
 }
 
 impl<'a> SecurityVerifier<'a> {
-    pub fn verify(&self, effect: &PreparedEffect, cert: &ActuationCertificate) -> Result<(), ActuatorRefusal> {
+    pub fn verify(
+        &self,
+        effect: &PreparedEffect,
+        cert: &ActuationCertificate,
+    ) -> Result<(), ActuatorRefusal> {
         if cert.effect_digest != effect.digest()? {
             return Err(ActuatorRefusal::InvalidDigest);
         }
@@ -77,7 +88,8 @@ impl<'a> SecurityVerifier<'a> {
         if cert.audience != self.audience {
             return Err(ActuatorRefusal::AudienceMismatch);
         }
-        if cert.policy_epoch != self.policy_epoch || cert.revocation_epoch != self.revocation_epoch {
+        if cert.policy_epoch != self.policy_epoch || cert.revocation_epoch != self.revocation_epoch
+        {
             return Err(ActuatorRefusal::EpochMismatch);
         }
         if cert.generation != self.generation {
@@ -93,7 +105,9 @@ impl<'a> SecurityVerifier<'a> {
         let mut trust_domains = BTreeSet::new();
 
         for sig in &cert.signatures {
-            let key = self.registry.resolve(&sig.key_id, self.now_ms, cert.revocation_epoch)?;
+            let key = self
+                .registry
+                .resolve(&sig.key_id, self.now_ms, cert.revocation_epoch)?;
             if key.algorithm != sig.algorithm {
                 return Err(ActuatorRefusal::UnsupportedAlgorithm);
             }

@@ -11,8 +11,8 @@ pub mod ground;
 pub mod mfw_interop;
 pub mod parse;
 pub mod receipt;
-pub mod schedule;
 pub mod sa2a;
+pub mod schedule;
 pub mod sexpr;
 
 pub use admission::{admit_plan_labels_with_policy, PlanAdmissionPolicy};
@@ -35,5 +35,5 @@ pub use parse::{domain_from_pddl, problem_from_pddl, Domain, PlannerError, Probl
 pub use receipt::{
     manufacture_world, manufacture_world_with_policy, ManufactureReceipt, PlanStepView,
 };
-pub use schedule::{max_parallelism, plan_to_powl_v2};
 pub use sa2a::*;
+pub use schedule::{max_parallelism, plan_to_powl_v2};

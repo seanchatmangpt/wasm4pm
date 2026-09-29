@@ -1,6 +1,5 @@
 use wasm4pm_sa2a_actuator::{
-    ActuatorRefusal, EffectLedger, FileEffectLedger, LedgerState, ResourceBudget,
-    ResourceEnvelope,
+    ActuatorRefusal, EffectLedger, FileEffectLedger, LedgerState, ResourceBudget, ResourceEnvelope,
 };
 
 fn digest() -> &'static str {

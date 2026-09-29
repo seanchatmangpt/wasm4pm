@@ -131,12 +131,7 @@ mod tests {
         let leaking = FixedProvider {
             id: "leaking",
             formalism: "hddl",
-            candidate: Ok(candidate(
-                "leaking",
-                "job:exact",
-                "effect:exact",
-                "do",
-            )),
+            candidate: Ok(candidate("leaking", "job:exact", "effect:exact", "do")),
         };
         let good = FixedProvider {
             id: "good",
@@ -145,7 +140,8 @@ mod tests {
         };
 
         let providers: [&dyn CandidateProvider; 2] = [&leaking, &good];
-        let recovered = recover(&request(), &providers, 2).expect("authority leak should be isolated");
+        let recovered =
+            recover(&request(), &providers, 2).expect("authority leak should be isolated");
 
         assert_eq!(recovered.candidate.provider, "good");
         assert_eq!(recovered.excluded, vec!["leaking".to_string()]);

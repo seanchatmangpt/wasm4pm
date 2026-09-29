@@ -16,7 +16,13 @@ fn malformed_pq_material_refuses_without_panicking() {
         ActuatorRefusal::InvalidKey
     );
     assert_eq!(
-        crypto::verify(SignatureAlgorithm::SlhDsaShake128f, &[0; 8], b"message", &[0; 8]).unwrap_err(),
+        crypto::verify(
+            SignatureAlgorithm::SlhDsaShake128f,
+            &[0; 8],
+            b"message",
+            &[0; 8]
+        )
+        .unwrap_err(),
         ActuatorRefusal::InvalidKey
     );
 }
