@@ -117,7 +117,13 @@ jobs:
           test -s packages/cognition/pkg-web/wasm4pm_cognition_bg.wasm
 
       - name: TypeScript build
-        run: pnpm build
+        # @wasm4pm/engine and @wasm4pm/testing depend on each other, so a parallel
+        # `pnpm -r build` races engine's tsc against testing's dist. Build the
+        # leaves first, then serialize the rest.
+        run: |
+          pnpm --filter @wasm4pm/contracts build
+          pnpm --filter @wasm4pm/testing build
+          pnpm -r --workspace-concurrency=1 --if-present run build
 
       - name: TypeScript integration tests
         run: pnpm test
