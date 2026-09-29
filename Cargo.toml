@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools", "crates/wasm4pm-planner", "crates/wasm4pm-bindings-py", "crates/wasm4pm-cmca", "crates/wasm4pm-ex4pm-bindings"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/bench-tools", "crates/wasm4pm-planner", "crates/wasm4pm-bindings-py", "crates/wasm4pm-cmca", "crates/wasm4pm-ex4pm-bindings", "crates/wasm4pm-sa2a-actuator"]
 # wasm4pm-lsp was removed in v26.7.1: it depended on an out-of-repo path crate
 # `lsp-max` and could not build in a clean checkout. Revival path: restore from
 # git history (crates/wasm4pm-lsp @ pre-26.7.1) once lsp-max is vendored or published.
@@ -49,6 +49,10 @@ regex = "1.10"
 anyhow = "1.0"
 colored = "2.1"
 git2 = "0.21"
+ed25519-dalek = "2.1"
+ml-dsa = "0.1.1"
+slh-dsa = "0.2.0-rc.5"
+serde_json_canonicalizer = "0.3.2"
 
 [profile.release]
 opt-level = "z"
