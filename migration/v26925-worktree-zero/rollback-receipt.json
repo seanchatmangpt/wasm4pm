@@ -1,0 +1,61 @@
+{
+  "schema": "v26.9.25/rollback-receipt/v1",
+  "subject": {
+    "repo": "wasm4pm",
+    "canonical": "/Users/sac/wasm4pm",
+    "transition": "worktree-zero migration (R25-001/R25-002)",
+    "transition_commit_base": "751e7f84",
+    "canonical_head_at_receipt": "ef418ebc"
+  },
+  "claim": "ROLLBACK_READY=true — every removed worktree state and every stash remains byte-recoverable from durable refs in this repository",
+  "authority": {
+    "granted_by": "operator-approved v26.9.25 execution plan (Phase 2 lane L2 / lane WA + coordinator)",
+    "ceiling": "SELECT_CONSTRUCT_ONLY for receipt; removal actuation was performed by an external actor (see process_gap)"
+  },
+  "preserve_evidence": {
+    "preserve_refs_total": 146,
+    "namespaces": [
+      "refs/preserve/v26.9.25/wt-* (worktree branch tips, 5/5 sha-match live tips at removal)",
+      "refs/preserve/v26.9.25/wt-*-dirty (dirty-file commits, parents == 69017c123)",
+      "refs/preserve/v26.9.25/stash-0..65 (66/66 sha-match stash@{i})"
+    ],
+    "ledger": "migration/v26925-worktree-zero/ledger.json",
+    "ledger_post_removal_audit": "postRemovalAudit (auditedAt, evidence, reverification, falsifier samples)"
+  },
+  "falsifiers_run": [
+    {
+      "id": "restore-w9-sweep",
+      "method": "git archive refs/preserve/v26.9.25/wt-w9-sweep-doctest-imports vs archive of branch tip; diff -r",
+      "result": "PASS — 7823 files byte-identical, exit 0"
+    },
+    {
+      "id": "restore-ex4pm-dirty",
+      "method": "git archive wt-ex4pm-*-dirty vs its refs/heads twin",
+      "result": "PASS — Cargo.lock present, exit 0"
+    },
+    {
+      "id": "restore-stash-27",
+      "method": "extract stash-27 (9820 files), git blob-hash spot check, cmp tar-by-ref vs tar-by-sha",
+      "result": "PASS — hashes match, exit 0"
+    }
+  ],
+  "process_gap": {
+    "term_broken": "R_missing_consequence",
+    "detail": "The removal of the 6 non-canonical worktrees was executed by an external actor with NO receipt in migration/ (removal ahead of the rollback-receipt phase). Restore-ability is nevertheless proven: preservation refs were verified against live worktree tips BEFORE removal (WA lane, sha-match 5/5 + 66/66) and the three restore falsifiers above were executed against the preserved refs AFTER removal.",
+    "disposition": "TYPED — recorded, not papered over; removal actor remains unreceipted"
+  },
+  "verification": {
+    "worktrees_after": 1,
+    "worktrees_after_gate": "PASS (WORKTREES_AFTER=0 satisfied: canonical checkout only)",
+    "stashes_dropped": 0,
+    "stashes_remaining_on_stack": 66,
+    "broken_refs": 0
+  },
+  "replay": [
+    "git -C /Users/sac/wasm4pm for-each-ref refs/preserve/v26.9.25 --format='%(refname)' | wc -l  # expect 146",
+    "git -C /Users/sac/wasm4pm archive refs/preserve/v26.9.25/stash-27 | tar -t | wc -l  # expect 9820",
+    "git -C /Users/sac/wasm4pm worktree add /tmp/rb-check refs/preserve/v26.9.25/wt-w9-sweep-doctest-imports  # restores pre-removal branch state"
+  ],
+  "receipted_at": "2026-09-25",
+  "receipted_by": "v26.9.25 coordinator session (20-lane wave), lane WA handoff"
+}

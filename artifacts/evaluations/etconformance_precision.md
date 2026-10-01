@@ -28,7 +28,7 @@
 Analyzes the precision of a process model compared to an event log, specifically identifying "extra" behavior allowed by the model that is not observed in reality. It is a critical metric for evaluating the quality and accuracy of discovered process models.
 
 ## Implementation Validation & Details
-- **Source Module**: `wasm4pm/src/align_etconformance.rs`
+- **Source Module**: `wasm4pm/src/etconformance_precision.rs`
 - **Algorithm Type**: Alignment-based ETConformance precision calculation.
 - **Implementation Mechanism**: Precision is quantified by measuring the proportion of transitions within the process model that are not utilized during alignment with the event log. 
 - **Formula**: `1 - (escaping_edges / total_edges)`, where `escaping_edges` refers to model transitions never executed or used in alignments.

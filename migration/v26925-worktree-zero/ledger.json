@@ -1,0 +1,828 @@
+{
+ "meta": {
+  "lane": "WA",
+  "wave": "v26.9.25 20-lane implementation wave",
+  "phase": "R25-002 preservation (worktree-zero migration)",
+  "repo": "/Users/sac/wasm4pm",
+  "canonicalBranch": "v26925/fmt-all",
+  "localMain": "5ae555e4d71e76a2ed3ab08ad8f6360decb7ae0b",
+  "originMain": "dd31b48531dd9a97a2af3d468e1eca946ff49481",
+  "writtenAt": "2026-09-25T07:29:14.854906+00:00",
+  "refNamespace": "refs/preserve/v26.9.25/*",
+  "refCreation": "git update-ref <ref> <sha> 000...0 (create-only CAS); zero working-tree/index/HEAD mutation in canonical checkout",
+  "writeTimeHead": "ef418ebc16c6ff23b2e3c223071e1953db8cb49c",
+  "surveyTimeHead": "751e7f848c69b9857b86d7a327e9a10aec8a20af",
+  "writerDriftNote": "canonical HEAD advanced 751e7f84 -> ef418ebc during lane WA run (active writer lane committing on v26925/fmt-all; one formerly-dirty file crates/wasm4pm-cognition/src/session/tests.rs left the dirty set via the writer's own commit). Lane WA performed zero commits/checkout/stash against the canonical checkout; its only canonical mutations were 74 create-only refs under refs/preserve/v26.9.25/* and the ledger file itself (migration/ in git status)."
+ },
+ "worktrees": [
+  {
+   "path": "/Users/sac/wasm4pm",
+   "role": "canonical",
+   "branch": "v26925/fmt-all",
+   "head": "ef418ebc16c6ff23b2e3c223071e1953db8cb49c",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 33
+   },
+   "dirtyBefore": "10 porcelain entries (8 paths incl. untracked dirs)",
+   "dirtyDisposition": "EXCLUDED \u2014 active writer lane (contract constraint); untouched by lane WA",
+   "preserveRefs": []
+  },
+  {
+   "path": "/private/tmp/xaas-w9-sweep-wasm4pm",
+   "branch": "w9-sweep/doctest-imports",
+   "head": "9ffdc2fa10858833d4ec4a7de1d2ac51e05b3377",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 54
+   },
+   "dirtyBefore": "0",
+   "dirtyDisposition": "clean; branch tip preserved",
+   "preserveRefs": [
+    "refs/preserve/v26.9.25/wt-w9-sweep-doctest-imports"
+   ]
+  },
+  {
+   "path": "/Users/sac/wasm4pm-worktrees/ex4pm-qual-episode-20260903",
+   "branch": "ex4pm-qual-episode-20260903",
+   "head": "69017c123f79ee3a9bef40473b9b4d63819c1307",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 7
+   },
+   "dirtyBefore": "1 (M Cargo.lock)",
+   "dirtyDisposition": "committed on worktree-local branch preserve/v26.9.25/wt-ex4pm-qual-episode-20260903-dirty @8762e7060 (content-empty delta after normalization; hooks passed); mirrored to preserve ref",
+   "preserveRefs": [
+    "refs/preserve/v26.9.25/wt-ex4pm-qual-episode-20260903",
+    "refs/preserve/v26.9.25/wt-ex4pm-qual-episode-20260903-dirty"
+   ]
+  },
+  {
+   "path": "/Users/sac/wasm4pm-worktrees/fix-etconformance-precision-feature-gate",
+   "branch": "fix-etconformance-precision-feature-gate",
+   "head": "9b32c57c442ac6e93d127b3ae26a181906fc8e52",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 1
+   },
+   "dirtyBefore": "0",
+   "dirtyDisposition": "clean; branch tip preserved",
+   "preserveRefs": [
+    "refs/preserve/v26.9.25/wt-fix-etconformance-precision-feature-gate"
+   ]
+  },
+  {
+   "path": "/Users/sac/wasm4pm-worktrees/predict-execute-episode-wf10-20260903",
+   "branch": "DETACHED @69017c123 (duplicate of ex4pm branch tip; sha-verified)",
+   "head": "69017c123f79ee3a9bef40473b9b4d63819c1307",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 7
+   },
+   "dirtyBefore": "1 (M Cargo.lock)",
+   "dirtyDisposition": "committed on worktree-local branch preserve/v26.9.25/wt-predict-execute-episode-wf10-dirty @1311f96a3 (content-empty delta; hooks passed); mirrored to preserve ref",
+   "preserveRefs": [
+    "refs/preserve/v26.9.25/wt-predict-execute-detached",
+    "refs/preserve/v26.9.25/wt-predict-execute-episode-wf10-dirty"
+   ]
+  },
+  {
+   "path": "/Users/sac/wasm4pm-worktrees/register-planner-mcp-json",
+   "branch": "register-planner-mcp-json",
+   "head": "078b1f2c0145b55d0fd07dbb6a2b971306ec6795",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 1
+   },
+   "dirtyBefore": "0",
+   "dirtyDisposition": "clean; branch tip preserved",
+   "preserveRefs": [
+    "refs/preserve/v26.9.25/wt-register-planner-mcp-json"
+   ]
+  },
+  {
+   "path": "/Users/sac/wasm4pm/.claude/worktrees/wf_99470ccd-c7b-1",
+   "branch": "worktree-wf_99470ccd-c7b-1",
+   "head": "2b9ba0773461a6e9f163d2dd13f9798d3f22c8a6",
+   "aheadBehindVsLocalMain": {
+    "behind": 0,
+    "ahead": 17
+   },
+   "dirtyBefore": "0",
+   "dirtyDisposition": "clean; branch tip preserved",
+   "preserveRefs": [
+    "refs/preserve/v26.9.25/wt-worktree-wf_99470ccd-c7b-1"
+   ]
+  }
+ ],
+ "stashes": [
+  {
+   "index": 0,
+   "sha": "2127d023a7d42010e4919e2add05cbf2f35c4a01",
+   "preserveRef": "refs/preserve/v26.9.25/stash-0",
+   "subject": "On docs/errc-audit-run4: wip 20260824-005741",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 1,
+   "sha": "6ae5dc30fc8d5d04efe0ad813b034fc96a2598f4",
+   "preserveRef": "refs/preserve/v26.9.25/stash-1",
+   "subject": "On main: pre-wip-finish stray files",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 2,
+   "sha": "ba463e213237a0ffc8ae3358e1c934af3c4c4e18",
+   "preserveRef": "refs/preserve/v26.9.25/stash-2",
+   "subject": "On main: unrelated-concurrent-prediction_drift",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 3,
+   "sha": "af34eed4acdd444403e204b12b6a2b3e7baf818e",
+   "preserveRef": "refs/preserve/v26.9.25/stash-3",
+   "subject": "WIP on main: 8f18f244 Merge pull request #480 from seanchatmangpt/refactor/wave50-inline-format-args",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 4,
+   "sha": "44ed43447e71606dbc5866bbccd1a7f61e53f47f",
+   "preserveRef": "refs/preserve/v26.9.25/stash-4",
+   "subject": "WIP on main: edeb0f51 Merge pull request #440 from seanchatmangpt/refactor/migrate-petri-net-helper",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 5,
+   "sha": "bb7e8465121679639fd85574279196ed7bafaa9e",
+   "preserveRef": "refs/preserve/v26.9.25/stash-5",
+   "subject": "WIP on refactor/attributes-btreemap: 588233fa Merge pull request #424 from seanchatmangpt/refactor/eliminate-dead-code",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 6,
+   "sha": "95b2dd6b93e867f2ef989e4c9b15907f43048f3b",
+   "preserveRef": "refs/preserve/v26.9.25/stash-6",
+   "subject": "WIP on feature/examples-breed-chains: 20051ae1 fix(wasm4pm): gate streaming/powl/ml WASM bindings behind their features",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 7,
+   "sha": "3aa105b0f56c8d7608bb39700d466a7959421764",
+   "preserveRef": "refs/preserve/v26.9.25/stash-7",
+   "subject": "On enterprise/fortune5-readiness: pre-merge remaining cognition test files",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 8,
+   "sha": "614bab06a6c0e2540b5ebfad96574043b10b1285",
+   "preserveRef": "refs/preserve/v26.9.25/stash-8",
+   "subject": "On enterprise/fortune5-readiness: pre-merge local cognition changes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 9,
+   "sha": "b98fa197c2cf02f6842f9bff32c66d5b28e8041c",
+   "preserveRef": "refs/preserve/v26.9.25/stash-9",
+   "subject": "On enterprise/fortune5-readiness: gemini-artefacts-pre-release-stash",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 10,
+   "sha": "f5345b2cdeb2086226259cb5e8317a582cfdb2d9",
+   "preserveRef": "refs/preserve/v26.9.25/stash-10",
+   "subject": "WIP on feat/iter21-social-network-metrics: ba9373a3 fix(dx): improve CLI help text, flag documentation, and CLAUDE.md conventions",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 11,
+   "sha": "2bc07fedfe2d70c3df4b5a837bf14fc694907cb2",
+   "preserveRef": "refs/preserve/v26.9.25/stash-11",
+   "subject": "On main: temp: stash unrelated ml-runner changes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 12,
+   "sha": "f6be238af680ae71f9ab98965354a65a3d5c2ce1",
+   "preserveRef": "refs/preserve/v26.9.25/stash-12",
+   "subject": "On main: external-noise",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 13,
+   "sha": "389cb9854c8b56fc9152b13ba8a6e2d95193e73d",
+   "preserveRef": "refs/preserve/v26.9.25/stash-13",
+   "subject": "On main: external-noise: main-divergent state",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 14,
+   "sha": "1231bd8acf494e0a5368ae43c6f15c9ff8f07e7f",
+   "preserveRef": "refs/preserve/v26.9.25/stash-14",
+   "subject": "On main: external-noise: pre-126-resolution",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 15,
+   "sha": "323213e8ea95cda45cb64a470f69195921dacc18",
+   "preserveRef": "refs/preserve/v26.9.25/stash-15",
+   "subject": "On main: external-noise: pre-untrack dirty tree",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 16,
+   "sha": "db908b16f33ca1c99145d7dfc722098471dd9a65",
+   "preserveRef": "refs/preserve/v26.9.25/stash-16",
+   "subject": "On feat/iter16-miniml-prolog8: external-noise: pre-fixture-fix dirty tree",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 17,
+   "sha": "a3eea39a7f77fb94a8a995913a2cbec03001c0c1",
+   "preserveRef": "refs/preserve/v26.9.25/stash-17",
+   "subject": "WIP on fix/cli-audit-write-paths: 43317fed fix(cli): write audit reports under .wasm4pm/audits, not wasm4pm/target/audits",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 18,
+   "sha": "3a6a9cee9515e192566a3ccef9cdc9f8a318f4b9",
+   "preserveRef": "refs/preserve/v26.9.25/stash-18",
+   "subject": "On feat/iter16-miniml-prolog8: external-noise: dist regen + ml tests + scratch dirs",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 19,
+   "sha": "5738dbaea1345766d8bf69a78f3bc1ac9f51c91f",
+   "preserveRef": "refs/preserve/v26.9.25/stash-19",
+   "subject": "On feat/iter16-miniml-prolog8: external: packages/contracts/dist regeneration",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 20,
+   "sha": "d6db68ab84d79a3e3a5ca9f6a8f2e04c8f7f17fd",
+   "preserveRef": "refs/preserve/v26.9.25/stash-20",
+   "subject": "WIP on chore/repo-hygiene: 2c6e0a6e Merge pull request #125 from seanchatmangpt/feat/iter20-social-tests",
+   "duplicateOf": null,
+   "sameSubjectAs": 21,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 21,
+   "sha": "a3f6f9f6a07fb43427c3239f9bba13666cbfb749",
+   "preserveRef": "refs/preserve/v26.9.25/stash-21",
+   "subject": "WIP on chore/repo-hygiene: 2c6e0a6e Merge pull request #125 from seanchatmangpt/feat/iter20-social-tests",
+   "duplicateOf": null,
+   "sameSubjectAs": 20,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 22,
+   "sha": "4d77adab6cc693edadf5969858276107762c4b9f",
+   "preserveRef": "refs/preserve/v26.9.25/stash-22",
+   "subject": "WIP on feat/iter16-miniml-prolog8: d5776707 test(swarm): JSON contract and worker validation gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 23,
+   "sha": "0aa7f50bc2d0ef3101dce7160860b42bcadb1198",
+   "preserveRef": "refs/preserve/v26.9.25/stash-23",
+   "subject": "WIP on feat/iter16-miniml-prolog8: af56150e fix(ml): remove problematic test file created by iteration 12b",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 24,
+   "sha": "da6b1b5ccdcac6802b6062f017e6ab21b8859e9c",
+   "preserveRef": "refs/preserve/v26.9.25/stash-24",
+   "subject": "WIP on feat/iter16-miniml-prolog8: f8b6222c feat(ml): implement feature quality assessment module (Gap 2)",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 25,
+   "sha": "26f11527888961e998bcfb14db2919574d67d0f9",
+   "preserveRef": "refs/preserve/v26.9.25/stash-25",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 6296b8c3 fix(iter6): close 2 critical gaps \u2014 testing cleanup and RL convergence metrics",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 26,
+   "sha": "d7e314156a56a6fec196e938cbd5591f536a8c9a",
+   "preserveRef": "refs/preserve/v26.9.25/stash-26",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 434446b9 fix(cli): close 5 DX gaps in social/validate/watch/explain/autoprocess commands",
+   "duplicateOf": null,
+   "sameSubjectAs": 27,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 27,
+   "sha": "bb2b511999d693a96a779a60303f915a65d68a1d",
+   "preserveRef": "refs/preserve/v26.9.25/stash-27",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 434446b9 fix(cli): close 5 DX gaps in social/validate/watch/explain/autoprocess commands",
+   "duplicateOf": null,
+   "sameSubjectAs": 26,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 28,
+   "sha": "317355445f83d2be12e70099516bf4bc2549d5fa",
+   "preserveRef": "refs/preserve/v26.9.25/stash-28",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 510de740 fix(dx): gitignore compiled artifacts in contracts/src \u2014 prevents ESM parallel test collisions",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 29,
+   "sha": "130b93b2b93a403d55ad0576986a57b9bc37920c",
+   "preserveRef": "refs/preserve/v26.9.25/stash-29",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 725b0723 feat(compare,watch): winner recommendation and config what-changed display",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 30,
+   "sha": "9b48ea1a0e6e30abed5ceab0879c1f6f3764f393",
+   "preserveRef": "refs/preserve/v26.9.25/stash-30",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 725b0723 feat(compare,watch): winner recommendation and config what-changed display",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 31,
+   "sha": "101652377e03d059fd449b5e438629ad7ae96e83",
+   "preserveRef": "refs/preserve/v26.9.25/stash-31",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 902b9856 feat(mcp): close three MCP server gaps \u2014 sequential patterns, resource/intervention perspective, process boundary analysis",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 32,
+   "sha": "598ca921a1d07d10502feed13e0acb3c49889333",
+   "preserveRef": "refs/preserve/v26.9.25/stash-32",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 53d66c5c docs(prolog8): add Prolog8 API section and update AAT/test docs",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 33,
+   "sha": "d79a0c3e9973db9c3dd1690bc6e4f5be34a055fd",
+   "preserveRef": "refs/preserve/v26.9.25/stash-33",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 593a806d qol(ml): close three interpretation gaps in the ML pipeline",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 34,
+   "sha": "ed7c0f40aa6bdff729587810f90784bf9a5aba5a",
+   "preserveRef": "refs/preserve/v26.9.25/stash-34",
+   "subject": "WIP on feat/iter16-miniml-prolog8: 593a806d qol(ml): close three interpretation gaps in the ML pipeline",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 35,
+   "sha": "b8d52fcfb12f6dc605b5d6d7269be3ce31406a71",
+   "preserveRef": "refs/preserve/v26.9.25/stash-35",
+   "subject": "WIP on feat/iter20-results-command-tests: 861c29bc feat(ocel): close OCEL/POWL lifecycle validation and serialization gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 36,
+   "sha": "da44b24eebc6582de1ac23fb0ee77543689fb4fe",
+   "preserveRef": "refs/preserve/v26.9.25/stash-36",
+   "subject": "WIP on feat/iter18-testing-otel-capture: 92d246a7 fix(cognition): correct SystemVerifyResult status value in test fixture",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 37,
+   "sha": "da07e48ce16ee30cd13bd9d33e18e3f3a5a06c98",
+   "preserveRef": "refs/preserve/v26.9.25/stash-37",
+   "subject": "WIP on feat/iter20-config-env-tests: 861c29bc feat(ocel): close OCEL/POWL lifecycle validation and serialization gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 38,
+   "sha": "2edbe88c7a2b13897e22a975a1353586bed5e610",
+   "preserveRef": "refs/preserve/v26.9.25/stash-38",
+   "subject": "On feat/iter17-swarm-convergence: pre-commit: stash unstaged to isolate TS commit",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 39,
+   "sha": "7d214edc35f1a5933d650f7bcce8acecfe6fe456",
+   "preserveRef": "refs/preserve/v26.9.25/stash-39",
+   "subject": "WIP on feat/iter18-testing-otel-capture: 861c29bc feat(ocel): close OCEL/POWL lifecycle validation and serialization gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": 40,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 40,
+   "sha": "f17d6e09ab07dc08d38498d2ae811b40babd08b5",
+   "preserveRef": "refs/preserve/v26.9.25/stash-40",
+   "subject": "WIP on feat/iter18-testing-otel-capture: 861c29bc feat(ocel): close OCEL/POWL lifecycle validation and serialization gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": 39,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 41,
+   "sha": "1af1379a6d7e3cf6d4bf299b643ffc9aa0f475fe",
+   "preserveRef": "refs/preserve/v26.9.25/stash-41",
+   "subject": "On feat/iter18-kernel-registry-completeness: temp-unstaged-wasm4pm-social-commit",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 42,
+   "sha": "c54f893d361aeb9a2c69322af225d7079949fd72",
+   "preserveRef": "refs/preserve/v26.9.25/stash-42",
+   "subject": "On feat/iter19-autoprocess-status: stash-cargo-lock-during-cognition-commit",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 43,
+   "sha": "1dda106afd437aa4dba873d805271d8f603808b6",
+   "preserveRef": "refs/preserve/v26.9.25/stash-43",
+   "subject": "On feat/iter19-autoprocess-status: temp-unstaged-for-social-commit",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 44,
+   "sha": "32704c7e941f0a808e46696ef9bbab88f166d187",
+   "preserveRef": "refs/preserve/v26.9.25/stash-44",
+   "subject": "WIP on feat/iter18-contracts-receipt-tests: 861c29bc feat(ocel): close OCEL/POWL lifecycle validation and serialization gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 45,
+   "sha": "92b061d73462bff03092be8d52c103edfecfdbe1",
+   "preserveRef": "refs/preserve/v26.9.25/stash-45",
+   "subject": "WIP on feat/iter19-cognition-field-contracts: 861c29bc feat(ocel): close OCEL/POWL lifecycle validation and serialization gaps",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 46,
+   "sha": "d4e1503dd9099d5f224534ef4876bc6c70770c13",
+   "preserveRef": "refs/preserve/v26.9.25/stash-46",
+   "subject": "On feat/iter14b-lab-validation-gaps: temp-pre-commit-unstaged",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 47,
+   "sha": "b6e48d01b5ef001acc737f46eed4a9c3b2319601",
+   "preserveRef": "refs/preserve/v26.9.25/stash-47",
+   "subject": "On feat/iter14-qol-engine-tests: temp-cargo-lock",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 48,
+   "sha": "0ba2bffd84bb955e774af16a24336eabcc6dd69a",
+   "preserveRef": "refs/preserve/v26.9.25/stash-48",
+   "subject": "On feat/iter14-qol-engine-tests: temp-stash-other-agent-changes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 49,
+   "sha": "b8ff5300ae7d1449e3e02844be3902dd0ccfd74e",
+   "preserveRef": "refs/preserve/v26.9.25/stash-49",
+   "subject": "WIP on feat/iter14-autoprocess-ocel-powl: b77e8524 fix(doctor): close OTEL flush gaps and exit-code bugs in tps/fix/perf/report subcommands",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 50,
+   "sha": "62d47459ac227cac82ac190ba74ba7422cc184d3",
+   "preserveRef": "refs/preserve/v26.9.25/stash-50",
+   "subject": "WIP on feat/iter14-qol-engine-tests: 73eaedd6 fix(automl): resolve wasm4pm-algos compilation errors from HashMap\u2192Vec<Attribute> type mismatch",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 51,
+   "sha": "9cc963fe6e6c234622e5a503776b74fef9b4ac4c",
+   "preserveRef": "refs/preserve/v26.9.25/stash-51",
+   "subject": "WIP on qol/iter-contract-mocks-iter8-main: b77e8524 fix(doctor): close OTEL flush gaps and exit-code bugs in tps/fix/perf/report subcommands",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 52,
+   "sha": "e8e72ff71fb5dcbc45626d2d294c60d8490e8709",
+   "preserveRef": "refs/preserve/v26.9.25/stash-52",
+   "subject": "WIP on dx/doctor-trace-gaps-iter8: 9484f9a2 release(v26.5.15b): workflow CI fixes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 53,
+   "sha": "7b4443dacaa5a12099e26a1fc1cb54fdfbb8db72",
+   "preserveRef": "refs/preserve/v26.9.25/stash-53",
+   "subject": "WIP on autoinstincts/iter-chain-show-guards-2026-05-16: 4e83e8bb feat(cognition): receipt chain integrity guard + cognition_show field-contract guard",
+   "duplicateOf": null,
+   "sameSubjectAs": 55,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 54,
+   "sha": "8ebdef93966aa612375ec355f86ee4e4c51b23b0",
+   "preserveRef": "refs/preserve/v26.9.25/stash-54",
+   "subject": "On automl/iter-ml-quality-metrics-2026-05-16: pre-switch-stash",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 55,
+   "sha": "00451ec4f973833e2e2e2a2a12b6f918c085a557",
+   "preserveRef": "refs/preserve/v26.9.25/stash-55",
+   "subject": "WIP on autoinstincts/iter-chain-show-guards-2026-05-16: 4e83e8bb feat(cognition): receipt chain integrity guard + cognition_show field-contract guard",
+   "duplicateOf": null,
+   "sameSubjectAs": 53,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 56,
+   "sha": "620729b724ad1c86cee35279015f3aeefaae9296",
+   "preserveRef": "refs/preserve/v26.9.25/stash-56",
+   "subject": "On automl/iter-ml-quality-metrics-2026-05-16: drift-on-automl-quality-metrics",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 57,
+   "sha": "a3eb5f5da99ade4b8421b2e8a105c73ed7e7bb18",
+   "preserveRef": "refs/preserve/v26.9.25/stash-57",
+   "subject": "On dx/iter-hints-exitcodes-2026-05-16: drift-after-swap",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 58,
+   "sha": "fc27176d89ee92db50afa02522808b565512086a",
+   "preserveRef": "refs/preserve/v26.9.25/stash-58",
+   "subject": "WIP on automl/iter-ml-gaps-2026-05-16: f6aa75a3 qol(drift-watch,temporal,social): make invisible visible in three result surfaces",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 59,
+   "sha": "92dc8395070e2b4dcfbfee171fed579206447b89",
+   "preserveRef": "refs/preserve/v26.9.25/stash-59",
+   "subject": "On autoprocess/iter-conformance-cache-2026-05-16: preexisting-cognition-show",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 60,
+   "sha": "f18e0a116b7371658084f21f03356c07fc5dd112",
+   "preserveRef": "refs/preserve/v26.9.25/stash-60",
+   "subject": "On autoprocess/iter-conformance-cache-2026-05-16: preexisting-ml-test-changes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 61,
+   "sha": "522936768ff52503aee1834878ac5fba9f4f8e1f",
+   "preserveRef": "refs/preserve/v26.9.25/stash-61",
+   "subject": "On autoprocess/iter-conformance-cache-2026-05-16: preexisting-changes-during-autoprocess-iter",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 62,
+   "sha": "46e728b06fccf76e649d707b70538e2c26ed28a4",
+   "preserveRef": "refs/preserve/v26.9.25/stash-62",
+   "subject": "On autoinstincts/iter-chain-show-guards-2026-05-16: pre-iter-chain-show-stash",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 63,
+   "sha": "0ec65875eb0b3601ff63c9c0bd7ecd4c99410297",
+   "preserveRef": "refs/preserve/v26.9.25/stash-63",
+   "subject": "WIP on dx/iter-validate-format-predict-2026-05-16: 9484f9a2 release(v26.5.15b): workflow CI fixes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 64,
+   "sha": "bed96516ff13f554214ec2dfeb06900f3a2d3a48",
+   "preserveRef": "refs/preserve/v26.9.25/stash-64",
+   "subject": "On dx/iter-validate-format-predict-2026-05-16: wip-pre-autoinstinct-iter",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  },
+  {
+   "index": 65,
+   "sha": "45c4d107e1b29a5508450c8887f580f0389d77f8",
+   "preserveRef": "refs/preserve/v26.9.25/stash-65",
+   "subject": "WIP on automl/iter-kmeans-fix-2026-05-16: 9484f9a2 release(v26.5.15b): workflow CI fixes",
+   "duplicateOf": null,
+   "sameSubjectAs": null,
+   "shaAndTreeLevelDuplicate": false
+  }
+ ],
+ "stashSummary": {
+  "count": 66,
+  "allResolved": true,
+  "shaLevelDuplicates": 0,
+  "treeLevelDuplicates": 0,
+  "nearDuplicateSubjectPairs": [
+   [
+    20,
+    21
+   ],
+   [
+    26,
+    27
+   ],
+   [
+    39,
+    40
+   ],
+   [
+    53,
+    55
+   ]
+  ],
+  "duplicateClaimNote": "wave-1 claimed pairs @{21}=@{20}, @{27}=@{26}, @{55}=@{53}, @{40}=@{39} as duplicates; falsified at commit-sha AND tree-sha level \u2014 pairs share identical subject lines only. All 66 preserved individually."
+ },
+ "verification": {
+  "totalPreserveRefs": 74,
+  "allResolve": true,
+  "contractCountCommand": "git for-each-ref refs/preserve/v26.9.25 | wc -l -> 74",
+  "falsifier": [
+   {
+    "ref": "refs/preserve/v26.9.25/wt-w9-sweep-doctest-imports",
+    "method": "git archive | tar -x to /tmp/lane-wa-wasm4pm/verify/a1; diff -r --exclude=.git vs /private/tmp/xaas-w9-sweep-wasm4pm",
+    "result": "PASS byte-identical",
+    "residual": "2 empty untracked dirs (packages/{cognition,kernel}/pkg); find entry-count=1 each; git stores no empty dirs"
+   },
+   {
+    "ref": "refs/preserve/v26.9.25/wt-ex4pm-qual-episode-20260903-dirty",
+    "method": "git archive | tar -x to a2; diff -r --exclude=.git vs ex4pm worktree",
+    "result": "PASS byte-identical",
+    "residual": "same 2 empty untracked dirs"
+   },
+   {
+    "ref": "refs/preserve/v26.9.25/wt-fix-etconformance-precision-feature-gate",
+    "method": "git archive | tar -x to a3; diff -r --exclude=.git vs fix-etconformance worktree",
+    "result": "PASS byte-identical",
+    "residual": "same 2 empty untracked dirs"
+   }
+  ]
+ },
+ "exclusions": [
+  "canonical checkout dirty state (10 porcelain entries) NOT preserved \u2014 writer lane v26925/fmt-all owns it per contract; no stash/add/commit/checkout executed against canonical"
+ ],
+ "postRemovalAudit": {
+  "auditedAt": "2026-09-25T17:36:53Z",
+  "auditor": "lane WA second run (same lane contract, re-verification pass)",
+  "trigger": "this run's census listed 7 live worktrees; live enumeration found only the canonical. The 6 non-canonical worktree directories were removed by another actor between the 07:29:14Z preservation pass and this audit (17:0xZ). This run performed zero removals: its only git operations were worktree list --porcelain, worktree prune --dry-run, status, for-each-ref, rev-parse, log -g, rev-list, archive, stash list. First command batch already witnessed the single-worktree state.",
+  "evidence": {
+   "gitWorktreeListPorcelain": "1 entry: /Users/sac/wasm4pm (canonical, v26925/fmt-all ef418ebc)",
+   "missingPaths": [
+    "/Users/sac/wasm4pm-worktrees/ex4pm-qual-episode-20260903",
+    "/Users/sac/wasm4pm-worktrees/fix-etconformance-precision-feature-gate",
+    "/Users/sac/wasm4pm-worktrees/predict-execute-episode-wf10-20260903",
+    "/Users/sac/wasm4pm-worktrees/register-planner-mcp-json",
+    "/private/tmp/xaas-w9-sweep-wasm4pm",
+    "/Users/sac/wasm4pm/.claude/worktrees/wf_99470ccd-c7b-1"
+   ],
+   "worktreeAdmin": "/Users/sac/wasm4pm/.git/worktrees absent; git worktree prune --dry-run --verbose -> empty, exit 0 (nothing left to prune)",
+   "claudeWorktreesDir": "exists, empty",
+   "removalReceipt": "NOT FOUND \u2014 migration/ contains only this ledger.json; worktree removal executed ahead of the coordinator's rollback-receipt phase with no receipt in migration/ (process gap; coordinator handoff item, not lane WA)"
+  },
+  "reverification": {
+   "preserveRefsTotal": 146,
+   "preserveRefsNote": "74 from the lane WA preservation pass (recorded above) + 72 from an independent tree-snapshot pass (refs/preserve/v26.9.25/{canonical-wasm4pm,chatmangpt_*,wasm4pm-worktrees*,tmp_xaas*,unrdf_*}/*: anchor/dirty/index/worktree-head trees)",
+   "allResolve": true,
+   "brokenRefs": 0,
+   "branchTipsVsPreserveRefs": "5/5 MATCH: ex4pm 69017c123f79, fix-etconformance 9b32c57c44, register-planner 078b1f2c01, w9-sweep 9ffdc2fa10, wf_99470ccd 2b9ba07734",
+   "aheadVsLocalMainReconfirmed": {
+    "ex4pm-qual-episode-20260903": 7,
+    "fix-etconformance-precision-feature-gate": 1,
+    "register-planner-mcp-json": 1,
+    "w9-sweep/doctest-imports": 54,
+    "worktree-wf_99470ccd-c7b-1": 17,
+    "all": "0 behind"
+   },
+   "stashShasVsLiveStashList": "66/66 sha-match (refs/preserve/v26.9.25/stash-0..65 vs git rev-parse stash@{i})",
+   "stashTreeDuplicateScan": "0 duplicate trees across all 66 stash commits \u2014 census duplicate-pair claims (@{21}=@{20} etc.) independently re-falsified at tree level",
+   "dirtyCommitLinkage": "wt-ex4pm-qual-episode-20260903-dirty 8762e7060 parent == ex4pm tip 69017c123; wt-predict-execute-episode-wf10-dirty 1311f96a3 parent == detached sha 69017c123; git diff-tree: ex4pm dirty commit delta = Cargo.lock only (matches dirtyBefore claim)",
+   "falsifierSamples": [
+    {
+     "ref": "refs/preserve/v26.9.25/wt-w9-sweep-doctest-imports",
+     "method": "git archive preserve ref -> /tmp/lane-wa-reaudit/a1a; git archive refs/heads/w9-sweep/doctest-imports -> a1b; diff -r a1a a1b",
+     "result": "exit 0, zero content differences; only benign traversal warnings for packages/{cognition,kernel}/pkg (mode-120000 symlink blobs, identical both sides)",
+     "files": 7823
+    },
+    {
+     "ref": "refs/preserve/v26.9.25/wt-ex4pm-qual-episode-20260903-dirty",
+     "method": "git archive refs/preserve twin vs git archive refs/heads/preserve/v26.9.25/wt-ex4pm-qual-episode-20260903-dirty (worktree-local branch, still present); diff -r",
+     "result": "exit 0, byte-identical; Cargo.lock present in extraction",
+     "note": "original live-worktree byte diff is not re-runnable post-removal; preservation pass's live diffs (verification.falsifier above) remain the restore-ability proof; this proves both ref namespaces still agree"
+    },
+    {
+     "ref": "refs/preserve/v26.9.25/stash-27",
+     "method": "git archive -> extract (9820 files) + git blob-hash spot check (package.json: extracted hash f9d625d9... == tree blob sha, MATCH) + cmp(archive-by-ref, archive-by-direct-sha bb2b5119)",
+     "result": "extract exit 0, blob MATCH, cmp exit 0"
+    }
+   ],
+   "limits": "post-removal re-verification proves ref-graph integrity (resolution, tip equality, parentage, cross-namespace agreement, blob identity). It cannot re-prove byte-identity against the deleted working trees; that proof lives in the preservation pass's verification.falsifier entries recorded against the then-live worktrees."
+  },
+  "worktreesRemaining": 1,
+  "canonicalDirtySet": "11 porcelain entries at audit time (writer lane v26925/fmt-all actively working; grew from 10 at preservation pass) \u2014 untouched per contract"
+ },
+ "worktreesRemoved": 0,
+ "stashesDropped": 0
+}

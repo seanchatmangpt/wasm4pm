@@ -114,6 +114,17 @@ Each algorithm includes:
 - `robustToNoise`: Whether handles noisy logs well
 - `scalesWell`: Whether scales to large logs (100k+ events)
 
+### Algorithm Contracts
+
+Every registered algorithm carries a typed registry-metadata contract: 60
+per-algorithm contract modules live in `src/algorithm-contracts/` (one
+module per algorithm, plus the shared `contract.ts` types). `index.ts`
+imports and exports all of them as the `algorithmContracts` tuple, and the
+closure is checked — `src/__tests__/algorithm-contracts/registry-closure.test.ts`
+fails the build if the contract set and the registry ever diverge in either
+direction (a contract with no registered algorithm, or a registered
+algorithm with no contract).
+
 ### 2. Execution Profiles
 
 Four execution profiles balance speed vs quality:
