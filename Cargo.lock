@@ -212,6 +212,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
+name = "base64ct"
+version = "1.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
+
+[[package]]
 name = "bcinr"
 version = "26.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -219,7 +225,7 @@ checksum = "c8fa2134f07705399d0ff44d30447305cd1a13c9389298ef2d703805a78769db"
 dependencies = [
  "bcinr-api",
  "bcinr-core",
- "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bcinr-logic 26.7.28",
 ]
 
 [[package]]
@@ -228,7 +234,7 @@ version = "26.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a95dd80866783974469ceb0f7593b066ecbdecdf8bc5c772fd055139a2a842bb"
 dependencies = [
- "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bcinr-logic 26.7.28",
 ]
 
 [[package]]
@@ -237,15 +243,15 @@ version = "26.7.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7aa454f03b50b6990c672fd72a4e2bc3ec3af63bed5d4dfae02dee5ca30ba19"
 dependencies = [
- "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bcinr-logic 26.7.28",
 ]
 
 [[package]]
 name = "bcinr-cmca"
-version = "26.7.28"
-source = "git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462#b76dcb377b297cb8826a5256b55f8b57a6b76462"
+version = "26.9.28"
+source = "git+https://github.com/seanchatmangpt/bcinr?rev=da50f4706aef47c3720868f33f1f29d585dc6466#da50f4706aef47c3720868f33f1f29d585dc6466"
 dependencies = [
- "bcinr-logic 26.7.28 (git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462)",
+ "bcinr-logic 26.9.28",
  "serde",
  "serde_json",
 ]
@@ -257,7 +263,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c2c16c6d4f7e1f8d6b681159ee1d12c071c5bee6d1610bfc9bffb984c58b32"
 dependencies = [
  "bcinr-api",
- "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bcinr-logic 26.7.28",
 ]
 
 [[package]]
@@ -268,8 +274,8 @@ checksum = "0be283759631eeff5f9be7313a699ae8efde493ab5b2ba2b5308d86030287b79"
 
 [[package]]
 name = "bcinr-logic"
-version = "26.7.28"
-source = "git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462#b76dcb377b297cb8826a5256b55f8b57a6b76462"
+version = "26.9.28"
+source = "git+https://github.com/seanchatmangpt/bcinr?rev=da50f4706aef47c3720868f33f1f29d585dc6466#da50f4706aef47c3720868f33f1f29d585dc6466"
 
 [[package]]
 name = "bcinr-mfw-ir"
@@ -286,8 +292,8 @@ version = "26.7.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "825ef986f0f2908fedfdf14e59446d90df1f962f5ab86bd13f33de4a5508f508"
 dependencies = [
- "bcinr-cmca 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
- "bcinr-logic 26.7.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bcinr-cmca 26.7.28",
+ "bcinr-logic 26.7.28",
  "bcinr-mfw-ir",
  "blake3",
  "serde",
@@ -664,6 +670,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-oid"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
+
+[[package]]
 name = "constant_time_eq"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -843,6 +855,7 @@ dependencies = [
  "fiat-crypto",
  "rustc_version",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -899,6 +912,16 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "der"
+version = "0.7.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb"
+dependencies = [
+ "const-oid",
+ "zeroize",
 ]
 
 [[package]]
@@ -984,6 +1007,7 @@ version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
 dependencies = [
+ "pkcs8",
  "signature",
 ]
 
@@ -996,8 +1020,10 @@ dependencies = [
  "curve25519-dalek",
  "ed25519",
  "rand_core 0.6.4",
+ "serde",
  "sha2",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -2320,6 +2346,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
+name = "pkcs8"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f950b2377845cebe5cf8b5165cb3cc1a5e0fa5cfa3e1f7f55707d8fd82e0a7b7"
+dependencies = [
+ "der",
+ "spki",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2890,6 +2926,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "ryu-js"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04d056b875a9d2e6cb9a61d127afee9ac5999b9f87bcb32079d1318e505be714"
+
+[[package]]
 name = "safe_arch"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3012,6 +3054,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_json_canonicalizer"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe52319a927259afbfa5180c5157cd8167edfd3e8c254f9558c7fef44c5649f2"
+dependencies = [
+ "ryu-js",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "serde_spanned"
 version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3089,6 +3142,9 @@ name = "signature"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
+dependencies = [
+ "rand_core 0.6.4",
+]
 
 [[package]]
 name = "simba"
@@ -3186,6 +3242,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eda41003dc44290527a59b13432d4a0379379fa074b70174882adfbdfd917844"
 dependencies = [
  "bitflags 2.13.1",
+]
+
+[[package]]
+name = "spki"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
+dependencies = [
+ "base64ct",
+ "der",
 ]
 
 [[package]]
@@ -3963,7 +4029,7 @@ dependencies = [
 name = "wasm4pm-cmca"
 version = "26.9.28"
 dependencies = [
- "bcinr-cmca 26.7.28 (git+https://github.com/seanchatmangpt/bcinr?rev=b76dcb377b297cb8826a5256b55f8b57a6b76462)",
+ "bcinr-cmca 26.9.28",
  "blake3",
  "serde",
  "serde-wasm-bindgen",
@@ -4044,6 +4110,18 @@ dependencies = [
  "wasm4pm",
  "wasm4pm-cognition",
  "wasm4pm-compat",
+]
+
+[[package]]
+name = "wasm4pm-sa2a-actuator"
+version = "26.9.28"
+dependencies = [
+ "ed25519-dalek",
+ "serde",
+ "serde_json",
+ "serde_json_canonicalizer",
+ "sha2",
+ "tempfile",
 ]
 
 [[package]]
