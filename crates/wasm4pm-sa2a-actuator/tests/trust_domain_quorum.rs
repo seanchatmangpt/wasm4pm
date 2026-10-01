@@ -59,9 +59,11 @@ fn sign(cert: &mut ActuationCertificate, key_id: &str, signing_key: &SigningKey)
     });
 }
 
-fn verify(registry: &KeyRegistry, effect: &PreparedEffect, cert: &ActuationCertificate)
-    -> Result<(), ActuatorRefusal>
-{
+fn verify(
+    registry: &KeyRegistry,
+    effect: &PreparedEffect,
+    cert: &ActuationCertificate,
+) -> Result<(), ActuatorRefusal> {
     SecurityVerifier {
         registry,
         audience: "actuator:test",
@@ -69,7 +71,8 @@ fn verify(registry: &KeyRegistry, effect: &PreparedEffect, cert: &ActuationCerti
         revocation_epoch: 7,
         generation: 3,
         now_ms: 1_000,
-    }.verify(effect, cert)
+    }
+    .verify(effect, cert)
 }
 
 #[test]
@@ -84,7 +87,10 @@ fn same_domain_signers_are_not_independent() {
     let mut cert = certificate(&effect);
     sign(&mut cert, "k1", &k1);
     sign(&mut cert, "k2", &k2);
-    assert_eq!(verify(&registry, &effect, &cert), Err(ActuatorRefusal::TrustDomainIndependence));
+    assert_eq!(
+        verify(&registry, &effect, &cert),
+        Err(ActuatorRefusal::TrustDomainIndependence)
+    );
 }
 
 #[test]
@@ -110,5 +116,8 @@ fn duplicate_key_does_not_manufacture_quorum() {
     let mut cert = certificate(&effect);
     sign(&mut cert, "k1", &k1);
     sign(&mut cert, "k1", &k1);
-    assert_eq!(verify(&registry, &effect, &cert), Err(ActuatorRefusal::InsufficientQuorum));
+    assert_eq!(
+        verify(&registry, &effect, &cert),
+        Err(ActuatorRefusal::InsufficientQuorum)
+    );
 }

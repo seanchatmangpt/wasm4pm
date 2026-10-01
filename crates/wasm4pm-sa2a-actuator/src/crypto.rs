@@ -11,12 +11,13 @@ pub fn verify(
 ) -> Result<(), ActuatorRefusal> {
     match algorithm {
         SignatureAlgorithm::Ed25519 => {
-            let key_bytes: &[u8; 32] =
-                public_key.try_into().map_err(|_| ActuatorRefusal::InvalidKey)?;
-            let key =
-                Ed25519VerifyingKey::from_bytes(key_bytes).map_err(|_| ActuatorRefusal::InvalidKey)?;
-            let sig =
-                Ed25519Signature::from_slice(signature).map_err(|_| ActuatorRefusal::InvalidSignature)?;
+            let key_bytes: &[u8; 32] = public_key
+                .try_into()
+                .map_err(|_| ActuatorRefusal::InvalidKey)?;
+            let key = Ed25519VerifyingKey::from_bytes(key_bytes)
+                .map_err(|_| ActuatorRefusal::InvalidKey)?;
+            let sig = Ed25519Signature::from_slice(signature)
+                .map_err(|_| ActuatorRefusal::InvalidSignature)?;
             key.verify_strict(message, &sig)
                 .map_err(|_| ActuatorRefusal::InvalidSignature)
         }

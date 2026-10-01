@@ -1,6 +1,7 @@
 {
   "version": "sa2a/resource-vector/v1",
   "case": "architecture_no_authority_transfer",
+  "ordinal": 43,
   "law": "BCINR allocation is powerless; WASM actuator independently verifies authority; resource admission occurs before claim; no allocation grants DO",
   "expected": "admit"
 }

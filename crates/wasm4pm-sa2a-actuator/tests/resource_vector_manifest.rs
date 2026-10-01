@@ -28,8 +28,7 @@ fn all_resource_vectors_are_executable_manifest_inputs() {
             continue;
         }
 
-        let vector: Vector =
-            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        let vector: Vector = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
 
         assert_eq!(vector.version, "sa2a/resource-vector/v1");
         assert!(!vector.case.is_empty());

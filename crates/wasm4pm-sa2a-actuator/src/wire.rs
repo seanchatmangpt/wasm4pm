@@ -19,8 +19,8 @@ impl PreparedEffect {
         if self.version != 1 || self.principal.is_empty() || self.capability.is_empty() {
             return Err(ActuatorRefusal::InvalidEffect);
         }
-        let bytes = serde_json_canonicalizer::to_vec(self)
-            .map_err(|_| ActuatorRefusal::InvalidEffect)?;
+        let bytes =
+            serde_json_canonicalizer::to_vec(self).map_err(|_| ActuatorRefusal::InvalidEffect)?;
         let digest = Sha256::digest(bytes);
         Ok(format!("sha256:{digest:x}"))
     }

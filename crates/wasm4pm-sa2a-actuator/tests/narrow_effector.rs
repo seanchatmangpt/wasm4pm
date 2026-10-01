@@ -16,6 +16,12 @@ fn writes_only_below_fixed_root() {
     let dir = tempfile::tempdir().unwrap();
     let effector = Utf8FileWriteEffector::new(dir.path()).unwrap();
     effector.perform(&effect("nested/a.txt")).unwrap();
-    assert_eq!(std::fs::read_to_string(dir.path().join("nested/a.txt")).unwrap(), "hello");
-    assert_eq!(effector.perform(&effect("../escape.txt")).unwrap_err(), ActuatorRefusal::PathRefused);
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("nested/a.txt")).unwrap(),
+        "hello"
+    );
+    assert_eq!(
+        effector.perform(&effect("../escape.txt")).unwrap_err(),
+        ActuatorRefusal::PathRefused
+    );
 }

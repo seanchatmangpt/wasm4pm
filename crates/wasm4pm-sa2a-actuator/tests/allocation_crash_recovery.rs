@@ -1,10 +1,8 @@
 use wasm4pm_sa2a_actuator::{
-    ActuatorRefusal, EffectLedger, FileEffectLedger, LedgerState, ResourceBudget,
-    ResourceEnvelope,
+    ActuatorRefusal, EffectLedger, FileEffectLedger, LedgerState, ResourceBudget, ResourceEnvelope,
 };
 
-const DIGEST: &str =
-    "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const DIGEST: &str = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 fn envelope() -> ResourceEnvelope {
     ResourceEnvelope {
