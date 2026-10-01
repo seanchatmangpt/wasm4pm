@@ -21,7 +21,10 @@ pub mod verifier;
 pub mod wire;
 
 pub use actuator::{ActuationReceipt, Actuator, ActuatorContext};
-pub use c3_court_manifest::{by_id as c3_court_by_id, CourtVector as C3CourtVector, Expected as C3Expected, VECTORS as C3_COURT_VECTORS};
+pub use c3_court_manifest::{
+    by_id as c3_court_by_id, CourtVector as C3CourtVector, Expected as C3Expected,
+    VECTORS as C3_COURT_VECTORS,
+};
 pub use effector::{Effector, EffectorOutcome, Utf8FileWriteEffector};
 pub use error::ActuatorRefusal;
 pub use ledger::{EffectClaimRecord, EffectLedger, FileEffectLedger, LedgerState};

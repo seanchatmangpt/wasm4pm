@@ -261,9 +261,12 @@ fn every_breed_module_declares_its_contract_test() {
             let p = e.path();
             if p.extension().map(|x| x == "rs").unwrap_or(false) {
                 let name = p.file_name().unwrap().to_string_lossy().to_string();
-                let declared = std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/breed_contracts.rs"))
-                    .map(|t| t.contains(&format!("breed_contracts/{name}")))
-                    .unwrap_or(false);
+                let declared = std::fs::read_to_string(
+                    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("tests/breed_contracts.rs"),
+                )
+                .map(|t| t.contains(&format!("breed_contracts/{name}")))
+                .unwrap_or(false);
                 if !declared {
                     undeclared.push(name);
                 }

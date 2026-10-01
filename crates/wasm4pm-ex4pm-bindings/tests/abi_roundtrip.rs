@@ -47,7 +47,10 @@ unsafe fn abi_call_raw(algo: AlgoV1, request: &[u8]) -> String {
 
     let mut out_len: usize = 0;
     let out_ptr = unsafe { algo(in_ptr, request.len(), &mut out_len) };
-    assert!(!out_ptr.is_null(), "algo export returned a null response buffer");
+    assert!(
+        !out_ptr.is_null(),
+        "algo export returned a null response buffer"
+    );
     assert!(out_len > 0, "algo export reported an empty response");
 
     let bytes = unsafe { std::slice::from_raw_parts(out_ptr, out_len) };
@@ -76,7 +79,10 @@ unsafe fn abi_replay(replay: AlgoReplayV1, request: &[u8]) -> u32 {
 /// Asserts the success envelope `{"result":...,"digest":"<16 lowercase hex>"}`.
 fn success_envelope(body: &str) -> Value {
     let v: Value = serde_json::from_str(body).expect("response is valid JSON");
-    assert!(v.get("error").is_none(), "unexpected error envelope: {body}");
+    assert!(
+        v.get("error").is_none(),
+        "unexpected error envelope: {body}"
+    );
     assert!(v.get("result").is_some(), "missing result: {body}");
     let digest = v
         .get("digest")
@@ -95,7 +101,10 @@ fn success_envelope(body: &str) -> Value {
 /// Asserts the error envelope `{"error":"..."}` with no result and no digest.
 fn error_envelope(body: &str) -> String {
     let v: Value = serde_json::from_str(body).expect("error response is valid JSON");
-    assert!(v.get("result").is_none(), "unexpected result envelope: {body}");
+    assert!(
+        v.get("result").is_none(),
+        "unexpected result envelope: {body}"
+    );
     assert!(
         v.get("digest").is_none(),
         "error envelope must not carry a digest: {body}"
@@ -125,7 +134,10 @@ fn discover_roundtrip_alloc_write_call_read_replay_free() {
 
     let mut out_len: usize = 0;
     let out_ptr = unsafe { wasm4pm_ex4pm_discover_v1(in_ptr, request.len(), &mut out_len) };
-    assert!(!out_ptr.is_null(), "discover_v1 returned a null response buffer");
+    assert!(
+        !out_ptr.is_null(),
+        "discover_v1 returned a null response buffer"
+    );
     assert!(out_len > 0, "discover_v1 reported an empty response");
 
     let response = unsafe {
@@ -160,7 +172,10 @@ fn conform_roundtrip_reports_real_fitness_and_replays() {
     assert_eq!(v["result"]["fit_traces"], 1);
     assert_eq!(v["result"]["total_traces"], 2);
     assert_eq!(v["result"]["fitness"], 0.5);
-    assert_eq!(unsafe { abi_replay(wasm4pm_ex4pm_conform_replay_v1, request) }, 1);
+    assert_eq!(
+        unsafe { abi_replay(wasm4pm_ex4pm_conform_replay_v1, request) },
+        1
+    );
 }
 
 #[test]
@@ -169,14 +184,24 @@ fn simulate_roundtrip_is_deterministic_and_replays() {
         br#"{"edges":[{"from":"a","to":"b"},{"from":"b","to":"a"}],"start":"a","steps":4,"seed":42}"#;
     let body1 = unsafe { abi_call_raw(wasm4pm_ex4pm_simulate_v1, request) };
     let body2 = unsafe { abi_call_raw(wasm4pm_ex4pm_simulate_v1, request) };
-    assert_eq!(body1, body2, "same request bytes must recompute byte-identically");
+    assert_eq!(
+        body1, body2,
+        "same request bytes must recompute byte-identically"
+    );
 
     let v = success_envelope(&body1);
     let trace = v["result"]["trace"].as_array().expect("trace is an array");
-    assert_eq!(trace.len(), 5, "steps=4 over the a->b->a cycle yields 5 nodes");
+    assert_eq!(
+        trace.len(),
+        5,
+        "steps=4 over the a->b->a cycle yields 5 nodes"
+    );
     assert_eq!(trace[0], "a");
     assert_eq!(trace[4], "a");
-    assert_eq!(unsafe { abi_replay(wasm4pm_ex4pm_simulate_replay_v1, request) }, 1);
+    assert_eq!(
+        unsafe { abi_replay(wasm4pm_ex4pm_simulate_replay_v1, request) },
+        1
+    );
 }
 
 #[test]
@@ -186,7 +211,10 @@ fn powl_mine_roundtrip_detects_a_sequence_and_replays() {
     let v = success_envelope(&body);
     assert_eq!(v["result"]["node_type"], "sequence");
     assert_eq!(v["result"]["children"], serde_json::json!(["a", "b", "c"]));
-    assert_eq!(unsafe { abi_replay(wasm4pm_ex4pm_powl_mine_replay_v1, request) }, 1);
+    assert_eq!(
+        unsafe { abi_replay(wasm4pm_ex4pm_powl_mine_replay_v1, request) },
+        1
+    );
 }
 
 #[test]
@@ -213,7 +241,10 @@ fn mean_roundtrip_phase4_stat_computes_the_real_average_and_replays() {
     let body = unsafe { abi_call_raw(wasm4pm_ex4pm_mean_v1, request) };
     let v = success_envelope(&body);
     assert_eq!(v["result"]["mean"], 2.5);
-    assert_eq!(unsafe { abi_replay(wasm4pm_ex4pm_mean_replay_v1, request) }, 1);
+    assert_eq!(
+        unsafe { abi_replay(wasm4pm_ex4pm_mean_replay_v1, request) },
+        1
+    );
 }
 
 #[test]
@@ -223,7 +254,10 @@ fn empty_discover_roundtrip_yields_an_empty_graph() {
     let v = success_envelope(&body);
     assert_eq!(v["result"]["activities"], serde_json::json!([]));
     assert_eq!(v["result"]["edges"], serde_json::json!([]));
-    assert_eq!(unsafe { abi_replay(wasm4pm_ex4pm_discover_replay_v1, request) }, 1);
+    assert_eq!(
+        unsafe { abi_replay(wasm4pm_ex4pm_discover_replay_v1, request) },
+        1
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -233,8 +267,16 @@ fn empty_discover_roundtrip_yields_an_empty_graph() {
 #[test]
 fn malformed_or_misshaped_json_yields_an_error_envelope_for_every_algo() {
     let cases: &[(&str, AlgoV1, &[u8])] = &[
-        ("discover", wasm4pm_ex4pm_discover_v1, br#"{"traces":"#.as_slice()),
-        ("conform", wasm4pm_ex4pm_conform_v1, b"not json at all".as_slice()),
+        (
+            "discover",
+            wasm4pm_ex4pm_discover_v1,
+            br#"{"traces":"#.as_slice(),
+        ),
+        (
+            "conform",
+            wasm4pm_ex4pm_conform_v1,
+            b"not json at all".as_slice(),
+        ),
         (
             "simulate",
             wasm4pm_ex4pm_simulate_v1,
@@ -273,7 +315,10 @@ fn tampered_request_bytes_change_the_response_digest() {
         .expect("steps field present")
         + needle.len()
         - 1; // index of the "4"
-    assert_eq!(tampered[steps_digit], b'4', "expected to land on the steps digit");
+    assert_eq!(
+        tampered[steps_digit], b'4',
+        "expected to land on the steps digit"
+    );
     tampered[steps_digit] = b'5';
 
     let orig_body = unsafe { abi_call_raw(wasm4pm_ex4pm_simulate_v1, original) };
@@ -317,5 +362,8 @@ fn tampered_request_bytes_change_the_response_digest() {
 #[ignore = "replay_ok (src/lib.rs) only checks non-empty; enable when replay_v1 compares digests"]
 fn tampered_request_fails_replay_once_replay_compares_digests() {
     let malformed: &[u8] = br#"{"traces":"#;
-    assert_eq!(unsafe { abi_replay(wasm4pm_ex4pm_discover_replay_v1, malformed) }, 0);
+    assert_eq!(
+        unsafe { abi_replay(wasm4pm_ex4pm_discover_replay_v1, malformed) },
+        0
+    );
 }
