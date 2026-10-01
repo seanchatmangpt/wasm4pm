@@ -4,6 +4,35 @@ wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
 
+## [26.8.27] — 2026-08-27
+
+### Added
+- `crates/wasm4pm-ex4pm-bindings` (new workspace member): C-ABI host bindings
+  for ex4pm integration — Phase-1 process-intelligence exports (discover,
+  conform, simulate, optimize, powl_mine) with `_replay_v1` companions, and
+  Phase-2 thin wrappers over existing wasm4pm/prolog8 algorithms (survival,
+  markov, bayesian, ocpq_eval, strips_plan, htn_plan, ctl_check,
+  allen_temporal, oc_discover, align, etc_precision, soundness, playout,
+  prolog_query).
+- `alloc_v1`/`dealloc_v1` exports closing the host-write gap in the ptr/len
+  ABI.
+- Phase-4: 14 statistics/ML bindings drawn from `wasm4pm::ml`, `hand_stats`,
+  and `prediction_drift` (39 crate tests).
+
+## [26.7.23] — 2026-07-23
+
+### Fixed
+- Cognition code-projection hardening: complete refusal receipts preserved as
+  tests; projected lookup keys, graph nodes, and grid traversal constrained
+  to hashable/regular input.
+- Interview assistant: unbroken Next.js production build and CI lockfile
+  drift; Chicago visual TDD contract and Playwright visual lifecycle
+  commands.
+
+### Added
+- `ALGORITHM_AND_BREED_STATUS.md` and the CLI docs generator
+  (`apps/wasm4pm/scripts/gen-cli-docs.ts`).
+
 ## [26.7.1] — 2026-07-01
 
 First-principles project refocus: repository hygiene, CI root-cause fixes, a
