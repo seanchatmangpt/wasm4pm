@@ -99,7 +99,7 @@ pub(crate) fn alpha_plus_plus_inner<W>(
     log: &AdmittedEventLog<W>,
     activity_key: &str,
     min_support: f64,
-) -> Result<PetriNet, JsValue> {
+) -> Result<PetriNet, String> {
     // ── Step 1: DF relations ──────────────────────────────────────────────────
     let all_relations = log.value.get_directly_follows(activity_key);
     let threshold = (log.value.traces.len() as f64 * min_support).max(1.0) as usize;
@@ -481,6 +481,7 @@ pub fn discover_alpha_plus_plus(
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
         alpha_plus_plus_inner(&admitted, activity_key, min_support)
+            .map_err(|e| crate::error::js_val(&e))
     })?;
 
     let n_places = pn.places.len();
@@ -516,7 +517,6 @@ pub fn discover_alpha_plus_plus_from_log<W>(
     min_support: f64,
 ) -> Result<PetriNet, String> {
     alpha_plus_plus_inner(log, activity_key, min_support)
-        .map_err(|e| e.as_string().unwrap_or_else(|| "alpha++ error".to_string()))
 }
 
 /// Pure-Rust DFG filtered discovery without wasm-bindgen. Used by integration tests.
