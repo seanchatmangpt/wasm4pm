@@ -9,9 +9,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   fromAtomVmJsonl,
   adaptAtomVmProcEvent,
@@ -213,8 +214,14 @@ describe('toOcelLog(): crash events appear in ocel_events with correct type', ()
 
 // ── Test 7: wpm trace conform integration ─────────────────────────────────────
 
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
+const CONFORM_MODEL_PATH = join(REPO_ROOT, 'routes/ai-code-review.powl.json');
+const CONFORM_CLI_PATH = join(REPO_ROOT, 'apps/wasm4pm/dist/cli.js');
+// The CLI dist is a build product; skip (not fail) where it has not been built.
+const HAVE_CONFORM_CLI = existsSync(CONFORM_MODEL_PATH) && existsSync(CONFORM_CLI_PATH);
+
 describe('toOcelLog(): wpm trace conform integration', () => {
-  it('wpm trace conform accepts OcelLog output and exits 0 or 3 (not a parse crash)', () => {
+  it.skipIf(!HAVE_CONFORM_CLI)('wpm trace conform accepts OcelLog output and exits 0 or 3 (not a parse crash)', () => {
     // Build an OcelLog with activities that match the ai-code-review route
     // (lint → type_check → run_tests → summarize → emit_receipt)
     // We do not guarantee Accepted (fitness=1.0 requires all required_stages),
@@ -234,8 +241,8 @@ describe('toOcelLog(): wpm trace conform integration', () => {
     writeFileSync(ocelPath, JSON.stringify(log), 'utf8');
 
     // Pick a simple route model that ships with wasm4pm
-    const modelPath = '/Users/sac/wasm4pm/routes/ai-code-review.powl.json';
-    const cliPath = '/Users/sac/wasm4pm/apps/wasm4pm/dist/cli.js';
+    const modelPath = CONFORM_MODEL_PATH;
+    const cliPath = CONFORM_CLI_PATH;
 
     try {
       execSync(`node --experimental-wasm-modules ${cliPath} trace conform -m ${modelPath} -i ${ocelPath} --format json`, {

@@ -7,7 +7,7 @@ members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core",
 # git history (crates/wasm4pm-lsp @ pre-26.7.1) once lsp-max is vendored or published.
 
 [workspace.package]
-version = "26.9.28"
+version = "26.9.30"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
@@ -32,12 +32,12 @@ bcinr = { version = "26.4.22" }
 bcinr-cmca = { git = "https://github.com/seanchatmangpt/bcinr", rev = "da50f4706aef47c3720868f33f1f29d585dc6466", package = "bcinr-cmca", features = ["std"] }
 bcinr-powl = { version = "26.6.25", features = ["std"] }
 wasm4pm-compat = { version = "26.8.7", features = ["formats", "strict", "wasm4pm"] }
-wasm4pm = { version = "26.9.28", path = "wasm4pm", features = ["cloud"] }
+wasm4pm = { version = "26.9.30", path = "wasm4pm", features = ["cloud"] }
 affidavit = { version = "26.6.22", features = ["core"] }
-wasm4pm-cognition = { version = "26.9.28", path = "crates/wasm4pm-cognition" }
-prolog8 = { version = "26.9.28", path = "crates/prolog8" }
-miniml = { version = "26.9.28", path = "crates/miniml-core" }
-ocpq = { version = "26.9.28", path = "crates/ocpq" }
+wasm4pm-cognition = { version = "26.9.30", path = "crates/wasm4pm-cognition" }
+prolog8 = { version = "26.9.30", path = "crates/prolog8" }
+miniml = { version = "26.9.30", path = "crates/miniml-core" }
+ocpq = { version = "26.9.30", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -50,8 +50,6 @@ anyhow = "1.0"
 colored = "2.1"
 git2 = "0.21"
 ed25519-dalek = "2.1"
-ml-dsa = "0.1.1"
-slh-dsa = "0.2.0-rc.5"
 serde_json_canonicalizer = "0.3.2"
 
 [profile.release]

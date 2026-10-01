@@ -10,13 +10,13 @@ fn malformed_ed25519_material_refuses_without_panicking() {
 }
 
 #[test]
-fn malformed_pq_material_refuses_without_panicking() {
+fn pq_algorithms_fail_closed_until_actuator_provider_is_admitted() {
     assert_eq!(
-        crypto::verify(SignatureAlgorithm::MlDsa65, &[0; 8], b"message", &[0; 8]).unwrap_err(),
-        ActuatorRefusal::InvalidKey
+        crypto::verify(SignatureAlgorithm::MlDsa65, &[], b"message", &[]).unwrap_err(),
+        ActuatorRefusal::UnsupportedAlgorithm
     );
     assert_eq!(
-        crypto::verify(SignatureAlgorithm::SlhDsaShake128f, &[0; 8], b"message", &[0; 8]).unwrap_err(),
-        ActuatorRefusal::InvalidKey
+        crypto::verify(SignatureAlgorithm::SlhDsaShake128f, &[], b"message", &[]).unwrap_err(),
+        ActuatorRefusal::UnsupportedAlgorithm
     );
 }

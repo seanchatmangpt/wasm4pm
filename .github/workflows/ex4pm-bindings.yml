@@ -1,0 +1,94 @@
+name: ex4pm-bindings
+
+on:
+  pull_request:
+    paths:
+      - "crates/wasm4pm-ex4pm-bindings/**"
+      - "rust-toolchain.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/ex4pm-bindings.yml"
+  push:
+    branches: [main]
+    paths:
+      - "crates/wasm4pm-ex4pm-bindings/**"
+      - "rust-toolchain.toml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/ex4pm-bindings.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ex4pm-bindings-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  bindings:
+    name: ex4pm bindings test + zero-import wasm32 build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact subject
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Admit exact head
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "subject_sha=$EXPECTED_SHA"
+
+      - name: Install repository-pinned Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-15
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ex4pm-bindings-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+
+      - name: cargo test -p wasm4pm-ex4pm-bindings
+        run: cargo test --locked -p wasm4pm-ex4pm-bindings
+
+      - name: Build zero-import wasm artifact
+        run: bash crates/wasm4pm-ex4pm-bindings/scripts/build-wasm.sh
+
+      - name: Digest wasm artifact
+        id: digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          wasm="target/wasm32-unknown-unknown/release/wasm4pm_ex4pm_bindings.wasm"
+          test -s "$wasm"
+          sha="$(sha256sum "$wasm" | cut -d' ' -f1)"
+          echo "sha256=$sha  $wasm"
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          echo "wasm=$wasm" >> "$GITHUB_OUTPUT"
+          echo "### ex4pm bindings wasm" >> "$GITHUB_STEP_SUMMARY"
+          echo "sha256: \`$sha\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload wasm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm4pm_ex4pm_bindings-${{ steps.digest.outputs.sha256 }}
+          path: ${{ steps.digest.outputs.wasm }}
+          if-no-files-found: error

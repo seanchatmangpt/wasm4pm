@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 [lib]
 name = "wasm4pm_ex4pm_bindings"
 path = "src/lib.rs"
-crate-type = ["rlib", "cdylib"]
+crate-type = ["rlib", "staticlib"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

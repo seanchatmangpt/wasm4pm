@@ -1,3 +1,9 @@
 use wasm4pm_planner::sa2a::wire::decode_request;
 #[test]
-fn valid_hddl(){let result=decode_request(include_bytes!("fixtures/sa2a/01_valid_hddl.json"));assert_eq!(result.is_ok(),true,"valid_hddl: {:?}",result);let r=result.unwrap();assert_eq!(r.authority,"none");assert!(!r.subject.is_empty());}
+fn valid_hddl() {
+    let result = decode_request(include_bytes!("fixtures/sa2a/01_valid_hddl.json"));
+    assert_eq!(result.is_ok(), true, "valid_hddl: {:?}", result);
+    let r = result.unwrap();
+    assert_eq!(r.authority, "none");
+    assert!(!r.subject.is_empty());
+}

@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "26.9.28"
+version = "26.9.30"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman"]
@@ -9,6 +9,12 @@ description = "High-performance process mining algorithms in WebAssembly for Jav
 documentation = "https://docs.rs/wasm4pm"
 homepage = "https://github.com/seanchatmangpt/wasm4pm"
 readme = "README.md"
+# crates.io caps a .crate at 10 MB; the BPI_2020 event logs are test data only,
+# never needed to build the crate.
+exclude = [
+    "tests/fixtures/BPI_2020_*.xes",
+    "wasm4pm/tests/fixtures/BPI_2020_*.xes",
+]
 keywords = [
     "process-mining",
     "wasm",

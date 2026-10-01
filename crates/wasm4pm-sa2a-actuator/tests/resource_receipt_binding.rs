@@ -6,9 +6,8 @@ fn envelope() -> ResourceEnvelope {
     ResourceEnvelope {
         version: "sa2a/resource-envelope/v1".into(),
         allocation_id: "allocation:receipt".into(),
-        effect_digest:
-            "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-                .into(),
+        effect_digest: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            .into(),
         replay_key: "replay:receipt".into(),
         generation: 11,
         parent_allocation_id: None,

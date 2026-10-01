@@ -52,6 +52,66 @@ The OCEL-v2 → POWL → WASM composition root requires these exact build-time e
 
 A missing export is `UNSUPPORTED` or `BUILD_BROKEN` for that exact build. It is not evidence that a similarly named host function executed.
 
+## ex4pm host bindings crate (`crates/wasm4pm-ex4pm-bindings`)
+
+The workspace member `wasm4pm-ex4pm-bindings` (listed in the root `Cargo.toml`
+`members`; crate version `26.8.27`) is a second WASM boundary: raw
+`extern "C"` exports built as `cdylib`. These are `#[export_name = ...]`
+symbols, not `wasm-bindgen` declarations, so they do not appear in
+`wasm4pm/pkg/wasm4pm.d.ts`; the crate source under
+`crates/wasm4pm-ex4pm-bindings/src/` is the inventory for this boundary, and
+the names below are verified against it.
+
+### Core buffer/ABI exports
+
+- `wasm4pm_ex4pm_bindings_version_v1` — returns the ABI version (`u32`, currently `1`).
+- `wasm4pm_ex4pm_bindings_alloc_v1(len)` — reserves `len` zeroed bytes in the module's own linear memory for the host to write an input request into.
+- `wasm4pm_ex4pm_bindings_dealloc_v1(ptr, len)` — releases a buffer previously returned by `alloc_v1`.
+- `wasm4pm_ex4pm_bindings_free_v1(ptr, len)` — releases a response buffer returned by an `<algo>_v1` export.
+
+### Algorithm exports
+
+Each `<algo>_v1` export has a `..._replay_v1` companion that re-executes the
+same computation from the same request bytes and returns a `u32` success flag.
+
+- Phase 1 (`src/lib.rs`, minimal implementations): `wasm4pm_ex4pm_{discover,conform,simulate,optimize,powl_mine}_v1`.
+- Phase 2 (`src/phase2.rs`, thin wrappers over existing workspace algorithms): `wasm4pm_ex4pm_{survival,markov,bayesian,ocpq_eval,strips_plan,htn_plan,ctl_check,allen_temporal,oc_discover,align,etc_precision,soundness}_v1`.
+- Phase 2 playout (`src/phase2_playout.rs`): `wasm4pm_ex4pm_playout_v1`.
+- Phase 2 prolog (`src/prolog.rs`): `wasm4pm_ex4pm_prolog_query_v1`.
+- Phase 4 statistics/ML (`src/phase4_stats.rs`, wrappers over `wasm4pm::ml`, `hand_stats`, `prediction_drift`): `wasm4pm_ex4pm_{ks_statistic,ks_critical_value,regression,forecast,holt_forecast,ewma,trend_classify,mean,dot_product,euclidean_distance,standardize,median,percentile,std_deviation}_v1`.
+
+### Buffer contract (as stated in the crate's code comments)
+
+- Every `<algo>_v1` export takes a UTF-8 JSON request buffer (`ptr`, `len`)
+  and returns a heap-allocated UTF-8 JSON response buffer via an owned
+  `(ptr, len)` pair written through `out_len`. The caller MUST release the
+  returned buffer with `wasm4pm_ex4pm_bindings_free_v1`.
+- `alloc_v1` gives an external host (Wasmex, wasmtime, JS, etc.) a real,
+  safe location to write the input JSON request before calling an `<algo>_v1`
+  export. The returned buffer must be released via `dealloc_v1` with the
+  SAME `len`; ownership transfers to the module the moment an
+  `<algo>_v1`/`<algo>_replay_v1` export reads it — reading never frees the
+  input buffer, so freeing it after the call is the host's responsibility.
+- Responses are wrapped by a shared helper as
+  `{"result":<body>,"digest":"<16-hex FNV-1a>"}`; an unparsable request
+  yields `{"error":"..."}` instead. The digest is a cheap in-WASM replay
+  self-check, not the identity hash surfaced to the receipt (the ex4pm-side
+  adapter's identity hashing uses its own BLAKE3-based `Ex4pm.Core.Hash`).
+
+## Public causal module (`wasm4pm::causal`)
+
+`pub mod causal;` is compiled unconditionally into the main crate
+(`wasm4pm/src/lib.rs`, registered by 69017c123). It exposes a JsValue-free
+pure function:
+
+```rust
+pub fn causal_footprint_pure(traces: &[Trace], activity_key: &str) -> CausalFootprintResult
+```
+
+The `#[wasm_bindgen]` export `causal_footprint(log_handle, activity_key)` is
+a thin wrapper that delegates to `causal_footprint_pure` and serializes the
+result.
+
 ## Session behavior
 
 `wpm evidence session` performs all of the following before reporting `ALIVE`:

@@ -107,10 +107,7 @@ pub fn discover_oc_petri_net_pure(
 
     for obj_type in &ocel.object_types {
         // Flatten OCEL to EventLog for this object type
-        let flattened_log = flatten_ocel_to_eventlog_for_type(ocel, obj_type).map_err(|e| {
-            e.as_string()
-                .unwrap_or_else(|| "flatten failed".to_string())
-        })?;
+        let flattened_log = flatten_ocel_to_eventlog_for_type_pure(ocel, obj_type)?;
 
         let net = discover_petri_net_for_log_pure(&flattened_log, algorithm)?;
         nets.insert(obj_type.clone(), net);
@@ -214,6 +211,15 @@ pub fn flatten_ocel_to_eventlog_for_type(
     ocel: &OCEL,
     object_type: &str,
 ) -> Result<crate::models::EventLog, JsValue> {
+    flatten_ocel_to_eventlog_for_type_pure(ocel, object_type).map_err(|e| crate::error::js_val(&e))
+}
+
+/// JsValue-free core of [`flatten_ocel_to_eventlog_for_type`]; keeps the
+/// wasm-bindgen glue out of exported paths reachable from the ex4pm bindings.
+pub fn flatten_ocel_to_eventlog_for_type_pure(
+    ocel: &OCEL,
+    object_type: &str,
+) -> Result<crate::models::EventLog, String> {
     use crate::models::{AttributeValue, Event, EventLog, Trace};
     use std::collections::{BTreeMap, HashMap};
 
@@ -225,10 +231,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
         .collect();
 
     if target_objects.is_empty() {
-        return Err(crate::error::js_val(&format!(
-            "No objects found of type '{}'",
-            object_type
-        )));
+        return Err(format!("No objects found of type '{}'", object_type));
     }
 
     // Create the flattened EventLog

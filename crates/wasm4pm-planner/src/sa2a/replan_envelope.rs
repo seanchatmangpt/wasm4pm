@@ -48,7 +48,9 @@ impl ReplanEnvelope {
             return Err(Sa2aError::MissingSubject);
         }
         if self.receipt_id.is_empty() {
-            return Err(Sa2aError::InvalidWire("SA2A_REPLAN_RECEIPT_REQUIRED".into()));
+            return Err(Sa2aError::InvalidWire(
+                "SA2A_REPLAN_RECEIPT_REQUIRED".into(),
+            ));
         }
         if self.decision.authority != "none" {
             return Err(Sa2aError::AuthorityPresent);
@@ -64,12 +66,7 @@ impl ReplanEnvelope {
         }
         if !matches!(
             self.consequence.as_str(),
-            "executed"
-                | "failed"
-                | "refused"
-                | "reconciled"
-                | "compensated"
-                | "unknown_outcome"
+            "executed" | "failed" | "refused" | "reconciled" | "compensated" | "unknown_outcome"
         ) {
             return Err(Sa2aError::InvalidWire(format!(
                 "SA2A_REPLAN_CONSEQUENCE:{}",
@@ -81,8 +78,8 @@ impl ReplanEnvelope {
 }
 
 pub fn decode_replan_envelope(bytes: &[u8]) -> Result<ReplanEnvelope, Sa2aError> {
-    let envelope: ReplanEnvelope = serde_json::from_slice(bytes)
-        .map_err(|error| Sa2aError::InvalidWire(error.to_string()))?;
+    let envelope: ReplanEnvelope =
+        serde_json::from_slice(bytes).map_err(|error| Sa2aError::InvalidWire(error.to_string()))?;
     envelope.admit()?;
     Ok(envelope)
 }
@@ -141,7 +138,10 @@ mod tests {
             r#"{{"schema":"{SA2A_REPLAN_SCHEMA}","contract_digest":"{SA2A_REPLAN_CONTRACT_DIGEST}","exact_subject":{{"kind":"drive","serial":42}},"receipt_id":"r2","consequence":"executed","decision":{{"kind":"stop","reason":"executed","authority":"none"}},"provider":null,"projection_digest":null,"source_replay_key":"rk"}}"#
         );
         let envelope = decode_replan_envelope(raw.as_bytes()).unwrap();
-        assert_eq!(envelope.exact_subject, json!({"kind": "drive", "serial": 42}));
+        assert_eq!(
+            envelope.exact_subject,
+            json!({"kind": "drive", "serial": 42})
+        );
     }
 
     #[test]

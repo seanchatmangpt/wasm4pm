@@ -58,12 +58,8 @@ impl<'a, L: EffectLedger, E: Effector> Actuator<'a, L, E> {
 
         // Allocation identity and the effect claim become one durable record.
         // No DO is reachable until this create-new claim is durable.
-        self.ledger.claim_with_allocation(
-            &digest,
-            cert.generation,
-            resources,
-            requested,
-        )?;
+        self.ledger
+            .claim_with_allocation(&digest, cert.generation, resources, requested)?;
 
         match self.effector.perform(effect) {
             Ok(outcome) => {

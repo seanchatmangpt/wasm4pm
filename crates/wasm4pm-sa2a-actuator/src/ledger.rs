@@ -51,8 +51,7 @@ pub trait EffectLedger {
         result_digest: &str,
     ) -> Result<(), ActuatorRefusal>;
 
-    fn mark_unknown(&self, effect_digest: &str, generation: u64)
-        -> Result<(), ActuatorRefusal>;
+    fn mark_unknown(&self, effect_digest: &str, generation: u64) -> Result<(), ActuatorRefusal>;
 
     fn recover_unknown_outcomes(&self) -> Result<usize, ActuatorRefusal>;
 
@@ -219,11 +218,7 @@ impl EffectLedger for FileEffectLedger {
         requested: ResourceBudget,
     ) -> Result<(), ActuatorRefusal> {
         ResourceAdmission::admit(envelope, effect_digest, generation, requested)?;
-        self.claim_record(
-            effect_digest,
-            generation,
-            Some((envelope, requested)),
-        )
+        self.claim_record(effect_digest, generation, Some((envelope, requested)))
     }
 
     fn complete(
@@ -244,11 +239,7 @@ impl EffectLedger for FileEffectLedger {
         self.transition(&from, &self.path(&key, LedgerState::Executed), &entry)
     }
 
-    fn mark_unknown(
-        &self,
-        effect_digest: &str,
-        generation: u64,
-    ) -> Result<(), ActuatorRefusal> {
+    fn mark_unknown(&self, effect_digest: &str, generation: u64) -> Result<(), ActuatorRefusal> {
         let key = Self::key(effect_digest, generation)?;
         let from = self.path(&key, LedgerState::Executing);
         if !from.exists() {
@@ -258,11 +249,7 @@ impl EffectLedger for FileEffectLedger {
         let mut entry = self.read(&from)?;
         entry.state = LedgerState::UnknownOutcome;
         entry.result_digest = None;
-        self.transition(
-            &from,
-            &self.path(&key, LedgerState::UnknownOutcome),
-            &entry,
-        )
+        self.transition(&from, &self.path(&key, LedgerState::UnknownOutcome), &entry)
     }
 
     fn recover_unknown_outcomes(&self) -> Result<usize, ActuatorRefusal> {

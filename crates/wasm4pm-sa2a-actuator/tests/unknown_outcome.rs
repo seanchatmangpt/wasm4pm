@@ -10,5 +10,8 @@ fn restart_converts_inflight_claim_to_unknown_outcome() {
     }
     let recovered = FileEffectLedger::new(dir.path()).unwrap();
     assert_eq!(recovered.recover_unknown_outcomes().unwrap(), 1);
-    assert_eq!(recovered.claim(digest, 9).unwrap_err(), ActuatorRefusal::UnknownOutcome);
+    assert_eq!(
+        recovered.claim(digest, 9).unwrap_err(),
+        ActuatorRefusal::UnknownOutcome
+    );
 }

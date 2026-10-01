@@ -11,6 +11,10 @@ pub struct TrustDomainId(pub String);
 impl TrustDomainId {
     pub fn parse(value: impl Into<String>) -> Option<Self> {
         let value = value.into();
-        if value.trim().is_empty() { None } else { Some(Self(value)) }
+        if value.trim().is_empty() {
+            None
+        } else {
+            Some(Self(value))
+        }
     }
 }
