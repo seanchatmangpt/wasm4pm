@@ -4,6 +4,31 @@ wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
 
+## [26.9.30] — 2026-09-30
+
+First crates.io release since 26.7.1 (no 26.8.x or 26.9.x version of any crate
+was ever published to crates.io). Published set, in dependency order: `prolog8`,
+`miniml`, `wasm4pm-cognition`, `wasm4pm`. `wasm4pm-ex4pm-bindings`,
+`wasm4pm-cmca` and `bench-tools` stay `publish = false`.
+
+### Changed
+- `wasm4pm-ex4pm-bindings` WASM artifact is now linked from a `staticlib`
+  with `rust-lld`, exporting only the 70 `export_name` symbols
+  (`crates/wasm4pm-ex4pm-bindings/scripts/build-wasm.sh`): 0 host imports
+  (was 87 `__wbindgen_*`) and 71 exports (was ~3300); the script fails on any
+  import or missing export.
+- `alpha_plus_plus_inner` and the OC-Petri-net flatten helper return
+  `Result<_, String>` internally (`*_pure` variant); the wasm-bindgen-exported
+  signatures are unchanged.
+- `wasm4pm` crate package excludes the BPI_2020 `.xes` test logs so the
+  `.crate` stays well under the 10 MB crates.io limit.
+- Versions: workspace, `wasm4pm`, `wasm4pm-cognition`, `prolog8`, `miniml`,
+  `ocpq` bumped to 26.9.30. `wasm4pm-ex4pm-bindings` stays at 26.8.27.
+
+### Known limitations
+- The `*_replay_v1` exports of `wasm4pm-ex4pm-bindings` only check that the
+  recomputed response is non-empty; they do not verify a digest.
+
 ## [26.8.27] — 2026-08-27
 
 ### Added
