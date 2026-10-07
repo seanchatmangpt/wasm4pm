@@ -375,6 +375,48 @@ wpm explain --algorithm genetic --level detailed
 
 ---
 
+### wpm log batch
+
+Discover process models for every XES log under a directory, in parallel,
+through the kernel's `BatchRunner`. XES event logs only; there is no per-log
+timeout. Failed or unreadable logs are reported per file and never abort the
+run — they turn the exit code into `partial_failure`.
+
+**Usage:**
+```bash
+wpm log batch <DIRECTORY> [OPTIONS]
+```
+
+**Arguments:**
+- `<DIRECTORY>` - Directory containing XES event logs (searched recursively;
+  dot-directories and `node_modules` are skipped)
+
+**Options:**
+```
+--algorithm, -a <ALG>   Discovery algorithm id or alias (default: heuristic_miner;
+                        run "wpm help algorithms"; unknown ids are refused, never
+                        defaulted silently)
+--workers <N>           Number of parallel workers (default: CPU count; must be a
+                        positive integer)
+--activity-key <KEY>    Event attribute key for activity names (default: concept:name)
+--help                  Show help text
+```
+
+**Output (JSON):** per-file results (`log`, `status`, `elapsed_ms`, `output_hash`,
+`error`), `success_count`/`failure_count`, summary statistics, and
+`total_duration_ms`. Exit code is `partial_failure` when any log failed.
+
+**Example:**
+```bash
+wpm log batch ./logs --algorithm dfg --workers 4
+```
+
+> **Alias note:** the retired v1 command `wpm batch` now redirects to
+> `wpm log batch` (previously it redirected to `wpm pipeline run`;
+> changed 2026-09-28, commit `0ec378f15`).
+
+---
+
 ## Configuration
 
 ### Configuration File (wasm4pm.toml)

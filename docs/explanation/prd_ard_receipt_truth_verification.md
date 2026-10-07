@@ -323,11 +323,12 @@ Audits a candidate receipt against all Adversarial Ingress Gates.
     - `producer`: Sanitized diagnostic reports containing action recommendations (hides forensics).
     - `operator`: Complete trace forensics and adversarial findings reports.
 - **Refusal Code Mapping:** Returns the exact refusal code string (e.g., `FixtureMutationDetected`) on failure.
+- **Fail-closed standing:** the doctor errors unless the verification state is `Admitted` — a receipt whose standing is `UNKNOWN` (or `REFUSED`) fails with "Receipt Doctor did not admit the provided receipt (UNKNOWN or REFUSED)" (fail-closed on UNKNOWN standing, 2026-09-26). The human-readable report carries an explicit `Admission Status: UNKNOWN` line when the state cannot be determined.
 
 #### `wpm receipt verify-ocel2`
 Validates that the embedded expected and observed OCEL 2.0 logs are structurally valid, follow schema constraints, and recompute to match their declared hashes.
 - **Syntax:** `wpm receipt verify-ocel2 <file>`
-- **Refusal Code:** `PathHashOnlyReceipt` if logs are not present.
+- **Refusal Codes:** `PathHashOnlyReceipt` if logs are not present; `IndependentEvidenceMissing` when the OCEL verification has no independent evidence to verify against — evidence-free OCEL verification is refused (2026-09-26). `ObservedOCELMissing`, `ExpectedOCELMissing`, and `PlaceholderEvidenceDetected` findings also fail the check.
 
 #### `wpm receipt detect-fixture-mutation`
 Runs the structural similarity index engine ($S_{sim}$) and temporal variance analysis over the expected and observed paths.

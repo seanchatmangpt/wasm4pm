@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/test-proof",
-  "version": "26.6.25",
+  "version": "26.10.6",
   "private": true,
   "type": "module",
   "scripts": {
