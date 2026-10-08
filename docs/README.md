@@ -57,6 +57,6 @@ A documentation migration is complete only when the second migration pass report
 
 The OCEL train spans three sibling repositories; their canonical documentation:
 
-- [beam4pm — ingest and bridge API reference](../beam4pm/docs/diataxis/reference/ingest-and-bridge-api.md) — beam4pm consumes wasm4pm's OCEL fixtures (e.g. `fixtures/shared/receipt.xes`, `fixtures/negative/`) through its ingest/bridge layer; wasm4pm itself has no direct code dependency on beam4pm.
+- [beam4pm — ingest and bridge API reference](../../beam4pm/docs/diataxis/reference/ingest-and-bridge-api.md) — beam4pm consumes wasm4pm's OCEL fixtures (e.g. `fixtures/shared/receipt.xes`, `fixtures/negative/`) through its ingest/bridge layer; wasm4pm itself has no direct code dependency on beam4pm.
 - [OCEL 2.0 conformance surface](reference/ocel-conformance.md) — the typed log model (`wasm4pm_compat::ocel`), token-replay/fitness API, typed `Admission`/`Refusal` boundary, OCPQ query crate, and the shared-fixture contract with beam4pm.
-- [ex4pm](../ex4pm/docs/) — evidence emitter; the binding is `crates/wasm4pm-ex4pm-bindings` (see `docs/abi/ex4pm-bindings.md`).
+- [ex4pm](../../ex4pm/docs/) — evidence emitter; the binding is `crates/wasm4pm-ex4pm-bindings` (see `docs/abi/ex4pm-bindings.md`).
