@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packages/testing/GEMBA.md; source-sha256: c13d2961cb1f67cb6c593985b9401966e2b3e3191e89645dceb557fe572c82fc; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Gemba Enforcement in @wasm4pm/testing
 
 **Principle:** Go to where the work actually happens. Integration tests must be real.

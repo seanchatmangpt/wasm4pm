@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/GPU_KERNEL_INTEGRATION_GUIDE.md; source-sha256: 14f42e02aeb83c77789ea185f797bb53c5c3cf291aaeed156c02246b489cc2c7; reason: already in an archive surface -->
+
 # GPU Kernel Integration Guide
 
 **Kernel:** LinUCB Contextual Bandit (WGSL / wgpu)

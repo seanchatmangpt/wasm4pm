@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/guides/ml-quickstart.md; source-sha256: a110fdd767abecd770de3d0aede4aac418607f64ac32f3eb8721e19692c7c212; reason: already in an archive surface -->
+
 # ML Algorithms Quickstart
 
 Get started with ML-powered process mining in 5 steps.

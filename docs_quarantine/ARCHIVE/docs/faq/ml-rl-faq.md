@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/faq/ml-rl-faq.md; source-sha256: 1ddbf81c16d24591a8e61d7e91f7e2a0e67841e54a784f745d325b130cbc6922; reason: already in an archive surface -->
+
 # ML & RL FAQ
 
 Common questions about ML algorithms, RL system, and prediction tasks.

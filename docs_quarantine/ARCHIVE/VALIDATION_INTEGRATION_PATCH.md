@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/VALIDATION_INTEGRATION_PATCH.md; source-sha256: 3a871cafa677fc1d8628b82f0e7b822c3a75f10d31b64e99971c2265bdcafb9c; reason: already in an archive surface -->
+
 # SHACL Validation Gatekeeper Integration
 
 ## Overview

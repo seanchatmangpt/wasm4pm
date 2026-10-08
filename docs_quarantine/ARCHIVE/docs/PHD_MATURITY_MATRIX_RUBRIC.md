@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PHD_MATURITY_MATRIX_RUBRIC.md; source-sha256: 67571023bb4ad8e1b3acbd3bdacb7b4cbf825abe4242c07a9e463dcff728fcb7; reason: already in an archive surface -->
+
 # Ph.D. Program Maturity Matrix Rubric (5x7)
 
 This maturity matrix provides the quantitative grading rubric for evaluating artifacts, systems, and research outputs within the *Ph.D. in Process Intelligence and Autonomous Systems Architecture*. 

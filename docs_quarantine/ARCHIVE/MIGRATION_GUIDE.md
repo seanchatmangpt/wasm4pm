@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/MIGRATION_GUIDE.md; source-sha256: c6e814092d9aa2bba7875f21e4bfe1bb8e740196d59ec1d876d62f55abecb51a; reason: already in an archive surface -->
+
 # wasm4pm v26.4.5 Migration Guide
 
 ## Overview

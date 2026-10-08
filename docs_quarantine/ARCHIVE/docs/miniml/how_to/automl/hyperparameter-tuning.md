@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/automl/hyperparameter-tuning.md; source-sha256: ec1849e0b0da8a31ed74dbc12633ae8d4f6985974eb2ef22e214cb6e9878babf; reason: already in an archive surface -->
+
 # Hyperparameter Tuning
 
 Use miniml's AutoML functions to automatically find the best model and hyperparameters.

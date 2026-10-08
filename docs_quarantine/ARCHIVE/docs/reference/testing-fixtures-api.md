@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/testing-fixtures-api.md; source-sha256: a25a1bf5ebeb3dccba7c64658029862150a6f72db4e9ae77c5ebdf62515e4e3e; reason: already in an archive surface -->
+
 # wasm4pm Testing Fixtures API Reference
 
 **Version:** 1.0  

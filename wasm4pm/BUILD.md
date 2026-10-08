@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/BUILD.md; source-sha256: 8da2a4a33a561eebc6ae22eb953d7dbc9533df904c77c1c734665fe5aada5c72; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Building and Publishing wasm4pm
 
 Complete guide for building, testing, and publishing the wasm4pm npm package.

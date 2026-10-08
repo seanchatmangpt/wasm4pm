@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/breeds/soar.md; source-sha256: 89b16c2a68ad02223486d5842f4044c6f705228b49e1242a4df5341d5c6e80a7; reason: already in an archive surface -->
+
 # SOAR
 
 ## Origin

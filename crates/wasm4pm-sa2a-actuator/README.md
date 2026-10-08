@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: crates/wasm4pm-sa2a-actuator/README.md; source-sha256: fb6f6c73256598b68cfd76db906ffdd04affb46da0237c613a6121305f1ef05c; reason: path-local authority or entrypoint -->
+
 # wasm4pm-sa2a-actuator
 
 Independent SA2A C2/C3 actuator boundary.

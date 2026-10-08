@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/CLI_UX_IMPLEMENTATION_SUMMARY.md; source-sha256: 60ae861adc448ed4728bcca1588fe7e494f9a132a7b9ef0ec43deef8c824b9ad; reason: already in an archive surface -->
+
 # CLI UX Improvements — Implementation Summary
 
 **Date:** 2026-05-18  

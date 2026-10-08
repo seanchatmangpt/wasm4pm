@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/tutorials/06-statistical.md; source-sha256: c686633cb938f2b228e8c88ca832da8ea1897a4ffbe9735760200adf42f67e59; reason: already in an archive surface -->
+
 # Statistical Analysis
 
 In this tutorial you will learn how to use miniml's statistical functions to analyze data, test hypotheses, and draw conclusions with quantified confidence. You will work with probability distributions, run t-tests and chi-square tests, perform ANOVA, and compute descriptive statistics.

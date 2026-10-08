@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/browse-results.md; source-sha256: 3a564ecb7702b2eab32541f19709589cd571a90642373b1ac1c6975eea020251; reason: already in an archive surface -->
+
 # How-To: Browse and Inspect Previous Results
 
 **Time required**: 5 minutes

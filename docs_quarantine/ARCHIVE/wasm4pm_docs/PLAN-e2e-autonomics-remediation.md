@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/PLAN-e2e-autonomics-remediation.md; source-sha256: a6f1b3145ca8bb32e31dd522c2fc3d384224c75110b3f8d2e441a76c86896d09; reason: already in an archive surface -->
+
 # End-to-End Autonomics Remediation Plan
 
 **Goal:** Achieve zero human intervention for `wpm run revops.xes` → complete artifact with receipts, telemetry, quality gates.

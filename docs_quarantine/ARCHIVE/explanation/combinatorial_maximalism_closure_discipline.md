@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md; source-sha256: 2ec5cde076c9c8aa5fdbea02d591e02e97eeeddbcb9635a041a18047e7c1c98e; reason: already in an archive surface -->
+
 # Combinatorial Maximalism as the Closure Discipline for First-Mile and Last-Mile Process Gaps
 
 ## A Workflow, Object-Centric, and Information-Theoretic Framework for Turning Intent into Verified Outcome

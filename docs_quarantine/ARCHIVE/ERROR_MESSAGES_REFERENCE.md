@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/ERROR_MESSAGES_REFERENCE.md; source-sha256: faed0a33da19279400daa85394f9f557f6b1162cbc459c8fbcfc110a5202d9e3; reason: already in an archive surface -->
+
 # wasm4pm Error Messages — Reference Guide
 
 **Quick guide to 5 vague errors identified in clarity audit + improved versions.**

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/reference/discover_dfg_ref.md; source-sha256: aea165880af69057781a09b991d5484ea4c6b6f28240091529ef5b4bbecc8a2d; reason: already in an archive surface -->
+
 # Reference: discover_dfg
 
 ## Description

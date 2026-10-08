@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/kernels/sigmoid.md; source-sha256: 5f70158df971466920e833421051754dac251ee470b1f183466b870875ae4d3a; reason: already in an archive surface -->
+
 # Sigmoid Kernel
 
 Compute the sigmoid (hyperbolic tangent) kernel, inspired by neural network activation functions.

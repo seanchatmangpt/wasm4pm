@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/hardware.md; source-sha256: 67f1f3f45907c06d7bfc2ae41125df9d632e6eca1b4ff082f17ed62e425e28c5; reason: already in an archive surface -->
+
 # Benchmark Hardware Specification
 
 ## Primary Benchmark Platform

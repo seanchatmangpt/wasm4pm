@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/AGENTIC.md; source-sha256: 92c9f04dd7b195114770a0491aa8841071f86498a354e70a87908ac15212ec52; reason: already in an archive surface -->
+
 # Agentic Control Primitives
 
 ## Quickstart

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/WASM4PM_REFERENCE.md; source-sha256: 4d549842a14ea2fde1c5747c12591ed21a16ca3dfdb1a72d67fbb2c04ec9d345; reason: already in an archive surface -->
+
 # wasm4pm - Command Line Reference
 
 wasm4pm: High-performance process mining CLI

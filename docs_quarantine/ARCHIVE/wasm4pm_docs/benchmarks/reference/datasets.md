@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/datasets.md; source-sha256: e1289323253ba4a763c5074a492605f5ab361d00eda030f151e5ea86727ee58a; reason: already in an archive surface -->
+
 # Benchmark Datasets
 
 ## Real-World Datasets

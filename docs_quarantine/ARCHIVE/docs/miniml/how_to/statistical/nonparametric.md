@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/statistical/nonparametric.md; source-sha256: 4e7f4c5a6c6aaa82d334cde73f0b4842e2d7347cdf51909dacd66d15a7ba2a1c; reason: already in an archive surface -->
+
 # Nonparametric Tests
 
 Test hypotheses without assuming normality: Mann-Whitney U and Wilcoxon signed-rank.

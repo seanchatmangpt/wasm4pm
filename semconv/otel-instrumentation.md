@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: semconv/otel-instrumentation.md; source-sha256: 9a36113382cafec6b585f51b8519af1fe010cdbe160ba622dce07f8bb6eeea67; reason: path-local documentation retained pending domain-specific supersession -->
+
 # OTel Instrumentation for wasm4pm MCP Server
 
 **Version**: 26.4.9  

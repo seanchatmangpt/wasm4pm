@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cognition-smoke.md; source-sha256: 51732aa369c465cfcb3242dc421f284cf3d5e464a77202efb96d95c605b11938; reason: already in an archive surface -->
+
 # Cognition Smoke Test
 
 The cognition smoke test is a single bash script — `scripts/cognition-smoke.sh` — that verifies the entire cognition stack is healthy in under 10 seconds on a warm (already-built) workspace. It is the first thing to run after any commit that touches the cognition subsystem.

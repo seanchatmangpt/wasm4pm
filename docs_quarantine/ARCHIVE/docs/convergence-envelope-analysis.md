@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/convergence-envelope-analysis.md; source-sha256: 8e6a871f2850ba380a2b9d8582f517b8a822735c9439c56f59c62d6e4ec84a72; reason: already in an archive surface -->
+
 # Convergence Envelope: Mathematical Analysis
 
 **Companion Appendix to:** *Autonomous Process Mining in Constrained Execution Environments: A Framework for Operational Autonomy in WebAssembly* (Chatman, 2026)

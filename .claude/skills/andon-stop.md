@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/skills/andon-stop.md; source-sha256: ada4e067a2ca9b1acd281cb5d2d4cd4463af7b7f39ffdbaabef45a6ce42d849f; reason: tooling or agent control surface -->
+
 ---
 name: Andon Stop
 description: Stop-the-line protocol when Andon signals appear

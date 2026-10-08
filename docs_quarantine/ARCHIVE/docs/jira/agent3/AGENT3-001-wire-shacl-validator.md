@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent3/AGENT3-001-wire-shacl-validator.md; source-sha256: 20130e9acab380cf0f3198d5733715b300fdd4c20b089187b8b6875bbce7f902; reason: already in an archive surface -->
+
 # AGENT3-001: Wire SHACL Validator Into CLI
 
 **Status:** 🔴 BLOCKER  

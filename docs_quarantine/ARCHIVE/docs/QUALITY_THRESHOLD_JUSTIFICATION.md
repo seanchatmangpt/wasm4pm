@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/QUALITY_THRESHOLD_JUSTIFICATION.md; source-sha256: 302cfcbbd3bd0ebe0ac53e216ea30da91bc9f9bb0908a3b88943fb7f2263f195; reason: already in an archive surface -->
+
 # Quality Threshold Justification
 
 These thresholds are used in the G3 quality-threshold gate.

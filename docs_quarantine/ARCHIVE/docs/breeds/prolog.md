@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/breeds/prolog.md; source-sha256: 192c25f1a0ef85eac586abbeff172372ab1f1e9f83e4eb3b9246231ba6fbe45f; reason: already in an archive surface -->
+
 # Prolog
 
 ## Origin

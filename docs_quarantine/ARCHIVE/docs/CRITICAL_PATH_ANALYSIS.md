@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/CRITICAL_PATH_ANALYSIS.md; source-sha256: bf08263c110aab2bbf9c75876ec7cb9b34b08e5b139eec58d907fdb8b411e0f6; reason: already in an archive surface -->
+
 # wasm4pm Critical Path Analysis
 
 **Version:** v26.4.17  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cli-completions.md; source-sha256: 75eb13344a5ccad6affad20cc017d5304974db82db0f99530b26af32b32ca16a; reason: already in an archive surface -->
+
 # wpm Shell Completions
 
 `wpm` ships tab-completion scripts for bash, zsh, and fish.

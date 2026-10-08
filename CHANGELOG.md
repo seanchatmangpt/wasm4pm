@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CHANGELOG.md; source-sha256: 41c9cd627f430e4fe8408f3166e71fc14fba8139f2681f143eefce112dea02cc; reason: root governance or canonical reference -->
+
 # Changelog
 
 wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY

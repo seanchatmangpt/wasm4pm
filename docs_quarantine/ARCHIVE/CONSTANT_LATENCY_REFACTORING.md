@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/CONSTANT_LATENCY_REFACTORING.md; source-sha256: 4e8b043900ae6aadde07a895517fcedcd069712e7237d4a62dcf97dc99521b07; reason: already in an archive surface -->
+
 # Constant-Latency Loop Refactoring Report
 
 **Date:** 2026-04-16  

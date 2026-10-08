@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/statistical/t-tests.md; source-sha256: 4f6be129affea44c10917d9123c7f4b85ce73d1201006915b6ead2dc4510d65a; reason: already in an archive surface -->
+
 # T-Tests
 
 Compare group means with hypothesis tests: one-sample, two-sample, paired, and Welch's.

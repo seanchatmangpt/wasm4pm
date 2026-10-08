@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/configuration.md; source-sha256: b25833bf3fb9b829ce9adffd15f412a8ae7e9435418b9fca072a65ff838d3d97; reason: already in an archive surface -->
+
 # Benchmark Configuration Reference
 
 ## Config File Resolution

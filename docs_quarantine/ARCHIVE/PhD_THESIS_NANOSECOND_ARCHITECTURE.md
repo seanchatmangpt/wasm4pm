@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/PhD_THESIS_NANOSECOND_ARCHITECTURE.md; source-sha256: 06f79e56b1a667ff8ea1cab4c58200c3d2921b5db5d1db50fbb97e7f8621b01c; reason: already in an archive surface -->
+
 # PhD Thesis: Nanosecond Architecture and the Vision 2030 Closed-Loop Paradigm
 
 **A Study on Picosecond and Nanosecond Performance Constraints in Autonomous Process Systems**

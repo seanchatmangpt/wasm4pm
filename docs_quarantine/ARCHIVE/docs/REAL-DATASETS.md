@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/REAL-DATASETS.md; source-sha256: d2e925d72fdbe1c7e9d153658c0020e69f3c0973fc21a5d161eb979975adb005; reason: already in an archive surface -->
+
 # Real Process Mining Datasets for wasm4pm Benchmarking
 
 A comprehensive guide to publicly available, real-world process mining datasets suitable for benchmarking and evaluating the wasm4pm library.

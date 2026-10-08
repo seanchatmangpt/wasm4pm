@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/VALIDATION_REPORT.md; source-sha256: f7d5464a3915874eaaa5225bb76da8a2c2636aaf924d1677f52ba2740f7f0ab8; reason: already in an archive surface -->
+
 # wasm4pm Hooks Validation Report
 
 **Date:** 2026-04-11  

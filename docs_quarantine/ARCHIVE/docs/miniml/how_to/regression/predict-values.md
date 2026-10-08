@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/regression/predict-values.md; source-sha256: 7137b2fbcf399f3d457efad785f41b80823235f4a86934f934a55e5b786919c4; reason: already in an archive surface -->
+
 # Predict Continuous Values
 
 Train regression models to predict numeric outcomes.

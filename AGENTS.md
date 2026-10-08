@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: AGENTS.md; source-sha256: fbe63135e3728e0ee6c3d5d697a11de257f3531fee025a9b7d8729e465099a09; reason: path-local authority or entrypoint -->
+
 # Engineering Standards Root Binding
 
 > Generated adoption header. Shared engineering semantics are rooted at `seanchatmangpt/engineering-standards@5a3bb6446aeaee2255a7523d4d8cebf6042960c3`.

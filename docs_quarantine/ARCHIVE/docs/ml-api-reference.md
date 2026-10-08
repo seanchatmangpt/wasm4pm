@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/ml-api-reference.md; source-sha256: 9b05cc1e93ed331fd11f0afdf9978d20a6a7632996d4adb2db3f1b1f4cdbe5ce; reason: already in an archive surface -->
+
 # `@wasm4pm/ml` — API Reference
 
 Public surface of the `@wasm4pm/ml` package. All functions are pure (no I/O, no

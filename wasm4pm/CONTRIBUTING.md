@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/CONTRIBUTING.md; source-sha256: f3e1e88ef1b7ed58f2b0aa80083c08d1a0360e1601018aa10e239adb09e23b49; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Contributing to wasm4pm
 
 Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of wasm4pm.

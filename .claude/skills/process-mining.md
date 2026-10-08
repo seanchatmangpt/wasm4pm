@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/skills/process-mining.md; source-sha256: 8e6dc4f345a4dccb46dd9ebbc32d808b0ea0cfff0de8ffebcb93e10ae756ccf0; reason: tooling or agent control surface -->
+
 ---
 name: Process Mining Chicago TDD
 description: Chicago TDD patterns for van der Aalst process mining

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/tutorials/first-benchmark.md; source-sha256: ba389647ee9af76aa962a05a7bd8e5875270903aaa7b17a82a10f647d810094c; reason: already in an archive surface -->
+
 # Your First Benchmark
 
 > Run benchmarks, see results, and understand the output format.

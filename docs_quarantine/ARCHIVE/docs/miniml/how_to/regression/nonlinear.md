@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/regression/nonlinear.md; source-sha256: 80d96f3f40c8d0dacf5768906fcbced29105c0d041055ad7bd87a7126a1f7ae0; reason: already in an archive surface -->
+
 # Non-linear Relationships
 
 Model relationships that are not straight lines.

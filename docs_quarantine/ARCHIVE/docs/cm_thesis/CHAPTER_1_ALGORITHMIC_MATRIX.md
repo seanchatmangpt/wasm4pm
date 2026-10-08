@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cm_thesis/CHAPTER_1_ALGORITHMIC_MATRIX.md; source-sha256: 8efd2db3cd68568523a31a700dcb9e3bad97886e1b669872f8bbf7f9116c81d3; reason: already in an archive surface -->
+
 # Chapter 1: The Algorithmic Permutation Matrix
 
 ## 1.1 Introduction

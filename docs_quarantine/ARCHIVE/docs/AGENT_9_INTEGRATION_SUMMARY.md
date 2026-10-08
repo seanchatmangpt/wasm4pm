@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/AGENT_9_INTEGRATION_SUMMARY.md; source-sha256: 7dd472a97204f3073b402846edaa70e169adbf22ab578be6496832fae5684884; reason: already in an archive surface -->
+
 # Agent 9 Integration Testing & Certification — Summary Report
 
 **Version:** v26.4.17  

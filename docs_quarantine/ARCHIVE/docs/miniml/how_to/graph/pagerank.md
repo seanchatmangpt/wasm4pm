@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/graph/pagerank.md; source-sha256: 96c81f35228f34c426faf203b7ce29541cd8042659300d220cda05757b9fdd4c; reason: already in an archive surface -->
+
 # PageRank
 
 Rank nodes in a graph by their importance using the PageRank algorithm.

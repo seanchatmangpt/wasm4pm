@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/unverified/reference/error_codes.md; source-sha256: 332d2e0df67e2145f80dbc30427b1a2f3b6060b8b7c24ca4e362781196c2c736; reason: already in an archive surface -->
+
 # Reference: Error Codes
 
 When `wpm` fails, it exits with a specific code and emits a typed error.

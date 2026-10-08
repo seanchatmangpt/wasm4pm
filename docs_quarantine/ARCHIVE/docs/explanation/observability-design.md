@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/observability-design.md; source-sha256: a7200433013aabdab211cbdda46995b3e1be0a88816eec72ff1aa7a019f35de6; reason: already in an archive surface -->
+
 # Explanation: The Observability Architecture
 
 **Time to read**: 15 minutes  

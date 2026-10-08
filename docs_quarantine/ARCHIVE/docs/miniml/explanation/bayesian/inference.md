@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/explanation/bayesian/inference.md; source-sha256: ce211c349ce5c38c784b99b1f684400954aa4670c4121c72df566b0ae2857a43; reason: already in an archive surface -->
+
 # Bayesian Inference
 
 Bayesian inference provides a coherent framework for updating beliefs in light of evidence. Unlike frequentist statistics, which treats parameters as fixed unknowns, Bayesian inference treats parameters as random variables with probability distributions that evolve as data arrives. This perspective naturally quantifies uncertainty, incorporates prior knowledge, and produces full posterior distributions rather than point estimates.

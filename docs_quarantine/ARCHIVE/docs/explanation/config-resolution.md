@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/config-resolution.md; source-sha256: c7a589b802387a8ec4fa9fa974ec5e7ccba8e7bd10e5c8c6ac849ca7531118da; reason: already in an archive surface -->
+
 # Explanation: Configuration Resolution
 
 **Time to read**: 15 minutes  

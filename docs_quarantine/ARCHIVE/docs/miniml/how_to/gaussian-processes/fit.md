@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/gaussian-processes/fit.md; source-sha256: c15db04ac635f2dbc28fba1e4a73a5ef8270a7ab12f9014c7add473608f50145; reason: already in an archive surface -->
+
 # Gaussian Process Regression
 
 Fit a nonparametric regression model that provides uncertainty estimates for every prediction.

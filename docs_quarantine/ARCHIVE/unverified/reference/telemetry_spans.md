@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/unverified/reference/telemetry_spans.md; source-sha256: 85accd8b984b728bedf837435645e4bf1ac854420aa204b0f11fc8671624045c; reason: already in an archive surface -->
+
 # Reference: Telemetry Spans
 
 `wasm4pm` emits structured OpenTelemetry spans to trace performance and correctness.

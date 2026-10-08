@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/COMPREHENSIVE_ALGORITHM_VALIDATION_REPORT.md; source-sha256: c31e6ca0abc9bdb5f0d83050d220766a035d7bd7c5a5b83dc7e3bf3b9c9983b7; reason: already in an archive surface -->
+
 # Comprehensive Algorithm Validation Report
 ## wasm4pm vs pm4py (All 41 Algorithms)
 

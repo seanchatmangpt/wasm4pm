@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/otel-datadog.md; source-sha256: 52288fdc674fe6eed091eb404d46fa15aa0b851a53f64b68d74417ec22d0c4da; reason: already in an archive surface -->
+
 # How-To: Configure OTEL for DataDog
 
 **Time required**: 10 minutes  

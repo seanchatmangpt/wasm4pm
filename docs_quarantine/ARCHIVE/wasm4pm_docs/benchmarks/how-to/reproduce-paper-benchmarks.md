@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/how-to/reproduce-paper-benchmarks.md; source-sha256: 6748e99d8c6154ad030bd6d964af6e715d77b51aff0447d3873cb76aed58374c; reason: already in an archive surface -->
+
 # Reproduce Published Benchmark Results
 
 **Problem:** You want to validate the benchmark numbers published in `docs/BENCHMARKS.md` on your own hardware, or you need to produce a benchmark report for a paper or internal review.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/reference/results.md; source-sha256: 8ee4cb727ead0cb46883a14f706725a4f8e6c58825b1b6253ab759ba7e4be7f8; reason: already in an archive surface -->
+
 # Benchmark Results
 
 **Version:** wasm4pm v26.4.9

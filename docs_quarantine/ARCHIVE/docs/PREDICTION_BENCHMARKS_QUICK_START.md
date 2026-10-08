@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PREDICTION_BENCHMARKS_QUICK_START.md; source-sha256: ebd4842838ae354ee79df3a177c861b2f88e4f80a76d3ab2acad355cf815425f; reason: already in an archive surface -->
+
 # Quick Start: Prediction Benchmarks
 
 ## 30-Second Overview

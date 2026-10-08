@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/benchmarks.md; source-sha256: e3aa6608e6d5f8b81740959cf1816000349ef02644559d46eb5e5b9b30847e5a; reason: already in an archive surface -->
+
 # wasm4pm — Algorithm Latency Reference
 
 Measured wall-clock numbers from Criterion benchmark runs (Rust native binary) and

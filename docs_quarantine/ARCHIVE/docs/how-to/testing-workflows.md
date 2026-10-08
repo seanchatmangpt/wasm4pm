@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/testing-workflows.md; source-sha256: b9cde284c15b344ec38f238cca8595357e4a4ee470ec8e3fd62e938003ab725e; reason: already in an archive surface -->
+
 # How-To: Test Process Mining Workflows
 
 **Time required**: 20 minutes  

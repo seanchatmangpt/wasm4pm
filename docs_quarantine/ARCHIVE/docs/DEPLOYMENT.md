@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/DEPLOYMENT.md; source-sha256: 0bd960bd934999ee753d6441251821f986b74e99f6f03181b31f85e409e0695b; reason: already in an archive surface -->
+
 # Deployment Guide - wasm4pm
 
 Build, test, publish, and deploy wasm4pm to production.

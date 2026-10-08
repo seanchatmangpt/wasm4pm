@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent4/AGENT4-001-fix-exit-code-contract.md; source-sha256: a00821ae7c8629afa7ecd9798813a1ff35f837e170ab6921ebb1a3f310eda3db; reason: already in an archive surface -->
+
 # AGENT4-001: Fix Exit Code Contract
 
 **Status:** 🔴 BLOCKER  

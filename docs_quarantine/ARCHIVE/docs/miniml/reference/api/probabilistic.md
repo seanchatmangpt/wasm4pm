@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/probabilistic.md; source-sha256: 02230983b7c44d6177b387a80c154e127a2ff3303713450e3810eb1740e167b8; reason: already in an archive surface -->
+
 # Probabilistic API
 
 Monte Carlo simulation, Markov chains, hidden Markov models, and MCMC sampling.

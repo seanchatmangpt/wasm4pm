@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/integration/package-integration-guide.md; source-sha256: bb95822fde6cfe7f87bc75d09a48a6e94a8d1f6fa9b50fe6bfdc75362cdfc5c4; reason: already in an archive surface -->
+
 # Package Integration Guide
 
 **Last Updated:** April 2026  

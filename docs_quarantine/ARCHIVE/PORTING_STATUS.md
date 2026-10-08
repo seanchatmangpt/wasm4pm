@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/PORTING_STATUS.md; source-sha256: 4eb6098aeb8e70201b6c7c6b49bd2aab4cf1a43a2c62466cb2cf2c6ff65f65d3; reason: already in an archive surface -->
+
 # wasm4pm Crates Porting Status
 
 **Status:** Phase 1 Complete  

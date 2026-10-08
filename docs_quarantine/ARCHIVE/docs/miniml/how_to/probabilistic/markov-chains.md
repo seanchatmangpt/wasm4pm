@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/probabilistic/markov-chains.md; source-sha256: 6c97e4d41f12505cf9e2ecf6f3c16544d249f7d4d43ecce60068e39e1b516bff; reason: already in an archive surface -->
+
 # Markov Chains
 
 Model systems that transition between discrete states with known probabilities.

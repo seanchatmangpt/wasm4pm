@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/breeds/dendral.md; source-sha256: 94efb2889b06b08f5a74328ee3ad4ed86d31c574714bd1183cd3b92fea2e5dc6; reason: already in an archive surface -->
+
 # DENDRAL
 
 ## Origin

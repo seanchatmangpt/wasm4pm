@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/MODEL_COMPLEXITY_WEIGHTING_AUDIT_REPORT.md; source-sha256: e05e22d7113cd4a694730757a948c97899a2d53bd2724dd33db0387616ffbb11; reason: already in an archive surface -->
+
 # Model Complexity Aggregation Weighting Sensitivity Analysis
 
 **Date:** 2026-05-18  

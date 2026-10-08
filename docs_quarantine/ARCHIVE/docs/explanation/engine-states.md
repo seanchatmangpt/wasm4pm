@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/engine-states.md; source-sha256: d1e17dcbe431dbc4d75340bd16513ceb6996967a4b667e762cd5c7b20c7f9e05; reason: already in an archive surface -->
+
 # Explanation: Engine State Machine
 
 **Time to read**: 10 minutes  
