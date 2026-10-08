@@ -3,12 +3,17 @@
 # Tutorial: Predictive Process Monitoring
 
 ## Learning Objectives
+
 In this tutorial, you will:
+
 1. Understand the six perspectivas of process prediction.
+
 2. Estimate the remaining time for an in-flight case.
+
 3. Predict the next most likely activity for a running trace.
 
 ## Step 1: Remaining Time Prediction
+
 To predict when a running case will finish, use the `remaining-time` task. You must supply the current trace as a comma-separated `--prefix`.
 
 ```bash
@@ -19,6 +24,7 @@ wpm predict remaining-time -i data/small-example.xes --prefix "Register,Approve"
 The output will provide an estimate in hours, backed by a Weibull survival model.
 
 ## Step 2: Next Activity Prediction
+
 To see what the next step should be, use the `next-activity` task.
 
 ```bash
@@ -29,6 +35,7 @@ wpm predict next-activity -i data/small-example.xes --prefix "Register" --top-k 
 This uses an n-gram language model (default order: 2) to compute probabilities for all possible continuations.
 
 ## Step 3: Drift Detection
+
 Predictive monitoring also includes identifying if the process has changed over time.
 
 ```bash

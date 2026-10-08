@@ -68,7 +68,7 @@ resolution; STRIPS plan soundness is checked against pre/post-condition semantic
 ## Implementation
 
 The complete implementation is available at:
-https://github.com/chatmangpt/wasm4pm
+https://github.com/seanchatmangpt/wasm4pm
 
 The cognition layer lives in `crates/wasm4pm-cognition/` (Rust/WASM) and
 `packages/cognition/` (TypeScript wrapper). The OCEL provability layer is wired at

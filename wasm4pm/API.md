@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/API.md; source-sha256: 5755117690f99aeb8888d1f215f01597103c0cadb6bfb16f926e3b74cef24b42; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm API Reference
 
 All functions are exported from the WASM module. Import the module before calling any function.
@@ -31,7 +33,7 @@ import * as pm from '@wasm4pm/cli'; // ES modules
 
 Initializes the global WASM state. Must be called once before any other function.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.init(): string
@@ -43,7 +45,7 @@ pm.init(): string
 
 **Throws** — never
 
-**Example**
+#### Example
 
 ```javascript
 const pm = require('@wasm4pm/cli');
@@ -56,7 +58,7 @@ pm.init();
 
 Returns the library version string.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_version(): string
@@ -68,7 +70,7 @@ pm.get_version(): string
 
 **Throws** — never
 
-**Example**
+#### Example
 
 ```javascript
 console.log(pm.get_version()); // "0.5.4"
@@ -86,7 +88,7 @@ All loading functions return an opaque handle string (`"obj_N"`) that identifies
 
 Parses an XES 1.0 file and stores the resulting EventLog.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.load_eventlog_from_xes(content: string): string
@@ -100,7 +102,7 @@ pm.load_eventlog_from_xes(content: string): string
 
 **Throws** `Error` — if the XES document cannot be parsed
 
-**Example**
+#### Example
 
 ```javascript
 const fs = require('fs');
@@ -114,7 +116,7 @@ const logHandle = pm.load_eventlog_from_xes(xes);
 
 Parses a JSON-serialized EventLog and stores it.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.load_eventlog_from_json(content: string): string
@@ -128,7 +130,7 @@ pm.load_eventlog_from_json(content: string): string
 
 **Throws** `Error` — `"Failed to parse EventLog JSON: ..."` if content is invalid
 
-**Example**
+#### Example
 
 ```javascript
 const raw = fs.readFileSync('log.json', 'utf8');
@@ -141,7 +143,7 @@ const logHandle = pm.load_eventlog_from_json(raw);
 
 Parses a JSON-serialized OCEL (Object-Centric Event Log) and stores it.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.load_ocel_from_json(content: string): string
@@ -155,7 +157,7 @@ pm.load_ocel_from_json(content: string): string
 
 **Throws** `Error` — `"Failed to parse OCEL JSON: ..."` if content is invalid
 
-**Example**
+#### Example
 
 ```javascript
 const raw = fs.readFileSync('ocel.json', 'utf8');
@@ -170,7 +172,7 @@ const ocelHandle = pm.load_ocel_from_json(raw);
 
 Serializes a stored EventLog to XES 1.0 XML.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.export_eventlog_to_xes(handle: string): string
@@ -184,7 +186,7 @@ pm.export_eventlog_to_xes(handle: string): string
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const xes = pm.export_eventlog_to_xes(logHandle);
@@ -197,7 +199,7 @@ fs.writeFileSync('out.xes', xes);
 
 Serializes a stored EventLog to JSON.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.export_eventlog_to_json(handle: string): string
@@ -211,7 +213,7 @@ pm.export_eventlog_to_json(handle: string): string
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const json = pm.export_eventlog_to_json(logHandle);
@@ -224,7 +226,7 @@ fs.writeFileSync('out.json', json);
 
 Serializes a stored OCEL to JSON.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.export_ocel_to_json(handle: string): string
@@ -238,7 +240,7 @@ pm.export_ocel_to_json(handle: string): string
 
 **Throws** `Error` — `"Object is not an OCEL"` or `"OCEL not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const json = pm.export_ocel_to_json(ocelHandle);
@@ -280,7 +282,7 @@ The table below lists which form each function uses.
 
 Discovers a Directly-Follows Graph using a single-pass columnar algorithm.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_dfg(handle: string, activity_key: string): object
@@ -304,7 +306,7 @@ pm.discover_dfg(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const dfg = pm.discover_dfg(logHandle, 'concept:name');
@@ -317,7 +319,7 @@ console.log(dfg.nodes.length, dfg.edges.length);
 
 Discovers a DFG from an Object-Centric Event Log. Edges are object-scoped (consecutive events sharing an object).
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_ocel_dfg(handle: string): object
@@ -331,7 +333,7 @@ pm.discover_ocel_dfg(handle: string): object
 
 **Throws** `Error` — `"Object is not an OCEL"` or `"OCEL not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const dfg = pm.discover_ocel_dfg(ocelHandle);
@@ -343,7 +345,7 @@ const dfg = pm.discover_ocel_dfg(ocelHandle);
 
 Discovers DECLARE Response constraints with support >= 0.1 from an EventLog.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_declare(handle: string, activity_key: string): object
@@ -372,7 +374,7 @@ pm.discover_declare(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const model = pm.discover_declare(logHandle, 'concept:name');
@@ -385,7 +387,7 @@ console.log(model.constraints.length, 'constraints found');
 
 Applies the Heuristic Miner dependency measure to filter DFG edges. Edges where `(ab - ba) / (ab + ba + 1) < dependency_threshold` are discarded.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_heuristic_miner(
@@ -415,7 +417,7 @@ pm.discover_heuristic_miner(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const result = JSON.parse(pm.discover_heuristic_miner(logHandle, 'concept:name', 0.5));
@@ -428,7 +430,7 @@ const dfgHandle = result.handle;
 
 Builds a DFG using all directly-follows relations, with start/end activity tracking. Simplified Inductive Miner variant.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_inductive_miner(handle: string, activity_key: string): object
@@ -447,7 +449,7 @@ pm.discover_inductive_miner(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.discover_inductive_miner(logHandle, 'concept:name');
@@ -460,7 +462,7 @@ const dfgHandle = r.handle;
 
 A\* search over the DFG space. Iteratively adds edges that maximize a fitness heuristic, up to `max_iterations`.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_astar(
@@ -484,7 +486,7 @@ pm.discover_astar(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.discover_astar(logHandle, 'concept:name', 100);
@@ -496,7 +498,7 @@ const r = pm.discover_astar(logHandle, 'concept:name', 100);
 
 Greedy local search. Adds edges one at a time, choosing the edge with the highest marginal fitness gain until no improvement is found.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_hill_climbing(handle: string, activity_key: string): object
@@ -515,7 +517,7 @@ pm.discover_hill_climbing(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.discover_hill_climbing(logHandle, 'concept:name');
@@ -527,7 +529,7 @@ const r = pm.discover_hill_climbing(logHandle, 'concept:name');
 
 Evolves a population of DFGs toward higher fitness using crossover and mutation (10% mutation rate, 25% elitism).
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_genetic_algorithm(
@@ -561,7 +563,7 @@ pm.discover_genetic_algorithm(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.discover_genetic_algorithm(logHandle, 'concept:name', 50, 100));
@@ -574,7 +576,7 @@ console.log('fitness:', r.final_fitness);
 
 Particle Swarm Optimization over the DFG space. Each particle's position is a set of edges; particles move toward the global best.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_pso_algorithm(
@@ -606,7 +608,7 @@ pm.discover_pso_algorithm(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.discover_pso_algorithm(logHandle, 'concept:name', 30, 50));
@@ -618,7 +620,7 @@ const r = JSON.parse(pm.discover_pso_algorithm(logHandle, 'concept:name', 30, 50
 
 Ant Colony Optimization. Pheromone trails are initialized from directly-follows frequencies and updated by fitness after each iteration.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_ant_colony(
@@ -644,7 +646,7 @@ pm.discover_ant_colony(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.discover_ant_colony(logHandle, 'concept:name', 20, 30);
@@ -656,7 +658,7 @@ const r = pm.discover_ant_colony(logHandle, 'concept:name', 20, 30);
 
 Simulated Annealing search. Accepts worsening moves with probability `exp(-delta/T)`. Terminates when temperature drops below 0.01.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_simulated_annealing(
@@ -682,7 +684,7 @@ pm.discover_simulated_annealing(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.discover_simulated_annealing(logHandle, 'concept:name', 1.0, 0.95);
@@ -694,7 +696,7 @@ const r = pm.discover_simulated_annealing(logHandle, 'concept:name', 1.0, 0.95);
 
 ILP-based Petri net discovery. Creates transitions for each activity, infers implicit places from the directly-follows relation, and reports fitness, precision, and F-measure.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_ilp_petri_net(handle: string, activity_key: string): string
@@ -723,7 +725,7 @@ pm.discover_ilp_petri_net(handle: string, activity_key: string): string
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.discover_ilp_petri_net(logHandle, 'concept:name'));
@@ -736,7 +738,7 @@ const netHandle = r.handle;
 
 Constraint-satisfaction DFG discovery. Edges are scored by a weighted combination of fitness and simplicity; only edges above the weighted threshold are retained.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.discover_optimized_dfg(
@@ -767,7 +769,7 @@ pm.discover_optimized_dfg(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.discover_optimized_dfg(logHandle, 'concept:name', 0.7, 0.3));
@@ -779,7 +781,7 @@ const r = JSON.parse(pm.discover_optimized_dfg(logHandle, 'concept:name', 0.7, 0
 
 Extracts the minimal DFG structure by keeping only edges whose frequency meets `min_frequency`. Nodes with no surviving edges are removed.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.extract_process_skeleton(
@@ -803,7 +805,7 @@ pm.extract_process_skeleton(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.extract_process_skeleton(logHandle, 'concept:name', 5);
@@ -815,7 +817,7 @@ const r = pm.extract_process_skeleton(logHandle, 'concept:name', 5);
 
 Returns metadata for all implemented discovery algorithms.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.available_discovery_algorithms(): object
@@ -855,7 +857,7 @@ All streaming functions operate on a `StreamingDfgBuilder` stored under a handle
 
 Opens a new streaming session.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_begin(): string
@@ -867,7 +869,7 @@ pm.streaming_dfg_begin(): string
 
 **Throws** `Error` — if the state mutex cannot be acquired
 
-**Example**
+#### Example
 
 ```javascript
 const stream = pm.streaming_dfg_begin();
@@ -879,7 +881,7 @@ const stream = pm.streaming_dfg_begin();
 
 Appends one event to an open trace. Creates the trace buffer for `case_id` automatically on first use.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_add_event(handle: string, case_id: string, activity: string): string
@@ -906,7 +908,7 @@ pm.streaming_dfg_add_event(handle: string, case_id: string, activity: string): s
 
 **Throws** `Error` — `"Handle is not a StreamingDfgBuilder"` or `"StreamingDfgBuilder handle not found"`
 
-**Example**
+#### Example
 
 ```javascript
 JSON.parse(pm.streaming_dfg_add_event(stream, 'case-1', 'Register'));
@@ -919,7 +921,7 @@ JSON.parse(pm.streaming_dfg_add_event(stream, 'case-1', 'Approve'));
 
 Adds multiple events in one call. Each element must have `case_id` and `activity` string fields.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_add_batch(handle: string, events_json: string): string
@@ -946,7 +948,7 @@ pm.streaming_dfg_add_batch(handle: string, events_json: string): string
 
 **Throws** `Error` — `"Invalid events JSON: ..."` if `events_json` is not a valid JSON array; `"Each event must have a 'case_id' string field"` or `"Each event must have an 'activity' string field"` if an element is malformed
 
-**Example**
+#### Example
 
 ```javascript
 const batch = JSON.stringify([
@@ -962,7 +964,7 @@ const stats = JSON.parse(pm.streaming_dfg_add_batch(stream, batch));
 
 Closes a trace: folds its event buffer into the running DFG counts, then frees the per-trace buffer.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_close_trace(handle: string, case_id: string): string
@@ -987,7 +989,7 @@ Not open: `{ "ok": false, "trace_count": 0, "open_traces": 0 }`
 
 **Throws** `Error` — `"Handle is not a StreamingDfgBuilder"` or `"StreamingDfgBuilder handle not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.streaming_dfg_close_trace(stream, 'case-1'));
@@ -1000,7 +1002,7 @@ if (!r.ok) console.warn('case-1 was not open');
 
 Closes all currently-open traces at once.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_flush_open(handle: string): string
@@ -1024,7 +1026,7 @@ pm.streaming_dfg_flush_open(handle: string): string
 
 **Throws** `Error` — `"Handle is not a StreamingDfgBuilder"` or `"StreamingDfgBuilder handle not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.streaming_dfg_flush_open(stream));
@@ -1037,7 +1039,7 @@ console.log(`Flushed ${r.flushed} open traces`);
 
 Returns a non-destructive DFG snapshot from closed-trace counts. Open (in-progress) traces are not included. Does not modify or free the streaming session.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_snapshot(handle: string): string
@@ -1060,7 +1062,7 @@ pm.streaming_dfg_snapshot(handle: string): string
 
 **Throws** `Error` — `"Handle is not a StreamingDfgBuilder"` or `"StreamingDfgBuilder handle not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const dfg = JSON.parse(pm.streaming_dfg_snapshot(stream));
@@ -1073,7 +1075,7 @@ console.log(dfg.nodes.length, 'activities seen so far');
 
 Flushes all open traces, stores the resulting DFG as a new object, frees the streaming builder, and returns the DFG handle. After this call, the streaming `handle` is invalid.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_finalize(handle: string): string
@@ -1097,7 +1099,7 @@ pm.streaming_dfg_finalize(handle: string): string
 
 **Throws** `Error` — `"Handle is not a StreamingDfgBuilder"` or `"StreamingDfgBuilder handle not found"` or `"Failed to store DFG"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = JSON.parse(pm.streaming_dfg_finalize(stream));
@@ -1111,7 +1113,7 @@ const dfgHandle = r.dfg_handle;
 
 Returns memory and progress statistics for an open streaming session. Does not modify the session.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.streaming_dfg_stats(handle: string): string
@@ -1145,7 +1147,7 @@ pm.streaming_dfg_stats(handle: string): string
 
 **Throws** `Error` — `"Handle is not a StreamingDfgBuilder"` or `"StreamingDfgBuilder handle not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const stats = JSON.parse(pm.streaming_dfg_stats(stream));
@@ -1160,7 +1162,7 @@ console.log(`Memory pressure: ${stats.open_trace_events} buffered events`);
 
 Computes a dotted-chart summary: event count per case.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_dotted_chart(handle: string): object
@@ -1183,7 +1185,7 @@ pm.analyze_dotted_chart(handle: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const chart = pm.analyze_dotted_chart(logHandle);
@@ -1196,7 +1198,7 @@ console.log(`${chart.case_count} cases, ${chart.total_events} events`);
 
 Computes aggregate event statistics.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_event_statistics(handle: string): object
@@ -1218,7 +1220,7 @@ pm.analyze_event_statistics(handle: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const stats = pm.analyze_event_statistics(logHandle);
@@ -1230,7 +1232,7 @@ const stats = pm.analyze_event_statistics(logHandle);
 
 Computes event and object counts for an OCEL.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_ocel_statistics(handle: string): object
@@ -1248,7 +1250,7 @@ pm.analyze_ocel_statistics(handle: string): object
 
 **Throws** `Error` — `"Object is not an OCEL"` or `"OCEL not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const stats = pm.analyze_ocel_statistics(ocelHandle);
@@ -1260,7 +1262,7 @@ const stats = pm.analyze_ocel_statistics(ocelHandle);
 
 Computes per-case event-count distribution (min, max, median, average). Note: durations are measured in events, not wall-clock time.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_case_duration(handle: string): object
@@ -1284,7 +1286,7 @@ pm.analyze_case_duration(handle: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const d = pm.analyze_case_duration(logHandle);
@@ -1297,7 +1299,7 @@ console.log(`Median case length: ${d.median_events_per_case} events`);
 
 Identifies trace variants whose relative frequency is below `frequency_threshold`.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_infrequent_paths(
@@ -1325,7 +1327,7 @@ pm.analyze_infrequent_paths(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.analyze_infrequent_paths(logHandle, 'concept:name', 0.05);
@@ -1338,7 +1340,7 @@ console.log(r.infrequent_paths.length, 'rare variants');
 
 Detects activities that repeat within individual traces (rework).
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.detect_rework(handle: string, activity_key: string): object
@@ -1365,7 +1367,7 @@ pm.detect_rework(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.detect_rework(logHandle, 'concept:name');
@@ -1378,7 +1380,7 @@ console.log(`${r.rework_percentage.toFixed(1)}% of cases have rework`);
 
 Identifies activities where the interval to the next event exceeds `duration_threshold_seconds`.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.detect_bottlenecks(
@@ -1409,7 +1411,7 @@ pm.detect_bottlenecks(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', 3600);
@@ -1421,7 +1423,7 @@ const r = pm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', 360
 
 Computes structural complexity metrics: activity count, edge count, variant count, average degree, density, and a composite complexity score.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.compute_model_metrics(handle: string, activity_key: string): object
@@ -1447,7 +1449,7 @@ pm.compute_model_metrics(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const m = pm.compute_model_metrics(logHandle, 'concept:name');
@@ -1459,7 +1461,7 @@ const m = pm.compute_model_metrics(logHandle, 'concept:name');
 
 Extracts all distinct trace variants and returns the top 20 by frequency.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_trace_variants(handle: string, activity_key: string): object
@@ -1482,7 +1484,7 @@ pm.analyze_trace_variants(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const v = pm.analyze_trace_variants(logHandle, 'concept:name');
@@ -1495,7 +1497,7 @@ console.log(`${v.total_variants} distinct variants`);
 
 Finds activity sequences of exactly `pattern_length` that appear in at least `min_support` fraction of traces.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.mine_sequential_patterns(
@@ -1517,7 +1519,7 @@ pm.mine_sequential_patterns(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.mine_sequential_patterns(logHandle, 'concept:name', 0.1, 3);
@@ -1529,7 +1531,7 @@ const r = pm.mine_sequential_patterns(logHandle, 'concept:name', 0.1, 3);
 
 Detects points where the set of active activities changes significantly between consecutive windows of traces. Uses Jaccard distance; drift is reported when distance exceeds 0.3.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.detect_concept_drift(
@@ -1557,7 +1559,7 @@ pm.detect_concept_drift(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.detect_concept_drift(logHandle, 'concept:name', 50);
@@ -1569,7 +1571,7 @@ const r = pm.detect_concept_drift(logHandle, 'concept:name', 50);
 
 Groups traces into `num_clusters` clusters using activity-set similarity (k-medoids style). Cluster centers are initialized from the first `num_clusters` traces.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.cluster_traces(
@@ -1589,7 +1591,7 @@ pm.cluster_traces(
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.cluster_traces(logHandle, 'concept:name', 5);
@@ -1601,7 +1603,7 @@ const r = pm.cluster_traces(logHandle, 'concept:name', 5);
 
 Identifies activity frequencies at trace start, trace end, and start-end pairs.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_start_end_activities(handle: string, activity_key: string): object
@@ -1616,7 +1618,7 @@ pm.analyze_start_end_activities(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.analyze_start_end_activities(logHandle, 'concept:name');
@@ -1628,7 +1630,7 @@ const r = pm.analyze_start_end_activities(logHandle, 'concept:name');
 
 Computes pairwise activity co-occurrence counts (how many traces contain both activities). Returns the top 30 pairs by count.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_activity_cooccurrence(handle: string, activity_key: string): object
@@ -1649,7 +1651,7 @@ pm.analyze_activity_cooccurrence(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.analyze_activity_cooccurrence(logHandle, 'concept:name');
@@ -1661,7 +1663,7 @@ const r = pm.analyze_activity_cooccurrence(logHandle, 'concept:name');
 
 Computes predecessor and successor sets for each activity.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.analyze_activity_dependencies(handle: string, activity_key: string): object
@@ -1676,7 +1678,7 @@ pm.analyze_activity_dependencies(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.analyze_activity_dependencies(logHandle, 'concept:name');
@@ -1688,7 +1690,7 @@ const r = pm.analyze_activity_dependencies(logHandle, 'concept:name');
 
 Returns metadata for all implemented analysis functions.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.available_analysis_functions(): string
@@ -1708,7 +1710,7 @@ pm.available_analysis_functions(): string
 
 Checks conformance by replaying each trace against a Petri net. A trace is conforming when fitness >= 0.9 and no deviations are found.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.check_token_based_replay(
@@ -1756,7 +1758,7 @@ pm.check_token_based_replay(
 
 **Throws** `Error` — `"Handle is not a PetriNet"` or `"PetriNet not found"` (checked first); `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const netResult = JSON.parse(pm.discover_ilp_petri_net(logHandle, 'concept:name'));
@@ -1772,7 +1774,7 @@ console.log(`Avg fitness: ${conformance.avg_fitness.toFixed(3)}`);
 
 Returns the number of traces in an EventLog.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_trace_count(handle: string): number
@@ -1792,7 +1794,7 @@ pm.get_trace_count(handle: string): number
 
 Returns the total event count across all traces.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_event_count(handle: string): number
@@ -1812,7 +1814,7 @@ pm.get_event_count(handle: string): number
 
 Returns all unique activity names observed in the log.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_activities(handle: string, activity_key: string): object
@@ -1833,7 +1835,7 @@ pm.get_activities(handle: string, activity_key: string): object
 
 Returns the event count for each trace as an array.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_trace_lengths(handle: string): object
@@ -1853,7 +1855,7 @@ pm.get_trace_lengths(handle: string): object
 
 Returns summary statistics of trace lengths.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_trace_length_statistics(handle: string): object
@@ -1877,7 +1879,7 @@ pm.get_trace_length_statistics(handle: string): object
 
 Returns all attribute keys used anywhere in the log (log-level, trace-level, event-level), sorted alphabetically.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_attribute_names(handle: string): object
@@ -1897,7 +1899,7 @@ pm.get_attribute_names(handle: string): object
 
 Returns activity occurrence counts across the entire log, sorted by frequency descending.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.get_activity_frequencies(handle: string, activity_key: string): object
@@ -1912,7 +1914,7 @@ pm.get_activity_frequencies(handle: string, activity_key: string): object
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const freqs = pm.get_activity_frequencies(logHandle, 'concept:name');
@@ -1925,7 +1927,7 @@ freqs.forEach(([name, count]) => console.log(name, count));
 
 Creates a new EventLog containing only traces that include at least one event with the specified activity.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.filter_log_by_activity(
@@ -1949,7 +1951,7 @@ pm.filter_log_by_activity(
 
 **Throws** `Error` — `"Object is not an EventLog"` or `"EventLog not found"`
 
-**Example**
+#### Example
 
 ```javascript
 const r = pm.filter_log_by_activity(logHandle, 'concept:name', 'Approve');
@@ -1962,7 +1964,7 @@ const filteredHandle = r.handle;
 
 Creates a new EventLog retaining only traces with event counts in `[min_length, max_length]`.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.filter_log_by_trace_length(
@@ -1992,7 +1994,7 @@ pm.filter_log_by_trace_length(
 
 Extracts start and end timestamps for each trace that has at least two events with `timestamp_key` attributes.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.calculate_trace_durations(handle: string, timestamp_key: string): object
@@ -2013,7 +2015,7 @@ pm.calculate_trace_durations(handle: string, timestamp_key: string): object
 
 Returns `true` if every event in every trace has a `timestamp_key` attribute of type Date.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.validate_has_timestamps(handle: string, timestamp_key: string): boolean
@@ -2034,7 +2036,7 @@ pm.validate_has_timestamps(handle: string, timestamp_key: string): boolean
 
 Returns `true` if every event in every trace has an `activity_key` attribute of type String.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.validate_has_activities(handle: string, activity_key: string): boolean
@@ -2057,7 +2059,7 @@ pm.validate_has_activities(handle: string, activity_key: string): boolean
 
 Returns the number of objects currently held in the WASM store.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.object_count(): number
@@ -2069,7 +2071,7 @@ pm.object_count(): number
 
 **Throws** — never (returns 0 if state is inaccessible)
 
-**Example**
+#### Example
 
 ```javascript
 console.log(pm.object_count()); // 3
@@ -2081,7 +2083,7 @@ console.log(pm.object_count()); // 3
 
 Deletes a single object from the WASM store. The handle becomes invalid after this call.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.delete_object(handle: string): boolean
@@ -2095,7 +2097,7 @@ pm.delete_object(handle: string): boolean
 
 **Throws** — never
 
-**Example**
+#### Example
 
 ```javascript
 pm.delete_object(logHandle); // free memory when done
@@ -2107,7 +2109,7 @@ pm.delete_object(logHandle); // free memory when done
 
 Removes all objects from the WASM store. All existing handles become invalid.
 
-**Signature**
+#### Signature
 
 ```javascript
 pm.clear_all_objects(): void
@@ -2119,7 +2121,7 @@ pm.clear_all_objects(): void
 
 **Throws** — never
 
-**Example**
+#### Example
 
 ```javascript
 pm.clear_all_objects();
