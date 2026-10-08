@@ -2,7 +2,12 @@
   "protocolVersion": "1.0",
   "name": "wasm4pm SA2A Actuator",
   "description": "Independent SA2A actuator. Authority is external: no effect is executed without an ActuationCertificate carrying an external authority signature quorum across independent trust domains, verified by the SecurityVerifier before the Effector runs. Resource allocation is powerless input admitted before the durable actuator claim; allocation identity is bound into the same durable record as the effect claim.",
-  "url": "https://github.com/seanchatmangpt/wasm4pm",
+  "supportedInterfaces": [
+    {
+      "protocolVersion": "1.0",
+      "protocolBinding": "SA2A"
+    }
+  ],
   "version": "26.10.8",
   "capabilities": {
     "streaming": false
