@@ -51,3 +51,10 @@ pnpm run docs:check
 ```
 
 A documentation migration is complete only when the second migration pass reports zero changes and active links/lint pass against the same commit.
+
+## See Also
+
+The OCEL train spans three sibling repositories; their canonical documentation:
+
+- [beam4pm — ingest and bridge API reference](../beam4pm/docs/diataxis/reference/ingest-and-bridge-api.md) — beam4pm consumes wasm4pm's OCEL fixtures (e.g. `fixtures/shared/receipt.xes`, `fixtures/negative/`) through its ingest/bridge layer; wasm4pm itself has no direct code dependency on beam4pm.
+- [ex4pm](../ex4pm/docs/) — evidence emitter; the binding is `crates/wasm4pm-ex4pm-bindings` (see `docs/abi/ex4pm-bindings.md`).
