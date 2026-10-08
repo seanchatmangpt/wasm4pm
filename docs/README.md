@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/README.md; source-sha256: 2e475c2d95119d1cfe9c65ad58204163811f27f9fdc4278ec5866fe9cc1296eb; reason: path-local authority or entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/README.md; source-sha256: 2baef8780c96c15e771f2da68aa8c1a5d8d09b28eaa74ed546c2805ed7a610ed; reason: path-local authority or entrypoint -->
 
 # wasm4pm documentation
 
