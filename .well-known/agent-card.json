@@ -1,0 +1,50 @@
+{
+  "protocolVersion": "1.0",
+  "name": "wasm4pm SA2A Actuator",
+  "description": "Independent SA2A actuator. Authority is external: no effect is executed without an ActuationCertificate carrying an external authority signature quorum across independent trust domains, verified by the SecurityVerifier before the Effector runs. Resource allocation is powerless input admitted before the durable actuator claim; allocation identity is bound into the same durable record as the effect claim.",
+  "url": "https://github.com/seanchatmangpt/wasm4pm",
+  "version": "26.10.8",
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": ["application/json"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "wasm4pm.actuator.execute",
+      "name": "Execute an admitted effect",
+      "description": "Actuator::execute — executes a PreparedEffect against an Effector only after SecurityVerifier::verify accepts an ActuationCertificate (external authority signature quorum, independent trust domains) and the EffectLedger records the claim. Refuses with typed ActuatorRefusal otherwise.",
+      "tags": ["actuator", "execute", "authority", "certificate"]
+    },
+    {
+      "id": "wasm4pm.actuator.effect.digest",
+      "name": "Digest a prepared effect",
+      "description": "PreparedEffect::digest — canonical-JSON sha256 digest of a version-1 PreparedEffect (principal, capability, subject, payload). Refuses invalid effects via ActuatorRefusal::InvalidEffect.",
+      "tags": ["effect", "digest", "canonicalization"]
+    },
+    {
+      "id": "wasm4pm.actuator.certificate.signing_message",
+      "name": "Certificate signing message",
+      "description": "ActuationCertificate::signing_message — constructs the canonical 'SA2A-C2-ACTUATION-CERTIFICATE-V1' signing message for an ActuationCertificate (effect digest, principal, policy/revocation epochs, generation, nonce, validity window, audience, threshold). Refuses invalid certificates via ActuatorRefusal::InvalidCertificate.",
+      "tags": ["certificate", "signing", "quorum"]
+    },
+    {
+      "id": "wasm4pm.actuator.verify",
+      "name": "Verify an actuation certificate",
+      "description": "SecurityVerifier::verify — verifies an ActuationCertificate's signature quorum against the KeyRegistry (SignatureAlgorithm, KeyState including revocation epochs).",
+      "tags": ["verify", "signatures", "key-registry"]
+    },
+    {
+      "id": "wasm4pm.actuator.resource.admit",
+      "name": "Admit a resource allocation",
+      "description": "ResourceAdmission::admit / admit_children — admits a powerless ResourceBudget/ResourceEnvelope allocation before any effect, producing a ResourceReceipt and ResourceOcelEvent bound into the same durable record as the effect claim; supports ResourceRecovery.",
+      "tags": ["resource", "admission", "receipt"]
+    },
+    {
+      "id": "wasm4pm.actuator.ledger",
+      "name": "Durable effect ledger",
+      "description": "EffectLedger / FileEffectLedger — durable EffectClaimRecord storage binding allocation identity and effect claims (LedgerState transitions).",
+      "tags": ["ledger", "durable", "claims"]
+    }
+  ]
+}
