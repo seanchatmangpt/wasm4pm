@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TEST_COMPACTION_IMPLEMENTATION_SPEC.md; source-sha256: bae1bfa21c1bcbe9d9b443a09c3792c5e731333f2c39db3a48d3123c9ef3c161; reason: already in an archive surface -->
+
 # Test Compaction: Detailed Implementation Specification
 
 **Audience:** Backend/Test Infrastructure Engineers  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.18/GALL-021-portable-process-determinism-PRD.md; source-sha256: af0cc4f94adbca3af053bdf147a5101de295a5f00bde86ba01c019fc0dfe2be3; reason: path-local documentation retained pending domain-specific supersession -->
+
 # PRD v26.9.18 — GALL-021: Portable Process Determinism
 
 **Status:** FINAL_SPEC — closed for v26.9.24  

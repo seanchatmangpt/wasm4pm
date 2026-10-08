@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ml_classify.md; source-sha256: 67c18b09da20486729ee5e67af0dcf56560957849174ffecc47e0f47634f5ac2; reason: already in an archive surface -->
+
 # Algorithm Evaluation: ML Trace Classification
 
 ## Metadata

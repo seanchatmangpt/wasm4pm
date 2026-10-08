@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/ALGORITHM_LINEAGE.md; source-sha256: fb6ee3f167c4747a0ffd1a0188e734041f23b33838df36eb34ccb8080d954c35; reason: already in an archive surface -->
+
 # Algorithm Historical Lineage — ACADEMIC-LINEAGE-001
 
 **Gate:** ACADEMIC-LINEAGE-001

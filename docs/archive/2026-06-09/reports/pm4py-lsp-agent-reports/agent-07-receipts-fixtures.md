@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/agent-07-receipts-fixtures.md; source-sha256: 3fc01f16d4f0ae2b1ea8c6f4abb3c6645409e1dcf8d665f47c26d2595a30cc6d; reason: already in an archive surface -->
+
 # Receipts and Fixtures Investigation Report
 
 **Role**: Receipts & Fixtures Agent (`receipts-fixtures`)  

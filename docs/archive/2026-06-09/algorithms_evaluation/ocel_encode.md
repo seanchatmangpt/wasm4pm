@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ocel_encode.md; source-sha256: 3108a4255ccae0ad40f1473c4a77cd357c2a7822f926d2a6daf2c18ceb88aa43; reason: already in an archive surface -->
+
 # Algorithm Evaluation: OCEL Text Encoding
 
 ## Metadata

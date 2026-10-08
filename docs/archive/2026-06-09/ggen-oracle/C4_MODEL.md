@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/ggen-oracle/C4_MODEL.md; source-sha256: 54e6cbccc5240b912008d2b5892b6c5662074080a088b644d63c9fe6b7cd9dc0; reason: already in an archive surface -->
+
 # C4 Architecture: ggen Living LSP + Open Ontology + wasm4pm
 
 This document contains the C4 architecture model for the `ggen` system and its integration with `wasm4pm` as the external process-law oracle.

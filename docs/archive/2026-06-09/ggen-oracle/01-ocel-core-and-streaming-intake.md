@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/ggen-oracle/01-ocel-core-and-streaming-intake.md; source-sha256: 78bfa9e4163ad00b85dae40c93a89e4ec1bc622b7ce21362f508940375327d50; reason: already in an archive surface -->
+
 # 01 — `ocel-core` + Streaming NDJSON Intake (the foundation)
 
 **Status:** Spec. Authored 2026-05-30. Grounds GGEN-NEEDS §2, §3, §3.1, §4 and Structure-Map §2, §3, §9.

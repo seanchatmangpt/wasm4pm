@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/inductive_miner.md; source-sha256: 92f05b527f4cab020fc28509d3091587fadf6afe27268313dabd643984fe0a82; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: inductive_miner
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/tableaux.md; source-sha256: 5f440043dad74f74327e06a1f8ec2828116cb9fd04609fb5d09e43bddf31a003; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Tableaux — Smullyan Signed Analytic Tableaux
 
 ## 1. Identity

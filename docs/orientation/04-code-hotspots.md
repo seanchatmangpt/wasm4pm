@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/orientation/04-code-hotspots.md; source-sha256: 39aafe6cd5fceab2fa24eb08731c8aaadbf5f6f77198160e7b238c5aaaf98e2b; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Phase 4: Code Hotspots
 
 This diagram identifies high-complexity or high-risk areas in the `wasm4pm` codebase. These are the areas most prone to memory panics, FFI boundary failures, or trust breaches.

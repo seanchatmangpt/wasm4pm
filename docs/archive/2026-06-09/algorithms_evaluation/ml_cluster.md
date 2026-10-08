@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ml_cluster.md; source-sha256: efb13b61757ddd22a4a9e57bd1883a9ecaf4f4f5d5dffcd8c7ed8629171f8cbf; reason: already in an archive surface -->
+
 # Algorithm Evaluation: ML Trace Clustering
 
 ## Metadata

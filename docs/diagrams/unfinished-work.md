@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/unfinished-work.md; source-sha256: 0b8593d815be50ef1ace532d60611efe3e67884a13457ac2296641d9ca59f3b2; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Unfinished work
 
 **Re-verified:** 2026-07-24.

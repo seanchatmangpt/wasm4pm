@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_regress.md; source-sha256: 11ee7a1dbfd8fc70e3e6fec481fcc201a88771a778d2f3339e8b0e129916efc7; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: ml_regress
 
 ## Algorithm ID & Domain

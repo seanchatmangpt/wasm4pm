@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/SCOPE_ANALYSIS_TRACK_B1.md; source-sha256: bbe142333958a6e01a3e9e98a6193c3a26a7a9e5da6d5c46ae145ff6a53d6065; reason: already in an archive surface -->
+
 # Track B-1: Scope Analysis — Payload Wrapper Fix for Conformance Tests
 
 **Date:** 2026-05-30  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/boundary.md; source-sha256: 5a4e15d17addda1b447aea43e90cf4dd503cb9397c90197b547fd09ab4ae1d53; reason: already in an archive surface -->
+
 # Boundary Agent Investigation Report
 
 **Role**: Boundary Agent (`boundary`)  

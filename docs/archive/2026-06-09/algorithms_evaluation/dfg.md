@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/dfg.md; source-sha256: de0fa03d7482333c47d8d7047de47963c0651eec48136f48c2d8c6d9a8b05233; reason: already in an archive surface -->
+
 # Algorithm Evaluation: DFG (Directly Follows Graph)
 
 ## Metadata

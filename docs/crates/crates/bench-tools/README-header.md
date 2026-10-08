@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/crates/crates/bench-tools/README-header.md; source-sha256: 84a5cbe45014731c437c03011f2b8afab0a1611505f43f33fed58c24b5dc77b6; reason: path-local documentation retained pending domain-specific supersession -->
+
 
 # bench-tools
 

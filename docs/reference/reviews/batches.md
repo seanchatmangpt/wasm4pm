@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/batches.md; source-sha256: f30ea75cbbc2f28bbea72d11ae226815bf18d43d7a24f0ce07b153ce69960814; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: batches
 
 ## Algorithm ID & Domain

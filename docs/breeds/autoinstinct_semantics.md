@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/autoinstinct_semantics.md; source-sha256: 0ae6851612aef4ecd77a7cdfd596ae2400ee83df0bb776dda34bba7b3f13d378; reason: path-local documentation retained pending domain-specific supersession -->
+
 # autoinstinct_semantics — Autoinstinct Semantic Grounding
 
 ## 1. Identity & Lineage

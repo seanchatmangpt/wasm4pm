@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TEST_COMPACTION_QUICKSTART.md; source-sha256: c898a36e94a41ebae9079d62763d1e17350b8f58646a811764509f3212d9382e; reason: already in an archive surface -->
+
 # Test Compaction: Quick Implementation Guide
 
 **Goal:** Reduce test runtime from ~20-30s to <5s (95% confidence, with margin)

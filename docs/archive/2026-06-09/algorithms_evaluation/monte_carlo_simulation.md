@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/monte_carlo_simulation.md; source-sha256: 10519d004826665aa385457267c235bdb2f2545ac902ecd6e0fe45e7588b887a; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Monte Carlo Simulation
 
 ## Metadata

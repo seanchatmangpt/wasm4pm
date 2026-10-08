@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/powl_to_process_tree.md; source-sha256: 95cf46b33b506ece3ba9440c44166a5b60db1ae4c17735f692642f7fb0f114ba; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: powl_to_process_tree
 
 ## Algorithm ID & Domain

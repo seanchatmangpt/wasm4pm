@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/predict_outcome.md; source-sha256: 3119ccad8dcf58e8e22c527e39f18ce21d4953abeef0525276aab99da0fa9ff6; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Outcome Prediction
 
 ## Metadata

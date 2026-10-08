@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/pso.md; source-sha256: e5cdbd10872fccb5bad19137396c0c765270edf40b851ccea7e9473df2bcc294; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Particle Swarm Optimization (PSO)
 
 ## Metadata

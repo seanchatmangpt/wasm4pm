@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/audits/breed-gap-review-2026-06-09.md; source-sha256: ddfe48d66c4597d579cba6b9bcfb14f1714235976ae46d73fdd4a3e722402823; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Cognition Breed Gap Review — 2026-06-09
 
 ## Executive Summary

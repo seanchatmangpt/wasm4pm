@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/generalization.md; source-sha256: c2d7457277296803c1ab684c8bc90fdfc1b20ebe32bf636361f442dee35c00eb; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Generalization Metric
 
 ## Metadata

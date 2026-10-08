@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/compute_trace_similarity_matrix.md; source-sha256: b9540378cd74a4cd89c0a7c15b757d17882bb92765d5cb2654ba9b539e0cb440; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Trace Similarity Matrix
 
 ## Metadata

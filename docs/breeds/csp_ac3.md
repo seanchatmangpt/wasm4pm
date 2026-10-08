@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/csp_ac3.md; source-sha256: c7e1947320edcbc9ec20fbcfefedbf260a52dee4baa4b832cf01f53481fdb203; reason: path-local documentation retained pending domain-specific supersession -->
+
 # CSP AC-3
 
 ## Origin

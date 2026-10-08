@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/allen_temporal.md; source-sha256: 201a002dd9d0bf013bd84b340625a503377b626354b75da1f12d2957d75d3ede; reason: path-local documentation retained pending domain-specific supersession -->
+
 # allen_temporal — Interval Algebra
 
 ## 1. Identity & Lineage

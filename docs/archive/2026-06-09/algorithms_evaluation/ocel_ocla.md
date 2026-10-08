@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ocel_ocla.md; source-sha256: 085ceca951d32f17001677f36dfb5ea9911cbdb6a1d734b872c2c743d4b4b34b; reason: already in an archive surface -->
+
 # Algorithm Evaluation: OC-Language Abstraction
 
 ## Metadata

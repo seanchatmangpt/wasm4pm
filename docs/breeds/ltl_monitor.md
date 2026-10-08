@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/ltl_monitor.md; source-sha256: 03740f8c484eea25a01aee4d01f55558cb03867ee426979d1537598e22df29ad; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ltl_monitor — Linear Temporal Logic Monitor
 
 ## 1. Identity & Lineage

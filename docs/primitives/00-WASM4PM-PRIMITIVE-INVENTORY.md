@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/00-WASM4PM-PRIMITIVE-INVENTORY.md; source-sha256: 15e067d0ca2a31c6f0be28df3b5e1ad3bdc037634c84eaaefaac78b2a441e8d0; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Agent 1 — Primitive Inventory Agent
 
 ## Mission

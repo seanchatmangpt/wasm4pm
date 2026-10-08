@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/aco.md; source-sha256: c10793bebae2d7f49c1c29e2795e5c673abaea8dbc634d2da1592433834b7c35; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: aco (Ant Colony Optimization)
 
 ## Algorithm ID & Domain

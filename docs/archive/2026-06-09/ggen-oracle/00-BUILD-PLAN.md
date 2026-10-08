@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/ggen-oracle/00-BUILD-PLAN.md; source-sha256: 09929cffaac2e5cba1bf411453f2163da15f4bfb5b85612fea8c9dddc8644219; reason: already in an archive surface -->
+
 # 00 — BUILD PLAN: the ggen Oracle (wasm4pm as judge of process POSSIBILITY)
 
 **Status:** Master synthesis. The single authoritative build sequence across specs 01–08.

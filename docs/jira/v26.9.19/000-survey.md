@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/000-survey.md; source-sha256: fb48e8070a1fac860c231838dfc9f0941d5dd240eb916c1174f0856ba7660839; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: v26.9.19 GitHub survey receipt
 
 - Date: 2026-09-19 (v26.9.19 gh survey wave)

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/sequence-cognition.md; source-sha256: cb3b5c58f51b615410a202e43580057edb93bf4ae15fdfdad28ebac2f80e8ef4; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Sequence: cognition-run flow
 
 **Re-verified:** 2026-07-24.

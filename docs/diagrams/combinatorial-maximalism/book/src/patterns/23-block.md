@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/23-block.md; source-sha256: a79ba6b5157ab02ccada4d6d67251411362f5ed17c8b5d2e60a753535d0a6d23; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Block Diagram: Spatial Composition
 
 **Pattern ID:** `23-block`  

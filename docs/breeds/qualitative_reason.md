@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/qualitative_reason.md; source-sha256: 47e8b47d6de340e8143a41573ee3f2541007dd212d5e5fc7029034d2aa2774b8; reason: path-local documentation retained pending domain-specific supersession -->
+
 # qualitative_reason — Confluence Envisionment
 
 ## 1. Identity & Lineage

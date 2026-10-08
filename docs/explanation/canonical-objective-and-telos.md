@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/explanation/canonical-objective-and-telos.md; source-sha256: 3e7f7732bf89b6fc7ec7d5de51dd66950c91c74b2e3d331137411d6adaf999f4; reason: canonical Diátaxis or ADR surface -->
+
 # Canonical objective and telos
 
 ## Decision

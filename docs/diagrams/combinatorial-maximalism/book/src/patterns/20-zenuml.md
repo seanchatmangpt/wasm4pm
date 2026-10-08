@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/20-zenuml.md; source-sha256: 6c727c85c31a23063b69531bd8794acfcdb7f0f751322b82d8f385b6b9784a7d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ZenUML: Executable-Looking Interaction Narrative
 
 **Pattern ID:** `20-zenuml`  

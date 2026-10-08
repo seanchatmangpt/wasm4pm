@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/handover_network.md; source-sha256: e064a35852533a80cae9e7920124109c45672d152499fcc39854c1f960e1be30; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Handover-of-Work Network
 
 ## Metadata

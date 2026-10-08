@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/alignments.md; source-sha256: 5a29e2e9e6205ec7575a2d06aa69ddd92976ce097d3e3acb4b8b076c01237b21; reason: already in an archive surface -->
+
 # Algorithm Evaluation: A* Optimal Alignments
 
 ## Metadata

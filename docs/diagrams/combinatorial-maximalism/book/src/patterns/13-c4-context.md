@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/13-c4-context.md; source-sha256: 5fd2ed56f5424c251cc85ac42ab8fc0ae02bdeb7752ab376c2176b95d0034919; reason: path-local documentation retained pending domain-specific supersession -->
+
 # C4 Context: System Boundary And External Actors
 
 **Pattern ID:** `13-c4-context`  

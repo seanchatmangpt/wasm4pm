@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/etconformance_precision.md; source-sha256: 4a708dd1d442a8be671f6320284e29fb98db7d7a555e6eec9f0ff6db90af3e46; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: etconformance_precision
 
 ## Algorithm ID & Domain

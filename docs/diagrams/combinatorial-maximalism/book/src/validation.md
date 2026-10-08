@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/validation.md; source-sha256: d4fd556b4111897b1ebbf707e1a0fa538a76b673d1e41f2ff66edca25a915071; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Validation and rendering
 
 This book separates four validation layers.

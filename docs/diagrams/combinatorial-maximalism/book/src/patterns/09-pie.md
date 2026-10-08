@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/09-pie.md; source-sha256: 629bca7ddb8dc457e68fe60046b8e60cbd8c348fa8781e414b001db2a13add80; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Pie Chart: Bounded Allocation
 
 **Pattern ID:** `09-pie`  

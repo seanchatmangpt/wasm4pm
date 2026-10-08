@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ocel_encode.md; source-sha256: 6e12161dc4378ab95a74cf8c9aa15bfc3fe6238c2cd8e50a81aa7769fbd51cd2; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: ocel_encode
 
 ## Algorithm ID & Domain

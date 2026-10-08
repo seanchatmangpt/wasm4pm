@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/optimized_dfg.md; source-sha256: 2fde18db782b8b0a52059cd2eb3897e5394093e08aa742939962ec88cb630df6; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Optimized DFG (ILP)
 
 ## Metadata

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/performance_spectrum.md; source-sha256: 83605b52aa7b713109dd1c8536a960a41bfd706932305989fb3b8dae1bb4bbae; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Performance Spectrum
 
 ## Metadata

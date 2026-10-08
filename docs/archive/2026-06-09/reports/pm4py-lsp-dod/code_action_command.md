@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reports/pm4py-lsp-dod/code_action_command.md; source-sha256: 4882daad5d6b37b2b639f4f515055b897d932686a9854858b5b15a0810866174; reason: already in an archive surface -->
+
 # Code Actions and Commands Investigation Report
 
 **Role**: Actions & Commands Agent (`actions-commands`)  

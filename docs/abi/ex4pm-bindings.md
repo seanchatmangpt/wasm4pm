@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/abi/ex4pm-bindings.md; source-sha256: 03f9ceafe2b7ecb2662b38b7ae60657a47801146aebe70a191241afdab86422c; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ex4pm-bindings ABI
 
 Generated companion to `ex4pm-bindings.abi.json` (produced by

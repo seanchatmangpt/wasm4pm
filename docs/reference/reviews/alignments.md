@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/alignments.md; source-sha256: b9b57c7e1e7b992247f39d9b7a06ec67a653f626e321ccbe1af0eff2f5e5d842; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: alignments
 
 ## Algorithm ID & Domain

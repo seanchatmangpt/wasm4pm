@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/12-gitgraph.md; source-sha256: eb30fb117e767369e7dac093cb9c2f5a369a707b8b29d109bd773dd0a341d21f; reason: path-local documentation retained pending domain-specific supersession -->
+
 # GitGraph: Admission History
 
 **Pattern ID:** `12-gitgraph`  

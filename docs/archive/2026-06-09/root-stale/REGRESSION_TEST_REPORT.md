@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/REGRESSION_TEST_REPORT.md; source-sha256: d831c7a0625ce544ef6167b747363d05a5114ba337b9375846d7e1c0daf86f83; reason: already in an archive surface -->
+
 # Regression Test Report: parsePayload() Fix
 
 **Date:** 2026-05-30  

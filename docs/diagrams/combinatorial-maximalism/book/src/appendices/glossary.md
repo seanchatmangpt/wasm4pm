@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/appendices/glossary.md; source-sha256: 70f461f726bca82aa4232d93fc48050548e3ad0fe743b21a11e48c22f12861fc; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Glossary
 
 **Actuation**  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/paper-fidelity/htn_planning.md; source-sha256: 1671d226da7cda88df921bd3f7c2843a141afadf9f37f820ec7714c0152e7002; reason: path-local documentation retained pending domain-specific supersession -->
+
 # HtnPlanning -- Paper Fidelity
 
 <!--

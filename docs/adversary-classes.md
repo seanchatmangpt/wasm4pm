@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/adversary-classes.md; source-sha256: 93978b5d7ffc8f4b5343c6009e07d35987f65cbe6ce34bd680fb7257136243f6; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Adversary Classes — Oracle Adequacy Theorem
 
 **Document:** Oracle Adequacy Theorem — Adversary Class Definitions  

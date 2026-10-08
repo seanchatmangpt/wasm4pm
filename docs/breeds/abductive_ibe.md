@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/abductive_ibe.md; source-sha256: d76b6e25792dc9571dd202c027b82adb9fc3f99ad79343a616343f98dd8b02c1; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Inference to the Best Explanation (IBE)
 
 ## Origin

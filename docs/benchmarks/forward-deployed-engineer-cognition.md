@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/benchmarks/forward-deployed-engineer-cognition.md; source-sha256: c5a7fdfc73641f89e1aadaf563b8ff38e7b8b1de0c9371cb997407bb181f053e; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Forward-Deployed Engineer Cognition Benchmark
 
 This rail measures a deterministic simulation of bounded forward-deployed engineering cognition over deployed-enterprise incident and change envelopes.

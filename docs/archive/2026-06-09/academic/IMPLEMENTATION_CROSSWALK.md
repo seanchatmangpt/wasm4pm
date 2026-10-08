@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/IMPLEMENTATION_CROSSWALK.md; source-sha256: 74f7b93ff81222a9ffa33f9e1963aaa8026587f4e68d1fb79539a1ddd4e51cc7; reason: already in an archive surface -->
+
 # Implementation Crosswalk — wasm4pm Algorithm Registry
 
 **Document:** IMPLEMENTATION_CROSSWALK.md

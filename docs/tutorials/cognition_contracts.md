@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/tutorials/cognition_contracts.md; source-sha256: 64392c906c9986cf896cecc5dffb355a2e311264e421dc17a9be981f93a82609; reason: canonical Diátaxis or ADR surface -->
+
 # Tutorial: Executing Cognition Contracts
 
 ## Learning Objectives

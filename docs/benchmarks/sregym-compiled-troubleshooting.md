@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/benchmarks/sregym-compiled-troubleshooting.md; source-sha256: db34e0f3e635129ff7e6b071f2d9dd8fa72efb5c7e0d5ab1f6b0ac1392472dad; reason: path-local documentation retained pending domain-specific supersession -->
+
 # SREGym-Derived Compiled Troubleshooting Benchmark
 
 ## Purpose

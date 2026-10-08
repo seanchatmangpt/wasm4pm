@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ml_anomaly.md; source-sha256: 0eb4540d57ed5f809048fe7e3293b2177c5233c2ea11d7038775f6fbd192b7c1; reason: already in an archive surface -->
+
 # Algorithm Evaluation: ML Anomaly Detection
 
 ## Metadata

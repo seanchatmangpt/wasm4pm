@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/002-branches-bulk-land-or-delete.md; source-sha256: ef40a75f44fc313461dbbd09a79075f00ff450198a2a2aee2eb4fd639e649f96; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: triage 45 PR-less unmerged remote branches
 
 - Standing: OPEN

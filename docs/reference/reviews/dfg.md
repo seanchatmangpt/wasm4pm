@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/dfg.md; source-sha256: f1ca97013ef2b51baf0b85a455d8d1e0dd7af41b354348bc1b7c3081dab83aa6; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: dfg (Directly-Follows Graph)
 
 ## Algorithm ID & Domain

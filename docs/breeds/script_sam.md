@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/script_sam.md; source-sha256: 07f61eb8d190dcd5cb95c71741c549174ed73e310e496aa4bc00ba15e6de5c12; reason: path-local documentation retained pending domain-specific supersession -->
+
 # script_sam — SAM Script Application
 
 ## 1. Identity & Lineage

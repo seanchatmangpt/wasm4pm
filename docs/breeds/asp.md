@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/asp.md; source-sha256: 700b4096a71110cf8565250a80b70457e103d05fb3ee57ea0f5ac64a0ee1906a; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Answer Set Programming (ASP)
 
 ## Origin

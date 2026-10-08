@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/process_skeleton.md; source-sha256: 4dc73ade44fec04dca9d312bd84a1cbe38e49007164e2995e7f28a34fc16a4c2; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Process Skeleton
 
 ## Metadata

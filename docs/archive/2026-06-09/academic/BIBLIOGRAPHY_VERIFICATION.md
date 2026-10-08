@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/BIBLIOGRAPHY_VERIFICATION.md; source-sha256: 5964e134f4efb2fcb2e779c4f9731c0f5b9e2b2d4736016fe0401a8ad60e68f0; reason: already in an archive surface -->
+
 # Bibliography Verification Report
 
 **Agent:** A11 — Bibliography Verifier  

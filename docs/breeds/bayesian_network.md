@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/bayesian_network.md; source-sha256: 1d74c00952c22227de227a148d169c0294dfc3d6d6bb9b27b1297a7f9fecf0df; reason: path-local documentation retained pending domain-specific supersession -->
+
 # BAYESIAN_NETWORK
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/01-PRIMITIVE-TAXONOMY.md; source-sha256: 6c5dd46285134bf03e7de573e90071baa24175d4fbef93e8b9b2a434d9d0bbdc; reason: already in an archive surface -->
+
 # wasm4pm Algorithm Primitive Taxonomy
 
 **Version:** 1.0  

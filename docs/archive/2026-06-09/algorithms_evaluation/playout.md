@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/playout.md; source-sha256: 3427278ed1877f369b69e4fab04abdd7f932a9f281e7057a0a97892312e1aed7; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Process Tree Playout
 
 ## Metadata

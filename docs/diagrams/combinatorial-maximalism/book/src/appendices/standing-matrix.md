@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/appendices/standing-matrix.md; source-sha256: 0fbd5ab8a3e0e9845e2e91c3ed354b69c43166851d46e0b3c608fba575fcaa00; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Standing matrix
 
 | Surface | Source standing | Parser standing | Renderer standing | Runtime standing |

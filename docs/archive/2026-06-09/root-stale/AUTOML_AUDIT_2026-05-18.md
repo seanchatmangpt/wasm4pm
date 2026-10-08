@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/AUTOML_AUDIT_2026-05-18.md; source-sha256: 331782e706d09276cc8d64d765c7282c4e908fe9f70287e85c129c4baf966ed0; reason: already in an archive surface -->
+
 # AutoML Feature Quality Audit Report
 
 **Date:** 2026-05-18  

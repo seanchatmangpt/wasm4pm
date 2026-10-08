@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/circumscription.md; source-sha256: e63045f553888523ba8840355f88ada09bac47c77217b996b1185cbdd4fd8404; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Circumscription
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/WASM4PM_CAPABILITY_INVENTORY.md; source-sha256: 6ce882878d094fc7284f8dbc631192ce3bd27a035896a66433484605b7dd5d90; reason: already in an archive surface -->
+
 # WASM4PM Capability Inventory
 
 **Gate:** Horse Gate  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/aco.md; source-sha256: 2ae396eea75d2cf9c59b6ffd235058e078c4749787837b162e44436439971034; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Ant Colony Optimization (ACO)
 
 ## Metadata

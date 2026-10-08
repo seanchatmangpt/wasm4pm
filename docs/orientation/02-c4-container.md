@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/orientation/02-c4-container.md; source-sha256: 9322d8b40fbb49d33cfbd4a0cd55e16d49fbe1e2213a5fe75a15e5fbd1f4a2c4; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Phase 2: C4 Container
 
 The Container diagram shows the internal architectural blocks mapping the `wasm4pm` stack from the mathematical Rust kernel up to the CLI.

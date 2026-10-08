@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/01-flowchart.md; source-sha256: 9c895516a7f1f678b6c77919deb77ebd08ee6e204bc2d527133d695a8cf5006d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Flowchart: Lawful Transformation Path
 
 **Pattern ID:** `01-flowchart`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/a_star.md; source-sha256: cc226eab35c2268b6aebac0ecc0ff733256dc711a29bfc6f70a19dad3d9a0d9e; reason: already in an archive surface -->
+
 # Algorithm Evaluation: A* Search
 
 ## Metadata

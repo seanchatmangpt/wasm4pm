@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/PUBLICATION.md; source-sha256: cdfd9f7673c6b9948676b7d460a56f63389f0fdf965037e767e6aeba52a4d496; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Full mdBook publication
 
 The compact atlas in [`SUMMARY.md`](SUMMARY.md) is expanded into a complete mdBook under [`book/`](book/).

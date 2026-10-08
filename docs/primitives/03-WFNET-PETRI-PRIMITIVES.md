@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/03-WFNET-PETRI-PRIMITIVES.md; source-sha256: 07254d67e02b00d674c25682dab9e219e1c9043ffec8299100d064207e5c1697; reason: path-local documentation retained pending domain-specific supersession -->
+
 # 03 — WF-net / Petri-net Primitive + Formal Soundness
 
 ## Mission

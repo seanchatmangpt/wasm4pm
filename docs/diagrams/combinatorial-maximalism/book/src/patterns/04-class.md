@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/04-class.md; source-sha256: 60ef616aab74b10230eee99a899f8be6e200c9f4ac1080cb8c6eb403c79ecc5a; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Class Diagram: Type-Level Obligation
 
 **Pattern ID:** `04-class`  

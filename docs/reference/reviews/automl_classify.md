@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/automl_classify.md; source-sha256: f25161dd844800d7d4e76d3ef705cddad97822335f2bb11aa2c06dc90b383c55; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: automl_classify
 
 ## Algorithm ID & Domain

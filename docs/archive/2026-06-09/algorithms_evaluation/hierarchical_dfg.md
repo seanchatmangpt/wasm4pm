@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/hierarchical_dfg.md; source-sha256: d09d3933118cd19eb055c4128300e75e1845239b17afed2b7092a884b1045b3d; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Hierarchical DFG
 
 ## Metadata

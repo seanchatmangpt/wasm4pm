@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/explanation/deterministic-command-projection.md; source-sha256: 082b5bf3459dcc23d6470238dfd25619129a8752f65fe0aaf006ec461db36a51; reason: canonical Diátaxis or ADR surface -->
+
 # Deterministic command projection
 
 ## Decision

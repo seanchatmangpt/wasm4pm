@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/MANIFEST.md; source-sha256: 92334e4c502ed3c7c12577ce7f65e3fe021e798ef3bd1783af3338cf8dee6c84; reason: already in an archive surface -->
+
 # Archive Manifest — 2026-06-09
 
 ## Reason
