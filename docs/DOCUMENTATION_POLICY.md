@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/DOCUMENTATION_POLICY.md; source-sha256: 651945384fd0b2bf595d5c689056f0217929170f1cfb1be8483cac680c4aec9f; reason: canonical documentation governance -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/DOCUMENTATION_POLICY.md; source-sha256: 39dd675808afc95aeb6faf4bcccf702ec0c286a6c52410732e921a2c29755b99; reason: path-local documentation retained pending domain-specific supersession -->
 
 # Documentation policy
 
@@ -29,6 +29,10 @@ The active documentation entrypoints are:
 - `AGENTS.md` — repository-wide agent doctrine.
 
 Path-local `AGENTS.md` and `README.md` files remain active because they govern or orient their subtree.
+
+## Layout
+
+This repository uses the flat `docs/{tutorials,how-to,reference,explanation}/` layout as its chosen Diataxis-equivalent. The naming differs from sibling repositories that use `documentation/` or `docs/diataxis/`, but the four quadrants are the same. `docs/DOCUMENTATION_MANIFEST.md` is regenerated from the exact checkout by `pnpm run docs:migrate` (`scripts/docs/migrate-markdown.mjs`); it is connector-generated output, not a hand-maintained per-file hash table.
 
 ## Archive law
 
