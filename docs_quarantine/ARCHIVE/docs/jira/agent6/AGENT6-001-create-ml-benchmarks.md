@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent6/AGENT6-001-create-ml-benchmarks.md; source-sha256: 993011302258ff032ffca6c2874aee69a43bdf8d744396e313db0d3204e26d87; reason: already in an archive surface -->
+
 # AGENT6-001: Create ML Algorithm Benchmarks
 
 **Status:** 🔴 BLOCKER  

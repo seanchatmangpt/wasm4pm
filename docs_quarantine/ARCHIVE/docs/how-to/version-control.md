@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/version-control.md; source-sha256: 40da1f663cab660ddb205ddda7dd49dc65f3ec08fd301e59b18cb9e5bd64ee01; reason: already in an archive surface -->
+
 # How-To: Version Control Config Safely
 
 **Time required**: 10 minutes  

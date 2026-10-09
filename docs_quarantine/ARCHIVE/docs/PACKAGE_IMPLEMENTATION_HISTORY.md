@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PACKAGE_IMPLEMENTATION_HISTORY.md; source-sha256: 59c715a4857373056b818c603204ad1dbe303bf5969745fac7b8e153ef43fff7; reason: already in an archive surface -->
+
 # Package Implementation History
 
 Historical record of package implementations across the wasm4pm monorepo.

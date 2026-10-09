@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/predict_next_activity.md; source-sha256: 8499738feba16b0c62fc4fadf8faae9c7cb3a104800aee2ce89478ab77f501bb; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Next Activity Prediction
 
 ## Metadata

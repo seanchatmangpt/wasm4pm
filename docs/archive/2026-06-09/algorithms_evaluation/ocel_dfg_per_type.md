@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ocel_dfg_per_type.md; source-sha256: 2166c33026a84d1ed74742e724a0a0afaf240475245584f652357bf77a011d4c; reason: already in an archive surface -->
+
 # Algorithm Evaluation: OC-DFG Per Object Type
 
 ## Metadata

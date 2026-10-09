@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/process-model-comparison.md; source-sha256: ddd883dad15617ebe6e23894b44e1e4d053ae8704da222500cb733f9f8a5a302; reason: already in an archive surface -->
+
 # Explanation: Process Model Comparison
 
 **Time to read**: 12 minutes

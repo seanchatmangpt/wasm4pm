@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/checkpoints/MAX-PURITY-FENCE.md; source-sha256: 8e205444fb45100e45af25e234da30a234a785953d052536bca1fc502383065b; reason: already in an archive surface -->
+
 # Checkpoint: MAX-PURITY-FENCE
 
 ## Status: Verified

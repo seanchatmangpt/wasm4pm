@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/title-page.md; source-sha256: bc5da5d863f3f860a7dd60609d8d40a5a6599c1ac3b8a889c42b6b9ccd32b7d1; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Design for Combinatorial Maximalism using all Mermaid
 
 ## An Alexander pattern language for proof-carrying manufacturing

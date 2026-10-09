@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: benchmarks/miniml/results.md; source-sha256: e1c5caf1d5176623a198761cf7a19a08ea65b007657a6f0e4a301be068b851cf; reason: path-local documentation retained pending domain-specific supersession -->
+
 # miniml Benchmark Results
 
 **Platform:** macOS (Apple Silicon), Rust native (`--release`)

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/KERNEL_REGISTRY_AUDIT.md; source-sha256: b32b0c2fc7183ea6984806b4c3e922706a4c36e3cd1034fb86b99676f14dd984; reason: already in an archive surface -->
+
 # wasm4pm Kernel Registry Audit Report
 
 **Date:** 2026-05-18  

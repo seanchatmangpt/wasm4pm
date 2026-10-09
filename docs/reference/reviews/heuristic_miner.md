@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/heuristic_miner.md; source-sha256: 1f2153d7f780051c8daeae20aed1921cb6d3bd11ce7418ce7ed4eb4f5f3398f9; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: heuristic_miner
 
 ## Algorithm ID & Domain

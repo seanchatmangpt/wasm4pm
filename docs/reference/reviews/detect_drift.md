@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/detect_drift.md; source-sha256: b6dbe7a1d8bc23c8c2805a7d3d5df7dae4a59c714e897da20bc3dc4f623c46e4; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: detect_drift
 
 ## Algorithm ID & Domain

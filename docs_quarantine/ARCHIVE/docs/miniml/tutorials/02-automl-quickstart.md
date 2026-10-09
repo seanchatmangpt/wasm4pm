@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/tutorials/02-automl-quickstart.md; source-sha256: afd73addd59a20a02583384048ded60328b414fc1f834932548713056745cbbd; reason: already in an archive surface -->
+
 # AutoML Quick Start
 
 Let miniml find the best algorithm, features, and hyperparameters for your dataset automatically.

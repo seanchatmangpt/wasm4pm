@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/INDEX.md; source-sha256: 3f7018cbc3e942f9776847204a4db337470bde74d5262a13805f57ffd3c9fd9a; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm Documentation
 
 We follow the [Diátaxis framework](https://diataxis.fr/). Each section serves a distinct reader need.

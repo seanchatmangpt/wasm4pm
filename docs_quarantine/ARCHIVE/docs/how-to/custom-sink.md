@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/custom-sink.md; source-sha256: 1a76ef94e38f2a90c319f30ac2250b2af4962bb3f91e8030180bb7fcc749d728; reason: already in an archive surface -->
+
 # How-To: Build a Custom Sink
 
 **Time required**: 20 minutes  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/error-handling.md; source-sha256: a66f36d2c35941f4eb223f309f2f800ef35cf48077ba3b66cefd2f704449ccdc; reason: already in an archive surface -->
+
 # Explanation: Error Handling Philosophy
 
 **Time to read**: 10 minutes  

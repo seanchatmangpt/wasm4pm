@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TRACKING_JTBD-001.md; source-sha256: cbe4cb57d94bf6ca594916524b6abd6619e2871c2822adddbbecb92bfd5a99f3; reason: already in an archive surface -->
+
 # JTBD-001: Autonomic GHF Verification
 
 - **Task:** Autonomic GHF Verification

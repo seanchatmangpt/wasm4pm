@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/version_space.md; source-sha256: 7dc7ca9836cb45ec5456960ab8c421fad89a51f8955f207b3fd57375068e356a; reason: path-local documentation retained pending domain-specific supersession -->
+
 # version_space — Candidate Elimination
 
 ## 1. Identity & Lineage

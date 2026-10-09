@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/UNCERTAIN_FIRSTS.md; source-sha256: eeaa27da8d227801a193a44d8a9f69e6c9b8066c96c7e912015673f8fd2df421; reason: already in an archive surface -->
+
 # Uncertain Firsts — ACADEMIC-LINEAGE-001
 
 *Algorithms where the "first accepted" claim is disputed, unclear, or cannot be verified without DBLP/DOI access.*

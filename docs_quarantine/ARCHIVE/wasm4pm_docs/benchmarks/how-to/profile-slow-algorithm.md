@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/how-to/profile-slow-algorithm.md; source-sha256: a2932a8074524fc8f506810c4709014ae3fa6bce3ea16d30a6fba8edc9e3a464; reason: already in an archive surface -->
+
 # Profile a Slow Algorithm
 
 **Problem:** An algorithm is taking longer than expected. You need to find the bottleneck -- whether it is in the Rust implementation, the WASM/JS boundary, or the Node.js wrapper layer.

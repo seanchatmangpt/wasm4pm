@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/WASM_UTILS_EXPORT_SUMMARY.md; source-sha256: 7f1d3aa800ac33326c15941323aeeb74b73d08e4330323bcf8513b1db4cda46b; reason: already in an archive surface -->
+
 # WASM Utility Exports: 6 High-ROI Functions (Cycle 8)
 
 **Status:** ✅ Implementation Complete  

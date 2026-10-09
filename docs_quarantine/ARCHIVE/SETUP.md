@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/SETUP.md; source-sha256: a16cba6311fb88ff2d821674c29750353b3c6307c1885532ad9b05f76456557d; reason: already in an archive surface -->
+
 # Monorepo Setup Complete - wasm4pm v26.4.5
 
 This document confirms the pnpm monorepo has been successfully set up according to PRD §6.

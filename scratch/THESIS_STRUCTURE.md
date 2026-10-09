@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: scratch/THESIS_STRUCTURE.md; source-sha256: 488f24543dab61cf19f21c20cc6b5acde3d91030b824a2eca18a8d1964983d46; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Thesis Structure: Bridging the Semantic Gap in Process Mining
 ## A Deterministic, WebAssembly-Accelerated Architecture for Formal Pipeline Verification
 

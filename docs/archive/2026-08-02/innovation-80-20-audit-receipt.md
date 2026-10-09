@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-08-02/innovation-80-20-audit-receipt.md; reason: immutable decision receipt for the selected innovation closure -->
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-08-02/innovation-80-20-audit-receipt.md; source-sha256: 54dffcd189ce1e7605a998c1f1ed3d39f280084212d868fa61ec0293225c0e29; reason: already in an archive surface -->
 
 # Innovation audit receipt
 

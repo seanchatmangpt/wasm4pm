@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/CHANGELOG_RELEASE.md; source-sha256: fe7d785418ffcf4ea634d25a4d69a893366b44674098f817d72ba479cd93232f; reason: already in an archive surface -->
+
 # Release Notes - v26.5.29
 
 **Release Date:** 2026-05-19

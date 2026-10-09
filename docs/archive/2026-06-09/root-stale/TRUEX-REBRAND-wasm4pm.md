@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TRUEX-REBRAND-wasm4pm.md; source-sha256: a9490c29a7abd13a7e3ade3d505e6fa50fe8e777521f970b98b1d4e34a3dcb4e; reason: already in an archive surface -->
+
 # TRUEX ARCHITECTURAL REBRAND: wasm4pm
 
 ## 1. TRUEX CLASSIFICATION

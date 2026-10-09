@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/SIMD_VECTORIZATION.md; source-sha256: bc511a6f80ad41c64af551535809afb011418ec694c6003d64f5c99bd59b8277; reason: already in an archive surface -->
+
 # SIMD Vectorization for wasm4pm Inner Loops
 
 ## Summary

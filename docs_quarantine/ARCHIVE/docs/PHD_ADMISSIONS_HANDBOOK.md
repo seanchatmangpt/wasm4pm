@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PHD_ADMISSIONS_HANDBOOK.md; source-sha256: 87df4389a91bac202f56e3ae947ea179268f9ef815e1a716c0855f11d84428af; reason: already in an archive surface -->
+
 # Admissions & Faculty Handbook
 
 ## 1. Program Mission

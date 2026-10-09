@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/rust-algorithm-porting-guide.md; source-sha256: 3aa94bf617f2efe9c0d9c1a34c383e8ecfb00fe6b35dc0116bf52c49f35b3666; reason: already in an archive surface -->
+
 # Rust Algorithm Porting Guide for wasm4pm
 
 **How to add a new Rust algorithm to wasm4pm and register it in the WASM kernel**

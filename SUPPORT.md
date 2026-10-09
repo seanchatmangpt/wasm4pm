@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: SUPPORT.md; source-sha256: d751abc30a35e0fa506d83ab0c694126c3e74109f60cb36d256865ab0b3ec443; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Support
 
 ## Node.js Versions

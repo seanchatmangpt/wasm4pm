@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/11-requirement.md; source-sha256: 6ffd79ec223e98fa5a8b4036f1da291bb1af3cb6c0393bcbb695054be2de774d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Requirement Diagram: Obligation-To-Evidence Traceability
 
 **Pattern ID:** `11-requirement`  

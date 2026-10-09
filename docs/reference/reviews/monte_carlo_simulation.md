@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/monte_carlo_simulation.md; source-sha256: b61d9abdd655fbcd7363340a3318d4830331d576d20942d73083905eb001b9dd; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: monte_carlo_simulation
 
 ## Algorithm ID & Domain

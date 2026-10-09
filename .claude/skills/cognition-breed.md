@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/skills/cognition-breed.md; source-sha256: 617834a40fa3ab3c12a10fee2f94becb07cd4c46c6f0bc13414bc020b8a5523b; reason: tooling or agent control surface -->
+
 ---
 name: Cognition Breed Patterns
 description: 9 old-AI breed logic, BLAKE3 receipt chains, adversarial gate

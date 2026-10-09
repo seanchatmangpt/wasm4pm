@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/appendices/source-index.md; source-sha256: 4e134202377c145b6f3ee738c55e604d3cfb0f9fc74effee5c5fc6626fd80e5f; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Mermaid source index
 
 - [Flowchart](../diagrams/01-flowchart.mmd) - `01-flowchart.mmd`

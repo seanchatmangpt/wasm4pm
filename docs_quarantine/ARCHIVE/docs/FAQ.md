@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/FAQ.md; source-sha256: 3f865cc275d75bf043272f6e79d27ddcb0c5d88a633b4c097164790306107428; reason: already in an archive surface -->
+
 # Frequently Asked Questions - wasm4pm
 
 Quick answers to common questions about wasm4pm.

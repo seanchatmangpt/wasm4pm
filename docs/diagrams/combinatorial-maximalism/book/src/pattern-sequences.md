@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/pattern-sequences.md; source-sha256: de8358c0ccaf9b849459802ca15a6b11a484187c3974d4060d5e1f8888c8fe61; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Pattern sequences
 
 A pattern language becomes operational through sequences. The following sequences are reusable for wasm4pm design and review.

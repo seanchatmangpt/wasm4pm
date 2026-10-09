@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/preprocessing/scaling.md; source-sha256: 7c7e27b3f8279e4648e07386c060bedf1a5b111934766b26b1cae34deebcdda7; reason: already in an archive surface -->
+
 # Scale Your Features
 
 Normalize numeric features so they contribute equally to model training.

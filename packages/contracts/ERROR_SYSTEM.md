@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packages/contracts/ERROR_SYSTEM.md; source-sha256: 5aba031914c2f61cda93904634accf3b4fa16791c93ad8301a0d59333c6b66c9; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Error System - PRD §14
 
 ## Overview

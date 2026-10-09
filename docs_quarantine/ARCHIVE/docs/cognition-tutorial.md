@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cognition-tutorial.md; source-sha256: c2b27c7c3e684856bf19bba903b681d6414137fb1fc1aff0fb3a57bf0f80850a; reason: already in an archive surface -->
+
 # Cognition Tutorial: From Clone to Verified Receipt in 120 Seconds
 
 This tutorial walks you through the complete wasm4pm cognition layer — from a fresh `git clone`

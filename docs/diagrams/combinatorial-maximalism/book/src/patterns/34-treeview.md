@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/34-treeview.md; source-sha256: cb2f44970417ce645cfea04e28fa0ae89e8898d356620dff49001fad131380e8; reason: path-local documentation retained pending domain-specific supersession -->
+
 # TreeView: Repository And Taxonomy Navigation
 
 **Pattern ID:** `34-treeview`  

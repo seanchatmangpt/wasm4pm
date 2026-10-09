@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/transition_system.md; source-sha256: 9b64428fdede25890a9e772a54b28e7ad439db874c81fc7cafe55641b3fc7ea8; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Transition System Discovery
 
 ## Metadata

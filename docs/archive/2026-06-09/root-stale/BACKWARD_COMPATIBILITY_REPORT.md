@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/BACKWARD_COMPATIBILITY_REPORT.md; source-sha256: ca398a474e55e2d8fd7d4af28d3f0d0e9fdcbf12dbddac9b9d3611fce4d8fa0f; reason: already in an archive surface -->
+
 # baseline admissibility Assessment: ConformancePayload Envelope Wrapper
 
 **Date:** 2026-05-30  

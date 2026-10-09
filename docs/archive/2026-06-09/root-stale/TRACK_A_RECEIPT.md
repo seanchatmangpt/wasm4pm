@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TRACK_A_RECEIPT.md; source-sha256: 7fa413b8c521b0f135b60bebdefedc98b50174135381a87cc29925697dd2f371; reason: already in an archive surface -->
+
 # TRACK A CLOSURE RECEIPT
 
 **Date:** 2026-05-30  

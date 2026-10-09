@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/batches.md; source-sha256: 9098a834e2cc466ec20cc09b8898de9a07bca15bba69afa8a80edc6510588f5f; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Batch Detection
 
 ## Metadata

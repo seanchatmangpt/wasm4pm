@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/yawl_export.md; source-sha256: d4337081cbbeb5e6f94db57191ef8ebd2f34eecb117ed98e8ea9f4f59750bdbf; reason: already in an archive surface -->
+
 # Algorithm Evaluation: YAWL Export
 
 ## Metadata

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/PETRI_NET_INDEX.md; source-sha256: 461b141f5c729f5c3624eb25a4f3bbbc423d22010ee876ece36063acf9f11150; reason: already in an archive surface -->
+
 # Lawful Dispatch Petri Net — Formal Verification Artifacts
 
 **System:** wasm4pm AutoProcess (34ns closed-loop cycle)  

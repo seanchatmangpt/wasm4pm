@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/statistical/anova.md; source-sha256: 597d47484e37b36cf4dab770f1f5ec2d0cb7b7d82d5680c6009ab997c229b1ea; reason: already in an archive surface -->
+
 # One-Way ANOVA
 
 Test whether the means of three or more groups differ significantly.

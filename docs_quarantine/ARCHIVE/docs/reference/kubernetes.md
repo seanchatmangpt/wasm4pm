@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/kubernetes.md; source-sha256: aef89c17e13a5801b6e4c69aa11f03c9c3cf56672d902ab15b028d3935398328; reason: already in an archive surface -->
+
 # Reference: Kubernetes Deployment
 
 ## Deployment

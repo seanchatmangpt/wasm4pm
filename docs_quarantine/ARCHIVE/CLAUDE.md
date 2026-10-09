@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/CLAUDE.md; source-sha256: bf398f04dfe9ee7dd1d0f7acf659462cc8457137b31fc35d96613c155f7d67ef; reason: already in an archive surface -->
+
 # wasm4pm — Claude Code Configuration
 
 **REQUIRED READING:**

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/streaming.md; source-sha256: a7f54796892be3e528b6217c2d5a8007967804a242296d409e3dcde4b5926fee; reason: already in an archive surface -->
+
 # Explanation: Streaming vs Batch Processing
 
 **Time to read**: 10 minutes  

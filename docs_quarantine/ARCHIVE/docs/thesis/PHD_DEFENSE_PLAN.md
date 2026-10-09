@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/thesis/PHD_DEFENSE_PLAN.md; source-sha256: 127ca643b2d3b6afcbe50ddac543d0105da688c54c06dfcc709d586493ccc4b6; reason: already in an archive surface -->
+
 # PhD Defense Plan: Cryptographic Observability, Adversarial Robustness, and Nanosecond Performance in WebAssembly Process Mining
 
 **Candidate:** wasm4pm Research Team  

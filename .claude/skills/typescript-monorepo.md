@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/skills/typescript-monorepo.md; source-sha256: 71cdaf7ea075ef6ac9a8db7e44e1bdff08547a9c4236601910efa4abce2f0c54; reason: tooling or agent control surface -->
+
 ---
 name: TypeScript Monorepo Patterns
 description: pnpm workspaces, Vitest, consola logging, package.json organization

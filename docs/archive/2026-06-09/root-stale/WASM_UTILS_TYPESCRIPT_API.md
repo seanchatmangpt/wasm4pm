@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/WASM_UTILS_TYPESCRIPT_API.md; source-sha256: 7f2f7291abab2b905df094cd9ad130a1d272b5263da2bd1cd9d1299253022fd2; reason: already in an archive surface -->
+
 # WASM Utils TypeScript API Reference
 
 **Generated for:** wasm4pm v26.5.18  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/explanation/algorithms/ensembles.md; source-sha256: 8810dda05b5cbca449c69e426514cbf930ac6f96c37ec29a82ebb33d3fd6a484; reason: already in an archive surface -->
+
 # Ensemble Methods
 
 Ensemble methods combine multiple base learners to produce a single prediction that is more accurate and robust than any individual learner. The core insight is simple: a committee of experts, if sufficiently diverse, will make better decisions than any single expert alone.

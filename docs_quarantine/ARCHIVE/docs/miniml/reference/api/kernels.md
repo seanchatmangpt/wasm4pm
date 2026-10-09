@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/kernels.md; source-sha256: dfbb3fcf9c495b6f9ce1fc60f540a40b9f48658044a387c62281a5bd361033d7; reason: already in an archive surface -->
+
 # Kernel API
 
 Kernel functions for pairwise similarity computation. Used by SVM, Gaussian processes, and other kernelized methods. Call `await init()` before use.

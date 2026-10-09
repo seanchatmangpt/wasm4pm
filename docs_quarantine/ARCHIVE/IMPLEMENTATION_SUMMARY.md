@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/IMPLEMENTATION_SUMMARY.md; source-sha256: 82d54a34613404aa7389d3cf4e822f55f378f8756473cbf18aebf9a95ed2963e; reason: already in an archive surface -->
+
 # WASM Feature Gating Implementation Summary
 
 **Date:** April 16, 2026  

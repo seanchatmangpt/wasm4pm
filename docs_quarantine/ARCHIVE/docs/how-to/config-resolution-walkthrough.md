@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/config-resolution-walkthrough.md; source-sha256: 1c261fc72cc4cb75a914a0d7ed2acde4c4a8ecbe3af4855fa325b61941a16411; reason: already in an archive surface -->
+
 # How-To: Configuration Resolution Walkthrough
 
 **Time required**: 20 minutes  

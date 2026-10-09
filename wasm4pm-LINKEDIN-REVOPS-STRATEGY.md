@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm-LINKEDIN-REVOPS-STRATEGY.md; source-sha256: e0a127e6eb7b5af5077dc959471052a9ffe175f1dd449a4420779b1e59ada449; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm LinkedIn RevOps Strategy
 
 ## Standing and claim ceiling

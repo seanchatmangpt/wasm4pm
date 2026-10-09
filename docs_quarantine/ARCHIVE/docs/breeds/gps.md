@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/breeds/gps.md; source-sha256: e06a9879b6a058a4831707e5778130391add9b53a6e69c4741bcf37042366e19; reason: already in an archive surface -->
+
 # GPS (General Problem Solver)
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/superpowers/plans/2026-08-16-autonomic-framework.md; source-sha256: bdab72c1b25e05816e7548cb9dcbde18f0ece3922a2f21bd7374d598d352c4e1; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Autonomic Framework Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

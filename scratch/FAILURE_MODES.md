@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: scratch/FAILURE_MODES.md; source-sha256: 900bf37980528751e7f949ce7d3ad8296d6e45f91b833a2346f89c760471fda9; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Autonomic Failure Mode Analysis: The Thesis Synthesis Catastrophe
 
 ## 1. Executive Summary

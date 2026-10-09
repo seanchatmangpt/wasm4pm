@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/rl-benchmarks-results.md; source-sha256: ee2570b3869dc542f6b0d5cf2c79d0228113cc5f7cfb1e34573134078f840562; reason: already in an archive surface -->
+
 # wasm4pm RL Benchmarks — Actual Results
 
 **Run Date:** May 5, 2026

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/automl.md; source-sha256: 7b982b53b3cd891a0bd444057a581c89ed95e9b3a12dcb9d6618dc186112428d; reason: already in an archive surface -->
+
 # AutoML API
 
 Complete reference for the automated machine learning pipeline. AutoML handles algorithm selection, feature selection, and hyperparameter optimization with minimal user configuration.

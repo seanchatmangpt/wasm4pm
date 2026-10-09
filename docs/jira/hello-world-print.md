@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/hello-world-print.md; source-sha256: 112cc1904a4ca9cd4e7d84b9831314e9fa806ef29b0118474e4d8ac14a690b4d; reason: path-local documentation retained pending domain-specific supersession -->
+
 
 # Hello World Print
 

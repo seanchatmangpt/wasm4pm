@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ocel_petri_net.md; source-sha256: 5464cde8b9c54c749a39ced222909aeb627bb9061367af4aa033abc4a54c110b; reason: already in an archive surface -->
+
 # Algorithm Evaluation: OC-Petri Net Discovery
 
 ## Metadata

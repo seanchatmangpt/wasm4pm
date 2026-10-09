@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/09b-ML-AI-PRIMITIVES.md; source-sha256: 70c15315966a776d72708ef45528187406e9c65d25ff8664ff0a56ec42cf86ae; reason: path-local documentation retained pending domain-specific supersession -->
+
 # 09b — ML / AI Primitives (Review + Correction Ledger)
 
 **Agent:** A10 — ML & AI Algorithm Review and Correction

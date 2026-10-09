@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/DATASETS-INDEX.md; source-sha256: b3646e2fb8344dfe8677be708ff873f62e8c93100558ac45d67e3a8e933f91ba; reason: already in an archive surface -->
+
 # Process Mining Datasets Index for wasm4pm
 
 Quick navigation to all process mining dataset resources compiled for benchmarking the wasm4pm library.

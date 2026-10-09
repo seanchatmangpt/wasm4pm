@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/wasm4pm-phd-thesis-benchmarks.md; source-sha256: 1689194f66954788012aee9457b2bbb77914f46afa612ac16ce2c14996c340fd; reason: already in an archive surface -->
+
 # Towards Operational Truth: What WebAssembly Process Mining Benchmarks Actually Prove
 
 ## A Doctoral Thesis on the Empirical Foundations of In-Browser Process Intelligence

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/thesis/manufactured-reason/manufactured-reason-thesis.md; source-sha256: 84b9fe1e9ab2fc17238b02f91421e71054413a830fd782602a10fbc73d918539; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Manufactured Reason
 ## A Formal Theory of Ontology-Governed Software Evolution
 

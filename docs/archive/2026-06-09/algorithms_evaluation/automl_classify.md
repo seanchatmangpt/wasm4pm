@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/automl_classify.md; source-sha256: 58c17b051c1fd442af7881e94b9fce38e477a7368ed0dd974af4507cc74e873e; reason: already in an archive surface -->
+
 # Algorithm Evaluation: AutoML Classification
 
 ## Metadata

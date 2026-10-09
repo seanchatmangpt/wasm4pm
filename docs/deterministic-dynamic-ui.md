@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/deterministic-dynamic-ui.md; source-sha256: c493d374b8e8986905ce02d708a67176b5f2ca9138d95dd39389143c8d8bbdfc; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Deterministic Dynamic UI (DDUI) — wasm4pm doctrine and prototype
 
 ## Constitutional definition

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/fuzzy_logic.md; source-sha256: 75f50768e4a6193209c755808590e617492fba9580bb906e7a2a7ddf98f5f138; reason: path-local documentation retained pending domain-specific supersession -->
+
 # fuzzy_logic — Fuzzy Controller
 
 ## 1. Identity & Lineage

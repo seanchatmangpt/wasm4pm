@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/tutorials/watch-mode.md; source-sha256: bfc8d64cbe5f2d10c6cbed2b638ead6b51c3a44f01f3578016739ad53ce8d314; reason: already in an archive surface -->
+
 # Tutorial: Stream Processing with Watch Mode
 
 **Time to complete**: 10 minutes  

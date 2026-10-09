@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/benchmarks/process-science.md; source-sha256: 358842fd4eb23a436e956b4b849f8fec90346085c7e2b9d662e11b5649ae5220; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Process Science Benchmark
 
 ## Thesis under test

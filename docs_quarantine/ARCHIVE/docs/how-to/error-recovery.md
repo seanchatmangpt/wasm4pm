@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/error-recovery.md; source-sha256: 2d37a4dac92df056a465aba52761a96632ed76d10d8390b9289ca4bddec00a5a; reason: already in an archive surface -->
+
 # How-To: Error Recovery
 
 **Time required**: 15 minutes  

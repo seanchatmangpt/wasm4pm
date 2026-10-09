@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: semconv/CODEGEN.md; source-sha256: 979fc9bf931baf909d0c924393016f829be998fb4a9acbf56d363ccff5d07cb8; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Semconv Codegen
 
 ## Status

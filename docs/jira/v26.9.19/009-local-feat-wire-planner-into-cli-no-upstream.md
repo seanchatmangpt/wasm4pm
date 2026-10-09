@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/009-local-feat-wire-planner-into-cli-no-upstream.md; source-sha256: 29407023e7926485cd2a28c9d7bd0d0bf588a900a04cd9a32699581bbb9a6512; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: push or delete local-only branch `feat/wire-planner-into-cli`
 
 - Standing: OPEN

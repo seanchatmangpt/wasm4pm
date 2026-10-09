@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/CACHE_EFFICIENT_STRUCTURES.md; source-sha256: 2f8f15ebd9cf5118fdaf179e7ab743eb8256ba20e8adc24b091fa2a08c469e1f; reason: already in an archive surface -->
+
 # Cache-Efficient Data Structures for RL System
 
 ## Overview

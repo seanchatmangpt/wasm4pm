@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CONTRIBUTING.md; source-sha256: 945ba13e9b79cad6687cd3d497e25c68a0af5b1be36dc757ec66a233ba0a2cf7; reason: canonical contribution workflow -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CONTRIBUTING.md; source-sha256: 945ba13e9b79cad6687cd3d497e25c68a0af5b1be36dc757ec66a233ba0a2cf7; reason: root governance or canonical reference -->
 
 # Contributing to wasm4pm
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/orientation/08-known-issues.md; source-sha256: 1401ec364184bfc371d1ca2e01bbe194e6e81fc6474a8a83fbdf480cf5f9229f; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Phase 8: Known Issues
 
 This is a real, evidenced rollup of every gap identified during the 2026-08

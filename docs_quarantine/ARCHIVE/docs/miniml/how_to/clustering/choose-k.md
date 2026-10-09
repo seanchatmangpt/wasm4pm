@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/clustering/choose-k.md; source-sha256: 7938058709b01e25d7387432966e5db0de922d073e14b5f47ca1316f3c7a7f11; reason: already in an archive surface -->
+
 # Choose K for K-Means
 
 Determine the optimal number of clusters for your data.

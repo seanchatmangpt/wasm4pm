@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/DEPLOYMENT-ARCHITECTURE.md; source-sha256: 49781a743a82f9e1ae025c641bbccd6e8a15d5b29bed946db4c296f9bf8af7cc; reason: already in an archive surface -->
+
 # wasm4pm Deployment Architecture
 ## Process Mining Across Cloud, Fog, Edge, and Device
 

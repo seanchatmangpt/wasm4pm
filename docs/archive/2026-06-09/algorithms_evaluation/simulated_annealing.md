@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/simulated_annealing.md; source-sha256: 0a22db9b353610761ce19b9c985bda48d222811be1480e67af6796bde5943b27; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Simulated Annealing
 
 ## Metadata

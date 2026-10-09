@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/case-studies/aurora.md; source-sha256: 7bddbc6087161ebe4f712ec0aaa0cb053ca3ac735e142229809cd52894eefa9b; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Aurora — a closed autonomic loop over a synthetic hospital
 
 Aurora is the end-to-end case study that closes wasm4pm's autonomic (MAPE-K)

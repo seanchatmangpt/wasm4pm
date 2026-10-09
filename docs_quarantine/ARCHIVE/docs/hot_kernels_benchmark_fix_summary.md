@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/hot_kernels_benchmark_fix_summary.md; source-sha256: d7d9372e5ebe62d95046c763c87164b058b896d8c6676cfe1c939bc37177738b; reason: already in an archive surface -->
+
 # Hot Kernels Benchmark Fix Summary
 
 **Date:** 2026-04-11  

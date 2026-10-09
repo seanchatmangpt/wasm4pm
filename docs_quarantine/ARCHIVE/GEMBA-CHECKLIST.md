@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/GEMBA-CHECKLIST.md; source-sha256: b06e2250791aaf29e877933a3178985569be42a6e3716ca28999bc5d06eb59ab; reason: already in an archive surface -->
+
 # Gemba Enforcement Setup Checklist
 
 ## Implementation Status: ✅ COMPLETE

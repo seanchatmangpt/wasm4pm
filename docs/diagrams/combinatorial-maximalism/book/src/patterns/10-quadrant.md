@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/10-quadrant.md; source-sha256: c73b3ffd08ec2a75e91c3553022208fc02f31f7605c2b783d5366f6e2129e824; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Quadrant Chart: Two-Axis Work Selection
 
 **Pattern ID:** `10-quadrant`  

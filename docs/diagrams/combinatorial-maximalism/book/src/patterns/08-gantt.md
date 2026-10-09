@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/08-gantt.md; source-sha256: c3c661937ed0132e8a970f143f6c637e92bffd11992a237aa5dfa5c6a6bc0f15; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Gantt Chart: Evidence-Gated Schedule
 
 **Pattern ID:** `08-gantt`  

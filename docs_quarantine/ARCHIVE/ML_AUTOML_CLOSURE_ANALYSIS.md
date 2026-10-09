@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/ML_AUTOML_CLOSURE_ANALYSIS.md; source-sha256: 704f6703a7bd679ca5fed5c64c377ce7349301d757c63a12d7ff53a98404ae11; reason: already in an archive surface -->
+
 # ML/AutoML Closure Plan — Iteration 16+ Remediation
 
 **Date:** 2026-05-18  

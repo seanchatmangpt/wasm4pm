@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/cli-commands.md; source-sha256: 6e395923a59bba1852367607dd6d0bae0eafb5cde32b801e195336735bd7ca6c; reason: already in an archive surface -->
+
 # Reference: wasm4pm CLI Commands
 
 **Version**: 26.4.7

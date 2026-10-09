@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/automl/custom-pipelines.md; source-sha256: 08e2a523f3640b424bba1663d4249dae14fb9e79f90e8ab2de94a4759e45623d; reason: already in an archive surface -->
+
 # Custom AutoML Pipelines
 
 Combine feature selection, algorithm evaluation, and recommendation into a custom AutoML workflow.

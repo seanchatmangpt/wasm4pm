@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/ALGORITHM_SELECTION_GUIDE.md; source-sha256: 7109442c1f8e1214c9c518c83a7c37e99c0b2cdbb075905781ac259c973bd73c; reason: already in an archive surface -->
+
 # ML Algorithm Selection Guide (Based on Benchmarks)
 
 **Quick reference for choosing algorithms based on performance constraints and use cases.**

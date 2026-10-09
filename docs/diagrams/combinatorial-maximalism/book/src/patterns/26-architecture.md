@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/26-architecture.md; source-sha256: 283f5cee39434f9dd4d6624641bd3a0ed188ed8e41461ff9f0f78f8162bc1a5c; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Architecture Diagram: Services, Groups, And Directional Interfaces
 
 **Pattern ID:** `26-architecture`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/powl-api.md; source-sha256: 09b845d7a9aa11030b7f055892db70b1c917f345b6c716d81ad8399f4216a753; reason: already in an archive surface -->
+
 # POWL API Reference
 
 Complete reference for all POWL functions exported by the WASM module.

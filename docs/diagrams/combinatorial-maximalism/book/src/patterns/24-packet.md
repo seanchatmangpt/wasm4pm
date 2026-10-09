@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/24-packet.md; source-sha256: 89cdbb41ebf90e778705475994fd464b51586fd65aabfd43cca7ee272ddacade; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Packet Diagram: Wire-Format Integrity
 
 **Pattern ID:** `24-packet`  

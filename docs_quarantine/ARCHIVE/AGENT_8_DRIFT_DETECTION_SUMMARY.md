@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/AGENT_8_DRIFT_DETECTION_SUMMARY.md; source-sha256: ab3a0945e43ae9fce36cf6ab09f0f0c7509ebd43f70ac98431b0a9b829d6dedb; reason: already in an archive surface -->
+
 # Agent 8 - Drift Detection Benchmarking - Final Summary
 
 **Date:** May 5, 2026  

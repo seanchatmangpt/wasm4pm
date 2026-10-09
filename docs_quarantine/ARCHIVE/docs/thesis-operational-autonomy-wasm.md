@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/thesis-operational-autonomy-wasm.md; source-sha256: 52697b9f4315d450e903786641fedba94f91f4a5f6f96b5848c803489d84a166; reason: already in an archive surface -->
+
 # Autonomous Process Mining in Constrained Execution Environments: A Framework for Operational Autonomy in WebAssembly
 
 ## A Doctoral Thesis in Computer Science

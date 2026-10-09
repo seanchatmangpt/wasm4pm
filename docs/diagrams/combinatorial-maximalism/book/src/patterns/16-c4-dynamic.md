@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/16-c4-dynamic.md; source-sha256: f94321a27fa113ac80180dd9a22d6b23f72065af095a4223ca59d6e44e2bffb2; reason: path-local documentation retained pending domain-specific supersession -->
+
 # C4 Dynamic: Numbered Runtime Scenario
 
 **Pattern ID:** `16-c4-dynamic`  

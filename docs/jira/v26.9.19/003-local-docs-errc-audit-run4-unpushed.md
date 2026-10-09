@@ -1,16 +1,13 @@
-# wasm4pm: push local branch `docs/errc-audit-run4` (ahead 11)
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: docs/jira/v26.9.19/003-local-docs-errc-audit-run4-unpushed.md; source-sha256: 55c86f4bac33346691ce4d43da34af0d5ce68ff3e1ebd051b9d3ec95e5f8e775; reason: historical, generated, status, or evidence narrative -->
 
-- Standing: OPEN
-- Created: 2026-09-19 (v26.9.19 gh survey wave)
-- Source: local branch `docs/errc-audit-run4` is ahead 11 its upstream
-- Evidence: `git for-each-ref --format='%(refname:short) %(upstream:track)'` → `docs/errc-audit-run4` ahead 11
+# Archived documentation
 
-## Work to complete
-- Push: `git push origin docs/errc-audit-run4` (fetch first; reconcile if upstream moved).
-- Or discard the local commits if they are obsolete.
+This document is retained as historical evidence and is not current product truth.
 
-## Acceptance
-- `git for-each-ref` shows `docs/errc-audit-run4` in sync (no ahead marker).
+- Archived copy: [`docs/archive/2026-08-02/docs/jira/v26.9.19/003-local-docs-errc-audit-run4-unpushed.md`](../../archive/2026-08-02/docs/jira/v26.9.19/003-local-docs-errc-audit-run4-unpushed.md)
+- Original path: `docs/jira/v26.9.19/003-local-docs-errc-audit-run4-unpushed.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `55c86f4bac33346691ce4d43da34af0d5ce68ff3e1ebd051b9d3ec95e5f8e775`
 
-## History
-- 2026-09-19 | OPEN | survey found unpushed commits | docs/errc-audit-run4 ahead 11 | push pending
+Current documentation starts at [`docs/README.md`](../../README.md).

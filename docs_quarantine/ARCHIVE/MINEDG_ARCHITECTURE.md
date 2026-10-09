@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/MINEDG_ARCHITECTURE.md; source-sha256: 0fe2cd21ea306387a010034051df8f0439b1dc1bc3bb8a591a06a40d52f0d15e; reason: already in an archive surface -->
+
 # MineDG Architecture & Integration Guide
 
 ## System Architecture

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/explanation/statistical/anova.md; source-sha256: 4b5bb20b71011f8f2598c6550033b856b77eefd455552d8cf9c08e8946ca60cc; reason: already in an archive surface -->
+
 # ANOVA
 
 Analysis of Variance (ANOVA) is a statistical method for testing whether the means of two or more groups differ significantly. Despite its name, ANOVA tests differences in means by decomposing the total variability in the data into components attributable to different sources.

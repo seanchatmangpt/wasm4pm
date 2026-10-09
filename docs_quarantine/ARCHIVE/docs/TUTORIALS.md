@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/TUTORIALS.md; source-sha256: 7d2833a78bed5eda0b07d4e366f4ce213df31ddc4535455937b4581e12dfc925; reason: already in an archive surface -->
+
 # wpm (wasm4pm) Tutorials
 
 Learn process mining step-by-step with real commands and concrete examples. Each tutorial takes 5–10 minutes.

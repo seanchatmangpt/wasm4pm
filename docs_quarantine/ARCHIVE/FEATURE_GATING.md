@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/FEATURE_GATING.md; source-sha256: 528b8dcfb5c5b84273ce9313e864e7cfd9dc95b9bf469978d3ce55ce1ce1ee47; reason: already in an archive surface -->
+
 # wasm4pm Feature Gating Infrastructure
 
 **Last Updated:** April 16, 2026 (v26.4.16)

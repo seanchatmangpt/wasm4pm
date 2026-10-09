@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PM4PY_COMPARISON_REPORT.md; source-sha256: 6253cb285683c5c1a28fc2451659d97a873637f6f6f1da06547ee85ee3779ea9; reason: already in an archive surface -->
+
 # POWL Validation Against pm4py
 
 **Date:** 2026-05-07

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/probabilistic/monte-carlo.md; source-sha256: 2300a2d9e283125c7a824dd2d19266a4ea2c9e6446fc2979172f63c2457b6898; reason: already in an archive surface -->
+
 # Monte Carlo Methods
 
 Estimate integrals, expected values, and confidence intervals through random sampling.

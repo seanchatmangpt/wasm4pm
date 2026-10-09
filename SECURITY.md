@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: SECURITY.md; source-sha256: 8d6f49d875d6b4e3334adfac10fa0ed5860c98c14ef4aae76cb3d049fd41caac; reason: canonical security policy -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: SECURITY.md; source-sha256: 8d6f49d875d6b4e3334adfac10fa0ed5860c98c14ef4aae76cb3d049fd41caac; reason: root governance or canonical reference -->
 
 # Security policy
 

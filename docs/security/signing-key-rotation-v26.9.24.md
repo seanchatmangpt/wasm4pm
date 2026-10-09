@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/security/signing-key-rotation-v26.9.24.md; source-sha256: e2434a74a732e70dc48ee32cecc97bafa1ac460513599e6a69a2d6148b4b11f6; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Signing-key rotation (v26.9.24)
 
 Recorded 2026-09-24 (fleet key scan after the single-repo migration). Base `da48e98cdde8` of `wasm4pm`.

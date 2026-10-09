@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: apps/wasm4pm/src/engines/orchestrator/INNOVATION_GAPS.md; source-sha256: ac4717dc2cc8976e56cd3c99d82ca9e36aa7d68f41fa015e41621418990abb1d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Closed innovation gaps
 
 | Gap | Before | After |

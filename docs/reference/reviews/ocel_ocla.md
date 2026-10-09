@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ocel_ocla.md; source-sha256: 96260a58a8007c6f8d272143fdab54f1b5949d693570a718c502329e06f5f875; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: ocel_ocla
 
 ## Algorithm ID & Domain

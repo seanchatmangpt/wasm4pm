@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/PUBLISH_CHECKLIST_v26.4.23.md; source-sha256: 0b4eb17ae6995ff283faaf8007700ddcfdb153c0b2f01e511ad544fe88e33dd9; reason: already in an archive surface -->
+
 # npm Publishing Checklist — v26.4.23
 
 **Release Date**: 2026-04-16  

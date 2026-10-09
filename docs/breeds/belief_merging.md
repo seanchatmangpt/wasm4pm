@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/belief_merging.md; source-sha256: 376dc79ebcfe654b2bb8e21605d4fe3371e0313dff9ee74fb95a7014bb4e673e; reason: path-local documentation retained pending domain-specific supersession -->
+
 # belief_merging — Σ / GMax IC Merging
 
 ## 1. Identity & Lineage

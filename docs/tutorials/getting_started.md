@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/tutorials/getting_started.md; source-sha256: f24514d34f60537457da0a53e62fa00b4b4f4deb0d723ca8f1f2970363bbcf27; reason: canonical source-checkout tutorial -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/tutorials/getting_started.md; source-sha256: f24514d34f60537457da0a53e62fa00b4b4f4deb0d723ca8f1f2970363bbcf27; reason: canonical Diátaxis or ADR surface -->
 
 # Getting started
 

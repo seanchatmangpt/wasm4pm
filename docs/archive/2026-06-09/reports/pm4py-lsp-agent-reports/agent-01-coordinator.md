@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/agent-01-coordinator.md; source-sha256: a297488f005516153959e182ae1a332985b9b2f629b378ab9257a590bf285d32; reason: already in an archive surface -->
+
 # Coordinator Agent Investigation Report
 
 **Role**: Coordinator Agent (`coordinator`)  

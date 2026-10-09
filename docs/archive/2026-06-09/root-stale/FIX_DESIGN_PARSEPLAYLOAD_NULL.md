@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/FIX_DESIGN_PARSEPLAYLOAD_NULL.md; source-sha256: c6c4013f7bd8b56ce652fceb0c154d96636d9b636c5ed5fd908b5872f976e98b; reason: already in an archive surface -->
+
 # Fix Design: `parsePayload() === null` Issue (Track B-1)
 
 **Date:** 2026-05-30  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/ORIGINAL_REQUEST.md; source-sha256: 1120db0f4b941616f944d62ed94f5bbe5d26baa1a5fcb8016aa1cf8a239c8909; reason: already in an archive surface -->
+
 # Original User Request
 
 ## Initial Request — 2026-05-30T01:16:00-07:00

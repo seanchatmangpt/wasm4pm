@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: semconv/INDEX.md; source-sha256: fd72ddb1bc8f2191c52eee8f1372358cad55efcd79b427cf693104d55303ab5a; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm Semantic Conventions Index
 
 > **Complete RDF/SPARQL ecosystem for process mining proofs**  

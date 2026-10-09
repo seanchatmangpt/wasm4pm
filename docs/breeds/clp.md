@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/clp.md; source-sha256: f2490fda2ea54de8c27c99b732a895534c33fdeb0496bd4da653de48a47f6dee; reason: path-local documentation retained pending domain-specific supersession -->
+
 # clp — Constraint Logic Programming (FD)
 
 ## 1. Identity & Lineage

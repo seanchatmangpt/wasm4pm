@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/classification/multi-class.md; source-sha256: 0f5a16890d87c5cfb3f6630adc69c43dbb795780f1f69e4ef96b360e448b9df5; reason: already in an archive surface -->
+
 # Multi-class Classification
 
 Classify samples into three or more categories.

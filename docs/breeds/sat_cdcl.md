@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/sat_cdcl.md; source-sha256: 15f966aa5eb0a2cda05db70eb832b329fdacce99c1253a62478f11465373d49d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # SAT (CDCL)
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/soar.md; source-sha256: e2c57bad29c00fcb7591e67577f1cb7a9e602cccd7d9da08e00eb279e4c9b0c1; reason: path-local documentation retained pending domain-specific supersession -->
+
 # soar — Cognitive Architecture (SOAR Simplified)
 
 ## 1. Identity & Lineage

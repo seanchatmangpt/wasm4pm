@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/E2E_TEST_HARNESS_GUIDE.md; source-sha256: 48de5ff88caaab15952943be355b6cf598ff21ae665a108abeea72829e14baba; reason: already in an archive surface -->
+
 # End-to-End Test Harness Implementation Guide
 
 **Version:** v26.4.17  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/meta_reasoning.md; source-sha256: a842748512821db60f53c46cfe71f85ed219fbdef60ec551c8f6458f14a549e7; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Meta-Reasoning — Conflict Detection + Confidence-Weighted Vote
 
 ## 1. Identity

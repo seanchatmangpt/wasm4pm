@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/AUTOPROCESS_HELP.md; source-sha256: 507e3345688fbac7fe76c2dcdd2e27b00e0220d3a683235043df17ba85dc51b5; reason: already in an archive surface -->
+
 # wpm autoprocess — Help Text Reference
 
 This document specifies the canonical help text for the `wpm autoprocess` command. Use this as the reference for what `wpm autoprocess --help` should display.

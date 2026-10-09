@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/001-prs-bulk-triage.md; source-sha256: d836d2b3890e69cd16f78ddd1bbbb3dd11e7079d0c2e2df528ef0285e8155891; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: triage 15 open PRs
 
 - Standing: OPEN

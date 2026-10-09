@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/PARITY_SURFACE_RECONCILIATION.md; source-sha256: bb364cccbeeacfc86b13ab8f8796cfb742d1239ce49dfd41c2a615db90ae476b; reason: already in an archive surface -->
+
 # Parity Surface Reconciliation
 
 ## 1. Clean Stack Statement

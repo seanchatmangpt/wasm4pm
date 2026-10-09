@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/src/WATCH_MODE.md; source-sha256: 5bbd84f35a490f573142b53c2a69985b89adf5757566d6d383345d119ff21416; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Watch Mode Implementation (§16)
 
 ## Overview

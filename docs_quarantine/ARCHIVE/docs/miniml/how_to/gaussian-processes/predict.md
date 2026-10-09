@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/gaussian-processes/predict.md; source-sha256: 1395a4e667b4214b6333ec824c5bdab37480d3cf34f763d7b8562a6538c168a5; reason: already in an archive surface -->
+
 # GP Prediction
 
 Make predictions with uncertainty estimates using a fitted Gaussian Process model.

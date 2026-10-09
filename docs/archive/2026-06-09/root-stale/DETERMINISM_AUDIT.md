@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/DETERMINISM_AUDIT.md; source-sha256: 43005dec2412c7da4c8a58164e4025b69b3bbf83175019ee6f80497c99cc0f7d; reason: already in an archive surface -->
+
 # Process Mining Algorithm Determinism Audit
 
 **Date:** 2026-05-18  

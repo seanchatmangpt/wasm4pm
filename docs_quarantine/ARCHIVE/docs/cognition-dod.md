@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cognition-dod.md; source-sha256: c7eeb39db30b9df87221dd2f3dc9703fb1c8a6e606c9f35393ae27aa56bec109; reason: already in an archive surface -->
+
 # Cognition Definition of Done
 
 Architecture diagram: #39 (Cognition Build DoD).

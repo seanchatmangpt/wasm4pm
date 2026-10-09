@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cm_thesis/METHODOLOGY.md; source-sha256: a8ea6b39873b463f045d49cd3f277be8feec44470bf34958c054edaa9f7c89c5; reason: already in an archive surface -->
+
 # Methodology: Combinatorial Maximalism in Process Mining
 
 ## 1. Defining "Combinatorial Maximalism"

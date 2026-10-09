@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/smart_engine.md; source-sha256: 644337ce0713876c0cb9608c17018ed4a3848b959d311c9c0bee9a6afe261618; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: smart_engine
 
 ## Algorithm ID & Domain

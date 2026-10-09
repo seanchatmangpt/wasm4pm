@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/a_star.md; source-sha256: ab978bc7df7bd7c88ecc5cf5386048c1d5e36be77cb9517b901c50818ed083c0; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: a_star
 
 ## Algorithm ID & Domain

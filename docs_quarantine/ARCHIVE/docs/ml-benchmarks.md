@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/ml-benchmarks.md; source-sha256: 3620929822e2c80fa682d3bfd2b42fb1e295488cb7be7205f1850c84443c44c1; reason: already in an archive surface -->
+
 # wasm4pm ML Algorithm Benchmarks
 
 **Comprehensive performance analysis of all 6 ML algorithms.**

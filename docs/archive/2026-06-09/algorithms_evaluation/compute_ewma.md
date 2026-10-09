@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/compute_ewma.md; source-sha256: 6e425e941adc6902d621af5565d4070efc45544280b10af3ff05c3b6f2d0b40d; reason: already in an archive surface -->
+
 # Algorithm Evaluation: EWMA Smoothing
 
 ## Metadata

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/drift-benchmarks.md; source-sha256: e6561e638a928d2c411193beec2df8eb397da25fc5043898c718d033455ceffd; reason: already in an archive surface -->
+
 # Drift Detection Benchmarking Report
 
 **Date:** 2026-05-05  

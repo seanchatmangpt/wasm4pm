@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/ACADEMIC_CROSSWALK.md; source-sha256: e1c3356c4c97140fc49002b1e8823a38ab1cf9c0b785dba017467dda0aefcb75; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Primitive Academic Crosswalk — wasm4pm
 
 Cross-reference: each primitive doc → paper grounding → formal object → implementation → tests.

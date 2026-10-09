@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/statistical/chi-square.md; source-sha256: 21321c494b7b395c7c6682a991ea9b42daeb98bbef5e4fde9bcb9839079f9e73; reason: already in an archive surface -->
+
 # Chi-Square Tests
 
 Test relationships between categorical variables: goodness-of-fit and independence.

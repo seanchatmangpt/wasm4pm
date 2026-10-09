@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/soundness_proof.md; source-sha256: 5e5a1763dcdddd665bdcbe59a5eee2347f1be9d4ed547e22354a7e8b6d2db1c2; reason: already in an archive surface -->
+
 # WvdA Soundness Proof: Lawful Dispatch Petri Net
 
 **System:** wasm4pm AutoProcess (34ns closed loop)  

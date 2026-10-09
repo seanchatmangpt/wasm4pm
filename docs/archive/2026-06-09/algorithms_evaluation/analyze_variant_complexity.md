@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/analyze_variant_complexity.md; source-sha256: b6fc71b1175b0d69c2ec4666634f4adbe7129d7849e70d9988d59fac1900a404; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Variant Complexity Analysis
 
 ## Metadata

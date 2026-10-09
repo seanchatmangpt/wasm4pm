@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/docker-deploy.md; source-sha256: f19bcd758bb02099dd54209f88387dcb8ce5ff8b452ded9b20c67368e64f2dd7; reason: already in an archive surface -->
+
 # How-To: Deploy wasm4pm Service with Docker
 
 **Time required**: 15 minutes  

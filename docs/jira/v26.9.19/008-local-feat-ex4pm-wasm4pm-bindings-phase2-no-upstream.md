@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/008-local-feat-ex4pm-wasm4pm-bindings-phase2-no-upstream.md; source-sha256: f80603481e40ceb7aff5a5816053f6354e9f7b3233c90d48e3225afcada39dbe; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: push or delete local-only branch `feat/ex4pm-wasm4pm-bindings-phase2`
 
 - Standing: OPEN

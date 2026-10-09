@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/compute_activity_transition_matrix.md; source-sha256: dc930ca58b88914035f6cf338287585d2ba44a6ca9a6934da5082d084d8780bc; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Activity Transition Matrix
 
 ## Metadata

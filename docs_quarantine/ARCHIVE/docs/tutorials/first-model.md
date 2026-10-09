@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/tutorials/first-model.md; source-sha256: d22353ca92eae5b80fa29240b5b06238bc61948ac142538bb5dd5613459bea4c; reason: already in an archive surface -->
+
 # Tutorial: Your First Process Model
 
 **Time to complete**: 5 minutes  

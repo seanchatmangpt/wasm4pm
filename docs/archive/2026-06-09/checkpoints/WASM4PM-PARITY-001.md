@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/checkpoints/WASM4PM-PARITY-001.md; source-sha256: 5b67b4e94df09b5afc0dd21397e163b0136ba712d44578c141d1d01dab7319f4; reason: already in an archive surface -->
+
 # WASM4PM-PARITY-001: PM4Py Parity Contract
 
 ## Overview

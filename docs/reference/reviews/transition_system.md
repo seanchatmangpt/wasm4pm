@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/transition_system.md; source-sha256: b85247467a178f8c309f350618b1aeda40158b871ad007c1f9b67310e84f00ce; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: transition_system
 
 ## Algorithm ID & Domain

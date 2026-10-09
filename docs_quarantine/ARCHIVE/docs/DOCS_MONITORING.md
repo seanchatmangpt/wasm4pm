@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/DOCS_MONITORING.md; source-sha256: 2d8a87f4b742cb07cbf278b2c77694aa9a5976353026ac7a41724b1ea63d1038; reason: already in an archive surface -->
+
 # Documentation Quality Monitoring & Semantic Convergence
 
 This document describes the documentation monitoring and semantic convergence analysis system for wasm4pm.

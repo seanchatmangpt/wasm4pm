@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/predictive-process-mining.md; source-sha256: 3fb954e18e0e6bc4f7a10e31bfe76a72f286385ebf77ecff0fb3e80c3db39115; reason: already in an archive surface -->
+
 # Explanation: Predictive Process Mining
 
 **Time to read**: 20 minutes

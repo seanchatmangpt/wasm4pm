@@ -404,7 +404,7 @@ describe('Algorithm Selection with Scaling', () => {
       // Allow up to 25% improvement on synthetic data (empirical baseline may vary)
       // Use epsilon to handle floating-point precision and random variation
       expect(improvement).toBeGreaterThanOrEqual(-0.06); // Allow slight degradation due to randomness
-      expect(improvement).toBeLessThanOrEqual(0.30); // Allow slight overage due to floating-point error
+      expect(improvement).toBeLessThanOrEqual(0.3 + 1e-9); // Allow slight overage due to floating-point error
     });
 
     it('should measure neutral or positive improvement with robust scaling on clean data', () => {

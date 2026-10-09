@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/INPUT_VALIDATION_AUDIT.md; source-sha256: cad11c088fae027d4c48c3c4cf5a3d2536e5e3f69e9373b1dba942659993223e; reason: already in an archive surface -->
+
 # wasm4pm CLI Input Validation Audit
 
 **Date:** 2026-05-18  

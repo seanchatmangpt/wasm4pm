@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/mcp-predictive-tools.md; source-sha256: 6d4bd285dff31efc7e8602da15f86275cd67ed797b6adbf2fb1889f3a0e18a1e; reason: already in an archive surface -->
+
 # Reference: MCP Predictive Tools
 
 **Version**: 0.5.4

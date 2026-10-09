@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TEST_COMPACTION_STRATEGY.md; source-sha256: 91c30ddadca6c9b200e2a2b789f7f7c56dab8dd5b3d017d7003520284260ba1c; reason: already in an archive surface -->
+
 # Test Compaction Strategy: 5-Second Wall-Clock Target
 
 **Status:** PLAN DRAFT | **Target:** Reduce `npm test` from ~20-30s → 5s max  

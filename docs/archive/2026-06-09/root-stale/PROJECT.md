@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/PROJECT.md; source-sha256: a5b3f1d8cb1faf3eed316919718d5d4c11f87e652974a212a581af086169fe43; reason: already in an archive surface -->
+
 # Project: wasm4pm Process-Law Oracle
 
 ## Architecture

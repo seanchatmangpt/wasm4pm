@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TEST_CONSOLIDATION_EXAMPLES.md; source-sha256: 544fa6e740b8a542c2dc95707b984a739176669f99431ea482b87eaa64b451f1; reason: already in an archive surface -->
+
 # Test Consolidation Examples — Before & After
 
 **Purpose:** Concrete examples of how redundant tests can be consolidated without losing coverage.

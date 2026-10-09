@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ocel_dfg_per_type.md; source-sha256: 86628dbcb37a0e671674e3e1f212a6088f6afcec81c4525715cbec1c1d4b7cb9; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: ocel_dfg_per_type
 
 ## Algorithm ID & Domain
