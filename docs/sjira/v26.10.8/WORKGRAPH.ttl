@@ -189,7 +189,7 @@ v8:SJIRA-26108-001 a sj:WorkOrder ;
   dcterms:description "scripts/gen_agent_card.py parses the real public surface (lib.rs; re-exports incl. the wire.rs types, workspace Cargo.toml version) and; emits .well-known/agent-card.json deterministically (double run; byte-identical). Fail-closed: refuses if a published skill loses its; lib.rs export. Card is byte-identical to the hand-authored one except (+1 more bullet(s))" ;
   sj:subject "seanchatmangpt/wasm4pm:a2a@5d052f2fe" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "5d052f2fe7c81e645bdd7a1cdf19abc49375d2c9" ;
   sj:landedCommit "5d052f2fe7c81e645bdd7a1cdf19abc49375d2c9" ;
@@ -216,7 +216,7 @@ v8:SJIRA-26108-001 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-001 a sj:Checkpoint ;
   rdfs:label "checkpoint: a2a axis" ;
   sj:checkpointOf v8:SJIRA-26108-001 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 1 commit(s) on the a2a axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-002 a sj:WorkOrder ;
@@ -226,7 +226,7 @@ v8:SJIRA-26108-002 a sj:WorkOrder ;
   dcterms:description "Fleet validator (ggen-marketplace scripts/validate_agent_cards.py) flagged; .well-known/agent-card.json: forbidden top-level url and missing; supportedInterfaces[0].protocolVersion. Replaced the url with a; supportedInterfaces entry (protocolVersion 1.0, protocolBinding SA2A),; format-preserving (6 insertions, 1 deletion). (+3 more bullet(s))" ;
   sj:subject "seanchatmangpt/wasm4pm:agent-card@070c5e96f" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "070c5e96fc763d322fa22461abb043541da0bbd7" ;
   sj:landedCommit "070c5e96fc763d322fa22461abb043541da0bbd7" ;
@@ -260,7 +260,7 @@ v8:SJIRA-26108-002 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-002 a sj:Checkpoint ;
   rdfs:label "checkpoint: agent-card axis" ;
   sj:checkpointOf v8:SJIRA-26108-002 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 2 commit(s) on the agent-card axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-003 a sj:WorkOrder ;
@@ -307,7 +307,7 @@ v8:SJIRA-26108-004 a sj:WorkOrder ;
   dcterms:description "Backfill CHANGELOG entries for 26.10.6 (baseline seal: CI fmt/toSorted fix,; rdflib+pytest CI fix, workspace 26.9.28 -> 26.10.6 package.json bump,; receipt-doctor docs), 26.10.7 (package.json 26.10.6 -> 26.10.7 lockfile; convergence), and 26.10.8 (Cargo workspace 26.9.30 -> 26.10.8 + 5 internal; path deps + package.json 26.10.7 -> 26.10.8)." ;
   sj:subject "seanchatmangpt/wasm4pm:changelog@72da25146" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "72da25146205edc772169e7541efc4b4ea3e4dfb" ;
   sj:landedCommit "72da25146205edc772169e7541efc4b4ea3e4dfb" ;
@@ -332,7 +332,7 @@ v8:SJIRA-26108-004 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-004 a sj:Checkpoint ;
   rdfs:label "checkpoint: changelog axis" ;
   sj:checkpointOf v8:SJIRA-26108-004 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 1 commit(s) on the changelog axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-005 a sj:WorkOrder ;
@@ -342,7 +342,7 @@ v8:SJIRA-26108-005 a sj:WorkOrder ;
   dcterms:description "Recommit of 515778bd1 with .oclnr-cache/scan.sled/db (633 MB classifier; cache) removed and .oclnr-cache/ gitignored. The original commit was; local-only, unpushed, marked in-flight/unverified, and cited in no; receipt — repaired to unblock all wasm4pm pushes (GitHub 100MB limit).; No published SHA invalidated. Disclosed in campaign receipt." ;
   sj:subject "seanchatmangpt/wasm4pm:docs@0ea4062e5" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "0ea4062e5154c09e5d5cd4d913a6df9030d08126" ;
   sj:landedCommit "00a7eb3440dfb5235a0f59594a6bc3dead5a78fc" ;
@@ -408,7 +408,7 @@ v8:SJIRA-26108-005 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-005 a sj:Checkpoint ;
   rdfs:label "checkpoint: docs axis" ;
   sj:checkpointOf v8:SJIRA-26108-005 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 6 commit(s) on the docs axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-006 a sj:WorkOrder ;
@@ -418,7 +418,7 @@ v8:SJIRA-26108-006 a sj:WorkOrder ;
   dcterms:description "Regenerated docs/DOCUMENTATION_MANIFEST.md via the lawful generator; (scripts/docs/migrate-markdown.mjs, full-checkout run: 2548 markdown files; inspected; per-file rewrite path disabled to honor this lane's two-file; pathspec — docs/README.md remains the one file the generator flags for; rewrite, left to its owner).; LANE docs-w4p3" ;
   sj:subject "seanchatmangpt/wasm4pm:policy@77e8b09dd" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "77e8b09dd098e19349cd20795cffa3594d2bf966" ;
   sj:landedCommit "77e8b09dd098e19349cd20795cffa3594d2bf966" ;
@@ -443,7 +443,7 @@ v8:SJIRA-26108-006 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-006 a sj:Checkpoint ;
   rdfs:label "checkpoint: policy axis" ;
   sj:checkpointOf v8:SJIRA-26108-006 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 1 commit(s) on the policy axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-007 a sj:WorkOrder ;
@@ -453,7 +453,7 @@ v8:SJIRA-26108-007 a sj:WorkOrder ;
   dcterms:description "Add docs/reference/ocel-conformance.md: the OCEL 2.0 relational/JSON model; types (wasm4pm-compat 26.8.7 src/ocel.rs), the token-replay/fitness API; (conformance.rs), object-centric conformance claims, the in-repo OCPQ; query/constraint crate (crates/ocpq), the typed Admission/Refusal + Ocel20; witness boundary, and the shared-fixture contract with beam4pm (+4 more bullet(s))" ;
   sj:subject "seanchatmangpt/wasm4pm:reference@5a59b1be4" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "5a59b1be4ee9cfeec975418a7991410582aa12db" ;
   sj:landedCommit "5a59b1be4ee9cfeec975418a7991410582aa12db" ;
@@ -480,7 +480,7 @@ v8:SJIRA-26108-007 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-007 a sj:Checkpoint ;
   rdfs:label "checkpoint: reference axis" ;
   sj:checkpointOf v8:SJIRA-26108-007 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 1 commit(s) on the reference axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-008 a sj:WorkOrder ;
@@ -490,7 +490,7 @@ v8:SJIRA-26108-008 a sj:WorkOrder ;
   dcterms:description "Skills are exactly the public surface re-exported from; crates/wasm4pm-sa2a-actuator/src/lib.rs (execute, effect digest,; certificate signing message, verify, resource admission, ledger).; Description carries the authority law: effects require an external; authority signature quorum; no invented verbs. Version 26.10.8." ;
   sj:subject "seanchatmangpt/wasm4pm:sa2a-actuator@7146a5312" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "7146a53129681008e255375e338fe47bb11cd06f" ;
   sj:landedCommit "7146a53129681008e255375e338fe47bb11cd06f" ;
@@ -521,7 +521,7 @@ v8:SJIRA-26108-008 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-008 a sj:Checkpoint ;
   rdfs:label "checkpoint: sa2a-actuator axis" ;
   sj:checkpointOf v8:SJIRA-26108-008 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "ALIVE" ;
   dcterms:description "checkpoint after 1 commit(s) on the sa2a-actuator axis; standing inherited from the order, never asserted" .
 
 v8:SJIRA-26108-009 a sj:WorkOrder ;
@@ -531,7 +531,7 @@ v8:SJIRA-26108-009 a sj:WorkOrder ;
   dcterms:description "Backlog [114]: git-trust court M2 closure — workgraph regenerated from repo state; (non-LLM, deterministic; double-run byte-identical).; Court delta: 0 -> 25 sha entries, 25 RESOLVED-ROOTED, 0 UNRESOLVED." ;
   sj:subject "seanchatmangpt/wasm4pm:sjira@0021d6151" ;
   sj:promotionRule "Standing may advance only from an independent exact-head court receipt binding this order member SHAs and a durable 5-field receipt." ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "REFUTED" ;
   sj:repository "seanchatmangpt/wasm4pm" ;
   sj:baseSha "0021d6151fa1a12b220df90100151fca8c22ac3f" ;
   sj:landedCommit "0021d6151fa1a12b220df90100151fca8c22ac3f" ;
@@ -561,6 +561,6 @@ v8:SJIRA-26108-009 a sj:WorkOrder ;
 v8:cp-SJIRA-26108-009 a sj:Checkpoint ;
   rdfs:label "checkpoint: sjira axis" ;
   sj:checkpointOf v8:SJIRA-26108-009 ;
-  sj:standing "UNKNOWN" ;
+  sj:standing "REFUTED" ;
   dcterms:description "checkpoint after 2 commit(s) on the sjira axis; standing inherited from the order, never asserted" .
 
