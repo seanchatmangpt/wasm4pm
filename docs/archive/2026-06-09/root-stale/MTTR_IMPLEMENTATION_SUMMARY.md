@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/MTTR_IMPLEMENTATION_SUMMARY.md; source-sha256: a5982b199e8293b24b0658a67e9ec9a2ab5112bbe0dc6719a2d971a727a749fc; reason: already in an archive surface -->
+
 # MTTR Benchmarking Suite — Implementation Summary
 
 **Date:** 2026-05-18  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/preprocessing.md; source-sha256: 442dc023e346be7459232ccc85225e009238468a4fee6e5983f192361f44fa5a; reason: already in an archive surface -->
+
 # Preprocessing API
 
 Complete reference for all data preprocessing functions exported by `miniml`. Includes scalers, encoders, imputation, dimensionality reduction, and data normalization.

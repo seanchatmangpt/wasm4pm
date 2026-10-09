@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/predictive-mining.md; source-sha256: 4b8aed050be73813bcb891b05bac5cc6e76e369a434403f9ff208e4453dc3f3d; reason: already in an archive surface -->
+
 # How-To: Run Predictive Process Mining
 
 **Time required**: 10 minutes

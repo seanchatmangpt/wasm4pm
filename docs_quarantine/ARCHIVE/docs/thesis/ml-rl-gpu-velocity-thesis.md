@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/thesis/ml-rl-gpu-velocity-thesis.md; source-sha256: 101aeb51b09eff97a90fdee9e54f58045cc48d524d2bb96e51e74afac86b85c3; reason: already in an archive surface -->
+
 # Velocity as Enabler: How Nanosecond-Scale ML/RL/GPU Process Mining Unlocks New Paradigms
 
 **Sean Chatman**

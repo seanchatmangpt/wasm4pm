@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reports/pm4py-lsp-agent-reports/CHECKLIST.md; source-sha256: 8ba5f437f283ee3894915bce1f2a1f84f3e5907c7d7836a9fe294ea9c6cc7f6f; reason: already in an archive surface -->
+
 # Checklist: PM4Py-LSP Definition of Done (DOD) Gates G1-G20
 
 This checklist records the validation status of all 20 Definition of Done (DOD) Gates for the `pm4py-lsp` adapter integration.

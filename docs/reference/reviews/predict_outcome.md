@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/predict_outcome.md; source-sha256: c74b9bdf9fb203475dfdfeca17f3031319352cda800aefb4b70ea9b28e512a9b; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: predict_outcome
 
 ## Algorithm ID & Domain

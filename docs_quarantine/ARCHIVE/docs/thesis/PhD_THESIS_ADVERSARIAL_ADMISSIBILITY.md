@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/thesis/PhD_THESIS_ADVERSARIAL_ADMISSIBILITY.md; source-sha256: 5c2cce6b4ed2df8e4953e3a007f65e5ffb0e1f77527c027127ffea9853f541a2; reason: already in an archive surface -->
+
 # Adversarial Admissibility Testing for AI-Manufactured Software
 
 **A Five-Dimensional Process-Mining-Grounded Framework for Refusing Fake Completion Claims**

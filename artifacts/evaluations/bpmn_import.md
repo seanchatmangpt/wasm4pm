@@ -1,39 +1,13 @@
-# Algorithm Evaluation: bpmn_import
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/bpmn_import.md; source-sha256: 97e7dbf00224769dd239e36f0c2fdac73fb794b7326cc9f047ea31ab7e40719b; reason: historical, generated, status, or evidence narrative -->
 
-## Metadata
-- **Algorithm ID**: `bpmn_import`
-- **Category**: `discovery`
-- **Supported Profiles**: `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Status Proof
-- **Registry**: ✅ Present
-- **TypeScript Dispatch**: ✅ Present
-- **CLI Surface**: ✅ Present
-- **WASM Export**: ✅ Present
+This document is retained as historical evidence and is not current product truth.
 
-## Behavioral Evidence
-- **Positive Cases**:
-    - `bpmn_import.valid_minimal_log`: **PASSED**
-- **Negative Cases**:
-    - `bpmn_import.MalformedLogCase`: **FAILED_CORRECTLY** (Error: `MALFORMED_EVENT_LOG`)
-    - `bpmn_import.EmptyLogCase`: **FAILED_CORRECTLY** (Error: `EMPTY_EVENT_LOG`)
-- **Invariant Cases**:
-    - `bpmn_import.DeterministicSameInputCase`: **PASSED** (Stable: true)
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/bpmn_import.md`](../../docs/archive/2026-08-02/artifacts/evaluations/bpmn_import.md)
+- Original path: `artifacts/evaluations/bpmn_import.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `97e7dbf00224769dd239e36f0c2fdac73fb794b7326cc9f047ea31ab7e40719b`
 
-## Evidence Binding
-- **Evidence Hash**: `2aaa368828466731e98015f745c278ea1f7d9d23c5a0d18a43f6859d33a245e1`
-- **Verification State**: `Closed`
-
-## Algorithmic Role
-The `bpmn_import` algorithm facilitates the integration of industry-standard Business Process Model and Notation (BPMN) files into the wasm4pm ecosystem. It parses BPMN XML and converts it into internal process tree or Petri net representations, enabling conformance checking and simulation against real-world event logs.
-
-## Implementation Validation & Details
-The `bpmn_import` algorithm is implemented in Rust (`wasm4pm/src/bpmn_import.rs`). It converts BPMN 2.0 XML models into the internal POWL (Partially Ordered Workflow Language) format by:
-- **XML Parsing**: Parsing the BPMN 2.0 XML document using the `roxmltree` crate to extract all relevant BPMN elements and sequence flows.
-- **Element Mapping**: Translating standard BPMN elements to POWL node structures:
-  - `<task>` nodes map to standard transitions.
-  - `pm4py:silent` service tasks map to silent (tau) transitions.
-  - `<parallelGateway>` splits/joins map to `StrictPartialOrder` blocks.
-  - `<exclusiveGateway>` maps to `OperatorPowl(Xor)` or `OperatorPowl(Loop)` if a cyclic back-edge is detected.
-- **Connector Resolution**: Providing transparent support for external tooling and `pm4py`-generated BPMNs by identifying and collapsing `pm4py:connector` service tasks directly into standard sequence edges.
-- **Subtree Construction**: Recursively building a POWL subtree starting from the identified start events and combining multiple starts with a top-level XOR operator.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

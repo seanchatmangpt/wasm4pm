@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/deployment_profiles.md; source-sha256: 8223deebba494f04570268742c0eaa6c4bc965902b0398064fd6f6b3c81f1b80; reason: canonical Diátaxis or ADR surface -->
+
 # Reference: Deployment Profiles
 
 wasm4pm provides WASM builds for different deployment environments by gating features during compilation.

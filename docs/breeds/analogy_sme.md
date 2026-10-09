@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/analogy_sme.md; source-sha256: fb6d2a81f6e13bc86530d4bb7d6a0a1e4fca2c7a8e7cca59aec3bb05bcb64ef9; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Analogy (Structure-Mapping Engine)
 
 ## Origin

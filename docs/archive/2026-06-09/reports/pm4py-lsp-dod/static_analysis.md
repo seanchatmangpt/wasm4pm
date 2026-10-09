@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reports/pm4py-lsp-dod/static_analysis.md; source-sha256: 3ea111f6f2fdbe9a75ea25c67975bab69004e8e496ba5735b70e2e50356eaf19; reason: already in an archive surface -->
+
 # Static Analysis Investigation Report
 
 **Role**: Static Analysis Agent (`analysis`)  

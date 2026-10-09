@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PHD_BENCHMARK_HARNESS.md; source-sha256: 3d14446539c76a2aae54ecf3b2eeb0ba47803d77bba6aa23fb025866d4b690ba; reason: already in an archive surface -->
+
 # Reproducible Benchmark Harness Architecture
 
 ## 1. Overview

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/CONFIG_AUDIT_FOOTGUNS.md; source-sha256: a8579d63fb6fac1431d653430b33a970f33920557ce2df7682dd23fb0e813875; reason: already in an archive surface -->
+
 # wasm4pm Config System Audit — Footguns & Validation Gaps
 
 **Date:** 2026-05-18  

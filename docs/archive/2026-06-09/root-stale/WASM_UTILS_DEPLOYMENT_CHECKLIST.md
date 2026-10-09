@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/WASM_UTILS_DEPLOYMENT_CHECKLIST.md; source-sha256: fea5f27b7e334d632b8fbd911ca02437611c9eb34dc32b9514803138ebae80a0; reason: already in an archive surface -->
+
 # WASM Utils Export Deployment Checklist
 
 **Status:** ✅ Code Complete (Ready for WASM Build)

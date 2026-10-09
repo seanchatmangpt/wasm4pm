@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/frames_inheritance.md; source-sha256: b67652cb7e56a37419efc7b68a44f50ebecb22e879a2f51b0ea0a3840f07ed6d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Frames Inheritance
 
 ## 1. Identity & Lineage

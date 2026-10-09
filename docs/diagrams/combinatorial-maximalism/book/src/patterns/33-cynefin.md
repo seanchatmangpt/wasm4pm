@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/33-cynefin.md; source-sha256: b0119c404cf5f2cd5d72164bd27bdc77f7a5530297186cf696f4b42e844c720f; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Cynefin Diagram: Decision Mode By Domain Uncertainty
 
 **Pattern ID:** `33-cynefin`  

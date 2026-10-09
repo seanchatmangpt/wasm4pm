@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/dendral.md; source-sha256: 191a8a29eb8fb385491e122ecf6c5990f276360767edba48203c1a8ff49cd57b; reason: path-local documentation retained pending domain-specific supersession -->
+
 # dendral — Constraint-Based Candidate Enumeration
 
 ## 1. Identity & Lineage

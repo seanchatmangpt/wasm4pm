@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/010-local-worktree-wf_99470ccd-c7b-1-no-upstream.md; source-sha256: ae75a623c8280ff121470e67310eb673859525f110a93b9d65d80e77060783fb; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: push or delete local-only branch `worktree-wf_99470ccd-c7b-1`
 
 - Standing: OPEN

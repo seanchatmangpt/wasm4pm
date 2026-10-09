@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/c4-container.md; source-sha256: e5e0c7fbe00a23dea5f25081c1aa8f3c9eedafdbef37dc5d8cf5cffc8b684061; reason: path-local documentation retained pending domain-specific supersession -->
+
 # C4: Container
 
 **Re-verified:** 2026-07-24.

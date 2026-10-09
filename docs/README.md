@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/README.md; source-sha256: b4e68a9681f8d3db92fe7d59fcb456305e0098f5f879bc8228827c5f2fb14d9f; reason: canonical documentation entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/README.md; source-sha256: 2baef8780c96c15e771f2da68aa8c1a5d8d09b28eaa74ed546c2805ed7a610ed; reason: path-local authority or entrypoint -->
 
 # wasm4pm documentation
 
@@ -14,6 +14,7 @@ This directory is the active documentation entrypoint for wasm4pm. Documentation
 | Build a first workflow | [`tutorials/getting_started.md`](tutorials/getting_started.md) |
 | Operate and troubleshoot the system | [`how-to/`](how-to/) |
 | Look up commands, configuration, and algorithms | [`reference/`](reference/) |
+| Look up the OCEL 2.0 log model, conformance API, and admission types | [`reference/ocel-conformance.md`](reference/ocel-conformance.md) |
 | Understand testing and evidence | [`../TESTING.md`](../TESTING.md) |
 | Contribute changes | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) |
 | Report a vulnerability | [`../SECURITY.md`](../SECURITY.md) |
@@ -51,3 +52,11 @@ pnpm run docs:check
 ```
 
 A documentation migration is complete only when the second migration pass reports zero changes and active links/lint pass against the same commit.
+
+## See Also
+
+The OCEL train spans three sibling repositories; their canonical documentation:
+
+- [beam4pm — ingest and bridge API reference](../../beam4pm/docs/diataxis/reference/ingest-and-bridge-api.md) — beam4pm consumes wasm4pm's OCEL fixtures (e.g. `fixtures/shared/receipt.xes`, `fixtures/negative/`) through its ingest/bridge layer; wasm4pm itself has no direct code dependency on beam4pm.
+- [OCEL 2.0 conformance surface](reference/ocel-conformance.md) — the typed log model (`wasm4pm_compat::ocel`), token-replay/fitness API, typed `Admission`/`Refusal` boundary, OCPQ query crate, and the shared-fixture contract with beam4pm.
+- [ex4pm](../../ex4pm/docs/) — evidence emitter; the binding is `crates/wasm4pm-ex4pm-bindings` (see `docs/abi/ex4pm-bindings.md`).

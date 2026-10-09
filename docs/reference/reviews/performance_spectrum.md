@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/performance_spectrum.md; source-sha256: d41cbc653e4f58fe57c3919af3e58b374e8d949aa5e042c663742ead4d777225; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: performance_spectrum
 
 ## Algorithm ID & Domain

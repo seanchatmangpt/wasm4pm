@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/WASM_BUILD_OPTIMIZATION_DEEP_DIVE.md; source-sha256: 135e90e24f02cd384bb3359f2fe020a6399bdd38671452cdedc6a918ca6d42e4; reason: already in an archive surface -->
+
 # WASM Build Optimization Deep-Dive
 
 **Date:** 2026-05-30  

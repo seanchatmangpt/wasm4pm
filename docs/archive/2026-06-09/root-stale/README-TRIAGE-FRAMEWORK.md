@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/README-TRIAGE-FRAMEWORK.md; source-sha256: ecabde08ef2fa92336b738db3afed694a23917f9923c9122094daba940bd3068; reason: already in an archive surface -->
+
 # Test Failure Triage Framework - Complete Guide
 
 **Last Updated:** 2026-05-30  

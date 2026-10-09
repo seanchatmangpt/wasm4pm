@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/02-EXISTING-CITATIONS.md; source-sha256: 4a8f79df74aa99b69e7564c710e7962f812a712dfbcb6ec8080d266b06e111c5; reason: already in an archive surface -->
+
 # 02 — Existing Citations Inventory
 
 **Agent:** A3 — Citation Agent  

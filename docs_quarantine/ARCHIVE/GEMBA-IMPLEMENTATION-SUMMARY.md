@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/GEMBA-IMPLEMENTATION-SUMMARY.md; source-sha256: 8e3ecbfc0d3a66b2858cf660fa314cefe730bb1cba244f42f37b4562808d7553; reason: already in an archive surface -->
+
 # Gemba Enforcement Implementation Summary
 
 **Date:** 2026-04-11

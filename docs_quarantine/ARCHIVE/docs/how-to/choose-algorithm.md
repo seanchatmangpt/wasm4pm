@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/choose-algorithm.md; source-sha256: 266982ea2f8ce00ceb7ec4fbf38b86cbc5bc08c6322c712d1a5e2e916125d43f; reason: already in an archive surface -->
+
 # How-To: Choose the Right Algorithm
 
 **Time required**: 10 minutes

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packages/cognition/src/__tests__/fixtures/papers/PROVENANCE.md; source-sha256: 33abc5daeaeea02ba5bad1800e981a8a2501ee8374845b2302b7b8e995e32478; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Breed Paper Provenance Manifest — wasm4pm cognition layer
 
 Single audit surface: which test data came from which paper.

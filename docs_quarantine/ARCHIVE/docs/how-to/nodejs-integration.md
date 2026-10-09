@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/nodejs-integration.md; source-sha256: d31d63a1af7f03fdce851eafd23e7a16686db9b8c966a2bba3a59bffcd8623f4; reason: already in an archive surface -->
+
 # How-To: Integrate wasm4pm into Node.js
 
 **Time required**: 15 minutes  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cm_thesis/CONCLUSION.md; source-sha256: 722b1935c8aeb48bef9ed60d457dcd533f67f862c2cb69ec07e737f79de8e066; reason: already in an archive surface -->
+
 # Conclusion
 
 ## Synthesis of Architectural Limits

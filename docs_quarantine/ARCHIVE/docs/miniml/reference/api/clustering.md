@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/clustering.md; source-sha256: 2f0fb8f5b0f0abd09d9cbebed3c22599eb1b09cbf4b862a7ffc7d0518dc07368; reason: already in an archive surface -->
+
 # Clustering API
 
 Complete reference for all clustering algorithms exported by `miniml`.

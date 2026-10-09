@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packages/kernel/README.md; source-sha256: d2be97840d94844983b8f72c2e3fa3c9a706dec5c2324f934f4664a6365b0589; reason: path-local authority or entrypoint -->
+
 # @wasm4pm/kernel
 
 Core kernel for algorithm registration and step execution in the wasm4pm process mining pipeline.

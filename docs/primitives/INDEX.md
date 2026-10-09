@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/INDEX.md; source-sha256: be1c256c2c346bfcaa834b47ff38c2decef26dfbf24097c64150521a0eadf690; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Primitive Kernel — Index
 
 The **primitive kernel** is the foundational layer of wasm4pm's process-mining

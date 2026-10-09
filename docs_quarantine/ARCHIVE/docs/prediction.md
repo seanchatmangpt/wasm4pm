@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/prediction.md; source-sha256: 4c7d2305f6d942a5910308666ee1b88608c0709b6cce787d5a4130e1efcd5f0f; reason: already in an archive surface -->
+
 # Prediction Tasks Guide
 
 `wpm predict <task>` runs *predictive* process mining — answering questions

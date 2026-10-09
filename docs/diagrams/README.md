@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/README.md; source-sha256: 30fab9294dbcb902e6531ed217daf11d0beb7a9caf6397c418abe93bd80d6937; reason: path-local authority or entrypoint -->
+
 # InterviewAssist diagrams
 
 Architecture and UX diagrams for `examples/interview-assist/`.

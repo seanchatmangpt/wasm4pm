@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent10/AGENT10-001-complete-documentation.md; source-sha256: fd77571c337622ac159800b72dbf335429e07f8f96f6d971552e9f09af3095e5; reason: already in an archive surface -->
+
 # AGENT10-001: Complete Documentation
 
 **Status:** 🟡 READY  

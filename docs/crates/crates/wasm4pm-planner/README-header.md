@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/crates/crates/wasm4pm-planner/README-header.md; source-sha256: c10667e9e070ddf1ee3425bb7948de72e85c21441c65270f6c19903ff266c1e8; reason: path-local documentation retained pending domain-specific supersession -->
+
 
 # wasm4pm-planner
 

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/INTEGRATION_TESTING_PLAN.md; source-sha256: fc49c53d5551402724c35f3a21106ef930e4aacfb7720f4426369711ef7602fb; reason: already in an archive surface -->
+
 # wasm4pm Integration Testing & Certification Plan
 
 **Version:** v26.4.17  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TEST_REDUNDANCY_AUDIT.md; source-sha256: 340bfb5f92fbe1f1346fc9eff9e941e5f823cdd61ac12917267d7348c9632cf9; reason: already in an archive surface -->
+
 # Test Suite Redundancy Audit Report — wasm4pm
 
 **Date:** 2026-05-29  

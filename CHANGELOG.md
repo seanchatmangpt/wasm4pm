@@ -1,8 +1,46 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: CHANGELOG.md; source-sha256: 41c9cd627f430e4fe8408f3166e71fc14fba8139f2681f143eefce112dea02cc; reason: root governance or canonical reference -->
+
 # Changelog
 
 wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
+
+## [26.10.8] — 2026-10-08
+
+### Changed
+- Versions: workspace version bumped 26.9.30 -> 26.10.8 (`Cargo.toml`
+  `[workspace.package]`), the 5 internal path dependencies (`wasm4pm`,
+  `wasm4pm-cognition`, `prolog8`, `miniml`, `ocpq`) aligned to 26.10.8, and
+  `package.json` bumped 26.10.7 -> 26.10.8. `Cargo.lock` reconciled.
+
+## [26.10.7] — 2026-10-07
+
+### Changed
+- Versions: `package.json` bumped 26.10.6 -> 26.10.7 (W632 lockfile
+  convergence; `Cargo.lock` verified already converged, `cargo metadata`
+  EXIT=0, zero diff).
+
+## [26.10.6] — 2026-10-07
+
+Baseline seal for the post-26.9.30 fleet campaign: workspace version bump,
+CI root-cause fixes, and receipt-doctor standing documentation. No lib
+source changes.
+
+### Fixed
+- CI: `cargo fmt` drift in 4 Rust files and ES2023 `toSorted` in the
+  registry-closure kernel test (TS2550) that surfaced after the v26.9.30
+  integration merge.
+- CI: install `rdflib` and `pytest` before the TypeScript integration tests
+  (interview-assist tests shell out to `python3` with both; pre-existing
+  failure on main run 36502285639).
+
+### Changed
+- Versions: all workspace `package.json` versions bumped 26.9.28 -> 26.10.6
+  (W601p phase-0 seal); receipt verify-ocel2 / doctor standing documentation
+  in `apps/wasm4pm/README.md` and
+  `docs/jira/26.10.6/prd_ard_receipt_truth_verification.md`; refreshed the
+  algorithm-selection-with-scaling test.
 
 ## [26.9.30] — 2026-09-30
 

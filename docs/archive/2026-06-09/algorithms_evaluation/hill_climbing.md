@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/hill_climbing.md; source-sha256: 33c5172797075a44662244c911c5befcc8642b908649de5afcd5f2da41dd5414; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Hill Climbing
 
 ## Metadata

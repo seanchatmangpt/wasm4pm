@@ -1,0 +1,20 @@
+[package]
+name = "eu_gate"
+version = "0.1.0"
+edition = "2021"
+license = "BUSL-1.1"
+description = "EU AI Act Art.15 admission gate: sandboxed SHACL-style rule evaluation with trap -> typed-refusal (fail-closed) semantics."
+
+# Standalone: do NOT join the wasm4pm workspace (this lane may only write crates/eu_gate/).
+[workspace]
+
+[[bin]]
+name = "eyerun_wasi"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = 3

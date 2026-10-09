@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/how-to-read.md; source-sha256: badf412a479b658a85e310cafca261210cf65d4b6c7416ea8e48cc040db8bb79; reason: path-local documentation retained pending domain-specific supersession -->
+
 # How to read this pattern language
 
 Each pattern uses the same seven-part grammar:

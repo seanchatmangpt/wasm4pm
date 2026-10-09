@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/004-local-fix-etconformance-precision-feature-gate-unpushed.md; source-sha256: 852c67400d27444cb74a032734d6b951b4a23b64b9ae41e64a68914c017993da; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: push local branch `fix-etconformance-precision-feature-gate` (ahead 1)
 
 - Standing: OPEN

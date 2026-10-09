@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/guides/prediction-quickstart.md; source-sha256: 9b1b4c9e0466f46df6251202c0b71990b840f83b3d180cc624fe1686853dc2ac; reason: already in an archive surface -->
+
 # Prediction Tasks Quickstart
 
 Forecast process behavior in 5 steps.

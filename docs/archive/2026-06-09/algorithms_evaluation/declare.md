@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/declare.md; source-sha256: 18b9ebfa3e0bacaf1ca6ea0ebf3c63f00362ecf502712123581dc0e224ab1ad4; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Declare (Constraints)
 
 ## Metadata

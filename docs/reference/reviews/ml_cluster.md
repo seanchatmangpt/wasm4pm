@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_cluster.md; source-sha256: 03b4d022abf70c38c95af78a4714b0bdc78154e4018a2d7c95a1498fb2c77aae; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: ml_cluster
 
 ## Algorithm ID & Domain

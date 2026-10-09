@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/crates/crates/wasm4pm-bindings-py/README-header.md; source-sha256: ee104fcc077b9c6ee7f8aad333e28b969045f706ff37dddb42407cfd5f3ed749; reason: path-local documentation retained pending domain-specific supersession -->
+
 
 # wasm4pm-bindings-py
 

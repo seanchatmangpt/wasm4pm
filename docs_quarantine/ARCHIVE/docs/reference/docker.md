@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/docker.md; source-sha256: bd472f06c7056538b8a965cc7a65bee81b51028e7eb277241dc5bd601db32b0c; reason: already in an archive surface -->
+
 # Reference: Docker Deployment
 
 ## Dockerfile

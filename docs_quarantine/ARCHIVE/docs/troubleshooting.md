@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/troubleshooting.md; source-sha256: bf0cc257bb3a33a47c32549f4b72fb80720f5f7fcf421ccd1440568452d5f42d; reason: already in an archive surface -->
+
 # Troubleshooting Guide
 
 Common issues and solutions for wasm4pm process mining platform.

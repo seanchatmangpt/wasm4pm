@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/tutorials/cognition_examples.md; source-sha256: e626a39ce217a3493088669302e452b29e213979366a9a25325c50cc3cd9c04d; reason: already in an archive surface -->
+
 # Old-AI Cognition Breeds Example Gallery
 
 This document provides concrete, working examples for each of the 9 classical "Old-AI" cognition breeds provided by `@wasm4pm/cognition`. 

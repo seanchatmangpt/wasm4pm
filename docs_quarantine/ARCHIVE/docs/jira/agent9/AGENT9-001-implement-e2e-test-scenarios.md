@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent9/AGENT9-001-implement-e2e-test-scenarios.md; source-sha256: 11e88ba3617225e66dde27bfd602a3b94055ac74f6de585a80698fd514b50d92; reason: already in an archive surface -->
+
 # AGENT9-001: Implement E2E Test Scenarios
 
 **Status:** 🔴 BLOCKER  

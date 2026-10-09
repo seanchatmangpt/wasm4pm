@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/hierarchical_dfg.md; source-sha256: f81af0cb1c89d955121094703f744f841b9581792a426a9dfc6a718f0d31ed61; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: hierarchical_dfg
 
 ## Algorithm ID & Domain

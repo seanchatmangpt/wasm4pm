@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/explanation/innovation-80-20-proof-pipeline.md; reason: executable 80/20 innovation audit and selected composition closure -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/explanation/innovation-80-20-proof-pipeline.md; source-sha256: 059aaa9b0bc234a8e6617c2d4fdfa0bf03a3fc6392c561f0c164498ab1191c83; reason: canonical Diátaxis or ADR surface -->
 
 # 80/20 innovation audit: proof-carrying pipelines
 

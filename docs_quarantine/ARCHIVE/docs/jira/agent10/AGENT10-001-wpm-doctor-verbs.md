@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent10/AGENT10-001-wpm-doctor-verbs.md; source-sha256: 56f8d7029da721b2050064c7cf8962cd47b3182d9983340819da0eb02d6cb745; reason: already in an archive surface -->
+
 # AGENT10-001: `wpm doctor <verb>` — 8 CLI Subcommands
 
 **Status:** 🟡 PLANNED  

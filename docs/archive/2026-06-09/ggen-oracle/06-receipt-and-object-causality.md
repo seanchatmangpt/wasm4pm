@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/ggen-oracle/06-receipt-and-object-causality.md; source-sha256: c16adcfc94c0090e6ba52d70187c91a53c3003fb7443a0bbb17cb7206e984054; reason: already in an archive surface -->
+
 # 06 — Receipt Causality + Object-Centric Causality Queries
 
 **Status:** Spec. Buildable by the wasm4pm agent system against version train `26.5.x`.

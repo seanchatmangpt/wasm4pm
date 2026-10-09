@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/ml-rl-faq.md; source-sha256: f1da09f78302217997bee159af41da44d481ab1f209db391f2776aa7c33b3d89; reason: already in an archive surface -->
+
 # ML & RL FAQ / Troubleshooting
 
 Quick answers to common questions about the `@wasm4pm/ml` package, the

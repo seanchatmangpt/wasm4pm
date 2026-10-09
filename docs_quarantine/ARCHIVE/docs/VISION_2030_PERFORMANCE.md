@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/VISION_2030_PERFORMANCE.md; source-sha256: 8678755dea03a73d6e72fd839a892951876bdabbd7777c8f18b56f05f292893c; reason: already in an archive surface -->
+
 # Vision 2030 Performance Report: Autonomic Execute Cycle
 
 **Date:** 2026-04-16  

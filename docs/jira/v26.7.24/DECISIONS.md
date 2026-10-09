@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.7.24/DECISIONS.md; source-sha256: 79552ea1772c8578476293d7346972fd0116b829428554a0044d08afcae87b6c; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ADR-001: Rank in TypeScript, eliminate in Dendral, question with Eliza
 
 - **Status:** Accepted for implementation; not implemented by this documentation branch
@@ -109,4 +111,4 @@ No application or cognition-crate code is changed by this ADR.
 ## Links
 
 - [Priority matrix and release backlog](README.md)
-- [UI/UX redesign §5](../../../diagrams/ui-ux-redesign.md#5-eliza-style-cognition-panel)
+- [UI/UX redesign §5](../../diagrams/ui-ux-redesign.md#5-eliza-style-cognition-panel)

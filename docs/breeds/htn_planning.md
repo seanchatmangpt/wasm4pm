@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/htn_planning.md; source-sha256: 426a68eb53bb2d86068c71e66a9856082b89ea949383058913cddea30284717c; reason: path-local documentation retained pending domain-specific supersession -->
+
 # HTN Planning
 
 ## 1. Identity & Lineage

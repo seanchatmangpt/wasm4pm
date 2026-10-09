@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/jira/agent1/AGENT1-001-add-introspection-apis.md; source-sha256: 92f127faddf6037a414324aa307cada832e382a830c58733119f3cbfd26ffe6f; reason: already in an archive surface -->
+
 # AGENT1-001: Add Introspection APIs
 
 **Status:** 🔴 BLOCKER  

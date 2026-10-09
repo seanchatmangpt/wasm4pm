@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/errors/types.md; source-sha256: 2b7f6cf7c1fae0c7ef510f6df9a52e3a21dd9ebe6186651344bb988eb39346e8; reason: already in an archive surface -->
+
 # Error Types
 
 All error variants returned by miniml operations. Errors are returned as thrown exceptions with descriptive messages.

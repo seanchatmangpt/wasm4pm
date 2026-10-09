@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.17/cleanup-merge-plan.md; source-sha256: da887e75ec5e6def19d84efc553396b498fe034ab6245f542fa8dda0376d4ab8; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Cleanup and Merge Plan: wasm4pm
 
 ## Current State (as observed 2026-09-17)

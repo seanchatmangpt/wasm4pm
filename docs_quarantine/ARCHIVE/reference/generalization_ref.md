@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/reference/generalization_ref.md; source-sha256: 09d3c26c1a769680cda09e031a48b132c1aca648f6ca74c7333334525f2ed063; reason: already in an archive surface -->
+
 # Reference: generalization
 
 ## Signature

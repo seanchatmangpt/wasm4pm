@@ -146,3 +146,8 @@ packages/kernel/src/__tests__/algorithm-contracts/
 crates/wasm4pm-cognition/tests/breed_contracts/
 crates/wasm4pm-cognition/tests/breed_contracts.rs
 artifacts/validation/
+
+# lane-lease build roots (fan-out campaign)
+_build/
+_build-lane*/
+target-lane*/

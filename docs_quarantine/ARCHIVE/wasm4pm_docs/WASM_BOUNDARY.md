@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/WASM_BOUNDARY.md; source-sha256: 87a3ea8e57685be1f47e20d37f4ce5eb57a1adc32b74945a4b6d0e89f7aecd94; reason: already in an archive surface -->
+
 # WASM Boundary Functions — Native Test Limitations
 
 **Version:** v26.5.19  

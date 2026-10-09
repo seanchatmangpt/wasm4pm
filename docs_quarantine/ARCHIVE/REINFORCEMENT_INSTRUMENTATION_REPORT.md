@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/REINFORCEMENT_INSTRUMENTATION_REPORT.md; source-sha256: 73d738004bf7b8c75f953351e26e54954a3e206a2d20d0a0b68773a3794ea6be; reason: already in an archive surface -->
+
 # reinforcement.rs Instrumentation — Phase 2 Complete
 
 **Status:** ✅ COMPLETE  

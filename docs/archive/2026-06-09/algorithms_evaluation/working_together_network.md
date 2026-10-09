@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/working_together_network.md; source-sha256: 8baa243816dbf276eedac4f9be5e05298160badb0549a2d623c97dc80b88e435; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Working-Together Network
 
 ## Metadata

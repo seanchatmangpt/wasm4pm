@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/wasm-profile-optimization.md; source-sha256: 0940ede7395b0e2b05716e844608938426db33517741021959715aba560b9a27; reason: already in an archive surface -->
+
 # WASM Profile Optimization Guide
 
 **Version:** 1.0  

@@ -1,31 +1,13 @@
-# Algorithm Evaluation: ocel_petri_net
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/ocel_petri_net.md; source-sha256: e68d07d52943e465279480d1db0957d77b6dfe913a3483f50a7908bad67d79ac; reason: historical, generated, status, or evidence narrative -->
 
-## Metadata
-- **Algorithm ID:** `ocel_petri_net`
-- **Category:** `discovery`
-- **Profiles Supported:** `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Interface Status
-- **Registry Entry:** ✅ Present
-- **TypeScript Dispatch:** ✅ Present
-- **CLI Surface:** ✅ Present
-- **WASM Export:** ✅ Present
+This document is retained as historical evidence and is not current product truth.
 
-## Behavioral Evidence
-- **Positive Cases:** 1/1 passed
-- **Negative Cases:** 2/2 failed correctly
-- **Invariant Cases:** 1/1 passed
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/ocel_petri_net.md`](../../docs/archive/2026-08-02/artifacts/evaluations/ocel_petri_net.md)
+- Original path: `artifacts/evaluations/ocel_petri_net.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `e68d07d52943e465279480d1db0957d77b6dfe913a3483f50a7908bad67d79ac`
 
-## Verification
-- **Evidence Hash:** `10da90f45a9cce12dffc48c1e5192e6071e35a47fe34659d72d8a1b45b797d85`
-- **State:** `Closed`
-
-## Algorithmic Role
-Implements discovery of Petri net models from Object-Centric Event Logs (OCEL), allowing for the modeling of processes with interacting objects of different types. This algorithm is crucial for capturing complex multi-object relationships and synchronization in modern business processes.
-
-## Implementation Validation & Details
-Based on the source code in `wasm4pm/src/oc_petri_net.rs`:
-- The algorithm flattens the Object-Centric Event Log (OCEL) into a single-type EventLog for each distinct `object_type`.
-- It performs per-type discovery by extracting traces specific to each object type and computing a Petri Net using the `alpha++` algorithm.
-- Places in the resulting per-type Petri nets are explicitly tagged with their corresponding `object_type`.
-- The final output is a JSON mapping representing a collection of these per-type Petri nets.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

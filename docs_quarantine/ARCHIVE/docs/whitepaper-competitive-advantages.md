@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/whitepaper-competitive-advantages.md; source-sha256: aee9e49460198c490cc159792ec941de0ef1abfc90d8c0c6a54aeb96dcecb964; reason: already in an archive surface -->
+
 # Process Mining Without Limits: The Structural Advantages of WebAssembly-Native Process Intelligence
 
 **A Technology Perspective**

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/research/gaps/gap-04-brittle-xml-parsers.md; source-sha256: 31a81f26dbd9e8cdc67f28c9e0c4dbad721a1374e40746a90f5b05e6ef679b9b; reason: already in an archive surface -->
+
 # Research: Brittle XML/BPMN Parsers
 
 ## Overview

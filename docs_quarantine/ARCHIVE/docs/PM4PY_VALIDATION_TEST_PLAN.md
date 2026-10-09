@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PM4PY_VALIDATION_TEST_PLAN.md; source-sha256: bf9d288ba29ef3b8e6bcb80c9007c0ca2c60780364074f6644e899bcca065f4f; reason: already in an archive surface -->
+
 # wasm4pm vs pm4py Algorithm Validation Test Plan
 
 **Version:** 1.0

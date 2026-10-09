@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/how-to/troubleshooting.md; source-sha256: 873113bba5448c873eed1e8b68f2d2d7938c3d51849b4f27489c73c184693502; reason: canonical Diátaxis or ADR surface -->
+
 # Troubleshooting
 
 Diagnostic steps for common wasm4pm failures. Start with `wpm doctor check` — it catches most environment issues automatically.

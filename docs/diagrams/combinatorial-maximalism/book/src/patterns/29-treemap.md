@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/29-treemap.md; source-sha256: e25c1081899175d4a60c0828cfcab7adfdfe03312976338fba0a1e93e566dc3b; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Treemap: Hierarchical Allocation
 
 **Pattern ID:** `29-treemap`  

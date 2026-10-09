@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/survival/cox.md; source-sha256: b7e75e7a13823cc4eee7179de9054bc65559078d41e747c250434a6de67f41fd; reason: already in an archive surface -->
+
 # Cox Proportional Hazards
 
 Model the effect of covariates on survival using Cox proportional hazards regression.

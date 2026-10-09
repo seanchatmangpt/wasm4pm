@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.19/006-local-ex4pm-qual-episode-20260903-no-upstream.md; source-sha256: 6c6f2b618cf46e16950df8b6887166b31227d3b7aa2e9340dc727c0c93834b82; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm: push or delete local-only branch `ex4pm-qual-episode-20260903`
 
 - Standing: OPEN

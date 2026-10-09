@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/unverified/tutorials/advanced_benchmarking.md; source-sha256: 0d227a01eb287f2ae8ea40bdb097b450be06d36a2fd5a8c3a5470d59ed01419b; reason: already in an archive surface -->
+
 # Tutorial: Advanced Benchmarking
 
 ## Learning Objectives

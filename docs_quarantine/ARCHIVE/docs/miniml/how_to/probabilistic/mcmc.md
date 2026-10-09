@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/how_to/probabilistic/mcmc.md; source-sha256: af718bd9c4980f233083cb867e5f41a463e7b90ff49c17909a69e5f403fbd5af; reason: already in an archive surface -->
+
 # MCMC Sampling
 
 Estimate posterior distributions using Metropolis-Hastings Markov Chain Monte Carlo.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/reference/discover_heuristic_ref.md; source-sha256: 186fe0e22190faeb343fab0c5d29e1a4bef92bb2dd4db1983921c37bbeb48df9; reason: already in an archive surface -->
+
 # Reference: discover_heuristic
 
 ## Description

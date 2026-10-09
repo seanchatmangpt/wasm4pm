@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/agentic_pipeline.md; source-sha256: 486a2870ae3f7231e8d33c15000624bad41a6e45426ee2097732883632b67c28; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: agentic_pipeline
 
 ## Algorithm ID & Domain

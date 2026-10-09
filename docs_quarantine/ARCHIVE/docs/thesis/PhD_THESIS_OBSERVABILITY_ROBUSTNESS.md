@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/thesis/PhD_THESIS_OBSERVABILITY_ROBUSTNESS.md; source-sha256: 2bbea048b29f66b5fc007a14a101f6cb934574cfabe9086674fb218eb7b9edfa; reason: already in an archive surface -->
+
 # PhD Thesis: Cryptographic Observability, Adversarial Robustness, and Micro-Architectural Performance in WebAssembly Process Mining
 
 **Author:** wasm4pm Research Team  

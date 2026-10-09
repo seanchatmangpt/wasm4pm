@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/ggen-oracle/04-prefix-and-online-conformance.md; source-sha256: 0fd50adac02a19636a75aa9b2db4001ec7b1963028392e686820136ecbbdbfc2; reason: already in an archive surface -->
+
 # 04 — Prefix / Online / Negative Conformance (the Andon-oracle leap)
 
 **Status:** Capability spec. Ground truth: every cited symbol was read from `/Users/sac/wasm4pm`. Capabilities that do not exist yet are marked **TO BE BUILT**.

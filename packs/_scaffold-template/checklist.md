@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packs/_scaffold-template/checklist.md; source-sha256: da7ebce2770f114d9e4e534bdf55c5f4849e00f5d4af9e2ba1eb26b6aa2d3d92; reason: path-local documentation retained pending domain-specific supersession -->
+
 # New combinatorial-pack checklist
 
 Concrete, mechanically-checkable steps for building a new pack from this

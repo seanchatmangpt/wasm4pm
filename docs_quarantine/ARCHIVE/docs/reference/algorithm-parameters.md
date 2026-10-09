@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/algorithm-parameters.md; source-sha256: 206777fb103f84b5f2043a0b8ddd1a4fb7b06eec1d1efc5e0d6b4843d4780cdb; reason: already in an archive surface -->
+
 # Reference: Algorithm-Specific Parameters
 
 ## DFG (No Parameters)

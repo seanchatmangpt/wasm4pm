@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/episodic_memory.md; source-sha256: e27cae877483820b21b0ff0aa80270653bb71f85ee579f000bc62d6945fdb847; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Episodic Memory
 
 ## Origin

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/genetic_algorithm.md; source-sha256: 9ffeeb66fb4fbce1f62c2177ff7e1cdb8866e2ea08a6d10e46e3d4dcaaf62444; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Genetic Algorithm
 
 ## Metadata

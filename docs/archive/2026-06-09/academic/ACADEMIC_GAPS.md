@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/academic/ACADEMIC_GAPS.md; source-sha256: c5fa18b409a5db57be56bd956253a9270e82f444847468d43710d8fb74292bd4; reason: already in an archive surface -->
+
 # Academic Gaps — ACADEMIC-LINEAGE-001
 
 *Generated 2026-05-30*

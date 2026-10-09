@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cm_thesis/README.md; source-sha256: 7188b8f2485c82866c99f66f87d612fe07b036fdba7938a61998b28cc3073eba; reason: already in an archive surface -->
+
 # The Combinatorial Maximalist Thesis
 
 **Working Title:** Pushing the Limits: A Combinatorial Maximalist Analysis of Nanosecond Process Intelligence

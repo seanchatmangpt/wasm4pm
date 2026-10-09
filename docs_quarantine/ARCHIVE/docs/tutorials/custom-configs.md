@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/tutorials/custom-configs.md; source-sha256: 19c82938df9dc3b8f7bcd936fd616df33718ce888ea43aa81348a76d3ad16373; reason: already in an archive surface -->
+
 # Tutorial: Custom Configuration Workflows
 
 **Time to complete**: 25 minutes  

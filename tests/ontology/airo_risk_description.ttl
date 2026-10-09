@@ -1,0 +1,149 @@
+# AIRo risk description for wasm4pm's WASM process-mining engine.
+# Vocabulary: https://w3id.org/airo (DelaramGlp/airo airo.ttl), per the landed
+# W603/W604 pattern. Every `file:` citation below is a real path (checked by
+# tests/ontology/test_airo_risk_description.py).
+
+@prefix airo: <https://w3id.org/airo#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix w4p: <https://wasm4pm.example/ontology/airo#> .
+
+<https://wasm4pm.example/airo/wasm-process-mining-engine> rdf:type airo:AISystem ;
+    rdfs:label "wasm4pm WASM process-mining engine"@en ;
+    dcterms:description """Browser/WASM process-mining engine (Rust core compiled
+        to WASM, TypeScript packages, `wpm` CLI): XES import, DFG/algorithm
+        discovery, ML-based algorithm selection with scaling, cognition
+        projections. Distributed as npm packages and a packed CLI artifact."""@en ;
+    airo:hasPurpose w4p:Purpose_ClientSideProcessMining ;
+    airo:hasRisk w4p:Risk_UnreceiptedBuild ;
+    airo:hasRisk w4p:Risk_FloatBoundarySelection ;
+    airo:hasRisk w4p:Risk_EcosystemToolchainSemanticsDrift ;
+    airo:hasRiskControl w4p:Control_CIReceiptChain ;
+    airo:hasRiskControl w4p:Control_VitestScalingGate ;
+    airo:hasModality w4p:Modality_Assessed .
+
+# ---------------------------------------------------------------- Purpose
+w4p:Purpose_ClientSideProcessMining rdf:type airo:Purpose ;
+    rdfs:label "Run process mining client-side over real XES event logs"@en .
+
+# ---------------------------------------------------------------- Risks
+w4p:Risk_UnreceiptedBuild rdf:type airo:Risk ;
+    rdfs:label "A shipped artifact traces to no admitted build subject"@en ;
+    dcterms:description """The workspace builds many artifacts (wasm pkg, TS
+        packages, packed CLI); without an exact-subject receipt a published
+        artifact could correspond to no CI-verified commit. Mitigated by the
+        CI receipt chain that pins EXPECTED_SHA and emits
+        artifacts/ci/receipt.json."""@en ;
+    rdfs:seeAlso <file:.github/workflows/ci.yml> ;
+    airo:hasConsequence w4p:Consequence_UntraceableArtifact .
+
+w4p:Risk_FloatBoundarySelection rdf:type airo:Risk ;
+    rdfs:label "Float-boundary epsilon bug flips algorithm-selection claims"@en ;
+    dcterms:description """W94 witnessed a real flake: `improvement =
+        accuracyScaled - accuracyUnscaled` evaluated to 0.30000000000000004 and
+        the literal bound `toBeLessThanOrEqual(0.30)` failed. Any scaling-improvement
+        claim resting on a raw float comparison at a boundary is unstable."""@en ;
+    rdfs:seeAlso <file:packages/ml/src/__tests__/algorithm-selection-with-scaling.test.ts> ;
+    airo:hasConsequence w4p:Consequence_UnstableClaim .
+
+w4p:Risk_EcosystemToolchainSemanticsDrift rdf:type airo:Risk ;
+    rdfs:label "Ecosystem toolchain-semantics drift invalidating cross-repo claims"@en ;
+    dcterms:description """W525d confirmed `Map.update/4` absent-key semantics
+        deviate from documentation on the pinned elixir 1.20.4-otp-29 toolchain
+        shared across the ecosystem; a repo inheriting claims from sibling
+        repos without re-verifying on its own toolchain inherits refuted
+        semantics. wasm4pm's own ABI surface is additionally pinned to a
+        specific nightly Rust toolchain."""@en ;
+    rdfs:seeAlso <file:/Users/sac/xaas/docs/sjira/v26.10.6/plans/w525d-map-update-sweep.md> ;
+    rdfs:seeAlso <file:rust-toolchain.toml> ;
+    airo:hasConsequence w4p:Consequence_UnstableClaim .
+
+# ------------------------------------------------------------- Consequences
+w4p:Consequence_UntraceableArtifact rdf:type airo:Consequence ;
+    rdfs:label "Published artifact cannot be traced to an admitted subject"@en ;
+    airo:hasSeverity w4p:Severity_Major ;
+    airo:hasImpact w4p:Impact_EvidenceIntegrity .
+
+w4p:Consequence_UnstableClaim rdf:type airo:Consequence ;
+    rdfs:label "A capability or conformance claim changes under re-run"@en ;
+    airo:hasSeverity w4p:Severity_Moderate ;
+    airo:hasImpact w4p:Impact_EvidenceIntegrity .
+
+w4p:Impact_EvidenceIntegrity rdf:type airo:Impact ;
+    rdfs:label "Loss of evidence integrity for engine capability claims"@en ;
+    airo:hasSeverity w4p:Severity_Major ;
+    airo:hasImpactOnStakeholder w4p:Stakeholder_EngineConsumer .
+
+w4p:Stakeholder_EngineConsumer rdf:type airo:Stakeholder ;
+    rdfs:label "Consumers of wasm4pm artifacts and process-mining outputs (downstream repos, CLI users)"@en .
+
+w4p:Severity_Moderate rdf:type airo:Severity ;
+    rdfs:label "moderate (qualitative, self-assessed)"@en .
+
+w4p:Severity_Major rdf:type airo:Severity ;
+    rdfs:label "major (qualitative, self-assessed)"@en .
+
+# --------------------------------------------------------- Risk sources
+w4p:Source_UnreceiptedDistribution rdf:type airo:RiskSource ;
+    rdfs:label "Artifact distribution without an exact-subject build receipt"@en ;
+    dcterms:description """.github/workflows/ci.yml emits artifacts/ci/receipt.json
+        carrying subject_sha and standing=ALIVE only after the rust/wasm/TS/CLI/pack
+        boundary gates pass; distributing outside that path is the hazard."""@en ;
+    airo:isRiskSourceFor w4p:Risk_UnreceiptedBuild .
+
+w4p:Source_FloatEpsilonBoundary rdf:type airo:RiskSource ;
+    rdfs:label "Raw float comparison at a scaling-improvement boundary (w94 flake)"@en ;
+    dcterms:description """The w94 receipt records the exact failure
+        `0.30000000000000004 <= 0.30` and its one-line fix bound
+        `0.3 + 1e-9`."""@en ;
+    airo:isRiskSourceFor w4p:Risk_FloatBoundarySelection .
+
+w4p:Source_EcosystemToolchainDrift rdf:type airo:RiskSource ;
+    rdfs:label "Documented toolchain-semantics deviation on the shared pinned toolchain (w511/w525d)"@en ;
+    dcterms:description """W525d's real probes returned `%{k: 7}` where documented
+        semantics require `%{k: 8}` on elixir 1.20.4-otp-29; the WASM ABI side is
+        pinned to nightly-2026-04-15 (rust-toolchain.toml). Cross-repo claims made
+        under one toolchain do not automatically hold under another."""@en ;
+    airo:isRiskSourceFor w4p:Risk_EcosystemToolchainSemanticsDrift .
+
+# --------------------------------------------------------- Risk controls
+w4p:Control_CIReceiptChain rdf:type airo:RiskControl ;
+    rdfs:label "CI receipt chain: EXPECTED_SHA admission + artifacts/ci/receipt.json"@en ;
+    dcterms:description """.github/workflows/ci.yml verifies HEAD against
+        EXPECTED_SHA, gates the rust/wasm/TypeScript/wpm-CLI/pack-smoke
+        boundaries, then emits and uploads artifacts/ci/receipt.json with
+        subject_sha, workflow_count, and standing=ALIVE."""@en ;
+    rdfs:seeAlso <file:.github/workflows/ci.yml> ;
+    airo:mitigatesRiskConcept w4p:Risk_UnreceiptedBuild .
+
+w4p:Control_VitestScalingGate rdf:type airo:RiskControl ;
+    rdfs:label "25-test vitest gate on algorithm-selection-with-scaling"@en ;
+    dcterms:description """packages/ml/src/__tests__/algorithm-selection-with-scaling.test.ts
+        (25 tests, per the w94 receipt's real run) exercises algorithm selection
+        under scaling with the epsilon-bounded float assertion; the TypeScript
+        integration test job in .github/workflows/ci.yml runs it via `pnpm test`."""@en ;
+    rdfs:seeAlso <file:packages/ml/src/__tests__/algorithm-selection-with-scaling.test.ts> ;
+    airo:mitigatesRiskConcept w4p:Risk_FloatBoundarySelection ;
+    airo:mitigatesRiskConcept w4p:Risk_EcosystemToolchainSemanticsDrift .
+
+# ------------------------------------------------- Qualitative assessment
+w4p:Risk_UnreceiptedBuild airo:hasLikelihood w4p:Likelihood_Possible ;
+    airo:hasRiskControl w4p:Control_CIReceiptChain .
+
+w4p:Risk_FloatBoundarySelection airo:hasLikelihood w4p:Likelihood_Occasional ;
+    airo:hasRiskControl w4p:Control_VitestScalingGate .
+
+w4p:Risk_EcosystemToolchainSemanticsDrift airo:hasLikelihood w4p:Likelihood_Possible ;
+    airo:hasRiskControl w4p:Control_VitestScalingGate ,
+                        w4p:Control_CIReceiptChain .
+
+w4p:Likelihood_Possible rdf:type airo:Likelihood ;
+    rdfs:label "possible (qualitative, self-assessed)"@en .
+
+w4p:Likelihood_Occasional rdf:type airo:Likelihood ;
+    rdfs:label "occasional (qualitative, self-assessed: witnessed once, w94)"@en .
+
+w4p:Modality_Assessed rdf:type airo:Modality ;
+    rdfs:label "as-is assessment, qualitative, self-assessed on this checkout"@en .

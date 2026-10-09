@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/checkpoints/PM4PY-LSP-003.md; source-sha256: 794327521b8476d8ebd9e39db169e309860ce7130e57098262154ba36157f934; reason: already in an archive surface -->
+
 # Checkpoint: PM4PY-LSP-003_ALIVE
 
 ## Verdict

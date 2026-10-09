@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/powl_to_process_tree.md; source-sha256: 647a3a14a21b22dbf7f503435035a0772d47f8105485f115a195b8455dda34f4; reason: already in an archive surface -->
+
 # Algorithm Evaluation: POWL to Process Tree
 
 ## Metadata

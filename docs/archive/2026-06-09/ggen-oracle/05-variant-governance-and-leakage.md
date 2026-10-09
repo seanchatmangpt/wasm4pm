@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/ggen-oracle/05-variant-governance-and-leakage.md; source-sha256: 11d6e1e768c68ea7a680dce3c3a921002458cba1ea77a36b39b85e8ff1b13f3e; reason: already in an archive surface -->
+
 # 05 — Variant Governance + Cross-Checkpoint Leakage
 
 **Status:** Spec. Capability area: **variant governance (#4)** + **cross-checkpoint leakage (#8)** from the

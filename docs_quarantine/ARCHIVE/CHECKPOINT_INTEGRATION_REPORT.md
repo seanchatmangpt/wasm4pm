@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/CHECKPOINT_INTEGRATION_REPORT.md; source-sha256: 32665fc7347faa1436e1db45222f8a7f8f3afe20f51be00e0680ad22ef723a7e; reason: already in an archive surface -->
+
 # Checkpoint Integration Phase 1.5 - Complete Report
 
 **Date:** May 18, 2026  

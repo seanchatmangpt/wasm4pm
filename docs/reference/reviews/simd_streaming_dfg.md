@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/simd_streaming_dfg.md; source-sha256: 2a080b8eeb3a063453a26b21315bfd4279f39fcfe185bbfe41ea17b8ffd775df; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: simd_streaming_dfg
 
 ## Algorithm ID & Domain

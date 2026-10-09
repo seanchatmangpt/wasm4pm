@@ -1,30 +1,13 @@
-# Algorithm Evaluation: ml_pca
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/ml_pca.md; source-sha256: c31f0ed4c078f4f7eae0426a5d569e92c97319ceb51d0f903958b5170771ba19; reason: historical, generated, status, or evidence narrative -->
 
-## Metadata
-- **Algorithm ID:** ml_pca
-- **Category:** discovery
-- **Supported Profiles:** fast, balanced, quality
+# Archived documentation
 
-## Implementation Status
-- **Registry:** present
-- **TS Dispatch:** present
-- **CLI Surface:** present
-- **WASM Export:** present
+This document is retained as historical evidence and is not current product truth.
 
-## Verification Results
-- **Positive Cases:** 1 passed
-- **Negative Cases:** 2 failed correctly
-    - `ml_pca.MalformedLogCase`: PREDICTION_FEATURES_REQUIRED
-    - `ml_pca.EmptyLogCase`: EMPTY_EVENT_LOG
-- **Invariant Cases:** 1 passed
-    - `ml_pca.DeterministicSameInputCase`: passed (stable: true)
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/ml_pca.md`](../../docs/archive/2026-08-02/artifacts/evaluations/ml_pca.md)
+- Original path: `artifacts/evaluations/ml_pca.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `c31f0ed4c078f4f7eae0426a5d569e92c97319ceb51d0f903958b5170771ba19`
 
-## Evidence
-- **Evidence Hash:** `8c61391fcf90f737744bf29da8020ebc0a468e4731c8cb7bb49d34a33fcaeaba`
-- **Verification State:** Closed
-
-## Algorithmic Role
-`ml_pca` implements Principal Component Analysis for dimensionality reduction of process data. It identifies the most significant features and variance components within high-dimensional event logs, enabling more efficient process analysis and serving as a pre-processing step for other machine learning or discovery algorithms by focusing on the most informative data dimensions.
-
-## Implementation Validation & Details
-Based on the implementation in `wasm4pm/src/ml/pca.rs`, the algorithm employs a zero-allocation, tightly unrolled Principal Component Analysis (PCA) targeting 2D process features (trace length and unique activity count). To maximize throughput ("Nanosecond Dimensionality Reduction Family"), loops computing means and covariances are manually unrolled to exploit instruction-level parallelism. The core solver relies on a closed-form eigenvalue decomposition for the symmetric 2x2 covariance matrix rather than iterative approximation. It efficiently surfaces critical interpretability metrics including eigenvalues, absolute total variance, explained variance per component, and monotonic cumulative variance ratios, handling edge cases dynamically.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

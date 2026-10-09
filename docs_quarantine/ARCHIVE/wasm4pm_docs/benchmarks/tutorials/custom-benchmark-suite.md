@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/tutorials/custom-benchmark-suite.md; source-sha256: 9d4e6819a8a98208a429e915837782e6ef5df1b3412e94f7d25546a28fda29ab; reason: already in an archive surface -->
+
 # Creating Custom Benchmark Suites
 
 > Add your own algorithm to the benchmark suite, run it, and document the results.

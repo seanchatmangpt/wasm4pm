@@ -1,3 +1,4 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/workspace-crate-registry.md; source-sha256: 5711c208131c182719844be765f3f302494431414358b39769bfb62c02493284; reason: path-local documentation retained pending domain-specific supersession -->
 
 # wasm4pm Workspace Crate Registry
 

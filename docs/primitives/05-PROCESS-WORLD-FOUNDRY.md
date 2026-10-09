@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/05-PROCESS-WORLD-FOUNDRY.md; source-sha256: 8f75c6d49f617b022ee5211cafcd746c47286f9cd0dd52d93421ace488b87e9b; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Agent 6 — Process-world foundry agent
 
 ## Mission

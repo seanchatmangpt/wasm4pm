@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reviews/cognition-session-adversarial-review.md; source-sha256: f083afff917cbe766ade3a2c84856c2ee3943e6ce5de6568978c241c5961c1ec; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Adversarial Review Ledger: Cognition Session Interview Assistant
 
 Date: 2026-07-23

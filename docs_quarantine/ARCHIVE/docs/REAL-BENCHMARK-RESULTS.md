@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/REAL-BENCHMARK-RESULTS.md; source-sha256: 94c8d029886025fb30cc6316a451dc61dd992abfb80c212dfefecfc530d2726d; reason: already in an archive surface -->
+
 # Real Benchmark Results - v26.4.5
 ## wasm4pm Complete Benchmark Suite
 

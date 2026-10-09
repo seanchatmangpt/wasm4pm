@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: artifacts/aloop-dogfood-001/lane-10/README.md; source-sha256: 6f4b085ed6ca4cc753f30352efaffd30a322d65210197c588fdcc86e676b4b8b; reason: path-local authority or entrypoint -->
+
 # Lane-10 replay oracle
 
 ALOOP replay oracle for episode `ALOOP-ZCODE-DOGFOOD-001` (source:

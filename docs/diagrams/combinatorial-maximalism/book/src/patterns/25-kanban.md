@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/25-kanban.md; source-sha256: 9245d1acf6b7e2ce087e38f8b4a39758a4f3699a6799764c33caef3e47f143b9; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Kanban: Standing-Aware Work State
 
 **Pattern ID:** `25-kanban`  

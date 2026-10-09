@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/github-actions.md; source-sha256: d93d8316058b3bb0432649b42b6d4a094d45f0e0fcbac180141386b5a0c1e319; reason: already in an archive surface -->
+
 # Reference: GitHub Actions Workflow
 
 ## Complete Workflow

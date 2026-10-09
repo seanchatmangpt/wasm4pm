@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/crates/crates/prolog8/README-header.md; source-sha256: 98ed3c7050e1de062c8356dc02a05e37b6b4c42fcb8245ef2f6db3f640049a92; reason: path-local documentation retained pending domain-specific supersession -->
+
 
 # prolog8
 

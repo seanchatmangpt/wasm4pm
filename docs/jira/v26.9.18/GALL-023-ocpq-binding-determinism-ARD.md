@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.18/GALL-023-ocpq-binding-determinism-ARD.md; source-sha256: 122a3b9ad7532050472c921963a6b17b50225c7df8844e311fc3c0065b7d3c6a; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ARD v26.9.18 — GALL-023: OCPQ Binding Determinism
 
 **Status:** FINAL_SPEC — closed for v26.9.24  

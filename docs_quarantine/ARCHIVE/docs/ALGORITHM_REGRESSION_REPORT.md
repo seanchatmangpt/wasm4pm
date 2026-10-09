@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/ALGORITHM_REGRESSION_REPORT.md; source-sha256: 7885b993c4ec76c6ca79aec0b34a0499ec741a5fa1a721e5f09850801250e654; reason: already in an archive surface -->
+
 # Algorithm Regression Test Report
 
 **Date:** 2026-05-07

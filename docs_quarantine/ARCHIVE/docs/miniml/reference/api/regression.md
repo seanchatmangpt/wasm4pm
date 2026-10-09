@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/regression.md; source-sha256: 60ecd41595ec2ef68370b82f7b74dd92b2d271381cd94ade1ea96359fe47d4ed; reason: already in an archive surface -->
+
 # Regression API
 
 Complete reference for all regression algorithms exported by `miniml`. Includes univariate curve-fitting models and multivariate linear models.

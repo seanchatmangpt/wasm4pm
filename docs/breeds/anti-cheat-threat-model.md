@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/anti-cheat-threat-model.md; source-sha256: 90ed5ee4f7c8c0ea43272bc15f0f900ad74fe86dd7253ca9c9b7f3f894bf2bfb; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Per-Breed Anti-Cheat Threat Model — Full Periodic Table (55 breeds)
 
 **Document:** ARD supplement to `docs/adversary-classes.md` and the Full Periodic Table PRD

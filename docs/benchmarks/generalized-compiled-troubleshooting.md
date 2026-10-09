@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/benchmarks/generalized-compiled-troubleshooting.md; source-sha256: b5aba699097f5b05c9f07cdd1b0babafcfbb231fa00c2e1473d1363362958a40; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Generalized Compiled Troubleshooting
 
 This benchmark generalizes the SREGym-derived issue calculus into a domain-independent troubleshooting substrate.

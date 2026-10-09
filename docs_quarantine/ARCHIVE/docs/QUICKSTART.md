@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/QUICKSTART.md; source-sha256: 2ec12e24a751870ac784d45566323b638c418f4a09e12da5fa36b0e980c35532; reason: already in an archive surface -->
+
 # Quick Start
 
 In 5 minutes you will have a working Node.js script that loads a process event

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/error-codes.md; source-sha256: bbeb1cf3ab2dbf1d6ad8023cac4b8c1afb8fabe4afa59a8109a8aeafd240a45c; reason: already in an archive surface -->
+
 # Reference: Error Codes and Remediation
 
 ## Exit Code 0 (SUCCESS)

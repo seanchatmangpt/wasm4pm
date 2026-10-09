@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/process_skeleton.md; source-sha256: 25af2c5ff1770b3f4cf30486d60567884e0a1c245dc94d650bd847ccc72cacb0; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: process_skeleton
 
 ## Algorithm ID & Domain

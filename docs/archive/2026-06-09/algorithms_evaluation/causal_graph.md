@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/causal_graph.md; source-sha256: 22ce4bca8240437dc9fe865240d21bfdc8c97fd83faf067e59f5011de348c2f5; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Causal Graph Discovery
 
 ## Metadata

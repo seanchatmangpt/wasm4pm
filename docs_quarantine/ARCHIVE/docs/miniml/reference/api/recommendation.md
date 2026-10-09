@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/miniml/reference/api/recommendation.md; source-sha256: 0481dfadd1e407ad482781cf45604fb42eae103c281a6d22ba44153ca3a46dc4; reason: already in an archive surface -->
+
 # Recommendation API
 
 Matrix factorization and collaborative filtering for recommendation systems. Call `await init()` before use.

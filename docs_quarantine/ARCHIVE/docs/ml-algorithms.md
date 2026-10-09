@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/ml-algorithms.md; source-sha256: 637624660a4665285ac72b799823dc6517095d202a9d4c4d3b00ca75ddaa3bb9; reason: already in an archive surface -->
+
 # ML Algorithms Guide
 
 The `@wasm4pm/ml` package provides six purpose-built machine-learning families

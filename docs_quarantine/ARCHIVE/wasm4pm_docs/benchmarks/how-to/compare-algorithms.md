@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/benchmarks/how-to/compare-algorithms.md; source-sha256: d7eda930237ab9e97f2252460b7fb68f0164f3a18d7deecd67028e6f413c21a9; reason: already in an archive surface -->
+
 # Compare Two Algorithms
 
 **Problem:** You want to know whether Algorithm A is faster, produces a more complex model, or discovers more edges than Algorithm B on the same event log.

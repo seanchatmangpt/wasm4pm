@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ocel_dfg.md; source-sha256: 1045ffa045b5a50687fcaaf8eaea9e8c8b2aedcb98686fda6f5bbdc3db725cb3; reason: already in an archive surface -->
+
 # Algorithm Evaluation: OC-DFG (Aggregate)
 
 ## Metadata

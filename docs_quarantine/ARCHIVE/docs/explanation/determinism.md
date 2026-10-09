@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/determinism.md; source-sha256: 53dd943dd0b59dfbc4a00b33b2dc8aec84cf5e7ebcf3501ac97eba71656a6e8e; reason: already in an archive surface -->
+
 # Explanation: Determinism in Process Mining
 
 **Time to read**: 15 minutes  

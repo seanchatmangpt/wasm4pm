@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/situation_calculus.md; source-sha256: 6a8307db0adf64598281414757c86114c083961c6fd6d41e5be47f85e6c306bd; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Situation Calculus
 
 ## Origin

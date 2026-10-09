@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/execution-substrate.md; source-sha256: e4b155e236166e0c6b72a69afbcf6a759bc32d8a3f564a11acd918656f54dd6f; reason: already in an archive surface -->
+
 # Explanation: The Execution Substrate
 
 **Time to read**: 20 minutes  

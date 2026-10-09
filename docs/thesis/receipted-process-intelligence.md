@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/thesis/receipted-process-intelligence.md; source-sha256: 902e3092266b2465b21bfa6b5dba11e06251a467f840f1af67df1fe7bb766cab; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Receipted Process Intelligence: Prolog8 and OCPQ as a Phase Transition from Observation to Admission in Object-Centric Process Mining
 
 *A doctoral thesis submitted in partial fulfillment of the requirements for the degree of Doctor of Philosophy in Computer Science*

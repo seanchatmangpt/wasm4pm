@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/INSTALL.md; source-sha256: 8cdfe4c4d257203532d52c7283ce2b8fb6d6066cb85a9682373d5dc6d41844b5; reason: already in an archive surface -->
+
 # Installation Guide
 
 Complete installation instructions for wasm4pm on all supported platforms.

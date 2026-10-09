@@ -1,35 +1,13 @@
-# Algorithm Evaluation: genetic_algorithm
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/genetic_algorithm.md; source-sha256: 0fcde0e99207442fec9e0cc2642f0892d50e020469239089062d935c232cc407; reason: historical, generated, status, or evidence narrative -->
 
-## Meta
-- **ID**: `genetic_algorithm`
-- **Category**: `discovery`
-- **Profiles**: `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Status
-- **Registry**: Present
-- **Dispatch**: Present
-- **CLI**: Present
-- **WASM**: Present
+This document is retained as historical evidence and is not current product truth.
 
-## Behavior Evidence
-- **Positive Case**: `passed`
-- **Negative Cases**:
-  - `MALFORMED_EVENT_LOG`: `failed_correctly`
-  - `EMPTY_EVENT_LOG`: `failed_correctly`
-- **Invariant Case**: `passed` (Stable: `true`)
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/genetic_algorithm.md`](../../docs/archive/2026-08-02/artifacts/evaluations/genetic_algorithm.md)
+- Original path: `artifacts/evaluations/genetic_algorithm.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `0fcde0e99207442fec9e0cc2642f0892d50e020469239089062d935c232cc407`
 
-## Evidence Hash
-`1e4b21a72ae724279362a11cfe03af3c1cead5e013d6dee9dd2d61cb64c4e181`
-
-## Verification State
-**Closed**
-
-## Algorithmic Role
-Employs evolutionary computation techniques (selection, crossover, mutation) to discover complex process models (often Petri nets) that maximize fitness scores such as fitness, precision, and simplicity. It is particularly effective for large, complex logs where traditional heuristics may fail.
-
-## Implementation Validation & Details
-- **Source Module**: `wasm4pm/src/genetic_discovery.rs`
-- **Algorithm Type**: Evolutionary computation-based process discovery.
-- **Implementation Mechanism**: Initializes a random population of candidate edge sets representing prospective Directly Follows Graphs. The `ColumnarLog` optimization is used to accelerate the frequency extraction over the event log.
-- **Evolutionary Process**: Evaluates candidates according to fitness functions (e.g. alignment fitness, precision) over a set number of generations. Employs a deterministic, fixed random seed (`StdRng::seed_from_u64(42)`) to ensure cross-run repeatability and stability of results.
-- **Graph Transformation**: Outputs the ultimate evolutionary best fit as a `DirectlyFollowsGraph`.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

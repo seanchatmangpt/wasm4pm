@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/monitor-jobs.md; source-sha256: 9112bd48d0ce1694652e9bc6fc98132605a06428df7c11007e08b7fed254e561; reason: already in an archive surface -->
+
 # How-To: Monitor Long-Running Jobs
 
 **Time required**: 10 minutes  

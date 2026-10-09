@@ -1,31 +1,13 @@
-# Algorithm Evaluation: pnml_import
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-08-02; original: artifacts/evaluations/pnml_import.md; source-sha256: 36469dd0368c4d80a22f98fe84e0386a00126460fdaa5bf85cba41283c304d8c; reason: historical, generated, status, or evidence narrative -->
 
-## Metadata
-- **Algorithm ID:** `pnml_import`
-- **Category:** `discovery`
-- **Profiles Supported:** `fast`, `balanced`, `quality`
+# Archived documentation
 
-## Interface Status
-- **Registry Entry:** ✅ Present
-- **TypeScript Dispatch:** ✅ Present
-- **CLI Surface:** ✅ Present
-- **WASM Export:** ✅ Present
+This document is retained as historical evidence and is not current product truth.
 
-## Behavioral Evidence
-- **Positive Cases:** 1/1 passed
-- **Negative Cases:** 2/2 failed correctly
-- **Invariant Cases:** 1/1 passed
+- Archived copy: [`docs/archive/2026-08-02/artifacts/evaluations/pnml_import.md`](../../docs/archive/2026-08-02/artifacts/evaluations/pnml_import.md)
+- Original path: `artifacts/evaluations/pnml_import.md`
+- Archived: 2026-08-02
+- Reason: historical, generated, status, or evidence narrative
+- Source SHA-256: `36469dd0368c4d80a22f98fe84e0386a00126460fdaa5bf85cba41283c304d8c`
 
-## Verification
-- **Evidence Hash:** `85b3e150f79adb84e62575c185e25f70a164b61f156545814a8520c135101b56`
-- **State:** `Closed`
-
-## Algorithmic Role
-Supports the importation of Petri net models defined in the standard Petri Net Markup Language (PNML). This ensures seamless interoperability with a wide range of process modeling and analysis tools that utilize the PNML standard, facilitating the reuse of existing process assets within the wasm4pm ecosystem.
-
-## Implementation Validation & Details
-Based on the source code in `wasm4pm/src/pnml_io.rs`:
-- Implements robust parsing of the PNML XML standard using the `roxmltree` library.
-- Extracts process graph structures from `<place>`, `<transition>`, and `<arc>` nodes spanning potentially multiple `<page>` elements.
-- Handles `<initialMarking>` and `<finalmarkings>` to reconstruct the state configuration.
-- Accurately captures transition labels from `<name><text>` tags or `name` attributes, and correctly deduces invisible (silent) transitions when labels are absent. Arc weights are mapped from `<inscription><text>`.
+Current documentation starts at [`docs/README.md`](../../docs/README.md).

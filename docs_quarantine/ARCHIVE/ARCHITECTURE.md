@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/ARCHITECTURE.md; source-sha256: ae601e60a140c0b5aef17c232f19e1cb2380315cf8bef70d62b871033cc72e8b; reason: already in an archive surface -->
+
 # Architecture
 
 wasm4pm is a process mining platform with a real Rust cognition kernel. This document describes the corrected architecture — the shape that emerged after the false-start of TS scaffolding with mock cognition was rejected and replaced with Rust-first authority.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/breeds/strips.md; source-sha256: 94e4720407c59d5a3b2478ab90f6664ff903946c97aa6a5a966521ce181cf971; reason: already in an archive surface -->
+
 # STRIPS
 
 ## Origin

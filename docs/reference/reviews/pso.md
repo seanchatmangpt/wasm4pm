@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/pso.md; source-sha256: ee887aee3b5c564cd8de61ba64f4edf0c074489a1160b9eea669f8a8d7259974; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: pso (Particle Swarm Optimization)
 
 ## Algorithm ID & Domain

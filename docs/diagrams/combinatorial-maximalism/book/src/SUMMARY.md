@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/SUMMARY.md; source-sha256: 87fe91f217bcce17a434b899118610e43671392fb4aab376495633d2cc7ffe7d; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Summary
 
 - [Title Page](title-page.md)

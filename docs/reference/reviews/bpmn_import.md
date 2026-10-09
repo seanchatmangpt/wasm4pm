@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/bpmn_import.md; source-sha256: 63af3eb43f5543814bbd56374cde73823b58cd64f45781aa0816928ff73070db; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: bpmn_import
 
 ## Algorithm ID & Domain

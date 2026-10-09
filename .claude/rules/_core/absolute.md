@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .claude/rules/_core/absolute.md; source-sha256: c9b4716ab6f531ce3e97ba263db061ae866f30cbed74bb61c5b97f46a550b72c; reason: tooling or agent control surface -->
+
 ---
 name: wasm4pm Absolute Rules
 description: Non-negotiable rules for wasm4pm development (gotchas live in CLAUDE.md)

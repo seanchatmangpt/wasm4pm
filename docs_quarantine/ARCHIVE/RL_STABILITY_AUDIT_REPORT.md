@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/RL_STABILITY_AUDIT_REPORT.md; source-sha256: a525542b90ff8298b12ae887d5def20da5dfe6f2d5622c5eb8b468c98477cc6a; reason: already in an archive surface -->
+
 # wasm4pm RL Learning Stability Audit — Final Report
 
 **Date:** 2026-05-18  

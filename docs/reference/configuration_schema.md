@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/configuration_schema.md; source-sha256: d0fdea2a769f14524887c807880cc7b089867fea3b044678956e782e42dabb71; reason: canonical Diátaxis or ADR surface -->
+
 # Reference: Configuration Schema
 
 The `wasm4pm.toml` file (or `wasm4pm.json`) controls the global behavior of the engine.

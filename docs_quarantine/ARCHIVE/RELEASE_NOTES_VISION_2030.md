@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/RELEASE_NOTES_VISION_2030.md; source-sha256: 21861925891a61210ee3874431223dec2151e67c65a23f5d9f623590c97289b1; reason: already in an archive surface -->
+
 # Release Notes: Vision 2030
 
 **wasm4pm v26.4.16** — Autonomous Process Monitoring with AutoProcess

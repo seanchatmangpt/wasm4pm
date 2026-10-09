@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/simd_streaming_dfg.md; source-sha256: c3a09dd35b61ab7528bb164a3d0a4433ff7afa98e70112fafc60deada6c1cca5; reason: already in an archive surface -->
+
 # Algorithm Evaluation: SIMD Streaming DFG
 
 ## Metadata

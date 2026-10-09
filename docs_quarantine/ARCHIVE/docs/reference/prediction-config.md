@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/reference/prediction-config.md; source-sha256: 1c9e7522630b6c10c9bcd036fc5aae5f05201d854daa8cd593f6f9da4672e871; reason: already in an archive surface -->
+
 # Reference: Prediction Configuration
 
 **Version**: 26.4.6

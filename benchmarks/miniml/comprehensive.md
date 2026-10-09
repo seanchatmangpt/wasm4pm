@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: benchmarks/miniml/comprehensive.md; source-sha256: e9e804ccdd7e6d044aca3dc654bd23d15d562680da3ed46788f11c1bd4aebad7; reason: path-local documentation retained pending domain-specific supersession -->
+
 # miniml Comprehensive Benchmark Suite
 
 110 benchmarks across 26 categories, covering all native-benchmarkable algorithms.

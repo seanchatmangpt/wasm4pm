@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.16/RFC-CLOSURE.md; source-sha256: 8346aeccbe48b4d5729d2ddfebb5f4ff9483ef5f251de54bd04307f4942c00ad; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm v26.9.16 — RFC Closure Contract
 
 Status: DRAFT IMPLEMENTATION PR.

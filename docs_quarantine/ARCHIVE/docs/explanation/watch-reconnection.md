@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/explanation/watch-reconnection.md; source-sha256: b87ae3d62fbdbd2b72dad0207a70b8e5bf357d423c6d32fb636b97d28892d0c9; reason: already in an archive surface -->
+
 # Explanation: Watch Mode Reconnection
 
 **Time to read**: 10 minutes  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/oracle-specs/ltl_monitor.md; source-sha256: f5581015dd5fc302f314b6d49579bfda9bad73fc17f80631b076f07e653031a2; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ltl_monitor — LTL Runtime Monitor (Havelund & Rosu 2001)
 
 Source of truth: `crates/wasm4pm-cognition/src/breeds/ltl_monitor.rs`, fixture `tests/fixtures/papers/ltl_monitor.json`, oracle `src/breeds/support/oracle_impls/logic.rs`, OCPN `ocel/models/l1/ltl_monitor.ocpn.json`.

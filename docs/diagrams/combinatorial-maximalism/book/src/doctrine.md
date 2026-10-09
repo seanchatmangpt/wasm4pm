@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/doctrine.md; source-sha256: 62419c34e4e0e33357b4ca92f85ef0bd1e7bfa7a5dde65acd2f1803f7c813c07; reason: path-local documentation retained pending domain-specific supersession -->
+
 # DCM doctrine
 
 ## The Chatman equation

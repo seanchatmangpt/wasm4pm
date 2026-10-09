@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/CARTOGRAPHY_REPORT.md; source-sha256: 8c26f9e87165affadf83f32ce80ed353cb58573182e3c3e5f48887ee25c7934e; reason: already in an archive surface -->
+
 # Cartography Report: wasm4pm-compat Boundary Integration
 
 ## Mission

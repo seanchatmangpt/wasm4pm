@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/breeds/cbr.md; source-sha256: a94bd9688e6397ae30264bd9b59b8a9f0c7b36c36996ec8563f590053d5d6e41; reason: already in an archive surface -->
+
 # CBR (Case-Based Reasoning)
 
 ## Origin

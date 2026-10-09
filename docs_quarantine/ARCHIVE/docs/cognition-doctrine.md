@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cognition-doctrine.md; source-sha256: fcfc1e161ef10d4cd68d81b22a2ace71c1949ce529121a3b35aae76e38eca4d0; reason: already in an archive surface -->
+
 # Cognition Doctrine: Old AI is the Factory. LLMs are the Brochure.
 
 ## The principle

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packages/observability/INDEX.md; source-sha256: 27da3b031de710788732568fb1c7e281c7b26907fabdadf8fd71bb0b94280315; reason: path-local documentation retained pending domain-specific supersession -->
+
 # @wasm4pm/observability - Documentation Index
 
 Complete reference for all documentation in this package.

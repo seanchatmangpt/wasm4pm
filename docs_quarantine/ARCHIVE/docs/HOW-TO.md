@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/HOW-TO.md; source-sha256: cdd607e172844e60ea40f806cea8f4c528a6bb3a521502afbdcded090ec902b4; reason: already in an archive surface -->
+
 # HOW-TO Guides — wasm4pm
 
 Task-oriented guides for common process mining goals. Each guide assumes you have already installed `wasm4pm` and know the basics. See [QUICKSTART.md](QUICKSTART.md) if you are starting from scratch.

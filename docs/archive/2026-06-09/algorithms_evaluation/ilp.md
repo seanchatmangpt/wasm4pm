@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/ilp.md; source-sha256: 55b50088a42d779d34c496716d3e2526e85c3cc4643ddf17c098484a059491b3; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Integer Linear Programming (ILP)
 
 ## Metadata

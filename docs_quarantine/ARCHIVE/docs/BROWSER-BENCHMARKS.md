@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/BROWSER-BENCHMARKS.md; source-sha256: 8be0e831ee8f74660091071687907a3f98652b37a6fc0ee24afd69a116b6da91; reason: already in an archive surface -->
+
 # Browser Profile WASM Performance Benchmarking
 
 Performance testing for WASM4PM algorithms in browser and Node.js environments using Vitest.

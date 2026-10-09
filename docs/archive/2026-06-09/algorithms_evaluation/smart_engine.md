@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/smart_engine.md; source-sha256: 697edfb22e1c0d2d507f3a85b075a4eef71f119a1fbe0ca6a4029a30507ab755; reason: already in an archive surface -->
+
 # Algorithm Evaluation: Smart Engine
 
 ## Metadata

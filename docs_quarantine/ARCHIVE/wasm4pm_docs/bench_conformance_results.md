@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/bench_conformance_results.md; source-sha256: f7c8f320a4085304c888a0f6a9b3a9226d142e0585dac748b71294766341fd81; reason: already in an archive surface -->
+
 # Conformance Checking Benchmark Results
 
 **Date:** 2026-04-10

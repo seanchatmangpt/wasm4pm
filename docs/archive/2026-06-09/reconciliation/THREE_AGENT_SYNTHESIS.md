@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/reconciliation/THREE_AGENT_SYNTHESIS.md; source-sha256: 33fa764da03ed3624aa09f2573c7bdb5579d9e89334b63308dc8375e2f7be609; reason: already in an archive surface -->
+
 # Three-Agent Finish Team — Consolidated Synthesis
 
 **Branch:** `finish-wip-primitives`

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/bench_tier1_results.md; source-sha256: 6386f1797483079b4b9d3b1db9484d56f3537da073d4b586b72ee2cbdd881c85; reason: already in an archive surface -->
+
 # Tier 1 Discovery Algorithm Benchmarks
 
 **Date:** 2026-04-10

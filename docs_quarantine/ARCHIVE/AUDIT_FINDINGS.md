@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/AUDIT_FINDINGS.md; source-sha256: bdd5028b0beece1482de3abc54be1aeaa04fe589442b683054200c3f70e25d2e; reason: already in an archive surface -->
+
 # Discovery Algorithm Audit — Final Findings & Implementation Report
 
 **Audit Date:** 2026-05-18  

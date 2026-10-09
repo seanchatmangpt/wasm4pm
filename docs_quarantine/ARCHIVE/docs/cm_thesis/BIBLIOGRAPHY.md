@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/cm_thesis/BIBLIOGRAPHY.md; source-sha256: 8316a9ed8b0b0f4c8aa8daeeacfd8ef08788663810ff5a69cdb63647441f2c55; reason: already in an archive surface -->
+
 # Research Backbone for a Combinatorial-Maximalist MCP+, wasm4pm, Prolog8, and MCPP Program
 
 ## Executive summary

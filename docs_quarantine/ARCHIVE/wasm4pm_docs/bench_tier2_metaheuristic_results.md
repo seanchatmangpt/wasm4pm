@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/wasm4pm_docs/bench_tier2_metaheuristic_results.md; source-sha256: 2e46619e99d91a0eae443fd6e7318448526e2022cfd3badd300a79e9c59a76c2; reason: already in an archive surface -->
+
 # Tier 2-3 Metaheuristic Discovery Algorithm Benchmarks
 
 **Benchmark Date:** 2026-04-10

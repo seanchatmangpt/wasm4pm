@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/thesis/oldia/README.md; source-sha256: 09baacb65ca176650f3c339ab7ec57c8b9ff5bc8f4283a861414837a6d059926; reason: path-local authority or entrypoint -->
+
 # OLDIA Thesis — arXiv Submission Notes
 
 **OLDIA: Operational Lifecycle Determinism in Intelligent Architectures**
@@ -66,7 +68,7 @@ resolution; STRIPS plan soundness is checked against pre/post-condition semantic
 ## Implementation
 
 The complete implementation is available at:
-https://github.com/chatmangpt/wasm4pm
+https://github.com/seanchatmangpt/wasm4pm
 
 The cognition layer lives in `crates/wasm4pm-cognition/` (Rust/WASM) and
 `packages/cognition/` (TypeScript wrapper). The OCEL provability layer is wired at

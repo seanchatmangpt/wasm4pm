@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/CONFORMANCE_DEGENERATE_CASES.md; source-sha256: cbcc46df961989383871ee23ed040284d8d8ae8ee08701c33c7e5b832072689e; reason: already in an archive surface -->
+
 # Conformance Degenerate Case Audit — Complete
 
 **Date:** 2026-05-18  

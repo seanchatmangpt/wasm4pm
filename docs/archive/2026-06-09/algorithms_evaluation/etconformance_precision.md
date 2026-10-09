@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/algorithms_evaluation/etconformance_precision.md; source-sha256: 618d60546d293ccaacf6ce87d24ad15ef9d0bb97cce530ba2a1f28b48818a02b; reason: already in an archive surface -->
+
 # Algorithm Evaluation: ETConformance Precision
 
 ## Metadata

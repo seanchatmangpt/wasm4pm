@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/PREDICTION_BENCHMARKS.md; source-sha256: fffabeb194d3ef4c6dc1962cb191e0798273e58651f63551b9fddec8e85c9517; reason: already in an archive surface -->
+
 # Prediction Task Benchmarks — Comprehensive Accuracy & Latency Report
 
 **Agent 7 Deliverable | Benchmark Date: 2026-05-05**

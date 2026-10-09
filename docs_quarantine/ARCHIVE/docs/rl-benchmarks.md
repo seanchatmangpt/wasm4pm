@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/rl-benchmarks.md; source-sha256: 5560b6f7b45f83eecc3e83ffeed28c334ea7aef5ea49f4fc880bb064c01331ca; reason: already in an archive surface -->
+
 # wasm4pm RL System Benchmarks
 
 **Comprehensive performance and convergence evaluation of all 5 RL agents.**

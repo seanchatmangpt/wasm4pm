@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ilp.md; source-sha256: 722e57a0b9c4213078e1bde3d39a2ae3ea354aa1c4621e19f42727e5a834e089; reason: canonical Diátaxis or ADR surface -->
+
 # Algorithm Review: ilp
 
 ## Algorithm ID & Domain

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/CRATES_STRUCTURE.md; source-sha256: 15b29279920a8e7bb8848bd7b5faae3104724e6ae3aff5e921fb98e655b8c5dc; reason: path-local documentation retained pending domain-specific supersession -->
+
 # wasm4pm Crates Structure
 
 ## Overview

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/how-to/export-formats.md; source-sha256: fb91bd0da2d875b78c406c7de58b1914b20159e32f631a01bbf0106187923624; reason: already in an archive surface -->
+
 # How-To: Export Models in Different Formats
 
 **Time required**: 5 minutes  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/benchmarks/COVERAGE.md; source-sha256: 7c6a70cd53aec2c4ba1758c1a747c4f577a8d160da70c724a95d4fded9d6603c; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Benchmark Coverage
 
 > The product is CodeManufactory; RevOps is merely proof that CodeManufactory works.

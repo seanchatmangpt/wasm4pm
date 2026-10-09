@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: packages/kernel/ALGORITHMS.md; source-sha256: c44be29c4c3490a762347718558d71cf12f92dac8fbaec986075a82d4322c255; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Algorithm Reference
 
 Complete reference for all **60** algorithms in the wasm4pm kernel registry.

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/DOCUMENTATION_INDEX.md; source-sha256: 66ddb6784f48d017e29548a605a12274a3975b60d9e4e802d66078b67b7439b7; reason: already in an archive surface -->
+
 # Documentation Index
 
 Complete guide to wasm4pm process mining platform documentation.

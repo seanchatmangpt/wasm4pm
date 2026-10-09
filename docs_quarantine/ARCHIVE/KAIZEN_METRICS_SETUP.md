@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/KAIZEN_METRICS_SETUP.md; source-sha256: b9da1c2b6267f77e10a1e5f3fef42c9a9baa0a7ec12693af47fcafbe9c37522b; reason: already in an archive surface -->
+
 # wasm4pm Kaizen Metrics Tracking — Complete Setup & Operations Guide
 
 **Version:** 1.0  

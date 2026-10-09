@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/02-swimlanes.md; source-sha256: 1a5a693af64d530485a2df8b7dc1ef026afaee7ab1eb3a9f23ee13dc1ed0b552; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Swimlanes: Ownership-Preserving Handoff
 
 **Pattern ID:** `02-swimlanes`  

@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs_quarantine/ARCHIVE/docs/VISION_2030_VERIFICATION.md; source-sha256: dd6dbc17deab4a0014d81e90fc106151264dc21185ebb8112800ad20993dd7e9; reason: already in an archive surface -->
+
 # wasm4pm Vision 2030 — Verification Report
 
 **Date:** 2026-04-16 | **Status:** VERIFIED | **Evidence:** Rank 1-2 Oracles (Mathematical Theorems + Domain Contracts)

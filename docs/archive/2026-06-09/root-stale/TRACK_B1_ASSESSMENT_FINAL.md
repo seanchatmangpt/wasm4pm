@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: archived; reviewed: 2026-08-02; original: docs/archive/2026-06-09/root-stale/TRACK_B1_ASSESSMENT_FINAL.md; source-sha256: 1b906886e2033e0b8a9fe7e5008c63e406933d9d5a836a4fc090d786c70665f6; reason: already in an archive surface -->
+
 # Track B-1: ConformancePayload Envelope Wrapper — baseline admissibility Assessment
 
 **Completed:** 2026-05-30  

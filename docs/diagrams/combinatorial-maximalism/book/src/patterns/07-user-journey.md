@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/diagrams/combinatorial-maximalism/book/src/patterns/07-user-journey.md; source-sha256: 403938044fd6b7fb4f4eb8f8306faddaf840a3cd2df0ab25fe59bd0ab0a0c5a8; reason: path-local documentation retained pending domain-specific supersession -->
+
 # User Journey: Human Effort And Confidence
 
 **Pattern ID:** `07-user-journey`  

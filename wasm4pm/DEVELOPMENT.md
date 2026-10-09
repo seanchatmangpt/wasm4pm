@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/DEVELOPMENT.md; source-sha256: b4d6af4b8541c1e484ec2b0eaf2bb39bf11cf73f1bbc2452832828114fc9d312; reason: path-local documentation retained pending domain-specific supersession -->
+
 # Development Guide for wasm4pm
 
 Architecture, extension points, and internal design documentation.

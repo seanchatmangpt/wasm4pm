@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/ontology-namespaces.md; source-sha256: a6c599bac478b48aafa7e8a9520dffc0c31cacf56cb5be1bd0a51089660bf528; reason: canonical Diátaxis or ADR surface -->
+
 # wasm4pm ontology namespace architecture
 
 ## Decision

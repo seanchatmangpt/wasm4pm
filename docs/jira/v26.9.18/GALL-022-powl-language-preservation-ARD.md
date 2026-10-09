@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.9.18/GALL-022-powl-language-preservation-ARD.md; source-sha256: 15ddf1d35b5b6c5ec64c54e7b72ec54849ad37b38856a17206b00f521d230ac2; reason: path-local documentation retained pending domain-specific supersession -->
+
 # ARD v26.9.18 — GALL-022: POWL Language Preservation
 
 **Status:** FINAL_SPEC — closed for v26.9.24  
