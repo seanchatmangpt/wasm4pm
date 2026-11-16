@@ -157,7 +157,7 @@ pub fn streaming_dfg_finalize(handle: &str) -> Result<JsValue, JsValue> {
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let dfg_handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_| JsValue::from_str("Failed to store DFG"))?;
 
     get_or_init_state().delete_object(handle)?;
@@ -283,7 +283,7 @@ pub fn streaming_skeleton_finalize(handle: &str) -> Result<JsValue, JsValue> {
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let dfg_handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_| JsValue::from_str("Failed to store DFG"))?;
 
     get_or_init_state().delete_object(handle)?;
@@ -396,7 +396,7 @@ pub fn streaming_heuristic_finalize(handle: &str) -> Result<JsValue, JsValue> {
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let dfg_handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_| JsValue::from_str("Failed to store DFG"))?;
 
     get_or_init_state().delete_object(handle)?;

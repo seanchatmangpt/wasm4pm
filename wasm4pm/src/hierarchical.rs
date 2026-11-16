@@ -73,7 +73,7 @@ impl TraceInfo {
 
 /// Intermediate DFG counts produced by a single chunk.
 ///
-/// All keys are integer activity IDs.  The final `DirectlyFollowsGraph` is
+/// All keys are integer activity IDs.  The final `DFG` is
 /// materialised via `to_dfg(vocab)` once all chunks are merged.
 #[derive(Debug, Clone, Default)]
 pub struct DfgChunkResult {
@@ -143,9 +143,9 @@ impl Chunkable for DfgChunker {
 }
 
 impl DfgChunkResult {
-    /// Materialise into a full `DirectlyFollowsGraph` using the string vocabulary.
-    pub fn to_dfg(&self, vocab: &[&str]) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    /// Materialise into a full `DFG` using the string vocabulary.
+    pub fn to_dfg(&self, vocab: &[&str]) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes -- include all activities seen in any count map
         let mut all_ids: FxHashMap<u32, bool> = FxHashMap::default();
@@ -447,7 +447,7 @@ mod tests {
     }
 
     /// Build a monolithic DFG for comparison.
-    fn monolithic_dfg(log: &EventLog) -> DirectlyFollowsGraph {
+    fn monolithic_dfg(log: &EventLog) -> DFG {
         let col = log.to_columnar("concept:name");
         let result = DfgChunker::discover_local(&build_traces(&col));
         result.to_dfg(&col.vocab)

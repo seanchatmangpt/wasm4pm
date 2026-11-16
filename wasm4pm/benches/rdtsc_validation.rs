@@ -62,12 +62,14 @@ fn validate_cycle_budget() {
     let p99 = cycles[(cycles.len() * 99) / 100] as f64;
 
     // Compute variance
-    let variance: f64 = cycles.iter()
+    let variance: f64 = cycles
+        .iter()
         .map(|&c| {
             let diff = c as f64 - mean;
             diff * diff
         })
-        .sum::<f64>() / cycles.len() as f64;
+        .sum::<f64>()
+        / cycles.len() as f64;
     let std_dev = variance.sqrt();
     let cv = std_dev / mean; // Coefficient of variation
 
@@ -80,14 +82,17 @@ fn validate_cycle_budget() {
 
     println!("\n=== RDTSC Cycle Counter Validation ===");
     println!("Iterations: {}", cycles.len());
-    println!("Mean: {:.2} cycles ({:.2}ns @ {}GHz)", mean, mean_ns, cpu_ghz);
+    println!(
+        "Mean: {:.2} cycles ({:.2}ns @ {}GHz)",
+        mean, mean_ns, cpu_ghz
+    );
     println!("Std Dev: {:.2} cycles ({:.2}ns)", std_dev, std_dev_ns);
     println!("CV (Coefficient of Variation): {:.2}%", cv * 100.0);
     println!("Median: {:.0} cycles ({:.2}ns)", median, median / cpu_ghz);
     println!("P95: {:.0} cycles ({:.2}ns)", p95, p95_ns);
     println!("P99: {:.0} cycles ({:.2}ns)", p99, p99_ns);
     println!("Min: {} cycles", cycles[0]);
-    println!("Max: {} cycles", cycles[cycles.len()-1]);
+    println!("Max: {} cycles", cycles[cycles.len() - 1]);
     println!();
 
     // Print histogram
@@ -103,7 +108,10 @@ fn validate_cycle_budget() {
 
     let mut prev_limit = 0;
     for (limit, label) in buckets {
-        let count = cycles.iter().filter(|&&c| c > prev_limit && c <= limit).count();
+        let count = cycles
+            .iter()
+            .filter(|&&c| c > prev_limit && c <= limit)
+            .count();
         let pct = count as f64 / cycles.len() as f64 * 100.0;
         println!("  {}: {} ({:.1}%)", label, count, pct);
         prev_limit = limit;

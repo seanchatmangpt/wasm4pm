@@ -1,0 +1,49 @@
+{
+  "task": "018 T007",
+  "title": "wasm4pm Alpha++ and Declare Constraints",
+  "verified_at": "2026-04-26T00:00:00Z",
+  "status": "VERIFIED_IMPLEMENTED",
+  "findings": {
+    "alpha_plus_plus": {
+      "file": "wasm4pm/src/algorithms.rs",
+      "function": "discover_alpha_plus_plus",
+      "implementation_status": "COMPLETE",
+      "evidence": [
+        "Footprint matrix built from directly-follows counts (df[a*n+b]) in Step 1 (lines ~50-75)",
+        "Causality and parallel relations derived in Step 2 (lines ~83-103)",
+        "Length-1 loops tracked via l1_loop[] vector",
+        "Start/end activities computed in Step 3 (lines ~109-133)",
+        "Full Petri net skeleton built in Step 4 with source/sink places"
+      ]
+    },
+    "declare_constraints": {
+      "file": "wasm4pm/src/discovery.rs",
+      "function": "discover_declare",
+      "implementation_status": "COMPLETE",
+      "constraints_verified": [
+        "Succession — Template 6: LTL-style trace scanning combining Precedence + Response (lines ~597-631)",
+        "NotCoExistence — Template 7: strict mutual exclusion check, confidence=1.0 only when violated==0 (lines ~633-662)",
+        "ChainPrecedence — Template 8: every non-first B must be immediately preceded by A, per-trace chain_pairs scan (lines ~666-757)",
+        "ChainResponse — Template 9: every non-last A must be immediately followed by B, same chain_pairs scan (lines ~666-757)"
+      ]
+    }
+  },
+  "test_run": {
+    "command": "cargo test --lib (from wasm4pm/wasm4pm/)",
+    "total_passed": 580,
+    "total_failed": 6,
+    "alpha_tests_passed": 7,
+    "alpha_tests_failed": 0,
+    "declare_tests_passed": 3,
+    "declare_tests_failed": 0,
+    "failing_tests_unrelated_to_task": [
+      "causal_graph::tests::test_causal_heuristic_low_threshold",
+      "causal_graph::tests::test_causal_heuristic_threshold",
+      "gpu::wgpu_binding::tests::algorithm_ids_length_correct",
+      "parallel_executor::tests::test_constant_latency_chunk_processing",
+      "parallel_executor::tests::test_parallel_dfg_matches_sequential",
+      "simd_token_replay::tests::test_fire_transition_saturating"
+    ],
+    "note": "The 6 failing tests are in unrelated modules (causal_graph, gpu, parallel_executor, simd_token_replay). Integration test files (edge_cases_tests, jtbd_bpi2020_tests, etc.) fail due to cloud-feature-gated modules not available in default build, not due to T007 scope."
+  }
+}

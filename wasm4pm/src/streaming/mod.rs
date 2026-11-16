@@ -70,7 +70,7 @@ pub struct StreamStats {
 /// All streaming discovery algorithms implement this trait, providing
 /// a unified API for incremental event processing.
 pub trait StreamingAlgorithm {
-    /// The output model type (e.g., `DirectlyFollowsGraph`, `PetriNet`)
+    /// The output model type (e.g., `DFG`, `PetriNet`)
     type Model;
 
     /// Create a new streaming instance with empty state.

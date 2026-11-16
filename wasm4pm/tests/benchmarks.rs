@@ -17,6 +17,10 @@
 //! Without real data, benchmarks generate synthetic logs (same behavior, synthetic data).
 //! License for real data: CC BY 4.0 (free to use, attribution required)
 
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+use std::time::Instant;
 use wasm4pm::advanced_algorithms::{
     analyze_infrequent_paths, compute_model_metrics, detect_bottlenecks, detect_rework,
     discover_heuristic_miner,
@@ -48,17 +52,14 @@ use wasm4pm::streaming::streaming_declare::StreamingDeclareBuilder;
 use wasm4pm::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
 use wasm4pm::streaming::streaming_inductive::StreamingInductiveBuilder;
 use wasm4pm::streaming::StreamingAlgorithm;
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-use std::time::Instant;
 
 // ── Data Source & Tier Detection ──────────────────────────────────────────
 
 fn get_benchmark_sizes() -> Vec<usize> {
     // Check if real BPI 2020 data exists (gemba: observe actual file system)
     // Try multiple path resolutions since test working directory varies
-    let bpi2020_exists = Path::new("wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes").exists()
+    let bpi2020_exists = Path::new("wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes")
+        .exists()
         || Path::new("tests/fixtures/BPI_2020_Travel_Permits_Actual.xes").exists()
         || Path::new("../wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes").exists();
 
@@ -352,14 +353,14 @@ fn generate_synthetic_log(cases: usize) -> EventLog {
 fn make_log(cases: usize) -> String {
     // Load real data based on requested size (exact case counts from real datasets)
     let dataset = match cases {
-        1_050 => Some("sepsis"),           // Sepsis Cases: 1,050 cases, 15,214 events
-        7_065 => Some("bpi2020"),          // BPI 2020 Travel: 7,065 cases, 86,581 events
-        7_554 => Some("bpi2013"),          // BPI 2013 Incidents: 7,554 cases, 65,533 events
-        13_087 => Some("bpi2012"),         // BPI 2012 Loans: 13,087 cases, 262,200 events
-        28_657 => Some("bpi2015"),         // BPI 2015 Building: 28,657 cases, 376,467 events
-        31_509 => Some("bpi2017"),         // BPI 2017 Loans: 31,509 cases, 1,202,267 events
-        150_370 => Some("road_traffic"),   // Road Traffic Fines: 150,370 cases, 561,470 events
-        251_734 => Some("bpi2019"),        // BPI 2019 P2P: 251,734 cases, 1,595,923 events
+        1_050 => Some("sepsis"),         // Sepsis Cases: 1,050 cases, 15,214 events
+        7_065 => Some("bpi2020"),        // BPI 2020 Travel: 7,065 cases, 86,581 events
+        7_554 => Some("bpi2013"),        // BPI 2013 Incidents: 7,554 cases, 65,533 events
+        13_087 => Some("bpi2012"),       // BPI 2012 Loans: 13,087 cases, 262,200 events
+        28_657 => Some("bpi2015"),       // BPI 2015 Building: 28,657 cases, 376,467 events
+        31_509 => Some("bpi2017"),       // BPI 2017 Loans: 31,509 cases, 1,202,267 events
+        150_370 => Some("road_traffic"), // Road Traffic Fines: 150,370 cases, 561,470 events
+        251_734 => Some("bpi2019"),      // BPI 2019 P2P: 251,734 cases, 1,595,923 events
         _ => None,
     };
 

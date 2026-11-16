@@ -1,8 +1,8 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
-use serde_json::json;
 use hashbrown::HashMap;
+use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 /// Pure-Rust token-based replay: returns ConformanceResult without wasm-bindgen.
@@ -115,7 +115,7 @@ pub fn token_replay_pure(
                         .get(place_id)
                         .map(|&idx| current_marking[idx])
                         .unwrap_or(0);
-                    
+
                     #[cfg(feature = "bcinr")]
                     {
                         let is_short = (available < *weight) as u64;

@@ -11,9 +11,7 @@
 //! Algorithm family: Autonomic Control Loop (integration)
 //! Modules tested: action_dispatch, rl_orchestrator
 
-use wasm4pm::action_dispatch::{
-    dispatch_action, DispatchOutcome, ExecutionContext,
-};
+use wasm4pm::action_dispatch::{dispatch_action, DispatchOutcome, ExecutionContext};
 use wasm4pm::rl_orchestrator::{compute_reward, RlOrchestrator};
 use wasm4pm::{RlAction, RlState};
 
@@ -68,9 +66,21 @@ fn test_dispatch_outcomes_valid_across_all_health_states() {
                             batch_size,
                         } => {
                             // Scaled must have non-zero values
-                            assert!(memory_mb > 0, "Scaled memory_mb must be > 0 at health={}", health);
-                            assert!(timeout_ms > 0, "Scaled timeout_ms must be > 0 at health={}", health);
-                            assert!(batch_size > 0, "Scaled batch_size must be > 0 at health={}", health);
+                            assert!(
+                                memory_mb > 0,
+                                "Scaled memory_mb must be > 0 at health={}",
+                                health
+                            );
+                            assert!(
+                                timeout_ms > 0,
+                                "Scaled timeout_ms must be > 0 at health={}",
+                                health
+                            );
+                            assert!(
+                                batch_size > 0,
+                                "Scaled batch_size must be > 0 at health={}",
+                                health
+                            );
                         }
                         DispatchOutcome::RetryInitiated { attempt, delay_ms } => {
                             assert!(attempt > 0, "Retry attempt must be > 0");
@@ -140,12 +150,14 @@ fn test_scale_action_proportionally_adjusts_by_health() {
     assert!(
         mem_0 >= mem_2,
         "Memory at health=0 ({}) should be >= health=2 ({})",
-        mem_0, mem_2
+        mem_0,
+        mem_2
     );
     assert!(
         mem_2 >= mem_4,
         "Memory at health=2 ({}) should be >= health=4 ({})",
-        mem_2, mem_4
+        mem_2,
+        mem_4
     );
 
     // batch_size should decrease or stay equal as health worsens
@@ -155,12 +167,14 @@ fn test_scale_action_proportionally_adjusts_by_health() {
     assert!(
         batch_0 >= batch_2,
         "Batch at health=0 ({}) should be >= health=2 ({})",
-        batch_0, batch_2
+        batch_0,
+        batch_2
     );
     assert!(
         batch_2 >= batch_4,
         "Batch at health=2 ({}) should be >= health=4 ({})",
-        batch_2, batch_4
+        batch_2,
+        batch_4
     );
 }
 
@@ -363,8 +377,14 @@ fn test_dispatch_and_reward_end_to_end() {
     } = dispatch_result.unwrap()
     {
         // After scaling, resources should be reduced
-        assert!(memory_mb <= 512, "Scaled memory should not increase in degraded state");
-        assert!(batch_size <= 1000, "Scaled batch should not increase in degraded state");
+        assert!(
+            memory_mb <= 512,
+            "Scaled memory should not increase in degraded state"
+        );
+        assert!(
+            batch_size <= 1000,
+            "Scaled batch should not increase in degraded state"
+        );
 
         // Compute reward for stable degraded state (action was taken, health unchanged)
         let reward = compute_reward(2, 2, 0, true, true, false);
@@ -391,13 +411,7 @@ fn test_orchestrator_run_cycle_produces_valid_action_and_reward() {
         orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
     // Action label should match one of the 5 RlAction variants
-    let valid_actions = [
-        "Continue",
-        "Scale",
-        "Retry",
-        "Fallback",
-        "Restart",
-    ];
+    let valid_actions = ["Continue", "Scale", "Retry", "Fallback", "Restart"];
     assert!(
         valid_actions.contains(&action_label.as_str()),
         "Action '{}' should be one of {:?}",
@@ -428,8 +442,7 @@ fn test_orchestrator_cycle_accumulates_reward() {
     let mut expected_cumulative = 0.0_f32;
 
     for _ in 0..5 {
-        let (_, reward) =
-            orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         expected_cumulative += reward;
         assert_eq!(
             orch.telemetry().cumulative_reward,

@@ -7,11 +7,11 @@
 //! Uses REAL event logs: running-example.json.
 //! Oracle: Rank 2 (Domain Contract) — rework should degrade health and reward.
 
+use std::collections::HashSet;
+use std::fs;
 use wasm4pm::models::EventLog;
 use wasm4pm::rl_orchestrator::compute_health_state;
 use wasm4pm::RlState;
-use std::collections::HashSet;
-use std::fs;
 
 const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
@@ -140,7 +140,11 @@ fn test_loop_trace_detects_rework() {
     }"#;
 
     let log: EventLog = serde_json::from_str(json).unwrap();
-    assert_eq!(count_rework_traces(&log, "activity"), 1, "Loop trace should be detected");
+    assert_eq!(
+        count_rework_traces(&log, "activity"),
+        1,
+        "Loop trace should be detected"
+    );
     assert!(
         compute_rework_ratio(&log, "activity") > 0.0,
         "Loop trace should produce positive rework ratio"
@@ -176,10 +180,7 @@ fn test_real_log_health_state_from_actual_metrics() {
         health, 0,
         "Real running-example log should be Normal (health=0), got {}\n\
          events={}, traces={}, activities={}",
-        health,
-        event_count,
-        trace_count,
-        unique_activities,
+        health, event_count, trace_count, unique_activities,
     );
 }
 
@@ -204,7 +205,10 @@ fn test_health_degrades_for_trivial_log() {
 
     let _log: EventLog = serde_json::from_str(json).unwrap();
     let health = compute_health_state(3, 1, 1);
-    assert_eq!(health, 2, "Trivial log (1 activity, < 5 events) should be Degraded");
+    assert_eq!(
+        health, 2,
+        "Trivial log (1 activity, < 5 events) should be Degraded"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +217,11 @@ fn test_health_degrades_for_trivial_log() {
 
 #[test]
 fn test_health_critical_for_no_traces() {
-    assert_eq!(compute_health_state(10, 0, 3), 3, "No traces should be Critical");
+    assert_eq!(
+        compute_health_state(10, 0, 3),
+        3,
+        "No traces should be Critical"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -222,8 +230,16 @@ fn test_health_critical_for_no_traces() {
 
 #[test]
 fn test_health_failed_for_empty_log() {
-    assert_eq!(compute_health_state(0, 0, 0), 4, "Empty log should be Failed");
-    assert_eq!(compute_health_state(5, 5, 0), 4, "No activities should be Failed");
+    assert_eq!(
+        compute_health_state(0, 0, 0),
+        4,
+        "Empty log should be Failed"
+    );
+    assert_eq!(
+        compute_health_state(5, 5, 0),
+        4,
+        "No activities should be Failed"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -237,26 +253,37 @@ fn test_real_log_rework_ratio_produces_distinct_rl_states() {
     // which means the RL system treats them as different situations.
 
     let log = load_event_log_json("running-example.json");
-    let (event_count, trace_count, unique_activities, rework_ratio) =
-        (log.traces.iter().map(|t| t.events.len() as u64).sum::<u64>(),
-         log.traces.len() as u64,
-         {
-             let mut s = HashSet::new();
-             for trace in &log.traces {
-                 for event in &trace.events {
-                     if let Some(wasm4pm::models::AttributeValue::String(n)) =
-                         event.attributes.get("activity") { s.insert(n.clone()); }
-                 }
-             }
-             s.len() as u64
-         },
-         compute_rework_ratio(&log, "activity"));
+    let (event_count, trace_count, unique_activities, rework_ratio) = (
+        log.traces
+            .iter()
+            .map(|t| t.events.len() as u64)
+            .sum::<u64>(),
+        log.traces.len() as u64,
+        {
+            let mut s = HashSet::new();
+            for trace in &log.traces {
+                for event in &trace.events {
+                    if let Some(wasm4pm::models::AttributeValue::String(n)) =
+                        event.attributes.get("activity")
+                    {
+                        s.insert(n.clone());
+                    }
+                }
+            }
+            s.len() as u64
+        },
+        compute_rework_ratio(&log, "activity"),
+    );
 
     let features = [
         (event_count as f32 / 10_000.0).min(1.0),
         (trace_count as f32 / 1_000.0).min(1.0),
         (unique_activities as f32 / 100.0).min(1.0),
-        0.0, 0.0, 1.0, 1.0, 0.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
     ];
     let health_level = 0u8;
 
@@ -279,8 +306,7 @@ fn test_real_log_rework_ratio_produces_distinct_rl_states() {
         // a different quantized state.
         let state_with_rework = RlState::from_features(&features, health_level, 0.5);
         assert_ne!(
-            state_zero.rework_ratio_q,
-            state_with_rework.rework_ratio_q,
+            state_zero.rework_ratio_q, state_with_rework.rework_ratio_q,
             "RlState.rework_ratio_q with 0.0 should differ from 0.5",
         );
     }

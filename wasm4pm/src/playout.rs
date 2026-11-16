@@ -394,7 +394,7 @@ pub fn play_out_process_tree(
 #[wasm_bindgen]
 pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue> {
     // Parse the DFG from JSON
-    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: crate::models::DFG = serde_json::from_str(dfg_json)
         .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid DFG JSON: {}", e)))?;
 
     // Parse parameters with defaults

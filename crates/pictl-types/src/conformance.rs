@@ -27,7 +27,12 @@ impl TokenReplayResult {
         }
     }
 
-    pub fn calculate_fitness(produced: usize, consumed: usize, missing: usize, remaining: usize) -> f64 {
+    pub fn calculate_fitness(
+        produced: usize,
+        consumed: usize,
+        missing: usize,
+        remaining: usize,
+    ) -> f64 {
         let denom = (produced + remaining).max(1) as f64;
         let num = (consumed - missing).max(0) as f64;
         (num / denom).clamp(0.0, 1.0)

@@ -23,8 +23,12 @@ impl ArtifactDispatcher for DefaultArtifactDispatcher {
         // Role → artifacts mapping
         let artifact_families = match role {
             AgentRole::Explorer => vec![ArtifactFamily::SystemPrompt, ArtifactFamily::TaskPrompt],
-            AgentRole::Planner => vec![ArtifactFamily::TaskPrompt, ArtifactFamily::DelegationPrompt],
-            AgentRole::Executor => vec![ArtifactFamily::TaskPrompt, ArtifactFamily::DelegationPrompt],
+            AgentRole::Planner => {
+                vec![ArtifactFamily::TaskPrompt, ArtifactFamily::DelegationPrompt]
+            }
+            AgentRole::Executor => {
+                vec![ArtifactFamily::TaskPrompt, ArtifactFamily::DelegationPrompt]
+            }
             AgentRole::Validator => vec![ArtifactFamily::ValidationPrompt, ArtifactFamily::Report],
             AgentRole::Escalator => vec![ArtifactFamily::EscalationPrompt, ArtifactFamily::Ticket],
             AgentRole::Auditor => vec![ArtifactFamily::AuditNote, ArtifactFamily::ReceiptBundle],

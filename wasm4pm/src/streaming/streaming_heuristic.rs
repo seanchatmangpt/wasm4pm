@@ -7,7 +7,7 @@
 //! - Optional/parallel activities (low dependency score)
 //! - Noise filtering (threshold-based edge pruning)
 
-use crate::models::DirectlyFollowsGraph;
+use crate::models::DFG;
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
@@ -125,8 +125,8 @@ impl StreamingHeuristicBuilder {
     }
 
     /// Get DFG filtered by dependency threshold.
-    pub fn snapshot_with_threshold(&self, threshold: f64) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    pub fn snapshot_with_threshold(&self, threshold: f64) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes
         dfg.nodes = self
@@ -151,11 +151,15 @@ impl StreamingHeuristicBuilder {
                 {
                     let pass = (dep_score.abs() >= threshold) as u64;
                     let mask = bcinr::mask::select_u64(pass, 1, 0);
-                    if mask == 0 { return None; }
+                    if mask == 0 {
+                        return None;
+                    }
                 }
                 #[cfg(not(feature = "bcinr"))]
                 {
-                    if dep_score.abs() < threshold { return None; }
+                    if dep_score.abs() < threshold {
+                        return None;
+                    }
                 }
                 Some(crate::models::DirectlyFollowsRelation {
                     from: self.interner.get(from).unwrap_or("").to_string(),
@@ -198,7 +202,7 @@ impl StreamingHeuristicBuilder {
 }
 
 impl StreamingAlgorithm for StreamingHeuristicBuilder {
-    type Model = DirectlyFollowsGraph;
+    type Model = DFG;
 
     fn new() -> Self {
         Self::new()

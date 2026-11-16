@@ -62,7 +62,8 @@ pub fn discover_streaming_dfg(log: &EventLog, activity_key: &str) -> Result<DFG>
     for ((from_id, to_id), frequency) in edge_counts.iter() {
         let from = &dfg.nodes[*from_id].activity;
         let to = &dfg.nodes[*to_id].activity;
-        dfg.edges.push(DFGEdge::new(from.clone(), to.clone(), *frequency));
+        dfg.edges
+            .push(DFGEdge::new(from.clone(), to.clone(), *frequency));
     }
 
     // Assign start/end activities
@@ -79,10 +80,16 @@ mod tests {
     #[test]
     fn test_inductive_miner_sequence() {
         let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs_a.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
 
         let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+        attrs_b.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
 
         let log = EventLog::new(
             vec![Trace::new(

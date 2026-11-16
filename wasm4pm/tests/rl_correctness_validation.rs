@@ -83,7 +83,14 @@ fn correctness_reward_function_bounds() {
             for &spc_alerts in &[0, 1, 5, 10] {
                 for &guard_pass in &[true, false] {
                     for &circuit_allowed in &[true, false] {
-                        let reward = compute_reward(from_health, to_health, spc_alerts, guard_pass, circuit_allowed, false);
+                        let reward = compute_reward(
+                            from_health,
+                            to_health,
+                            spc_alerts,
+                            guard_pass,
+                            circuit_allowed,
+                            false,
+                        );
 
                         // Oracle: reward must always be finite
                         assert!(
@@ -155,14 +162,11 @@ fn correctness_rl_orchestrator_learns_monotone_improvement() {
         let state = make_test_state(current_health);
         let next_state = make_test_state(next_health);
 
-        let (_action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
+        let (_action, reward) =
+            orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
         // Verify reward is finite
-        assert!(
-            !reward.is_nan(),
-            "Cycle {}: reward must be finite",
-            cycle
-        );
+        assert!(!reward.is_nan(), "Cycle {}: reward must be finite", cycle);
 
         cumulative += reward;
     }
@@ -198,7 +202,8 @@ fn correctness_rl_orchestrator_detects_degradation() {
         let state = make_test_state(current_health);
         let next_state = make_test_state(next_health);
 
-        let (_action, reward) = orch_degrade.run_cycle(&features, &state, &next_state, 0, true, true, false);
+        let (_action, reward) =
+            orch_degrade.run_cycle(&features, &state, &next_state, 0, true, true, false);
         cumulative_degrade += reward;
     }
 
@@ -210,7 +215,8 @@ fn correctness_rl_orchestrator_detects_degradation() {
         let state = make_test_state(1);
         let next_state = make_test_state(1);
 
-        let (_action, reward) = orch_stable.run_cycle(&features, &state, &next_state, 0, true, true, false);
+        let (_action, reward) =
+            orch_stable.run_cycle(&features, &state, &next_state, 0, true, true, false);
         cumulative_stable += reward;
     }
 
@@ -249,11 +255,7 @@ fn correctness_rl_agent_implements_bellman() {
             "Cycle {}: action must be non-empty",
             cycle
         );
-        assert!(
-            !reward.is_nan(),
-            "Cycle {}: reward must not be NaN",
-            cycle
-        );
+        assert!(!reward.is_nan(), "Cycle {}: reward must not be NaN", cycle);
         assert!(
             !reward.is_infinite(),
             "Cycle {}: reward must not be infinite",
@@ -302,7 +304,15 @@ fn correctness_linucb_selects_based_on_context() {
     let mut stressed_agents = Vec::new();
     for _ in 0..20 {
         let next_state = make_test_state(1);
-        orch.run_cycle(&features_stressed, &state, &next_state, 0, true, true, false);
+        orch.run_cycle(
+            &features_stressed,
+            &state,
+            &next_state,
+            0,
+            true,
+            true,
+            false,
+        );
         stressed_agents.push(orch.active_agent() as u8);
     }
 

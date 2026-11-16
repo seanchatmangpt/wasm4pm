@@ -1,6 +1,7 @@
 /// Criterion benchmarks for extended discovery algorithms.
 /// Covers performance analysis, social networks, causal graphs, etc.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::time::Duration;
 use wasm4pm::batches::discover_batches_wasm;
 use wasm4pm::causal_graph::{discover_causal_alpha, discover_causal_heuristic};
 use wasm4pm::correlation_miner::discover_correlation;
@@ -9,7 +10,6 @@ use wasm4pm::performance_dfg::discover_performance_dfg;
 use wasm4pm::process_tree::discover_simple_process_tree;
 use wasm4pm::social_network::{discover_handover_network, discover_working_together_network};
 use wasm4pm::temporal_profile::discover_temporal_profile;
-use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;

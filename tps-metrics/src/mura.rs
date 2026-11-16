@@ -15,7 +15,7 @@
 //! - **Distribution evenness**: Are commits spread evenly?
 
 use anyhow::{Context, Result};
-use chrono::{DateTime, Duration, Utc, Timelike};
+use chrono::{DateTime, Duration, Timelike, Utc};
 use git2::Repository;
 use std::collections::{BTreeMap, HashMap};
 
@@ -43,16 +43,13 @@ pub struct MuraMetrics {
 
 /// Analyze mura (unevenness) from git repository
 pub fn analyze_mura(repo_path: &str, days: usize) -> Result<MuraMetrics> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open git repository")?;
 
     let cutoff_date = Utc::now() - Duration::days(days as i64);
 
-    let mut revwalk = repo.revwalk()
-        .context("Failed to create revwalk")?;
+    let mut revwalk = repo.revwalk().context("Failed to create revwalk")?;
 
-    revwalk.push_head()
-        .context("Failed to push HEAD")?;
+    revwalk.push_head().context("Failed to push HEAD")?;
 
     let mut commits_by_date: HashMap<String, usize> = HashMap::new();
     let mut commits_by_hour: BTreeMap<u32, usize> = BTreeMap::new();
@@ -63,8 +60,7 @@ pub fn analyze_mura(repo_path: &str, days: usize) -> Result<MuraMetrics> {
         let commit = repo.find_commit(oid)?;
 
         let time = commit.time();
-        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0)
-            .unwrap_or_default();
+        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0).unwrap_or_default();
 
         if commit_date < cutoff_date {
             break;
@@ -90,8 +86,10 @@ pub fn analyze_mura(repo_path: &str, days: usize) -> Result<MuraMetrics> {
     let evenness_score = calculate_evenness(&commits_by_date);
 
     // Count abnormal days (>2x average)
-    let avg_commits: f64 = commits_by_date.values().map(|v| *v as f64).sum::<f64>() / commits_by_date.len().max(1) as f64;
-    let abnormal_days = commits_by_date.values()
+    let avg_commits: f64 = commits_by_date.values().map(|v| *v as f64).sum::<f64>()
+        / commits_by_date.len().max(1) as f64;
+    let abnormal_days = commits_by_date
+        .values()
         .filter(|&&count| count as f64 > avg_commits * 2.0)
         .count();
 
@@ -114,12 +112,14 @@ fn calculate_variance<K>(data: &HashMap<K, usize>) -> f64 {
     let values: Vec<f64> = data.values().map(|v| *v as f64).collect();
     let mean = values.iter().sum::<f64>() / values.len() as f64;
 
-    let variance = values.iter()
+    let variance = values
+        .iter()
         .map(|v| {
             let diff = v - mean;
             diff * diff
         })
-        .sum::<f64>() / values.len() as f64;
+        .sum::<f64>()
+        / values.len() as f64;
 
     variance.sqrt()
 }
@@ -133,12 +133,14 @@ fn calculate_variance_map(data: &BTreeMap<u32, usize>) -> f64 {
     let values: Vec<f64> = data.values().map(|v| *v as f64).collect();
     let mean = values.iter().sum::<f64>() / values.len() as f64;
 
-    let variance = values.iter()
+    let variance = values
+        .iter()
         .map(|v| {
             let diff = v - mean;
             diff * diff
         })
-        .sum::<f64>() / values.len() as f64;
+        .sum::<f64>()
+        / values.len() as f64;
 
     variance.sqrt()
 }
@@ -169,12 +171,14 @@ fn calculate_burst_score(commit_times: &[DateTime<Utc>]) -> f64 {
 
     // Calculate mean and coefficient of variation
     let mean_gap: f64 = gaps.iter().sum::<f64>() / gaps.len() as f64;
-    let variance = gaps.iter()
+    let variance = gaps
+        .iter()
         .map(|g| {
             let diff = g - mean_gap;
             diff * diff
         })
-        .sum::<f64>() / gaps.len() as f64;
+        .sum::<f64>()
+        / gaps.len() as f64;
     let std_dev = variance.sqrt();
 
     // High CV = bursty (some gaps tiny, some huge)
@@ -231,7 +235,10 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
 
     // Variance metrics
     report.push_str(&"Workflow Variability:\n".bold());
-    report.push_str(&format!("  Daily variance: {:.2} (target: <2.0)\n", metrics.daily_variance));
+    report.push_str(&format!(
+        "  Daily variance: {:.2} (target: <2.0)\n",
+        metrics.daily_variance
+    ));
 
     let daily_status = if metrics.daily_variance < 2.0 {
         "✅".green()
@@ -242,7 +249,10 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     };
     report.push_str(&format!("    Status: {}\n", daily_status));
 
-    report.push_str(&format!("  Hourly variance: {:.2} (target: <3.0)\n", metrics.hourly_variance));
+    report.push_str(&format!(
+        "  Hourly variance: {:.2} (target: <3.0)\n",
+        metrics.hourly_variance
+    ));
 
     let hourly_status = if metrics.hourly_variance < 3.0 {
         "✅".green()
@@ -255,7 +265,10 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
 
     // Burst and evenness
     report.push_str(&"\nDistribution Quality:\n".bold());
-    report.push_str(&format!("  Burst score: {:.2} (0=even, 1=clustered)\n", metrics.burst_score));
+    report.push_str(&format!(
+        "  Burst score: {:.2} (0=even, 1=clustered)\n",
+        metrics.burst_score
+    ));
 
     let burst_status = if metrics.burst_score < 0.3 {
         "✅".green()
@@ -266,7 +279,10 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     };
     report.push_str(&format!("    Status: {}\n", burst_status));
 
-    report.push_str(&format!("  Evenness score: {:.2} (1=perfect evenness)\n", metrics.evenness_score));
+    report.push_str(&format!(
+        "  Evenness score: {:.2} (1=perfect evenness)\n",
+        metrics.evenness_score
+    ));
 
     let evenness_status = if metrics.evenness_score > 0.7 {
         "✅".green()
@@ -277,7 +293,10 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     };
     report.push_str(&format!("    Status: {}\n", evenness_status));
 
-    report.push_str(&format!("  Abnormal days: {} (days with >2x average commits)\n", metrics.abnormal_days));
+    report.push_str(&format!(
+        "  Abnormal days: {} (days with >2x average commits)\n",
+        metrics.abnormal_days
+    ));
 
     // Interpretation
     report.push_str(&"\nUnevenness Assessment:\n".bold());
@@ -298,16 +317,21 @@ pub fn generate_report(metrics: &MuraMetrics) -> String {
     }
 
     if metrics.burst_score >= 0.6 {
-        report.push_str(&"  • High burst score. Spread commits evenly instead of clustering.\n".yellow());
+        report.push_str(
+            &"  • High burst score. Spread commits evenly instead of clustering.\n".yellow(),
+        );
     }
 
     if metrics.evenness_score < 0.4 {
-        report.push_str(&"  • Low evenness. Distribute commits more evenly across days.\n".yellow());
+        report
+            .push_str(&"  • Low evenness. Distribute commits more evenly across days.\n".yellow());
     }
 
     if metrics.abnormal_days > 0 {
-        let msg = format!("  • {} abnormal day(s) detected. Avoid \"fire drill\" commits.\n",
-            metrics.abnormal_days);
+        let msg = format!(
+            "  • {} abnormal day(s) detected. Avoid \"fire drill\" commits.\n",
+            metrics.abnormal_days
+        );
         report.push_str(&msg.yellow());
     }
 

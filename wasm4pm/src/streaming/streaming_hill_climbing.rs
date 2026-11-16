@@ -9,7 +9,7 @@
 //! This streaming implementation stores closed trace sequences so that the
 //! `to_dfg()` snapshot can compute per-edge removal costs accurately.
 
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
@@ -93,9 +93,9 @@ impl StreamingHillClimbingBuilder {
     /// 4. Repeat until all remaining edges are "essential" (removing any
     ///    would break at least one trace)
     /// 5. Materialise DFG from the optimized edge set
-    pub fn to_dfg(&self) -> DirectlyFollowsGraph {
+    pub fn to_dfg(&self) -> DFG {
         if self.closed_traces.is_empty() {
-            return DirectlyFollowsGraph::new();
+            return DFG::new();
         }
 
         // Pre-filter: build candidate set of edges above noise threshold
@@ -111,7 +111,7 @@ impl StreamingHillClimbingBuilder {
         };
 
         if current_edges.is_empty() {
-            return DirectlyFollowsGraph::new();
+            return DFG::new();
         }
 
         // Greedy hill climbing: iteratively remove the least-costly edge
@@ -162,7 +162,7 @@ impl StreamingHillClimbingBuilder {
         }
 
         // Materialise DFG from the optimized edge set
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
 
         dfg.nodes = self
             .interner
@@ -204,7 +204,7 @@ impl StreamingHillClimbingBuilder {
 }
 
 impl StreamingAlgorithm for StreamingHillClimbingBuilder {
-    type Model = DirectlyFollowsGraph;
+    type Model = DFG;
 
     fn new() -> Self {
         Self::new()

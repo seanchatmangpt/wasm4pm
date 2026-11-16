@@ -6,12 +6,12 @@
 #![doc = "- Deterministic behavior (same input → same output every time)"]
 #![doc = "- SIMD vectorization where applicable"]
 
-pub mod dfg;
 pub mod alpha;
+pub mod columnar;
+pub mod conformance;
+pub mod dfg;
 pub mod heuristic;
 pub mod streaming;
-pub mod conformance;
-pub mod columnar;
 
 pub use pictl_types;
 

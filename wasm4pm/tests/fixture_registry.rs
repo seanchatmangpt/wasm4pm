@@ -24,15 +24,12 @@ impl Fixture {
     /// Create fixture from file
     pub fn from_file(name: &str) -> Result<Self, String> {
         let path = format!("{FIXTURES_DIR}/{name}");
-        fs::read_to_string(&path).map(|content| Self {
-            name: name.to_string(),
-            content,
-        }).map_err(|e| {
-            format!(
-                "Failed to load fixture '{}' from '{}': {}",
-                name, path, e
-            )
-        })
+        fs::read_to_string(&path)
+            .map(|content| Self {
+                name: name.to_string(),
+                content,
+            })
+            .map_err(|e| format!("Failed to load fixture '{}' from '{}': {}", name, path, e))
     }
 
     /// Parse fixture as JSON
@@ -76,24 +73,18 @@ pub fn get(name: &str) -> Result<Fixture, String> {
         .lock()
         .unwrap_or_else(|e| panic!("Failed to acquire fixture registry lock: {}", e));
 
-    registry
-        .get(name)
-        .cloned()
-        .ok_or_else(|| {
-            let available = registry.keys().map(|k| k.as_str()).collect::<Vec<_>>();
-            if available.is_empty() {
-                format!(
-                    "Fixture '{}' not found. No fixtures registered.",
-                    name
-                )
-            } else {
-                format!(
-                    "Fixture '{}' not found. Available: {}",
-                    name,
-                    available.join(", ")
-                )
-            }
-        })
+    registry.get(name).cloned().ok_or_else(|| {
+        let available = registry.keys().map(|k| k.as_str()).collect::<Vec<_>>();
+        if available.is_empty() {
+            format!("Fixture '{}' not found. No fixtures registered.", name)
+        } else {
+            format!(
+                "Fixture '{}' not found. Available: {}",
+                name,
+                available.join(", ")
+            )
+        }
+    })
 }
 
 /// Load a fixture from file and register it

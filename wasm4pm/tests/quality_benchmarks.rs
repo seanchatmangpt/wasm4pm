@@ -15,13 +15,13 @@
 //! Requires fixture: tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
 //! (10,500 traces, 86,581 events). Skips gracefully if not present.
 
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::etconformance_precision::compute_precision;
 use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
 
 // ---------------------------------------------------------------------------
 // Fixture loading (mirrors benchmarks.rs pattern)
@@ -151,8 +151,7 @@ fn quality_ilp_token_replay_fitness_threshold() {
     let ak = "concept:name";
 
     // Discover Petri net using pure-Rust function
-    let (petri_net, ilp_fitness, _ilp_precision) =
-        discover_ilp_petri_net_from_log(&log, ak);
+    let (petri_net, ilp_fitness, _ilp_precision) = discover_ilp_petri_net_from_log(&log, ak);
 
     eprintln!(
         "ILP PetriNet: {} places, {} transitions, {} arcs, self_fitness={:.4}",
@@ -257,9 +256,9 @@ fn quality_simplicity_decreases_with_complexity() {
 
     for &extra in &redundancy_levels {
         // Each redundant branch adds some extra places, transitions, and arcs
-        let places = base_places + extra * 2;   // extra source/sink per branch
+        let places = base_places + extra * 2; // extra source/sink per branch
         let transitions = base_transitions + extra; // duplicate transitions
-        let arcs = base_arcs + extra * 4;       // extra routing arcs
+        let arcs = base_arcs + extra * 4; // extra routing arcs
 
         let s = compute_simplicity(places, transitions, arcs);
         eprintln!("  extra={} -> simplicity={:.6}", extra, s);
@@ -304,8 +303,7 @@ fn quality_ilp_internal_consistency() {
     eprintln!(
         "ILP quality: fitness={:.4}, precision={:.4}, simplicity={:.4}, \
          places={}, transitions={}, arcs={}",
-        reported_fitness, reported_precision, reported_simplicity,
-        places, transitions, arcs
+        reported_fitness, reported_precision, reported_simplicity, places, transitions, arcs
     );
 
     // Structural sanity: a discovered net should have at least source + sink
@@ -320,11 +318,7 @@ fn quality_ilp_internal_consistency() {
         "ILP net has {} transitions (expected >= 1)",
         transitions
     );
-    assert!(
-        arcs >= 2,
-        "ILP net has {} arcs (expected >= 2)",
-        arcs
-    );
+    assert!(arcs >= 2, "ILP net has {} arcs (expected >= 2)", arcs);
 
     // Quality dimensions should all be in [0, 1]
     assert!(
@@ -345,9 +339,8 @@ fn quality_ilp_internal_consistency() {
 
     // F-measure should be positive when fitness and precision are positive
     if reported_fitness + reported_precision > 0.001 {
-        let f_measure =
-            2.0 * (reported_fitness * reported_precision)
-                / (reported_fitness + reported_precision + 0.001);
+        let f_measure = 2.0 * (reported_fitness * reported_precision)
+            / (reported_fitness + reported_precision + 0.001);
         assert!(
             f_measure > 0.0,
             "F-measure {:.4} is zero despite positive fitness and precision",
@@ -446,10 +439,7 @@ fn quality_degrades_on_mismatched_log() {
         };
         for activity in &["UNKNOWN_A", "UNKNOWN_B", "UNKNOWN_C"] {
             let mut attrs = HashMap::new();
-            attrs.insert(
-                ak.to_string(),
-                AttributeValue::String(activity.to_string()),
-            );
+            attrs.insert(ak.to_string(), AttributeValue::String(activity.to_string()));
             trace.events.push(Event { attributes: attrs });
         }
         mismatched_log.traces.push(trace);
@@ -502,7 +492,8 @@ fn quality_etconformance_precision_above_threshold() {
         .cloned()
         .unwrap_or_default();
 
-    let precision_result = compute_precision(&petri_net, &initial_marking, &final_marking, &log, ak);
+    let precision_result =
+        compute_precision(&petri_net, &initial_marking, &final_marking, &log, ak);
 
     eprintln!(
         "ETConformance precision: {:.4} (escaping={}, consumed={}, traces={})",

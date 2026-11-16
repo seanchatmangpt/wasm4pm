@@ -35,7 +35,11 @@ const VECTOR_WIDTH: usize = 16; // AVX-512: 16 × u32
 const VECTOR_WIDTH: usize = 8; // AVX-2: 8 × u32
 #[cfg(all(target_feature = "sse4.2", not(target_feature = "avx2")))]
 const VECTOR_WIDTH: usize = 4; // SSE4.2: 4 × u32
-#[cfg(not(any(target_feature = "sse4.2", target_feature = "avx2", target_feature = "avx512f")))]
+#[cfg(not(any(
+    target_feature = "sse4.2",
+    target_feature = "avx2",
+    target_feature = "avx512f"
+)))]
 const VECTOR_WIDTH: usize = 1; // Scalar fallback
 
 /// SIMD-vectorized activity counter for DFG discovery.
@@ -52,7 +56,10 @@ impl SimdActivityCounter {
     /// Create a new activity counter with capacity for `num_activities`.
     pub fn new(num_activities: usize) -> Self {
         SimdActivityCounter {
-            counts: vec![0u32; (num_activities + VECTOR_WIDTH - 1) & !VECTOR_WIDTH.saturating_sub(1)],
+            counts: vec![
+                0u32;
+                (num_activities + VECTOR_WIDTH - 1) & !VECTOR_WIDTH.saturating_sub(1)
+            ],
         }
     }
 
@@ -185,18 +192,14 @@ impl SimdActivityCounter {
         let len = activity_ids.len();
 
         while i + 4 <= len {
-            self.counts[activity_ids[i] as usize] = self
-                .counts[activity_ids[i] as usize]
-                .wrapping_add(1);
-            self.counts[activity_ids[i + 1] as usize] = self
-                .counts[activity_ids[i + 1] as usize]
-                .wrapping_add(1);
-            self.counts[activity_ids[i + 2] as usize] = self
-                .counts[activity_ids[i + 2] as usize]
-                .wrapping_add(1);
-            self.counts[activity_ids[i + 3] as usize] = self
-                .counts[activity_ids[i + 3] as usize]
-                .wrapping_add(1);
+            self.counts[activity_ids[i] as usize] =
+                self.counts[activity_ids[i] as usize].wrapping_add(1);
+            self.counts[activity_ids[i + 1] as usize] =
+                self.counts[activity_ids[i + 1] as usize].wrapping_add(1);
+            self.counts[activity_ids[i + 2] as usize] =
+                self.counts[activity_ids[i + 2] as usize].wrapping_add(1);
+            self.counts[activity_ids[i + 3] as usize] =
+                self.counts[activity_ids[i + 3] as usize].wrapping_add(1);
             i += 4;
         }
 

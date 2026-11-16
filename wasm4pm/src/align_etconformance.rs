@@ -74,7 +74,7 @@ pub fn compute_align_etconformance_precision(
             let is_visible = !transition.is_invisible.unwrap_or(false);
             let in_log = log_activities.contains(&transition.label);
             let increment = bcinr::mask::select_u64((is_visible && !in_log) as u64, 1, 0);
-            
+
             // Branchless membership update
             if is_visible && in_log {
                 used_transitions.insert(&transition.id);
@@ -98,7 +98,11 @@ pub fn compute_align_etconformance_precision(
     let precision = {
         let has_edges = (total_edges > 0) as u64;
         let p = 1.0 - (escaping_edges as f64 / total_edges as f64);
-        f64::from_bits(bcinr::mask::select_u64(has_edges, p.to_bits(), 1.0f64.to_bits()))
+        f64::from_bits(bcinr::mask::select_u64(
+            has_edges,
+            p.to_bits(),
+            1.0f64.to_bits(),
+        ))
     };
     #[cfg(not(feature = "bcinr"))]
     let precision = if total_edges > 0 {

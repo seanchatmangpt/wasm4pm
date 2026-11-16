@@ -11,12 +11,12 @@
 //!
 //! Tests use both synthetic logs and (when available) real BPI 2020 data.
 
-use wasm4pm::conformance::token_replay_pure;
-use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use wasm4pm::conformance::token_replay_pure;
+use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -161,10 +161,8 @@ fn negative_minimal_log_model_cannot_replay_complex_log() {
     let self_result = token_replay_pure(&trivial_log, &trivial_net, ak);
 
     // Step 3: Create a more complex log and replay against the trivial model
-    let complex_log = make_synthetic_log(
-        ak,
-        &[&["A", "B", "C"], &["A", "C", "B"], &["C", "A", "B"]],
-    );
+    let complex_log =
+        make_synthetic_log(ak, &[&["A", "B", "C"], &["A", "C", "B"], &["C", "A", "B"]]);
     let cross_result = token_replay_pure(&complex_log, &trivial_net, ak);
 
     eprintln!(
@@ -301,7 +299,10 @@ fn negative_simplicity_never_increases_with_complexity() {
             current <= prev_val + 1e-9,
             "simplicity({} places, {} arcs) = {:.6} > prev {:.6} -- \
              simplicity MUST be monotonically non-increasing with complexity",
-            places, arcs, current, prev_val
+            places,
+            arcs,
+            current,
+            prev_val
         );
         prev_val = current;
     }
@@ -392,23 +393,16 @@ fn negative_unknown_activities_zero_conformance() {
     let ak = "concept:name";
 
     // Discover model from a log with activities X, Y, Z
-    let model_log = make_synthetic_log(
-        ak,
-        &[&["X", "Y", "Z"], &["X", "Z", "Y"], &["Y", "X", "Z"]],
-    );
+    let model_log = make_synthetic_log(ak, &[&["X", "Y", "Z"], &["X", "Z", "Y"], &["Y", "X", "Z"]]);
     let (net, _, _) = discover_ilp_petri_net_from_log(&model_log, ak);
 
     // Replay a log with COMPLETELY DIFFERENT activities
-    let alien_log = make_synthetic_log(
-        ak,
-        &[&["ALPHA", "BETA", "GAMMA"], &["ALPHA", "GAMMA"]],
-    );
+    let alien_log = make_synthetic_log(ak, &[&["ALPHA", "BETA", "GAMMA"], &["ALPHA", "GAMMA"]]);
     let result = token_replay_pure(&alien_log, &net, ak);
 
     eprintln!(
         "Alien activities replay: fitness={:.4}, conforming={}",
-        result.avg_fitness,
-        result.conforming_cases
+        result.avg_fitness, result.conforming_cases
     );
 
     // No case should conform (activities not in model)

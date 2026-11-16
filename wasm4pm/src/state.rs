@@ -2,7 +2,7 @@ use crate::error::{codes, wasm_err};
 use crate::incremental_dfg::IncrementalDFG;
 use crate::incremental_dfg::StreamingDFG;
 use crate::models::{
-    DeclareModel, DirectlyFollowsGraph, EventLog, NGramPredictor, PetriNet,
+    DeclareModel, DFG, EventLog, NGramPredictor, PetriNet,
     StreamingConformanceChecker, TemporalProfile, OCEL,
 };
 #[cfg(feature = "streaming_basic")]
@@ -26,7 +26,7 @@ pub enum StoredObject {
     EventLog(EventLog),
     OCEL(OCEL),
     PetriNet(PetriNet),
-    DirectlyFollowsGraph(DirectlyFollowsGraph),
+    DFG(DFG),
     DeclareModel(DeclareModel),
     #[allow(dead_code)]
     JsonString(String),
@@ -162,8 +162,8 @@ impl Clone for StoredObject {
             StoredObject::EventLog(el) => StoredObject::EventLog(el.clone()),
             StoredObject::OCEL(o) => StoredObject::OCEL(o.clone()),
             StoredObject::PetriNet(pn) => StoredObject::PetriNet(pn.clone()),
-            StoredObject::DirectlyFollowsGraph(dfg) => {
-                StoredObject::DirectlyFollowsGraph(dfg.clone())
+            StoredObject::DFG(dfg) => {
+                StoredObject::DFG(dfg.clone())
             }
             StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),

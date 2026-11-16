@@ -2,7 +2,7 @@
 // Run with: cargo bench --bench cache_efficiency_bench
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use wasm4pm::cache_resident::{encode_rl_state, decode_rl_state, QTable, VariantMap};
+use wasm4pm::cache_resident::{decode_rl_state, encode_rl_state, QTable, VariantMap};
 use wasm4pm::RlState;
 
 fn bench_encode_state(c: &mut Criterion) {
@@ -85,9 +85,7 @@ fn bench_qtable_get_random(c: &mut Criterion) {
         }
 
         // Pre-generate random lookups to avoid RNG in benchmark
-        let lookups: Vec<u32> = (0..10000)
-            .map(|i| ((i * 7919) % 10000) as u32)
-            .collect();
+        let lookups: Vec<u32> = (0..10000).map(|i| ((i * 7919) % 10000) as u32).collect();
 
         b.iter(|| {
             let mut sum = 0.0;

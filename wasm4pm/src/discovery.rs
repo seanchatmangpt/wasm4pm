@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             // Single-pass columnar DFG construction:
             //   1. to_columnar() encodes activities as u32 IDs into a flat Vec<u32>
@@ -96,7 +96,7 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
     let dfg =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
-                let mut dfg = DirectlyFollowsGraph::new();
+                let mut dfg = DFG::new();
 
                 let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
                     .unwrap_or_else(|| {
@@ -159,17 +159,17 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
             )),
         })?;
 
-    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;
     Ok(JsValue::from_str(&handle))
 }
 
-/// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
+/// Pure-Rust OCEL DFG discovery: returns DFG without wasm-bindgen.
 ///
 /// This is the testable core of `discover_ocel_dfg`. Integration tests
 /// on native targets cannot call `#[wasm_bindgen]` functions, so they use
 /// this instead.
-pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
+    let mut dfg = DFG::new();
 
     // Get event types
     for event_type in &ocel.event_types {
@@ -260,11 +260,11 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
+            let mut result: FxHashMap<String, DFG> = FxHashMap::default();
 
             // For each object type, discover a separate DFG
             for obj_type in &ocel.object_types {
-                let mut dfg = DirectlyFollowsGraph::new();
+                let mut dfg = DFG::new();
 
                 // Initialize nodes for activities
                 let mut activity_nodes: FxHashMap<String, bool> = FxHashMap::default();
@@ -515,7 +515,8 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             // Template 2: Absence — activity appears in < (1 - min_support) fraction of traces
             for a in 0..n {
-                let absence_support = (total_cases - activity_counts[a] as usize) as f64 / total_f64;
+                let absence_support =
+                    (total_cases - activity_counts[a] as usize) as f64 / total_f64;
                 if absence_support >= min_support {
                     model.constraints.push(DeclareConstraint {
                         template: "Absence".to_string(),
@@ -592,7 +593,213 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                 }
             }
 
-            // TODO: Succession, NotCoExistence, ChainPrecedence, ChainResponse require additional LTL-style trace scanning
+            // ---------------------------------------------------------------
+            // Template 6: Succession(A,B) — Precedence(A,B) AND Response(A,B):
+            //   A always precedes B (when both present) AND whenever A occurs
+            //   B eventually follows.  We use the already-computed response_counts
+            //   and coexistence_counts.
+            // ---------------------------------------------------------------
+            for a in 0..n {
+                if activity_counts[a] == 0 {
+                    continue;
+                }
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let coex = coexistence_counts[a * n + b];
+                    if coex == 0 {
+                        continue;
+                    }
+                    // Precedence confidence: P(a before b | both present)
+                    let prec_conf = response_counts[a * n + b] as f64 / coex as f64;
+                    // Response confidence: P(b after a | a occurs)
+                    let resp_conf = response_counts[a * n + b] as f64 / activity_counts[a] as f64;
+                    let support = coex as f64 / total_f64;
+                    if support >= min_support && prec_conf >= 0.8 && resp_conf >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Succession".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence: prec_conf.min(resp_conf),
+                        });
+                    }
+                }
+            }
+
+            // ---------------------------------------------------------------
+            // Template 7: NotCoExistence(A,B) — A and B never appear together.
+            //   confidence = fraction of traces that satisfy (absence of both).
+            // ---------------------------------------------------------------
+            for a in 0..n {
+                for b in (a + 1)..n {
+                    let coex = coexistence_counts[a * n + b];
+                    // How many traces have NEITHER a nor b
+                    let has_a = activity_counts[a] as usize;
+                    let has_b = activity_counts[b] as usize;
+                    // Traces that violate: those with both
+                    let violated = coex as usize;
+                    let satisfied = total_cases - (has_a + has_b - violated); // De Morgan
+                                                                              // support = fraction of traces where neither or only one occurs (not both)
+                    let not_coex_count = (total_cases - violated) as f64;
+                    let support = not_coex_count / total_f64;
+                    // Only emit if no trace has both (strict NotCoExistence, confidence=1)
+                    if violated == 0 && (has_a > 0 || has_b > 0) && support >= min_support {
+                        model.constraints.push(DeclareConstraint {
+                            template: "NotCoExistence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence: 1.0,
+                        });
+                    }
+                    let _ = satisfied; // used in reasoning above
+                }
+            }
+
+            // ---------------------------------------------------------------
+            // Templates 8 & 9: ChainPrecedence(A,B) and ChainResponse(A,B).
+            //
+            // Require a second pass over consecutive event pairs in each trace:
+            //   ChainPrecedence(A,B): every occurrence of B is immediately
+            //                         preceded by A.
+            //   ChainResponse(A,B):  every occurrence of A is immediately
+            //                         followed by B.
+            //
+            // We count:
+            //   chain_prec_ok[a][b]  = traces where every B is preceded by A
+            //   chain_resp_ok[a][b]  = traces where every A is followed by B
+            //   trace_has_b[b]       = traces containing b
+            //   trace_has_a[a]       = traces containing a (= activity_counts)
+            // ---------------------------------------------------------------
+            let mut chain_prec_ok = vec![0u32; n * n]; // [a*n+b]
+            let mut chain_resp_ok = vec![0u32; n * n]; // [a*n+b]
+
+            for t in 0..total_cases {
+                let start = col.trace_offsets[t];
+                let end = col.trace_offsets[t + 1];
+                if start >= end {
+                    // empty trace — all constraints vacuously satisfied
+                    for a in 0..n {
+                        for b in 0..n {
+                            if a != b {
+                                chain_prec_ok[a * n + b] += 1;
+                                chain_resp_ok[a * n + b] += 1;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
+                let events = &col.events[start..end];
+                let len = events.len();
+
+                // For each pair (a,b), check chain conditions in this trace.
+                // To avoid O(A²×E) we invert: scan event pairs once, record
+                // which (prev,curr) directly-follows pairs occur and how often
+                // each activity appears as a non-first or non-last element.
+                //
+                // Then for ChainPrec(a,b): b never appears without a immediately before.
+                // For ChainResp(a,b): a never appears without b immediately after.
+
+                // direct_follows_pairs: set of (prev_id, curr_id) that appear
+                let mut chain_pairs: FxHashMap<(u32, u32), u32> = FxHashMap::default();
+                for i in 0..(len - 1) {
+                    *chain_pairs.entry((events[i], events[i + 1])).or_insert(0) += 1;
+                }
+
+                // Count occurrences of each activity except at last position
+                // (for ChainResponse: A at last position vacuously satisfies it)
+                let mut act_not_last = vec![0u32; n];
+                for i in 0..(len - 1) {
+                    act_not_last[events[i] as usize] += 1;
+                }
+                // Count occurrences except at first position (for ChainPrecedence)
+                let mut act_not_first = vec![0u32; n];
+                for i in 1..len {
+                    act_not_first[events[i] as usize] += 1;
+                }
+
+                for a in 0..n {
+                    for b in 0..n {
+                        if a == b {
+                            continue;
+                        }
+                        let au = a as u32;
+                        let bu = b as u32;
+
+                        // ChainPrecedence(a,b): every non-first B must be preceded by A.
+                        // Violations: b appears not-at-first position AND (a,b) never directly follows.
+                        let b_not_first = act_not_first[b];
+                        let ab_chain = *chain_pairs.get(&(au, bu)).unwrap_or(&0);
+                        let cp_ok = if b_not_first == 0 || ab_chain >= b_not_first {
+                            true
+                        } else {
+                            false
+                        };
+                        if cp_ok {
+                            chain_prec_ok[a * n + b] += 1;
+                        }
+
+                        // ChainResponse(a,b): every non-last A must be followed by B.
+                        let a_not_last = act_not_last[a];
+                        let cr_ok = if a_not_last == 0 || ab_chain >= a_not_last {
+                            true
+                        } else {
+                            false
+                        };
+                        if cr_ok {
+                            chain_resp_ok[a * n + b] += 1;
+                        }
+                    }
+                }
+            }
+
+            // Emit ChainPrecedence constraints
+            for a in 0..n {
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let has_b = activity_counts[b] as usize;
+                    if has_b == 0 {
+                        continue;
+                    }
+                    let ok = chain_prec_ok[a * n + b] as usize;
+                    let support = has_b as f64 / total_f64;
+                    let confidence = ok as f64 / total_f64;
+                    if support >= min_support && confidence >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "ChainPrecedence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence,
+                        });
+                    }
+                }
+            }
+
+            // Emit ChainResponse constraints
+            for a in 0..n {
+                if activity_counts[a] == 0 {
+                    continue;
+                }
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let ok = chain_resp_ok[a * n + b] as usize;
+                    let support = activity_counts[a] as f64 / total_f64;
+                    let confidence = ok as f64 / total_f64;
+                    if support >= min_support && confidence >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "ChainResponse".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence,
+                        });
+                    }
+                }
+            }
 
             to_js_str(&model)
         }

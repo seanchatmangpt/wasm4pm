@@ -6,9 +6,9 @@
 //! Oracle: Rank 2 (Domain Contract) — bottleneck detection should identify
 //! activities with above-threshold durations, sorted by severity.
 
-use wasm4pm::models::EventLog;
 use std::collections::HashMap;
 use std::fs;
+use wasm4pm::models::EventLog;
 
 const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
@@ -22,10 +22,7 @@ fn load_event_log_json(name: &str) -> EventLog {
 
 /// Compute per-activity total event count as a bottleneck proxy.
 /// Activities that appear in many events are potential bottlenecks.
-fn compute_activity_bottleneck_scores(
-    log: &EventLog,
-    activity_key: &str,
-) -> Vec<(String, f64)> {
+fn compute_activity_bottleneck_scores(log: &EventLog, activity_key: &str) -> Vec<(String, f64)> {
     let mut activity_counts: HashMap<String, usize> = HashMap::new();
 
     for trace in &log.traces {
@@ -67,15 +64,12 @@ fn compute_activity_gap_bottleneck(
                 _ => None,
             });
 
-            let ts = event
-                .attributes
-                .get(timestamp_key)
-                .and_then(|v| match v {
-                    wasm4pm::models::AttributeValue::Date(s) => parse_timestamp_ms(s),
-                    wasm4pm::models::AttributeValue::String(s) => parse_timestamp_ms(s),
-                    wasm4pm::models::AttributeValue::Int(i) => Some(*i as u64),
-                    _ => None,
-                });
+            let ts = event.attributes.get(timestamp_key).and_then(|v| match v {
+                wasm4pm::models::AttributeValue::Date(s) => parse_timestamp_ms(s),
+                wasm4pm::models::AttributeValue::String(s) => parse_timestamp_ms(s),
+                wasm4pm::models::AttributeValue::Int(i) => Some(*i as u64),
+                _ => None,
+            });
 
             if let (Some(name), Some(ts)) = (activity_name, ts) {
                 if let (Some(prev_name), Some(prev_ts)) = (&last_activity, last_ts) {

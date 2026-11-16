@@ -8,9 +8,9 @@
 //! Algorithm family: Reinforcement Learning
 //! Modules tested: rl_orchestrator (RlOrchestrator, AgentType, CycleTelemetry)
 
+use std::collections::HashMap;
 use wasm4pm::rl_orchestrator::{AgentType, RlOrchestrator};
 use wasm4pm::RlState;
-use std::collections::HashMap;
 
 /// Helper to create test RlState with reasonable defaults.
 fn make_test_state(health_level: u8) -> RlState {
@@ -35,7 +35,11 @@ fn run_health_improvement_scenario(
     for _ in 0..total_cycles {
         let state = make_test_state(current_health);
         // Next health: step toward 0 (Normal), wrapping around if already 0
-        let next_health = if current_health == 0 { 0 } else { current_health - 1 };
+        let next_health = if current_health == 0 {
+            0
+        } else {
+            current_health - 1
+        };
         let next_state = make_test_state(next_health);
 
         let (_, reward) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
@@ -125,8 +129,10 @@ fn test_success_rate_convergence() {
     }
 
     // The last 10 episodes should have a success rate >= first 10 episodes.
-    let early_success_rate: f32 = episode_successes[..10].iter().filter(|&&s| s).count() as f32 / 10.0;
-    let late_success_rate: f32 = episode_successes[40..50].iter().filter(|&&s| s).count() as f32 / 10.0;
+    let early_success_rate: f32 =
+        episode_successes[..10].iter().filter(|&&s| s).count() as f32 / 10.0;
+    let late_success_rate: f32 =
+        episode_successes[40..50].iter().filter(|&&s| s).count() as f32 / 10.0;
 
     assert!(
         late_success_rate >= early_success_rate,
@@ -169,7 +175,8 @@ fn test_exploration_decay_reduces_action_variance() {
     let mut action_counts: Vec<HashMap<String, usize>> = Vec::new();
 
     for cycle in 0..total_cycles {
-        let (action_label, _) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
+        let (action_label, _) =
+            orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
 
         let window_idx = cycle / window_size;
         if window_idx >= action_counts.len() {
@@ -307,7 +314,10 @@ fn test_linucb_exploration_then_exploitation() {
     // exploration). The key property is that it produces valid selections without
     // panicking, and the system converges. Verify the mechanism works end-to-end.
     for &agent in &agent_selections {
-        assert!(agent as u8 <= 4, "LinUCB should only select valid agent types (0-4)");
+        assert!(
+            agent as u8 <= 4,
+            "LinUCB should only select valid agent types (0-4)"
+        );
     }
 
     // Cumulative reward should grow (positive reward environment).
@@ -322,9 +332,7 @@ fn test_linucb_exploration_then_exploitation() {
     // Verify LinUCB was actually making selections (not just staying on default).
     // If all selections are the same, that means LinUCB found a strong preference,
     // which is valid exploitation behavior.
-    let all_same = agent_selections
-        .iter()
-        .all(|&a| a == agent_selections[0]);
+    let all_same = agent_selections.iter().all(|&a| a == agent_selections[0]);
 
     if all_same {
         // If LinUCB converges to one agent, that is valid exploitation.
@@ -362,7 +370,11 @@ fn test_cumulative_reward_monotonic_in_positive_environment() {
 
     for cycle in 0..total_cycles {
         let state = make_test_state(current_health);
-        let next_health = if current_health == 0 { 0 } else { current_health - 1 };
+        let next_health = if current_health == 0 {
+            0
+        } else {
+            current_health - 1
+        };
         let next_state = make_test_state(next_health);
 
         orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
@@ -397,7 +409,11 @@ fn test_negative_environment_drives_reward_down() {
     for _ in 0..total_cycles {
         let state = make_test_state(current_health);
         // Degrade health each cycle (0 -> 1 -> 2 -> 3 -> 4 -> 4...)
-        let next_health = if current_health >= 4 { 4 } else { current_health + 1 };
+        let next_health = if current_health >= 4 {
+            4
+        } else {
+            current_health + 1
+        };
         let next_state = make_test_state(next_health);
 
         // SPC alerts + circuit failure = additional penalty
@@ -428,7 +444,11 @@ fn test_reward_recovery_after_environment_improvement() {
     let mut current_health: u8 = 0;
     for _ in 0..15 {
         let state = make_test_state(current_health);
-        let next_health = if current_health >= 4 { 4 } else { current_health + 1 };
+        let next_health = if current_health >= 4 {
+            4
+        } else {
+            current_health + 1
+        };
         let next_state = make_test_state(next_health);
         orch.run_cycle(&FEATURES, &state, &next_state, 2, true, false, false);
         current_health = next_health;
@@ -439,7 +459,11 @@ fn test_reward_recovery_after_environment_improvement() {
     current_health = 4; // start from worst
     for _ in 0..15 {
         let state = make_test_state(current_health);
-        let next_health = if current_health == 0 { 0 } else { current_health - 1 };
+        let next_health = if current_health == 0 {
+            0
+        } else {
+            current_health - 1
+        };
         let next_state = make_test_state(next_health);
         orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
         current_health = next_health;
@@ -486,10 +510,10 @@ fn test_health_improves_after_three_consecutive_successes() {
             &features,
             &state,
             &next_state,
-            0, // no SPC alerts
+            0,     // no SPC alerts
             true,  // guard_pass
             true,  // circuit_allowed
-            false,  // latency_budget_exceeded
+            false, // latency_budget_exceeded
         );
 
         // Verify consecutive_successes tracking
@@ -529,7 +553,10 @@ fn test_health_improves_after_three_consecutive_successes() {
     // Final state verification
     assert_eq!(orch.telemetry().consecutive_successes, 4);
     assert_eq!(orch.telemetry().last_health_state, 2); // Improved from 3 to 2!
-    assert!(orch.telemetry().cumulative_reward > 1.0, "cumulative reward should be positive");
+    assert!(
+        orch.telemetry().cumulative_reward > 1.0,
+        "cumulative reward should be positive"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -558,7 +585,8 @@ fn test_consecutive_successes_resets_on_failure() {
 
     // Verify consecutive_successes reset to 0
     assert_eq!(
-        orch.telemetry().consecutive_successes, 0,
+        orch.telemetry().consecutive_successes,
+        0,
         "consecutive_successes should reset to 0 after failure"
     );
 }
@@ -586,11 +614,8 @@ fn test_b3_sustained_critical_health_reward_stability() {
     assert_eq!(rewards.len(), 30, "should collect exactly 30 rewards");
 
     let mean: f32 = rewards.iter().sum::<f32>() / rewards.len() as f32;
-    let variance: f32 = rewards
-        .iter()
-        .map(|r| (r - mean).powi(2))
-        .sum::<f32>()
-        / rewards.len() as f32;
+    let variance: f32 =
+        rewards.iter().map(|r| (r - mean).powi(2)).sum::<f32>() / rewards.len() as f32;
     let std_dev = variance.sqrt();
 
     assert!(

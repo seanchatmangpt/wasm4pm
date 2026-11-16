@@ -65,7 +65,8 @@ pub fn discover_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
     for ((from_id, to_id), frequency) in edge_counts.iter() {
         let from = &dfg.nodes[*from_id].activity;
         let to = &dfg.nodes[*to_id].activity;
-        dfg.edges.push(DFGEdge::new(from.clone(), to.clone(), *frequency));
+        dfg.edges
+            .push(DFGEdge::new(from.clone(), to.clone(), *frequency));
     }
 
     // Set start and end activities
@@ -82,10 +83,16 @@ mod tests {
     #[test]
     fn test_dfg_discovery() {
         let mut attrs1 = std::collections::HashMap::new();
-        attrs1.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs1.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
 
         let mut attrs2 = std::collections::HashMap::new();
-        attrs2.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+        attrs2.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
 
         let log = EventLog::new(
             vec![Trace::new(

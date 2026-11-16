@@ -9,9 +9,9 @@
 //! 3. Negative test: wrong phase order in OCEL produces inverted edges (proving discovery detects violations)
 
 use chrono::{Duration, Utc};
-use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
-use wasm4pm::discovery::discover_ocel_dfg_pure;
 use std::collections::{HashMap, HashSet};
+use wasm4pm::discovery::discover_ocel_dfg_pure;
+use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 
 // ============================================================================
 // Test Helper
@@ -60,7 +60,12 @@ fn build_test_ocel(cycles: usize) -> OCEL {
     }
 
     OCEL {
-        event_types: vec!["Perception".to_string(), "Decision".to_string(), "Protection".to_string(), "Optimization".to_string()],
+        event_types: vec![
+            "Perception".to_string(),
+            "Decision".to_string(),
+            "Protection".to_string(),
+            "Optimization".to_string(),
+        ],
         object_types: vec!["cycle_run".to_string()],
         events,
         objects,
@@ -71,7 +76,7 @@ fn build_test_ocel(cycles: usize) -> OCEL {
 /// Build a test OCEL with phases in WRONG order (reversed).
 /// Useful for negative testing: prove that DFG reveals the phase-order violation.
 fn build_reversed_ocel(cycles: usize) -> OCEL {
-    let phases = ["Optimization", "Protection", "Decision", "Perception"];  // WRONG ORDER
+    let phases = ["Optimization", "Protection", "Decision", "Perception"]; // WRONG ORDER
     let base_time = Utc::now();
     let mut events = Vec::new();
     let mut objects = Vec::new();
@@ -108,7 +113,12 @@ fn build_reversed_ocel(cycles: usize) -> OCEL {
     }
 
     OCEL {
-        event_types: vec!["Perception".to_string(), "Decision".to_string(), "Protection".to_string(), "Optimization".to_string()],
+        event_types: vec![
+            "Perception".to_string(),
+            "Decision".to_string(),
+            "Protection".to_string(),
+            "Optimization".to_string(),
+        ],
         object_types: vec!["cycle_run".to_string()],
         events,
         objects,
@@ -129,10 +139,19 @@ fn test_dfg_has_all_four_phase_nodes() {
 
     let node_ids: HashSet<&str> = dfg.nodes.iter().map(|n| n.id.as_str()).collect();
 
-    assert!(node_ids.contains("Perception"), "DFG must have Perception node");
+    assert!(
+        node_ids.contains("Perception"),
+        "DFG must have Perception node"
+    );
     assert!(node_ids.contains("Decision"), "DFG must have Decision node");
-    assert!(node_ids.contains("Protection"), "DFG must have Protection node");
-    assert!(node_ids.contains("Optimization"), "DFG must have Optimization node");
+    assert!(
+        node_ids.contains("Protection"),
+        "DFG must have Protection node"
+    );
+    assert!(
+        node_ids.contains("Optimization"),
+        "DFG must have Optimization node"
+    );
 }
 
 // ============================================================================
@@ -146,24 +165,34 @@ fn test_dfg_has_correct_directed_edges() {
     let ocel = build_test_ocel(5);
     let dfg = discover_ocel_dfg_pure(&ocel);
 
-    let edges_map: HashMap<(&str, &str), usize> =
-        dfg.edges.iter()
-            .map(|e| ((e.from.as_str(), e.to.as_str()), e.frequency))
-            .collect();
+    let edges_map: HashMap<(&str, &str), usize> = dfg
+        .edges
+        .iter()
+        .map(|e| ((e.from.as_str(), e.to.as_str()), e.frequency))
+        .collect();
 
     // Verify the three correct edges, each with frequency = 5 (one per cycle)
     assert_eq!(
-        edges_map.get(&("Perception", "Decision")).copied().unwrap_or(0),
+        edges_map
+            .get(&("Perception", "Decision"))
+            .copied()
+            .unwrap_or(0),
         5,
         "Edge Perception→Decision should have frequency 5"
     );
     assert_eq!(
-        edges_map.get(&("Decision", "Protection")).copied().unwrap_or(0),
+        edges_map
+            .get(&("Decision", "Protection"))
+            .copied()
+            .unwrap_or(0),
         5,
         "Edge Decision→Protection should have frequency 5"
     );
     assert_eq!(
-        edges_map.get(&("Protection", "Optimization")).copied().unwrap_or(0),
+        edges_map
+            .get(&("Protection", "Optimization"))
+            .copied()
+            .unwrap_or(0),
         5,
         "Edge Protection→Optimization should have frequency 5"
     );
@@ -197,8 +226,7 @@ fn test_dfg_start_activity_is_perception() {
         "Start activities must include Perception"
     );
     assert_eq!(
-        dfg.start_activities["Perception"],
-        5,
+        dfg.start_activities["Perception"], 5,
         "Perception should be the first activity for all 5 cycles"
     );
 
@@ -233,8 +261,7 @@ fn test_dfg_end_activity_is_optimization() {
         "End activities must include Optimization"
     );
     assert_eq!(
-        dfg.end_activities["Optimization"],
-        5,
+        dfg.end_activities["Optimization"], 5,
         "Optimization should be the last activity for all 5 cycles"
     );
 
@@ -265,24 +292,34 @@ fn test_dfg_reversed_ocel_reveals_phase_order_violation() {
     let reversed_ocel = build_reversed_ocel(5);
     let dfg = discover_ocel_dfg_pure(&reversed_ocel);
 
-    let edges_map: HashMap<(&str, &str), usize> =
-        dfg.edges.iter()
-            .map(|e| ((e.from.as_str(), e.to.as_str()), e.frequency))
-            .collect();
+    let edges_map: HashMap<(&str, &str), usize> = dfg
+        .edges
+        .iter()
+        .map(|e| ((e.from.as_str(), e.to.as_str()), e.frequency))
+        .collect();
 
     // Verify the inverted edges appear (Optimization→Protection→Decision→Perception)
     assert_eq!(
-        edges_map.get(&("Optimization", "Protection")).copied().unwrap_or(0),
+        edges_map
+            .get(&("Optimization", "Protection"))
+            .copied()
+            .unwrap_or(0),
         5,
         "Edge Optimization→Protection should appear in reversed OCEL"
     );
     assert_eq!(
-        edges_map.get(&("Protection", "Decision")).copied().unwrap_or(0),
+        edges_map
+            .get(&("Protection", "Decision"))
+            .copied()
+            .unwrap_or(0),
         5,
         "Edge Protection→Decision should appear in reversed OCEL"
     );
     assert_eq!(
-        edges_map.get(&("Decision", "Perception")).copied().unwrap_or(0),
+        edges_map
+            .get(&("Decision", "Perception"))
+            .copied()
+            .unwrap_or(0),
         5,
         "Edge Decision→Perception should appear in reversed OCEL"
     );
@@ -306,7 +343,10 @@ fn test_dfg_reversed_ocel_reveals_phase_order_violation() {
 
     // Verify start/end are also reversed
     assert_eq!(
-        dfg.start_activities.get("Optimization").copied().unwrap_or(0),
+        dfg.start_activities
+            .get("Optimization")
+            .copied()
+            .unwrap_or(0),
         5,
         "Optimization should be first in reversed order"
     );

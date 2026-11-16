@@ -6,9 +6,9 @@
 //! Target speedups: 4-8x depending on CPU SIMD support (SSE4.2, AVX-2, AVX-512).
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use wasm4pm::simd_inner_loops::*;
-use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
+use wasm4pm::simd_inner_loops::*;
 
 // ============================================================================
 // Scalar baseline implementations (for comparison)
@@ -83,7 +83,10 @@ fn generate_trace_variants(num_variants: usize, trace_len: usize) -> Vec<Vec<u32
 }
 
 /// Generate synthetic Petri net transitions.
-fn generate_petri_transitions(num_places: usize, num_transitions: usize) -> Vec<(Vec<u32>, Vec<u32>)> {
+fn generate_petri_transitions(
+    num_places: usize,
+    num_transitions: usize,
+) -> Vec<(Vec<u32>, Vec<u32>)> {
     let mut rng = StdRng::seed_from_u64(42);
     (0..num_transitions)
         .map(|_| {
@@ -171,20 +174,16 @@ fn bench_edge_aggregator_scalar(c: &mut Criterion) {
             .collect();
         let edges = black_box(edges);
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(num_edges),
-            num_edges,
-            |b, _| {
-                b.iter(|| {
-                    let mut edge_counts: std::collections::HashMap<(u32, u32), u64> =
-                        std::collections::HashMap::new();
-                    for (from, to) in &edges {
-                        *edge_counts.entry((*from, *to)).or_insert(0) += 1;
-                    }
-                    black_box(edge_counts);
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(num_edges), num_edges, |b, _| {
+            b.iter(|| {
+                let mut edge_counts: std::collections::HashMap<(u32, u32), u64> =
+                    std::collections::HashMap::new();
+                for (from, to) in &edges {
+                    *edge_counts.entry((*from, *to)).or_insert(0) += 1;
+                }
+                black_box(edge_counts);
+            })
+        });
     }
 
     group.finish();
@@ -205,17 +204,13 @@ fn bench_edge_aggregator_simd(c: &mut Criterion) {
             .collect();
         let edges = black_box(edges);
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(num_edges),
-            num_edges,
-            |b, _| {
-                b.iter(|| {
-                    let mut agg = SimdEdgeAggregator::new();
-                    agg.increment_batch(&edges);
-                    black_box(agg.edges().clone());
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(num_edges), num_edges, |b, _| {
+            b.iter(|| {
+                let mut agg = SimdEdgeAggregator::new();
+                agg.increment_batch(&edges);
+                black_box(agg.edges().clone());
+            })
+        });
     }
 
     group.finish();
@@ -232,19 +227,15 @@ fn bench_variant_hash_scalar(c: &mut Criterion) {
     for trace_len in [10, 50, 200].iter() {
         let variants = black_box(generate_trace_variants(1000, *trace_len));
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(trace_len),
-            trace_len,
-            |b, _| {
-                b.iter(|| {
-                    let mut hashes = Vec::new();
-                    for variant in &variants {
-                        hashes.push(scalar_compute_variant_hash(variant));
-                    }
-                    black_box(hashes);
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(trace_len), trace_len, |b, _| {
+            b.iter(|| {
+                let mut hashes = Vec::new();
+                for variant in &variants {
+                    hashes.push(scalar_compute_variant_hash(variant));
+                }
+                black_box(hashes);
+            })
+        });
     }
 
     group.finish();
@@ -257,19 +248,15 @@ fn bench_variant_hash_simd(c: &mut Criterion) {
     for trace_len in [10, 50, 200].iter() {
         let variants = black_box(generate_trace_variants(1000, *trace_len));
 
-        group.bench_with_input(
-            BenchmarkId::from_parameter(trace_len),
-            trace_len,
-            |b, _| {
-                b.iter(|| {
-                    let mut dedup = SimdVariantDeduplicator::new();
-                    for variant in &variants {
-                        dedup.add_variant(variant);
-                    }
-                    black_box(dedup.variants().clone());
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(trace_len), trace_len, |b, _| {
+            b.iter(|| {
+                let mut dedup = SimdVariantDeduplicator::new();
+                for variant in &variants {
+                    dedup.add_variant(variant);
+                }
+                black_box(dedup.variants().clone());
+            })
+        });
     }
 
     group.finish();

@@ -6,21 +6,24 @@
 #![doc = "- Conformance results (ConformanceResult, TokenReplayResult)"]
 #![doc = "- Provenance and hashing (ProvenanceChain, BLAKE3 operations)"]
 
-pub mod event_log;
-pub mod ocel;
-pub mod models;
 pub mod conformance;
-pub mod provenance;
 pub mod error;
+pub mod event_log;
 pub mod hash;
+pub mod models;
+pub mod ocel;
+pub mod provenance;
 
 // Re-exports for convenience
-pub use event_log::{Event, EventLog, Trace, AttributeValue, Attributes};
-pub use ocel::{OCEL, OCELEvent, OCELObject};
-pub use models::{DFG, DFGNode, DFGEdge, PetriNet, PetriNetPlace, PetriNetTransition, PetriNetArc, DeclareModel, DeclareConstraint};
 pub use conformance::{ConformanceResult, TokenReplayResult};
-pub use provenance::ProvenanceChain;
 pub use error::{Error, Result};
+pub use event_log::{AttributeValue, Attributes, Event, EventLog, Trace};
 pub use hash::Blake3Hash;
+pub use models::{
+    DFGEdge, DFGNode, DeclareConstraint, DeclareModel, PetriNet, PetriNetArc, PetriNetPlace,
+    PetriNetTransition, DFG,
+};
+pub use ocel::{OCELEvent, OCELObject, OCEL};
+pub use provenance::ProvenanceChain;
 
 pub const VERSION: &str = "26.4.10";

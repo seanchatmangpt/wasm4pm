@@ -62,7 +62,9 @@ impl Event {
     }
 
     pub fn get_activity(&self, key: &str) -> Option<String> {
-        self.attributes.get(key).and_then(|v| v.as_string().map(|s| s.to_string()))
+        self.attributes
+            .get(key)
+            .and_then(|v| v.as_string().map(|s| s.to_string()))
     }
 
     pub fn get_timestamp(&self, key: &str) -> Option<String> {
@@ -166,7 +168,10 @@ mod tests {
     #[test]
     fn test_event_creation() {
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
         let event = Event::new(attrs);
         assert_eq!(event.get_activity("concept:name"), Some("A".to_string()));
     }
@@ -174,9 +179,15 @@ mod tests {
     #[test]
     fn test_trace_activities() {
         let mut attrs1 = HashMap::new();
-        attrs1.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+        attrs1.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
         let mut attrs2 = HashMap::new();
-        attrs2.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+        attrs2.insert(
+            "concept:name".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
 
         let trace = Trace::new(
             "case1".to_string(),

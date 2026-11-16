@@ -27,7 +27,7 @@ use wasm4pm::reinforcement::{
     Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     WorkflowAction, WorkflowState,
 };
-use wasm4pm::rl_orchestrator::{compute_reward, compute_health_state, AgentType, RlOrchestrator};
+use wasm4pm::rl_orchestrator::{compute_health_state, compute_reward, AgentType, RlOrchestrator};
 use wasm4pm::RlState;
 
 // ---------------------------------------------------------------------------
@@ -91,8 +91,7 @@ fn test_zero_exploration_is_deterministic() {
     // It always picks the greedy action (highest Q-value, or first on tie).
     // With an empty Q-table, all Q-values are 0.0, so the first action
     // (index 0) wins the tie — deterministic.
-    let agent: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
 
     let state = TinyState(42);
 
@@ -107,8 +106,7 @@ fn test_zero_exploration_is_deterministic() {
     }
 
     // Run again with a fresh agent — must produce the same action
-    let agent2: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent2: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
     let fresh_action = agent2.select_action(&state);
     assert_eq!(
         fresh_action, first_action,
@@ -127,10 +125,8 @@ fn test_deterministic_reward_accumulation() {
     // Record cumulative Q-value for a specific (state, action) pair after each cycle.
     // Assert: both agents accumulate identical Q-values at every step.
 
-    let agent1: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
-    let agent2: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent1: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent2: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
 
     let action = TinyAction::A;
 
@@ -157,7 +153,9 @@ fn test_deterministic_reward_accumulation() {
         assert!(
             (q1 - q2).abs() < 1e-6,
             "cycle {}: Q(s0,A) diverged between two zero-exploration agents: {:.6} vs {:.6}",
-            cycle, q1, q2
+            cycle,
+            q1,
+            q2
         );
     }
 
@@ -188,8 +186,7 @@ fn test_all_agents_deterministic_at_zero_exploration() {
     let cycles = 20;
 
     // --- QLearning ---
-    let q_agent: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let q_agent: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
     let q_first = q_agent.select_action(&state);
     for _ in 1..cycles {
         assert_eq!(
@@ -271,16 +268,14 @@ fn test_exploration_rate_affects_diversity() {
     let selections = 50;
 
     // Run A: zero exploration
-    let agent_a: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent_a: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
     let mut unique_a = std::collections::HashSet::new();
     for _ in 0..selections {
         unique_a.insert(agent_a.select_action(&state));
     }
 
     // Run B: full exploration
-    let agent_b: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 1.0);
+    let agent_b: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 1.0);
     let mut unique_b = std::collections::HashSet::new();
     for _ in 0..selections {
         unique_b.insert(agent_b.select_action(&state));
@@ -408,7 +403,10 @@ fn test_telemetry_accumulation_deterministic() {
     // Verify compute_health_state is pure and deterministic
     for _ in 0..100 {
         let h = compute_health_state(100, 10, 5);
-        assert_eq!(h, 0, "compute_health_state(100, 10, 5) should always return 0 (Normal)");
+        assert_eq!(
+            h, 0,
+            "compute_health_state(100, 10, 5) should always return 0 (Normal)"
+        );
     }
 
     // Verify compute_reward is pure (reinforcement of Test 5, in context)
@@ -482,8 +480,7 @@ fn test_run_cycle_output_reproducible() {
     // and health transitions are deterministic.
 
     // Part A: Verify direct agent usage is deterministic
-    let agent: QLearning<TinyState, TinyAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent: QLearning<TinyState, TinyAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
 
     let s0 = TinyState(0);
     let s1 = TinyState(1);

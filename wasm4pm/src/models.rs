@@ -583,7 +583,7 @@ pub struct DirectlyFollowsRelation {
 /// - `start_activities` — Activities that start traces (name → count)
 /// - `end_activities` — Activities that end traces (name → count)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DirectlyFollowsGraph {
+pub struct DFG {
     pub nodes: Vec<DFGNode>,
     pub edges: Vec<DirectlyFollowsRelation>,
     pub start_activities: HashMap<String, usize>,
@@ -597,9 +597,9 @@ pub struct DFGNode {
     pub frequency: usize,
 }
 
-impl DirectlyFollowsGraph {
+impl DFG {
     pub fn new() -> Self {
-        DirectlyFollowsGraph {
+        DFG {
             nodes: Vec::new(),
             edges: Vec::new(),
             start_activities: HashMap::new(),
@@ -712,8 +712,8 @@ pub struct StreamingConformanceChecker {
 }
 
 impl StreamingConformanceChecker {
-    /// Create a new checker from a `DirectlyFollowsGraph`.
-    pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Self {
+    /// Create a new checker from a `DFG`.
+    pub fn from_dfg(dfg: &DFG) -> Self {
         let dfg_edges: std::collections::HashSet<(String, String)> = dfg
             .edges
             .iter()
@@ -871,7 +871,7 @@ impl Default for PetriNet {
     }
 }
 
-impl Default for DirectlyFollowsGraph {
+impl Default for DFG {
     fn default() -> Self {
         Self::new()
     }
@@ -895,8 +895,8 @@ impl Default for TemporalProfile {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessTreeNode {
-    pub node_type: String,  // "sequence", "xor", "parallel", "loop", "leaf"
-    pub label: Option<String>,  // Activity name (leaf only)
+    pub node_type: String,     // "sequence", "xor", "parallel", "loop", "leaf"
+    pub label: Option<String>, // Activity name (leaf only)
     pub children: Vec<ProcessTreeNode>,
 }
 

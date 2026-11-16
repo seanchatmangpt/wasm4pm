@@ -8,16 +8,46 @@ impl RoleSelector for DefaultRoleSelector {
     fn select_role(&self, task: &TaskContext) -> Result<RoleDecision, AgenticError> {
         // Phase → primary role mapping
         let (primary_role, candidates) = match &task.phase {
-            WorkflowPhase::Intake => (AgentRole::Explorer, vec![AgentRole::Planner, AgentRole::Validator]),
-            WorkflowPhase::Triage => (AgentRole::Reviewer, vec![AgentRole::Validator, AgentRole::Explorer]),
-            WorkflowPhase::Analyze => (AgentRole::Explorer, vec![AgentRole::Auditor, AgentRole::Validator]),
-            WorkflowPhase::Plan => (AgentRole::Planner, vec![AgentRole::Reviewer, AgentRole::Executor]),
-            WorkflowPhase::Execute => (AgentRole::Executor, vec![AgentRole::Reviewer, AgentRole::Validator]),
-            WorkflowPhase::Validate => (AgentRole::Validator, vec![AgentRole::Reviewer, AgentRole::Auditor]),
-            WorkflowPhase::Escalate => (AgentRole::Escalator, vec![AgentRole::Auditor, AgentRole::Explainer]),
-            WorkflowPhase::Complete => (AgentRole::Auditor, vec![AgentRole::Compiler, AgentRole::Reviewer]),
-            WorkflowPhase::Failed => (AgentRole::Escalator, vec![AgentRole::Auditor, AgentRole::Explainer]),
-            WorkflowPhase::Custom(_) => (AgentRole::Explorer, vec![AgentRole::Planner, AgentRole::Validator]),
+            WorkflowPhase::Intake => (
+                AgentRole::Explorer,
+                vec![AgentRole::Planner, AgentRole::Validator],
+            ),
+            WorkflowPhase::Triage => (
+                AgentRole::Reviewer,
+                vec![AgentRole::Validator, AgentRole::Explorer],
+            ),
+            WorkflowPhase::Analyze => (
+                AgentRole::Explorer,
+                vec![AgentRole::Auditor, AgentRole::Validator],
+            ),
+            WorkflowPhase::Plan => (
+                AgentRole::Planner,
+                vec![AgentRole::Reviewer, AgentRole::Executor],
+            ),
+            WorkflowPhase::Execute => (
+                AgentRole::Executor,
+                vec![AgentRole::Reviewer, AgentRole::Validator],
+            ),
+            WorkflowPhase::Validate => (
+                AgentRole::Validator,
+                vec![AgentRole::Reviewer, AgentRole::Auditor],
+            ),
+            WorkflowPhase::Escalate => (
+                AgentRole::Escalator,
+                vec![AgentRole::Auditor, AgentRole::Explainer],
+            ),
+            WorkflowPhase::Complete => (
+                AgentRole::Auditor,
+                vec![AgentRole::Compiler, AgentRole::Reviewer],
+            ),
+            WorkflowPhase::Failed => (
+                AgentRole::Escalator,
+                vec![AgentRole::Auditor, AgentRole::Explainer],
+            ),
+            WorkflowPhase::Custom(_) => (
+                AgentRole::Explorer,
+                vec![AgentRole::Planner, AgentRole::Validator],
+            ),
         };
 
         // Override for Critical risk

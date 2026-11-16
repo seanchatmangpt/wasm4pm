@@ -5,28 +5,26 @@
 //! - discover_ml_pca: 2-component PCA
 
 use crate::state::{get_or_init_state, StoredObject};
-use wasm_bindgen::prelude::*;
 use serde_json::json;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn discover_ml_regress(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| {
-        match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                Ok(col_owned)
-            }
-            _ => Err(JsValue::from_str("not_found")),
+    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            Ok(col_owned)
         }
+        _ => Err(JsValue::from_str("not_found")),
     })?;
 
     // Extract trace-level features
@@ -82,7 +80,11 @@ pub fn discover_ml_regress(eventlog_handle: &str, activity_key: &str) -> Result<
         ss_res += (trace_durations[i] - pred).powi(2);
         ss_tot += (trace_durations[i] - mean_y).powi(2);
     }
-    let r_squared = if ss_tot > 0.0 { 1.0 - (ss_res / ss_tot) } else { 0.0 };
+    let r_squared = if ss_tot > 0.0 {
+        1.0 - (ss_res / ss_tot)
+    } else {
+        0.0
+    };
 
     Ok(to_js_value(&json!({
         "algorithm": "ml_regress",
@@ -96,23 +98,21 @@ pub fn discover_ml_regress(eventlog_handle: &str, activity_key: &str) -> Result<
 
 #[wasm_bindgen]
 pub fn discover_ml_forecast(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| {
-        match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                Ok(col_owned)
-            }
-            _ => Err(JsValue::from_str("not_found")),
+    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            Ok(col_owned)
         }
+        _ => Err(JsValue::from_str("not_found")),
     })?;
 
     // Time-window analysis: bin traces into windows, forecast next window
@@ -166,23 +166,21 @@ pub fn discover_ml_forecast(eventlog_handle: &str, activity_key: &str) -> Result
 
 #[wasm_bindgen]
 pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| {
-        match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                Ok(col_owned)
-            }
-            _ => Err(JsValue::from_str("not_found")),
+    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            Ok(col_owned)
         }
+        _ => Err(JsValue::from_str("not_found")),
     })?;
 
     // k-NN classifier: classify traces as "short" (len<10), "medium" (10-30), "long" (>30)
@@ -216,23 +214,21 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
 
 #[wasm_bindgen]
 pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| {
-        match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                Ok(col_owned)
-            }
-            _ => Err(JsValue::from_str("not_found")),
+    let col_owned = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            Ok(col_owned)
         }
+        _ => Err(JsValue::from_str("not_found")),
     })?;
 
     // 2-component PCA on trace length and activity diversity

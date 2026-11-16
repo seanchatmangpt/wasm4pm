@@ -18,8 +18,8 @@
 //! - `rand::random` replaced with `fastrand` (WASM-compatible)
 //! - `async` methods removed (WASM is single-threaded)
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Monotonic clock stub
@@ -147,10 +147,18 @@ pub struct CircuitBreakerConfigJson {
     pub half_open_timeout_ms: u64,
 }
 
-fn default_failure_threshold() -> u32 { 5 }
-fn default_success_threshold() -> u32 { 2 }
-fn default_open_timeout() -> u64 { 60_000 }
-fn default_half_open_timeout() -> u64 { 30_000 }
+fn default_failure_threshold() -> u32 {
+    5
+}
+fn default_success_threshold() -> u32 {
+    2
+}
+fn default_open_timeout() -> u64 {
+    60_000
+}
+fn default_half_open_timeout() -> u64 {
+    30_000
+}
 
 impl From<CircuitBreakerConfigJson> for CircuitBreakerConfig {
     fn from(json: CircuitBreakerConfigJson) -> Self {
@@ -850,12 +858,15 @@ mod circuit_breaker_config_tests {
 
     #[test]
     fn test_circuit_breaker_json_serialization() {
-        let breaker = CircuitBreaker::from_json(r#"{
+        let breaker = CircuitBreaker::from_json(
+            r#"{
             "failure_threshold": 7,
             "success_threshold": 4,
             "open_timeout_ms": 90000,
             "half_open_timeout_ms": 45000
-        }"#).unwrap();
+        }"#,
+        )
+        .unwrap();
 
         // Verify getters return correct values
         assert_eq!(breaker.failure_threshold(), 7);

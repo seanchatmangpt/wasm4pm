@@ -1,4 +1,4 @@
-use crate::models::{DirectlyFollowsGraph, StreamingConformanceChecker};
+use crate::models::{DFG, StreamingConformanceChecker};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -16,9 +16,9 @@ use wasm_bindgen::prelude::*;
 /// ```
 #[wasm_bindgen]
 pub fn store_dfg_from_json(dfg_json: &str) -> Result<JsValue, JsValue> {
-    let dfg: DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: DFG = serde_json::from_str(dfg_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid DFG JSON: {}", e)))?;
-    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;
     Ok(JsValue::from_str(&handle))
 }
 
@@ -31,10 +31,10 @@ pub fn store_dfg_from_json(dfg_json: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn streaming_conformance_begin(dfg_handle: &str) -> Result<JsValue, JsValue> {
     let checker = get_or_init_state().with_object(dfg_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             Ok(StreamingConformanceChecker::from_dfg(dfg))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
+        Some(_) => Err(JsValue::from_str("Handle is not a DFG")),
         None => Err(JsValue::from_str("DFG handle not found")),
     })?;
 
