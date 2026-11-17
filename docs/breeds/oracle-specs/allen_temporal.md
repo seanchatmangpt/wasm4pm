@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/oracle-specs/allen_temporal.md; source-sha256: 573c01a9d190ef478d53638f8166ba36152953132e4b2fafc37a80d79f89c4dc; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/oracle-specs/allen_temporal.md; source-sha256: 10f1bd8e0c1ae665d5ea926ff59b5245b57391a3bc97fdf599745c69b0b49862; reason: path-local documentation retained pending domain-specific supersession -->
 
 # allen_temporal — Allen Interval Algebra (Allen 1983)
 
@@ -25,7 +25,7 @@ Caps (refusal semantics — plain precondition `Err`, no BoundedBreed):
 
 ### BreedOutput
 - `selected`: always `Some("temporal-consistent")` on success (inconsistency is a run error, not a verdict).
-- Output facts: `derived:A,B` for EVERY ordered pair (lexicographic node order), value = post-fixpoint mask symbols joined by `|` in index order. Input facts are NOT echoed.
+- Output facts: `derived:A:C` for EVERY ordered pair (lexicographic node order), value = post-fixpoint mask symbols joined by `|` in index order. Input facts are NOT echoed.
 - `candidates` passed through; `explanation`: `"Allen interval network over <n> intervals reached path-consistency fixpoint"`.
 
 ### Trace
@@ -43,8 +43,8 @@ Provenance: Allen, J. F. (1983). Maintaining Knowledge about Temporal Intervals.
 Input facts: `relation` = `A,B,m`; `relation` = `B,C,d`. (No state, rules, goals.)
 
 Expected (asserted):
-- `derived:A,C` = `o|d|s`
-- `derived:C,A` = `oi|di|si`
+- `derived:A:C` = `o|d|s`
+- `derived:C:A` = `oi|di|si`
 
 (Note: `o|d|s` is the implementation's index order p,pi,m,mi,o,oi,d,di,s,si,f,fi,eq — the paper's `(o s d)` reordered.)
 
@@ -55,7 +55,7 @@ Expected (asserted):
 - `boundary_pair`: `uo_a p uo_b` with concrete intervals `uo_a,1,2`/`uo_b,3,4` vs `uo_a pi uo_b` with `uo_a,3,4`/`uo_b,1,2` — opposite derived facts.
 - `refusal_input`: `relation` = `uo_a,uo_b,uo_notarel` (no valid relation symbols).
 - `assert_intermediate`: `require_non_empty()`; `require_at_least("allen-load", 2)`; `require_kind("allen-compose")`; `require_count("allen-verdict", 1)`; `require_last("allen-verdict")`.
-- `assert_trace_values`: none (default).
+- `assert_trace_values` (Surface-3 values): `allen-load[0] == "rel uo_a,uo_b,p"` and count 2; `allen-compose == "uo_c via uo_b -> uo_a: pi"` (narrowed mask via-clause); `allen-verdict == "path-consistency-fixpoint"`.
 
 Postconditions (in-breed): `require_non_empty_with_kinds(["allen-load"])`; `require_count("allen-verdict", 1)`; output must contain at least one `derived:` fact.
 

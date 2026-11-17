@@ -19,6 +19,7 @@ pub static TRIZ_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// Morphological (Zwicky GMA): define-parameter+ → compute-field-size →
@@ -51,6 +52,7 @@ pub static MORPHOLOGICAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// OCPM route discoverer: process-event+ → discover-route+ → discover-route-empty?.
@@ -77,4 +79,5 @@ pub static OCPM_ROUTE_DISCOVERER_MODEL: BreedLifecycleModel = BreedLifecycleMode
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };

@@ -17,6 +17,19 @@
 //!
 //! Algorithm family: Process Discovery — DFG streaming
 //! Gap: F (streaming batch equivalence)
+//!
+//! # Known limitation: native coverage of the wasm SIMD path
+//!
+//! All tests in this file run on native targets, where
+//! `SimdStreamingDfg`'s unsafe v128 code is compiled out by
+//! `#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]` — every
+//! `SimdStreamingDfg` test here exercises the SCALAR fallback only. The SIMD
+//! path is compile-checked in CI (`cargo check` for wasm32-unknown-unknown
+//! with and without `RUSTFLAGS="-C target-feature=+simd128"`) but is never
+//! EXECUTED in native CI. The `#[cfg(target_arch = "wasm32")]` parity test at
+//! the bottom of this file covers execution parity, and only runs under a
+//! wasm test runner (wasm-bindgen-test). Never claim native parity of the
+//! SIMD path from these tests.
 
 use std::collections::BTreeMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace, DFG};
@@ -436,3 +449,130 @@ fn streaming_late_event_handled_deterministically() {
 // ---------------------------------------------------------------------------
 // Test 6: streaming_conformance_matches_batch_conformance
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Test 7 (wasm-only): simd builder parity vs batch on 100+ generated traces
+// ---------------------------------------------------------------------------
+//
+// On native targets this test does not exist: the wasm SIMD path is compiled
+// out natively (see the limitation header at the top of this file). Under a
+// wasm-bindgen-test run it executes the actual cfg-gated SIMD code path and
+// compares it against the batch streaming builder.
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_simd_parity {
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+    use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
+    use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
+    use std::collections::BTreeMap;
+
+    /// Deterministic LCG so the wasm parity test is reproducible.
+    struct Lcg(u64);
+    impl Lcg {
+        fn next(&mut self) -> u64 {
+            self.0 = self
+                .0
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            self.0 >> 33
+        }
+    }
+
+    fn generated_log(num_traces: usize) -> (EventLog, Vec<Vec<u32>>) {
+        let mut rng = Lcg(0x5EED_1234_ABCD_0001);
+        let vocab = ["A", "B", "C", "D", "E", "F"];
+        let mut log = EventLog::new();
+        let mut ids = Vec::with_capacity(num_traces);
+        for t in 0..num_traces {
+            let len = 1 + (rng.next() % 12) as usize;
+            let mut trace_ids = Vec::with_capacity(len);
+            let mut trace = Trace {
+                attributes: {
+                    let mut m = BTreeMap::new();
+                    m.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String(format!("case{}", t)),
+                    );
+                    m
+                },
+                events: Vec::new(),
+            };
+            for i in 0..len {
+                let id = (rng.next() % vocab.len() as u64) as u32;
+                trace_ids.push(id);
+                let mut attrs = BTreeMap::new();
+                attrs.insert(
+                    "concept:name".to_string(),
+                    AttributeValue::String(vocab[id as usize].to_string()),
+                );
+                attrs.insert(
+                    "time:timestamp".to_string(),
+                    AttributeValue::String(format!("2024-01-01T00:{:02}:{:02}Z", i, t % 60)),
+                );
+                trace.events.push(Event { attributes: attrs });
+            }
+            log.traces.push(trace);
+            ids.push(trace_ids);
+        }
+        (log, ids)
+    }
+
+    #[wasm_bindgen_test]
+    fn simd_builder_matches_batch_on_100_generated_traces() {
+        let (log, ids) = generated_log(120);
+        assert!(ids.len() >= 100, "must generate 100+ traces");
+
+        // Batch-side: streaming builder (scalar, canonical)
+        let mut batch = StreamingDfgBuilder::new();
+        for (t, trace_ids) in ids.iter().enumerate() {
+            let case = format!("case{}", t);
+            for &id in trace_ids {
+                let act = match id {
+                    0 => "A",
+                    1 => "B",
+                    2 => "C",
+                    3 => "D",
+                    4 => "E",
+                    _ => "F",
+                };
+                batch.add_event(&case, act);
+            }
+            batch.close_trace(&case);
+        }
+        let batch_dfg = batch.snapshot();
+
+        // SIMD-side: SimdStreamingDfg (executes the cfg-gated wasm path)
+        let mut simd = SimdStreamingDfg::new();
+        for trace_ids in &ids {
+            simd.add_trace(trace_ids);
+        }
+        let vocab: Vec<&str> = vec!["A", "B", "C", "D", "E", "F"];
+        let simd_dfg = simd.finish(&vocab);
+
+        assert_eq!(batch_dfg.edges.len(), simd_dfg.edges.len());
+        for e in &simd_dfg.edges {
+            let freq = batch_dfg
+                .edges
+                .iter()
+                .find(|b| b.from == e.from && b.to == e.to)
+                .map(|b| b.frequency)
+                .unwrap_or(0);
+            assert_eq!(
+                freq, e.frequency,
+                "edge {}->{}: simd={} batch={}",
+                e.from, e.to, e.frequency, freq
+            );
+        }
+        // Node frequency parity
+        for n in &simd_dfg.nodes {
+            let bf = batch_dfg
+                .nodes
+                .iter()
+                .find(|b| b.id == n.id)
+                .map(|b| b.frequency)
+                .unwrap_or(0);
+            assert_eq!(bf, n.frequency, "node {}", n.id);
+        }
+    }
+}

@@ -3,27 +3,60 @@
   "provenance": {
     "paper": "citation-only",
     "citation": "Baader et al. 2003",
-    "locus": "This breed's completion-rule algorithm is grounded against Baader, Brandt & Lutz 2005 (Pushing the EL Envelope, IJCAI), Section 1 medical-ontology subsumption example, completion rules Table 2 (CR1-CR4) -- the same real, already-verified locus this repo's paper-pointers.ttl anti-cheat lock uses for description_logic's classify algorithm.",
-    "extraction": "grounded"
+    "locus": "Baader, Brandt & Lutz, 'Pushing the EL Envelope', IJCAI 2005, Section 1 medical-ontology example + Section 3 Table 2 completion rules (CR1-CR4) -- Pericarditis subclass chain plus the exists/quantified-conjunction axioms classify Pericarditis <= HeartDisease (true) but not the reverse (false).",
+    "extraction": "adapted"
   },
   "input": {
     "intent": "classify",
     "facts": [
-      { "key": "subclass", "value": "A,B" },
-      { "key": "subclass", "value": "B,C" },
-      { "key": "class", "value": "x,A" },
-      { "key": "disjoint", "value": "C,D" }
+      {
+        "key": "dl:subclass:Pericarditis",
+        "value": "Inflammation"
+      },
+      {
+        "key": "dl:subclass:Inflammation",
+        "value": "Disease"
+      },
+      {
+        "key": "dl:exists_rhs:Pericarditis",
+        "value": "has_location.Heart"
+      },
+      {
+        "key": "dl:exists_lhs:has_location.Heart",
+        "value": "HasLocationHeart"
+      },
+      {
+        "key": "dl:conj:Disease+HasLocationHeart",
+        "value": "HeartDisease"
+      }
     ],
     "rules": [],
-    "candidates": [
-      { "id": "x", "score": 0.5, "eliminated": false, "elimination_reason": null }
-    ],
+    "candidates": [],
     "cases": [],
-    "goals": [],
+    "goals": [
+      {
+        "id": "q1",
+        "predicate": "dl:subsumes",
+        "value": "Pericarditis:HeartDisease"
+      },
+      {
+        "id": "q2",
+        "predicate": "dl:subsumes",
+        "value": "HeartDisease:Pericarditis"
+      }
+    ],
     "state": []
   },
   "expected": {
-    "consistent": "true",
-    "member_xc": "true"
+    "verdicts": {
+      "dl:verdict:Pericarditis:HeartDisease": "true",
+      "dl:verdict:HeartDisease:Pericarditis": "false"
+    },
+    "trace_kinds": [
+      "apply-cr1",
+      "apply-cr2",
+      "apply-cr3",
+      "apply-cr4"
+    ]
   }
 }

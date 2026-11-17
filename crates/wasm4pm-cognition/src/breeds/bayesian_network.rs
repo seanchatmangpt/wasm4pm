@@ -207,14 +207,19 @@ impl CognitionBreed for BayesianNetwork {
         let mut nodes: Vec<String> = all_nodes.into_iter().collect();
         nodes.sort();
 
-        let node_id = |name: &str| -> usize { nodes.iter().position(|x| x == name).unwrap() };
+        let node_id = |name: &str| -> Result<usize, BreedError> {
+            nodes.iter().position(|x| x == name).ok_or_else(|| BreedError {
+                breed: self.id(),
+                message: format!("undeclared node name '{}'", name),
+            })
+        };
 
         let mut adj = vec![vec![]; nodes.len()];
         let mut parents_map = vec![vec![]; nodes.len()];
 
         for (key, _) in &cpts {
             let parts: Vec<&str> = key["cpt:".len()..].split('|').collect();
-            let c = node_id(parts[0]);
+            let c = node_id(parts[0])?;
             if parts.len() > 1 && !parts[1].is_empty() {
                 let ps: Vec<&str> = parts[1].split(',').collect();
                 if ps.len() > 4 {
@@ -224,7 +229,7 @@ impl CognitionBreed for BayesianNetwork {
                     });
                 }
                 for p_name in ps {
-                    let p = node_id(p_name);
+                    let p = node_id(p_name)?;
                     adj[p].push(c);
                     parents_map[c].push(p);
                 }
@@ -270,17 +275,17 @@ impl CognitionBreed for BayesianNetwork {
                     message: "query node not found".to_string(),
                 });
             }
-            let q_node = node_id(q_node_name);
+            let q_node = node_id(q_node_name)?;
 
             // Build factors
             let mut factors = Vec::new();
             for (key, val) in &cpts {
                 let parts: Vec<&str> = key["cpt:".len()..].split('|').collect();
-                let x_id = node_id(parts[0]);
+                let x_id = node_id(parts[0])?;
                 let mut p_ids = Vec::new();
                 if parts.len() > 1 && !parts[1].is_empty() {
                     for p in parts[1].split(',') {
-                        p_ids.push(node_id(p));
+                        p_ids.push(node_id(p)?);
                     }
                 }
 
@@ -324,7 +329,7 @@ impl CognitionBreed for BayesianNetwork {
 
             // Reduce with evidence
             for (ev_name, &ev_val) in &evidence {
-                let ev_id = node_id(ev_name);
+                let ev_id = node_id(ev_name)?;
                 let bit_val = usize::from(ev_val);
                 for f in &mut factors {
                     if let Some(pos) = f.vars.iter().position(|&x| x == ev_id) {
@@ -395,9 +400,11 @@ impl CognitionBreed for BayesianNetwork {
                 if !relevant.is_empty() {
                     let mut prod = relevant[0].clone();
                     for i in 1..relevant.len() {
-                        prod = multiply_factors(&prod, &relevant[i]);
+                        prod = multiply_factors(&prod, &relevant[i])
+                            .map_err(|e| BreedError { breed: self.id(), message: e })?;
                     }
-                    let sum = sum_out_factor(&prod, u);
+                    let sum = sum_out_factor(&prod, u)
+                        .map_err(|e| BreedError { breed: self.id(), message: e })?;
                     remaining.push(sum);
                 }
                 factors = remaining;
@@ -406,10 +413,18 @@ impl CognitionBreed for BayesianNetwork {
             // Final multiplication
             let mut final_f = factors[0].clone();
             for i in 1..factors.len() {
-                final_f = multiply_factors(&final_f, &factors[i]);
+                final_f = multiply_factors(&final_f, &factors[i])
+                    .map_err(|e| BreedError { breed: self.id(), message: e })?;
             }
 
-            let pos_q = final_f.vars.iter().position(|&x| x == q_node).unwrap();
+            let pos_q = final_f
+                .vars
+                .iter()
+                .position(|&x| x == q_node)
+                .ok_or_else(|| BreedError {
+                    breed: self.id(),
+                    message: "query node missing from final factor".to_string(),
+                })?;
             let mut prob_t = 0.0;
             let mut prob_f = 0.0;
             for idx in 0..(1 << final_f.vars.len()) {
@@ -456,13 +471,13 @@ impl CognitionBreed for BayesianNetwork {
             let inner = &q_str["dsep:".len()..];
             let parts: Vec<&str> = inner.split('|').collect();
             let ends: Vec<&str> = parts[0].split(',').collect();
-            let mut start_nodes = vec![node_id(ends[0])];
-            let mut end_nodes = vec![node_id(ends[1])];
+            let mut start_nodes = vec![node_id(ends[0])?];
+            let mut end_nodes = vec![node_id(ends[1])?];
 
             let mut obs = HashSet::new();
             if parts.len() > 1 && !parts[1].is_empty() {
                 for o in parts[1].split(',') {
-                    obs.insert(node_id(o));
+                    obs.insert(node_id(o)?);
                 }
             }
 
@@ -677,7 +692,11 @@ mod tests {
     }
 }
 
-fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
+/// Engineering cap: factor ops allocate 2^n-entry tables; beyond this the
+/// 2^n table size is a memory/shift hazard. Refuse before any allocation.
+const MAX_FACTOR_VARS: usize = 32;
+
+fn multiply_factors(f1: &Factor, f2: &Factor) -> Result<Factor, String> {
     let mut vars = f1.vars.clone();
     for &v in &f2.vars {
         if !vars.contains(&v) {
@@ -686,11 +705,22 @@ fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
     }
     vars.sort_unstable();
 
+    if vars.len() > MAX_FACTOR_VARS {
+        return Err(format!(
+            "factor product would span {} variables (cap {})",
+            vars.len(),
+            MAX_FACTOR_VARS
+        ));
+    }
+
     let mut table = vec![0.0; 1 << vars.len()];
     for idx in 0..(1 << vars.len()) {
         let mut idx1 = 0;
         for (i, &v) in f1.vars.iter().enumerate() {
-            let pos = vars.iter().position(|&x| x == v).unwrap();
+            let pos = vars
+                .iter()
+                .position(|&x| x == v)
+                .expect("infallible: v was taken from f1.vars which is a subset of vars");
             if (idx & (1 << pos)) != 0 {
                 idx1 |= 1 << i;
             }
@@ -698,35 +728,76 @@ fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
 
         let mut idx2 = 0;
         for (i, &v) in f2.vars.iter().enumerate() {
-            let pos = vars.iter().position(|&x| x == v).unwrap();
+            let pos = vars
+                .iter()
+                .position(|&x| x == v)
+                .expect("infallible: v was taken from f2.vars which is a subset of vars");
             if (idx & (1 << pos)) != 0 {
                 idx2 |= 1 << i;
             }
         }
         table[idx] = f1.table[idx1] * f2.table[idx2];
     }
-    Factor { vars, table }
+    Ok(Factor { vars, table })
 }
 
-fn sum_out_factor(f: &Factor, var_to_elim: usize) -> Factor {
+fn sum_out_factor(f: &Factor, var_to_elim: usize) -> Result<Factor, String> {
+    let pos_elim = f
+        .vars
+        .iter()
+        .position(|&x| x == var_to_elim)
+        .ok_or_else(|| format!("variable {var_to_elim} not present in factor"))?;
+
     let mut vars = f.vars.clone();
     vars.retain(|&v| v != var_to_elim);
 
     let mut table = vec![0.0; 1 << vars.len()];
-    let pos_elim = f.vars.iter().position(|&x| x == var_to_elim).unwrap();
-
     for idx in 0..(1 << f.vars.len()) {
         let mut new_idx = 0;
         for (i, &v) in f.vars.iter().enumerate() {
             if i == pos_elim {
                 continue;
             }
-            let pos_new = vars.iter().position(|&x| x == v).unwrap();
+            let pos_new = vars
+                .iter()
+                .position(|&x| x == v)
+                .expect("infallible: v != var_to_elim, retained in vars");
             if (idx & (1 << i)) != 0 {
                 new_idx |= 1 << pos_new;
             }
         }
         table[new_idx] += f.table[idx];
     }
-    Factor { vars, table }
+    Ok(Factor { vars, table })
+}
+
+#[cfg(test)]
+mod panic_hardening_tests {
+    use super::*;
+
+    #[test]
+    fn multiply_refuses_over_cap_before_allocation() {
+        // Factor does not enforce table.len() == 1 << vars.len(), so we can
+        // construct over-cap factors with tiny tables — proving the refusal
+        // fires BEFORE any 2^n allocation.
+        let f = Factor {
+            vars: (0..MAX_FACTOR_VARS).collect(),
+            table: vec![1.0],
+        };
+        let g = Factor {
+            vars: vec![MAX_FACTOR_VARS, MAX_FACTOR_VARS + 1],
+            table: vec![0.5, 0.5, 0.5, 0.5],
+        };
+        let err = multiply_factors(&f, &g).err().expect("over-cap product must be refused");
+        assert!(err.contains("cap"), "got: {err}");
+    }
+
+    #[test]
+    fn sum_out_missing_var_is_typed_error() {
+        let f = Factor {
+            vars: vec![0, 1],
+            table: vec![0.25, 0.25, 0.25, 0.25],
+        };
+        assert!(sum_out_factor(&f, 99).is_err());
+    }
 }

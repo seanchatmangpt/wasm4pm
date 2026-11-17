@@ -1,0 +1,161 @@
+{
+  "schema_version": "wasm4pm.release-certificate.v2",
+  "package": {
+    "name": "wasm4pm",
+    "version": "26.10.10",
+    "git_commit": "8323cba14c0cf60f80b29553a61591eb53e05983",
+    "package_json_path": "packages/kernel/package.json",
+    "package_json_sha256": "1127d5576bd131c5026a8919139e83d5ff2b3b103addb409c4b4007ba278d185"
+  },
+  "reachability": {
+    "evidence_path": "artifacts/release/ALGORITHM_REACHABILITY_EVIDENCE.v26.10.10.json",
+    "evidence_file_sha256": "cbc792f3418bb70ae38b6c8b80254d28e9946993192afb0339ca320dd4f8621e",
+    "evidence_claimed_hash": "7ae1a6bf4c256e5362b8c8b8d02f58e26a570c83683c945365a4a28f812084bc",
+    "algorithm_count": 60,
+    "algorithms_reachable": 60,
+    "all_reachable": true
+  },
+  "behavior": {
+    "evidence_path": "artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v26.10.10.json",
+    "evidence_file_sha256": "ff0e06bf21b997bb898f463e6865874cb5bf4a91ed9d3b8af8ed212391b6e8b8",
+    "evidence_claimed_hash": "77809d5d79f940a1519c6d54728907021fcd44e422e11896306e95f97bd66009",
+    "algorithm_count": 60,
+    "positive_case_count": 60,
+    "negative_case_count": 120,
+    "invariant_case_count": 60,
+    "all_positive_passed": true,
+    "all_negative_failed_correctly": true,
+    "all_invariants_passed": true,
+    "all_algorithm_receipts_recompute": true
+  },
+  "examples": {
+    "root": "examples/out",
+    "file_count": 21,
+    "manifest_hash": "a1d7ab0069948ae30e862331b190b2fe626154728fc721d9bfb7684f3ef9fef9",
+    "files": [
+      {
+        "path": "autonomic_healing.receipt.json",
+        "size": 83031,
+        "sha256": "eee947749a9a9108ff0d6a9db545db0106c1f3c1fd4bc1fe0d682d7557961868"
+      },
+      {
+        "path": "benevolence_route.receipt.json",
+        "size": 81799,
+        "sha256": "298c3c29616e9f21d6128e5a08b46dd04e5e4087c44dedf85b7659b532c1f61e"
+      },
+      {
+        "path": "cg_belonging.receipt.json",
+        "size": 80790,
+        "sha256": "087be0464ab14cba7b40625b664bca015c421a415b59628b999341e1df8aed30"
+      },
+      {
+        "path": "cicd_mining.receipt.json",
+        "size": 81829,
+        "sha256": "f15856a2b32b5baad0633ec70a7b0214c56d7d0b8d007a38ac6691d585121d38"
+      },
+      {
+        "path": "customer_journey.receipt.json",
+        "size": 83319,
+        "sha256": "519199d7e815f73410143accf94f35c036c9054e57aa64168630010363d8964c"
+      },
+      {
+        "path": "ecommerce_nba.receipt.json",
+        "size": 81863,
+        "sha256": "5fd1db99fd7ee8d26a7e96ea2c59d836562daa72d9d910f5f23b6259e05803ec"
+      },
+      {
+        "path": "finance_audit.receipt.json",
+        "size": 81863,
+        "sha256": "2c61ef0d43b1648295272b76801a276c171a4de049ffd814d690c8945592f548"
+      },
+      {
+        "path": "healthcare_protocol.receipt.json",
+        "size": 82845,
+        "sha256": "c76a6ae851605258f1e17001366912c4f5aeb7669d468a54a457aea9ad892fce"
+      },
+      {
+        "path": "hft_monitoring.receipt.json",
+        "size": 81610,
+        "sha256": "c30c9526ce6f489498154c657c765c497e9cb2862d2bdc1a50dcce102976512f"
+      },
+      {
+        "path": "kids_safety.receipt.json",
+        "size": 80597,
+        "sha256": "997c46e446d3422f8dafeeeec6cc7f7d2e5c64d89eba55620a261b8922efd156"
+      },
+      {
+        "path": "local_db.json",
+        "size": 53,
+        "sha256": "883f33af50c5fb14cddfc5589cb9747bffe5085eb094c629c2f0932ef1976823"
+      },
+      {
+        "path": "prayer_pipeline.receipt.json",
+        "size": 81853,
+        "sha256": "9856e5234a513cf42a8e037e5fe26a5afc2f238f9fefef14a13dcb0f46d74757"
+      },
+      {
+        "path": "production_line.receipt.json",
+        "size": 83877,
+        "sha256": "cdbe2d6374bb24f03624aa43c3758bafe0da0a07020709ff0b790104da094bb6"
+      },
+      {
+        "path": "sunday_andon.receipt.json",
+        "size": 81010,
+        "sha256": "88880f5e80f71687223c195f7f6e0d9c0ab4018ffe381c8dca170d108ac875d5"
+      },
+      {
+        "path": "supply_chain_port.receipt.json",
+        "size": 82855,
+        "sha256": "9c1e9207d4a1fea59f3a1b6febf1ab06ea0ec57762e8474746f4b090222b2cec"
+      },
+      {
+        "path": "truex_ocel2_forged.json",
+        "size": 5215,
+        "sha256": "18f14ec746b7cffbcf906f0ca683a93e467f3e7ffd2d763ec6366dfb4b9561b9"
+      },
+      {
+        "path": "truex_ocel2_fraudulent.json",
+        "size": 3155,
+        "sha256": "8102c43d0daa74909fd65056d772dce4ebd8abfbbd52369d9e29a3d12f275db2"
+      },
+      {
+        "path": "truex_ocel2_valid.json",
+        "size": 5215,
+        "sha256": "44cc2463534898af033d82612100a7479a57f0a7a4fc60166dc686775ee29e19"
+      },
+      {
+        "path": "truex_replay_fraudulent.md",
+        "size": 927,
+        "sha256": "6effbaf2f61a71cbae5e1fdf3f49afe7fda38d3c6522e118f5a178731055d83a"
+      },
+      {
+        "path": "truex_replay_valid.md",
+        "size": 888,
+        "sha256": "e058e393da380b38d47c6c162ea693da1939d9632baa4a3ce8207477aaec466d"
+      },
+      {
+        "path": "volunteer_serving.receipt.json",
+        "size": 82365,
+        "sha256": "0eebdeb09b9e7a2f58d7b0b36abf5f5adf0f7cd3eebcb9e2f0dda2b95cf06322"
+      }
+    ]
+  },
+  "package_artifact": {
+    "tarball_path": "artifacts/release/npm/wasm4pm-26.10.10.tgz",
+    "tarball_name": "wasm4pm-26.10.10.tgz",
+    "tarball_size": 592471,
+    "tarball_sha1": "f8121c6dd0eb4df524393eabd0cea0a2d60bca97",
+    "tarball_sha256": "0e1b9505546f5a97a731ce3c8182326cf9c4eb705962e9726b0c96e6e636fa6f",
+    "tarball_integrity": "sha512-2KjRP4+r63nhcCqfq+yZQU7UyYc6xpv8Ye8ptW7QQo9NMs8gHtQHnz45W4LO8lBmcbjImBUrGwFqU/u7cJXRHw==",
+    "packed_package_name": "wasm4pm",
+    "packed_package_version": "26.10.10",
+    "wasm_bundle_path": "wasm4pm/pkg/wasm4pm_bg.wasm",
+    "wasm_bundle_size": 7704342,
+    "wasm_bundle_sha256": "2dd1aa8ab4e63daf3df72008b23818354c5d30c06085bf93f4e957823f4d3f8d"
+  },
+  "generated_at": "2026-10-10T21:00:50-07:00",
+  "certificate": {
+    "algorithm": "sha256",
+    "hash": "314445474ba71c5cd29125945f6c808939ff83742e8012e5eddef2bf5f2820d1"
+  }
+}

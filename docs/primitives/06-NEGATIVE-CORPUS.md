@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/06-NEGATIVE-CORPUS.md; source-sha256: 50adc9c5c47bc99cf20fc5862ff9b951eba9cc05169f435ca97a765055ec1126; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/06-NEGATIVE-CORPUS.md; source-sha256: 2e2ab9c403e07955486a3aa8b3427e9d5e86a501af2ed4f4c7c178e7085adba1; reason: path-local documentation retained pending domain-specific supersession -->
 
 # Agent 7 — Negative fixture / sabotage corpus agent
 
@@ -43,7 +43,7 @@ published.
 ```
 fixtures/models/               # PNML and OCEL model fixtures (5 models)
 fixtures/real/                 # Real-data acceptance fixtures (trace-conform-*)
-bench_data/                    # Real XES logs: bpi2020_travel.xes, sepsis.xes (stub),
+bench_data/                    # Real XES logs: bpi2020_domestic_declarations.xes, sepsis.xes (stub),
                                # roadtraffic100traces.xes, ocel20_example.jsonocel
 ```
 

@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/detect_drift.md; source-sha256: b6dbe7a1d8bc23c8c2805a7d3d5df7dae4a59c714e897da20bc3dc4f623c46e4; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/detect_drift.md; source-sha256: 1dfcd7685e08606be18bba2b292893897ef5efd1bb70e2a36466e4dadb396dda; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: detect_drift
 
@@ -28,3 +28,18 @@
 - **Rust Implementation**: `wasm4pm/src/prediction_drift.rs` -> `detect_drift`, `jaccard_distance`
 - **TypeScript dispatch**: `packages/kernel/src/api.ts` -> `runRaw`
 - **Test file**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Evaluation semantics (2026-10-10, commit `0e3d81b38`)
+
+- New export `detect_drift_with_threshold(log_handle, activity_key, window_size, threshold)`
+  exposes the drift cutoff as a parameter. `threshold` is clamped to
+  `[0.0, 1.0]` (both Jaccard and total-variation distances live in that
+  range); the default `detect_drift` export is unchanged and still uses
+  `DEFAULT_DRIFT_THRESHOLD = 0.3`.
+- Rationale: a hard-coded cutoff hides real drift at high settings and masks
+  noise at low settings; lowering the threshold supports high-sensitivity
+  monitoring.
+- Note: the vocabulary (Jaccard) and frequency (total variation) distances can
+  disagree — identical vocabularies with an 80/20 frequency shift score
+  Jaccard 0 but TV 0.8, which exceeds the default threshold. This is an
+  intentional honesty oracle in the test suite, not a bug.

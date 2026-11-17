@@ -23,10 +23,9 @@ impl ScriptSam {
         }
     }
 
-    /// Canonical built-in restaurant script ($RESTAURANT, Schank & Abelson 1977
-    /// Chapter 3): enter, order, eat, pay, leave — with the customer role as the
-    /// single variable filler. SAM carries this script built-in, so an empty
-    /// `input.rules` triggers it.
+    /// Canonical built-in restaurant script ($RESTAURANT, Schank & Abelson
+    /// 1977 Chapter 3): enter, order, eat, pay, leave — with the customer
+    /// role as the single variable filler.
     fn builtin_restaurant_script() -> crate::breeds::Rule {
         crate::breeds::Rule {
             id: "restaurant_script".to_string(),
@@ -40,6 +39,31 @@ impl ScriptSam {
             conclusion: "restaurant".to_string(),
             certainty: 1.0,
         }
+    }
+
+    /// Canonical built-in airport script: checkin, security, board, fly —
+    /// with the passenger role as the single variable filler. SAM carries
+    /// both travel and dining scripts in its script inventory.
+    fn builtin_airport_script() -> crate::breeds::Rule {
+        crate::breeds::Rule {
+            id: "airport_script".to_string(),
+            premise: vec![
+                "checkin($passenger)".to_string(),
+                "security($passenger)".to_string(),
+                "board($passenger)".to_string(),
+                "fly($passenger)".to_string(),
+            ],
+            conclusion: "airport".to_string(),
+            certainty: 1.0,
+        }
+    }
+
+    /// The built-in script inventory, in deterministic evaluation order.
+    fn builtin_scripts() -> Vec<crate::breeds::Rule> {
+        vec![
+            Self::builtin_airport_script(),
+            Self::builtin_restaurant_script(),
+        ]
     }
 
     /// Normalize a fact into an observed scene instance `scene(filler)`.
@@ -132,7 +156,7 @@ impl CognitionBreed for ScriptSam {
                 "no observations to align (need 'observation' or 'sam:event:N' facts)".to_string(),
             );
         }
-        // Scripts come either from input.rules or the built-in restaurant script.
+        // Scripts come either from input.rules or the built-in script inventory.
         Ok(())
     }
 
@@ -146,40 +170,28 @@ impl CognitionBreed for ScriptSam {
             .filter_map(Self::observation_from_fact)
             .collect();
 
-        // SAM carries the restaurant script built-in: if no scripts are
-        // supplied in input.rules, fall back to the canonical inventory.
+        if observations.is_empty() {
+            return Err(BreedError {
+                breed: self.id(),
+                message: "no observations to align".to_string(),
+            });
+        }
+
+        // SAM carries a script inventory built-in: if no scripts are supplied
+        // in input.rules, fall back to the canonical inventory (airport,
+        // restaurant). Otherwise the supplied scripts ARE the inventory.
         let scripts: Cow<'_, [crate::breeds::Rule]> = if input.rules.is_empty() {
-            Cow::Owned(vec![Self::builtin_restaurant_script()])
+            Cow::Owned(Self::builtin_scripts())
         } else {
             Cow::Borrowed(&input.rules)
         };
 
-        if observations.is_empty() {
-            return Ok(BreedOutput {
-                breed: self.id(),
-                candidates: input.candidates.clone(),
-                facts: vec![],
-                selected: None,
-                explanation: "No observations to align.".to_string(),
-                inference_trace: trace,
-                ocel_log: None,
-                retained_cases: vec![],
-            });
-        }
-
-        let mut best_script = None;
-        let mut best_alignment = None;
-        let mut best_bindings = BTreeMap::new();
-
+        // Script selection: evaluate every candidate script against the
+        // observation sequence and keep those where ALL observations align
+        // (in order, with gaps allowed forward). Overlap = matched events.
+        let mut best: Option<(usize, &crate::breeds::Rule, Vec<usize>, BTreeMap<String, String>)> =
+            None;
         for script_rule in scripts.as_ref() {
-            trace.push(TraceStep {
-                step: trace.len(),
-                kind: "script-selection".to_string(),
-                detail: format!("Evaluating script: {}", script_rule.conclusion),
-                depth: 0,
-                objects: vec![("script".to_string(), script_rule.conclusion.clone())],
-            });
-
             let script = &script_rule.premise;
             let mut bindings = BTreeMap::new();
             let mut alignment = Vec::new();
@@ -204,108 +216,143 @@ impl CognitionBreed for ScriptSam {
                 }
             }
 
-            if possible {
-                trace.push(TraceStep {
-                    step: trace.len(),
-                    kind: "alignment-success".to_string(),
-                    detail: format!(
-                        "Aligned script {} with {} matches",
-                        script_rule.conclusion,
-                        alignment.len()
-                    ),
-                    depth: 0,
-                    objects: vec![("script".to_string(), script_rule.conclusion.clone())],
-                });
-
-                if best_alignment
-                    .as_ref()
-                    .map_or(true, |a: &Vec<usize>| alignment.len() > a.len())
-                {
-                    best_script = Some(script_rule);
-                    best_alignment = Some(alignment);
-                    best_bindings = bindings;
-                }
-            }
-        }
-
-        if let (Some(script_rule), Some(alignment)) = (best_script, best_alignment) {
-            let min_idx = alignment[0];
-            let max_idx = alignment[alignment.len() - 1];
-
             trace.push(TraceStep {
                 step: trace.len(),
-                kind: "inference-bounds".to_string(),
-                detail: format!("Inference bounds: [{}, {}]", min_idx, max_idx),
+                kind: "select-script".to_string(),
+                detail: format!(
+                    "Selected script '{}' (overlap {}/{} events)",
+                    script_rule.conclusion,
+                    if possible {
+                        observations.len()
+                    } else {
+                        alignment.len()
+                    },
+                    observations.len()
+                ),
                 depth: 0,
-                objects: vec![],
+                objects: vec![("script".to_string(), script_rule.conclusion.clone())],
             });
 
-            // Surface the bound role filler (e.g. the customer = john). The
-            // single script variable maps to the customer role in $RESTAURANT.
-            if let Some(filler) = best_bindings.get("$customer") {
-                inferred_facts.push(Fact {
-                    key: "sam:role:customer".to_string(),
-                    value: filler.clone(),
-                });
-                trace.push(TraceStep {
-                    step: trace.len(),
-                    kind: "role-binding".to_string(),
-                    detail: format!("Bound customer role to {}", filler),
-                    depth: 0,
-                    objects: vec![("filler".to_string(), filler.clone())],
-                });
-            }
-
-            for i in min_idx..=max_idx {
-                if !alignment.contains(&i) {
-                    let inferred_scene_pattern = &script_rule.premise[i];
-                    let inferred_scene =
-                        Self::apply_bindings(inferred_scene_pattern, &best_bindings);
-                    let (scene_name, scene_args) = Self::parse_scene(&inferred_scene);
-                    let filler = scene_args.first().cloned().unwrap_or_default();
-
-                    trace.push(TraceStep {
-                        step: trace.len(),
-                        kind: "gap-inference".to_string(),
-                        detail: format!(
-                            "Inferred scene: {} ({}={})",
-                            inferred_scene, scene_name, filler
-                        ),
-                        depth: 0,
-                        objects: vec![("scene".to_string(), inferred_scene.clone())],
-                    });
-
-                    // Key the inferred scene by its derived scene token under the
-                    // sam:inferred: namespace, with the bound role filler as value.
-                    inferred_facts.push(Fact {
-                        key: format!("sam:inferred:{}", scene_name),
-                        value: filler,
-                    });
+            if possible {
+                let better = match &best {
+                    None => true,
+                    Some((n, _, _, _)) => alignment.len() > *n,
+                };
+                if better {
+                    best = Some((alignment.len(), script_rule, alignment, bindings));
                 }
             }
         }
 
-        // inferred_count is the number of inferred (gap) scenes, excluding the
-        // role-binding fact.
-        let inferred_count = inferred_facts
-            .iter()
-            .filter(|f| f.key.starts_with("sam:inferred:"))
-            .count();
-
-        let explanation = if let Some(s) = best_script {
-            format!(
-                "Successfully aligned to script '{}' and inferred {} missing scenes.",
-                s.conclusion, inferred_count
-            )
-        } else {
-            "Could not align observations to any known script.".to_string()
+        let (_, script_rule, alignment, best_bindings) = match best {
+            Some(b) => b,
+            None => {
+                return Err(BreedError {
+                    breed: self.id(),
+                    message: format!(
+                        "could not align observations to any known script (tried {})",
+                        scripts.len()
+                    ),
+                });
+            }
         };
+
+        let script = &script_rule.premise;
+
+        // Alignment surface: one step per matched observation.
+        for (obs, &scene_idx) in observations.iter().zip(alignment.iter()) {
+            let (scene_name, _) = Self::parse_scene(obs);
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "align-event".to_string(),
+                detail: format!(
+                    "'{}' -> scene {} of '{}'",
+                    scene_name, scene_idx, script_rule.conclusion
+                ),
+                depth: 0,
+                objects: vec![("script".to_string(), script_rule.conclusion.clone())],
+            });
+        }
+
+        // Role bindings are script-driven: each `$role` variable bound by the
+        // alignment becomes a bind-role step and a sam:role:<role> fact.
+        let mut role_count = 0usize;
+        for (role_var, filler) in &best_bindings {
+            let role = role_var.trim_start_matches('$').to_string();
+            inferred_facts.push(Fact {
+                key: format!("sam:role:{}", role),
+                value: filler.clone(),
+            });
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "bind-role".to_string(),
+                detail: format!("{} := {}", role, filler),
+                depth: 0,
+                objects: vec![("filler".to_string(), filler.clone())],
+            });
+            role_count += 1;
+        }
+
+        // Bounded gap inference: only scenes BETWEEN the first and last
+        // aligned scene indices are inferred (A8 counter).
+        let min_idx = alignment[0];
+        let max_idx = alignment[alignment.len() - 1];
+        let mut gap_count = 0usize;
+        for i in min_idx..=max_idx {
+            if !alignment.contains(&i) {
+                let inferred_scene_pattern = &script[i];
+                let inferred_scene = Self::apply_bindings(inferred_scene_pattern, &best_bindings);
+                let (scene_name, scene_args) = Self::parse_scene(&inferred_scene);
+                let filler = scene_args.first().cloned().unwrap_or_default();
+
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "infer-gap".to_string(),
+                    detail: format!(
+                        "scene '{}' inferred (filler: {})",
+                        scene_name, filler
+                    ),
+                    depth: 0,
+                    objects: vec![("scene".to_string(), inferred_scene.clone())],
+                });
+
+                // Key the inferred scene by its derived scene token under the
+                // sam:inferred: namespace, with the bound role filler as value.
+                inferred_facts.push(Fact {
+                    key: format!("sam:inferred:{}", scene_name),
+                    value: filler,
+                });
+                gap_count += 1;
+            }
+        }
+
+        // Summary step (always last): the aligned/gap/role counts.
+        let summary_detail = format!(
+            "script '{}': {} aligned, {} inferred, {} role binding(s)",
+            script_rule.conclusion, alignment.len(), gap_count, role_count
+        );
+        trace.push(TraceStep {
+            step: trace.len(),
+            kind: "summary".to_string(),
+            detail: summary_detail,
+            depth: 0,
+            objects: vec![],
+        });
+
+        let explanation = format!(
+            "Aligned {} observation(s) to script '{}' and inferred {} missing scene(s) \
+             with {} role binding(s).",
+            alignment.len(),
+            script_rule.conclusion,
+            gap_count,
+            role_count
+        );
 
         Ok(BreedOutput {
             breed: self.id(),
             candidates: input.candidates.clone(),
             facts: inferred_facts,
-            selected: best_script.map(|s| s.conclusion.clone()),
+            selected: Some(script_rule.conclusion.clone()),
             explanation,
             inference_trace: trace,
             ocel_log: None,
@@ -317,6 +364,136 @@ impl CognitionBreed for ScriptSam {
         if output.inference_trace.is_empty() {
             return Err("empty inference trace".to_string());
         }
+        let has_select = output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "select-script");
+        let has_summary = output.inference_trace.iter().any(|t| t.kind == "summary");
+        if !has_select || !has_summary {
+            return Err("trace must include select-script and summary steps".to_string());
+        }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_restaurant_gap_inference() {
+        let input = BreedInput {
+            intent: "".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "sam:event:1".into(),
+                    value: "enter:john".into(),
+                },
+                Fact {
+                    key: "sam:event:2".into(),
+                    value: "order:john".into(),
+                },
+                Fact {
+                    key: "sam:event:3".into(),
+                    value: "pay:john".into(),
+                },
+                Fact {
+                    key: "sam:event:4".into(),
+                    value: "leave:john".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = ScriptSam.run(&input).unwrap();
+        assert_eq!(out.selected.as_deref(), Some("restaurant"));
+        let eat = out
+            .facts
+            .iter()
+            .find(|f| f.key == "sam:inferred:eat")
+            .expect("eat gap must be inferred");
+        assert_eq!(eat.value, "john");
+        let role = out
+            .facts
+            .iter()
+            .find(|f| f.key == "sam:role:customer")
+            .expect("customer role must be bound");
+        assert_eq!(role.value, "john");
+        assert_eq!(
+            out.inference_trace.last().map(|t| t.kind.as_str()),
+            Some("summary")
+        );
+    }
+
+    #[test]
+    fn test_airport_builtin_and_gaps() {
+        let input = BreedInput {
+            intent: "".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "sam:event:1".into(),
+                    value: "checkin: pia".into(),
+                },
+                Fact {
+                    key: "sam:event:2".into(),
+                    value: "fly: pia".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = ScriptSam.run(&input).unwrap();
+        assert_eq!(out.selected.as_deref(), Some("airport"));
+        for scene in ["security", "board"] {
+            assert!(
+                out.facts
+                    .iter()
+                    .any(|f| f.key == format!("sam:inferred:{}", scene)
+                        && f.value == "pia"),
+                "gap '{}' must be inferred for pia",
+                scene
+            );
+        }
+        assert!(out
+            .facts
+            .iter()
+            .any(|f| f.key == "sam:role:passenger" && f.value == "pia"));
+    }
+
+    #[test]
+    fn test_refusal_no_alignable_script() {
+        let input = BreedInput {
+            intent: "".into(),
+            candidates: vec![],
+            facts: vec![Fact {
+                key: "sam:event:1".into(),
+                value: "levitate:zorp".into(),
+            }],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(ScriptSam.run(&input).is_err());
+    }
+
+    #[test]
+    fn test_refusal_no_observations() {
+        let input = BreedInput {
+            intent: "".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(ScriptSam.preconditions(&input).is_err());
     }
 }

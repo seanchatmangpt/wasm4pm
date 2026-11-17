@@ -34,6 +34,7 @@ mod ocel_m2m_tests {
         OCEL {
             event_types: vec!["Register".to_string()],
             object_types: vec!["order".to_string(), "item".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![OCELEvent {
                 id: "e1".to_string(),
                 event_type: "Register".to_string(),
@@ -83,6 +84,7 @@ mod ocel_m2m_tests {
         OCEL {
             event_types: vec!["Pay".to_string(), "Ship".to_string()],
             object_types: vec!["order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "ev_pay".to_string(),
@@ -211,6 +213,7 @@ mod ocel_m2m_tests {
         let ocel = OCEL {
             event_types: vec!["start".to_string(), "complete".to_string()],
             object_types: vec!["order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "ev_start".to_string(),
@@ -264,6 +267,7 @@ mod ocel_m2m_tests {
         let ocel = OCEL {
             event_types: vec!["start".to_string(), "complete".to_string()],
             object_types: vec!["order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 // "start" event arrives FIRST in the log but has a LATER timestamp
                 // — simulating an invalid lifecycle recording
@@ -321,6 +325,7 @@ mod ocel_m2m_tests {
                 "Close".to_string(),
             ],
             object_types: vec!["case".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e_create".to_string(),
@@ -388,6 +393,7 @@ mod ocel_m2m_tests {
                 "D".to_string(),
             ],
             object_types: vec!["process".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 // Object p1: trace A → B → D
                 // Use object_ids only to avoid double-counting in all_object_ids()

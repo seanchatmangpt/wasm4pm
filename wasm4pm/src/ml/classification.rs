@@ -1,5 +1,6 @@
 //! Nanosecond Classification Family — branchless k-NN for process mining.
 
+use crate::ml::utils::ensure_finite_2d;
 use crate::models::{parse_timestamp_ms, AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
@@ -79,6 +80,8 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
             "accuracy": 0.0
         }));
     }
+
+    ensure_finite_2d(&features).map_err(|e| crate::error::js_val(&e))?;
 
     let train_size = (features.len() as f64 * TRAIN_SPLIT_RATIO) as usize;
     // Mixed magnitudes (seconds vs counts) — min-max normalize, fit on train only.
@@ -257,6 +260,11 @@ pub struct KnnMetrics {
 /// Compute full classification metrics (accuracy, macro precision/recall/F1)
 /// from a single pass of k-NN prediction. Mirrors the prediction logic of
 /// [`knn_internal`] so the `accuracy` field is identical.
+///
+/// # Caller contract (hot path)
+/// Performs NO finiteness validation — callers must pre-screen with
+/// [`ensure_finite_2d`](crate::ml::utils::ensure_finite_2d); NaN distances
+/// silently corrupt argmin comparisons.
 #[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
 pub fn knn_internal_metrics<const D: usize>(
     train_x: &[[f64; D]],
@@ -362,6 +370,11 @@ pub fn knn_internal_metrics<const D: usize>(
 /// - Fixed-size stack array for neighbor list to avoid heap allocation.
 /// - Branchless insertion logic for pipeline efficiency.
 /// - Zero-copy sweep support for AutoML.
+///
+/// # Caller contract (hot path)
+/// Performs NO finiteness validation — callers must pre-screen with
+/// [`ensure_finite_2d`](crate::ml::utils::ensure_finite_2d); NaN distances
+/// silently corrupt the branchless argmin insertion.
 #[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
 pub fn knn_internal<const D: usize>(
     train_x: &[[f64; D]],

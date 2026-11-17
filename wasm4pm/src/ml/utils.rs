@@ -2,6 +2,64 @@
 
 use crate::cache::OwnedColumnarLog;
 
+/// Validate a 1-D input slice for finiteness. Returns a typed error naming
+/// the first offending index instead of letting NaN/Inf silently poison
+/// every downstream metric.
+///
+/// # Errors
+/// `Err("input contains NaN/Inf at index i")` when any element is non-finite.
+pub fn ensure_finite_1d(data: &[f64]) -> Result<(), String> {
+    for (i, v) in data.iter().enumerate() {
+        if !v.is_finite() {
+            return Err(format!("input contains NaN/Inf at index {}", i));
+        }
+    }
+    Ok(())
+}
+
+/// Validate a 2-D input (row-major) for finiteness. The reported index is the
+/// flat element index (`row * width + col`) of the first offender.
+///
+/// # Errors
+/// `Err("input contains NaN/Inf at index i")` with the flat element index.
+pub fn ensure_finite_2d<const D: usize>(data: &[[f64; D]]) -> Result<(), String> {
+    for (row, r) in data.iter().enumerate() {
+        for (col, v) in r.iter().enumerate() {
+            if !v.is_finite() {
+                let flat = row * D + col;
+                return Err(format!("input contains NaN/Inf at index {}", flat));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ensure_finite_1d_accepts_finite_and_rejects_nan() {
+        assert!(ensure_finite_1d(&[1.0, 2.0, 3.0]).is_ok());
+        let err = ensure_finite_1d(&[1.0, f64::NAN, 3.0]).unwrap_err();
+        assert_eq!(err, "input contains NaN/Inf at index 1");
+        assert_eq!(
+            ensure_finite_1d(&[f64::NEG_INFINITY]).unwrap_err(),
+            "input contains NaN/Inf at index 0"
+        );
+    }
+
+    #[test]
+    fn ensure_finite_2d_reports_flat_index() {
+        let data = vec![[0.0, 1.0], [2.0, f64::INFINITY]];
+        assert_eq!(
+            ensure_finite_2d(&data).unwrap_err(),
+            "input contains NaN/Inf at index 3"
+        );
+        assert!(ensure_finite_2d::<2>(&[[0.0, 1.0], [2.0, 3.0]]).is_ok());
+    }
+}
+
 /// Extract trace lengths as f64 for regression/PCA.
 pub fn extract_trace_lengths(col: &OwnedColumnarLog) -> Vec<f64> {
     let mut lengths = Vec::with_capacity(col.trace_offsets.len() - 1);

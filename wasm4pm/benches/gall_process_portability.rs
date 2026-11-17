@@ -46,7 +46,7 @@ fn bench_lowering(c: &mut Criterion) {
     for width in [3usize, 5, 7] {
         let subject = model(width);
         g.bench_with_input(BenchmarkId::from_parameter(width), &subject, |b, s| {
-            b.iter(|| lower_powl(black_box(s)).unwrap())
+            b.iter(|| black_box(lower_powl(black_box(s)).unwrap()))
         });
     }
     g.finish();
@@ -59,7 +59,7 @@ fn bench_lowering(c: &mut Criterion) {
         g.bench_with_input(
             BenchmarkId::new(format!("w{width}"), bound),
             &subject,
-            |b, s| b.iter(|| powl_reference_language(black_box(s), bound).unwrap()),
+            |b, s| b.iter(|| black_box(powl_reference_language(black_box(s), bound).unwrap())),
         );
     }
     g.finish();
@@ -159,7 +159,7 @@ fn bench_ocpq(c: &mut Criterion) {
         )
         .unwrap();
         g.bench_with_input(BenchmarkId::from_parameter(n), &ocel, |b, o| {
-            b.iter(|| gall017_reference_evaluate(black_box(o), &query))
+            b.iter(|| black_box(gall017_reference_evaluate(black_box(o), &query)))
         });
     }
     g.finish();

@@ -51,7 +51,7 @@ jobs:
           echo "subject_sha=$EXPECTED_SHA"
 
       - name: Install repository-pinned Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # nightly-2026-04-15
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy

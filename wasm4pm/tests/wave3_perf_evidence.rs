@@ -11,7 +11,7 @@
 //!
 //! Datasets (real, public-domain):
 //!   sepsis.xes         — 1,050 cases, ~15K events  (ICU patient flow)
-//!   bpi2020_travel.xes — 7,065 cases, ~87K events  (travel permits)
+//!   bpi2020_domestic_declarations.xes — 7,065 cases, ~87K events  (travel permits)
 //!   roadtraffic100traces.xes — 100 cases (road traffic fines)
 //!
 //! Each measurement is the median of N_REPS repeated runs to reduce OS noise.
@@ -164,10 +164,10 @@ fn load_datasets() -> Vec<Dataset> {
     }
 
     let bpi2020_paths = [
-        "../bench_data/bpi2020_travel.xes", // from wasm4pm/ package dir
-        "bench_data/bpi2020_travel.xes",
-        "../../bench_data/bpi2020_travel.xes",
-        "~/chatmangpt/wasm4pm/bench_data/bpi2020_travel.xes",
+        "../bench_data/bpi2020_domestic_declarations.xes", // from wasm4pm/ package dir
+        "bench_data/bpi2020_domestic_declarations.xes",
+        "../../bench_data/bpi2020_domestic_declarations.xes",
+        "~/chatmangpt/wasm4pm/bench_data/bpi2020_domestic_declarations.xes",
     ];
     if let Some(log) = resolve_xes(&bpi2020_paths) {
         out.push(Dataset {
@@ -175,7 +175,7 @@ fn load_datasets() -> Vec<Dataset> {
             log,
         });
     } else {
-        eprintln!("WARN: bpi2020_travel.xes not found — skipping");
+        eprintln!("WARN: bpi2020_domestic_declarations.xes not found — skipping");
     }
 
     out
@@ -243,7 +243,7 @@ fn wave3_performance_table() {
     let datasets = load_datasets();
 
     if datasets.is_empty() {
-        eprintln!("SKIP: no datasets found — place sepsis.xes / bpi2020_travel.xes in bench_data/");
+        eprintln!("SKIP: no datasets found — place sepsis.xes / bpi2020_domestic_declarations.xes in bench_data/");
         return;
     }
 

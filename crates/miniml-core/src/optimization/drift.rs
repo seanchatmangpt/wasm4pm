@@ -257,13 +257,24 @@ pub fn detect_statistical_drift(
 
 /// Page-Hinkley test for abrupt change detection
 ///
-/// Detects abrupt changes in the mean of a sequence by tracking
-/// the cumulative sum of differences.
+/// Canonical Page-Hinkley (Mouss et al.; Gama `page_hinkley` form), detecting
+/// increases in the mean of the sequence:
+///
+/// * Running mean: `m_t = m_{t-1} + (x_t / t - m_{t-1})` (E_t = t, the count of
+///   samples seen so far).
+/// * Cumulative deviation: `PH_t = PH_{t-1} + (m_t - x_t - delta)`
+/// * Running maximum: `M_T = max(M_T, PH_t)`
+/// * Alarm when `M_T - PH_t > lambda` (the `threshold` argument).
+/// * On alarm: reset `PH_t` to 0 and `M_T` to 0 (the running max restarts so
+///   the next shift can be detected independently).
 ///
 /// # Arguments
 /// * `values` - Time series values
-/// * `threshold` - Detection threshold (default: 50.0)
-/// * `alpha` - Forgetting factor (0-1, default: 0.99)
+/// * `threshold` - `lambda`, the alarm threshold on the cumulative deviation
+///   (higher = fewer/more conservative alarms; default: 50.0)
+/// * `alpha` - `delta`, the magnitude allowance subtracted at each step
+///   (drift tolerance; higher = fewer false alarms on noisy stationary data;
+///   typical range 0.0-0.5)
 ///
 /// # Returns
 /// Indices where changes were detected
@@ -272,20 +283,24 @@ pub fn page_hinkley_test(values: &[f64], threshold: f64, alpha: f64) -> Vec<usiz
         return vec![];
     }
 
+    let delta = alpha;
     let mut change_points = Vec::new();
-    let mut cumulative_sum: f64 = 0.0;
-    let mut min_cumulative_sum: f64 = 0.0;
+    let mut running_mean: f64 = 0.0;
+    let mut ph: f64 = 0.0;
+    let mut max_ph: f64 = 0.0;
 
     for (i, &val) in values.iter().enumerate() {
-        cumulative_sum = alpha * cumulative_sum + val - values[0];
-        min_cumulative_sum = min_cumulative_sum.min(cumulative_sum);
+        let t = (i + 1) as f64;
+        running_mean += (val - running_mean) / t;
 
-        let pt = cumulative_sum - min_cumulative_sum;
-        if pt > threshold {
+        ph += running_mean - val - delta;
+        max_ph = max_ph.max(ph);
+
+        if max_ph - ph > threshold {
             change_points.push(i);
-            // Reset after detection
-            cumulative_sum = 0.0;
-            min_cumulative_sum = 0.0;
+            // Reset: PH restarts at 0, M_T restarts as the running max.
+            ph = 0.0;
+            max_ph = 0.0;
         }
     }
 
@@ -378,16 +393,69 @@ mod tests {
 
     #[test]
     fn test_page_hinkley_test() {
+        // Canonical PH: alpha is the delta magnitude allowance. With delta=0
+        // the stationary constant segment cannot drift PH, so the first alarm
+        // must land right after the mean increase at index 20.
         let values: Vec<f64> = (0..20).map(|_| 1.0).collect();
         let shift: Vec<f64> = (20..40).map(|_| 10.0).collect();
         let mut data = values;
         data.extend(shift);
 
-        let changes = page_hinkley_test(&data, 5.0, 0.99);
+        let changes = page_hinkley_test(&data, 5.0, 0.0);
 
         // Should detect change around index 20
         assert!(!changes.is_empty());
         assert!(changes[0] >= 18 && changes[0] <= 25);
+    }
+
+    #[test]
+    fn test_page_hinkley_mean_shift_noisy() {
+        // 300 samples of stationary noise at 0, then a +3 mean shift.
+        // Seeded LCG for determinism (Chicago: real data, no mocks).
+        let mut rng = 0x9E3779B97F4A7C15u64;
+        let mut next_unit = move || {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            // uniform-ish in [-1, 1]
+            ((rng >> 11) as f64 / (1u64 << 53) as f64) * 2.0 - 1.0
+        };
+
+        let mut data: Vec<f64> = (0..300).map(|_| next_unit()).collect();
+        data.extend((0..300).map(|_| 3.0 + next_unit()));
+
+        let changes = page_hinkley_test(&data, 100.0, 0.1);
+
+        assert!(
+            !changes.is_empty(),
+            "expected an alarm after the +3 mean shift"
+        );
+        assert!(
+            changes[0] >= 300 && changes[0] < 400,
+            "alarm should fire shortly after the shift (got index {})",
+            changes[0]
+        );
+    }
+
+    #[test]
+    fn test_page_hinkley_stationary_no_alarm() {
+        // Pure stationary seeded noise: no alarm with the same parameters.
+        let mut rng = 0xDEADBEEFCAFEBABEu64;
+        let mut next_unit = move || {
+            rng ^= rng << 13;
+            rng ^= rng >> 7;
+            rng ^= rng << 17;
+            ((rng >> 11) as f64 / (1u64 << 53) as f64) * 2.0 - 1.0
+        };
+
+        let data: Vec<f64> = (0..600).map(|_| next_unit()).collect();
+        let changes = page_hinkley_test(&data, 100.0, 0.1);
+
+        assert!(
+            changes.is_empty(),
+            "stationary noise must not alarm (got {:?})",
+            changes
+        );
     }
 
     #[test]

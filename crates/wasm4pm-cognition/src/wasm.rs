@@ -30,7 +30,71 @@ fn js_val(s: &str) -> JsValue {
 }
 
 fn wasm_err(msg: &str) -> JsValue {
-    js_val(&format!("{{\"error\":\"{}\"}}", msg.replace('"', "\\\"")))
+    // serde_json escapes quotes, backslashes and control chars — the
+    // hand-rolled quote-only escaping corrupted output on such input.
+    js_val(&serde_json::json!({ "error": msg }).to_string())
+}
+
+/// Forbidden evidence markers for adversarial artifact detection.
+///
+/// Mirrors `wasm4pm/src/receipt.rs` `FORBIDDEN_EVIDENCE_MARKERS` (cognition is
+/// a separate crate with no dependency on the wasm4pm kernel). `unknown` is
+/// deliberately dropped: legitimate payloads carry `"status": "unknown"`.
+const FORBIDDEN_VALUE_MARKERS: &[&str] = &[
+    "placeholder",
+    "hash_placeholder",
+    "receipt_uuid_placeholder",
+    "stub",
+    "mock",
+    "fake",
+    "dummy",
+    "simulated",
+    "synthetic",
+    "test-only",
+    "test_only",
+    "not-real",
+    "not_real",
+    "default_role",
+    "default_purpose",
+    "artifact_needed.md",
+    "todo",
+    "fixme",
+    "changeme",
+    "tbd",
+    "lorem",
+    "example-only",
+    "simulation",
+];
+
+/// Recursively scan string VALUES (never keys, never raw text) of a JSON value
+/// for forbidden evidence markers.
+fn scan_forbidden_values(value: &serde_json::Value) -> Vec<String> {
+    use serde_json::Value;
+    let mut hits = Vec::new();
+    match value {
+        Value::String(s) => {
+            let lower = s.to_lowercase();
+            for marker in FORBIDDEN_VALUE_MARKERS {
+                if lower.contains(marker) {
+                    hits.push(s.clone());
+                    break;
+                }
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                hits.extend(scan_forbidden_values(item));
+            }
+        }
+        Value::Object(map) => {
+            // Keys are never scanned — only values.
+            for (_k, v) in map {
+                hits.extend(scan_forbidden_values(v));
+            }
+        }
+        _ => {}
+    }
+    hits
 }
 
 fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
@@ -291,12 +355,15 @@ pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
         }
     }
 
-    if result_json.to_lowercase().contains("fake") {
+    // Adversarial gate: scan parsed string VALUES for forbidden markers
+    // (previously a raw-text contains("fake") — flagged keys and escaped text,
+    // and missed everything else).
+    for hit in scan_forbidden_values(&result_value) {
         findings.push(crate::autosystems::findings::Finding {
             code: "FAKE_ARTEFACT_DETECTED".to_string(),
             severity: crate::autosystems::findings::Severity::Fatal,
-            message: "Result contains 'fake'".to_string(),
-            evidence: vec!["Input JSON contains the word 'fake'".to_string()],
+            message: format!("Result contains forbidden marker in value: {}", hit),
+            evidence: vec![hit],
         });
     }
 
@@ -427,4 +494,55 @@ pub fn system_verify(target: &str, artifacts_json: &str) -> Result<JsValue, JsVa
         "status": if finding_jsons.is_empty() { "verified" } else { "has_findings" }
     });
     to_js_str(&result)
+}
+
+#[cfg(test)]
+mod wasm_tests {
+    use super::*;
+
+    #[test]
+    fn fake_value_is_flagged() {
+        let hits = scan_forbidden_values(&serde_json::json!({"note": "this is a fake result"}));
+        assert_eq!(hits.len(), 1, "hits: {:?}", hits);
+        assert_eq!(hits[0], "this is a fake result");
+    }
+
+    #[test]
+    fn marker_in_key_only_is_not_flagged() {
+        let hits = scan_forbidden_values(&serde_json::json!({"fake": "legitimate"}));
+        assert!(hits.is_empty(), "key-only marker must not fire: {:?}", hits);
+    }
+
+    #[test]
+    fn unknown_status_is_not_flagged() {
+        let hits = scan_forbidden_values(&serde_json::json!({"status": "unknown"}));
+        assert!(hits.is_empty(), "'unknown' must not fire: {:?}", hits);
+    }
+
+    #[test]
+    fn nested_value_is_flagged() {
+        let hits = scan_forbidden_values(&serde_json::json!({"a": {"b": ["STUB output"]}}));
+        assert_eq!(hits.len(), 1, "hits: {:?}", hits);
+    }
+
+    #[test]
+    fn clean_payload_passes() {
+        let hits = scan_forbidden_values(&serde_json::json!({
+            "status": "ok",
+            "output_hash": "ab12",
+            "gates": {"g1": {"passed": true, "evidence_count": 2}}
+        }));
+        assert!(hits.is_empty(), "clean payload must not fire: {:?}", hits);
+    }
+
+    #[test]
+    fn wasm_err_escaping_is_valid_json() {
+        // Mirrors wasm_err's body — the JsValue boundary itself panics on
+        // native test targets, so assert on the escaping contract directly.
+        let msg = "quote \" backslash \\ newline \n\t tab";
+        let s = serde_json::json!({ "error": msg }).to_string();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&s).expect("wasm_err output must parse as JSON");
+        assert_eq!(parsed["error"], msg, "message must round-trip intact");
+    }
 }

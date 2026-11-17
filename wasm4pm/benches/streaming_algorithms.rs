@@ -6,7 +6,7 @@
 /// loaded from `bench_data/`:
 ///   - sepsis.xes            — ICU patient flow (small)
 ///   - roadtraffic100traces.xes — road-traffic fines (medium)
-///   - bpi2020_travel.xes    — travel permits (large, included only in BENCH_FULL)
+///   - bpi2020_domestic_declarations.xes    — travel permits (large, included only in BENCH_FULL)
 ///
 /// Each dataset is parsed once, stored in the global state, and the resulting
 /// handle is reused across iterations. Throughput is reported in Elements
@@ -16,7 +16,6 @@ use std::path::Path;
 use std::time::Duration;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::simd_streaming_dfg::discover_dfg_simd_handle;
-use wasm4pm::xes_format::validate_and_parse_xes;
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -32,30 +31,20 @@ struct Dataset {
 /// Load the real XES datasets available under `bench_data/`. In fast mode only
 /// the two smaller logs are used; `BENCH_FULL=1` adds the large BPI-2020 log.
 fn load_datasets() -> Vec<Dataset> {
-    let mut specs: Vec<(&str, &str)> = vec![
-        ("sepsis", "bench_data/sepsis.xes"),
-        ("roadtraffic", "bench_data/roadtraffic100traces.xes"),
+    let mut specs: Vec<(&str, &[&str])> = vec![
+        ("sepsis", helpers::SEPSIS_CANDIDATES),
+        ("roadtraffic", helpers::ROADTRAFFIC_CANDIDATES),
     ];
     if !is_fast_mode() {
-        specs.push(("bpi2020_travel", "bench_data/bpi2020_travel.xes"));
+        specs.push((
+            "bpi2020_domestic_declarations",
+            helpers::BPI2020_DECL_CANDIDATES,
+        ));
     }
 
     let mut out = Vec::new();
-    for (label, rel) in specs {
-        let path = Path::new(rel);
-        if !path.exists() {
-            // Skip cleanly if a dataset is absent (e.g. CI without bench_data);
-            // never fabricate a synthetic log — that is a TPS violation.
-            eprintln!(
-                "streaming bench: dataset '{}' missing at {}, skipping",
-                label, rel
-            );
-            continue;
-        }
-        let content = std::fs::read_to_string(path)
-            .unwrap_or_else(|e| panic!("bench: failed to read {}: {}", rel, e));
-        let log = validate_and_parse_xes(&content)
-            .unwrap_or_else(|e| panic!("bench: failed to parse {}: {}", rel, e));
+    for (label, candidates) in specs {
+        let log = helpers::load_real_log_from(candidates);
         let events = log.event_count() as u64;
         assert!(
             events > 0,

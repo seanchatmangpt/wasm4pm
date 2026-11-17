@@ -147,6 +147,8 @@ fn datasets(max_traces: Option<usize>) -> Vec<Dataset> {
     if let Some(d) = load_dataset(
         &[
             "bench_data/roadtraffic100traces.xes",
+            "../bench_data/roadtraffic100traces.xes",
+            "../../bench_data/roadtraffic100traces.xes",
             "data/small-example.xes",
         ],
         "roadtraffic100",
@@ -158,6 +160,8 @@ fn datasets(max_traces: Option<usize>) -> Vec<Dataset> {
     if let Some(d) = load_dataset(
         &[
             "bench_data/sepsis.xes",
+            "../bench_data/sepsis.xes",
+            "../../bench_data/sepsis.xes",
             "data/Sepsis Cases - Event Log.xes",
             "data/RepairExample.xes",
         ],
@@ -169,8 +173,13 @@ fn datasets(max_traces: Option<usize>) -> Vec<Dataset> {
     // In full mode, add the larger BPI-2020 travel log (capped).
     if !is_fast_mode() {
         if let Some(d) = load_dataset(
-            &["bench_data/bpi2020_travel.xes", "data/PermitLog.xes"],
-            "bpi2020_travel",
+            &[
+            "bench_data/bpi2020_domestic_declarations.xes",
+            "../bench_data/bpi2020_domestic_declarations.xes",
+            "../../bench_data/bpi2020_domestic_declarations.xes",
+            "data/PermitLog.xes",
+        ],
+            "bpi2020_domestic_declarations",
             Some(max_traces.unwrap_or(usize::MAX).min(2_000)),
         ) {
             out.push(d);

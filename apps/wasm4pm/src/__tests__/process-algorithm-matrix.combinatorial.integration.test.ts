@@ -80,7 +80,7 @@ const OCEL_ALGORITHMS = ['ocel_dfg_per_type', 'ocel_oc_declare', 'ocel_petri_net
 const EVENT_LOGS = [
   { label: 'small-clean', path: path.resolve(REPO_ROOT, 'bench_data/roadtraffic100traces.xes') },
   { label: 'noisy-healthcare', path: path.resolve(REPO_ROOT, 'bench_data/sepsis.xes') },
-  { label: 'business-travel', path: path.resolve(REPO_ROOT, 'bench_data/bpi2020_travel.xes') },
+  { label: 'business-travel', path: path.resolve(REPO_ROOT, 'bench_data/bpi2020_domestic_declarations.xes') },
 ] as const;
 const OCEL_LOG = path.resolve(REPO_ROOT, 'fixtures/world/ocel-v2.json');
 
@@ -116,7 +116,7 @@ const FULL_SWEEP = process.env.PROCESS_ALGORITHM_FULL_SWEEP === '1';
 
 type Case = { algo: string; logLabel: string; logPath: string };
 
-// Verified live: `compute_trace_similarity_matrix` against `bpi2020_travel.xes`
+// Verified live: `compute_trace_similarity_matrix` against `bpi2020_domestic_declarations.xes`
 // hits a genuine Rust `unreachable!()` WASM panic ({"code":"EXECUTION_ERROR",
 // "message":"unreachable"}) — a real crash bug in that algorithm for this log
 // shape, not a CLI-routing issue and not something fixed as part of this

@@ -17,6 +17,24 @@ use std::collections::BTreeMap;
 /// totals. Memory use is proportional to open concurrent traces × average
 /// trace length, not total log size.
 ///
+/// # Memory contract: `open_traces` is unbounded (by design)
+///
+/// There is deliberately NO cap or LRU eviction on `open_traces`. Bounding it
+/// would change semantics: an evicted case's buffered counts would never fold
+/// into the totals, making results input-order-dependent and breaking the
+/// batch-parity guarantee above. Callers that need a memory bound MUST bound
+/// case concurrency themselves by closing traces (`close_trace`) as cases
+/// complete. Memory is O(open_cases × avg_trace_length) plus the folded
+/// aggregates (O(activities + edges)).
+///
+/// # Reopen semantics
+///
+/// Closing a case and later adding events for the same `case_id` starts a NEW
+/// trace segment: each `close_trace` folds its own segment into the totals
+/// and increments `trace_count` once per segment. A closed/reopened case
+/// therefore contributes multiple traces (and its cross-segment transitions
+/// are not edges). This is the documented contract, not a bug.
+///
 /// # Performance
 ///
 /// - **Per-event overhead**: ~100ns (integer encoding + HashMap insert)
@@ -59,6 +77,12 @@ pub struct StreamingDfgBuilder {
     pub event_count: usize,
     /// open (in-progress) traces: case_id → encoded activity sequence
     /// freed when the trace is closed via `close_trace`
+    ///
+    /// UNBOUNDED by contract: no cap or eviction exists, because evicting an
+    /// open case would silently drop its counts from the totals and break
+    /// batch parity. Memory is O(open cases × avg trace length) — callers
+    /// must bound case concurrency by closing traces. Re-adding events for a
+    /// closed case_id starts a new trace segment (see module docs).
     pub open_traces: BTreeMap<String, Vec<u32>>,
 }
 
@@ -138,6 +162,10 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
         self.event_count += 1;
     }
 
+    /// Close the trace for `case_id`, folding its buffered segment into the
+    /// totals. Returns `false` if the case has no open trace. Note: reopening
+    /// the same case afterwards starts a NEW segment (each close increments
+    /// `trace_count` per segment) — see the module docs on reopen semantics.
     #[inline]
     fn close_trace(&mut self, case_id: &str) -> bool {
         let Some(events) = self.open_traces.remove(case_id) else {

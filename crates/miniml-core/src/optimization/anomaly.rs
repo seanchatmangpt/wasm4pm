@@ -220,77 +220,239 @@ pub fn detect_statistical_outliers(values: &[f64], reference: &[f64], threshold:
         .collect()
 }
 
-/// Isolation forest-like anomaly detection (simplified)
+/// Subsample size (psi) per isolation tree, per Liu et al. 2008.
 ///
-/// Partitions data randomly and measures isolation depth.
-/// Anomalies are isolated faster (shallower trees).
+/// Each tree is built on a random subsample of at most this many reference
+/// points; sub-sampling swamps the effect of outliers in the training data.
+const IF_SUBSAMPLE: usize = 256;
+
+/// Fixed RNG seed — identical inputs always produce a byte-identical score.
+const IF_SEED: u64 = 42;
+
+/// Euler–Mascheroni constant, for the harmonic number H(i) = ln(i) + gamma.
+const EULER_GAMMA: f64 = 0.577_215_664_901_532_9;
+
+/// XORShift64 PRNG (same algorithm as `optimization/genetic.rs`), local to a
+/// call so that scoring is never perturbed by other RNG consumers.
+struct XorShift64 {
+    state: u64,
+}
+
+impl XorShift64 {
+    fn new(seed: u64) -> Self {
+        Self {
+            state: if seed == 0 { 1 } else { seed },
+        }
+    }
+
+    /// Uniform f64 in [0, 1)
+    fn next_f64(&mut self) -> f64 {
+        let mut x = self.state;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        self.state = x;
+        (x >> 11) as f64 / (1u64 << 53) as f64
+    }
+}
+
+/// H(i) = ln(i) + gamma; H(1) defined as 1 (standard convention, gives c(2)=2).
+fn harmonic_number(i: usize) -> f64 {
+    if i <= 1 {
+        1.0
+    } else {
+        (i as f64).ln() + EULER_GAMMA
+    }
+}
+
+/// Average path length of an unsuccessful BST search over n points:
+/// c(n) = 2H(n-1) - 2(n-1)/n. Returns 0 for n <= 1 (no BST exists).
+fn average_path_length(n: usize) -> f64 {
+    match n {
+        0 | 1 => 0.0,
+        2 => 2.0,
+        n => 2.0 * harmonic_number(n - 1) - 2.0 * (n - 1) as f64 / n as f64,
+    }
+}
+
+/// A node of an isolation tree. Leaves record how many training points
+/// reached them, used for the unresolved-node path adjustment.
+enum ITreeNode {
+    Leaf {
+        size: usize,
+    },
+    Split {
+        feature: usize,
+        split_value: f64,
+        left: Box<ITreeNode>,
+        right: Box<ITreeNode>,
+    },
+}
+
+/// Build one isolation tree over `indices` (into `reference`).
+///
+/// Splitting rule (Liu et al. 2008): pick a random feature q, then a random
+/// split value p uniform in (min, max) of feature q over the node's points.
+/// A node whose chosen feature has zero range (constant column, or all points
+/// equal on q) cannot be split and becomes a leaf — the path adjustment in
+/// `path_length` accounts for its remaining points.
+fn build_itree(
+    indices: &[usize],
+    depth: usize,
+    height_limit: usize,
+    rng: &mut XorShift64,
+    reference: &[Vec<f64>],
+) -> ITreeNode {
+    if depth >= height_limit || indices.len() <= 1 {
+        return ITreeNode::Leaf {
+            size: indices.len(),
+        };
+    }
+
+    let feature = (rng.next_f64() * reference[0].len() as f64) as usize;
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    for &i in indices {
+        let v = reference[i].get(feature).copied().unwrap_or(0.0);
+        if v < min {
+            min = v;
+        }
+        if v > max {
+            max = v;
+        }
+    }
+
+    // Zero-range (degenerate) node: cannot partition, treat as leaf.
+    if !(max > min) {
+        return ITreeNode::Leaf {
+            size: indices.len(),
+        };
+    }
+
+    let mut split_value = min + rng.next_f64() * (max - min);
+    if split_value <= min {
+        // Guard against rounding to the boundary; midpoint is strictly inside.
+        split_value = min + 0.5 * (max - min);
+    }
+
+    let left: Vec<usize> = indices
+        .iter()
+        .copied()
+        .filter(|&i| reference[i].get(feature).copied().unwrap_or(0.0) < split_value)
+        .collect();
+    let right: Vec<usize> = indices
+        .iter()
+        .copied()
+        .filter(|&i| reference[i].get(feature).copied().unwrap_or(0.0) >= split_value)
+        .collect();
+
+    ITreeNode::Split {
+        feature,
+        split_value,
+        left: Box::new(build_itree(
+            &left, depth + 1, height_limit, rng, reference,
+        )),
+        right: Box::new(build_itree(
+            &right,
+            depth + 1,
+            height_limit,
+            rng,
+            reference,
+        )),
+    }
+}
+
+/// Adjusted path length h(x) of `point` through `tree`.
+///
+/// At a leaf with n > 1 training points (height-limit cutoff or unsplittable
+/// node), the expected remaining path is added: h = depth + c(n).
+fn path_length(node: &ITreeNode, point: &[f64], depth: usize) -> f64 {
+    match node {
+        ITreeNode::Leaf { size } => {
+            if *size <= 1 {
+                depth as f64
+            } else {
+                depth as f64 + average_path_length(*size)
+            }
+        }
+        ITreeNode::Split {
+            feature,
+            split_value,
+            left,
+            right,
+        } => {
+            let v = point.get(*feature).copied().unwrap_or(0.0);
+            if v < *split_value {
+                path_length(left, point, depth + 1)
+            } else {
+                path_length(right, point, depth + 1)
+            }
+        }
+    }
+}
+
+/// Canonical Isolation Forest anomaly score (Liu, Ting & Zhou, ICDM 2008).
+///
+/// Each of `n_trees` trees is built on a random subsample of
+/// `psi = min(256, reference.len())` points, splitting on a random feature at
+/// a random value in that feature's range, capped at
+/// `min(max_depth, ceil(log2 psi))` height. The score is the canonical
+/// s(x) = 2^(-E(h)/c(psi)), where E(h) is the mean adjusted path length of
+/// `point` over the forest: values near 1 are anomalous (isolated quickly),
+/// values near 0.5 or below are normal.
+///
+/// Fully deterministic: fixed internal seed, no external RNG state.
 ///
 /// # Arguments
 /// * `point` - Point to score (vector of features)
 /// * `reference` - Reference data points
-/// * `n_trees` - Number of random trees (default: 100)
-/// * `max_depth` - Maximum depth per tree (default: 10)
+/// * `n_trees` - Number of isolation trees (default: 100)
+/// * `max_depth` - Upper bound on per-tree height (the effective cap is
+///   `min(max_depth, ceil(log2 psi))`, matching the paper)
 ///
 /// # Returns
-/// Anomaly score (0 = normal, 1 = highly anomalous)
+/// Anomaly score in (0, 1); higher = more anomalous
 pub fn isolation_forest_score(
     point: &[f64],
     reference: &[Vec<f64>],
     n_trees: usize,
     max_depth: usize,
 ) -> f64 {
-    if reference.is_empty() || point.is_empty() {
+    if reference.is_empty() || point.is_empty() || n_trees == 0 {
         return 0.0;
     }
 
-    let n_features = point.len();
-    let mut total_depth = 0.0;
-
-    for _ in 0..n_trees {
-        let mut depth = 0;
-        let mut indices: Vec<usize> = (0..reference.len()).collect();
-
-        for d in 0..max_depth {
-            if indices.is_empty() {
-                break;
-            }
-
-            // Random feature to split on
-            let feature = d % n_features;
-
-            // Random split point from current indices
-            let split_value = if let Some(random_idx) = indices.first() {
-                reference[*random_idx].get(feature).copied().unwrap_or(0.0)
-            } else {
-                0.0
-            };
-
-            // Split indices
-            let left: Vec<usize> = indices
-                .iter()
-                .copied()
-                .filter(|&i| reference[i].get(feature).copied().unwrap_or(0.0) < split_value)
-                .collect();
-
-            let right: Vec<usize> = indices
-                .iter()
-                .copied()
-                .filter(|&i| reference[i].get(feature).copied().unwrap_or(0.0) >= split_value)
-                .collect();
-
-            // Determine which side the point goes to
-            let point_val = point.get(feature).copied().unwrap_or(0.0);
-            indices = if point_val < split_value { left } else { right };
-            depth += 1;
-        }
-
-        total_depth += depth as f64;
+    let psi = IF_SUBSAMPLE.min(reference.len());
+    if psi <= 1 {
+        // A single reference point carries no distribution to isolate from.
+        return 0.0;
     }
 
-    // Normalize to [0, 1]: shallower depth = more anomalous
-    let avg_depth = total_depth / n_trees as f64;
-    let max_d = max_depth as f64;
-    1.0 - (avg_depth / max_d).min(1.0)
+    let height_limit = max_depth.min((psi as f64).log2().ceil() as usize).max(1);
+    let norm = average_path_length(psi);
+    if norm <= 0.0 {
+        return 0.0;
+    }
+
+    let mut rng = XorShift64::new(IF_SEED);
+    let mut total_path = 0.0;
+
+    for _ in 0..n_trees {
+        // Subsample psi points without replacement (partial Fisher–Yates).
+        let mut order: Vec<usize> = (0..reference.len()).collect();
+        let n = order.len();
+        for i in 0..psi.min(n) {
+            let j = i + (rng.next_f64() * (n - i) as f64) as usize;
+            order.swap(i, j);
+        }
+        let sample = &order[..psi.min(n)];
+
+        let tree = build_itree(sample, 0, height_limit, &mut rng, reference);
+        total_path += path_length(&tree, point, 0);
+    }
+
+    let expected_h = total_path / n_trees as f64;
+    (-expected_h / norm).exp2()
 }
 
 #[cfg(test)]
@@ -397,10 +559,47 @@ mod tests {
         let normal_score = isolation_forest_score(&normal, &reference, 200, 10);
         let anomaly_score = isolation_forest_score(&anomaly, &reference, 200, 10);
 
-        // Anomaly should have higher score (more isolated)
-        // Note: Isolation forest has randomness, so we check if anomaly score
-        // is significantly higher than normal score
-        assert!(anomaly_score >= normal_score);
+        // Planted far outlier isolates strictly faster than any inlier.
+        assert!(
+            anomaly_score > normal_score,
+            "anomaly {} must exceed normal {}",
+            anomaly_score,
+            normal_score
+        );
+        assert!((0.0..=1.0).contains(&normal_score));
+        assert!((0.0..=1.0).contains(&anomaly_score));
+    }
+
+    #[test]
+    fn test_isolation_forest_deterministic_double_run() {
+        let reference: Vec<Vec<f64>> = (0..64)
+            .map(|i| vec![i as f64 * 0.25, ((i * 7) % 13) as f64 * 0.5])
+            .collect();
+        let point = vec![3.0, 4.0];
+
+        let a = isolation_forest_score(&point, &reference, 100, 10);
+        let b = isolation_forest_score(&point, &reference, 100, 10);
+
+        // Byte-equal across runs: fixed seed, no external RNG state.
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+
+    #[test]
+    fn test_isolation_forest_constant_column() {
+        // Degenerate case: one constant feature; separation happens on dim 1.
+        let reference: Vec<Vec<f64>> = (0..32)
+            .map(|i| vec![7.0, (((i * 5) % 9) as f64) * 0.1])
+            .collect();
+        let inlier = vec![7.0, 0.4];
+        let outlier = vec![7.0, 50.0];
+
+        let inlier_score = isolation_forest_score(&inlier, &reference, 100, 10);
+        let outlier_score = isolation_forest_score(&outlier, &reference, 100, 10);
+
+        // Old bug scored this 0.0; now constant column is simply unsplittable
+        // and the other feature does the isolating.
+        assert!(outlier_score > inlier_score);
+        assert!(outlier_score > 0.0);
     }
 
     #[test]

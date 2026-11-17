@@ -175,29 +175,29 @@ static INTERNER_CACHE: Lazy<Mutex<FxHashMap<String, Interner>>> =
 
 /// Clear all three cache layers.
 pub fn cache_clear() {
-    PARSE_CACHE.lock().expect("mutex poisoned").clear();
-    COLUMNAR_CACHE.lock().expect("mutex poisoned").clear();
+    PARSE_CACHE.lock().unwrap_or_else(|p| p.into_inner()).clear();
+    COLUMNAR_CACHE.lock().unwrap_or_else(|p| p.into_inner()).clear();
     #[cfg(feature = "streaming_basic")]
     {
-        INTERNER_CACHE.lock().expect("mutex poisoned").clear();
+        INTERNER_CACHE.lock().unwrap_or_else(|p| p.into_inner()).clear();
     }
 }
 
 /// Return aggregate statistics from all three cache layers.
 pub fn cache_stats() -> CacheStats {
-    let parse = PARSE_CACHE.lock().expect("mutex poisoned");
+    let parse = PARSE_CACHE.lock().unwrap_or_else(|p| p.into_inner());
     let (parse_hits, parse_misses, parse_evictions) = parse.stats();
     let parse_entries = parse.len();
 
     let columnar_entries = COLUMNAR_CACHE
         .lock()
-        .unwrap()
+        .unwrap_or_else(|p| p.into_inner())
         .values()
         .map(|inner| inner.len())
         .sum();
 
     #[cfg(feature = "streaming_basic")]
-    let interner_entries = INTERNER_CACHE.lock().expect("mutex poisoned").len();
+    let interner_entries = INTERNER_CACHE.lock().unwrap_or_else(|p| p.into_inner()).len();
     #[cfg(not(feature = "streaming_basic"))]
     let interner_entries = 0;
 
@@ -215,7 +215,7 @@ pub fn cache_stats() -> CacheStats {
 pub fn parse_cache_get(content_hash: &str) -> Option<String> {
     PARSE_CACHE
         .lock()
-        .expect("mutex poisoned")
+        .unwrap_or_else(|p| p.into_inner())
         .get(content_hash)
 }
 
@@ -223,13 +223,13 @@ pub fn parse_cache_get(content_hash: &str) -> Option<String> {
 pub fn parse_cache_insert(content_hash: String, handle: String) {
     PARSE_CACHE
         .lock()
-        .expect("mutex poisoned")
+        .unwrap_or_else(|p| p.into_inner())
         .insert(content_hash, handle);
 }
 
 /// Look up a cached columnar log by `(log_handle, activity_key)`.
 pub fn columnar_cache_get(log_handle: &str, activity_key: &str) -> Option<OwnedColumnarLog> {
-    let outer = COLUMNAR_CACHE.lock().expect("mutex poisoned");
+    let outer = COLUMNAR_CACHE.lock().unwrap_or_else(|p| p.into_inner());
     outer
         .get(log_handle)
         .and_then(|inner| inner.get(activity_key).cloned())
@@ -239,7 +239,7 @@ pub fn columnar_cache_get(log_handle: &str, activity_key: &str) -> Option<OwnedC
 pub fn columnar_cache_insert(log_handle: String, activity_key: String, col: OwnedColumnarLog) {
     COLUMNAR_CACHE
         .lock()
-        .unwrap()
+        .unwrap_or_else(|p| p.into_inner())
         .entry(log_handle)
         .or_default()
         .insert(activity_key, col);
@@ -250,7 +250,7 @@ pub fn columnar_cache_insert(log_handle: String, activity_key: String, col: Owne
 pub fn interner_cache_get(log_handle: &str) -> Option<Interner> {
     INTERNER_CACHE
         .lock()
-        .expect("mutex poisoned")
+        .unwrap_or_else(|p| p.into_inner())
         .get(log_handle)
         .cloned()
 }
@@ -260,7 +260,7 @@ pub fn interner_cache_get(log_handle: &str) -> Option<Interner> {
 pub fn interner_cache_insert(log_handle: String, interner: Interner) {
     INTERNER_CACHE
         .lock()
-        .expect("mutex poisoned")
+        .unwrap_or_else(|p| p.into_inner())
         .insert(log_handle, interner);
 }
 
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn test_cache_clear() {
-        let _guard = CACHE_TEST_LOCK.lock().expect("mutex poisoned");
+        let _guard = CACHE_TEST_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let k = unique_key("tcc");
         let lk = unique_key("tcc-log");
 
@@ -475,7 +475,7 @@ mod tests {
 
     #[test]
     fn test_columnar_cache_roundtrip() {
-        let _guard = CACHE_TEST_LOCK.lock().expect("mutex poisoned");
+        let _guard = CACHE_TEST_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let k = unique_key("ccr");
 
         let col = OwnedColumnarLog {
@@ -503,7 +503,7 @@ mod tests {
     #[cfg(feature = "streaming_basic")]
     #[test]
     fn test_interner_cache_shared() {
-        let _guard = CACHE_TEST_LOCK.lock().expect("mutex poisoned");
+        let _guard = CACHE_TEST_LOCK.lock().unwrap_or_else(|p| p.into_inner());
         let k = unique_key("ics");
 
         let mut interner = Interner::new();

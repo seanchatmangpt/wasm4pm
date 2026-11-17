@@ -16,6 +16,7 @@ mod tests {
                 "Item".to_string(),
                 "Customer".to_string(),
             ],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e1".to_string(),
@@ -138,7 +139,7 @@ mod tests {
             object_refs: vec![],
         };
 
-        let ids: Vec<&str> = event.all_object_ids().collect();
+        let ids: Vec<&str> = event.all_object_ids();
         assert_eq!(ids.len(), 2);
         assert!(ids.contains(&"obj1"));
         assert!(ids.contains(&"obj2"));
@@ -160,7 +161,7 @@ mod tests {
             }],
         };
 
-        let ids: Vec<&str> = event.all_object_ids().collect();
+        let ids: Vec<&str> = event.all_object_ids();
         assert_eq!(ids.len(), 2);
         assert!(ids.contains(&"obj1"));
         assert!(ids.contains(&"obj2"));
@@ -214,6 +215,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],
@@ -259,4 +261,107 @@ mod tests {
             unreachable!("Expected String attribute for 'status'");
         }
     }
+}
+
+#[test]
+fn ocel_object_type_defs_roundtrip_with_attributes() {
+    // OCEL 2.0 objectTypes entries may carry attribute metadata; it must
+    // survive a parse/serialize round trip (previously dropped).
+    let json = r#"{
+        "eventTypes": ["place_order"],
+        "objectTypes": [
+            "Customer",
+            {"name": "Order", "attributes": [{"name": "total", "type": "float"}]}
+        ],
+        "events": [
+            {"id": "e1", "type": "place_order", "time": "2024-01-02T09:00:00Z",
+             "attributes": [], "relationships": [{"objectId": "o1"}]},
+            {"type": "place_order", "time": "2024-01-02T10:00:00Z", "attributes": []},
+            {"type": "place_order", "time": "2024-01-02T10:00:00Z", "attributes": []}
+        ],
+        "objects": [
+            {"id": "o1", "type": "Order", "attributes": [], "relationships": []}
+        ]
+    }"#;
+    let mut ocel: crate::models::OCEL =
+        serde_json::from_str(json).expect("parse with rich objectTypes");
+    // Names are a derived view synced by normalize() (called by the io parse
+    // path via normalize_relations); sync explicitly here.
+    ocel.normalize();
+    assert_eq!(ocel.object_types, vec!["Customer", "Order"]);
+    let defs = ocel.object_type_defs.clone();
+    assert_eq!(defs.len(), 2);
+    assert_eq!(defs[0].name, "Customer");
+    assert!(defs[0].attributes.is_empty());
+    assert_eq!(defs[1].name, "Order");
+    assert_eq!(defs[1].attributes.len(), 1);
+    assert_eq!(defs[1].attributes[0].name, "total");
+
+    // Round trip: re-serializing must preserve the attribute metadata.
+    let out = serde_json::to_string(&ocel).unwrap();
+    assert!(out.contains(r#""name":"Order","attributes":[{"name":"total""#));
+    // Defaults: missing event id -> "", missing qualifier -> "".
+    assert_eq!(ocel.events[1].id, "");
+    assert_eq!(ocel.events[0].object_refs[0].qualifier, "");
+
+    // normalize() syncs the derived name list from the full defs.
+    let mut o2 = crate::models::OCEL::new();
+    o2.object_type_defs = defs.clone();
+    o2.normalize();
+    assert_eq!(o2.object_types, vec!["Customer", "Order"]);
+}
+
+#[test]
+fn all_object_ids_dedup_removes_double_count() {
+    // One event referencing o1 in BOTH the OCEL 1.0 object_ids array and the
+    // OCEL 2.0 relationships array. Pre-dedup, all_object_ids() yielded o1
+    // twice, so:
+    //   - OC-DFG per-type node frequency for an activity attached only to o1
+    //     counted the event twice,
+    //   - flattening-loss event_duplication_count counted the event as
+    //     duplicating o1 (refs == 2 > 1).
+    // Both are artifacts of the double-listing, not of the underlying
+    // behavior; the dedup removes them.
+    use crate::discovery::discover_ocel_dfg_per_type_pure;
+    use crate::models::{OCEL, OCELEvent, OCELEventObjectRef, OCELObject};
+    use crate::ocel_flatten::measure_flattening_loss;
+
+    let mut ocel = OCEL {
+        event_types: vec!["act".to_string()],
+        object_types: vec!["order".to_string()],
+        object_type_defs: Vec::new(),
+        events: Vec::new(),
+        objects: Vec::new(),
+        object_relations: Vec::new(),
+    };
+    ocel.objects.push(OCELObject {
+        id: "o1".to_string(),
+        object_type: "order".to_string(),
+        attributes: Default::default(),
+        changes: Vec::new(),
+        embedded_relations: Vec::new(),
+    });
+    ocel.events.push(OCELEvent {
+        id: "e1".to_string(),
+        event_type: "act".to_string(),
+        timestamp: "2024-01-01T00:00:00Z".to_string(),
+        attributes: Default::default(),
+        object_ids: vec!["o1".to_string()],
+        object_refs: vec![OCELEventObjectRef {
+            object_id: "o1".to_string(),
+            qualifier: String::new(),
+        }],
+    });
+
+    // Dedup: the id appears exactly once.
+    assert_eq!(ocel.events[0].all_object_ids(), vec!["o1"]);
+
+    // Trace 1 — OC-DFG frequency: 1, not 2.
+    let dfgs = discover_ocel_dfg_per_type_pure(&ocel);
+    assert_eq!(dfgs["order"].nodes[0].frequency, 1);
+
+    // Trace 2 — flattening loss: event_duplication_count 0, not 1.
+    let report = measure_flattening_loss(&ocel, "order");
+    let dup = report.event_duplication_count;
+    assert_eq!(dup, 0, "double-listed ref must not count as duplication");
 }

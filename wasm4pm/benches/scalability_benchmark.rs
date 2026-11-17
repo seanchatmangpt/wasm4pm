@@ -350,43 +350,10 @@ fn bench_adversarial_inductive(c: &mut Criterion) {
 // still holds while exercising real activity vocabularies, trace lengths, and
 // timestamp distributions instead of only synthetic input.
 
-/// Candidate paths, resolved relative to the workspace and the crate dir.
-const REAL_LOG_CANDIDATES: &[&str] = &[
-    "bench_data/sepsis.xes",
-    "../bench_data/sepsis.xes",
-    "data/Sepsis Cases - Event Log.xes",
-    "../data/Sepsis Cases - Event Log.xes",
-];
+// Real-log loader now shared: helpers::load_real_log / SEPSIS_CANDIDATES.
 
 /// Trace-count sub-samples for the real-data sweep (capped to the loaded size).
 const REAL_BATCH_SIZES: &[usize] = &[128, 256, 512, 1024];
-
-/// Load the real Sepsis log via the production XES parser. Panics (no silent
-/// skip) if no candidate path yields a non-empty log.
-fn load_real_log() -> EventLog {
-    let log = REAL_LOG_CANDIDATES
-        .iter()
-        .filter_map(|p| {
-            let content = std::fs::read_to_string(p).ok()?;
-            if content.len() < 200 {
-                return None;
-            }
-            let l = validate_and_parse_xes(&content).ok()?;
-            if l.traces.is_empty() {
-                None
-            } else {
-                Some(l)
-            }
-        })
-        .next();
-    log.unwrap_or_else(|| {
-        panic!(
-            "scalability_benchmark: required real log not found at any of {:?}\n\
-             Provide bench_data/sepsis.xes (Sepsis Cases — Event Log, https://data.4tu.nl/).",
-            REAL_LOG_CANDIDATES
-        )
-    })
-}
 
 /// Take the first `n` traces of `src` (deterministic, in file order).
 fn subsample(src: &EventLog, n: usize) -> EventLog {
@@ -398,7 +365,7 @@ fn subsample(src: &EventLog, n: usize) -> EventLog {
 }
 
 fn bench_real_dfg(c: &mut Criterion) {
-    let real = load_real_log();
+    let real = helpers::load_real_log();
     let available = real.traces.len();
     let mut group = c.benchmark_group("scalability/real_sepsis/dfg");
     group.measurement_time(Duration::from_secs(4));
@@ -421,7 +388,7 @@ fn bench_real_dfg(c: &mut Criterion) {
 }
 
 fn bench_real_inductive(c: &mut Criterion) {
-    let real = load_real_log();
+    let real = helpers::load_real_log();
     let available = real.traces.len();
     let mut group = c.benchmark_group("scalability/real_sepsis/inductive_miner");
     group.measurement_time(Duration::from_secs(5));

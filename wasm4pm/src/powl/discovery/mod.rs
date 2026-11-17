@@ -217,52 +217,55 @@ impl CutFilter {
     }
 }
 
-pub fn discover_powl(log: &EventLog, config: &DiscoveryConfig) -> Result<(PowlArena, u32), String> {
+/// Discover a POWL model. Returns `(arena, root, fall_through_fired)` — the
+/// bool is `true` when the result came from an approximate fall-through
+/// (decision-graph or flower) rather than a real cut. Callers MUST surface it.
+pub fn discover_powl(
+    log: &EventLog,
+    config: &DiscoveryConfig,
+) -> Result<(PowlArena, u32, bool), String> {
     let mut arena = PowlArena::new();
-    let root = if config.from_dfg {
-        discover_from_dfg(log, config, &mut arena)?
+    let (root, fall_through_fired) = if config.from_dfg {
+        return Err("from_dfg=true is not supported: DFG-based POWL cut detection is not \
+                    implemented; set from_dfg=false or see powl/discovery/from_dfg.rs \
+                    (follow-up: faithful DFG cuts)"
+            .into());
     } else {
         discover_from_traces(log, config, &mut arena)?
     };
-    Ok((arena, root))
+    Ok((arena, root, fall_through_fired))
 }
 
 fn discover_from_traces(
     log: &EventLog,
     config: &DiscoveryConfig,
     arena: &mut PowlArena,
-) -> Result<u32, String> {
+) -> Result<(u32, bool), String> {
     let activities = log.get_activities(&config.activity_key);
     if activities.is_empty() {
-        return base_case::handle_empty_log(arena);
+        return base_case::handle_empty_log(arena).map(|root| (root, false));
     }
     if activities.len() == 1 {
-        return base_case::handle_single_activity(arena, &activities[0]);
+        return base_case::handle_single_activity(arena, &activities[0]).map(|root| (root, false));
     }
-    let traces = group_traces_by_activity_sequence(log, &config.activity_key);
+    let (traces, _counts) = group_traces_by_activity_sequence(log, &config.activity_key);
     let cut_filter = CutFilter::for_variant(config.variant);
     inductive_miner(&traces, arena, config, &cut_filter)
-}
-
-fn discover_from_dfg(
-    log: &EventLog,
-    config: &DiscoveryConfig,
-    arena: &mut PowlArena,
-) -> Result<u32, String> {
-    let _dfg_edges = log.get_directly_follows(&config.activity_key);
-    discover_from_traces(log, config, arena)
 }
 
 /// Inductive miner with CutFilter-based cut detection.
 ///
 /// Following pm4py's CutFactory pattern, attempts cut types in the order
 /// specified by the CutFilter, with decision graph or flower model fall-through.
+/// Returns `(root, fall_through_fired)` — the bool is `true` for BOTH
+/// fall-through paths (decision graph and flower), i.e. whenever no cut
+/// succeeded and the output is approximate.
 pub(crate) fn inductive_miner(
     traces: &[Vec<String>],
     arena: &mut PowlArena,
     config: &DiscoveryConfig,
     cut_filter: &CutFilter,
-) -> Result<u32, String> {
+) -> Result<(u32, bool), String> {
     for cut_type in &cut_filter.cut_order {
         let result = match cut_type {
             CutType::Concurrency => cuts::detect_concurrency_cut(traces, arena, config),
@@ -279,24 +282,32 @@ pub(crate) fn inductive_miner(
                 cuts::detect_brute_force_partial_order_cut(traces, arena, config)
             }
         };
-        if result.is_ok() {
-            return result;
+        if let Ok(root) = result {
+            return Ok((root, false));
         }
     }
 
-    // Fall-through: decision graph or flower model based on variant
-    if cut_filter.decision_graph_fall_through {
-        fall_through::decision_graph_fall_through(traces, arena, config)
+    // Fall-through: decision graph or flower model based on variant — both are
+    // "gave up on cuts" outputs, so both mark the fall-through flag.
+    let root = if cut_filter.decision_graph_fall_through {
+        fall_through::decision_graph_fall_through(traces, arena, config)?
     } else {
-        fall_through::flower_model_fall_through(traces, arena, config)
-    }
+        fall_through::flower_model_fall_through(traces, arena, config)?
+    };
+    Ok((root, true))
 }
 
+/// Group traces by their activity sequence, preserving per-variant counts.
+///
+/// Returns `(unique_traces, counts)` in deterministic (BTreeMap-sorted) order —
+/// the previous `HashMap::into_keys()` iteration made cut output
+/// nondeterministic and dropped trace counts.
 pub(crate) fn group_traces_by_activity_sequence(
     log: &EventLog,
     activity_key: &str,
-) -> Vec<Vec<String>> {
-    let mut unique_traces = std::collections::HashMap::new();
+) -> (Vec<Vec<String>>, Vec<usize>) {
+    let mut unique_traces: std::collections::BTreeMap<Vec<String>, usize> =
+        std::collections::BTreeMap::new();
     for trace in &log.traces {
         let activities: Vec<String> = trace
             .events
@@ -305,10 +316,9 @@ pub(crate) fn group_traces_by_activity_sequence(
             .filter_map(|v| v.as_string())
             .map(|s| s.to_string())
             .collect();
-        let count = unique_traces.entry(activities.clone()).or_insert(0);
-        *count += 1;
+        *unique_traces.entry(activities).or_insert(0) += 1;
     }
-    unique_traces.into_keys().collect()
+    unique_traces.into_iter().unzip()
 }
 
 #[cfg(test)]

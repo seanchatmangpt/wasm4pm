@@ -6,6 +6,95 @@ wasm4pm uses [CalVer](https://calver.org/): YEAR.MONTH.DAY
 - Pin exact versions in production (e.g. "26.6.9") — never use ^ or ~ ranges.
 - Multiple releases same day: 26.6.9a, 26.6.9b etc.
 
+## [26.10.10] — 2026-10-10
+
+### Fixed
+- Cognition correctness: asp stable-model enumeration forces all fact
+  atoms (was: fact-as-premise atoms enumerated free — bogus "stable
+  models" omitting mandatory facts); CSP AC-3 revises over ALL constraints
+  per variable pair (was: first-only — unsound domains); LTL finite-trace
+  `G p` false negatives (vacuous `Always` at trace end); prolog8 NAF
+  groundness (typed `NegationFloundering` refusal), receipt hashes now
+  bind rule bodies + output bindings (receipt-hash ripple: old receipts
+  replay `VersionIncompatible`), memoized SLD, latent proof fan-in panic.
+- Universal anticheat harness: 57/57 green (was 39/54 with 15 failures) —
+  4 breeds rewritten to the documented Surface-3 trace contracts
+  (abductive_ibe, abductive_lp, description_logic, script_sam) plus
+  asp/mdp/clp detail alignment; BreedOracle + adversaries for the 3 P5
+  breeds (coverage 55/55); provenance binding detects post-hoc trace
+  fabrication; vacuous oracle assertions are errors; OCEL gate fail-closed
+  (55/55 modeled); serde `deny_unknown_fields` on the breed data plane.
+- Conformance: pm4py fitness parity achieved on identical log+PNML
+  (sepsis TBR 1.0000 vs 1.0; was 0.0045) — PNML initial-marking merge,
+  minimal-enabling BFS for silent transitions, pm4py remaining-token
+  convention; Declare confidence denominators (violating traces now
+  deflate); standard f-measure; honest `method`/`engine`/`cap_applied`
+  payload fields; fake-intrinsics claims demoted to documented scalar
+  unrolling; wasm32 v128 alignment UB removed (aligned blocks + simd128
+  cfg gates).
+- Discovery: Declare/POWL `fall_through_fired` + inductive `fallback`
+  surfaced (silent flower models were indistinguishable from cuts);
+  `from_dfg=true` is a loud error; variant dedup deterministic; OC-DFG
+  deterministic sort + per-type frequencies; OCEL `objectTypes`
+  metadata preserved; lifecycle models registered for all 55 breeds.
+- ML evaluation honesty: real hold-out evaluation (was absent) for
+  remaining-time/outcome/RF/next-activity; real k-fold AutoML (was
+  in-sample); NaN input screening; `detect_drift_with_threshold`.
+- Datasets: real 1,050-case Sepsis log restored (md5
+  `90a79e23…`), truth-in-labeling renames for a mislabeled BPI-2020
+  file; download script refuses error bodies (status/size/sniff/sha256).
+- Parser guards: bounded gzip decompression (bomb-resistant);
+  namespace-prefixed XES parses instead of silently yielding an empty
+  log; CSV type-inference unified (numbers-first); 512 MB guards on all
+  OCEL entry points.
+- Panic hardening: typed errors over reachable panics (pattern-dispatch
+  shifts, binary-format section readers, miniml NaN labels, Bayes
+  factor caps, CSP iteration budget).
+- prolog8 receipt binding gaps (rule bodies, output bindings) and the
+  latent `>8`-support proof panic; planner `at end` conditions evaluated
+  (plans violating them were accepted) and default-deny admission wired
+  on the production MCP path.
+
+### Changed
+- Canonical implementations where verdicts were mislabeled: real A*
+  (admissible h, branch-and-bound; beam preserved as
+  `discover_beam_from_log`), canonical PSO (velocity/inertia) and
+  per-arc-normalized ACO (empty-result laundering removed), disjoint
+  LinUCB per Li et al. 2010 (per-action uncertainty), isolation forest
+  per Liu et al. 2008, canonical Page–Hinkley, gradient-checked neural
+  backprop, ocpq AND/OR/NOT algebra with memoized CHILD-SET, real
+  STRIPS means-ends planning for autoinstinct_learning, real DENDRAL
+  generate-and-test isomer enumeration, Planner durative-action
+  soundness (`at end` + concurrent-effect conflicts).
+- External oracles: pm4py parity harness (token replay/ETC/alignments;
+  fitness parity witnessed), graphlaw vector-oracle court (45
+  provenance-pinned vectors across 12 breeds; confirm+falsify harness;
+  fragment-boundary exclude-list), bench index generator
+  (`bench-tools index`), dataset provenance in receipts.
+- Bench honesty: shared real-data loader (silent 0-measurement skips
+  became honest failures); ~30 synthetic-data call sites re-grounded on
+  real logs; closed_claw pipelines compile + data-grounded; budgets
+  re-derived from the seeded baseline; 320 committed build outputs
+  untracked; tests fail loudly on missing datasets
+  (`WASM4PM_ALLOW_DATA_SKIP=1` restores skip-green).
+- Infra: `wpm cognition run` writes BLAKE3 command receipts + emits
+  tracing spans (Absolute Rules 6/7); cognition guard hooks wired;
+  CI: dtolnay/rust-toolchain SHA-pinned in all 8 workflows, simd128
+  wasm check, bench-gate job, self-destructing deps-bot removed;
+  `wpm doctor` exit-code fix; oracle fixture law substitution removed.
+- Versions: workspace 26.10.8 -> 26.10.10 (members from 26.10.6), five
+  internal path deps aligned, `Cargo.lock` reconciled.
+
+### Added
+- graphlaw vector-oracle court + harness; pm4py parity harness +
+  reference numbers; `bench-tools index` (machine-readable bench
+  inventory, 50 targets) and `bench-bootstrap`/`bench-all` chains;
+  seeded baseline + receipt ledger (regress/verify/ledger/budget now
+  executable); ML hold-out evaluation exports
+  (`*_with_eval`, `evaluate_rf_predictor`, `predict_outcome_evaluated_wasm`,
+  `detect_drift_with_threshold`); `discover_astar_bounded`;
+  benchmark provenance (`datasets` field, `DatasetProvenance` labels).
+
 ## [26.10.8] — 2026-10-08
 
 ### Changed

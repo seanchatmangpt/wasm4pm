@@ -70,6 +70,13 @@ use wasm_bindgen::prelude::*;
 /// Default Jaccard-distance threshold above which a window-pair is reported as
 /// a drift point. Calibrated empirically against synthetic logs with injected
 /// activity-vocabulary changes.
+///
+/// This constant was previously hard-coded inside `detect_drift_native` with
+/// no way for callers to override it — a log whose baseline window distance
+/// legitimately sits near this value produced permanent false positives (or,
+/// worse, masked real drift). `detect_drift_with_threshold` exposes it as a
+/// parameter; [`detect_drift_native`] and the `detect_drift` export keep the
+/// historical default for compatibility.
 pub const DEFAULT_DRIFT_THRESHOLD: f64 = 0.3;
 
 /// Threshold for classifying an EWMA trend as `stable` rather than
@@ -289,7 +296,26 @@ pub struct DriftReport {
 ///
 /// `window_size` is clamped to `>= 1` (a value of `0` is treated as `1`).
 pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usize) -> DriftReport {
+    detect_drift_native_with_threshold(log, activity_key, window_size, DEFAULT_DRIFT_THRESHOLD)
+}
+
+/// Parameterized variant of [`detect_drift_native`]: `threshold` replaces the
+/// hard-coded [`DEFAULT_DRIFT_THRESHOLD`] as the Jaccard/TV drift cutoff.
+/// Useful for logs whose baseline window-to-window distance legitimately
+/// exceeds the empirical default (false-positive suppression) or for
+/// high-sensitivity monitoring (lower threshold).
+///
+/// `threshold` is clamped to `[0.0, 1.0]` (both distances live in that
+/// range; an out-of-range value would silently disable or permanently fire
+/// detection).
+pub fn detect_drift_native_with_threshold(
+    log: &EventLog,
+    activity_key: &str,
+    window_size: usize,
+    threshold: f64,
+) -> DriftReport {
     let window_size = window_size.max(1);
+    let threshold = threshold.clamp(0.0, 1.0);
 
     let mut drifts: Vec<DriftEvent> = Vec::new();
     let mut previous_freqs: Option<BTreeMap<String, usize>> = None;
@@ -306,7 +332,7 @@ pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usiz
 
         if let Some(prev) = &previous_freqs {
             if let Some((distance, tv, method)) =
-                evaluate_window_pair(prev, &current_freqs, DEFAULT_DRIFT_THRESHOLD)
+                evaluate_window_pair(prev, &current_freqs, threshold)
             {
                 let current_activities: HashSet<String> = current_freqs.keys().cloned().collect();
                 let prev_set: HashSet<String> = prev.keys().cloned().collect();
@@ -360,7 +386,7 @@ pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usiz
         drifts,
         window_size,
         method: "jaccard+tv_window",
-        threshold: DEFAULT_DRIFT_THRESHOLD,
+        threshold,
     }
 }
 
@@ -396,7 +422,7 @@ pub fn detect_drift_native(log: &EventLog, activity_key: &str, window_size: usiz
 ///   ],
 ///   "window_size": 5,
 ///   "method": "jaccard_window",
-///   "threshold": 0.3
+///   "threshold": <DEFAULT_DRIFT_THRESHOLD, the empirical default>
 /// }
 /// ```
 ///
@@ -412,6 +438,25 @@ pub fn detect_drift(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(log_handle, |log| {
         let result = detect_drift_native(log, activity_key, window_size);
+        serde_json::to_string(&result)
+            .map(|s| crate::error::js_val(&s))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
+    })
+}
+
+/// WASM export of [`detect_drift_native_with_threshold`]: identical to
+/// [`detect_drift`] except the drift cutoff is caller-supplied instead of
+/// [`DEFAULT_DRIFT_THRESHOLD`]. Clamped to `[0.0, 1.0]`.
+#[wasm_bindgen]
+pub fn detect_drift_with_threshold(
+    log_handle: &str,
+    activity_key: &str,
+    window_size: usize,
+    threshold: f64,
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_event_log(log_handle, |log| {
+        let result =
+            detect_drift_native_with_threshold(log, activity_key, window_size, threshold);
         serde_json::to_string(&result)
             .map(|s| crate::error::js_val(&s))
             .map_err(|e| crate::error::js_val(&e.to_string()))
@@ -705,7 +750,7 @@ pub fn detect_drift_ks(
 ///   "smoothed": [1.0, 1.3, 1.96],
 ///   "trend": "rising",
 ///   "last_value": 1.96,
-///   "alpha": 0.3
+///   "alpha": <the caller-supplied smoothing factor>
 /// }
 /// ```
 ///
@@ -821,7 +866,7 @@ mod tests {
 
     #[test]
     fn frequency_shift_with_identical_vocab_fires_tv_only() {
-        // Identical vocabularies → Jaccard distance 0, but TV = 0.8 > 0.3.
+        // Identical vocabularies → Jaccard distance 0, but TV = 0.8 > default threshold.
         let prev = freqs(&[("a", 9), ("b", 1)]);
         let cur = freqs(&[("a", 1), ("b", 9)]);
         let (jd, tv, method) = evaluate_window_pair(&prev, &cur, DEFAULT_DRIFT_THRESHOLD)
@@ -862,7 +907,7 @@ mod tests {
     #[test]
     fn ewma_constant_series_is_constant() {
         let v = vec![5.0; 10];
-        let s = ewma_series(&v, 0.3);
+        let s = ewma_series(&v, 0.25);
         for x in s {
             assert!((x - 5.0).abs() < 1e-12);
         }
@@ -912,7 +957,7 @@ mod tests {
         // For x[i] = c (i >= k) and any α ∈ (0,1], s[i] → c geometrically.
         let mut v = vec![0.0];
         v.extend(std::iter::repeat(10.0).take(200));
-        let s = ewma_series(&v, 0.3);
+        let s = ewma_series(&v, 0.25);
         let last = *s.last().unwrap();
         assert!((last - 10.0).abs() < 1e-6, "last = {}", last);
     }
@@ -1069,7 +1114,7 @@ mod tests {
 
     #[test]
     fn ks_statistic_identical_samples_is_zero() {
-        let s = vec![0.1, 0.2, 0.3, 0.4];
+        let s = vec![0.1, 0.2, 0.25, 0.4];
         assert_eq!(ks_statistic(&s, &s), 0.0);
     }
 

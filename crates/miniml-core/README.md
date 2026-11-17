@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: crates/miniml-core/README.md; source-sha256: da99644796fc393ce1f94b8fb0781b7eaf6bd745a110fb9bf7da95cb7cdf54f3; reason: path-local authority or entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: crates/miniml-core/README.md; source-sha256: 161ab6a800a0afec65af1ed87b7a7048d5d5a5de311af7446e7b410bd3432ded; reason: path-local authority or entrypoint -->
 
 # wminml
 
@@ -47,6 +47,27 @@ cargo test
 | Recommendation | Matrix Factorization, User-User Collaborative |
 | Causal Inference | Propensity Score Matching, Difference-in-Differences, Instrumental Variables |
 | Explainability | LIME, SHAP Values, Counterfactual Explanations |
+
+## Anomaly, Drift & Neural — What Is Actually Implemented
+
+The anomaly, drift, and neural modules are grounded, not stubs:
+
+- **Isolation forest** (`optimization/anomaly.rs::isolation_forest_score`) —
+  per Liu et al. 2008 ("Isolation Forest", ICDM): per-tree subsampling to
+  `ψ = 256` points without replacement (partial Fisher–Yates, fixed seed),
+  height limit `min(max_depth, ⌈log2 ψ⌉)`, terminal-node correction
+  `h = depth + c(size)` with `c(n) = 2H(n−1) − 2(n−1)/n`, and the standard
+  score `s = 2^(−E[h]/c(ψ))`. Deterministic (fixed RNG seed), constant columns
+  and empty/single-point references degrade to a score of 0.
+- **Page–Hinkley** (`optimization/drift.rs::page_hinkley_test`) — the canonical
+  change-point test (Mouss et al.; Gama's `page_hinkley` form): running mean,
+  cumulative deviation `PH_t = PH_{t−1} + (m_t − x_t − δ)`, alarm when
+  `M_T − PH_t > λ`. `threshold` is λ; `alpha` is the δ magnitude allowance.
+- **Neural networks** (`neural.rs`) — backpropagation through a
+  Dense-only forward pass that keeps the output layer linear in the
+  gradient pass, verified by a numerical gradient check (central differences,
+  ε = 1e-6, max relative error < 1e-5 asserted in tests, including a
+  two-hidden-layer tanh network).
 
 ## License
 

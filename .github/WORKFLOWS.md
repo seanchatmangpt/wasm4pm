@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .github/WORKFLOWS.md; source-sha256: aa0e2f182002af153f10b00ffd331d399d0212bd373fa8144ebf94b4b6f0c7bd; reason: tooling or agent control surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .github/WORKFLOWS.md; source-sha256: ffefea9bcba40334351e0d4a3b5c0e8a64a8ee2a230586628af6158a553fa487; reason: tooling or agent control surface -->
 
 # GitHub Actions Workflows
 
@@ -25,7 +25,7 @@ Runs on every commit to main/develop, pull requests, and on manual trigger.
 
 **Test Matrix:**
 ```
-OS:     [ubuntu-latest, macos-latest, windows-latest]
+OS:     [ubuntu-latest, macos-latest] (windows dropped from the test matrix)
 Node:   [18, 20]
 Rust:   [stable, nightly]
 ```

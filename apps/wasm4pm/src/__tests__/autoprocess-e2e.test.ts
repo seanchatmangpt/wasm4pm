@@ -74,7 +74,7 @@ const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
 // Real bench data — use absolute paths from repo root
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
 const ROAD_TRAFFIC_XES = path.join(REPO_ROOT, 'bench_data/roadtraffic100traces.xes');
-const BPI2020_XES = path.join(REPO_ROOT, 'bench_data/bpi2020_travel.xes');
+const BPI2020_XES = path.join(REPO_ROOT, 'bench_data/bpi2020_domestic_declarations.xes');
 
 function runCli(
   args: string[],

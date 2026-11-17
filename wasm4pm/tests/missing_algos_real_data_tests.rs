@@ -103,6 +103,10 @@ fn resolve_xes(candidates: &[&str]) -> Option<(String, EventLog)> {
     None
 }
 
+fn allow_skip() -> bool {
+    std::env::var("WASM4PM_ALLOW_DATA_SKIP").as_deref() == Ok("1")
+}
+
 fn load_log(name: &str) -> Option<(String, EventLog)> {
     let prefix_candidates: Vec<String> = [
         "/Users/sac/wasm4pm/bench_data/",
@@ -158,7 +162,15 @@ macro_rules! jsval_to_json {
 fn hierarchical_dfg_roadtraffic_4_chunks_matches_expected_structure() {
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "hierarchical_dfg: loaded {} traces from {}",
@@ -185,7 +197,15 @@ fn hierarchical_dfg_roadtraffic_4_chunks_matches_expected_structure() {
 fn hierarchical_dfg_sepsis_by_events_10000_non_degenerate() {
     let (path, log) = match load_log("sepsis.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "hierarchical_dfg_by_events: loaded {} traces from {}",
@@ -216,7 +236,15 @@ fn hierarchical_dfg_sepsis_by_events_10000_non_degenerate() {
 fn process_skeleton_roadtraffic_min_freq_5_reduces_noise() {
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "process_skeleton: loaded {} traces from {}",
@@ -239,7 +267,15 @@ fn process_skeleton_roadtraffic_min_freq_5_reduces_noise() {
 fn process_skeleton_sepsis_captures_high_frequency_paths() {
     let (path, log) = match load_log("sepsis.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "process_skeleton (sepsis): loaded {} traces from {}",
@@ -266,7 +302,15 @@ fn process_skeleton_sepsis_captures_high_frequency_paths() {
 fn analyze_variant_complexity_roadtraffic_entropy_in_range() {
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "analyze_variant_complexity: loaded {} traces from {}",
@@ -293,7 +337,15 @@ fn analyze_variant_complexity_roadtraffic_entropy_in_range() {
 fn analyze_variant_complexity_sepsis_high_diversity() {
     let (path, log) = match load_log("sepsis.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "variant_complexity (sepsis): loaded {} traces from {}",
@@ -323,7 +375,15 @@ fn analyze_variant_complexity_sepsis_high_diversity() {
 fn transition_matrix_roadtraffic_rows_sum_to_one() {
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "transition_matrix: loaded {} traces from {}",
@@ -364,7 +424,15 @@ fn transition_matrix_roadtraffic_rows_sum_to_one() {
 fn analyze_process_speedup_roadtraffic_returns_speedup_factor() {
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "analyze_process_speedup: loaded {} traces from {}",
@@ -392,7 +460,15 @@ fn analyze_process_speedup_roadtraffic_returns_speedup_factor() {
 fn trace_similarity_matrix_roadtraffic_diagonal_is_one() {
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "trace_similarity_matrix: loaded {} traces from {}",
@@ -420,7 +496,15 @@ fn causal_graph_alpha_roadtraffic_has_causal_edges() {
     use wasm4pm::causal_graph::discover_causal_alpha;
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "causal_graph (alpha): loaded {} traces from {}",
@@ -442,7 +526,15 @@ fn causal_graph_heuristic_sepsis_captures_dominant_dependencies() {
     use wasm4pm::causal_graph::discover_causal_heuristic;
     let (path, log) = match load_log("sepsis.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "causal_graph (heuristic): loaded {} traces from {}",
@@ -468,7 +560,15 @@ fn performance_spectrum_roadtraffic_buckets_have_positive_durations() {
     use wasm4pm::performance_spectrum::discover_performance_spectrum_wasm;
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "performance_spectrum: loaded {} traces from {}",
@@ -501,7 +601,15 @@ fn ml_anomaly_roadtraffic_scores_traces_without_panic() {
     use wasm4pm::anomaly::discover_ml_anomaly;
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "ml_anomaly: loaded {} traces from {}",
@@ -526,7 +634,15 @@ fn ml_anomaly_sepsis_scores_are_finite() {
     use wasm4pm::anomaly::discover_ml_anomaly;
     let (path, log) = match load_log("sepsis.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "ml_anomaly (sepsis): loaded {} traces from {}",
@@ -554,7 +670,15 @@ fn ml_cluster_roadtraffic_groups_traces_non_trivially() {
     use wasm4pm::ml::clustering::discover_ml_cluster;
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "ml_cluster: loaded {} traces from {}",
@@ -586,7 +710,15 @@ fn monte_carlo_simulation_roadtraffic_produces_timing_stats() {
     use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "monte_carlo: loaded {} traces from {}",
@@ -624,7 +756,15 @@ fn detect_drift_roadtraffic_window_5_runs_without_panic() {
     use wasm4pm::prediction_drift::detect_drift;
     let (path, log) = match load_log("roadtraffic100traces.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "detect_drift: loaded {} traces from {}",
@@ -645,7 +785,15 @@ fn detect_drift_sepsis_window_10_returns_drift_events() {
     use wasm4pm::prediction_drift::detect_drift;
     let (path, log) = match load_log("sepsis.xes") {
         Some(v) => v,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET: real-data tests must not silently skip. \
+                     Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     eprintln!(
         "detect_drift (sepsis): loaded {} traces from {}",
@@ -707,7 +855,15 @@ fn ocel_dfg_per_type_multiple_object_types_present() {
     // which means the per-type DFG algorithm will produce distinct graphs.
     let ocel = match load_ocel() {
         Some(o) => o,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET (ocel20_example.jsonocel): real-data tests must not silently skip. \
+                     Provide the OCEL or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     assert!(
         ocel.object_types.len() >= 1,
@@ -726,7 +882,15 @@ fn ocel_oc_declare_discovers_constraints_from_real_ocel() {
     use wasm4pm::advanced::{discover_oc_declare, OCDeclareOptions};
     let ocel = match load_ocel() {
         Some(o) => o,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET (ocel20_example.jsonocel): real-data tests must not silently skip. \
+                     Provide the OCEL or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     let options = OCDeclareOptions {
         noise_threshold: 0.1,
@@ -744,7 +908,15 @@ fn ocel_ocla_produces_language_abstraction_from_real_ocel() {
     use wasm4pm::advanced::OCLanguageAbstraction;
     let ocel = match load_ocel() {
         Some(o) => o,
-        None => return,
+        None => {
+            if !allow_skip() {
+                panic!(
+                    "MISSING DATASET (ocel20_example.jsonocel): real-data tests must not silently skip. \
+                     Provide the OCEL or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                );
+            }
+            return;
+        }
     };
     let ocla = OCLanguageAbstraction::create_from_ocel(&ocel);
     // Must have discovered directly-follows relations per object type

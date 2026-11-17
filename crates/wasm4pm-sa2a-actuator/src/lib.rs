@@ -14,6 +14,7 @@ pub mod ledger;
 pub mod resource;
 pub mod resource_admission;
 pub mod resource_ocel;
+pub mod resource_ocel_castle;
 pub mod resource_receipt;
 pub mod resource_recovery;
 pub mod trust_domain;
@@ -31,6 +32,7 @@ pub use ledger::{EffectClaimRecord, EffectLedger, FileEffectLedger, LedgerState}
 pub use resource::{ResourceBudget, ResourceEnvelope};
 pub use resource_admission::ResourceAdmission;
 pub use resource_ocel::ResourceOcelEvent;
+pub use resource_ocel_castle::{CastleOcelAttributes, CastleOcelError, CastleOcelEvent};
 pub use resource_receipt::ResourceReceipt;
 pub use resource_recovery::{ResourceRecovery, ResourceRecoveryState};
 pub use trust_domain::TrustDomainId;

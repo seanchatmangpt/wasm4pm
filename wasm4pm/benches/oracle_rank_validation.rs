@@ -25,7 +25,7 @@ use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
 #[path = "helpers.rs"]
 mod helpers;
-use helpers::{bench_sizes, generate_event_log, make_handle, ACTIVITY_KEY};
+use helpers::{bench_sizes, ACTIVITY_KEY};
 
 // ---------------------------------------------------------------------------
 // Oracle helpers (mirrors what the tests do)
@@ -218,7 +218,8 @@ fn bench_dfg_edge_map_comparison(c: &mut Criterion) {
 
     // Only use the smallest size — oracle cost benchmarks are about overhead, not scalability
     let shape = bench_sizes().remove(0);
-    let log = generate_event_log(&shape);
+    // Real ICU-patient log (TPS rule): smallest prefix, matching the old size cap.
+    let log = helpers::load_real_log_capped(shape.num_cases);
     let events = log.event_count();
 
     group.throughput(Throughput::Elements(events as u64));
@@ -252,7 +253,8 @@ fn bench_jaccard_distance(c: &mut Criterion) {
     }
 
     let shape = bench_sizes().remove(0);
-    let log = generate_event_log(&shape);
+    // Real ICU-patient log (TPS rule): smallest prefix, matching the old size cap.
+    let log = helpers::load_real_log_capped(shape.num_cases);
     let events = log.event_count();
 
     // Pre-compute two edge maps (same log, two different algorithms — simulates
@@ -324,7 +326,8 @@ fn bench_heuristic_threshold_sweep(c: &mut Criterion) {
     }
 
     let shape = bench_sizes().remove(0);
-    let (handle, events) = make_handle(&shape);
+    // Real ICU-patient log (TPS rule): smallest prefix, matching the old size cap.
+    let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
 
     group.throughput(Throughput::Elements(events as u64));
 

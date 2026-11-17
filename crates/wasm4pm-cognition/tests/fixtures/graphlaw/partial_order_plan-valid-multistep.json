@@ -1,0 +1,240 @@
+{
+  "breed": "partial_order_plan",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "pop:op:opA:pre",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opA:add",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opA:del",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opB:pre",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opB:add",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opC:pre",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opC:add",
+        "value": ""
+      },
+      {
+        "key": "pop:op:opC:del",
+        "value": ""
+      }
+    ],
+    "goals": [
+      {
+        "id": "g0",
+        "predicate": "t",
+        "value": "true"
+      }
+    ],
+    "intent": "validate a valid 3-action chain plan",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "r=true; !q=true",
+        "id": "opA",
+        "premise": [
+          "p=true"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "s=true",
+        "id": "opB",
+        "premise": [
+          "r=true"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "t=true; !r=true",
+        "id": "opC",
+        "premise": [
+          "s=true"
+        ]
+      }
+    ],
+    "state": [
+      {
+        "predicate": "p",
+        "value": "true"
+      },
+      {
+        "predicate": "q",
+        "value": "true"
+      }
+    ]
+  },
+  "expected": {
+    "derived_facts_sorted": [],
+    "notes": "Valid 3-action chain: opC deletes r (opA's contribution to opB) but is ordered after opB (promotion), so no unresolved threat; opA deletes q, which no link needs. All preconditions supported. Verifier, not deriver.",
+    "verdicts": {
+      "plan": "opA;opB;opC"
+    }
+  },
+  "provenance": {
+    "datalog_program": {
+      "fixpoint": [
+        "add:opA,r",
+        "add:opB,s",
+        "add:opC,t",
+        "add:start,p",
+        "add:start,q",
+        "del:opA,q",
+        "del:opC,r",
+        "link:K1",
+        "link:K2",
+        "link:K3",
+        "link:K4",
+        "linkcond:K1,p",
+        "linkcond:K2,r",
+        "linkcond:K3,s",
+        "linkcond:K4,t",
+        "linkfrom:K1,start",
+        "linkfrom:K2,opA",
+        "linkfrom:K3,opB",
+        "linkfrom:K4,opC",
+        "linkto:K1,opA",
+        "linkto:K2,opB",
+        "linkto:K3,opC",
+        "linkto:K4,end",
+        "ord:opA,opB",
+        "ord:opB,opC",
+        "ord:opC,end",
+        "ord:start,opA",
+        "ordtc:opA,end",
+        "ordtc:opA,opB",
+        "ordtc:opA,opC",
+        "ordtc:opB,end",
+        "ordtc:opB,opC",
+        "ordtc:opC,end",
+        "ordtc:start,end",
+        "ordtc:start,opA",
+        "ordtc:start,opB",
+        "ordtc:start,opC",
+        "pdiff:end,opA",
+        "pdiff:end,opB",
+        "pdiff:end,opC",
+        "pdiff:end,start",
+        "pdiff:opA,end",
+        "pdiff:opA,opB",
+        "pdiff:opA,opC",
+        "pdiff:opA,start",
+        "pdiff:opB,end",
+        "pdiff:opB,opA",
+        "pdiff:opB,opC",
+        "pdiff:opB,start",
+        "pdiff:opC,end",
+        "pdiff:opC,opA",
+        "pdiff:opC,opB",
+        "pdiff:opC,start",
+        "pdiff:start,end",
+        "pdiff:start,opA",
+        "pdiff:start,opB",
+        "pdiff:start,opC",
+        "pre:end,t",
+        "pre:opA,p",
+        "pre:opB,r",
+        "pre:opC,s",
+        "step:end",
+        "step:opA",
+        "step:opB",
+        "step:opC",
+        "step:start",
+        "supp:end,t",
+        "supp:opA,p",
+        "supp:opB,r",
+        "supp:opC,s"
+      ],
+      "rules": [
+        {
+          "certainty": 1.0,
+          "conclusion": "ordtc:?0,?1",
+          "id": "r_ordtc",
+          "premise": [
+            "ord:?0,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "ordtc:?0,?2",
+          "id": "r_ordtc",
+          "premise": [
+            "ord:?0,?1",
+            "ordtc:?1,?2"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "cyclic:?0",
+          "id": "r_cyclic",
+          "premise": [
+            "ordtc:?0,?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "supp:?0,?1",
+          "id": "r_supp",
+          "premise": [
+            "pre:?0,?1",
+            "link:?2",
+            "linkfrom:?2,?3",
+            "linkto:?2,?0",
+            "linkcond:?2,?1",
+            "add:?3,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "unsupp:?0,?1",
+          "id": "r_unsupp",
+          "premise": [
+            "pre:?0,?1",
+            "!supp:?0,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "threat:?0,?1",
+          "id": "r_threat",
+          "premise": [
+            "link:?0",
+            "linkfrom:?0,?2",
+            "linkto:?0,?3",
+            "linkcond:?0,?4",
+            "del:?1,?4",
+            "pdiff:?1,?2",
+            "pdiff:?1,?3",
+            "!ordtc:?1,?2",
+            "!ordtc:?3,?1"
+          ]
+        }
+      ]
+    },
+    "differential": "the Datalog validation court (ordtc closure, acyclicity, support, threats) must reproduce the hand-checked verdict at generation time",
+    "eyeron": "0.7.8",
+    "generator": "bayes_pop_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "partial_order_plan-valid-multistep"
+}

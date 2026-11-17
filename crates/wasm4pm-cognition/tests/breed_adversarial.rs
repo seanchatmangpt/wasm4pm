@@ -1632,18 +1632,21 @@ fn autoinstinct_learning_goal_already_satisfied_returns_one_step() {
 
     let breed = AutoinstinctLearning;
 
-    // 2 goals, 2 facts → goal_mask = 0b11, initial_features = 0b11 → already satisfied
+    // 2 goals, 2 identity-matched facts → both goal atoms already true in
+    // the initial state → pre-satisfied. (Identity matching: a fact
+    // key=value satisfies a goal predicate=value only on exact string
+    // equality — the pre-2026-10-10 planner matched by positional index.)
     let input = BreedInput {
         intent: "test".to_string(),
         candidates: vec![],
         facts: vec![
             Fact {
-                key: "f0".to_string(),
-                value: "true".to_string(),
+                key: "achieve".to_string(),
+                value: "sub-goal-0".to_string(),
             },
             Fact {
-                key: "f1".to_string(),
-                value: "true".to_string(),
+                key: "achieve".to_string(),
+                value: "sub-goal-1".to_string(),
             },
         ],
         cases: vec![],

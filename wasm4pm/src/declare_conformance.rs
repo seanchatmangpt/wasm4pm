@@ -8,6 +8,31 @@ use serde_json::json;
 /// follow it).  Returns per-constraint and overall fitness metrics.
 use wasm_bindgen::prelude::*;
 
+/// Declare constraint templates the conformance checker actually implements.
+///
+/// Single source of truth for both the checker's match arms and the
+/// `unsupported_templates` honesty list emitted in the result payload.
+/// Any template outside this table hits the fail-closed arm: it is counted
+/// as violated AND reported via `"template_supported": false` so callers can
+/// distinguish "violated" from "checker does not implement this template".
+pub const SUPPORTED_DECLARE_TEMPLATES: [&str; 10] = [
+    "Absence",
+    "ChainPrecedence",
+    "ChainResponse",
+    "CoExistence",
+    "Existence",
+    "Init",
+    "NotCoExistence",
+    "Precedence",
+    "Response",
+    "Succession",
+];
+
+/// Whether the checker implements this template (fail-closed arm otherwise).
+fn template_supported(template: &str) -> bool {
+    SUPPORTED_DECLARE_TEMPLATES.contains(&template)
+}
+
 /// Pure core: check an `EventLog` against a set of DECLARE constraints.
 /// No wasm/handle plumbing — natively unit-testable, and the single
 /// source of truth the wasm-bound `check_declare_conformance` delegates to.
@@ -19,6 +44,8 @@ pub fn check_declare_conformance_pure(
     let total = log.traces.len();
     // violations[i] = # traces violating constraint i
     let mut violations: Vec<usize> = vec![0; constraints.len()];
+    // Templates that hit the fail-closed arm (deduped, sorted, in payload).
+    let mut unsupported: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
 
     for trace in &log.traces {
         let acts: Vec<&str> = trace
@@ -52,6 +79,10 @@ pub fn check_declare_conformance_pure(
         };
 
         for (ci, constraint) in constraints.iter().enumerate() {
+            let supported = template_supported(&constraint.template);
+            if !supported {
+                unsupported.insert(&constraint.template);
+            }
             let violated = match constraint.template.as_str() {
                 "Response" if constraint.activities.len() == 2 => {
                     response_violates(&constraint.activities[0], &constraint.activities[1])
@@ -147,6 +178,7 @@ pub fn check_declare_conformance_pure(
                 "support": c.support,
                 "violations": v,
                 "fitness": fitness,
+                "template_supported": template_supported(&c.template),
             })
         })
         .collect();
@@ -165,6 +197,7 @@ pub fn check_declare_conformance_pure(
         "total_traces": total,
         "avg_fitness": avg_fitness,
         "constraints": constraint_results,
+        "unsupported_templates": unsupported.into_iter().collect::<Vec<_>>(),
     }))
     .map_err(|e| e.to_string())
 }
@@ -181,10 +214,18 @@ pub fn check_declare_conformance_pure(
 ///   "avg_fitness": 0.92,
 ///   "constraints": [
 ///     {"template":"Response","activities":["A","B"],
-///      "violations": 8, "fitness": 0.92}
-///   ]
+///      "violations": 8, "fitness": 0.92, "template_supported": true}
+///   ],
+///   "unsupported_templates": []
 /// }
 /// ```
+///
+/// Honesty contract: the checker implements the 9 templates listed in
+/// [`SUPPORTED_DECLARE_TEMPLATES`]. Any other template hits a fail-closed arm
+/// (counted as violated, `fitness` degraded accordingly) AND is reported via
+/// `"template_supported": false` on the constraint plus a deduped, sorted
+/// `"unsupported_templates"` list at the top level — so callers can tell
+/// "violated" apart from "this checker does not implement that template".
 #[wasm_bindgen]
 pub fn check_declare_conformance(
     log_handle: &str,
@@ -364,6 +405,40 @@ mod tests {
         let log = make_log(&[&["A", "B"]]);
         let result = check(log, vec![constraint("SomeFutureTemplate", &["A", "B"])]);
         assert_eq!(violations_for(&result, "SomeFutureTemplate"), 1);
+    }
+
+    #[test]
+    fn unknown_template_reported_in_unsupported_templates() {
+        // Honesty surface: an unrecognized template must appear (deduped) in
+        // the top-level `unsupported_templates` list and be flagged per
+        // constraint via `template_supported: false`, so callers can
+        // distinguish "violated" from "not implemented".
+        let log = make_log(&[&["A", "B"]]);
+        let result = check(
+            log,
+            vec![
+                constraint("SomeFutureTemplate", &["A", "B"]),
+                constraint("SomeFutureTemplate", &["B", "C"]),
+                constraint("Response", &["A", "B"]),
+            ],
+        );
+        let unsupported: Vec<&str> = result["unsupported_templates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        assert_eq!(unsupported, vec!["SomeFutureTemplate"]);
+        let flags: Vec<bool> = result["constraints"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["template_supported"].as_bool().unwrap())
+            .collect();
+        assert_eq!(flags, vec![false, false, true]);
+        // Fail-closed still degrades fitness: 2 unsupported constraints on a
+        // 1-trace log each count 1 violation → fitness 0.0 for those.
+        assert_eq!(result["constraints"][0]["fitness"], 0.0);
     }
 
     #[test]

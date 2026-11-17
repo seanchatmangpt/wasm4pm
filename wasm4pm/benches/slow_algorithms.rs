@@ -26,43 +26,17 @@ struct Dataset {
     events: u64,
 }
 
-/// Load the first existing candidate path, parse it, cap traces (these miners are
-/// O(>200ms), so caps stay small), store it, and return the assembled `Dataset`.
+/// Load a real dataset via the shared tolerant loader, cap traces (these miners
+/// are O(>200ms), so caps stay small), store it, and return the `Dataset`.
 fn load_dataset(label: &'static str, candidates: &[&str], max_traces: usize) -> Dataset {
-    let home = std::env::var("HOME").unwrap_or_default();
-    let mut log: EventLog = candidates
-        .iter()
-        .filter_map(|p| {
-            let resolved = p.replace('~', &home);
-            let content = std::fs::read_to_string(&resolved).ok()?;
-            if content.len() < 200 {
-                return None;
-            }
-            let parsed = validate_and_parse_xes(&content).ok()?;
-            if parsed.traces.is_empty() {
-                return None;
-            }
-            Some(parsed)
-        })
-        .next()
-        .unwrap_or_else(|| {
-            panic!(
-                "Required real dataset '{}' not found at any of: {:?}\n\
-                 Download from https://data.4tu.nl/ — synthetic data is prohibited.",
-                label, candidates
-            )
-        });
-
-    // Cap traces to keep these >200ms-per-call miners runtime-bounded.
+    let mut log = helpers::load_real_log_from(candidates);
     if log.traces.len() > max_traces {
         log.traces.truncate(max_traces);
     }
-    let events = log.traces.iter().map(|t| t.events.len()).sum::<usize>() as u64;
-
+    let events = log.event_count() as u64;
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(log))
         .expect("bench: store EventLog failed");
-
     Dataset {
         label,
         handle,
@@ -76,24 +50,17 @@ fn real_datasets() -> Vec<Dataset> {
     vec![
         load_dataset(
             "roadtraffic",
-            &[
-                "bench_data/roadtraffic100traces.xes",
-                "../../bench_data/roadtraffic100traces.xes",
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
-            ],
+            helpers::ROADTRAFFIC_CANDIDATES,
             100,
         ),
         load_dataset(
             "sepsis",
-            &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"],
+            helpers::SEPSIS_CANDIDATES,
             500,
         ),
         load_dataset(
             "bpi2020",
-            &[
-                "bench_data/bpi2020_travel.xes",
-                "../../bench_data/bpi2020_travel.xes",
-            ],
+            helpers::BPI2020_DECL_CANDIDATES,
             // Aggressive cap — these metaheuristics scale poorly with case count.
             500,
         ),

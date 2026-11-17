@@ -1,103 +1,144 @@
 use super::{BreedLifecycleModel, LifecyclePhase};
 
-/// ASP lifecycle: asp-load -> asp-solve -> asp-model*
+/// ASP lifecycle: ground(1,1) -> guess-candidate(1,*) -> reduct(0,*) -> least-model(0,*)
+/// -> stable(0..* in stable-accept|stable-reject) -> answer-set(1,1)
 pub static ASP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "asp",
     phases: &[
         LifecyclePhase {
-            name: "load",
-            kinds: &["asp-load"],
+            name: "ground",
+            kinds: &["ground"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "solve",
-            kinds: &["asp-solve"],
+            name: "guess",
+            kinds: &["guess-candidate"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "model",
-            kinds: &["asp-model"],
+            name: "reduct",
+            kinds: &["reduct"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
+        LifecyclePhase {
+            name: "least-model",
+            kinds: &["least-model"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "stable",
+            kinds: &["stable-accept", "stable-reject"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "answer-set",
+            kinds: &["answer-set"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
     ],
+    allowed_unknown_kinds: &[],
 };
 
-/// Description Logic lifecycle: dl-load -> dl-subsume* -> dl-consistent
+/// Description Logic lifecycle: normalize -> apply-cr{1..4}* -> fixpoint -> classify-verdict*
 pub static DESCRIPTION_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "description_logic",
     phases: &[
         LifecyclePhase {
             name: "load",
-            kinds: &["dl-load"],
+            kinds: &["normalize"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "subsume",
-            kinds: &["dl-subsume"],
+            name: "rules",
+            kinds: &["apply-cr1", "apply-cr2", "apply-cr3", "apply-cr4"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "consistent",
-            kinds: &["dl-consistent"],
+            name: "fixpoint",
+            kinds: &["fixpoint"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
+        LifecyclePhase {
+            name: "verdict",
+            kinds: &["classify-verdict"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
     ],
+    allowed_unknown_kinds: &[],
 };
 
-/// Abductive LP lifecycle: alp-load -> alp-abduce -> alp-hypothesis*
+/// Abductive LP lifecycle: load-abducibles -> candidate-delta* -> explain-accept/reject* -> minimal-set
 pub static ABDUCTIVE_LP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "abductive_lp",
     phases: &[
         LifecyclePhase {
             name: "load",
-            kinds: &["alp-load"],
+            kinds: &["load-abducibles"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
             name: "abduce",
-            kinds: &["alp-abduce"],
+            kinds: &["candidate-delta", "derive"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "decision",
+            kinds: &["explain-accept", "explain-reject"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "summary",
+            kinds: &["minimal-set"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
-        LifecyclePhase {
-            name: "hypothesis",
-            kinds: &["alp-hypothesis"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
     ],
+    allowed_unknown_kinds: &[],
 };
 
-/// Abductive IBE lifecycle: ibe-load -> ibe-explain -> ibe-select
+/// Abductive IBE lifecycle: collect-observations -> score-hypothesis* -> compare* -> best-explanation
 pub static ABDUCTIVE_IBE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "abductive_ibe",
     phases: &[
         LifecyclePhase {
             name: "load",
-            kinds: &["ibe-load"],
+            kinds: &["collect-observations"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "explain",
-            kinds: &["ibe-explain"],
+            name: "scoring",
+            kinds: &["score-hypothesis"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "compare",
+            kinds: &["compare"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "select",
-            kinds: &["ibe-select"],
+            kinds: &["best-explanation"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Partial Order Plan lifecycle: pop-init -> pop-resolve* -> pop-plan
@@ -123,6 +164,7 @@ pub static PARTIAL_ORDER_PLAN_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &["detect-threat", "promote"],
 };
 
 /// Event Calculus lifecycle: ec-load -> ec-infer* -> ec-model
@@ -148,6 +190,7 @@ pub static EVENT_CALCULUS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &["ec-verdict"],
 };
 
 /// MDP lifecycle: mdp-init -> mdp-iterate* -> mdp-policy
@@ -173,6 +216,7 @@ pub static MDP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Belief Merging lifecycle: bm-enumerate -> bm-filter* -> bm-distance -> bm-aggregate -> bm-select -> bm-merge
@@ -216,6 +260,7 @@ pub static BELIEF_MERGING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Version Space lifecycle: vs-init -> vs-update* -> vs-verdict
@@ -241,6 +286,7 @@ pub static VERSION_SPACE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Qualitative Reasoning lifecycle: qr-limit -> qr-branch* -> qr-envision*
@@ -266,84 +312,69 @@ pub static QUALITATIVE_REASON_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: usize::MAX,
         },
     ],
+    allowed_unknown_kinds: &["load-model"],
 };
 
-/// Script SAM lifecycle: script-selection -> alignment-success* -> inference-bounds -> role-binding* -> gap-inference*
+/// Script SAM lifecycle: select-script+ -> align-event* -> bind-role* -> infer-gap* -> summary
 pub static SCRIPT_SAM_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "script_sam",
     phases: &[
         LifecyclePhase {
             name: "select",
-            kinds: &["script-selection"],
+            kinds: &["select-script"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "align",
-            kinds: &["alignment-success"],
+            kinds: &["align-event"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "bounds",
-            kinds: &["inference-bounds"],
-            min_occurrences: 0,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
             name: "bind",
-            kinds: &["role-binding"],
+            kinds: &["bind-role"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "infer",
-            kinds: &["gap-inference"],
+            kinds: &["infer-gap"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
+        LifecyclePhase {
+            name: "summary",
+            kinds: &["summary"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
     ],
+    allowed_unknown_kinds: &[],
 };
 
-/// CLP lifecycle: clp-init? -> clp-propagate* -> clp-revise* -> clp-assign* -> clp-backtrack* -> clp-verdict?
+/// CLP lifecycle: post-constraint(0,*) -> propagate(0,*) -> solution(0,1)
 pub static CLP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "clp",
     phases: &[
         LifecyclePhase {
-            name: "init",
-            kinds: &["clp-init"],
+            name: "post-constraint",
+            kinds: &["post-constraint"],
             min_occurrences: 0,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "propagate",
-            kinds: &["clp-propagate"],
+            kinds: &["propagate"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "revise",
-            kinds: &["clp-revise"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "assign",
-            kinds: &["clp-assign"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "backtrack",
-            kinds: &["clp-backtrack"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "verdict",
-            kinds: &["clp-verdict"],
+            name: "solution",
+            kinds: &["solution"],
             min_occurrences: 0,
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };

@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/09b-ML-AI-PRIMITIVES.md; source-sha256: 70c15315966a776d72708ef45528187406e9c65d25ff8664ff0a56ec42cf86ae; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/09b-ML-AI-PRIMITIVES.md; source-sha256: a9f6e47d26d4c8bce436250b20e8ef6d82862c32a1be99677141bcdda1a02037; reason: path-local documentation retained pending domain-specific supersession -->
 
 # 09b — ML / AI Primitives (Review + Correction Ledger)
 
@@ -84,20 +84,49 @@ divergence / reward stays in `[-5.5, +1.6]`.
 
 ### 1.3 LinUCB — `wasm4pm/src/ml/linucb.rs`
 
-Implements **disjoint LinUCB** (Li et al., WWW 2010). Inference
-`Q̂_a(x) = w_a·x + b_a + α√(xᵀA⁻¹x)`; update is gradient-on-(w,b) plus a rank-1
-`A += x⊗x` with **Sherman-Morrison** maintenance of `A⁻¹`.
+Implements the **disjoint LinUCB model** (Li et al., WWW 2010, Algorithm 1) — fixed
+at main `a6626aac3`, which replaced the earlier shared-`A` hybrid (SGD-learned
+weights, action-independent exploration bonus) with the real per-action model.
+Each action `a` owns `A_a` ([8×8], init `λI`), `b_a` ([8], init 0), and a cached
+`A_a⁻¹` (Sherman-Morrison rank-1 maintenance). Inference per action:
+`p_{t,a} = θ_aᵀx + α√(xᵀA_a⁻¹x)` with `θ_a = A_a⁻¹b_a` (closed form — no gradient
+step). The exploration bonus `α√(xᵀA_a⁻¹x)` is **per-action**: it is large for
+actions with little history and shrinks as that action's history accumulates.
+Update (steps 8–10 of Algorithm 1) touches only the taken action's `A_a`, `b_a`,
+`A_a⁻¹`. `alpha_lr` is a documented no-op retained for telemetry compatibility
+(`with_params` accepts it; the disjoint update does not use it).
+
+The autoprocess stub `AutoProcessAgent::linucb_ucb_estimate(q_value, action,
+features)` (`autoprocess.rs:429`) now delegates to this real per-action bonus
+(α √(xᵀA_action⁻¹x)); note the signature gained an `action: u32` parameter at
+`a6626aac3` — it is a Rust-internal method, no wasm_bindgen export and no JS/TS
+caller exists. The previous fake `sqrt_lut` lookup-table field is gone from the
+struct. The generated crate reference (`docs/reference/generated/reference.md`)
+is pinned to v26.7.1 (finding D9) and still shows the pre-`a6626aac3` signature
+and `sqrt_lut`; regenerate before relying on it.
 
 | Item | File:line | Status | Math-correct | Deterministic | WASM-reachable |
 |------|-----------|--------|--------------|---------------|----------------|
-| `select` (argmax UCB) | `linucb.rs:150-166` | real | ✅ | ✅ pure fn of state+input | indirect (orchestrator agent selection) |
-| `update` (Sherman-Morrison) | `linucb.rs:206-253` | real | ✅ `A⁻¹' = A⁻¹ − (uuᵀ)/(1+xᵀA⁻¹x)`, denom ≥ 1 (PSD) so guard is safe | ✅ | indirect |
-| `compute_ucb_variance` `xᵀA⁻¹x` | `linucb.rs:184-189` | real | ✅ clamped ≥0 for numeric safety | ✅ | — |
-| `weight_norms` (convergence metric) | `linucb.rs:284-294` | real | ✅ L2 | ✅ | — |
+| `select` (argmax UCB, ties → lowest index) | `linucb.rs:126-144` | real | ✅ | ✅ pure fn of state+input | indirect (orchestrator agent selection) |
+| `update` (per-action closed-form) | `linucb.rs:181-246` | real | ✅ `A⁻¹' = A⁻¹ − (A⁻¹x)(A⁻¹x)ᵀ/(1+xᵀA⁻¹x)`, denom ≥ 1 (PSD) so guard is safe | ✅ | indirect |
+| `variance_for_action` `xᵀA_a⁻¹x` | `linucb.rs:172-179` | real | ✅ clamped ≥0 for numeric safety | ✅ | — |
+| `exploration_bonus` `α√(xᵀA_a⁻¹x)` | `linucb.rs:162-165` | real | ✅ per-action (non-constant across actions) | ✅ | — |
+| `weight_norms` (convergence metric) | `linucb.rs:248` | real | ✅ L2 | ✅ | — |
 
 **Math oracle that proves it (not FM-5):** `linucb.rs` test `a_inv_is_consistent_with_a_after_updates`
 multiplies `A · A⁻¹` after 5 updates and asserts it equals `I` (±1e-3) — an external linear-algebra
-identity, independent of the Sherman-Morrison code path. **Verdict: real, math-correct, deterministic.**
+identity, independent of the Sherman-Morrison code path. Additional `a6626aac3` tests assert
+disjointness and per-action uncertainty (bonus differs across actions for the same context, and
+shrinks as the taken action's history grows), regret < horizon/10 vs random, closed-loop
+convergence, and seeded determinism.
+
+**Determinism scope:** the LinUCB inference and update math is deterministic and
+RNG-free; the enclosing `rl_orchestrator`/`AutoProcessAgent` ε-greedy loop is
+deterministic **only on seeded paths** (tests seed `fastrand::Rng`). Production
+construction seeds the RNG from entropy, so end-to-end cycle behavior is not
+bit-reproducible — see the open finding in `docs/benchmarks/RESULTS-2026-10-10.md`.
+
+**Verdict: real, math-correct; deterministic (math + seeded paths only).**
 
 ---
 

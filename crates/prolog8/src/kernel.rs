@@ -16,6 +16,7 @@ use crate::types::{
     ProofNodeId, QueryAtom8, Receipt, Rule8, SubstitutionId, TermId, ARITY_CAP,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
 // Variable-encoding helpers (module-level so `solve_body` can use them)
@@ -27,7 +28,36 @@ const VAR_SENTINEL_BASE: u32 = 0x8000_0000;
 
 /// Maximum recursive rule-chaining depth in `derive_atom`. Prevents infinite
 /// loops on recursive rules while supporting PARARULE-Plus depth-5 chains.
-const MAX_DERIVE_DEPTH: u32 = 32;
+pub const MAX_DERIVE_DEPTH: u32 = 32;
+
+/// One derived solution: concrete head args + the leaf facts that support it.
+type Solution = ([TermId; ARITY_CAP as usize], Vec<FactRow8>);
+
+/// Per-query evaluation state. Created fresh by `Kernel::query` (so it is
+/// trivially invalidated at `load_facts`/`load_rule` boundaries — it never
+/// outlives a single query) and threaded through the solver.
+///
+/// Memoization soundness: results are depth-sensitive (the cap truncates),
+/// so entries record the deepest call depth at which the goal was derived
+/// WITHOUT truncation, and are reused only when the current call depth is <=
+/// the recorded depth — an untruncated derivation of a goal has the same
+/// solution set at any smaller call depth. Entries computed while the depth
+/// cap fired are never cached. The cache is per-query only (created in
+/// `Kernel::query`), so it is trivially invalidated at load_facts/load_rule
+/// boundaries.
+#[derive(Default)]
+struct EvalState {
+    /// Memo table: goal atom -> (max untruncated call depth, solutions).
+    memo: HashMap<Atom8, (u32, Vec<Solution>)>,
+    /// Number of memo hits (diagnostic; proves the cache fires).
+    memo_hits: u64,
+    /// Number of memo misses (derivation computations actually performed).
+    memo_misses: u64,
+    /// Set when a negated body atom was evaluated with unbound variables.
+    negation_floundered: bool,
+    /// Set when the derivation recursion hit `MAX_DERIVE_DEPTH`.
+    depth_exceeded: bool,
+}
 
 type Subst = [Option<TermId>; ARITY_CAP as usize];
 
@@ -80,6 +110,10 @@ pub struct Decision {
     pub proof: Vec<ProofNode>,
     /// Receipt assembled from all roots.
     pub receipt: Receipt,
+    /// True when derivation was truncated by `MAX_DERIVE_DEPTH`. The answer
+    /// set may be incomplete; callers decide refusal semantics. Never a
+    /// silent truncation: this flag makes the cap observable.
+    pub depth_exceeded: bool,
 }
 
 /// Result of running a query.
@@ -136,7 +170,34 @@ impl Kernel {
 
     /// Run a query end-to-end: validate, scan facts, fire applicable rules,
     /// emit proof and receipt.
+    /// Run a query end-to-end with a fresh per-query `EvalState`
+    /// (memoization + fault tracking). See `query_with_state`.
     pub fn query(&self, q: &QueryAtom8) -> QueryResult {
+        let mut state = EvalState::default();
+        let result = self.query_with_state(q, &mut state);
+        if state.negation_floundered {
+            // Floundered negation is a typed refusal, never a silent false.
+            return QueryResult::Invalid(RejectionCode::NegationFloundering);
+        }
+        result
+    }
+
+    /// Query with memoization statistics: `(result, memo_misses, memo_hits)`.
+    /// Diagnostic surface for tests and benchmarks.
+    pub fn query_with_stats(&self, q: &QueryAtom8) -> (QueryResult, u64, u64) {
+        let mut state = EvalState::default();
+        let result = self.query_with_state(q, &mut state);
+        if state.negation_floundered {
+            return (
+                QueryResult::Invalid(RejectionCode::NegationFloundering),
+                state.memo_misses,
+                state.memo_hits,
+            );
+        }
+        (result, state.memo_misses, state.memo_hits)
+    }
+
+    fn query_with_state(&self, q: &QueryAtom8, state: &mut EvalState) -> QueryResult {
         if let Err(code) = admit_atom(&q.atom, &self.catalog) {
             return QueryResult::Invalid(code);
         }
@@ -148,19 +209,26 @@ impl Kernel {
             let answers = fact_answers
                 .into_iter()
                 .enumerate()
-                .map(|(i, (row, fact_hash))| self.assemble_fact_answer(q, &row, fact_hash, i))
+                .map(|(i, (row, fact_hash))| {
+                    let mut d = self.assemble_fact_answer(q, &row, fact_hash, i);
+                    d.depth_exceeded = state.depth_exceeded;
+                    d
+                })
                 .collect();
             return QueryResult::Answered(answers);
         }
 
         // Phase 2: rule application (one-step, depth-1 backwards chaining).
-        let rule_answers = self.scan_rules(q);
+        let rule_answers = self.scan_rules(q, state);
         if !rule_answers.is_empty() {
             return QueryResult::Answered(rule_answers);
         }
 
-        // Phase 3: deny with negative proof.
-        QueryResult::Denied(Box::new(self.assemble_negative(q)))
+        // Phase 3: deny with negative proof. Depth truncation is surfaced on
+        // the decision — the caller decides refusal semantics.
+        let mut d = self.assemble_negative(q);
+        d.depth_exceeded = state.depth_exceeded;
+        QueryResult::Denied(Box::new(d))
     }
 
     /// Scan all admitted fact blocks for rows that unify with `query`.
@@ -191,7 +259,7 @@ impl Kernel {
     /// rule evaluation (it calls `scan_facts` only), so there is no rule-level
     /// recursion to prevent. Blocking duplicate (pred_id, args) entries would
     /// incorrectly suppress multiple rules that derive the same head.
-    fn scan_rules(&self, q: &QueryAtom8) -> Vec<Decision> {
+    fn scan_rules(&self, q: &QueryAtom8, state: &mut EvalState) -> Vec<Decision> {
         let mut answers = Vec::new();
 
         for rule in &self.rules {
@@ -222,7 +290,7 @@ impl Kernel {
             }
 
             // Depth-first backtracking search over body atoms.
-            self.solve_body(rule, subst, 0, &mut Vec::new(), &mut answers, q);
+            self.solve_body(rule, subst, 0, &mut Vec::new(), &mut answers, q, state);
         }
 
         // Deduplicate by bindings: two proofs for the same conclusion are one answer.
@@ -256,6 +324,7 @@ impl Kernel {
         supporting: &mut Vec<FactRow8>,
         answers: &mut Vec<Decision>,
         q: &QueryAtom8,
+        state: &mut EvalState,
     ) {
         if bi == rule.body_len as usize {
             let mut bindings_arr = [TermId::sentinel(); ARITY_CAP as usize];
@@ -264,7 +333,7 @@ impl Kernel {
                 let effective = if h.is_sentinel() { var_term(i) } else { h };
                 bindings_arr[i] = resolve_var(effective, &subst);
             }
-            answers.push(self.assemble_rule_answer(q, rule, &bindings_arr, supporting));
+            answers.push(self.assemble_rule_answer(q, rule, &bindings_arr, supporting, state));
             return;
         }
 
@@ -289,17 +358,25 @@ impl Kernel {
 
         if negated {
             // NAF: body atom succeeds iff it has NO derivation.
-            // Negated atoms must not bind variables (stratification invariant);
-            // we evaluate with whatever is already ground in `subst`.
-            let solutions = self.derive_atom_with_support(&concrete, q.epoch, 0);
+            // Groundness gate: every variable of the negated atom must already
+            // be bound. Evaluating a non-ground negation would silently treat
+            // "no proof found for unknown bindings" as false — unsound. Refuse
+            // with a typed error instead.
+            if concrete_binding != (1u8 << body_atom.arity).wrapping_sub(1) {
+                state.negation_floundered = true;
+                return;
+            }
+            let solutions = self.derive_atom_with_support(&concrete, q.epoch, 0, state);
             if solutions.is_empty() {
                 // NAF succeeds — no new bindings, continue to next body atom.
-                self.solve_body(rule, subst, bi + 1, supporting, answers, q);
+                self.solve_body(rule, subst, bi + 1, supporting, answers, q, state);
             }
             // else: NAF fails — backtrack (no recursive call).
         } else {
             // Positive atom: evaluate and extend substitution for each solution.
-            for (sol_args, sol_facts) in self.derive_atom_with_support(&concrete, q.epoch, 0) {
+            for (sol_args, sol_facts) in
+                self.derive_atom_with_support(&concrete, q.epoch, 0, state)
+            {
                 let mut new_subst = subst;
                 let mut ok = true;
 
@@ -315,7 +392,7 @@ impl Kernel {
                 if ok {
                     let pre_len = supporting.len();
                     supporting.extend_from_slice(&sol_facts);
-                    self.solve_body(rule, new_subst, bi + 1, supporting, answers, q);
+                    self.solve_body(rule, new_subst, bi + 1, supporting, answers, q, state);
                     supporting.truncate(pre_len);
                 }
             }
@@ -332,10 +409,24 @@ impl Kernel {
         query: &Atom8,
         epoch: EpochId,
         depth: u32,
-    ) -> Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)> {
+        state: &mut EvalState,
+    ) -> Vec<Solution> {
+        // Memo lookup: reuse only if the cached derivation ran with at least
+        // the current budget (depth <= recorded depth) and was not truncated.
+        if let Some((d0, sols)) = state.memo.get(query) {
+            if depth <= *d0 {
+                state.memo_hits += 1;
+                return sols.clone();
+            }
+        }
+
         if depth > MAX_DERIVE_DEPTH {
+            // Typed, observable truncation: record the cap hit so the caller's
+            // Decision carries `depth_exceeded = true`. Never silently empty.
+            state.depth_exceeded = true;
             return Vec::new();
         }
+        state.memo_misses += 1;
 
         let mut out: Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)> = Vec::new();
 
@@ -372,9 +463,38 @@ impl Kernel {
                 depth,
                 &mut Vec::new(),
                 &mut out,
+                state,
             );
         }
 
+        // Dedup by head args: multiple derivation paths to the same ground
+        // instance yield one solution (first supporting-fact set wins). This
+        // is the tabled-prolog collapse — answer bindings are unchanged
+        // (scan_rules dedups by bindings anyway) and it bounds the solution
+        // count by distinct ground instances instead of derivation paths.
+        let mut seen_args: Vec<[TermId; ARITY_CAP as usize]> = Vec::new();
+        out.retain(|(args, _)| {
+            if seen_args.contains(args) {
+                false
+            } else {
+                seen_args.push(*args);
+                true
+            }
+        });
+
+        // Cache only complete (untruncated) derivations, recording the deepest
+        // call depth at which the goal was derived; the entry is sound to
+        // reuse at any smaller call depth.
+        if !state.depth_exceeded {
+            state
+                .memo
+                .entry(query.clone())
+                .and_modify(|(d0, sols)| {
+                    *d0 = (*d0).max(depth);
+                    *sols = out.clone();
+                })
+                .or_insert((depth, out.clone()));
+        }
         out
     }
 
@@ -390,7 +510,8 @@ impl Kernel {
         epoch: EpochId,
         depth: u32,
         supporting: &mut Vec<FactRow8>,
-        out: &mut Vec<([TermId; ARITY_CAP as usize], Vec<FactRow8>)>,
+        out: &mut Vec<Solution>,
+        state: &mut EvalState,
     ) {
         if bi == rule.body_len as usize {
             let mut args = [TermId::sentinel(); ARITY_CAP as usize];
@@ -421,12 +542,21 @@ impl Kernel {
         let negated = (rule.negation_mask >> bi) & 1 == 1;
 
         if negated {
-            let solutions = self.derive_atom_with_support(&c_atom, epoch, depth + 1);
+            // Same groundness gate as `solve_body`: refuse non-ground NAF.
+            if c_mask != (1u8 << body_atom.arity).wrapping_sub(1) {
+                state.negation_floundered = true;
+                return;
+            }
+            let solutions = self.derive_atom_with_support(&c_atom, epoch, depth + 1, state);
             if solutions.is_empty() {
-                self.derive_body_with_support(rule, subst, bi + 1, epoch, depth, supporting, out);
+                self.derive_body_with_support(
+                    rule, subst, bi + 1, epoch, depth, supporting, out, state,
+                );
             }
         } else {
-            for (sol_args, sol_facts) in self.derive_atom_with_support(&c_atom, epoch, depth + 1) {
+            for (sol_args, sol_facts) in
+                self.derive_atom_with_support(&c_atom, epoch, depth + 1, state)
+            {
                 let mut new_subst = subst;
                 let mut ok = true;
                 for ai in 0..body_atom.arity as usize {
@@ -448,6 +578,7 @@ impl Kernel {
                         depth,
                         supporting,
                         out,
+                        state,
                     );
                     supporting.truncate(pre_len);
                 }
@@ -484,12 +615,13 @@ impl Kernel {
             Vec::new()
         };
         let proof = self.finalize_proof(proof);
-        let receipt = self.assemble_receipt(q, &proof, DecisionKind::Allow);
+        let receipt = self.assemble_receipt(q, &bindings, false, &proof, DecisionKind::Allow);
         Decision {
             kind: DecisionKind::Allow,
             bindings,
             proof,
             receipt,
+            depth_exceeded: false,
         }
     }
 
@@ -499,6 +631,7 @@ impl Kernel {
         rule: &Rule8,
         bindings_arr: &[TermId; 8],
         supporting_facts: &[FactRow8],
+        state: &EvalState,
     ) -> Decision {
         let mut bindings = Vec::new();
         for i in 0..rule.head.arity {
@@ -520,28 +653,67 @@ impl Kernel {
                 node_hash: [0u8; 32],
             });
         }
+        // Reduce the supporting facts into a valid fan-in<=8 proof DAG.
+        // Layers of chunked grouping nodes (kind: Rule, rule_id: None) combine
+        // >8 supports; every fact node stays in the Vec, so proof_root still
+        // commits to the full derivation. (Previously this indexed out of
+        // bounds when a derivation had more than 8 supporting facts.)
+        let mut layer: Vec<ProofNodeId> = (0..supporting_facts.len() as u32)
+            .map(ProofNodeId)
+            .collect();
+        while layer.len() > 8 {
+            let mut next = Vec::new();
+            for chunk in layer.chunks(8) {
+                let node_id = ProofNodeId(proof.len() as u32);
+                let mut children = [ProofNodeId(0); 8];
+                for (j, c) in chunk.iter().enumerate() {
+                    children[j] = *c;
+                }
+                let node = ProofNode {
+                    node_id,
+                    kind: ProofKind::Rule,
+                    pred_id: rule.head.pred_id,
+                    rule_id: None,
+                    fact_hash: None,
+                    children,
+                    child_count: chunk.len() as u8,
+                    substitution_id: SubstitutionId(0),
+                    node_hash: [0u8; 32],
+                };
+                proof.push(node);
+                next.push(node_id);
+            }
+            layer = next;
+        }
         let mut child_ids = [ProofNodeId(0); 8];
-        for (i, _) in supporting_facts.iter().enumerate() {
-            child_ids[i] = ProofNodeId(i as u32);
+        for (i, id) in layer.iter().enumerate() {
+            child_ids[i] = *id;
         }
         proof.push(ProofNode {
-            node_id: ProofNodeId(supporting_facts.len() as u32),
+            node_id: ProofNodeId(proof.len() as u32),
             kind: ProofKind::Rule,
-            pred_id: rule.head.pred_id,
             rule_id: Some(rule.rule_id),
+            pred_id: rule.head.pred_id,
             fact_hash: None,
             children: child_ids,
-            child_count: supporting_facts.len() as u8,
+            child_count: layer.len() as u8,
             substitution_id: SubstitutionId(0),
             node_hash: [0u8; 32],
         });
         let proof = self.finalize_proof(proof);
-        let receipt = self.assemble_receipt(q, &proof, DecisionKind::Allow);
+        let receipt = self.assemble_receipt(
+            q,
+            &bindings,
+            state.depth_exceeded,
+            &proof,
+            DecisionKind::Allow,
+        );
         Decision {
             kind: DecisionKind::Allow,
             bindings,
             proof,
             receipt,
+            depth_exceeded: state.depth_exceeded,
         }
     }
 
@@ -562,12 +734,13 @@ impl Kernel {
             Vec::new()
         };
         let proof = self.finalize_proof(proof);
-        let receipt = self.assemble_receipt(q, &proof, DecisionKind::Deny);
+        let receipt = self.assemble_receipt(q, &[], false, &proof, DecisionKind::Deny);
         Decision {
             kind: DecisionKind::Deny,
             bindings: Vec::new(),
             proof,
             receipt,
+            depth_exceeded: false,
         }
     }
 
@@ -581,6 +754,8 @@ impl Kernel {
     fn assemble_receipt(
         &self,
         q: &QueryAtom8,
+        bindings: &[TermId],
+        depth_exceeded: bool,
         proof: &[ProofNode],
         decision: DecisionKind,
     ) -> Receipt {
@@ -589,7 +764,7 @@ impl Kernel {
         let fact_root = self.fact_root();
         let input_root = Self::input_root(q);
         let proof_root = Self::proof_root(proof);
-        let output_root = Self::output_root(q, proof);
+        let output_root = Self::output_root(q, bindings, depth_exceeded);
         let mut receipt = Receipt {
             engine_version: crate::ENGINE_VERSION.to_string(),
             catalog_root,
@@ -606,14 +781,33 @@ impl Kernel {
         receipt
     }
 
+    /// Hash a single atom into `hasher`: pred_id, arity, binding mask, then
+    /// every live argument term. Fixed-width fields — no extra length prefix
+    /// needed because the arg count is determined by `arity`.
+    fn hash_atom_into(hasher: &mut blake3::Hasher, a: &Atom8) {
+        hasher.update(&a.pred_id.0.to_le_bytes());
+        hasher.update(&[a.arity, a.binding_mask]);
+        for i in 0..a.arity as usize {
+            hasher.update(&a.args[i].0.to_le_bytes());
+        }
+    }
+
     fn rule_root(&self) -> Hash {
         let mut hasher = blake3::Hasher::new_keyed(&DOMAIN_PROLOG8_RULES);
         hasher.update(&(self.rules.len() as u32).to_le_bytes());
         for r in &self.rules {
             hasher.update(&r.rule_id.0.to_le_bytes());
-            hasher.update(&r.head.pred_id.0.to_le_bytes());
             hasher.update(&[r.head.arity, r.body_len, r.var_count]);
             hasher.update(&[r.body_mask, r.negation_mask, r.builtin_mask, r.feature_mask]);
+            // Head atom in full (pred + mask + args), then the count-prefixed
+            // body atoms in full. Binding the bodies closes the gap where rule
+            // BODIES were unbound in receipts (only head id/arity/masks were
+            // hashed).
+            Self::hash_atom_into(&mut hasher, &r.head);
+            hasher.update(&[r.body_len]);
+            for bi in 0..r.body_len as usize {
+                Self::hash_atom_into(&mut hasher, &r.body[bi]);
+            }
         }
         hasher.finalize().into()
     }
@@ -649,15 +843,17 @@ impl Kernel {
         hasher.finalize().into()
     }
 
-    fn output_root(q: &QueryAtom8, proof: &[ProofNode]) -> Hash {
+    /// Output root binds the actual `Decision.bindings` (count-prefixed terms)
+    /// plus the depth-truncation marker. Previously it hashed only the output
+    /// mask and proof fact-hashes, leaving the bindings themselves unbound.
+    fn output_root(q: &QueryAtom8, bindings: &[TermId], depth_exceeded: bool) -> Hash {
         let mut hasher = blake3::Hasher::new_keyed(&DOMAIN_PROLOG8_OUTPUT);
         hasher.update(&q.output_mask.to_le_bytes());
-        // Output bindings live inside the matching ProofNode that wraps a fact.
-        for n in proof {
-            if let Some(fh) = n.fact_hash {
-                hasher.update(&fh);
-            }
+        hasher.update(&(bindings.len() as u32).to_le_bytes());
+        for b in bindings {
+            hasher.update(&b.0.to_le_bytes());
         }
+        hasher.update(&[depth_exceeded as u8]);
         hasher.finalize().into()
     }
 }
@@ -1378,5 +1574,466 @@ mod tests {
             }
             other => panic!("expected Answered, got {other:?}"),
         }
+    }
+
+    /// Depth cap: hitting MAX_DERIVE_DEPTH must surface a typed marker on the
+    /// Decision (depth_exceeded = true), not silently return empty/Denied.
+    #[test]
+    fn depth_exceeded_is_visible_in_decision() {
+        let mut cat = Catalog::new(CatalogId(1));
+        for (pid, label) in [
+            (PredicateId(1), "base"),
+            (PredicateId(2), "p"),
+        ] {
+            cat.add_predicate(PredicateMeta {
+                pred_id: pid,
+                label: label.into(),
+                arity: 1,
+                access_orders: vec![],
+                proof_policy: PredicateProofPolicy::OnRequest,
+                materialized: false,
+            });
+        }
+        let x = cat.intern_term("x");
+        let mut k = Kernel::new(cat);
+        // Fact: base(x). No fact for p. Recursive rule with no terminating
+        // base case: p(?0) :- p(?0). Deriving p(x) recurses forever → cap.
+        k.load_facts(FactBlock8::new(
+            PredicateId(1),
+            1,
+            vec![FactRow8::new(PredicateId(1), 1, &[x], SourceId(0))],
+        ))
+        .unwrap();
+        let v0 = var_term(0);
+        let head = Atom8::new(PredicateId(2), 1, &[v0]);
+        let body0 = Atom8::new(PredicateId(2), 1, &[v0]);
+        let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        body_arr[0] = body0;
+        let rule = Rule8 {
+            rule_id: RuleId(1),
+            head,
+            body: body_arr,
+            body_len: 1,
+            body_mask: 0b1,
+            negation_mask: 0,
+            builtin_mask: 0,
+            var_count: 1,
+            var_live_mask: 0b1,
+            feature_mask: FeatureBit::Facts.mask() | FeatureBit::BoundedRecursion.mask(),
+            proof_mask: 0,
+            plan_id: PlanId::default(),
+        };
+        k.load_rule(rule).unwrap();
+        let q_atom = Atom8::new(PredicateId(2), 1, &[x]);
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0,
+            proof_mode: ProofMode::Both,
+            epoch: EpochId(0),
+        };
+        let (result, _misses, _hits) = k.query_with_stats(&q);
+        match result {
+            QueryResult::Denied(d) => assert!(
+                d.depth_exceeded,
+                "depth cap hit must be visible on the Decision"
+            ),
+            QueryResult::Answered(a) => panic!("unexpected answers {a:?}"),
+            other => panic!("unexpected {other:?}"),
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Validation-gap upgrades (u5 lane)
+    // ------------------------------------------------------------------
+
+    /// NAF groundness: a negated body atom with an unbound variable must be a
+    /// typed refusal (`NegationFloundering`), never a silent false.
+    #[test]
+    fn negation_with_unbound_var_is_typed_refusal() {
+        let mut cat = Catalog::new(CatalogId(1));
+        for (pid, label) in [(PredicateId(1), "q"), (PredicateId(2), "r"), (PredicateId(3), "p")] {
+            cat.add_predicate(PredicateMeta {
+                pred_id: pid,
+                label: label.into(),
+                arity: 1,
+                access_orders: vec![],
+                proof_policy: PredicateProofPolicy::OnRequest,
+                materialized: false,
+            });
+        }
+        let x = cat.intern_term("x");
+        let mut k = Kernel::new(cat);
+        k.load_facts(FactBlock8::new(
+            PredicateId(1),
+            1,
+            vec![FactRow8::new(PredicateId(1), 1, &[x], SourceId(0))],
+        ))
+        .unwrap();
+
+        // Rule: p(?0) :- q(?0), not r(?1)  — ?1 never bound → must flounder.
+        let v0 = var_term(0);
+        let v1 = var_term(1);
+        let head = Atom8::new(PredicateId(3), 1, &[v0]);
+        let body0 = Atom8::new(PredicateId(1), 1, &[v0]);
+        let body1 = Atom8::new(PredicateId(2), 1, &[v1]);
+        let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        body_arr[0] = body0;
+        body_arr[1] = body1;
+        let rule = Rule8 {
+            rule_id: RuleId(1),
+            head,
+            body: body_arr,
+            body_len: 2,
+            body_mask: 0b11,
+            negation_mask: 0b10,
+            builtin_mask: 0,
+            var_count: 2,
+            var_live_mask: 0b1,
+            feature_mask: FeatureBit::Facts.mask() | FeatureBit::StratifiedNegation.mask(),
+            proof_mask: 0,
+            plan_id: PlanId::default(),
+        };
+        k.load_rule(rule).unwrap();
+
+        let q_atom = Atom8::new(PredicateId(3), 1, &[TermId::sentinel()]);
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0b1,
+            proof_mode: ProofMode::PositiveOnly,
+            epoch: EpochId(0),
+        };
+        match k.query(&q) {
+            QueryResult::Invalid(RejectionCode::NegationFloundering) => {}
+            other => panic!("expected NegationFloundering refusal, got {other:?}"),
+        }
+    }
+
+    /// Ground negation still evaluates: `not r(x)` with r(x) absent succeeds,
+    /// `not r(x)` with r(x) present fails — no floundering refusal.
+    #[test]
+    fn ground_negation_still_evaluates() {
+        let mut cat = Catalog::new(CatalogId(1));
+        for (pid, label) in [(PredicateId(1), "q"), (PredicateId(2), "r"), (PredicateId(3), "p")] {
+            cat.add_predicate(PredicateMeta {
+                pred_id: pid,
+                label: label.into(),
+                arity: 1,
+                access_orders: vec![],
+                proof_policy: PredicateProofPolicy::OnRequest,
+                materialized: false,
+            });
+        }
+        let x = cat.intern_term("x");
+        let y = cat.intern_term("y");
+        let mut k = Kernel::new(cat);
+        k.load_facts(FactBlock8::new(
+            PredicateId(1),
+            1,
+            vec![FactRow8::new(PredicateId(1), 1, &[x], SourceId(0))],
+        ))
+        .unwrap();
+        // r(y) exists, r(x) does not.
+        k.load_facts(FactBlock8::new(
+            PredicateId(2),
+            1,
+            vec![FactRow8::new(PredicateId(2), 1, &[y], SourceId(0))],
+        ))
+        .unwrap();
+
+        // Rule: p(?0) :- q(?0), not r(?0)  — ground at NAF time.
+        let v0 = var_term(0);
+        let head = Atom8::new(PredicateId(3), 1, &[v0]);
+        let body0 = Atom8::new(PredicateId(1), 1, &[v0]);
+        let body1 = Atom8::new(PredicateId(2), 1, &[v0]);
+        let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        body_arr[0] = body0;
+        body_arr[1] = body1;
+        let rule = Rule8 {
+            rule_id: RuleId(1),
+            head,
+            body: body_arr,
+            body_len: 2,
+            body_mask: 0b11,
+            negation_mask: 0b10,
+            builtin_mask: 0,
+            var_count: 1,
+            var_live_mask: 0b1,
+            feature_mask: FeatureBit::Facts.mask() | FeatureBit::StratifiedNegation.mask(),
+            proof_mask: 0,
+            plan_id: PlanId::default(),
+        };
+        k.load_rule(rule).unwrap();
+
+        let q_atom = Atom8::new(PredicateId(3), 1, &[TermId::sentinel()]);
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0b1,
+            proof_mode: ProofMode::PositiveOnly,
+            epoch: EpochId(0),
+        };
+        match k.query(&q) {
+            QueryResult::Answered(a) => assert_eq!(a.len(), 1),
+            other => panic!("expected Answered for ground NAF, got {other:?}"),
+        }
+    }
+
+    /// rule_root must bind rule BODIES: two kernels with rules that share
+    /// rule_id, head, and masks but differ in a body atom must produce
+    /// different rule roots (and receipt hashes).
+    #[test]
+    fn rule_root_binds_rule_bodies() {
+        let (k1, q) = body_discrimination_kernel(PredicateId(1));
+        let (k2, _) = body_discrimination_kernel(PredicateId(2));
+
+        let r1 = match k1.query(&q) {
+            QueryResult::Answered(a) => a[0].receipt.clone(),
+            QueryResult::Denied(d) => d.receipt,
+            QueryResult::Invalid(_) => unreachable!(),
+        };
+        let r2 = match k2.query(&q) {
+            QueryResult::Answered(a) => a[0].receipt.clone(),
+            QueryResult::Denied(d) => d.receipt,
+            QueryResult::Invalid(_) => unreachable!(),
+        };
+        assert_ne!(
+            r1.rule_root, r2.rule_root,
+            "rule_root must change when a rule body changes"
+        );
+        assert_ne!(r1.receipt_hash, r2.receipt_hash);
+    }
+
+    /// Kernel factory for `rule_root_binds_rule_bodies`: builds identical
+    /// fact bases and a rule whose first body atom differs by pred_id.
+    fn body_discrimination_kernel(body0_pred: PredicateId) -> (Kernel, QueryAtom8) {
+        let mut cat = Catalog::new(CatalogId(1));
+        for (pid, label) in [
+            (PredicateId(1), "f1"),
+            (PredicateId(2), "f2"),
+            (PredicateId(3), "p"),
+        ] {
+            cat.add_predicate(PredicateMeta {
+                pred_id: pid,
+                label: label.into(),
+                arity: 1,
+                access_orders: vec![],
+                proof_policy: PredicateProofPolicy::OnRequest,
+                materialized: false,
+            });
+        }
+        let x = cat.intern_term("x");
+        let mut k = Kernel::new(cat);
+        k.load_facts(FactBlock8::new(
+            PredicateId(1),
+            1,
+            vec![FactRow8::new(PredicateId(1), 1, &[x], SourceId(0))],
+        ))
+        .unwrap();
+        k.load_facts(FactBlock8::new(
+            PredicateId(2),
+            1,
+            vec![FactRow8::new(PredicateId(2), 1, &[x], SourceId(0))],
+        ))
+        .unwrap();
+
+        // Rule: p(?0) :- <body0_pred>(?0)  — same head/ids/masks, body differs.
+        let v0 = var_term(0);
+        let head = Atom8::new(PredicateId(3), 1, &[v0]);
+        let body0 = Atom8::new(body0_pred, 1, &[v0]);
+        let mut body_arr = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        body_arr[0] = body0;
+        let rule = Rule8 {
+            rule_id: RuleId(7),
+            head,
+            body: body_arr,
+            body_len: 1,
+            body_mask: 0b1,
+            negation_mask: 0,
+            builtin_mask: 0,
+            var_count: 1,
+            var_live_mask: 0b1,
+            feature_mask: FeatureBit::Facts.mask() | FeatureBit::HornRules.mask(),
+            proof_mask: 0,
+            plan_id: PlanId::default(),
+        };
+        k.load_rule(rule).unwrap();
+
+        let q_atom = Atom8::new(PredicateId(3), 1, &[x]);
+        let mut q_atom = q_atom;
+        q_atom.binding_mask = 0b1;
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0,
+            proof_mode: ProofMode::PositiveOnly,
+            epoch: EpochId(0),
+        };
+        (k, q)
+    }
+
+    /// output_root must bind Decision.bindings: the same query against two
+    /// fact bases that yield different output bindings must yield different
+    /// output roots (the old root hashed only the mask + fact hashes).
+    #[test]
+    fn output_root_binds_decision_bindings() {
+        let mk = |rows: Vec<TermId>| -> (Kernel, QueryAtom8) {
+            let mut cat = Catalog::new(CatalogId(1));
+            cat.add_predicate(PredicateMeta {
+                pred_id: PredicateId(1),
+                label: "src".into(),
+                arity: 1,
+                access_orders: vec![],
+                proof_policy: PredicateProofPolicy::OnRequest,
+                materialized: false,
+            });
+            let a = cat.intern_term("a");
+            let b = cat.intern_term("b");
+            let terms = [a, b];
+            let (k, q) = {
+                let mut k = Kernel::new(cat);
+                k.load_facts(FactBlock8::new(
+                    PredicateId(1),
+                    1,
+                    rows.into_iter()
+                        .map(|t| FactRow8::new(PredicateId(1), 1, &[t], SourceId(0)))
+                        .collect(),
+                ))
+                .unwrap();
+                let q_atom = Atom8::new(PredicateId(1), 1, &[TermId::sentinel()]);
+                let q = QueryAtom8 {
+                    atom: q_atom,
+                    output_mask: 0b1,
+                    proof_mode: ProofMode::PositiveOnly,
+                    epoch: EpochId(0),
+                };
+                (k, q)
+            };
+            let _ = terms;
+            (k, q)
+        };
+        let (k1, q1) = mk(vec![TermId(101)]);
+        let (k2, q2) = mk(vec![TermId(202)]);
+        // Sanity: the two kernels use different catalogs so term ids don't collide.
+        let r1 = match k1.query(&q1) {
+            QueryResult::Answered(a) => a[0].receipt.clone(),
+            _ => unreachable!(),
+        };
+        let r2 = match k2.query(&q2) {
+            QueryResult::Answered(a) => a[0].receipt.clone(),
+            _ => unreachable!(),
+        };
+        assert_ne!(r1.output_root, r2.output_root);
+        assert_ne!(r1.receipt_hash, r2.receipt_hash);
+    }
+
+    #[test]
+    fn memoization_collapses_exponential_path_enumeration() {
+        // Layered DAG: width 2, 10 hops. Naive path count = 2^10 = 1024; distinct
+        // nodes = 22. The memo table must collapse repeated (goal, depth) subgoals.
+        const LEVELS: usize = 10;
+        let mut cat = Catalog::new(CatalogId(1));
+        for (pid, label, ar) in [
+            (PredicateId(1), "edge".to_string(), 2u8),
+            (PredicateId(2), "path".to_string(), 2u8),
+        ] {
+            cat.add_predicate(PredicateMeta {
+                pred_id: pid,
+                label,
+                arity: ar,
+                access_orders: vec![],
+                proof_policy: PredicateProofPolicy::OnRequest,
+                materialized: false,
+            });
+        }
+        let node = |k: usize, w: usize| TermId(1000 + (k * 2 + w) as u32);
+        let mut rows = Vec::new();
+        for k in 0..LEVELS {
+            for w in 0..2usize {
+                for w2 in 0..2usize {
+                    rows.push(FactRow8::new(
+                        PredicateId(1),
+                        2,
+                        &[node(k, w), node(k + 1, w2)],
+                        SourceId(0),
+                    ));
+                }
+            }
+        }
+        let mut k = Kernel::new(cat);
+        k.load_facts(FactBlock8::new(PredicateId(1), 2, rows))
+            .unwrap();
+
+        // Rule A: path(?0,?1) :- edge(?0,?1).
+        // Rule B: path(?0,?1) :- path(?0,?2), edge(?2,?1).
+        let v0 = var_term(0);
+        let v1 = var_term(1);
+        let v2 = var_term(2);
+        let mut b0 = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        b0[0] = Atom8::new(PredicateId(1), 2, &[v0, v1]);
+        let mut b1 = [Atom8::new(PredicateId(0), 0, &[]); 8];
+        // edge(?0,?2) first, then the recursive path(?2,?1) — subgoals become
+        // the forward nodes, which are shared across derivation routes.
+        b1[0] = Atom8::new(PredicateId(1), 2, &[v0, v2]);
+        b1[1] = Atom8::new(PredicateId(2), 2, &[v2, v1]);
+        let mk_rule = |rid: u32, body: [Atom8; 8], body_len: u8| Rule8 {
+            rule_id: RuleId(rid),
+            head: Atom8::new(PredicateId(2), 2, &[v0, v1]),
+            body,
+            body_len,
+            body_mask: (1u16 << body_len) as u8 - 1,
+            negation_mask: 0,
+            builtin_mask: 0,
+            var_count: 3,
+            var_live_mask: 0b11,
+            feature_mask: FeatureBit::Facts.mask() | FeatureBit::HornRules.mask(),
+            proof_mask: 0,
+            plan_id: PlanId::default(),
+        };
+        k.load_rule(mk_rule(1, b0, 1)).unwrap();
+        k.load_rule(mk_rule(2, b1, 2)).unwrap();
+
+        // Query: path(L0_0, ?) — all reachable endpoints.
+        let q_atom = Atom8::new(PredicateId(2), 2, &[node(0, 0), TermId::sentinel()]);
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0b10,
+            proof_mode: ProofMode::PositiveOnly,
+            epoch: EpochId(0),
+        };
+        let (result, misses, hits) = k.query_with_stats(&q);
+        let answers = match result {
+            QueryResult::Answered(a) => a,
+            other => panic!("expected Answered, got {other:?}"),
+        };
+        // Every layer's nodes are reachable.
+        let mut endpoints: Vec<u32> = answers
+            .iter()
+            .filter_map(|a| a.bindings.first().map(|t| t.0))
+            .collect();
+        endpoints.sort_unstable();
+        endpoints.dedup();
+        assert_eq!(endpoints.len(), 2 * LEVELS, "all layer nodes reachable");
+        for k in 1..=LEVELS {
+            for w in 0..2 {
+                assert!(endpoints.contains(&(node(k, w).0)));
+            }
+        }
+        // No duplicate derivations.
+        let n = answers.len();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                assert_ne!(answers[i].bindings, answers[j].bindings);
+                assert_ne!(answers[i].receipt.receipt_hash, answers[j].receipt.receipt_hash);
+            }
+        }
+        // Naive SLD enumerates 2^LEVELS paths; memoization must collapse the
+        // repeated (goal, depth) subgoals to a small number of computations.
+        let naive_paths = 1usize << LEVELS;
+        assert!(
+            hits > 0,
+            "memo table must actually fire"
+        );
+        assert!(
+            (misses as usize) < naive_paths / 8,
+            "memo must collapse exponential re-derivation: misses={misses}, naive={naive_paths}"
+        );
     }
 }

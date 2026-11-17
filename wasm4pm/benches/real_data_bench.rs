@@ -3,7 +3,7 @@
 //! Benchmarks 16 algorithms (those with native Rust `_from_log` or direct EventLog API)
 //! across 3 real-world datasets:
 //!   - sepsis.xes         (1,050 cases, ~15K events — ICU patient flow)
-//!   - bpi2020_travel.xes (7,065 cases, ~87K events — travel permits)
+//!   - bpi2020_domestic_declarations.xes (7,065 cases, ~87K events — travel permits)
 //!   - roadtraffic.xes    (100 cases  — road traffic fines)
 //!
 //! Excluded (no EventLog API): streaming_log, smart_engine, pnml_import, bpmn_import,
@@ -13,6 +13,8 @@
 //! Fallback: if real data is absent (e.g., CI), a synthetic 100-case log is generated
 //! so the bench always produces output regardless of environment.
 
+#[path = "helpers.rs"]
+mod helpers;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::{collections::BTreeMap, fs, time::Duration};
 
@@ -175,21 +177,15 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> Dataset {
 fn real_datasets() -> Vec<Dataset> {
     vec![
         load_dataset(
-            &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"],
+            helpers::SEPSIS_CANDIDATES,
             "sepsis",
         ),
         load_dataset(
-            &[
-                "bench_data/bpi2020_travel.xes",
-                "../../bench_data/bpi2020_travel.xes",
-            ],
+            helpers::BPI2020_DECL_CANDIDATES,
             "bpi2020",
         ),
         load_dataset(
-            &[
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            ],
+            helpers::ROADTRAFFIC_CANDIDATES,
             "roadtraffic",
         ),
     ]

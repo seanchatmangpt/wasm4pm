@@ -101,7 +101,14 @@ macro_rules! require_log {
     ($candidates:expr, $label:expr) => {
         match resolve_xes($candidates) {
             None => {
-                eprintln!("SKIP: {} not found", $label);
+                if std::env::var("WASM4PM_ALLOW_DATA_SKIP").as_deref() != Ok("1") {
+                    panic!(
+                        "MISSING DATASET for '{}': real-data tests must not silently skip. \
+                         Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping.",
+                        $label
+                    );
+                }
+                eprintln!("SKIP (WASM4PM_ALLOW_DATA_SKIP=1): {} not found", $label);
                 return;
             }
             Some(log) => log,
@@ -119,7 +126,7 @@ fn alpha_plus_plus_roadtraffic_produces_petri_net() {
         &[
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            "bench_data/sepsis.xes"
+            "../bench_data/sepsis.xes"
         ],
         "roadtraffic or sepsis for alpha++"
     );
@@ -170,7 +177,7 @@ fn optimized_dfg_roadtraffic_reduces_noise() {
         &[
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            "bench_data/sepsis.xes"
+            "../bench_data/sepsis.xes"
         ],
         "roadtraffic for optimized_dfg"
     );
@@ -193,8 +200,8 @@ fn optimized_dfg_roadtraffic_reduces_noise() {
 fn optimized_dfg_bpi2020_large_scale_non_degenerate() {
     let log = require_log!(
         &[
-            "bench_data/bpi2020_travel.xes",
-            "~/chatmangpt/wasm4pm/bench_data/bpi2020_travel.xes"
+            "../bench_data/bpi2020_domestic_declarations.xes",
+            "~/chatmangpt/wasm4pm/bench_data/bpi2020_domestic_declarations.xes"
         ],
         "bpi2020 for optimized_dfg"
     );
@@ -221,7 +228,7 @@ fn transition_system_roadtraffic_past_window_produces_states() {
         &[
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            "bench_data/sepsis.xes"
+            "../bench_data/sepsis.xes"
         ],
         "roadtraffic for transition_system"
     );
@@ -266,7 +273,7 @@ fn prefix_tree_roadtraffic_captures_all_variants() {
         &[
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            "bench_data/sepsis.xes"
+            "../bench_data/sepsis.xes"
         ],
         "roadtraffic for prefix_tree"
     );
@@ -293,7 +300,7 @@ fn prefix_tree_roadtraffic_captures_all_variants() {
 #[test]
 fn prefix_tree_sepsis_limited_depth_reduces_variant_count() {
     let log = require_log!(
-        &["bench_data/sepsis.xes"],
+        &["../bench_data/sepsis.xes"],
         "sepsis for prefix_tree depth limit"
     );
     let full = discover_prefix_tree_inner(&log, "concept:name", None).unwrap();
@@ -336,7 +343,7 @@ fn batches_roadtraffic_does_not_panic_on_real_timestamps() {
 
 #[test]
 fn batches_sepsis_structural_consistency() {
-    let log = require_log!(&["bench_data/sepsis.xes"], "sepsis for batches");
+    let log = require_log!(&["../bench_data/sepsis.xes"], "sepsis for batches");
     let result = discover_batches(&log, "concept:name", "time:timestamp");
     // Each batch must have at least 2 case references (batch = ≥2 cases together)
     for batch in &result.batches {
@@ -362,7 +369,7 @@ fn correlation_miner_roadtraffic_produces_edges() {
         &[
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
             "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            "bench_data/sepsis.xes"
+            "../bench_data/sepsis.xes"
         ],
         "roadtraffic for correlation_miner"
     );
@@ -392,7 +399,7 @@ fn correlation_miner_roadtraffic_produces_edges() {
 
 #[test]
 fn correlation_miner_sepsis_min_frequency_filter_works() {
-    let log = require_log!(&["bench_data/sepsis.xes"], "sepsis for correlation_miner");
+    let log = require_log!(&["../bench_data/sepsis.xes"], "sepsis for correlation_miner");
     let cfg_low = CorrelationConfig {
         correlation_threshold: 3600.0 * 24.0,
         min_edge_frequency: 1,

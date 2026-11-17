@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/predict_remaining_time.md; source-sha256: e163f6ca3a43c8a6f7b02a1ffbd333b75cecb5e60c58f41bad71819812809f9f; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/predict_remaining_time.md; source-sha256: f535d7bb1fb4b43f502b11af18709a6bec01d16254d1279d598aaef181a7a4b9; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: predict_remaining_time
 
@@ -29,3 +29,18 @@
 - **Rust Implementation**: `wasm4pm/src/prediction_remaining_time.rs` -> `predict_case_duration`, `build_remaining_time_model`
 - **TypeScript dispatch**: `packages/kernel/src/api.ts` -> `runRaw`
 - **Test file**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Evaluation semantics (2026-10-10, commit `0e3d81b38`)
+
+- `build_remaining_time_model_with_eval(log_handle, activity_key, timestamp_key)`
+  trains on the first `prefix_split(n, 0.8)` slice and scores every prefix of
+  every held-out trace. `prefix_split` guarantees a non-empty test slice
+  whenever `n >= 2` (`prefix_split(10, 0.8) == (8, 2)`).
+- The stored model JSON carries an optional `holdout` object with `mae`,
+  `rmse`, `r_squared` (can be negative — a model worse than the test mean is
+  reported as such, not clamped), `n_test`, `n_train`. `holdout` is absent
+  below `MIN_EVAL_SAMPLES = 10` total samples.
+- Hold-out MAE exceeding in-sample MAE on noise-injected logs is a regression
+  oracle in `wasm4pm/src/prediction_remaining_time.rs`.
+- NaN/Inf in the extracted lengths/durations return a typed error
+  (`input contains NaN/Inf at index i`) instead of silently poisoning metrics.

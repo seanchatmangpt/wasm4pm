@@ -127,14 +127,21 @@ impl PetriNetLookup {
             if let Some(inputs) = transition_inputs.get(&trans.id) {
                 for (place_id, _) in inputs {
                     if let Some(&idx) = place_idx.get(place_id) {
-                        trans_in_masks[i] |= 1u64 << idx;
+                        // Only places 0..64 are representable in the u64
+                        // bitmask fast path; nets with more places always run
+                        // the Vec engine, so higher bits are never read.
+                        if idx < 64 {
+                            trans_in_masks[i] |= 1u64 << idx;
+                        }
                     }
                 }
             }
             if let Some(outputs) = transition_outputs.get(&trans.id) {
                 for (place_id, _) in outputs {
                     if let Some(&idx) = place_idx.get(place_id) {
-                        trans_out_masks[i] |= 1u64 << idx;
+                        if idx < 64 {
+                            trans_out_masks[i] |= 1u64 << idx;
+                        }
                     }
                 }
             }
@@ -188,9 +195,253 @@ fn fire_invisible_bitmask(
     }
 }
 
+/// pm4py-parity invisible-transition handling: instead of firing every enabled
+/// invisible transition greedily to fixpoint (which can consume tokens a later
+/// visible transition needs — the sepsis fitness-0.0045 divergence), search
+/// breadth-first over invisible-only firings for a minimal sequence that makes
+/// `target_in_mask` enabled, and apply only that sequence. Returns `None` if
+/// the target cannot be enabled by invisible firings alone (caller then counts
+/// missing tokens as usual).
+fn enable_via_invisible_bitmask(
+    invisible_indices: &[usize],
+    trans_in_masks: &[u64],
+    trans_out_masks: &[u64],
+    marking: u64,
+    target_in_mask: u64,
+) -> Option<u64> {
+    if (marking & target_in_mask) == target_in_mask {
+        return Some(marking);
+    }
+    let mut visited: HashSet<u64> = HashSet::new();
+    let mut frontier: Vec<u64> = vec![marking];
+    visited.insert(marking);
+    let mut depth = 0usize;
+    while !frontier.is_empty() && depth < 64 {
+        let mut next: Vec<u64> = Vec::new();
+        for &m in &frontier {
+            for &i in invisible_indices {
+                let in_m = trans_in_masks[i];
+                if (m & in_m) == in_m {
+                    let m2 = (m & !in_m) | trans_out_masks[i];
+                    if (m2 & target_in_mask) == target_in_mask {
+                        return Some(m2);
+                    }
+                    if visited.insert(m2) {
+                        next.push(m2);
+                    }
+                }
+            }
+        }
+        frontier = next;
+        depth += 1;
+    }
+    None
+}
+
+/// Weight-aware Vec-path analog of [`enable_via_invisible_bitmask`].
+fn enable_via_invisible_vec(
+    invisible_indices: &[usize],
+    transition_inputs: &HashMap<String, Vec<(String, usize)>>,
+    transition_outputs: &HashMap<String, Vec<(String, usize)>>,
+    place_idx: &HashMap<String, usize>,
+    marking: &[usize],
+    target_transition_id: &str,
+) -> Option<Vec<usize>> {
+    let target_inputs = transition_inputs.get(target_transition_id);
+    let target_needs: Vec<(usize, usize)> = target_inputs
+        .map(|ins| {
+            ins.iter()
+                .filter_map(|(pid, w)| place_idx.get(pid).map(|&idx| (idx, *w)))
+                .collect()
+        })
+        .unwrap_or_default();
+    let enabled_on = |m: &[usize]| -> bool {
+        target_needs
+            .iter()
+            .all(|&(idx, w)| m.get(idx).copied().unwrap_or(0) >= w)
+    };
+    let m0: Vec<usize> = marking.to_vec();
+    if enabled_on(&m0) {
+        return Some(m0);
+    }
+    let fire = |m: &mut Vec<usize>, i: usize| -> bool {
+        let tid = i.to_string();
+        if let Some(ins) = transition_inputs.get(&tid) {
+            for (pid, w) in ins {
+                let idx = match place_idx.get(pid) {
+                    Some(&idx) => idx,
+                    None => return false,
+                };
+                if m.get(idx).copied().unwrap_or(0) < *w {
+                    return false;
+                }
+            }
+            for (pid, w) in ins {
+                if let Some(&idx) = place_idx.get(pid) {
+                    m[idx] -= w;
+                }
+            }
+        }
+        if let Some(outs) = transition_outputs.get(&tid) {
+            for (pid, w) in outs {
+                if let Some(&idx) = place_idx.get(pid) {
+                    m[idx] += w;
+                }
+            }
+        }
+        true
+    };
+    let mut visited: HashSet<Vec<usize>> = HashSet::with_capacity(64);
+    let mut frontier: Vec<Vec<usize>> = vec![m0.clone()];
+    visited.insert(m0);
+    let mut depth = 0usize;
+    while !frontier.is_empty() && depth < 32 {
+        let mut next: Vec<Vec<usize>> = Vec::new();
+        for m in &frontier {
+            for &i in invisible_indices {
+                let mut m2 = m.clone();
+                if fire(&mut m2, i) && visited.insert(m2.clone()) {
+                    if enabled_on(&m2) {
+                        return Some(m2);
+                    }
+                    next.push(m2);
+                }
+            }
+        }
+        frontier = next;
+        depth += 1;
+    }
+    None
+}
+
+/// End-of-trace drain: BFS over invisible-only firings to reach exactly the
+/// final marking `fm` (equality on every place). Returns `None` if unreachable.
+fn reach_final_via_invisible_vec(
+    invisible_indices: &[usize],
+    transition_inputs: &HashMap<String, Vec<(String, usize)>>,
+    transition_outputs: &HashMap<String, Vec<(String, usize)>>,
+    place_idx: &HashMap<String, usize>,
+    marking: &[usize],
+    fm: &BTreeMap<String, usize>,
+) -> Option<Vec<usize>> {
+    let mut visited: HashSet<Vec<usize>> = HashSet::with_capacity(64);
+    let mut frontier: Vec<Vec<usize>> = vec![marking.to_vec()];
+    visited.insert(marking.to_vec());
+    let mut depth = 0usize;
+    while !frontier.is_empty() && depth < 32 {
+        let mut next: Vec<Vec<usize>> = Vec::new();
+        for m in &frontier {
+            for &i in invisible_indices {
+                let mut m2 = m.clone();
+                let fired = (|| {
+                    let tid = i.to_string();
+                    if let Some(ins) = transition_inputs.get(&tid) {
+                        for (pid, w) in ins {
+                            let idx = match place_idx.get(pid) {
+                                Some(&idx) => idx,
+                                None => return false,
+                            };
+                            if m2.get(idx).copied().unwrap_or(0) < *w {
+                                return false;
+                            }
+                        }
+                        for (pid, w) in ins {
+                            if let Some(&idx) = place_idx.get(pid) {
+                                m2[idx] -= w;
+                            }
+                        }
+                    }
+                    if let Some(outs) = transition_outputs.get(&tid) {
+                        for (pid, w) in outs {
+                            if let Some(&idx) = place_idx.get(pid) {
+                                m2[idx] += w;
+                            }
+                        }
+                    }
+                    true
+                })();
+                let is_final = place_idx.iter().all(|(pid, &idx)| {
+                    let c = m2.get(idx).copied().unwrap_or(0);
+                    match fm.get(pid) {
+                        Some(&n) => c == n,
+                        None => c == 0,
+                    }
+                });
+                if fired && visited.insert(m2.clone()) {
+                    if is_final {
+                        return Some(m2);
+                    }
+                    next.push(m2);
+                }
+            }
+        }
+        frontier = next;
+        depth += 1;
+    }
+    None
+}
+
+/// Shared invisible-transition firing for the Vec marking path — the exact
+/// analog of [`fire_invisible_bitmask`] (same fixpoint, same call sites:
+/// after initial-marking load and after every visible event). Invisible
+/// firings do not touch consumed/produced/missing counters in either path.
+fn fire_invisible_vec(
+    invisible_indices: &[usize],
+    transition_inputs: &HashMap<String, Vec<(String, usize)>>,
+    transition_outputs: &HashMap<String, Vec<(String, usize)>>,
+    place_idx: &HashMap<String, usize>,
+    marking: &mut [usize],
+) {
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for &i in invisible_indices {
+            let tid = i.to_string();
+            let inputs = transition_inputs.get(&tid);
+            let enabled = inputs.map_or(true, |ins| {
+                ins.iter().all(|(place_id, weight)| {
+                    place_idx
+                        .get(place_id)
+                        .map_or(false, |&idx| marking[idx] >= *weight)
+                })
+            });
+            if enabled {
+                if let Some(ins) = inputs {
+                    for (place_id, weight) in ins {
+                        if let Some(&idx) = place_idx.get(place_id) {
+                            marking[idx] -= weight;
+                        }
+                    }
+                }
+                if let Some(outs) = transition_outputs.get(&tid) {
+                    for (place_id, weight) in outs {
+                        if let Some(&idx) = place_idx.get(place_id) {
+                            marking[idx] += weight;
+                        }
+                    }
+                }
+                changed = true;
+                break;
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Core replay logic (shared by token_replay_pure and check_token_based_replay)
 // ---------------------------------------------------------------------------
+
+/// Engine eligibility: the u64 bitmask fast path is used only when every
+/// place is representable as at most one token bit — ≤64 places, unit arc
+/// weights, single-token initial marking. Otherwise the weight-aware Vec
+/// engine runs. Single source of truth for both the replay routing and the
+/// `"engine"` field in the WASM payload.
+/// Public for parity regression tests (engine-coverage pinning); stable.
+pub fn uses_bitmask_engine(petri_net: &PetriNet) -> bool {
+    petri_net.places.len() <= 64
+        && petri_net.arcs.iter().all(|a| a.weight.unwrap_or(1) == 1)
+        && petri_net.initial_marking.values().all(|&c| c <= 1)
+}
 
 fn replay_log(
     log: &EventLog,
@@ -215,8 +466,11 @@ fn replay_log(
         }
     }
 
-    // Fix D — u64 bitmask fast path for ≤64 places
-    let use_bitmask = petri_net.places.len() <= 64;
+    // Fix D — u64 bitmask fast path: ≤64 places AND unit arc weights AND
+    // single-token initial marking. Nets with non-unit weights or multi-token
+    // initial markings cannot be represented faithfully at 1 bit/place and
+    // are routed to the Vec path (pm4py-faithful weight-aware accounting).
+    let use_bitmask = uses_bitmask_engine(petri_net);
 
     for (case_id, trace) in log.traces.iter().enumerate() {
         let mut deviations: Vec<TokenReplayDeviation> = Vec::new();
@@ -227,13 +481,7 @@ fn replay_log(
         // ---- bitmask path ----
         if use_bitmask {
             let mut marking: u64 = 0u64;
-            // Load initial marking into bitmask (each place holds 0 or 1 token for
-            // the bitmask path; multi-token places fall back via the Vec path above).
-            // We only use the bitmask when every initial count is ≤ 1.
-            let all_single = petri_net.initial_marking.values().all(|&c| c <= 1)
-                && petri_net.arcs.iter().all(|a| a.weight.unwrap_or(1) == 1);
-
-            if all_single {
+            {
                 for (place_id, &count) in &petri_net.initial_marking {
                     if count == 1 {
                         if let Some(&idx) = lookup.place_idx.get(place_id) {
@@ -241,12 +489,8 @@ fn replay_log(
                         }
                     }
                 }
-                fire_invisible_bitmask(
-                    &lookup.invisible_indices,
-                    &lookup.trans_in_masks,
-                    &lookup.trans_out_masks,
-                    &mut marking,
-                );
+                // pm4py parity: no blanket eager invisible firing at start;
+                // taus fire only when needed, via the per-event BFS below.
 
                 for (event_idx, event) in trace.events.iter().enumerate() {
                     let activity = event
@@ -284,6 +528,22 @@ fn replay_log(
 
                     let transition = &petri_net.transitions[trans_idx];
                     let inputs = lookup.transition_inputs.get(&transition.id);
+
+                    // pm4py-parity: try to enable the target transition via a
+                    // minimal sequence of invisible firings before declaring
+                    // missing tokens. (Blanket greedy firing could consume
+                    // tokens this transition needs.)
+                    let target_in_mask = lookup.trans_in_masks[trans_idx];
+                    if let Some(m2) = enable_via_invisible_bitmask(
+                        &lookup.invisible_indices,
+                        &lookup.trans_in_masks,
+                        &lookup.trans_out_masks,
+                        marking,
+                        target_in_mask,
+                    ) {
+                        marking = m2;
+                    }
+
                     let mut enabled = true;
 
                     if let Some(input_places) = inputs {
@@ -324,15 +584,73 @@ fn replay_log(
                             }
                         }
                     }
-                    fire_invisible_bitmask(
-                        &lookup.invisible_indices,
-                        &lookup.trans_in_masks,
-                        &lookup.trans_out_masks,
-                        &mut marking,
-                    );
+                    // pm4py parity: no eager invisible fixpoint after firing;
+                    // the next event's BFS enables what it needs.
                 }
 
-                let tokens_remaining = rank_u64(marking, petri_net.places.len().saturating_sub(1));
+                // pm4py token-replay parity: tokens sitting in final-marking
+                // places are the ACCEPTED end state, not a deviation. Only
+                // tokens in places outside the final marking count as
+                // "remaining". Without a final marking, all end tokens count
+                // (pm4py's behavior with no accepting marking).
+                // pm4py parity: end-of-trace invisible drain toward a final
+                // marking before remaining-token accounting.
+                if !petri_net.final_markings.is_empty() {
+                    let mut drain_target: Option<u64> = None;
+                    for fm in &petri_net.final_markings {
+                        let mut need = 0u64;
+                        let mut forbid = 0u64;
+                        for (i, place) in petri_net.places.iter().enumerate() {
+                            match fm.get(&place.id) {
+                                Some(&n) => {
+                                    if n == 1 {
+                                        need |= 1u64 << i;
+                                    }
+                                }
+                                None => forbid |= 1u64 << i,
+                            }
+                        }
+                        if marking & forbid == 0 && (marking & need) == need {
+                            drain_target = Some(marking);
+                            break;
+                        }
+                        // BFS: invisible firings to reach this final marking
+                        if let Some(m2) = enable_via_invisible_bitmask(
+                            &lookup.invisible_indices,
+                            &lookup.trans_in_masks,
+                            &lookup.trans_out_masks,
+                            marking,
+                            need,
+                        ) {
+                            if m2 & forbid == 0 {
+                                drain_target = Some(m2);
+                                break;
+                            }
+                        }
+                    }
+                    if let Some(m2) = drain_target {
+                        marking = m2;
+                    }
+                }
+
+                let tokens_remaining = if petri_net.final_markings.is_empty() {
+                    rank_u64(marking, petri_net.places.len().saturating_sub(1))
+                } else {
+                    petri_net
+                        .final_markings
+                        .iter()
+                        .map(|fm| {
+                            let mut r = 0usize;
+                            for (i, place) in petri_net.places.iter().enumerate() {
+                                if !fm.contains_key(&place.id) && (marking >> i) & 1 == 1 {
+                                    r += 1;
+                                }
+                            }
+                            r
+                        })
+                        .min()
+                        .unwrap_or(0)
+                };
 
                 let mut is_final_marking_reached = false;
                 for final_marking in &petri_net.final_markings {
@@ -384,11 +702,12 @@ fn replay_log(
                 });
                 continue; // next trace
             }
-            // fall through to Vec path if not all_single
+            // (use_bitmask nets always take the bitmask branch above)
         }
 
         // ---- Vec path (general case) ----
         let mut current_marking: Vec<usize> = initial_vec.clone();
+        // pm4py parity: no eager invisible firing at start (see bitmask path).
 
         for (event_idx, event) in trace.events.iter().enumerate() {
             let activity = event
@@ -427,6 +746,20 @@ fn replay_log(
             let transition = &petri_net.transitions[trans_idx];
 
             let inputs = lookup.transition_inputs.get(&transition.id);
+
+            // pm4py-parity: minimal invisible-firing search to enable the
+            // target before declaring missing tokens (see bitmask path).
+            if let Some(m2) = enable_via_invisible_vec(
+                &lookup.invisible_indices,
+                &lookup.transition_inputs,
+                &lookup.transition_outputs,
+                &lookup.place_idx,
+                &current_marking,
+                &transition.id,
+            ) {
+                current_marking = m2;
+            }
+
             let mut enabled = true;
 
             if let Some(input_places) = inputs {
@@ -484,9 +817,64 @@ fn replay_log(
                     }
                 }
             }
+
+            // pm4py parity: no eager invisible fixpoint after firing.
         }
 
-        let tokens_remaining: usize = current_marking.iter().sum();
+        // pm4py parity (same convention as the bitmask path above): tokens in
+        // final-marking places are the accepted end state, not "remaining".
+        // pm4py parity: end-of-trace invisible drain toward a final marking
+        // before remaining-token accounting (mirrors the bitmask path).
+        if !petri_net.final_markings.is_empty() {
+            let matches_fm = |m: &[usize], fm: &BTreeMap<String, usize>| -> bool {
+                petri_net.places.iter().enumerate().all(|(i, p)| {
+                    let c = m.get(i).copied().unwrap_or(0);
+                    match fm.get(&p.id) {
+                        Some(&n) => c == n,
+                        None => c == 0,
+                    }
+                })
+            };
+            let mut drain: Option<Vec<usize>> = None;
+            for fm in &petri_net.final_markings {
+                if matches_fm(&current_marking, fm) {
+                    drain = Some(current_marking.clone());
+                    break;
+                }
+                if let Some(m2) = reach_final_via_invisible_vec(
+                    &lookup.invisible_indices,
+                    &lookup.transition_inputs,
+                    &lookup.transition_outputs,
+                    &lookup.place_idx,
+                    &current_marking,
+                    fm,
+                ) {
+                    drain = Some(m2);
+                    break;
+                }
+            }
+            if let Some(m2) = drain {
+                current_marking = m2;
+            }
+        }
+
+        let tokens_remaining: usize = if petri_net.final_markings.is_empty() {
+            current_marking.iter().sum()
+        } else {
+            petri_net
+                .final_markings
+                .iter()
+                .map(|fm| {
+                    current_marking
+                        .iter()
+                        .zip(petri_net.places.iter())
+                        .filter(|(_, p)| !fm.contains_key(&p.id))
+                        .map(|(&c, _)| c)
+                        .sum::<usize>()
+                })
+                .min()
+                .unwrap_or(0)
+        };
         let mut is_final_marking_reached = false;
 
         for final_marking in &petri_net.final_markings {
@@ -591,7 +979,21 @@ pub fn check_token_based_replay(
     // Perform conformance using borrowed EventLog — no clone.
     get_or_init_state().with_event_log(eventlog_handle, |log| {
         let result = replay_log(log, &petri_net_cloned, activity_key, &lookup);
-        to_js_str(&result)
+        // Honesty field: which replay engine actually ran. `bitmask` (u64
+        // fast path) only when ≤64 places, unit arc weights, and single-token
+        // initial marking; otherwise the weight-aware `vec` engine. Both now
+        // share invisible-transition firing semantics.
+        let engine = if uses_bitmask_engine(&petri_net_cloned) {
+            "bitmask"
+        } else {
+            "vec"
+        };
+        let mut value =
+            serde_json::to_value(&result).map_err(|e| crate::error::js_val(&e.to_string()))?;
+        if let Some(obj) = value.as_object_mut() {
+            obj.insert("engine".to_string(), serde_json::json!(engine));
+        }
+        to_js_str(&value)
     })
 }
 

@@ -1,0 +1,58 @@
+{
+  "breed": "gps",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [],
+    "goals": [
+      {
+        "id": "goal-1",
+        "predicate": "expr",
+        "value": "L0"
+      }
+    ],
+    "intent": "transform propositional logic expression L1 into L0 using symbolic-logic rules",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "expr=L2;!expr=L1",
+        "id": "R6",
+        "premise": [
+          "expr=L1"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "expr=L0;!expr=L2",
+        "id": "R12",
+        "premise": [
+          "expr=L2"
+        ]
+      }
+    ],
+    "state": [
+      {
+        "predicate": "expr",
+        "value": "L1"
+      }
+    ]
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "expr=L0"
+    ],
+    "notes": "PLAN-REPLAY (gps, paper fixture: Newell & Simon 1963 Fig. 4, papers/gps.json): breed plan R6,R12 replayed step-by-step in Datalog — STRIPS atoms expr=<L>@tN, frame rule expr=L2@t2 :- expr=L2@t1 (persistence of undeleted atoms), add rule expr=L0@t2 :- expr=L2@t1 (preconds gate the add). Deleted atoms (expr=L1, then expr=L2) get no frame rule: closed world per step, monotone fragment. Final state = {expr=L0@t2}: goal expr=L0 reachable, nothing else survives. | CONFORMED to the breed output surface by the FOUNDATION harness court: the gps trace emits reduce-gap/apply-operator details without situation indices, so the queried fact is asserted as expr=L0 (trace-evidenced) and the plan via selected R6,R12.",
+    "verdicts": {
+      "plan": "R6,R12"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "gps-paper-fixture"
+}

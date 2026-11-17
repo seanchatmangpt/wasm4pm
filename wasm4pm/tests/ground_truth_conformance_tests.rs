@@ -9,7 +9,9 @@
 //!
 //! Important: `remaining` is the total token count in the final marking
 //! (all places), INCLUDING the sink/f-place token. A perfectly-executing
-//! trace on a simple A→p→B→f net therefore yields fitness 0.75, not 1.0.
+//! trace on a simple A→p→B→f net therefore yields fitness 1.0, not 0.75
+//! (pm4py-parity convention, 2026-10-10: tokens in final-marking places are the
+//! accepted end state, not "remaining"; see wasm-parity-notes.md).
 //!
 //! When an activity is not in the net (transition_not_found), missing_tokens
 //! is incremented by 1 but the "fire" step is skipped entirely (no consume,
@@ -132,17 +134,19 @@ fn sequence_net() -> PetriNet {
 }
 
 #[test]
-fn test_sequence_perfect_trace_fitness_is_0_75() {
-    // Trace [A, B] on sequence net: consumed=2, produced=2, missing=0, remaining=1
-    // fitness = 0.5*(1-0/2) + 0.5*(1-1/2) = 0.75
+fn test_sequence_perfect_trace_fitness_is_1_0() {
+    // Trace [A, B] on sequence net: consumed=2, produced=2, missing=0, remaining=0
+    // (pm4py parity 2026-10-10: tokens in final-marking places are the accepted
+    // end state, not "remaining"; end-of-trace tau drain reaches {f:1} exactly)
+    // fitness = 0.5*(1-0/2) + 0.5*(1-0/2) = 1.0
     let log = make_log(&[&["A", "B"]]);
     let net = sequence_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     assert_eq!(result.case_fitness.len(), 1);
     let f = result.case_fitness[0].trace_fitness;
-    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
-    assert_eq!(result.case_fitness[0].tokens_remaining, 1);
+    assert_eq!(result.case_fitness[0].tokens_remaining, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
 
@@ -200,25 +204,25 @@ fn choice_net() -> PetriNet {
 }
 
 #[test]
-fn test_choice_left_path_fitness_is_0_75() {
-    // Trace [A, B]: perfect execution via left branch → fitness = 0.75
+fn test_choice_left_path_fitness_is_1_0() {
+    // Trace [A, B]: perfect execution via left branch → fitness = 1.0
     let log = make_log(&[&["A", "B"]]);
     let net = choice_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
 
 #[test]
-fn test_choice_right_path_fitness_is_0_75() {
-    // Trace [A, C]: perfect execution via right branch → fitness = 0.75
+fn test_choice_right_path_fitness_is_1_0() {
+    // Trace [A, C]: perfect execution via right branch → fitness = 1.0
     let log = make_log(&[&["A", "C"]]);
     let net = choice_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
@@ -242,17 +246,17 @@ fn test_choice_right_path_fitness_is_0_75() {
 //     Fire B:     consume p_b (c=2), produce p_jb (p=3)
 //     Fire C:     consume p_c (c=3), produce p_jc (p=4)
 //     Fire join:  consume p_jb+p_jc (c=5), produce f (p=5)
-//     End: remaining=1(f)
-//     fitness = 0.5*(1-0/5) + 0.5*(1-1/5) = 0.5 + 0.4 = 0.90
+//     End: remaining=0 (f is the final-marking place — pm4py parity: not counted)
+//     fitness = 0.5*(1-0/5) + 0.5*(1-0/5) = 1.0
 //
 //   Trace [split, B, join] (C skipped — join fires with missing p_jc token):
 //     Fire split: consume i (c=1), produce p_b+p_c (p=2)
 //     Fire B:     consume p_b (c=2), produce p_jb (p=3)
 //     Fire join:  needs p_jb+p_jc; p_jc missing → missing_tokens=1; bitmask path
 //                 consumes p_jb (c=3), produces f (p=4)
-//     End: remaining = p_c(1) + f(1) = 2
-//     fitness = 0.5*(1-1/3) + 0.5*(1-2/4) = 0.5*(2/3) + 0.5*(1/2)
-//             = 1/3 + 1/4 = 0.333... + 0.25 = 0.5833...
+//     End: remaining = p_c(1) only (f excluded — final-marking place)
+//     fitness = 0.5*(1-1/3) + 0.5*(1-1/4) = 0.5*(2/3) + 0.5*(3/4)
+//             = 1/3 + 3/8 = 0.333... + 0.375 = 0.7083333...
 // ---------------------------------------------------------------------------
 
 fn parallel_net() -> PetriNet {
@@ -295,28 +299,28 @@ fn parallel_net() -> PetriNet {
 }
 
 #[test]
-fn test_parallel_perfect_trace_fitness_is_0_90() {
-    // Trace [split, B, C, join]: all transitions enabled, fitness = 0.90
+fn test_parallel_perfect_trace_fitness_is_1_0() {
+    // Trace [split, B, C, join]: all transitions enabled, fitness = 1.0
     let log = make_log(&[&["split", "B", "C", "join"]]);
     let net = parallel_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!((f - 0.90).abs() < 1e-10, "expected 0.90, got {f:.10}");
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
-    assert_eq!(result.case_fitness[0].tokens_remaining, 1);
+    assert_eq!(result.case_fitness[0].tokens_remaining, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
 
 #[test]
-fn test_parallel_missing_branch_fitness_is_0_5833() {
+fn test_parallel_missing_branch_fitness_is_0_7083() {
     // Trace [split, B, join] (C skipped):
-    // missing=1, consumed=3, produced=4, remaining=2
-    // fitness = 0.5*(1-1/3) + 0.5*(1-2/4) = 0.5*(2/3) + 0.5*(0.5) = 1/3 + 1/4 ≈ 0.5833
+    // missing=1, consumed=3, produced=4, remaining=1 (p_c only; f excluded)
+    // fitness = 0.5*(1-1/3) + 0.5*(1-1/4) = 1/3 + 3/8 ≈ 0.7083
     let log = make_log(&[&["split", "B", "join"]]);
     let net = parallel_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    let expected = 0.5 * (2.0 / 3.0) + 0.5 * (1.0 / 2.0);
+    let expected = 0.5 * (2.0 / 3.0) + 0.5 * (3.0 / 4.0);
     assert!(
         (f - expected).abs() < 1e-9,
         "expected {expected:.10}, got {f:.10}"
@@ -339,16 +343,16 @@ fn test_parallel_missing_branch_fitness_is_0_5833() {
 //   Trace [A, C] (zero loop iterations):
 //     Fire A: consume i (c=1), produce p_loop (p=1)
 //     Fire C: consume p_loop (c=2), produce f (p=2)
-//     End: remaining=1(f)
-//     fitness = 0.5*(1-0/2) + 0.5*(1-1/2) = 0.75
+//     End: remaining=0 (f is the final-marking place — not counted)
+//     fitness = 0.5*(1-0/2) + 0.5*(1-0/2) = 1.0
 //
 //   Trace [A, B, B, C] (two loop iterations):
 //     Fire A: consume i (c=1), produce p_loop (p=1)
 //     Fire B: consume p_loop (c=2), produce p_loop (p=2)
 //     Fire B: consume p_loop (c=3), produce p_loop (p=3)
 //     Fire C: consume p_loop (c=4), produce f (p=4)
-//     End: remaining=1(f)
-//     fitness = 0.5*(1-0/4) + 0.5*(1-1/4) = 0.5 + 0.375 = 0.875
+//     End: remaining=0 (f excluded — final-marking place)
+//     fitness = 0.5*(1-0/4) + 0.5*(1-0/4) = 1.0
 // ---------------------------------------------------------------------------
 
 fn loop_net() -> PetriNet {
@@ -373,27 +377,27 @@ fn loop_net() -> PetriNet {
 }
 
 #[test]
-fn test_loop_zero_iterations_fitness_is_0_75() {
-    // Trace [A, C]: consumed=2, produced=2, missing=0, remaining=1
-    // fitness = 0.75
+fn test_loop_zero_iterations_fitness_is_1_0() {
+    // Trace [A, C]: consumed=2, produced=2, missing=0, remaining=0 (f excluded)
+    // fitness = 1.0
     let log = make_log(&[&["A", "C"]]);
     let net = loop_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
 
 #[test]
-fn test_loop_two_iterations_fitness_is_0_875() {
-    // Trace [A, B, B, C]: consumed=4, produced=4, missing=0, remaining=1
-    // fitness = 0.5*(1-0/4) + 0.5*(1-1/4) = 0.5 + 0.375 = 0.875
+fn test_loop_two_iterations_fitness_is_1_0() {
+    // Trace [A, B, B, C]: consumed=4, produced=4, missing=0, remaining=0 (f excluded)
+    // fitness = 1.0
     let log = make_log(&[&["A", "B", "B", "C"]]);
     let net = loop_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!((f - 0.875).abs() < 1e-10, "expected 0.875, got {f:.10}");
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
@@ -408,21 +412,22 @@ fn test_loop_two_iterations_fitness_is_0_875() {
 // Initial marking: {i: 1}
 // Final marking:   [{f: 1}]
 //
-// The silent τ transition fires automatically after A (invisible fixpoint).
+// The silent τ transition fires lazily: a minimal invisible-firing BFS enables
+// B when it is needed, and an end-of-trace drain tries to reach the final
+// marking (pm4py parity, 2026-10-10).
 //
 // Oracle trace analysis:
 //
-// CRITICAL: fire_invisible_bitmask modifies the marking bitmask directly but
-// does NOT increment consumed_tokens or produced_tokens. Only VISIBLE transitions
-// update those counters. The silent τ transition is therefore "free" in terms
-// of the fitness formula denominators.
+// CRITICAL: invisible firings do NOT increment consumed_tokens or
+// produced_tokens. Only VISIBLE transitions update those counters. The silent
+// τ transition is therefore "free" in terms of the fitness formula denominators.
 //
 //   Trace [A, B]:
 //     Fire A: consume i (c=1), produce p1 (p=1)
-//     Silent fixpoint: τ fires (marking update only, c/p unchanged)
+//     BFS before B: τ fires (marking update only, c/p unchanged) → p2
 //     Fire B: consume p2 (c=2), produce f (p=2)
-//     End: remaining=1(f)
-//     fitness = 0.5*(1-0/2) + 0.5*(1-1/2) = 0.5 + 0.25 = 0.75
+//     End: remaining=0 (f is the final-marking place — not counted)
+//     fitness = 0.5*(1-0/2) + 0.5*(1-0/2) = 1.0
 //
 //   Trace [A] (stops before B, τ still auto-fires silently):
 //     Fire A: consume i (c=1), produce p1 (p=1)
@@ -451,18 +456,19 @@ fn silent_transition_net() -> PetriNet {
 }
 
 #[test]
-fn test_silent_transition_perfect_trace_fitness_is_0_75() {
-    // Trace [A, B]: τ auto-fires between A and B (silent transitions are "free" —
-    // fire_invisible_bitmask does NOT increment consumed_tokens/produced_tokens).
-    // Only visible transitions A and B count: consumed=2, produced=2, missing=0, remaining=1
-    // fitness = 0.5*(1-0/2) + 0.5*(1-1/2) = 0.5 + 0.25 = 0.75
+fn test_silent_transition_perfect_trace_fitness_is_1_0() {
+    // Trace [A, B]: τ fires via the minimal enabling BFS before B (silent
+    // transitions are "free" — invisible firings do NOT increment c/p counters).
+    // Only visible transitions A and B count: consumed=2, produced=2,
+    // missing=0, remaining=0 (f is the final-marking place — not counted)
+    // fitness = 0.5*(1-0/2) + 0.5*(1-0/2) = 1.0
     let log = make_log(&[&["A", "B"]]);
     let net = silent_transition_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
     assert!(
-        (f - 0.75).abs() < 1e-10,
-        "expected 0.75 (silent transitions are free in token counts), got {f:.10}"
+        (f - 1.0).abs() < 1e-10,
+        "expected 1.0 (silent transitions are free in token counts), got {f:.10}"
     );
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
@@ -470,8 +476,9 @@ fn test_silent_transition_perfect_trace_fitness_is_0_75() {
 
 #[test]
 fn test_silent_transition_incomplete_trace_fitness_is_0_50() {
-    // Trace [A]: τ still auto-fires silently (zero cost to c/p counters).
-    // Only A counts: consumed=1, produced=1, missing=0, remaining=1(p2 after τ)
+    // Trace [A]: B never fires; the end-of-trace drain cannot reach {f:1} (B is
+    // visible, so τ p1→p2 only moves the token to p2). remaining=1(p2).
+    // Only A counts: consumed=1, produced=1, missing=0
     // fitness = 0.5*(1-0/1) + 0.5*(1-1/1) = 0.5 + 0.0 = 0.50
     let log = make_log(&[&["A"]]);
     let net = silent_transition_net();
@@ -565,16 +572,18 @@ fn duplicate_label_net() -> PetriNet {
 }
 
 #[test]
-fn test_duplicate_label_misrouted_trace_fitness_is_0_0() {
+fn test_duplicate_label_misrouted_trace_fitness_is_0_25() {
     // Trace [A, B]: code always picks first "A" transition (A1: i→p1).
-    // B needs p2 but p2 is never populated → missing tokens → fitness = 0.0
+    // B needs p2 but p2 is never populated → missing=1, consumed=1, produced=2,
+    // remaining=1 (p1; f is the final-marking place — not counted)
+    // fitness = 0.5*(1-1/1) + 0.5*(1-1/2) = 0.25 (pm4py-parity convention)
     let log = make_log(&[&["A", "B"]]);
     let net = duplicate_label_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
     assert!(
-        f < 1e-10,
-        "expected 0.0 (duplicate-label routing always picks first transition), got {f:.10}"
+        (f - 0.25).abs() < 1e-10,
+        "expected 0.25 (duplicate-label routing always picks first transition), got {f:.10}"
     );
     assert!(result.case_fitness[0].tokens_missing > 0);
 }
@@ -582,17 +591,15 @@ fn test_duplicate_label_misrouted_trace_fitness_is_0_0() {
 #[test]
 fn test_duplicate_label_correct_sequence_fitness() {
     // Trace [A, A, B]: first A fires A1(i→p1), second A fires A1 again (missing i),
-    // but in the VEC path (not bitmask) the second A token IS consumed from wherever.
-    // Here we verify the bitmask path behavior:
-    // After [A, A, B]: at least one missing token (B cannot reach f normally),
-    // so fitness < 0.75. We assert strictly less than perfect fitness.
+    // B still cannot fire properly. At least one missing token (B requires p2
+    // which is never populated), so fitness stays strictly below the perfect 1.0.
     let log = make_log(&[&["A", "A", "B"]]);
     let net = duplicate_label_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
     assert!(
-        f < 0.75,
-        "expected fitness < 0.75 for misrouted duplicate-label trace, got {f:.10}"
+        f < 1.0,
+        "expected fitness < 1.0 for misrouted duplicate-label trace, got {f:.10}"
     );
     // At least one token is missing because B requires p2 which is never populated
     assert!(result.case_fitness[0].tokens_missing > 0);
@@ -607,8 +614,8 @@ fn test_duplicate_label_correct_sequence_fitness() {
 //   fitness = 0.5*(1-0/1) + 0.5*(1-1/1) = 0.5 + 0.0 = 0.50
 //
 // Sub-family 7b: Multi-trace average fitness
-//   Log with two traces: [A,B] (fitness=0.75) and [A] (fitness=0.50)
-//   avg_fitness = (0.75 + 0.50) / 2 = 0.625
+//   Log with two traces: [A,B] (fitness=1.0) and [A] (fitness=0.50)
+//   avg_fitness = (1.0 + 0.50) / 2 = 0.75
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -655,9 +662,9 @@ fn test_single_transition_net_empty_trace_zero_denominator() {
 }
 
 #[test]
-fn test_multi_trace_average_fitness_is_0_625() {
-    // Two traces: [A,B] → 0.75, [A] → 0.50
-    // avg = 0.625
+fn test_multi_trace_average_fitness_is_0_75() {
+    // Two traces: [A,B] → 1.0, [A] → 0.50
+    // avg = 0.75
     let log = make_log(&[&["A", "B"], &["A"]]);
     let net = sequence_net();
     let result = token_replay_pure(&log, &net, "concept:name");
@@ -665,17 +672,17 @@ fn test_multi_trace_average_fitness_is_0_625() {
     let f0 = result.case_fitness[0].trace_fitness;
     let f1 = result.case_fitness[1].trace_fitness;
     assert!(
-        (f0 - 0.75).abs() < 1e-10,
-        "trace 0 expected 0.75, got {f0:.10}"
+        (f0 - 1.0).abs() < 1e-10,
+        "trace 0 expected 1.0, got {f0:.10}"
     );
     assert!(
         (f1 - 0.50).abs() < 1e-10,
         "trace 1 expected 0.50, got {f1:.10}"
     );
-    let expected_avg = 0.625;
+    let expected_avg = 0.75;
     assert!(
         (result.avg_fitness - expected_avg).abs() < 1e-10,
-        "avg_fitness expected 0.625, got {:.10}",
+        "avg_fitness expected 0.75, got {:.10}",
         result.avg_fitness
     );
 }
@@ -706,16 +713,18 @@ fn test_multi_trace_conforming_count() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn test_sequence_reversed_trace_fitness_is_0_0() {
-    // Trace [B, A]: activities in wrong order
-    // B fires with missing token; A fires afterwards; fitness = 0.0
+fn test_sequence_reversed_trace_fitness_is_0_25() {
+    // Trace [B, A]: activities in wrong order.
+    // B fires with missing=1 (p never populated), produces f (p=1); A consumes
+    // i (c=1), produces p (p=2). End: remaining=1 (p; f excluded as final place).
+    // fitness = 0.5*(1-1/1) + 0.5*(1-1/2) = 0.25 (pm4py-parity convention)
     let log = make_log(&[&["B", "A"]]);
     let net = sequence_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
     assert!(
-        f < 1e-10,
-        "expected 0.0 for reversed trace [B,A] on sequence net, got {f:.10}"
+        (f - 0.25).abs() < 1e-10,
+        "expected 0.25 for reversed trace [B,A] on sequence net, got {f:.10}"
     );
     assert!(result.case_fitness[0].tokens_missing > 0);
     assert!(!result.case_fitness[0].is_conforming);
@@ -728,25 +737,59 @@ fn test_sequence_reversed_trace_fitness_is_0_0() {
 //   Fire A: consume i (c=1), produce p (p=1).
 //   X not found: missing_tokens=1; no consume; no produce (skipped entirely).
 //   Fire B: consume p (c=2), produce f (p=2).
-//   End: remaining=1(f).
+//   End: remaining=0 (f is the final-marking place — not counted).
 //   c=2, p=2, missing=1
-//   fitness = 0.5*(1-1/2) + 0.5*(1-1/2) = 0.25 + 0.25 = 0.50
+//   fitness = 0.5*(1-1/2) + 0.5*(1-0/2) = 0.25 + 0.5 = 0.75
 // ---------------------------------------------------------------------------
 
 #[test]
-fn test_sequence_unknown_activity_fitness_is_0_50() {
+fn test_sequence_unknown_activity_fitness_is_0_75() {
     // Trace [A, X, B]: X not in net → missing_tokens=1 but no tokens consumed/produced
-    // consumed=2, produced=2, missing=1, remaining=1
-    // fitness = 0.5*(1-1/2) + 0.5*(1-1/2) = 0.50
+    // consumed=2, produced=2, missing=1, remaining=0 (f excluded as final place)
+    // fitness = 0.5*(1-1/2) + 0.5*(1-0/2) = 0.75
     let log = make_log(&[&["A", "X", "B"]]);
     let net = sequence_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
     assert!(
-        (f - 0.50).abs() < 1e-10,
-        "expected 0.50 for trace with unknown activity, got {f:.10}"
+        (f - 0.75).abs() < 1e-10,
+        "expected 0.75 for trace with unknown activity, got {f:.10}"
     );
     assert_eq!(result.case_fitness[0].tokens_missing, 1);
-    // B still fires after unknown X, so final marking is reached
-    assert!(result.case_fitness[0].tokens_remaining == 1);
+    // B still fires after unknown X, so the final marking is reached
+    assert_eq!(result.case_fitness[0].tokens_remaining, 0);
+}
+
+// ---------------------------------------------------------------------------
+// pm4py-parity guard, Vec engine (>64 places forces the weight-aware Vec
+// replay path instead of the u64 bitmask fast path): same A→B net padded with
+// unused places. Fitness for perfectly fitting traces must be 1.0 and the
+// final-marking drain must work here too.
+// ---------------------------------------------------------------------------
+#[test]
+fn vec_engine_two_transition_reproducer_fitness_is_1_0() {
+    let mut net = PetriNet::new();
+    // 70 places: i + 66 padding + p + f  → uses_bitmask_engine == false
+    net.places = vec![place("i")];
+    for k in 0..66 {
+        net.places.push(place(&format!("pad{k}")));
+    }
+    net.places.push(place("p"));
+    net.places.push(place("f"));
+    net.transitions = vec![trans("tA", "A"), trans("tB", "B")];
+    net.arcs = vec![arc("i", "tA"), arc("tA", "p"), arc("p", "tB"), arc("tB", "f")];
+    net.initial_marking.insert("i".to_string(), 1);
+    let mut fm = BTreeMap::new();
+    fm.insert("f".to_string(), 1usize);
+    net.final_markings.push(fm);
+
+    assert!(!wasm4pm::conformance::uses_bitmask_engine(&net));
+
+    let log = make_log(&[&["A", "B"]]);
+    let result = token_replay_pure(&log, &net, "concept:name");
+    let f = result.case_fitness[0].trace_fitness;
+    assert!((f - 1.0).abs() < 1e-10, "expected 1.0, got {f:.10}");
+    assert_eq!(result.case_fitness[0].tokens_missing, 0);
+    assert_eq!(result.case_fitness[0].tokens_remaining, 0);
+    assert_eq!(result.conforming_cases, 1);
 }

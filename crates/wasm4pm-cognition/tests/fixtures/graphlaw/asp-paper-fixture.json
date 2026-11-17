@@ -1,0 +1,44 @@
+{
+  "breed": "asp",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "parent:tom,bob",
+        "value": ""
+      },
+      {
+        "key": "parent:bob,ann",
+        "value": ""
+      },
+      {
+        "key": "parent:bob,pat",
+        "value": ""
+      }
+    ],
+    "goals": [],
+    "intent": "stable model of the paper family fact base (facts-only program)",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "asp:answer_set_count=1",
+      "model_0_0=parent:bob,ann",
+      "model_0_1=parent:bob,pat",
+      "model_0_2=parent:tom,bob",
+      "stable_models_count=1"
+    ],
+    "notes": "Paper fixture (Kowalski 1974 Fig. 2) as a facts-only propositional ASP program. Stratifiability CHECKED (no NAF — trivially stratified). The unique stable model is the fact set itself; asp:answer_set_count=1.",
+    "verdicts": {}
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "asp_tableaux_vector_gen (purrdf-datalog stratified least model; stratifiability enforced via graphlaw::datalog::plan::stratify)",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "asp-paper-fixture"
+}

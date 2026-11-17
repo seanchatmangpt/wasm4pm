@@ -68,8 +68,9 @@ pub struct Problem {
     pub objects: Vec<String>,
     pub init_atoms: Vec<Atom>,
     pub init_fn_values: HashMap<String, f64>,
-    /// Goal: conjunction of positive atoms (negation not needed for this slice).
-    pub goal: Vec<Atom>,
+    /// Goal: conjunction of conditions (positive atoms, `not`-negated atoms,
+    /// and numeric-fluent comparisons — all evaluated by the planner).
+    pub goal: Vec<Condition>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -380,10 +381,10 @@ pub fn problem_from_pddl(text: &str) -> Result<Problem, PlannerError> {
                 let goal_items = list_items(goal_expr)?;
                 if goal_items.first().and_then(|e| e.as_atom()) == Some("and") {
                     for g in &goal_items[1..] {
-                        goal.push(parse_atom(g)?);
+                        goal.push(parse_condition(g)?);
                     }
                 } else {
-                    goal.push(parse_atom(goal_expr)?);
+                    goal.push(parse_condition(goal_expr)?);
                 }
             }
             _ => {}

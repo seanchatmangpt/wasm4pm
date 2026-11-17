@@ -22,7 +22,7 @@ fn plan_converts_to_powl_v2_and_executes_to_ocel() {
         ],
         makespan: 2.0,
     };
-    let powl = plan_to_powl_v2(&plan);
+    let powl = plan_to_powl_v2(&plan).expect("powl projection succeeds");
     assert!(powl.starts_with("PartialOrder(plan)"), "{powl}");
     assert!(
         powl.contains("(a, c)") && powl.contains("(b, c)"),

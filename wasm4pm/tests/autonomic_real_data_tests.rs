@@ -110,7 +110,14 @@ macro_rules! require_log {
     ($candidates:expr, $label:expr) => {
         match resolve_xes($candidates) {
             None => {
-                eprintln!("SKIP: {} not found", $label);
+                if std::env::var("WASM4PM_ALLOW_DATA_SKIP").as_deref() != Ok("1") {
+                    panic!(
+                        "MISSING DATASET for '{}': real-data tests must not silently skip. \
+                         Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping.",
+                        $label
+                    );
+                }
+                eprintln!("SKIP (WASM4PM_ALLOW_DATA_SKIP=1): {} not found", $label);
                 return;
             }
             Some(log) => log,
@@ -265,8 +272,8 @@ fn western_electric_rules_on_sepsis_returns_valid_causes() {
 fn western_electric_rules_on_bpi2020_chart_data_is_valid() {
     let log = require_log!(
         &[
-            "bench_data/bpi2020_travel.xes",
-            "../../bench_data/bpi2020_travel.xes"
+            "bench_data/bpi2020_domestic_declarations.xes",
+            "../../bench_data/bpi2020_domestic_declarations.xes"
         ],
         "bpi2020"
     );
@@ -736,8 +743,8 @@ fn full_autonomic_loop_on_sepsis_completes_without_panic() {
 fn full_autonomic_loop_on_bpi2020_completes_without_panic() {
     let log = require_log!(
         &[
-            "bench_data/bpi2020_travel.xes",
-            "../../bench_data/bpi2020_travel.xes"
+            "bench_data/bpi2020_domestic_declarations.xes",
+            "../../bench_data/bpi2020_domestic_declarations.xes"
         ],
         "bpi2020"
     );

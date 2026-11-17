@@ -16,6 +16,18 @@ pub fn analyze_variant_complexity(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_event_log(eventlog_handle, |log| {
+        // Empty log: explicit deterministic zero-result (never NaN by construction).
+        if log.traces.is_empty() {
+            return to_js_str(&json!({
+                "total_variants": 0,
+                "entropy": 0.0,
+                "max_entropy": 0.0,
+                "normalized_entropy": 0.0,
+                "top_10_coverage": 0.0,
+                "predominant_variant_size": 0,
+            }));
+        }
+
         let total = log.traces.len() as f64;
 
         // Single-pass: build variant counts with itertools::counts()

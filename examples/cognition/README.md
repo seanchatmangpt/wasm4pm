@@ -1,8 +1,8 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: examples/cognition/README.md; source-sha256: 208823e73411ff5c0869a8f41687e9d8d20e4b14870de61abda72d8e49c076ed; reason: path-local authority or entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-10-10; original: examples/cognition/README.md; source-sha256: dc04205f2a06bdaf519805f3f5d8a4d3b8b2bfa817e2c1ec2db47c9b3c604f34; reason: path-local authority or entrypoint -->
 
 # Cognition Examples
 
-Working `wpm cognition` examples for all 52 breeds — including 39 Admitted Periodic Table breeds and 13 Classic / Autoinstinct breeds. Each example is a self-contained directory with a JSON input file (`intent.json`), a shell runner (`run.sh`), a live `result.json`, and a `last-output.log`.
+Working `wpm cognition` examples for all 55 registered breeds (`BreedId::ALL`, `crates/wasm4pm-cognition/src/breeds/registration.rs`). Each example is a self-contained directory with a JSON input file (`intent.json`), a shell runner (`run.sh`), a live `result.json`, and a `last-output.log`.
 
 ## Quickstart
 
@@ -10,19 +10,19 @@ Working `wpm cognition` examples for all 52 breeds — including 39 Admitted Per
 # Run a single breed example
 bash examples/cognition/mycin/run.sh
 
-# Run all 52 breed examples sequentially
+# Run all registered breed examples sequentially
 bash examples/cognition/run-all.sh
 
-# Run the 52-stage factory-agent chain
+# Run the factory-agent chain
 bash examples/cognition/chains/factory-agent/chain.sh
 
 # Run master verification runner
 bash examples/cognition/verify-all.sh
 ```
 
-## The 52 Cognition Breeds
+## The Cognition Breeds
 
-Every breed has a verified working example that exits 0, produces `status: ok`, an OCEL conformance receipt (fitness=1.0), and a BLAKE3 output hash.
+Every breed has a verified working example that exits 0, produces `status: ok`, an OCEL conformance receipt (fitness=1.0), and a BLAKE3 output hash. The enumeration below covers 52 breeds; `triz`, `morphological`, and `ocpm_route_discoverer` also have example directories (55 example directories in total).
 
 ### Admitted Periodic Table Breeds (39)
 1. **abductive_ibe**: Abductive Inference (medical diagnosis/competing illness hypotheses)
@@ -84,7 +84,7 @@ Every breed has a verified working example that exits 0, produces `status: ok`, 
 
 Chains wire multiple breeds end-to-end — each breed's output becomes the next breed's input. 
 
-*   **[factory-agent](chains/factory-agent/)**: Executes all **52 breeds** sequentially in a single cryptographic chain (`00-abductive_ibe` to `51-version_space`). Each stage's output is cryptographically bound to the next stage by injecting the `prior_stage_hash` (formatted as `f"{prev_breed}:{prev_output_hash}"`) into the next breed's facts array.
+*   **[factory-agent](chains/factory-agent/)**: Executes **55 breeds** sequentially in a single cryptographic chain (`00-abductive_ibe` to `54-ocpm_route_discoverer`). Each stage's output is cryptographically bound to the next stage by injecting the `prior_stage_hash` (formatted as `f"{prev_breed}:{prev_output_hash}"`) into the next breed's facts array.
 
 ## Live Output Hashes (v26.6.10)
 

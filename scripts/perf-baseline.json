@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-05-29T21:38:29.602Z",
+  "generated_at": "2026-10-11T02:48:40.838Z",
   "platform": "darwin",
   "arch": "arm64",
-  "node_version": "v25.9.0",
+  "node_version": "v26.10.0",
   "dataset": "roadtraffic100traces.xes",
   "traces": 100,
   "events": 390,
@@ -10,27 +10,27 @@
   "timing_method": "process.hrtime.bigint()",
   "results": {
     "dfg": {
-      "mean_ms": 0.41,
-      "min_ms": 0.324,
-      "max_ms": 0.5,
-      "p50_ms": 0.426,
-      "p95_ms": 0.5,
+      "mean_ms": 1.854,
+      "min_ms": 0.784,
+      "max_ms": 8.426,
+      "p50_ms": 1.143,
+      "p95_ms": 8.426,
       "documentedSpeedTier": 5
     },
     "heuristic_miner": {
-      "mean_ms": 6.968,
-      "min_ms": 0.221,
-      "max_ms": 48.751,
-      "p50_ms": 0.346,
-      "p95_ms": 48.751,
+      "mean_ms": 0.368,
+      "min_ms": 0.335,
+      "max_ms": 0.43,
+      "p50_ms": 0.363,
+      "p95_ms": 0.43,
       "documentedSpeedTier": 25
     },
     "alpha_plus_plus": {
-      "mean_ms": 1.366,
-      "min_ms": 0.358,
-      "max_ms": 9.624,
-      "p50_ms": 0.405,
-      "p95_ms": 9.624,
+      "mean_ms": 0.942,
+      "min_ms": 0.84,
+      "max_ms": 1.047,
+      "p50_ms": 0.968,
+      "p95_ms": 1.047,
       "documentedSpeedTier": 20
     }
   }

@@ -186,6 +186,185 @@ pub fn make_handle(shape: &LogShape) -> (String, usize) {
     (handle, total_events)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Real-data grounding (TPS rule: no synthetic event logs in benches)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Candidate paths for the real Sepsis event log (1,050 cases / 15,214 events,
+/// https://data.4tu.nl/). Bench cwd is the crate dir (`wasm4pm/`), so both the
+/// repo-root fixture and the direct `data/` source are tried.
+pub const SEPSIS_CANDIDATES: &[&str] = &[
+    "bench_data/sepsis.xes",
+    "../bench_data/sepsis.xes",
+    "../../bench_data/sepsis.xes",
+    "data/Sepsis Cases - Event Log.xes",
+    "../data/Sepsis Cases - Event Log.xes",
+];
+
+/// Candidate paths for the real BPI 2020 Domestic Declarations log.
+pub const BPI2020_DECL_CANDIDATES: &[&str] = &[
+    "bench_data/bpi2020_domestic_declarations.xes",
+    "../bench_data/bpi2020_domestic_declarations.xes",
+    "../../bench_data/bpi2020_domestic_declarations.xes",
+];
+
+/// Candidate paths for the real Road Traffic fine-grained event log
+/// (100-trace sample, https://data.4tu.nl/).
+pub const ROADTRAFFIC_CANDIDATES: &[&str] = &[
+    "bench_data/roadtraffic100traces.xes",
+    "../bench_data/roadtraffic100traces.xes",
+    "../../bench_data/roadtraffic100traces.xes",
+];
+
+/// Resolve the first existing, non-trivial candidate path. Panics listing every
+/// tried path (never `Option`-returns — honest failure, no silent skip).
+pub fn resolve_real_log_path(candidates: &[&str]) -> usize {
+    for (i, path) in candidates.iter().enumerate() {
+        if let Ok(meta) = std::fs::metadata(path) {
+            if meta.len() >= 200 {
+                return i;
+            }
+    }
+    }
+    panic!(
+        "bench: required real log not found at any of {:?}\n\
+         Provide the fixture under bench_data/ (see bench_data/README.md).",
+        candidates
+    );
+}
+
+/// Minimal tolerant XES extraction: line-based `trace`/`event`/`string`/`date`
+/// attribute collection. Used only as a fallback when the production strict
+/// parser rejects a real-world export (e.g. the 4TU Sepsis log ships nested
+/// classifier metadata under `<int key="meta_general:classifiers">`, which the
+/// strict parser refuses because its `<string>` children are not self-closing).
+pub fn parse_xes_tolerant(content: &str) -> EventLog {
+    use std::collections::BTreeMap;
+    use wasm4pm::models::{AttributeValue, Event, Trace};
+    let mut log = EventLog::new();
+    let mut trace: Option<Trace> = None;
+    let mut event: Option<Event> = None;
+    for line in content.lines() {
+        let t = line.trim();
+        if t.starts_with("<trace>") || t.starts_with("<trace ") {
+            trace = Some(Trace {
+                attributes: BTreeMap::new(),
+                events: Vec::new(),
+            });
+        } else if t.starts_with("</trace>") {
+            if let Some(tr) = trace.take() {
+                log.traces.push(tr);
+            }
+        } else if t.starts_with("<event>") || t.starts_with("<event ") {
+            event = Some(Event {
+                attributes: BTreeMap::new(),
+            });
+        } else if t.starts_with("</event>") {
+            if let Some(ev) = event.take() {
+                if let Some(ref mut tr) = trace {
+                    tr.events.push(ev);
+    }
+            }
+        } else if t.starts_with("<string") || t.starts_with("<date") {
+            let (Some(ref mut ev), Some(k), Some(v)) = (
+                event.as_mut(),
+                extract_xml_attr(t, "key"),
+                extract_xml_attr(t, "value"),
+            ) else {
+                continue;
+            };
+            let val = if t.starts_with("<date") {
+                AttributeValue::Date(v)
+            } else {
+                AttributeValue::String(v)
+            };
+            ev.attributes.insert(k, val);
+        }
+    }
+    log
+}
+
+fn extract_xml_attr(s: &str, attr: &str) -> Option<String> {
+    let needle = format!("{attr}=\"");
+    let start = s.find(&needle)? + needle.len();
+    let end = s[start..].find('"')?;
+    Some(s[start..start + end].to_string())
+}
+
+/// Read + parse a real XES log from the first candidate path that yields a
+/// non-empty log. Tries the production strict parser first; falls back to a
+/// tolerant extraction when the real-world export trips strict validation.
+/// Panics with the tried-path list if none works. Never `Option`-returns.
+pub fn load_real_log_from(candidates: &[&str]) -> EventLog {
+    use wasm4pm::xes_format::validate_and_parse_xes;
+    // Prefer bench_data/ fixtures over raw data/ originals (verified-md5 inventory).
+    let mut idx: Vec<&str> = candidates.to_vec();
+    idx.sort_by_key(|p| !p.contains("bench_data"));
+    let path = idx[resolve_real_log_path(&idx)];
+    let content = std::fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("bench: failed to read {path}: {e}"));
+    let log = validate_and_parse_xes(&content)
+        .ok()
+        .filter(|l| !l.traces.is_empty())
+        .unwrap_or_else(|| {
+            let l = parse_xes_tolerant(&content);
+            assert!(
+                !l.traces.is_empty(),
+                "bench: {path} parsed to an empty log under both strict and tolerant parsers"
+            );
+            l
+        });
+    log
+}
+
+/// Load the real Sepsis log via the production XES parser.
+pub fn load_real_log() -> EventLog {
+    load_real_log_from(SEPSIS_CANDIDATES)
+}
+
+/// Load the real Sepsis log truncated to `max_traces` (deterministic prefix).
+pub fn load_real_log_capped(max_traces: usize) -> EventLog {
+    let mut log = load_real_log();
+    log.traces.truncate(max_traces);
+    log
+}
+
+/// Load the real Sepsis log and store it in global `APP_STATE`.
+/// Returns (handle, total_events).
+pub fn store_real_log() -> (String, usize) {
+    let log = load_real_log();
+    let events = log.event_count();
+    let handle = store_log(log);
+    (handle, events)
+}
+
+/// Load the real Sepsis log truncated to `max_traces` and store it.
+/// Returns (handle, total_events).
+pub fn store_real_log_capped(max_traces: usize) -> (String, usize) {
+    let log = load_real_log_capped(max_traces);
+    let events = log.event_count();
+    let handle = store_log(log);
+    (handle, events)
+}
+
+/// Ground-truth case counts of the shipped real fixtures:
+/// `(sepsis_cases, bpi2020_declarations_cases)` — re-read from disk, not
+/// hardcoded claims.
+pub fn real_case_counts() -> (usize, usize) {
+    let sepsis = load_real_log().traces.len();
+    let bpi = load_real_log_from(BPI2020_DECL_CANDIDATES).traces.len();
+    (sepsis, bpi)
+}
+
+/// Shape descriptor used by the enterprise-architecture bench to select the
+/// real-log prefix size. Only `num_cases` affects real-data loading; the other
+/// fields are kept for benchmark labeling.
+pub struct BenchShape {
+    pub num_cases: usize,
+    pub events_per_case: usize,
+    pub num_activities: usize,
+}
+
 /// Parse `node_count` and `edge_count` from an algorithm's JSON output
 /// using simd-json for fast deserialization.
 pub fn parse_model_stats(json: &str) -> (usize, usize) {

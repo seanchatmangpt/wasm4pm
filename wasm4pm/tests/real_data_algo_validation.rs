@@ -119,7 +119,14 @@ macro_rules! require_log {
     ($candidates:expr, $label:expr) => {
         match resolve_xes($candidates) {
             None => {
-                eprintln!("SKIP: {} not found at any candidate path", $label);
+                if std::env::var("WASM4PM_ALLOW_DATA_SKIP").as_deref() != Ok("1") {
+                    panic!(
+                        "MISSING DATASET for '{}': real-data tests must not silently skip. \
+                         Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping.",
+                        $label
+                    );
+                }
+                eprintln!("SKIP (WASM4PM_ALLOW_DATA_SKIP=1): {} not found", $label);
                 return;
             }
             Some((path, log)) => {
@@ -148,9 +155,9 @@ const RECEIPT: &[&str] = &[
 ];
 
 const BPI2020: &[&str] = &[
-    "bench_data/bpi2020_travel.xes",
-    "../bench_data/bpi2020_travel.xes",
-    "/Users/sac/chatmangpt/wasm4pm/bench_data/bpi2020_travel.xes",
+    "bench_data/bpi2020_domestic_declarations.xes",
+    "../bench_data/bpi2020_domestic_declarations.xes",
+    "/Users/sac/chatmangpt/wasm4pm/bench_data/bpi2020_domestic_declarations.xes",
 ];
 
 // ---------------------------------------------------------------------------

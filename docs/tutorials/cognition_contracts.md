@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/tutorials/cognition_contracts.md; source-sha256: 64392c906c9986cf896cecc5dffb355a2e311264e421dc17a9be981f93a82609; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-10-10; original: docs/tutorials/cognition_contracts.md; source-sha256: 64392c906c9986cf896cecc5dffb355a2e311264e421dc17a9be981f93a82609; reason: canonical Diátaxis or ADR surface -->
 
 # Tutorial: Executing Cognition Contracts
 
@@ -147,35 +147,38 @@ const shortHash = result.output_hash.slice(0, 8);
 {
   "breed": "mycin",
   "contract": {
-    "intent": "diagnosis",
+    "intent": "diagnose bacteremia organism and recommend antibiotic therapy",
     "candidates": [],
     "facts": [
-      { "key": "organism", "value": "gram_positive_cocci" },
-      { "key": "organism", "value": "strep" },
-      { "key": "site", "value": "throat" }
+      { "key": "gram-stain", "value": "gram-positive" },
+      { "key": "morphology", "value": "coccus" },
+      { "key": "growth-conformation", "value": "chains" },
+      { "key": "allergy-penicillin", "value": "no" }
     ],
     "cases": [],
     "rules": [
       {
-        "id": "r1",
-        "premise": ["organism=gram_positive_cocci", "organism=strep"],
-        "conclusion": "diagnosis=strep_infection",
+        "id": "RULE050-class",
+        "premise": ["gram-positive", "coccus", "chains"],
+        "conclusion": "organism=streptococcus",
         "certainty": 0.7
       },
       {
-        "id": "r2",
-        "premise": ["diagnosis=strep_infection"],
-        "conclusion": "antibiotic=penicillin",
-        "certainty": 0.95
+        "id": "RULE071-class",
+        "premise": ["organism=streptococcus", "allergy-penicillin=no"],
+        "conclusion": "therapy=penicillin",
+        "certainty": 0.9
       }
     ],
-    "goals": [
-      { "id": "g1", "predicate": "antibiotic", "value": "penicillin" }
-    ],
+    "goals": [],
     "state": []
   }
 }
 ```
+
+Rule premises match against bare fact **values** (`"gram-positive"`, `"coccus"`, ...) or
+`key=value` compound strings (`"allergy-penicillin=no"`). Ground truth:
+`crates/wasm4pm-cognition/tests/fixtures/papers/mycin.json` (Shortliffe & Buchanan 1975).
 
 ```bash
 wpm cognition run --contract strep-diagnosis \
@@ -286,16 +289,11 @@ GPS chains operators by reducing the difference between current state and goal s
   "contract": {
     "intent": "I feel sad about my deadlines",
     "candidates": [],
-    "facts": [],
-    "cases": [],
-    "rules": [
-      {
-        "id": "feel-pattern",
-        "premise": ["pattern:I feel (\\w+)"],
-        "conclusion": "Why do you feel $1?",
-        "certainty": 1.0
-      }
+    "facts": [
+      { "key": "frame.pattern", "value": "i feel * || Why do you feel ${1}?" }
     ],
+    "cases": [],
+    "rules": [],
     "goals": [],
     "state": []
   }
@@ -308,7 +306,27 @@ wpm cognition run --contract eliza-session \
   --format json
 ```
 
-ELIZA matches the `intent` string against regex `premise` patterns in `frame.rs` and rewrites matched groups into the `conclusion` template.
+ELIZA reads `frame.pattern` facts of the form `pattern || template`, where the pattern is a
+`*`-wildcard token sequence (lowercase) and the template uses `${1}`, `${2}`, ... for captured
+slots (pronoun-reflected before insertion). Custom `frame.pattern` facts are matched longest-
+pattern-first; with none supplied, built-in defaults apply (`breeds/frame.rs`).
+Ground truth: `crates/wasm4pm-cognition/tests/fixtures/papers/eliza.json` (Weizenbaum 1966).
+
+### 6.5 Breed-specific fact-key grammars (namespaced keys)
+
+Several breeds do not consume the generic `rules`/`cases` machinery — they encode their problem
+in namespaced `facts[].key` strings. These keys are part of the breed's input contract and are
+asserted by the breed oracles (`breeds/support/oracle.rs`, `oracle_impls/`). Verified examples
+from `crates/wasm4pm-cognition/tests/fixtures/papers/`:
+
+| Breed | Key grammar | Example keys |
+|---|---|---|
+| `abductive_ibe` | `ibe:obs:<id>`, `ibe:hyp:<id>:covers`, `ibe:hyp:<id>:cost` | `ibe:obs:E1`, `ibe:hyp:H1:covers` |
+| `abductive_lp` | `alp:abducible:<c>`, `alp:ic:<rule>` | `alp:abducible:a`, `alp:ic:r_ic` |
+| `description_logic` | `dl:subclass:<C>`, `dl:exists_lhs/rhs:<prop>.<filler>`, `dl:conj:<C1>+<C2>`; queries as goals `dl:subsumes` | `dl:subclass:Pericarditis`, `dl:subsumes` |
+
+For these breeds, malformed or missing namespaced keys are a typed breed refusal (`Err`), not a
+silent empty result — each oracle asserts a `refusal_input()` case that must be rejected.
 
 ---
 

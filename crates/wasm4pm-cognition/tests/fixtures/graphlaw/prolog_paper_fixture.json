@@ -1,0 +1,51 @@
+{
+  "breed": "prolog",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "parent:tom,bob",
+        "value": "true"
+      },
+      {
+        "key": "parent:bob,ann",
+        "value": "true"
+      },
+      {
+        "key": "parent:bob,pat",
+        "value": "true"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "parent:bob,ann",
+        "value": "true"
+      }
+    ],
+    "intent": "prove parent(bob, ann) from the family fact base (Kowalski 1974)",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "parent:bob,ann",
+      "parent:bob,pat",
+      "parent:tom,bob"
+    ],
+    "notes": "Cross-check vs papers/prolog.json: goal parent(bob,ann) is a direct fact (post-fixpoint fact set contains parent:bob,ann), consistent with the paper fixture's Allow verdict. No rules; derived set = EDB. CONFORMED to SCHEMA.md v1 by the FOUNDATION harness lane (compile-freeze unblock): required BreedInput fields added, goal converted to literal fact key parent:bob,ann (kernel path matches goal.predicate as an exact fact key and goal.value as the term), fact values set to 'true' so the ground query matches, verdicts converted to map.",
+    "verdicts": {
+      "g1": "admitted"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "breed_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "prolog_paper_fixture"
+}

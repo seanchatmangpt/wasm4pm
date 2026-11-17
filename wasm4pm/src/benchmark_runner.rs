@@ -190,7 +190,7 @@ fn verdict_matches(actual: &str, expected: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
-// Built-in benchmark corpus (5 traces)
+// Built-in benchmark corpus (8 traces)
 // ---------------------------------------------------------------------------
 
 /// Return the eight built-in benchmark traces.

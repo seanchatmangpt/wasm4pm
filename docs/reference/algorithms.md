@@ -28,10 +28,10 @@ All 60 algorithms are registered in the current release.
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `a_star` | `astar` | A* shortest-path discovery over DFG — finds optimal path through the directly-follows graph using heuristic search, producing a Petri net model. | XES | CERTIFIED |
-| `aco` | `ant-colony` | Ant Colony Optimisation discovery — stochastic population-based search inspired by ant foraging, producing Petri net models with good fitness/precision balance. | XES | CERTIFIED |
+| `a_star` | `astar` | A* search over DFG edge subsets — g = covered pair occurrences minus a fixed per-edge complexity penalty; h is admissible (exact for this additive objective); optimal with an unbounded open set, beam-degenerate under a width bound. | XES | CERTIFIED |
+| `aco` | `ant-colony` | Ant Colony Optimisation discovery — per-decision-point normalized pheromone sampling (probabilities sum to 1, NaN-sanitized); when no ant constructs a solution the result is an honest empty model with fitness 0.0. | XES | CERTIFIED |
 | `alpha_plus_plus` | `alpha` | Alpha++ miner — extends the original Alpha algorithm to handle length-one and length-two loops, producing a Petri net from the directly-follows footprint matrix. | XES | CERTIFIED |
-| `declare` | `declare` | Declarative constraint mining using LTL-based temporal logic — discovers existence, response, and precedence constraints rather than a procedural model. | XES | CERTIFIED |
+| `declare` | `declare` | Declarative constraint mining using LTL-based temporal logic — confidence denominators are per-template (`activity_counts[a]`, `max(abs(a),abs(b))`); violating traces deflate confidence rather than dropping out of both numerator and denominator; ChainResponse/ChainPrecedence use immediate-window semantics. | XES | CERTIFIED |
 | `dfg` | `dfg` | Directly-Follows Graph — fastest baseline discovery, counting how often one activity directly follows another. Serves as input to most other discovery algorithms. | XES | CERTIFIED |
 | `genetic_algorithm` | `genetic` | Genetic algorithm process model search — evolves a population of candidate Petri nets using fitness, precision, generalization and simplicity as multi-objective fitness functions. | XES | CERTIFIED |
 | `heuristic_miner` | `heuristic` | Heuristics Miner — uses dependency measures to filter noise before constructing a causal net. Dependency threshold controls filtering aggressiveness. | XES | CERTIFIED |
@@ -42,7 +42,7 @@ All 60 algorithms are registered in the current release.
 | `log_to_trie` | `prefix-tree` | Prefix-tree (trie) representation — inserts all traces into a trie where each path from root to leaf represents a unique trace variant. | XES | CERTIFIED |
 | `optimized_dfg` | `dfg-optimized` | DFG with arc-weight optimisation pass — builds a standard DFG then applies pruning to remove statistically insignificant arcs. | XES | CERTIFIED |
 | `process_skeleton` | `skeleton` | Minimal skeleton DFG — retains only the highest-frequency directly-follows arcs to produce a sparse backbone of the process. | XES | CERTIFIED |
-| `pso` | `pso` | Particle Swarm Optimisation discovery — maintains a swarm of candidate models whose positions evolve toward the global best according to social and cognitive acceleration. | XES | CERTIFIED |
+| `pso` | `pso` | Particle Swarm Optimisation discovery — canonical velocity update `v = w·v + c1·r1·(pbest−x) + c2·r2·(gbest−x)` with inertia decaying 0.9→0.4, `c1 = c2 = 2`, vmax clamp; continuous [0,1] relaxation decoded at 0.5. | XES | CERTIFIED |
 | `simd_streaming_dfg` | `simd-dfg` | SIMD-accelerated streaming DFG — processes the event log in a single pass using SIMD vector intrinsics for maximum throughput on large logs. | XES | CERTIFIED |
 | `simulated_annealing` | `simulated-annealing` | Simulated Annealing stochastic search — probabilistically accepts worse candidate models according to a cooling schedule to escape local optima. | XES | CERTIFIED |
 | `smart_engine` | — | Auto-selects the best algorithm for the input characteristics — inspects log size, variant count, and noise level, then dispatches to the most appropriate discovery algorithm. | XES | CERTIFIED |

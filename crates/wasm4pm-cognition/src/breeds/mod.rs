@@ -190,6 +190,7 @@ include!("registration.rs");
 
 /// A logical fact: key-value pair in the knowledge representation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Fact {
     /// Fact key (e.g., "requirement:offline", "scale:billion")
     pub key: String,
@@ -260,6 +261,7 @@ pub struct StateAtom {
 
 /// Input to a breed's `run()` method: all available knowledge.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct BreedInput {
     /// User intent or problem statement
     pub intent: String,
@@ -282,6 +284,7 @@ pub struct BreedInput {
 /// Trace steps are append-only evidence that a real algorithm executed.
 /// An empty trace is a fraud signal: the breed did no work.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(deny_unknown_fields)]
 pub struct TraceStep {
     /// Monotonic step index (0-based)
     pub step: usize,
@@ -298,6 +301,7 @@ pub struct TraceStep {
 
 /// Output from a breed's `run()` method.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BreedOutput {
     /// Which breed produced this output
     pub breed: BreedId,
@@ -310,13 +314,11 @@ pub struct BreedOutput {
     /// Human-readable explanation of the breed's reasoning
     pub explanation: String,
     /// Append-only inference trace: real algorithms produce non-empty traces.
-    #[serde(default)]
+    /// Absence is a typed serde error — a hollow output cannot deserialize.
     pub inference_trace: Vec<TraceStep>,
     /// OCEL 2.0 event log derived from inference_trace (no wall-clock: uses logical steps)
-    #[serde(default)]
     pub ocel_log: Option<serde_json::Value>,
     /// Cases retained from this run (max 1 per run; host owns persistence)
-    #[serde(default)]
     pub retained_cases: Vec<Case>,
 }
 
@@ -485,5 +487,62 @@ pub trait CognitionBreed: Send + Sync {
             breed: self.id(),
             message,
         }
+    }
+}
+
+#[cfg(test)]
+mod serde_flip_tests {
+    use super::*;
+
+    /// F7: unknown keys on the four flipped types must be a typed error.
+    #[test]
+    fn f7_unknown_key_refused() {
+        let err = serde_json::from_str::<BreedInput>(
+            r#"{"intent":"x","candidates":[],"facts":[],"cases":[],"rules":[],"goals":[],"state":[],"sneaky":1}"#,
+        );
+        assert!(err.is_err(), "unknown key on BreedInput must be refused");
+
+        let err = serde_json::from_str::<Fact>(r#"{"key":"k","value":"v","extra":true}"#);
+        assert!(err.is_err(), "unknown key on Fact must be refused");
+
+        let err = serde_json::from_str::<TraceStep>(
+            r#"{"step":0,"kind":"k","detail":"d","depth":0,"objects":[],"extra":1}"#,
+        );
+        assert!(err.is_err(), "unknown key on TraceStep must be refused");
+    }
+
+    /// F7: a BreedOutput missing inference_trace / ocel_log / retained_cases
+    /// must be a typed serde error, not a silent default.
+    #[test]
+    fn f7_missing_required_output_fields_refused() {
+        let base_fields = r#""breed":"eliza","candidates":[],"facts":[],"selected":null,"explanation":""#;
+        let err = serde_json::from_str::<BreedOutput>(&format!(
+            "{{{}}}",
+            base_fields
+        ));
+        assert!(err.is_err(), "missing inference_trace must be refused");
+        let err = serde_json::from_str::<BreedOutput>(&format!(
+            r#"{{"breed":"eliza","candidates":[],"facts":[],"selected":null,"explanation":"","inference_trace":[]}}"#
+        ));
+        assert!(err.is_err(), "missing ocel_log/retained_cases must be refused");
+    }
+
+    /// The complete field set still round-trips.
+    #[test]
+    fn f7_complete_output_round_trips() {
+        let out = BreedOutput::from_parts(
+            BreedId::Eliza,
+            &BreedInput::default(),
+            vec![],
+            None,
+            "ok".to_string(),
+            vec![TraceStep::default()],
+        );
+        let json = serde_json::to_string(&out).expect("serialize ok");
+        let back: BreedOutput = serde_json::from_str(&json).expect("deserialize ok");
+        assert_eq!(
+            serde_json::to_value(&out).unwrap(),
+            serde_json::to_value(&back).unwrap()
+        );
     }
 }

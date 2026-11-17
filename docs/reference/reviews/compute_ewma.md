@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/compute_ewma.md; source-sha256: aa991db9e31d772b70646abe07b16f359feb5ed066942e03dd173977566d4ce8; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/compute_ewma.md; source-sha256: baf5fc4d9edbbc67ecc89b41d37e7a7275d4cc17ef420139b6ff99f1a6e7218b; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: compute_ewma
 
@@ -26,3 +26,13 @@
 - **Rust Implementation**: `wasm4pm/src/prediction_drift.rs` -> `compute_ewma`, `ewma_series`, `classify_trend`
 - **TypeScript dispatch**: `packages/kernel/src/api.ts` -> `runRaw`
 - **Test file**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Deduplication and input screening (2026-10-10, commit `0e3d81b38`)
+
+- The unclamped duplicate EWMA helper (`ewma(values, alpha)` in
+  `wasm4pm/src/prediction_additions.rs`, which skipped the `alpha` clamp
+  applied by `compute_ewma`) has been deleted. `compute_ewma` /
+  `ewma_series` in `wasm4pm/src/prediction_drift.rs` is the single EWMA
+  implementation, with `alpha` clamped to `(0.0, 1.0]`.
+- NaN/Inf inputs are refused with a typed error naming the offending flat
+  element index rather than silently propagating into the smoothed series.

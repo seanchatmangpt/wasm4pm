@@ -55,7 +55,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 let event_count = ocel
                     .events
                     .iter()
-                    .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+                    .filter(|e| e.all_object_ids().iter().any(|oid| *oid == obj.id))
                     .count();
                 total_events += event_count;
             }
@@ -125,7 +125,7 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
         let mut events_for_obj: Vec<&OCELEvent> = ocel
             .events
             .iter()
-            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .filter(|e| e.all_object_ids().iter().any(|oid| *oid == obj.id))
             .collect();
 
         // Sort events by timestamp (ascending)
@@ -223,6 +223,7 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
     for event in &ocel.events {
         let refs = event
             .all_object_ids()
+            .into_iter()
             .filter(|oid| target_objects.iter().any(|o| o.id == *oid))
             .count();
         if refs > 0 {
@@ -243,7 +244,7 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
         let ocel_seq: Vec<String> = ocel
             .events
             .iter()
-            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .filter(|e| e.all_object_ids().iter().any(|oid| *oid == obj.id))
             .map(|e| e.event_type.clone())
             .collect();
 
@@ -251,7 +252,7 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
         let mut ts_sorted: Vec<(&OCELEvent, String)> = ocel
             .events
             .iter()
-            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .filter(|e| e.all_object_ids().iter().any(|oid| *oid == obj.id))
             .map(|e| (e, e.event_type.clone()))
             .collect();
         ts_sorted.sort_by_key(|(a, _)| a.timestamp.clone());
@@ -331,6 +332,7 @@ mod tests {
         OCEL {
             event_types: vec!["Create".to_string(), "Update".to_string()],
             object_types: vec!["Order".to_string(), "Item".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e1".to_string(),
@@ -408,6 +410,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],

@@ -6,6 +6,8 @@
 //! not just synthetic activity ids. Synthetic logs are retained only for the
 //! size-parameterized throughput sweep.
 
+#[path = "helpers.rs"]
+mod helpers;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -29,27 +31,6 @@ fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
         attributes: BTreeMap::new(),
         traces,
     }
-}
-
-/// Load a real event log from `bench_data/`. Returns `None` if the file is
-/// absent so the synthetic benches still run in CI without the fixture.
-fn load_real_log() -> Option<EventLog> {
-    // Bench cwd is the crate dir (wasm4pm/); fixture lives at repo-root/bench_data.
-    let candidates = [
-        "../bench_data/sepsis.xes",
-        "bench_data/sepsis.xes",
-        "../data/Sepsis Cases - Event Log.xes",
-    ];
-    for c in candidates {
-        if Path::new(c).exists() {
-            if let Ok(content) = std::fs::read_to_string(c) {
-                if let Ok(log) = wasm4pm::xes_format::validate_and_parse_xes(&content) {
-                    return Some(log);
-                }
-            }
-        }
-    }
-    None
 }
 
 fn total_events(log: &EventLog) -> u64 {
@@ -89,7 +70,8 @@ fn bench_parallel_executor(c: &mut Criterion) {
     }
 
     // Real-log DFG: production input shape (sepsis.xes).
-    if let Some(log) = load_real_log() {
+    {
+        let log = helpers::load_real_log();
         group.throughput(Throughput::Elements(total_events(&log)));
         group.bench_with_input(BenchmarkId::new("real", "sepsis"), &log, |b, log| {
             b.iter(|| {
@@ -121,7 +103,8 @@ fn bench_token_replay(c: &mut Criterion) {
         },
     );
 
-    if let Some(log) = load_real_log() {
+    {
+        let log = helpers::load_real_log();
         group.throughput(Throughput::Elements(total_events(&log)));
         group.bench_with_input(BenchmarkId::new("real", "sepsis"), &log, |b, log| {
             b.iter(|| {

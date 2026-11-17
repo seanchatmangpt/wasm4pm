@@ -1,0 +1,241 @@
+{
+  "breed": "naive_physics",
+  "breed_input": {
+    "facts": [
+      {
+        "key": "np:ground:floor",
+        "value": "true"
+      },
+      {
+        "key": "np:on:b2",
+        "value": "floor"
+      },
+      {
+        "key": "np:on:b1",
+        "value": "b2"
+      },
+      {
+        "key": "np:on:b0",
+        "value": "b1"
+      },
+      {
+        "key": "np:remove:b2",
+        "value": "true"
+      }
+    ],
+    "intent": "naive physics scene naive-physics-support-chain"
+  },
+  "datalog": {
+    "facts": [
+      [
+        "https://np.graphlaw.dev/b0",
+        "https://np.graphlaw.dev/on",
+        "https://np.graphlaw.dev/b1"
+      ],
+      [
+        "https://np.graphlaw.dev/b1",
+        "https://np.graphlaw.dev/on",
+        "https://np.graphlaw.dev/b2"
+      ],
+      [
+        "https://np.graphlaw.dev/b2",
+        "https://np.graphlaw.dev/on",
+        "https://np.graphlaw.dev/floor"
+      ],
+      [
+        "https://np.graphlaw.dev/b2",
+        "https://np.graphlaw.dev/remove",
+        "https://np.graphlaw.dev/true"
+      ],
+      [
+        "https://np.graphlaw.dev/floor",
+        "https://np.graphlaw.dev/ground",
+        "https://np.graphlaw.dev/true"
+      ]
+    ],
+    "rules": [
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/on",
+            "?y"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/sup",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/in",
+            "?y"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/sup",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/sup",
+            "?y"
+          ],
+          [
+            "?y",
+            "https://np.graphlaw.dev/sup",
+            "?z"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/sup",
+          "?z"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/sup",
+            "?y"
+          ],
+          [
+            "?y",
+            "https://np.graphlaw.dev/remove",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/falls",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/sup",
+            "?y"
+          ],
+          [
+            "?y",
+            "https://np.graphlaw.dev/falls",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/falls",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?l",
+            "https://np.graphlaw.dev/liquid",
+            "?c"
+          ],
+          [
+            "?c",
+            "https://np.graphlaw.dev/falls",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?l",
+          "https://np.graphlaw.dev/spills",
+          "?c"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?l",
+            "https://np.graphlaw.dev/liquid",
+            "?c"
+          ],
+          [
+            "?c",
+            "https://np.graphlaw.dev/remove",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?l",
+          "https://np.graphlaw.dev/spills",
+          "?c"
+        ]
+      }
+    ]
+  },
+  "engine": "graphlaw::abi op=datalog (PurRDF least fixpoint)",
+  "expected": {
+    "derived_facts_sorted": [
+      "falls:b0=true",
+      "falls:b1=true"
+    ],
+    "falls": [
+      "b0",
+      "b1"
+    ],
+    "not_falls": [
+      "b2",
+      "floor"
+    ],
+    "notes": "Removing base block b2 cascades: b1 then b0 fall through the ax-unsupported-falls fixpoint.",
+    "spills": [],
+    "value": "verified",
+    "verdicts": {}
+  },
+  "input": {
+    "facts": [
+      {
+        "key": "np:ground:floor",
+        "value": "true"
+      },
+      {
+        "key": "np:on:b2",
+        "value": "floor"
+      },
+      {
+        "key": "np:on:b1",
+        "value": "b2"
+      },
+      {
+        "key": "np:on:b0",
+        "value": "b1"
+      },
+      {
+        "key": "np:remove:b2",
+        "value": "true"
+      }
+    ]
+  },
+  "provenance": {
+    "axioms": [
+      "ax-support (on/in are support; support transitivity)",
+      "ax-unsupported-falls (support removed -> falls)",
+      "ax-containment-transport (contents of a falling container fall)",
+      "ax-liquid-spill (liquid in a falling/removed container spills)"
+    ],
+    "eyeron": "0.7.8",
+    "generator": "naive_physics_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "note": "Removing base block b2 cascades: b1 then b0 fall through the ax-unsupported-falls fixpoint.",
+    "paper": "Hayes 1979 (Naive Physics Manifesto); Hayes 1985 (Naive physics I: ontology for liquids)",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "naive-physics-support-chain"
+}

@@ -2,6 +2,7 @@
 //! (power iteration with deflation) for process mining.
 
 use crate::ml::classification::extract_features;
+use crate::ml::utils::ensure_finite_2d;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -36,7 +37,10 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
         _ => Err(crate::error::js_val("not_found")),
     })?;
 
-    let result = pca_internal(&features);
+    let result = {
+        ensure_finite_2d(&features).map_err(|e| crate::error::js_val(&e))?;
+        pca_internal(&features)
+    };
 
     to_js_val(&json!({
         "algorithm": "ml_pca",
@@ -51,6 +55,11 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
 
 /// Core PCA over N-dimensional feature vectors. Deterministic: fixed start
 /// vectors, fixed iteration counts, no RNG.
+///
+/// # Caller contract (hot path)
+/// Performs NO finiteness validation — callers must pre-screen with
+/// [`ensure_finite_2d`](crate::ml::utils::ensure_finite_2d); a NaN feature
+/// collapses every eigenpair to garbage without erroring.
 pub fn pca_internal<const D: usize>(features: &[[f64; D]]) -> PcaResult {
     let k = MAX_COMPONENTS.min(D);
     let n = features.len();

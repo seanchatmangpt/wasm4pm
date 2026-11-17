@@ -1,0 +1,70 @@
+{
+  "breed": "event_calculus",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "ec:happens:2",
+        "value": "hire"
+      },
+      {
+        "key": "ec:happens:5",
+        "value": "fire"
+      },
+      {
+        "key": "ec:initiates:hire",
+        "value": "employed"
+      },
+      {
+        "key": "ec:terminates:fire",
+        "value": "employed"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "ec:holdsat",
+        "value": "employed@4"
+      },
+      {
+        "id": "g2",
+        "predicate": "ec:holdsat",
+        "value": "employed@6"
+      },
+      {
+        "id": "g3",
+        "predicate": "ec:holdsat",
+        "value": "employed@7"
+      }
+    ],
+    "intent": "a fluent initiated, then clipped strictly before the query time",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "ec:verdict:employed@4=true",
+      "ec:verdict:employed@6=false",
+      "ec:verdict:employed@7=false",
+      "g1: HoldsAt(employed@4) = true",
+      "g2: HoldsAt(employed@6) = false",
+      "g3: HoldsAt(employed@7) = false"
+    ],
+    "notes": "Termination at t=5 clips the holds chain before qt=6 and qt=7; qt=4 is strictly before the clip and still holds. Hand timeline: holds[3..6]={employed}; holds[6..8]={}. Route: stratified negation (purrdf-datalog negated atoms driven directly via graphlaw::datalog; NOT the positive-only JSON-ABI shim), cross-checked against an explicit-complement positive program — the holds-projections agree.",
+    "verdicts": {
+      "g1: HoldsAt(employed@4)": "true",
+      "g2: HoldsAt(employed@6)": "false",
+      "g3: HoldsAt(employed@7)": "false"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "event_calculus_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "event_calculus-clipped-before-query"
+}

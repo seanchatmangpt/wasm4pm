@@ -25,7 +25,7 @@ use wasm4pm::state::{get_or_init_state, StoredObject};
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{bench_sizes, generate_event_log, LogShape, ACTIVITY_KEY};
+use helpers::{bench_sizes, LogShape, ACTIVITY_KEY};
 
 // ---------------------------------------------------------------------------
 // Petri Net Builders (adapted from conformance_bench.rs)
@@ -180,12 +180,8 @@ fn bench_token_replay(c: &mut Criterion) {
         .expect("store PetriNet failed");
 
     for shape in bench_sizes() {
-        let log = generate_event_log(&shape);
-        let log_handle = get_or_init_state()
-            .store_object(StoredObject::EventLog(log))
-            .expect("store EventLog failed");
-
-        let total_events = shape.num_cases * shape.avg_events_per_case;
+        let (log_handle, total_events) = helpers::store_real_log_capped(shape.num_cases);
+        let total_events = total_events as u64;
         group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(
             BenchmarkId::new("sequential/cases", shape.num_cases),
@@ -193,7 +189,7 @@ fn bench_token_replay(c: &mut Criterion) {
             |_b, h| {
                 let result =
                     conformance::check_token_based_replay(h, &net_handle, ACTIVITY_KEY).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -217,12 +213,8 @@ fn bench_token_replay_parallel(c: &mut Criterion) {
         .expect("store PetriNet failed");
 
     for shape in bench_sizes() {
-        let log = generate_event_log(&shape);
-        let log_handle = get_or_init_state()
-            .store_object(StoredObject::EventLog(log))
-            .expect("store EventLog failed");
-
-        let total_events = shape.num_cases * shape.avg_events_per_case;
+        let (log_handle, total_events) = helpers::store_real_log_capped(shape.num_cases);
+        let total_events = total_events as u64;
         group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(
             BenchmarkId::new("parallel/cases", shape.num_cases),
@@ -230,7 +222,7 @@ fn bench_token_replay_parallel(c: &mut Criterion) {
             |_b, h| {
                 let result =
                     conformance::check_token_based_replay(h, &net_handle, ACTIVITY_KEY).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -255,7 +247,7 @@ fn bench_simd_token_replay(c: &mut Criterion) {
             num_activities: 4,
             noise_factor: 0.1,
         };
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
 
         // Build DFG-based Petri net
         let mut dfg = DFG::new();
@@ -309,9 +301,8 @@ fn bench_etconformance_precision(c: &mut Criterion) {
         net.final_markings.first().cloned().unwrap_or_default();
 
     for shape in bench_sizes() {
-        let log = generate_event_log(&shape);
-
-        let total_events = shape.num_cases * shape.avg_events_per_case;
+        let log = helpers::load_real_log_capped(shape.num_cases);
+        let total_events = log.event_count();
         group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
@@ -352,9 +343,7 @@ fn bench_declare_conformance(c: &mut Criterion) {
             num_activities: 4,
             noise_factor: 0.1,
         };
-        let log = generate_event_log(&shape);
-
-        // Build trace activities as owned strings, then &str slices
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let traces_owned: Vec<Vec<String>> = log
             .traces
             .iter()
@@ -376,7 +365,7 @@ fn bench_declare_conformance(c: &mut Criterion) {
             .map(|t| t.iter().map(|s| s.as_str()).collect())
             .collect();
 
-        let total_events = num_cases * shape.avg_events_per_case;
+        let total_events = log.event_count();
         group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", num_cases),

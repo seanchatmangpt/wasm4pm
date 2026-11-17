@@ -8,7 +8,7 @@
 
 ## Abstract
 
-The wasm4pm cognition layer is a library of **52 breeds**, each a faithful,
+The wasm4pm cognition layer is a library of **55 registered breeds**, each a faithful,
 deterministic, falsifiable re-implementation of a single foundational result in
 the history of mechanized reasoning — from Bellman's dynamic programming (1957)
 to van der Aalst's object-centric process mining (2019). Individually, a breed
@@ -92,7 +92,7 @@ breed is the smallest object for which that proof can be carried.
 
 ## 2. What capabilities the breeds provide
 
-The 52 breeds are not an arbitrary collection. Laid out by the kind of inference
+The 55 breeds are not an arbitrary collection. Laid out by the kind of inference
 they mechanize, they cover — with striking completeness — the paradigms that
 the field of artificial intelligence discovered over seven decades. The families
 below are the *capabilities*; the cited breeds are the executable instances.
@@ -207,7 +207,7 @@ audits it.
 A reader could acquire any one of these capabilities elsewhere: a Prolog
 interpreter, a Bayesian library, a SAT solver, a planner. The thesis is not
 about the parts. It is about three properties that emerge **only** from holding
-all 52 together under the same four-fold discipline of Section 1.
+all 55 together under the same four-fold discipline of Section 1.
 
 ### 3.1 Completeness: a basis over reasoning, not a pile of tools
 

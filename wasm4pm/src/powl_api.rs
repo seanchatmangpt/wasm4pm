@@ -567,7 +567,7 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
         fall_through_fired: false,
     };
 
-    let (arena, root) =
+    let (arena, root, fall_through_fired) =
         discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {e}")))?;
 
     let repr = arena.to_repr(root);
@@ -576,6 +576,7 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
         "node_count": arena.len(),
         "repr": repr,
         "variant": variant,
+        "fall_through_fired": fall_through_fired,
     }))
 }
 
@@ -613,7 +614,7 @@ pub fn discover_powl_from_log_config(
         fall_through_fired: false,
     };
 
-    let (arena, root) =
+    let (arena, root, fall_through_fired) =
         discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {e}")))?;
 
     let repr = arena.to_repr(root);
@@ -622,6 +623,7 @@ pub fn discover_powl_from_log_config(
         "node_count": arena.len(),
         "repr": repr,
         "variant": variant,
+        "fall_through_fired": fall_through_fired,
         "config": {
             "activity_key": activity_key,
             "min_trace_count": min_trace_count,

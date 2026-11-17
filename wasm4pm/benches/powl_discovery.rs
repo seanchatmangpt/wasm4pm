@@ -26,40 +26,15 @@ struct Dataset {
     events: u64,
 }
 
-/// Load the first existing candidate path, parse it, optionally cap the number of
-/// traces (to keep large logs runtime-bounded), serialize to JSON, and return it.
+/// Load a real dataset via the shared tolerant loader, cap traces (to keep
+/// measured iterations runtime-bounded), and package it.
 fn load_dataset(label: &'static str, candidates: &[&str], max_traces: usize) -> Dataset {
-    let home = std::env::var("HOME").unwrap_or_default();
-    let mut log: EventLog = candidates
-        .iter()
-        .filter_map(|p| {
-            let resolved = p.replace('~', &home);
-            let content = std::fs::read_to_string(&resolved).ok()?;
-            if content.len() < 200 {
-                return None;
-            }
-            let parsed = validate_and_parse_xes(&content).ok()?;
-            if parsed.traces.is_empty() {
-                return None;
-            }
-            Some(parsed)
-        })
-        .next()
-        .unwrap_or_else(|| {
-            panic!(
-                "Required real dataset '{}' not found at any of: {:?}\n\
-                 Download from https://data.4tu.nl/ — synthetic data is prohibited.",
-                label, candidates
-            )
-        });
-
-    // Cap traces so a measured iteration stays runtime-bounded on large logs.
+    let mut log = helpers::load_real_log_from(candidates);
     if log.traces.len() > max_traces {
         log.traces.truncate(max_traces);
     }
     let events = log.traces.iter().map(|t| t.events.len()).sum::<usize>() as u64;
     let json = serde_json::to_string(&log).expect("bench: serialize EventLog failed");
-
     Dataset {
         label,
         json,
@@ -74,24 +49,17 @@ fn real_datasets() -> Vec<Dataset> {
     vec![
         load_dataset(
             "roadtraffic",
-            &[
-                "bench_data/roadtraffic100traces.xes",
-                "../../bench_data/roadtraffic100traces.xes",
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
-            ],
+            helpers::ROADTRAFFIC_CANDIDATES,
             100,
         ),
         load_dataset(
             "sepsis",
-            &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"],
+            helpers::SEPSIS_CANDIDATES,
             1_050,
         ),
         load_dataset(
             "bpi2020",
-            &[
-                "bench_data/bpi2020_travel.xes",
-                "../../bench_data/bpi2020_travel.xes",
-            ],
+            helpers::BPI2020_DECL_CANDIDATES,
             // Cap the large travel-permit log so a measured iteration stays bounded.
             2_000,
         ),
@@ -135,7 +103,7 @@ fn bench_powl_from_log(c: &mut Criterion) {
 fn bench_powl_variants(c: &mut Criterion) {
     let ds = load_dataset(
         "sepsis",
-        &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"],
+        helpers::SEPSIS_CANDIDATES,
         1_050,
     );
 

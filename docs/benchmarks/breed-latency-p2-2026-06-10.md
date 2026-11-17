@@ -1,26 +1,13 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/benchmarks/breed-latency-p2-2026-06-10.md; source-sha256: 6baec424be6a81944345c5b2bb38dca3d95ecaa401a9940fdd2f2d8fffe6d3dc; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: archive-pointer; reviewed: 2026-10-10; original: docs/benchmarks/breed-latency-p2-2026-06-10.md; source-sha256: 6b27147aecb09d4d9d5f5159f943e398562ea09e1e06d338b1daa274f4201968; reason: superseded dated breed-latency evidence (pre-postfix runs) -->
 
-# P2 Tier Breed Latency — 2026-06-10
+# Archived documentation
 
-Criterion medians for `CognitionBreed::run()` at the Rust boundary
-(`cargo bench -p wasm4pm-cognition --bench breed_latency -- breed_latency_p2`,
-50 samples per breed, representative inputs exercising each algorithm's core
-path — see `benches/breed_latency.rs`). Budget: τ ≤ 100 µs (PRD §0.5).
+This document is retained as historical evidence and is not current product truth.
 
-| Breed | Median | Budget | Verdict |
-|---|---|---|---|
-| asp | 8.92 µs | ≤ 100 µs | PASS |
-| description_logic | 8.12 µs | ≤ 100 µs | PASS |
-| abductive_lp | 4.63 µs | ≤ 100 µs | PASS |
-| abductive_ibe | 2.87 µs | ≤ 100 µs | PASS |
-| partial_order_plan | 6.67 µs | ≤ 100 µs | PASS |
-| event_calculus | 1.86 µs | ≤ 100 µs | PASS |
-| mdp | 4.09 µs | ≤ 100 µs | PASS |
-| version_space | 9.70 µs | ≤ 100 µs | PASS |
-| belief_merging | 3.88 µs | ≤ 100 µs | PASS |
-| qualitative_reason | 4.19 µs | ≤ 100 µs | PASS |
-| script_sam | 1.95 µs | ≤ 100 µs | PASS |
-| clp | 11.72 µs | ≤ 100 µs | PASS |
+- Archived copy: [`docs/archive/2026-10-10/docs/benchmarks/breed-latency-p2-2026-06-10.md`](../archive/2026-10-10/docs/benchmarks/breed-latency-p2-2026-06-10.md)
+- Original path: `docs/benchmarks/breed-latency-p2-2026-06-10.md`
+- Archived: 2026-10-10
+- Reason: superseded dated breed-latency evidence (pre-postfix runs)
+- Source SHA-256: `6b27147aecb09d4d9d5f5159f943e398562ea09e1e06d338b1daa274f4201968`
 
-All 12 P2 breeds measured under budget (worst case clp at 11.72 µs, 8.5×
-headroom). Host: darwin arm64, release profile.
+Current documentation starts at [`docs/README.md`](../README.md).

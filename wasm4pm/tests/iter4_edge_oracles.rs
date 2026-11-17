@@ -36,7 +36,7 @@ static CLOCK_LOCK: Mutex<()> = Mutex::new(());
 
 /// Rank-1: x^T A^{-1} x ≥ 0 because A is initialised as λI (positive definite)
 /// and every rank-1 outer-product update preserves positive semi-definiteness.
-/// `compute_ucb_variance` therefore must never return a negative value, even
+/// `variance_for_action` therefore must never return a negative value, even
 /// when the caller violates the documented [0,1] contract.
 #[test]
 fn linucb_variance_non_negative_under_unnormalized_features() {
@@ -48,7 +48,7 @@ fn linucb_variance_non_negative_under_unnormalized_features() {
         [10.0; N_FEATURES], // out-of-spec >1
     ];
     for (i, x) in cases.iter().enumerate() {
-        let v = agent.compute_ucb_variance(x);
+        let v = agent.variance_for_action(0, x);
         assert!(v >= 0.0, "case {i}: variance must be ≥ 0, got {v}");
         assert!(v.is_finite(), "case {i}: variance must be finite, got {v}");
     }
@@ -65,7 +65,8 @@ fn linucb_a_inv_symmetric_after_repeated_updates() {
     for _ in 0..20 {
         agent.update(&features, 1, 0.5);
     }
-    let a_inv = agent.inverse_covariance();
+    // Updates targeted action 1, so its per-action A_inv is the one exercised.
+    let a_inv = agent.inverse_covariance(1);
     for i in 0..N_FEATURES {
         for j in (i + 1)..N_FEATURES {
             let d = (a_inv[i][j] - a_inv[j][i]).abs();

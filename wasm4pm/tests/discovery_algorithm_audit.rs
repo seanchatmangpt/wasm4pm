@@ -466,3 +466,72 @@ fn admitted_log(
 > {
     wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }
+
+// ============================================================================
+// OC-DFG tied-timestamp determinism regression (lane 11)
+// ============================================================================
+// Pre-fix, the per-object event sort keyed only on timestamp
+// (sort_unstable_by) — for events sharing a timestamp the resulting
+// permutation depended on the unstable partitioning, so OC-DFG edges,
+// start/end activities, and node frequencies could vary run to run. The
+// sort key is now (timestamp, positional idx) — a total order. This test
+// pins the required tie-break semantics: arrival (positional) order.
+
+#[test]
+fn ocel_dfg_tied_timestamps_resolve_in_arrival_order() {
+    use wasm4pm::discovery::discover_ocel_dfg_per_type_pure;
+    use wasm4pm::models::{OCEL, OCELEvent, OCELEventObjectRef, OCELObject};
+
+    // 8 events, all sharing one timestamp, referencing one object.
+    // 8 tied elements is enough to force unstable-sort partitioning.
+    let n = 8;
+    let mut ocel = OCEL::new();
+    ocel.object_types = vec!["order".to_string()];
+    ocel.object_type_defs = vec![wasm4pm::models::OCELObjectType {
+        name: "order".to_string(),
+        attributes: vec![],
+    }];
+    ocel.objects.push(OCELObject {
+        id: "o1".to_string(),
+        object_type: "order".to_string(),
+        attributes: Default::default(),
+        changes: Vec::new(),
+        embedded_relations: Vec::new(),
+    });
+    for i in 0..n {
+        ocel.events.push(OCELEvent {
+            id: format!("e{i}"),
+            event_type: format!("act{i}"),
+            timestamp: "2024-01-01T00:00:00Z".to_string(), // all tied
+            attributes: Default::default(),
+            object_ids: vec![],
+            object_refs: vec![OCELEventObjectRef {
+                object_id: "o1".to_string(),
+                qualifier: String::new(),
+            }],
+        });
+    }
+
+    // Run discovery twice; require byte-identical JSON.
+    let a = serde_json::to_string(&discover_ocel_dfg_per_type_pure(&ocel)).unwrap();
+    let b = serde_json::to_string(&discover_ocel_dfg_per_type_pure(&ocel)).unwrap();
+    assert_eq!(a, b, "OC-DFG must be byte-identical across runs");
+
+    // Arrival-order tie-break: with all timestamps tied, DF edges must follow
+    // positional order; start activity act0, end activity act7.
+    let dfgs = discover_ocel_dfg_per_type_pure(&ocel);
+    let dfg = dfgs.get("order").unwrap();
+    assert_eq!(dfg.start_activities.get("act0"), Some(&1));
+    assert_eq!(dfg.end_activities.get("act7"), Some(&1));
+    for i in 0..n - 1 {
+        assert_eq!(
+            dfg.edges
+                .iter()
+                .find(|e| e.from == format!("act{i}") && e.to == format!("act{}", i + 1))
+                .map(|e| e.frequency),
+            Some(1),
+            "edge act{i}->act{} must exist with frequency 1",
+            i + 1
+        );
+    }
+}

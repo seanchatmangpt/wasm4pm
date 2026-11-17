@@ -90,6 +90,7 @@ pub fn oc_conformance_check_inner(ocel: &OCEL) -> Result<serde_json::Value, Stri
         for event in &ocel.events {
             let related_count = event
                 .all_object_ids()
+                .into_iter()
                 .filter(|id| object_type_by_id.get(id) == Some(&obj_type.as_str()))
                 .count();
             if related_count > 0 {
@@ -108,6 +109,7 @@ pub fn oc_conformance_check_inner(ocel: &OCEL) -> Result<serde_json::Value, Stri
         for event in &ocel.events {
             let related_count = event
                 .all_object_ids()
+                .into_iter()
                 .filter(|id| object_type_by_id.get(id) == Some(&obj_type.as_str()))
                 .count();
             if related_count == 0 {
@@ -233,6 +235,7 @@ mod tests {
         OCEL {
             event_types: vec!["A".to_string(), "B".to_string()],
             object_types: vec!["Order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e1".to_string(),
@@ -278,6 +281,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![], // no types → no alpha++ call
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],
@@ -294,6 +298,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],
@@ -323,6 +328,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],
@@ -397,6 +403,7 @@ mod tests {
         let mut ocel = OCEL {
             event_types: vec!["A".to_string()],
             object_types: vec!["Order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![
                 OCELObject {

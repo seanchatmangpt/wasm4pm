@@ -2,6 +2,15 @@
 
 # SREGym-Derived Compiled Troubleshooting Benchmark
 
+## Campaign note (2026-10-10)
+
+Re-verified 2026-10-10: `wasm4pm/examples/sregym_issue_reasoning.rs` exists on
+disk and the upstream SREGym pins are unchanged in this page. This page makes
+no SIMD, LinUCB, or absolute-latency claims. Still resting on the 2026-06
+campaign evidence: the 30,501,000-episode / 244,008,000-transition execution
+constitution and all throughput figures — campaign receipts, not a fresh
+2026-10-10 run.
+
 ## Purpose
 
 This benchmark asks which recurring SRE reasoning steps should be compiled into deterministic process reasoning rather than paying for fresh LLM inference on every incident.

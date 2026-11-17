@@ -1,25 +1,48 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: benchmarks/adversarial/SUMMARY.md; source-sha256: b932af15fa5b488a850bfb2fd75dd663dd0b51c832f7c5140cc1f1cf6820d7db; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-10-11; original: benchmarks/adversarial/SUMMARY.md; source-sha256: b932af15fa5b488a850bfb2fd75dd663dd0b51c832f7c5140cc1f1cf6820d7db; reason: corrected against measured ground truth (manifest stats, registry state, 2026-10-11 audit run) -->
 
 # Adversarial WvdA Algorithm Audit — Implementation Summary
 
-**Date:** 2026-04-17  
-**Status:** Phases 0-4, 6 Complete (Phase 5 pending execution)  
+**Date:** 2026-04-17 (corrected 2026-10-11 against measured ground truth)
+**Status:** Phases 0-4, 6 complete; Phase 5 audit executed 2026-10-11
 **van der Aalst Doctrine:** If code claims it worked but event logs cannot prove a lawful process happened, then it did not work.
 
 ---
 
 ## Executive Summary
 
-The wasm4pm algorithm registry claimed 41 algorithms. The adversarial audit reveals:
+The wasm4pm algorithm registry once claimed 41 algorithms. This adversarial audit
+cross-references that declaration against actual `#[wasm_bindgen]` exports and
+executes every algorithm against a synthetic 500K-event log with known ground truth.
 
-| Finding | Count |
-|---------|-------|
-| **Tier 0 (Production-Ready)** | ~6 |
-| **Tier 1 (Experimental)** | ~8 |
-| **Tier 2 (Wrong)** | ~12 |
-| **Tier 3 (Lie — No WASM export)** | ~15 |
+### Measured Manifest Ground Truth (verified 2026-10-11 via `getManifestStats()`)
 
-**Action Taken:** Removed 5 non-existent algorithms and corrected 7 output type mismatches in registry.
+| Fact | Measured value |
+|------|----------------|
+| Manifest entries (`ALGORITHM_MANIFEST.length`) | 40 |
+| Exported (real `wasmFn`) | 39 |
+| `NOT_EXPORTED` | 1 (`yawl_export` — takes internal `PowlArena`, not WASM-compatible) |
+| Manifest file length | 421 lines (`algorithm-manifest.ts`) |
+| `STUB` markers in manifest | 0 |
+
+An earlier version of this file claimed 41 algorithms / 388 lines / 5 `NOT_EXPORTED`;
+those numbers were stale registry declarations, not measured counts.
+
+### 2026-10-11 Audit Run (500K events, real WASM, exit 0)
+
+Results: `results/audit-results-2026-10-11.json` (runner writes `dist/results/`;
+both paths gitignored). Per-algorithm 4D quality + tier classification:
+
+| Tier | Count | Members |
+|------|-------|---------|
+| Tier 0 (production-ready) | 0 | — |
+| Tier 1 (experimental) | 35 | dfg (fitness 0.92, 1.06 s), simd_streaming_dfg (0.92, 79 ms), alpha_plus_plus (0.871), ilp (0.842, 2.52 s), … |
+| Tier 2 (wrong/low quality) | 4 | alpha_plus_plus, ilp, ml_anomaly, petri_net_reduction |
+| Tier 3 (no export) | 0 | — |
+
+Headline: **no algorithm currently meets the Tier 0 bar** (fitness ≥ 0.85 AND latency
+< 5 s AND precision threshold) under the audit's strict 4D classification; 35 run
+end-to-end at 500K. Most algorithms report precision 0.000, which drives the Tier 2
+classifications — the precision scorer is the next thing to investigate.
 
 ---
 
@@ -78,18 +101,16 @@ Deleted three broken benchmark files that assumed non-existent APIs:
    - CLI entry point with 6-step workflow
    - Generates synthetic logs → loads WASM → runs audit → prints recommendations
 
-7. **`algorithm-manifest.ts`** (388 lines)
-   - Ground truth: maps 41 registered algorithms to WASM implementations
+7. **`algorithm-manifest.ts`** (421 lines, 40 entries)
+   - Ground truth: maps registered algorithm IDs to WASM implementations
    - Fields: id, wasmFn, outputType, fitnessCapable, expectedLatencyBudgetMs
-   - **Critical findings encoded:**
-     - 5 algorithms: `wasmFn = 'NOT_EXPORTED'` (no WASM)
-     - 7 algorithms: wrong `outputType` (claim petrinet, return DFG)
-     - 2 algorithms: marked STUB (inductive_miner, ilp)
-   - Helper functions: `getAlgorithm()`, `getExportedAlgorithms()`, `getManifestStats()`
+   - Encoded findings (verified 2026-10-11):
+     - 1 algorithm: `wasmFn = 'NOT_EXPORTED'` (`yawl_export`)
+     - Helper functions: `getAlgorithm()`, `getExportedAlgorithms()`, `getManifestStats()`
 
-8. **`package.json` + `tsconfig.json`**
-   - TypeScript 5.3, vitest, @types/node
-   - Scripts: `npm run audit`, `npm test`
+8. **`package.json` + `tsconfig.json` + `vitest.config.ts`**
+   - TypeScript 5.3+, vitest (workspace-resolved), @types/node
+   - Scripts: `pnpm audit`, `pnpm test` (now a pnpm workspace member)
 
 ---
 
@@ -106,39 +127,51 @@ Deleted three broken benchmark files that assumed non-existent APIs:
 
 ---
 
-## Phase 4: Registry Fixes ✅
+## Phase 4: Registry Corrections — and Partial Reversion ✅
 
-**Commit:** 1d5c7c33
+**Commits:** 1d5c7c33 (removals), later reverts
 
-### Changes to `packages/kernel/src/registry.ts`
+### History of `packages/kernel/src/registry.ts`
 
-**Removed 5 non-existent algorithms:**
+Phase 4 removed 5 algorithms it judged NOT_EXPORTED:
+`ml_classify`, `ml_forecast`, `ml_regress`, `ml_pca`, `petri_net_reduction`.
+
+**That removal was itself partially wrong and has been reverted.** As of 2026-10-11,
+`packages/kernel/src/registry.ts` re-adds all of them (ml_classify at line 842, plus
+ml_cluster, ml_forecast, ml_anomaly, ml_regress, ml_pca, petri_net_reduction), with an
+in-source note that the Phase 4 audit "incorrectly removed these; they are re-added
+here" — the ml_* family is backed by the `@wasm4pm/ml` package using
+`wasm.extract_case_features` + native TS, not direct WASM exports, and
+`petri_net_reduction` maps to the real `wasm_reduce_petri_net` export. The manifest
+reflects this: it lists all of them with concrete `wasmFn` values, and its only
+NOT_EXPORTED entry is `yawl_export`.
+
+**Registry corrections that did stick (per manifest):**
 ```
-❌ ml_classify      — NOT_EXPORTED (no WASM)
-❌ ml_forecast      — NOT_EXPORTED
-❌ ml_regress       — NOT_EXPORTED
-❌ ml_pca           — NOT_EXPORTED
-❌ petri_net_reduction — NOT_EXPORTED (Rust exists, missing #[wasm_bindgen])
+a_star              petrinet → dfg      (discover_astar)
+hill_climbing       petrinet → dfg      (discover_hill_climbing)
+aco                 petrinet → dfg      (discover_aco_algorithm)
+simulated_annealing petrinet → dfg      (discover_simulated_annealing)
+genetic_algorithm   petrinet → dfg      (discover_genetic_algorithm)
+pso                 petrinet → dfg      (discover_pso_algorithm)
 ```
-
-**Corrected 7 output types:**
-```
-✏️  a_star              petrinet → dfg
-✏️  hill_climbing       petrinet → dfg
-✏️  inductive_miner     tree → dfg (marked STUB)
-✏️  aco                 petrinet → dfg
-✏️  simulated_annealing petrinet → dfg
-✏️  genetic_algorithm   petrinet → dfg
-✏️  pso                 petrinet → dfg
-```
-
-**Result:** Registry now truthful. 36 algorithms remain (down from 41).
 
 ---
 
 ## Phase 6: Vitest Regression Suite ✅
 
-**Commit:** baf22564
+**Commit:** baf22564; suite executed 2026-10-11: **19/19 pass** (`pnpm --filter
+wasm4pm-adversarial-audit test`, ~0.4 s, vitest 1.6.1 workspace-resolved).
+
+Note (honest scope): the suite's WASM-dependent integration paths (Category G) run in a
+degraded mode in this environment — `@wasm4pm/cli` is not a declared dependency and the
+`require()`-based loader fails under ESM, so Categories A-F/H validate the oracles and
+Category G exercises only its prerequisites guards. The 500K WASM integration coverage
+lives in the Phase 5 audit runner, which does execute real WASM end to end.
+
+Also fixed 2026-10-11: Category H's expected values contradicted the rank-1 fitness
+formula itself (`(10,10,100,100)` → 0.9 not 0.8; `(50,50,100,100)` → 0.5 not 0.0);
+assertions corrected to the formula's true outputs.
 
 ### File Created
 
@@ -165,18 +198,16 @@ Deleted three broken benchmark files that assumed non-existent APIs:
 
 ---
 
-## Phase 5: Run Audit (Pending)
-
-**Status:** Ready to execute  
-**Prerequisites:** WASM built (`cd wasm4pm && npm run build`)
+## Phase 5: Audit Executed ✅ (2026-10-11)
 
 ```bash
-cd benchmarks/adversarial
-npm install
-npm run audit
+pnpm install                      # workspace now includes benchmarks/*
+pnpm --filter wasm4pm-adversarial-audit audit
 ```
 
-**Output:** `results/audit-results-YYYY-MM-DD.json` with 4D quality metrics and tier classifications for all algorithms.
+Prerequisite: WASM built (`wasm4pm/pkg/` present). The 2026-10-11 run generated a
+fresh 500K-event synthetic log, executed 39 algorithms against real WASM, and wrote
+`dist/results/audit-results-2026-10-11.json` (exit 0). See the measured table above.
 
 ---
 
@@ -211,35 +242,44 @@ This is Van der Aalst's theorem. It cannot be wrong—it is the definition. All 
 ### benchmarks/adversarial/
 
 ```
-├── algorithm-manifest.ts         # Registry audit (41 → 36 algorithms)
+├── algorithm-manifest.ts         # Registry audit (40 entries, 1 NOT_EXPORTED)
 ├── audit-runner.ts               # Master orchestrator
 ├── audit-runner-main.ts          # CLI entry point
 ├── adversarial-wvda.bench.ts     # Vitest regression suite (Categories A–H)
+├── vitest.config.ts              # Includes the .bench.ts test file
 ├── synthetic-log-gen.ts          # 500K XES generator
 ├── oracle.ts                     # Rank-1 mathematical oracles
 ├── quality-pipeline.ts           # 4D quality measurement
 ├── tier-classifier.ts            # Tier 0/1/2/3 classification
 ├── report.ts                     # Markdown/HTML reporting
-├── package.json                  # TypeScript + vitest
+├── package.json                  # TypeScript + vitest (pnpm workspace member)
 ├── tsconfig.json                 # ES2020 strict mode
-└── results/                      # Audit output (generated at runtime)
-    └── audit-results-YYYY-MM-DD.json
+├── dist/                         # tsc output (gitignored via `dist/`)
+└── results/                      # Audit output (gitignored via `results/`)
 ```
 
-### packages/kernel/src/registry.ts (Modified)
+### Build-output ignore coverage (verified 2026-10-11)
 
-- Removed 5 false algorithms (ml_classify, ml_forecast, ml_regress, ml_pca, petri_net_reduction)
-- Corrected 7 output type mismatches (a_star, hill_climbing, inductive_miner, aco, simulated_annealing, genetic_algorithm, pso)
-- Added Phase 4 audit comments marking corrections
+Existing `.gitignore` patterns already keep the generated artifacts untracked,
+confirmed with `git check-ignore -v`:
+
+- `dist/` (line 20) → `benchmarks/adversarial/dist/*`
+- `results/` (line 31) → `benchmarks/adversarial/results/*`
+- `benchmarks/**/*.js`, `*.js.map`, `*.d.ts`, `*.d.ts.map` (lines 160-163) → the
+  root-level transpiled files
+
+Only `.ts` sources, `package.json`, `tsconfig.json`, `vitest.config.ts`, and
+`SUMMARY.md` are tracked.
 
 ---
 
 ## Next Steps
 
-1. **Build WASM:** `cd wasm4pm && npm run build` (required for Phase 5)
-2. **Run Audit:** `cd benchmarks/adversarial && npm run audit`
-3. **View Results:** `cat results/audit-results-*.json | jq .tier_summary`
-4. **CI/CD Integration:** `.github/workflows/adversarial-audit.yml` (from plan, not yet created)
+1. **Tier 0 gap:** no algorithm passed the strict Tier 0 bar on 2026-10-11 —
+   investigate the precision scoring path (most algorithms report precision 0.000).
+2. **Category G:** declare `@wasm4pm/cli` or port the loader to ESM `import()` so the
+   vitest suite exercises real WASM in-process.
+3. **CI/CD Integration:** `.github/workflows/adversarial-audit.yml` (from plan, not yet created)
 
 ---
 
@@ -258,4 +298,4 @@ This is Van der Aalst's theorem. It cannot be wrong—it is the definition. All 
 
 ---
 
-**Status:** 📊 Infrastructure complete. 🔬 Ready to audit.
+**Status:** Infrastructure complete; audit executed 2026-10-11 (39/40 exported, 0 Tier 0).

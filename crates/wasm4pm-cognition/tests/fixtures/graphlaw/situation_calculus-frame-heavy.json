@@ -1,0 +1,139 @@
+{
+  "vector_id": "situation_calculus-frame-heavy",
+  "breed": "situation_calculus",
+  "provenance": {
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "eyeron": "0.7.8",
+    "generator": "graphlaw:scripts/gen_wasm4pm_graphlaw_vectors.py@615dbfa \u2014 encodes successor-state progression / STRIPS replay as N3 Datalog over explicit situation constants s0..sN (holds(F,do(A,S)) :- causes(F,A); holds(F,do(A,S)) :- holds(F,S), keeps(F,A), keeps = closed-world completion of not causes_del), derives holds fluents with graphlaw-eyeron 0.7.8, emits SCHEMA.md v1 vectors",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "frame-persistence stress: 12 initial fluents, 3 actions touch only f01,f13,f14,f15 \u2014 the other 11 persist by inertia",
+    "facts": [
+      {
+        "key": "fluent:f01",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f02",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f03",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f04",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f05",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f06",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f07",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f08",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f09",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f10",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f11",
+        "value": "true"
+      },
+      {
+        "key": "fluent:f12",
+        "value": "true"
+      },
+      {
+        "key": "action:a1:pre",
+        "value": "f01"
+      },
+      {
+        "key": "action:a1:add",
+        "value": "f13"
+      },
+      {
+        "key": "action:a1:del",
+        "value": "f01"
+      },
+      {
+        "key": "action:a2:pre",
+        "value": "f13"
+      },
+      {
+        "key": "action:a2:add",
+        "value": "f14"
+      },
+      {
+        "key": "action:a2:del",
+        "value": "f13"
+      },
+      {
+        "key": "action:a3:pre",
+        "value": "f14"
+      },
+      {
+        "key": "action:a3:add",
+        "value": "f15"
+      },
+      {
+        "key": "action:a3:del",
+        "value": "f14"
+      },
+      {
+        "key": "do:0",
+        "value": "a1"
+      },
+      {
+        "key": "do:1",
+        "value": "a2"
+      },
+      {
+        "key": "do:2",
+        "value": "a3"
+      }
+    ],
+    "rules": [],
+    "goals": [],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "holds:f02",
+      "holds:f03",
+      "holds:f04",
+      "holds:f05",
+      "holds:f06",
+      "holds:f07",
+      "holds:f08",
+      "holds:f09",
+      "holds:f10",
+      "holds:f11",
+      "holds:f12",
+      "holds:f15"
+    ],
+    "verdicts": {
+      "final_situation": "s3",
+      "frame_persist": "11 fluents persisted by frame inertia"
+    },
+    "notes": "Ground truth derived by eyeron N3 progression over explicit situation constants s0..s3. Frame-persist set ['f02', 'f03', 'f04', 'f05', 'f06', 'f07', 'f08', 'f09', 'f10', 'f11', 'f12'] = initial fluents never mentioned in any executed action's add/del lists (hand-checked)."
+  }
+}

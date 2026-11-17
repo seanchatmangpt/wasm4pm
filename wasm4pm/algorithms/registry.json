@@ -112,7 +112,7 @@
   {
     "algorithm_id": "a_star",
     "algorithm_label": "AStar",
-    "description": "A* shortest-path discovery over DFG — finds optimal path through the directly-follows graph using heuristic search, producing a Petri net model.",
+    "description": "A* search over DFG edge subsets — g = covered pair occurrences minus a fixed per-edge complexity penalty; h is admissible (exact for this additive objective); optimal with an unbounded open set, beam-degenerate under a width bound.",
     "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
     "output_type": "petrinet",
     "category": "discovery",
@@ -134,7 +134,7 @@
   {
     "algorithm_id": "aco",
     "algorithm_label": "Aco",
-    "description": "Ant Colony Optimisation discovery — stochastic population-based search inspired by ant foraging, producing Petri net models with good fitness/precision balance.",
+    "description": "Ant Colony Optimisation discovery — per-decision-point normalized pheromone sampling (probabilities sum to 1, NaN-sanitized); when no ant constructs a solution the result is an honest empty model with fitness 0.0.",
     "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
     "output_type": "petrinet",
     "category": "discovery",
@@ -178,7 +178,7 @@
   {
     "algorithm_id": "declare",
     "algorithm_label": "Declare",
-    "description": "Declarative constraint mining using LTL-based temporal logic — discovers existence, response, and precedence constraints rather than a procedural model.",
+    "description": "Declarative constraint mining using LTL-based temporal logic — confidence denominators are per-template (activity_counts[a], max(abs(a),abs(b))); violating traces deflate confidence; ChainResponse/ChainPrecedence use immediate-window semantics.",
     "citation": "Pesic, M., & van der Aalst, W.M.P. (2006). A Declarative Approach for Flexible Business Processes. BPM 2006 Workshops, LNCS 4103. Springer.",
     "output_type": "declare",
     "category": "discovery",
@@ -420,7 +420,7 @@
   {
     "algorithm_id": "pso",
     "algorithm_label": "Pso",
-    "description": "Particle Swarm Optimisation discovery — maintains a swarm of candidate models whose positions evolve toward the global best according to social and cognitive acceleration.",
+    "description": "Particle Swarm Optimisation discovery — canonical velocity update `v = w·v + c1·r1·(pbest−x) + c2·r2·(gbest−x)` with inertia decaying 0.9→0.4, `c1 = c2 = 2`, vmax clamp; continuous [0,1] relaxation decoded at 0.5.",
     "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
     "output_type": "petrinet",
     "category": "discovery",

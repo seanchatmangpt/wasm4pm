@@ -1,0 +1,62 @@
+{
+  "breed": "asp",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "edge",
+        "value": ""
+      }
+    ],
+    "goals": [],
+    "intent": "recursion guarded by NAF: reachable :- edge, not blocked",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "reachable",
+        "id": "r1",
+        "premise": [
+          "edge",
+          "not blocked"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "reach_link",
+        "id": "r2",
+        "premise": [
+          "edge"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "reachable",
+        "id": "r3",
+        "premise": [
+          "reach_link"
+        ]
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "asp:answer_set_count=1",
+      "model_0_0=edge",
+      "model_0_1=reach_link",
+      "model_0_2=reachable",
+      "stable_models_count=1"
+    ],
+    "notes": "Recursion with NAF (reachable :- edge, not blocked; reachable :- reach_link :- edge). blocked is EDB-only and absent, so the guard passes and reachable is derived; the recursion on reachable is positive-only, so the program is stratified with a unique stable model {edge, reach_link, reachable}.",
+    "verdicts": {}
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "asp_tableaux_vector_gen (purrdf-datalog stratified least model; stratifiability enforced via graphlaw::datalog::plan::stratify)",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "asp-recursive-naf-guard"
+}

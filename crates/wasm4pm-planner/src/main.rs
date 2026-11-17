@@ -7,7 +7,7 @@ use rmcp::{
     handler::server::wrapper::Parameters, schemars, tool, tool_router, transport::stdio, ServiceExt,
 };
 use serde::Deserialize;
-use wasm4pm_planner::{CapabilityTask, DesiredEffect};
+use wasm4pm_planner::{CapabilityTask, DesiredEffect, PlanAdmissionPolicy};
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PlanInput {
@@ -15,6 +15,26 @@ pub struct PlanInput {
     pub domain_text: String,
     /// PDDL problem text
     pub problem_text: String,
+    /// Explicit default-deny allowlist of action labels; when omitted, every
+    /// grounded action is refused (default-deny).
+    #[serde(default)]
+    pub allowed_actions: Option<Vec<String>>,
+    /// Explicit opt-in to the legacy permissive admission (every label
+    /// discovered in the plan is admitted). Off by default.
+    #[serde(default)]
+    pub permissive: bool,
+}
+
+/// Build the admission policy for a manufacture_world request: explicit
+/// default-deny allowlist; the legacy permissive path is a separate branch.
+fn build_admission_policy(allowed_actions: &Option<Vec<String>>) -> PlanAdmissionPolicy {
+    let mut policy = PlanAdmissionPolicy::default_deny();
+    if let Some(labels) = allowed_actions {
+        for label in labels {
+            policy = policy.allow_label(label.clone());
+        }
+    }
+    policy
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -49,10 +69,20 @@ pub struct Wasm4pmPlannerServer;
 #[tool_router(server_handler)]
 impl Wasm4pmPlannerServer {
     #[tool(
-        description = "PDDL-subset (durative actions + numeric fluents) temporal planner with prolog8 admission gating. Returns JSON with admitted, refusal_reason, plan_steps, makespan, max_parallelism, manufacture_chain (BLAKE3)."
+        description = "PDDL-subset (durative actions + numeric fluents) temporal planner with prolog8 admission gating. Default-deny action policy: pass allowed_actions to admit specific labels; set permissive=true to opt into the legacy admit-all behavior. Returns JSON with admitted, refusal_reason, plan_steps, makespan, max_parallelism, manufacture_chain (BLAKE3)."
     )]
     async fn manufacture_world(&self, Parameters(input): Parameters<PlanInput>) -> String {
-        let receipt = wasm4pm_planner::manufacture_world(&input.domain_text, &input.problem_text);
+        let receipt = if input.permissive {
+            // Explicit legacy opt-in: admit every label discovered in the plan.
+            wasm4pm_planner::manufacture_world(&input.domain_text, &input.problem_text)
+        } else {
+            let policy = build_admission_policy(&input.allowed_actions);
+            wasm4pm_planner::manufacture_world_with_policy(
+                &input.domain_text,
+                &input.problem_text,
+                &policy,
+            )
+        };
         serde_json::to_string(&receipt).unwrap_or_else(|e| {
             serde_json::json!({ "ok": false, "error": format!("serialization failed: {e}") })
                 .to_string()
@@ -87,10 +117,16 @@ impl Wasm4pmPlannerServer {
                 return serde_json::json!({ "ok": false, "error": e.to_string() }).to_string()
             }
         };
+        let max_parallelism = match wasm4pm_planner::max_parallelism(&plan) {
+            Ok(p) => p,
+            Err(e) => {
+                return serde_json::json!({ "ok": false, "error": e.to_string() }).to_string()
+            }
+        };
         serde_json::json!({
             "ok": true,
             "makespan": plan.makespan,
-            "max_parallelism": wasm4pm_planner::max_parallelism(&plan),
+            "max_parallelism": max_parallelism,
             "step_count": plan.steps.len(),
         })
         .to_string()
@@ -179,4 +215,73 @@ async fn main() {
         eprintln!("MCP server error: {e}");
         std::process::exit(1);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_is_deny_all() {
+        let policy = build_admission_policy(&None);
+        assert!(!policy.allows("anything"));
+        assert!(!policy.allows("work"));
+    }
+
+    #[test]
+    fn allowlist_admits_only_listed_labels() {
+        let policy = build_admission_policy(&Some(vec!["work".to_string()]));
+        assert!(policy.allows("work"));
+        assert!(!policy.allows("other"));
+    }
+
+    #[test]
+    fn permissive_flag_selects_legacy_path() {
+        // The opt-in permissive flag routes to the legacy entry point, whose
+        // observable contract is admitting a plan the default-deny path refuses.
+        let receipt_permissive =
+            wasm4pm_planner::manufacture_world(crate::test_domain(), &crate::test_problem(2));
+        assert!(receipt_permissive.admitted);
+
+        let receipt_default = wasm4pm_planner::manufacture_world_with_policy(
+            &crate::test_domain(),
+            &crate::test_problem(2),
+            &build_admission_policy(&None),
+        );
+        assert!(!receipt_default.admitted);
+
+        // ...and the allowlist restores admission without the flag.
+        let receipt_allowed = wasm4pm_planner::manufacture_world_with_policy(
+            &crate::test_domain(),
+            &crate::test_problem(2),
+            &build_admission_policy(&Some(vec!["work".to_string()])),
+        );
+        assert!(receipt_allowed.admitted);
+    }
+}
+
+#[cfg(test)]
+fn test_domain() -> &'static str {
+    r#"
+(define (domain d)
+  (:requirements :durative-actions :numeric-fluents :typing)
+  (:predicates (done ?w))
+  (:functions (cap))
+  (:durative-action work
+    :parameters (?w - worker)
+    :duration (= ?duration 5)
+    :condition (at start (>= (cap) 1))
+    :effect (and (at start (decrease (cap) 1)) (at end (increase (cap) 1)) (at end (done ?w)))))
+"#
+}
+
+#[cfg(test)]
+fn test_problem(capacity: u32) -> String {
+    format!(
+        r#"(define (problem p)
+  (:domain d)
+  (:objects w1 w2 - worker)
+  (:init (= (cap) {capacity}))
+  (:goal (and (done w1) (done w2))))"#
+    )
 }

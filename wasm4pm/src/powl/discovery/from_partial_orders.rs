@@ -19,7 +19,7 @@ pub fn discover_from_partial_orders(
 
     // For now, fall back to standard discovery
     // Full lifecycle analysis requires more complex event structure
-    super::discover_from_traces(log, config, arena)
+    super::discover_from_traces(log, config, arena).map(|(root, _ft)| root)
 }
 
 #[cfg(test)]

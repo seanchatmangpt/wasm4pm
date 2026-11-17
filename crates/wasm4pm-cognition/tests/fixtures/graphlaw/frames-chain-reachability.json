@@ -1,0 +1,41 @@
+{
+  "breed": "frames_inheritance",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "frame:zilk:isa",
+        "value": "welp"
+      },
+      {
+        "key": "frame:welp:isa",
+        "value": "snorf"
+      },
+      {
+        "key": "frame:snorf:slot:color:default",
+        "value": "blue"
+      }
+    ],
+    "goals": [],
+    "intent": "resolve zilk color",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [],
+    "notes": "FRAMES isa-walk (chain, Minsky-1974-style frame chain zilk>welp>snorf, cf. the breed's hidden oracle): the isa DAG is encoded as transitive-closure Datalog (tc base + composition rules, native engine least fixpoint); expected = REACHABILITY SET ONLY: {isa:zilk,welp; isa:welp,snorf; isa:zilk,snorf}. The snorf color default is present in the input but deliberately NOT asserted in expected: default-override semantics are out of fragment — OWL-RL would entail all defaults, actively wrong. The breed's own walk is single-parent; this vector fixes the closure oracle the walk must respect. | CONFORMED to the breed output surface by the FOUNDATION harness court: the frames breed surfaces resolution via frame-walk/frame-resolve traces and selected, not isa: atom facts; chain closure (isa:zilk,welp, isa:welp,snorf, isa:zilk,snorf) is recorded here and evidenced by the 3-hop frame-walk trace zilk->welp->snorf resolving at distance 2.",
+    "verdicts": {
+      "resolve": "resolved zilk color to blue at distance 2"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "frames-chain-reachability"
+}

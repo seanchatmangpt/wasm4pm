@@ -152,7 +152,7 @@ fi
 
 if [[ "$FILE_PATH" == *"packages/cognition/src/types.ts" ]]; then
 
-  if echo "$EDIT_CONTENT" | grep -qP '^\s+candidates\s*:'; then
+  if echo "$EDIT_CONTENT" | grep -qE '^[[:space:]]+candidates[[:space:]]*:'; then
     if echo "$EDIT_CONTENT" | grep -B5 'candidates' | grep -q 'SystemBuildResult'; then
       cat >&2 << 'EOF'
 COGNITION CONTRACT GUARD — BLOCKED

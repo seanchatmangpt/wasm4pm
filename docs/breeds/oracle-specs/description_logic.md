@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/oracle-specs/description_logic.md; source-sha256: aee8445f999833865c932645cdd33d721295500700451b55d6cb5e2dba780c0f; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/oracle-specs/description_logic.md; source-sha256: b50b9045a6654dcbb890b98e33d9d36e8fff6a18fabc92ff974f1e4c9e1ce1be; reason: path-local documentation retained pending domain-specific supersession -->
 
 # description_logic — EL Completion-Rule Classification (Baader, Brandt & Lutz 2005)
 
@@ -64,7 +64,7 @@ BreedOracle impl: `src/breeds/support/oracle_impls/logic.rs:196`.
 - `require_non_empty_with_kinds(["normalize", "apply-cr1"])`
 - `require_sequence(["normalize", "fixpoint", "classify-verdict"])`
 
-No `assert_trace_values` override.
+`assert_trace_values` (Surface-3 values): `normalize` contains "3 concepts, 2 subclass"; derived `apply-cr1 == "uo_Cat ⊑ uo_Animal (via uo_Mammal ⊑ uo_Animal)"` (the via clause names the premise axiom whose RHS is the query's B); `fixpoint` contains "6 subsumptions" (reflexive pairs counted); `classify-verdict == "uo_Cat ⊑ uo_Animal : true"`.
 
 Postconditions (breed): `require_non_empty_with_kinds(["fixpoint","classify-verdict"])`; at least one `dl:verdict:` fact.
 

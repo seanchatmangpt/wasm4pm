@@ -8,6 +8,7 @@ packages:
   - 'examples/*'
   - 'tests/proof'
   - 'tests/archive'
+  - 'benchmarks/*'
 
 allowBuilds:
   '@parcel/watcher': true

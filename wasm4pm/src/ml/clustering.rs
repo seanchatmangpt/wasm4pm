@@ -2,6 +2,7 @@
 #![allow(clippy::needless_range_loop)] // branchless argmin: index carries centroid identity
 
 use crate::ml::classification::{extract_features, normalize_features};
+use crate::ml::utils::ensure_finite_2d;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -32,12 +33,14 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
             "assignments": [],
             "inertia": 0.0,
             "silhouette": 0.0,
-            "iterations": 0
+            "iterations": 0,
+            "converged": false
         }));
     }
 
     // Mixed magnitudes (seconds vs counts) — min-max normalize before distances.
     let normalized = normalize_features(&features, &features);
+    ensure_finite_2d(&normalized).map_err(|e| crate::error::js_val(&e))?;
     let result = kmeans_internal(&normalized, K_CLUSTERS);
 
     // SAFETY: to_js_str required here; to_js(&json!()) silently returns {} on wasm32.
@@ -48,7 +51,8 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
         "assignments": result.assignments,
         "inertia": result.inertia,
         "silhouette": result.silhouette,
-        "iterations": result.iterations
+        "iterations": result.iterations,
+        "converged": result.converged
     }))
 }
 
@@ -69,6 +73,10 @@ pub struct KmeansResult<const D: usize> {
     pub silhouette: f64,
     /// The number of iterations until convergence.
     pub iterations: usize,
+    /// True when the assignment step stabilized before exhausting
+    /// `MAX_ITERATIONS`. False ⇒ the reported centroids are an
+    /// unconverged snapshot, not a fixed point.
+    pub converged: bool,
 }
 
 /// Branchless K-Means implementation on `D`-dimensional points.
@@ -76,6 +84,11 @@ pub struct KmeansResult<const D: usize> {
 /// Convergence is deterministic for identical input. `k` is clamped to `min(k, n)`.
 /// This implementation uses branchless arithmetic for the assignment step to ensure
 /// high performance.
+///
+/// # Caller contract (hot path)
+/// Performs NO finiteness validation — callers must pre-screen with
+/// [`ensure_finite_2d`](crate::ml::utils::ensure_finite_2d); a NaN feature
+/// poisons every distance comparison and yields garbage clusters.
 pub fn kmeans_internal<const D: usize>(features: &[[f64; D]], k_request: usize) -> KmeansResult<D> {
     let n = features.len();
     let k = k_request.clamp(1, n);
@@ -88,6 +101,7 @@ pub fn kmeans_internal<const D: usize>(features: &[[f64; D]], k_request: usize) 
 
     let mut assignments = vec![0usize; n];
     let mut iterations = 0usize;
+    let mut converged = false;
 
     for iter in 0..MAX_ITERATIONS {
         iterations = iter + 1;
@@ -119,6 +133,7 @@ pub fn kmeans_internal<const D: usize>(features: &[[f64; D]], k_request: usize) 
         }
 
         if !changed && iter > 0 {
+            converged = true;
             break;
         }
 
@@ -166,6 +181,7 @@ pub fn kmeans_internal<const D: usize>(features: &[[f64; D]], k_request: usize) 
         inertia,
         silhouette,
         iterations,
+        converged,
     }
 }
 

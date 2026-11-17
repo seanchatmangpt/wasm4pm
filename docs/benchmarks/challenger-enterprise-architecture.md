@@ -2,6 +2,14 @@
 
 # Challenger Enterprise Architecture Benchmarks
 
+## Campaign note (2026-10-10)
+
+Re-verified 2026-10-10: `wasm4pm/bench_data/receipt.xes` exists on disk
+(4,285,624 bytes). This page makes no SIMD, LinUCB, or absolute-latency
+claims. Still resting on the 2026-06 campaign evidence: the 30,511,000-envelope
+plan, the sixteen measured rows, and all EBAA/s figures — campaign receipts,
+not a fresh 2026-10-10 run.
+
 This rail measures the economics of architectural decision-making on real process evidence, not only isolated algorithm latency.
 
 ## Evidence subject

@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/declare.md; source-sha256: 3c57124c0b33b9a5d39185e5c5cd1be20917b9330e617fc8a8da971228afbb29; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/declare.md; source-sha256: 5ba1fa1f0924c2298642df7341034e1a15b6213b071ef080a8a2c011f49756a4; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: declare
 
@@ -23,6 +23,18 @@
     For long traces containing 256 or more events, activities occurring at index 256 or later are ignored. They will be treated as absent, corrupting constraint support and confidence calculations.
   - **U128 activity mask**: The `activity_mask` is restricted to `activity_idx < 128`. However, `activity_mask` is not used in the Phase 2 analysis, so this does not cause functional errors.
   - Early exit for empty logs (`n == 0 || total_cases == 0`) prevents division by zero in support calculations.
+- **Confidence Semantics** (commit `2c980c399`):
+  - `appears_before` is any-occurrence ordering (`first_a < last_b`); the old
+    first-only ordering mis-called a B-A-B trace a violation.
+  - ChainResponse/ChainPrecedence use real immediate-window semantics over the
+    raw event sequence.
+  - Succession uses a single confidence `sat / max(|a|,|b|)` replacing the old
+    double gate.
+  - Violating traces now deflate confidence; previously they were absent from
+    both numerator and denominator, inflating reported confidence. Discovered
+    constraint sets can therefore shrink (constraints at or below the
+    `min_confidence = 0.8` gate drop out).
+  - Pure core extracted as `discover_declare_from_log`.
 
 ## Improvement Areas
 - **Correctness Optimization**:

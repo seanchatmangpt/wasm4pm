@@ -16,9 +16,11 @@
 //!
 //! Datasets (real files with synthetic fallback if absent):
 //!   bench_data/sepsis.xes         — 1,050 cases, ~15K events (ICU patient flow)
-//!   bench_data/bpi2020_travel.xes — 7,065 cases, ~87K events (travel permits)
-//!   ~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes — 100 cases
+//!   bench_data/bpi2020_domestic_declarations.xes — 7,065 cases, ~87K events (travel permits)
+//!   roadtraffic100traces.xes (bench_data/) — 100 cases
 
+#[path = "helpers.rs"]
+mod helpers;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
@@ -366,21 +368,15 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> AutonomicDataset {
 fn real_datasets() -> Vec<AutonomicDataset> {
     vec![
         load_dataset(
-            &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"],
+            helpers::SEPSIS_CANDIDATES,
             "sepsis",
         ),
         load_dataset(
-            &[
-                "bench_data/bpi2020_travel.xes",
-                "../../bench_data/bpi2020_travel.xes",
-            ],
+            helpers::BPI2020_DECL_CANDIDATES,
             "bpi2020",
         ),
         load_dataset(
-            &[
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic50traces.xes",
-            ],
+            helpers::ROADTRAFFIC_CANDIDATES,
             "roadtraffic",
         ),
     ]

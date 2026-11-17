@@ -1,0 +1,66 @@
+{
+  "breed": "event_calculus",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "ec:initially",
+        "value": "loaded"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "ec:holdsat",
+        "value": "loaded@0"
+      },
+      {
+        "id": "g2",
+        "predicate": "ec:holdsat",
+        "value": "loaded@1"
+      },
+      {
+        "id": "g3",
+        "predicate": "ec:holdsat",
+        "value": "loaded@2"
+      },
+      {
+        "id": "g4",
+        "predicate": "ec:holdsat",
+        "value": "loaded@3"
+      }
+    ],
+    "intent": "inertia only: a fluent that holds with no events anywhere on the timeline",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "ec:verdict:loaded@0=true",
+      "ec:verdict:loaded@1=true",
+      "ec:verdict:loaded@2=true",
+      "ec:verdict:loaded@3=true",
+      "g1: HoldsAt(loaded@0) = true",
+      "g2: HoldsAt(loaded@1) = true",
+      "g3: HoldsAt(loaded@2) = true",
+      "g4: HoldsAt(loaded@3) = true"
+    ],
+    "notes": "Pure inertia: no happens events, so no clipping anywhere; loaded holds at every query time. Hand timeline: holds[t]={loaded} for all t in 0..=3. Route: stratified negation (purrdf-datalog negated atoms driven directly via graphlaw::datalog; NOT the positive-only JSON-ABI shim), cross-checked against an explicit-complement positive program — the holds-projections agree.",
+    "verdicts": {
+      "g1: HoldsAt(loaded@0)": "true",
+      "g2: HoldsAt(loaded@1)": "true",
+      "g3: HoldsAt(loaded@2)": "true",
+      "g4: HoldsAt(loaded@3)": "true"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "event_calculus_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "event_calculus-persist-through-nothing"
+}

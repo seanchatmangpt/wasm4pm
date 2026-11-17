@@ -145,7 +145,10 @@ impl CognitionBreed for CspAc3 {
             }
         }
 
-        let solution = solver.solve();
+        let solution = solver.solve().map_err(|e| BreedError {
+            breed: self.id(),
+            message: e.to_string(),
+        })?;
 
         let mut trace = Vec::new();
         for (i, event) in solver.trace.iter().enumerate() {

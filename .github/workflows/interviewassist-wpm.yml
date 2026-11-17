@@ -51,7 +51,7 @@ jobs:
           printf 'subject_sha=%s\n' "$EXPECTED_SHA"
 
       - name: Install repository Rust and wasm target
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # nightly-2026-04-15
         with:
           toolchain: nightly-2026-04-15
           targets: wasm32-unknown-unknown

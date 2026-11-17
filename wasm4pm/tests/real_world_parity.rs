@@ -9,8 +9,8 @@ use wasm4pm::xes_format::validate_and_parse_xes;
 #[test]
 fn test_real_world_xes_and_alphappp() {
     // 1. Load real XES dataset (BPI 2020 Travel)
-    let xes_path = "bench_data/bpi2020_travel.xes";
-    let xes_path_alt = "../bench_data/bpi2020_travel.xes";
+    let xes_path = "bench_data/bpi2020_domestic_declarations.xes";
+    let xes_path_alt = "../bench_data/bpi2020_domestic_declarations.xes";
     let path = if std::path::Path::new(xes_path).exists() {
         xes_path
     } else if std::path::Path::new(xes_path_alt).exists() {

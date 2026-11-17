@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 
 use wasm4pm_cognition::breeds::support::oracle::{
-    run_universal_anticheat, AntiCheatResult, BreedOracle,
+    run_cross_oracle_check, run_universal_anticheat, AntiCheatResult, BreedOracle,
 };
 use wasm4pm_cognition::breeds::BreedId;
 
@@ -46,11 +46,13 @@ use wasm4pm_cognition::breeds::ltl_monitor::LtlMonitor;
 use wasm4pm_cognition::breeds::markov_logic::MarkovLogic;
 use wasm4pm_cognition::breeds::mdp::Mdp;
 use wasm4pm_cognition::breeds::meta_reasoning::MetaReasoning;
+use wasm4pm_cognition::breeds::morphological::Morphological;
 use wasm4pm_cognition::breeds::naive_physics::NaivePhysics;
 use wasm4pm_cognition::breeds::partial_order_plan::PartialOrderPlan;
 use wasm4pm_cognition::breeds::pomdp::Pomdp;
 use wasm4pm_cognition::breeds::problog::Problog;
 use wasm4pm_cognition::breeds::production_rules::Mycin;
+use wasm4pm_cognition::breeds::ocpm_route_discoverer::OcpmRouteDiscoverer;
 use wasm4pm_cognition::breeds::prolog::Prolog;
 use wasm4pm_cognition::breeds::qualitative_reason::QualitativeReason;
 use wasm4pm_cognition::breeds::rl_symbolic::RlSymbolic;
@@ -60,6 +62,7 @@ use wasm4pm_cognition::breeds::situation_calculus::SituationCalculus;
 use wasm4pm_cognition::breeds::soar::Soar;
 use wasm4pm_cognition::breeds::strips::Strips;
 use wasm4pm_cognition::breeds::tableaux::Tableaux;
+use wasm4pm_cognition::breeds::triz::Triz;
 use wasm4pm_cognition::breeds::version_space::VersionSpace;
 
 fn assert_green<B: BreedOracle>(breed: &str) {
@@ -71,6 +74,12 @@ fn assert_green<B: BreedOracle>(breed: &str) {
     );
     let fails: Vec<&AntiCheatResult> = results.iter().filter(|r| r.is_fail()).collect();
     assert!(fails.is_empty(), "{breed} anti-cheat failures: {fails:?}");
+
+    // F2 cross-oracle invariants: X1 non-empty vocabulary, X2 all trace kinds
+    // within vocabulary on a real dispatch, X3 determinism.
+    let x = run_cross_oracle_check::<B>();
+    let xfails: Vec<&AntiCheatResult> = x.iter().filter(|r| r.is_fail()).collect();
+    assert!(xfails.is_empty(), "{breed} cross-oracle failures: {xfails:?}");
 }
 
 #[test]
@@ -259,6 +268,11 @@ fn u_meta_reasoning() {
 }
 
 #[test]
+fn u_morphological() {
+    assert_green::<Morphological>("morphological");
+}
+
+#[test]
 fn u_mycin() {
     assert_green::<Mycin>("mycin");
 }
@@ -266,6 +280,11 @@ fn u_mycin() {
 #[test]
 fn u_naive_physics() {
     assert_green::<NaivePhysics>("naive_physics");
+}
+
+#[test]
+fn u_ocpm_route_discoverer() {
+    assert_green::<OcpmRouteDiscoverer>("ocpm_route_discoverer");
 }
 
 #[test]
@@ -329,6 +348,11 @@ fn u_tableaux() {
 }
 
 #[test]
+fn u_triz() {
+    assert_green::<Triz>("triz");
+}
+
+#[test]
 fn u_version_space() {
     assert_green::<VersionSpace>("version_space");
 }
@@ -374,8 +398,10 @@ fn oracle_coverage_is_complete() {
         BreedId::MarkovLogic,
         BreedId::Mdp,
         BreedId::MetaReasoning,
+        BreedId::Morphological,
         BreedId::Mycin,
         BreedId::NaivePhysics,
+        BreedId::OcpmRouteDiscoverer,
         BreedId::PartialOrderPlan,
         BreedId::Pomdp,
         BreedId::Problog,
@@ -388,6 +414,7 @@ fn oracle_coverage_is_complete() {
         BreedId::Soar,
         BreedId::Strips,
         BreedId::Tableaux,
+        BreedId::Triz,
         BreedId::VersionSpace,
     ]
     .into_iter()
@@ -407,7 +434,7 @@ fn oracle_coverage_is_complete() {
 fn u6_every_adversary_is_killed() {
     use wasm4pm_cognition::breeds::support::oracle::run_adversary_check;
     use wasm4pm_cognition::breeds::support::oracle_impls::{
-        dialogue::*, learning::*, logic::*, planning::*, rule_fact::*,
+        dialogue::*, learning::*, logic::*, planning::*, rule_fact::*, p5::*,
     };
 
     let results = [
@@ -496,8 +523,13 @@ fn u6_every_adversary_is_killed() {
             "meta_reasoning",
             run_adversary_check::<CheatMetaReasoning>(),
         ),
+        ("morphological", run_adversary_check::<CheatMorphological>()),
         ("mycin", run_adversary_check::<CheatMycin>()),
         ("naive_physics", run_adversary_check::<CheatNaivePhysics>()),
+        (
+            "ocpm_route_discoverer",
+            run_adversary_check::<CheatOcpmRouteDiscoverer>(),
+        ),
         (
             "partial_order_plan",
             run_adversary_check::<CheatPartialOrderPlan>(),
@@ -519,6 +551,7 @@ fn u6_every_adversary_is_killed() {
         ("soar", run_adversary_check::<CheatSoar>()),
         ("strips", run_adversary_check::<CheatStrips>()),
         ("tableaux", run_adversary_check::<CheatTableaux>()),
+        ("triz", run_adversary_check::<CheatTriz>()),
         ("version_space", run_adversary_check::<CheatVersionSpace>()),
     ];
 

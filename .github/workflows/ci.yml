@@ -46,7 +46,7 @@ jobs:
           printf 'subject_sha=%s\nworkflow_count=%s\n' "$EXPECTED_SHA" "$count"
 
       - name: Install repository-pinned Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # nightly-2026-04-15
         with:
           toolchain: nightly-2026-04-15
           components: rustfmt, clippy
@@ -107,6 +107,12 @@ jobs:
           test -s wasm4pm/pkg/wasm4pm.js
           test -s wasm4pm/pkg/wasm4pm_bg.wasm
 
+      - name: WASM simd128 target-feature check (SIMD lane handoff)
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUSTFLAGS="-C target-feature=+simd128" cargo check -p wasm4pm --target wasm32-unknown-unknown --features wasm
+
       - name: Cognition WASM node and web bundles
         shell: bash
         run: |
@@ -163,4 +169,112 @@ jobs:
           name: ci-receipt-${{ github.run_id }}
           path: artifacts/ci/receipt.json
           if-no-files-found: error
+          retention-days: 14
+
+  bench-gate:
+    name: quick-subset bench gate (fast_algorithms + breed_latency vs main)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact subject (PR head)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Checkout main as comparison subject
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+          path: bench-main-src
+
+      - name: Admit exact head
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install repository-pinned Rust
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # nightly-2026-04-15
+        with:
+          toolchain: nightly-2026-04-15
+
+      # Quick subset only; the calibration anchor (calibration/anchor in
+      # breed_latency) is a machine-speed drift detector: it is measured on
+      # both subjects and used for cross-host normalization by bench-tools
+      # regress, never as a pass/fail benchmark.
+      - name: Bench quick subset on PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo bench -p wasm4pm --bench fast_algorithms --locked
+          cargo bench -p wasm4pm-cognition --bench breed_latency --locked
+
+      - name: Bench quick subset on main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd bench-main-src
+          cargo bench -p wasm4pm --bench fast_algorithms --locked
+          cargo bench -p wasm4pm-cognition --bench breed_latency --locked
+
+      - name: Build bench-tools (head tree)
+        shell: bash
+        run: cargo build -p bench-tools --release --locked
+
+      - name: Sign main baseline receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/bench
+          ./target/release/bench-tools receipt \
+            --criterion-dir bench-main-src/target/criterion \
+            --out /tmp/bench/baseline-main.json \
+            --allow-dirty \
+            --print
+
+      - name: Regress gate (head medians vs signed main baseline)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./target/release/bench-tools regress \
+            --criterion-dir target/criterion \
+            --baseline /tmp/bench/baseline-main.json \
+            --threshold 25 \
+            --min-coverage 0.5
+
+      - name: Emit bench receipt
+        if: always()
+        shell: bash
+        env:
+          SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/bench
+          ./target/release/bench-tools receipt \
+            --criterion-dir target/criterion \
+            --out artifacts/bench/bench-receipt.json \
+            --allow-dirty \
+            --print
+          python3 - <<'PY'
+          import json, os
+          p="artifacts/bench/bench-receipt.json"
+          r=json.load(open(p))
+          r["head_sha"]=os.environ.get("SUBJECT_SHA")
+          r["main_sha"]=os.popen("git -C bench-main-src rev-parse HEAD").read().strip()
+          r["gate"]="bench-tools regress threshold=25% vs signed main baseline; calibration anchor excluded from pass/fail"
+          json.dump(r, open(p,"w"), indent=2, sort_keys=True)
+          print(json.dumps(r, indent=2)[:1200])
+          PY
+
+      - name: Upload bench receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-receipt-${{ github.run_id }}
+          path: artifacts/bench/bench-receipt.json
+          if-no-files-found: warn
           retention-days: 14

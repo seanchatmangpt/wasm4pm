@@ -198,7 +198,7 @@ fn autoinstinct_learning_input() -> BreedInput {
 // ---------------------------------------------------------------------------
 
 fn abductive_ibe_input() -> BreedInput {
-    // Thagard 1989 ECHO coherence model: evidence/hypothesis/contradicts facts.
+    // Thagard 1989, Surface-3 grammar: ibe:obs / ibe:hyp:<H>:covers / :cost.
     BreedInput {
         intent: "coherence".into(),
         candidates: vec![
@@ -217,54 +217,39 @@ fn abductive_ibe_input() -> BreedInput {
         ],
         facts: vec![
             Fact {
-                key: "evidence".into(),
+                key: "ibe:obs:E1".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "ibe:obs:E2".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "ibe:hyp:H1:covers".into(),
+                value: "E1,E2".into(),
+            },
+            Fact {
+                key: "ibe:hyp:H1:cost".into(),
+                value: "1.0".into(),
+            },
+            Fact {
+                key: "ibe:hyp:H2:covers".into(),
                 value: "E1".into(),
             },
             Fact {
-                key: "evidence".into(),
-                value: "E2".into(),
-            },
-            Fact {
-                key: "hypothesis".into(),
-                value: "H1".into(),
-            },
-            Fact {
-                key: "hypothesis".into(),
-                value: "H2".into(),
-            },
-            Fact {
-                key: "contradicts".into(),
-                value: "H1,H2".into(),
+                key: "ibe:hyp:H2:cost".into(),
+                value: "1.0".into(),
             },
         ],
         cases: vec![],
-        rules: vec![
-            Rule {
-                id: "expl1".into(),
-                premise: vec!["H1".into()],
-                conclusion: "E1".into(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "expl2".into(),
-                premise: vec!["H1".into()],
-                conclusion: "E2".into(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "expl3".into(),
-                premise: vec!["H2".into()],
-                conclusion: "E1".into(),
-                certainty: 1.0,
-            },
-        ],
+        rules: vec![],
         goals: vec![],
         state: vec![],
     }
 }
 
 fn abductive_lp_input() -> BreedInput {
-    // Kakas et al. 1992: abducibles, rules, integrity constraint, goal to explain.
+    // Kakas et al. 1992, Surface-3 grammar: alp:abducible / alp:ic fact / alp:observe goal.
     BreedInput {
         intent: "abduce".into(),
         candidates: vec![Candidate {
@@ -275,24 +260,28 @@ fn abductive_lp_input() -> BreedInput {
         }],
         facts: vec![
             Fact {
-                key: "abducible".into(),
-                value: "a".into(),
+                key: "alp:abducible:a".into(),
+                value: "true".into(),
             },
             Fact {
-                key: "abducible".into(),
-                value: "b".into(),
+                key: "alp:abducible:b".into(),
+                value: "true".into(),
             },
             Fact {
-                key: "abducible".into(),
-                value: "c".into(),
+                key: "alp:abducible:c".into(),
+                value: "true".into(),
             },
             Fact {
-                key: "abducible".into(),
-                value: "d".into(),
+                key: "alp:abducible:d".into(),
+                value: "true".into(),
             },
             Fact {
                 key: "context".into(),
                 value: "d".into(),
+            },
+            Fact {
+                key: "alp:ic:r_ic".into(),
+                value: "a,d".into(),
             },
         ],
         cases: vec![],
@@ -309,16 +298,10 @@ fn abductive_lp_input() -> BreedInput {
                 conclusion: "g".into(),
                 certainty: 1.0,
             },
-            Rule {
-                id: "r_ic".into(),
-                premise: vec!["a".into(), "d".into()],
-                conclusion: "false".into(),
-                certainty: 1.0,
-            },
         ],
         goals: vec![Goal {
             id: "g1".into(),
-            predicate: "goal".into(),
+            predicate: "alp:observe".into(),
             value: "g".into(),
         }],
         state: vec![],
@@ -492,36 +475,46 @@ fn dempster_shafer_input() -> BreedInput {
 }
 
 fn description_logic_input() -> BreedInput {
-    // Baader et al. 2003: subclass/class/disjoint TBox+ABox facts.
+    // Baader/Brandt/Lutz 2005 EL envelope, Surface-3 grammar: dl:* axioms + dl:subsumes goals.
     BreedInput {
         intent: "classify".into(),
-        candidates: vec![Candidate {
-            id: "x".into(),
-            score: 0.5,
-            eliminated: false,
-            elimination_reason: None,
-        }],
+        candidates: vec![],
         facts: vec![
             Fact {
-                key: "subclass".into(),
-                value: "A,B".into(),
+                key: "dl:subclass:Pericarditis".into(),
+                value: "Inflammation".into(),
             },
             Fact {
-                key: "subclass".into(),
-                value: "B,C".into(),
+                key: "dl:subclass:Inflammation".into(),
+                value: "Disease".into(),
             },
             Fact {
-                key: "class".into(),
-                value: "x,A".into(),
+                key: "dl:exists_rhs:Pericarditis".into(),
+                value: "has_location.Heart".into(),
             },
             Fact {
-                key: "disjoint".into(),
-                value: "C,D".into(),
+                key: "dl:exists_lhs:has_location.Heart".into(),
+                value: "HasLocationHeart".into(),
+            },
+            Fact {
+                key: "dl:conj:Disease+HasLocationHeart".into(),
+                value: "HeartDisease".into(),
             },
         ],
         cases: vec![],
         rules: vec![],
-        goals: vec![],
+        goals: vec![
+            Goal {
+                id: "q1".into(),
+                predicate: "dl:subsumes".into(),
+                value: "Pericarditis:HeartDisease".into(),
+            },
+            Goal {
+                id: "q2".into(),
+                predicate: "dl:subsumes".into(),
+                value: "HeartDisease:Pericarditis".into(),
+            },
+        ],
         state: vec![],
     }
 }
@@ -1279,16 +1272,16 @@ fn abductive_ibe_determinism_test() {
         candidates: vec![],
         facts: vec![
             Fact {
-                key: "observation:O1".into(),
-                value: "".into(),
+                key: "ibe:obs:O1".into(),
+                value: "true".into(),
             },
             Fact {
-                key: "hyp:H1".into(),
+                key: "ibe:hyp:H1:covers".into(),
+                value: "O1".into(),
+            },
+            Fact {
+                key: "ibe:hyp:H1:cost".into(),
                 value: "10.0".into(),
-            },
-            Fact {
-                key: "explains:H1:O1".into(),
-                value: "".into(),
             },
         ],
         cases: vec![],

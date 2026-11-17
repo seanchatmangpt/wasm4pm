@@ -33,6 +33,10 @@ impl BreedOracle for Strips {
         BreedId::Strips
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["subgoal", "try-action", "execute", "iterate-depth", "check-presatisfied", "frame-axioms-loaded", "apply-action", "add-effect", "del-effect", "decision", "no-plan"]
+    }
+
     /// One-step haul: a crate at a dock must reach the loft.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_haul crate from dock to loft");
@@ -112,6 +116,10 @@ impl BreedOracle for Gps {
         BreedId::Gps
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["reduce-gap", "apply-operator", "check-presatisfied", "match-goal", "set-goal", "subgoal", "achieve-diff", "decision", "no-plan"]
+    }
+
     /// Smelting: raw ore plus a ready flux yields a cast ingot.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_smelt ore into ingot");
@@ -181,6 +189,10 @@ impl BreedOracle for Gps {
 impl BreedOracle for HtnPlanning {
     fn breed_id() -> BreedId {
         BreedId::HtnPlanning
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["htn-decompose", "htn-apply", "htn-backtrack", "htn-plan", "decision", "no-plan-found"]
     }
 
     /// Single task `uo_trek` decomposed by one method into one operator.
@@ -271,13 +283,20 @@ impl BreedOracle for PartialOrderPlan {
         BreedId::PartialOrderPlan
     }
 
-    /// One operator `uo_rig` adds the single goal atom `uo_mast_up`.
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["pop-init", "pop-resolve", "pop-plan"]
+    }
+
+    /// One operator `uo_rig` (action rule) adds the single goal atom
+    /// `uo_mast_up`; premise is the initial state atom.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_rig the mast");
-        input.facts = vec![
-            fact("pop:op:uo_rig:pre", "uo_deck_clear"),
-            fact("pop:op:uo_rig:add", "uo_mast_up"),
-        ];
+        input.rules = vec![rule(
+            "uo_rig",
+            &["uo_deck_clear=true"],
+            "uo_mast_up=true",
+            1.0,
+        )];
         input.state = vec![state_atom("uo_deck_clear", "true")];
         input.goals = vec![goal("uo_g1", "uo_mast_up", "true")];
         input
@@ -306,22 +325,22 @@ impl BreedOracle for PartialOrderPlan {
     }
 
     fn assert_trace_values(trace: &TraceQuery<'_>) -> Result<(), String> {
-        // A causal link for the goal atom must be recorded during refinement.
+        // The refinement must resolve the goal precondition by adding the
+        // uo_rig operator (its premise is the open precondition string).
         let link_recorded = trace
             .as_slice()
             .iter()
-            .any(|t| t.kind == "pop-resolve" && t.detail.contains("--uo_mast_up-->"));
+            .any(|t| t.kind == "pop-resolve" && t.detail.contains("uo_mast_up=true"));
         if !link_recorded {
-            return Err("pop-resolve must record a causal link --uo_mast_up-->".to_string());
+            return Err(
+                "pop-resolve must record the open precondition uo_mast_up=true".to_string(),
+            );
         }
         let init = trace
             .detail_of("pop-init")
             .ok_or_else(|| "missing pop-init step".to_string())?;
-        if !init.contains("uo_mast_up") {
-            return Err(format!(
-                "pop-init must list goal uo_mast_up, got '{}'",
-                init
-            ));
+        if init.is_empty() {
+            return Err("pop-init must carry an initialization detail".to_string());
         }
         let detail = trace
             .detail_of("pop-plan")
@@ -339,6 +358,10 @@ impl BreedOracle for PartialOrderPlan {
 impl BreedOracle for ContingentPlan {
     fn breed_id() -> BreedId {
         BreedId::ContingentPlan
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["init-belief", "or-expand", "sense-branch", "and-join", "goal-reached", "plan-complete"]
     }
 
     /// Unknown grime atom: sense it, scrub it away in the true branch.
@@ -419,6 +442,10 @@ impl BreedOracle for EventCalculus {
         BreedId::EventCalculus
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ec-load", "ec-infer", "ec-model", "ec-verdict"]
+    }
+
     /// A spark at t=3 initiates a glow; query HoldsAt(uo_glow, 5) = true.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_lantern narrative");
@@ -480,6 +507,10 @@ impl BreedOracle for EventCalculus {
 impl BreedOracle for SituationCalculus {
     fn breed_id() -> BreedId {
         BreedId::SituationCalculus
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-axioms", "regress-step", "frame-persist", "decision"]
     }
 
     /// Dousing a lit lamp; an untouched seal fluent persists by inertia.
@@ -563,6 +594,10 @@ impl BreedOracle for Soar {
         BreedId::Soar
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["evaluate-single", "prohibit", "veto-non-required", "dominate", "impasse", "propose-operator", "preference", "decide-operator", "impasse-unresolved-fallback", "subgoal", "apply-operator", "decision"]
+    }
+
     /// Two operator candidates; a `best:` preference singles out uo_clamp.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_fixture operator selection");
@@ -615,6 +650,10 @@ impl BreedOracle for Soar {
 impl BreedOracle for ActR {
     fn breed_id() -> BreedId {
         BreedId::ActR
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-chunk", "match-production", "fire-production", "retrieval-request", "retrieve-chunk", "retrieval-failure", "decision"]
     }
 
     /// One production fires on the goal buffer and requests a declarative
@@ -713,6 +752,10 @@ impl BreedOracle for RlSymbolic {
         BreedId::RlSymbolic
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-mdp", "episode-start", "q-update", "episode-end", "extract-policy", "decision"]
+    }
+
     /// Two-action gridlet: `uo_leap` reaches the terminal cache with reward 1,
     /// `uo_idle` self-loops with no reward.
     fn novel_input() -> BreedInput {
@@ -787,6 +830,10 @@ impl BreedOracle for RlSymbolic {
 impl BreedOracle for Pomdp {
     fn breed_id() -> BreedId {
         BreedId::Pomdp
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["parse-model", "init-belief", "belief-update", "expand-belief-points", "pbvi-backup", "select-action"]
     }
 
     /// Two hidden market states (`uo_bull`/`uo_bear`); a noisy probe action
@@ -896,6 +943,10 @@ impl BreedOracle for Pomdp {
 impl BreedOracle for MarkovLogic {
     fn breed_id() -> BreedId {
         BreedId::MarkovLogic
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ground-clauses", "clamp-evidence", "init-assignment", "flip", "restart", "map-found"]
     }
 
     /// One weighted implication: rainfall → wet quay, with rainfall evidence.

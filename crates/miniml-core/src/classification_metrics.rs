@@ -22,7 +22,7 @@ pub fn matthews_corrcoef_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
             (0, 0) => tn += 1,
             (0, 1) => fp += 1,
             (1, 0) => fn_count += 1,
-            _ => unreachable!(),
+            _ => return Err(MlError::new("internal: non-binary MCC bucket reached")),
         }
     }
 

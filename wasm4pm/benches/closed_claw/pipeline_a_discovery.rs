@@ -21,7 +21,7 @@ use std::time::Duration;
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{bench_sizes, bench_sizes_slow, make_handle, ACTIVITY_KEY};
+use helpers::{bench_sizes, bench_sizes_slow, ACTIVITY_KEY};
 
 use wasm4pm::advanced_algorithms::discover_heuristic_miner;
 use wasm4pm::algorithms::discover_alpha_plus_plus;
@@ -51,14 +51,14 @@ fn bench_dfg(c: &mut Criterion) {
     group.sample_size(50);
 
     for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = discover_dfg(h, ACTIVITY_KEY).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -77,14 +77,14 @@ fn bench_alpha_plus_plus(c: &mut Criterion) {
     group.sample_size(30);
 
     for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = discover_alpha_plus_plus(h, ACTIVITY_KEY, 0.1).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -103,14 +103,14 @@ fn bench_heuristic_miner(c: &mut Criterion) {
     group.sample_size(30);
 
     for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = discover_heuristic_miner(h, ACTIVITY_KEY, 0.5).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -129,14 +129,14 @@ fn bench_inductive_miner(c: &mut Criterion) {
     group.sample_size(30);
 
     for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = discover_inductive_miner(h, ACTIVITY_KEY).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -155,14 +155,14 @@ fn bench_process_skeleton(c: &mut Criterion) {
     group.sample_size(50);
 
     for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = extract_process_skeleton(h, ACTIVITY_KEY, 2).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -181,14 +181,14 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
     group.sample_size(10);
 
     for shape in bench_sizes_slow() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = discover_genetic_algorithm(h, ACTIVITY_KEY, 50, 20).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );
@@ -207,14 +207,14 @@ fn bench_declare_discovery(c: &mut Criterion) {
     group.sample_size(30);
 
     for shape in bench_sizes() {
-        let (handle, events) = make_handle(&shape);
+        let (handle, events) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &handle,
             |_b, h| {
                 let result = discover_declare(h, ACTIVITY_KEY).unwrap();
-                let hash = blake3::hash(result.as_string().unwrap_or_default().as_bytes());
+                let hash = blake3::hash(format!("{result:?}").as_bytes());
                 black_box(hash);
             },
         );

@@ -3,7 +3,7 @@
 //! Validates that all 15 discovery algorithms achieve fitness >= 0.85 on production-scale logs.
 //!
 //! Context from Cycle 39 audit:
-//! - BPI 2020 travel log: `bench_data/bpi2020_travel.xes` (20MB, 5000+ traces)
+//! - BPI 2020 travel log: `bench_data/bpi2020_domestic_declarations.xes` (20MB, 5000+ traces)
 //! - Requirement: All discovery algorithms must achieve fitness >= 0.85
 //! - Gap: 12 of 15 algorithms have no fitness >= 0.85 assertions
 //!
@@ -40,8 +40,9 @@ lazy_static::lazy_static! {
 
 /// Loads the real BPI 2020 fixture if present, caching it across tests. Returns `None`
 /// (never panics) when the fixture is absent -- this 20MB file was never committed to
-/// the repo (confirmed via `git ls-files bench_data/`; only `bpi2017.jsonocel` is
-/// present), so every environment without a local copy must get a real, visible skip
+/// the repo (confirmed via `git ls-files bench_data/`; the since-deleted
+/// `bpi2017.jsonocel` was the only previously tracked dataset file), so every
+/// environment without a local copy must get a real, visible skip
 /// per each call site, not a panic. The previous `.expect()`-on-panic here panicked
 /// while holding the `BPI2020` mutex guard, poisoning it for the rest of the test
 /// binary -- that single missing-fixture panic cascaded into every other test in this
@@ -58,8 +59,8 @@ fn get_bpi2020_log() -> Option<EventLog> {
     // `/Users/sac/wasm4pm/...` absolute candidate was a personal-machine path leak
     // with no value in any other environment -- removed.)
     let candidates = &[
-        "bench_data/bpi2020_travel.xes",
-        "./bench_data/bpi2020_travel.xes",
+        "bench_data/bpi2020_domestic_declarations.xes",
+        "./bench_data/bpi2020_domestic_declarations.xes",
     ];
 
     let mut loaded = None;
@@ -94,7 +95,7 @@ macro_rules! require_bpi2020 {
             Some(log) => log,
             None => {
                 eprintln!(
-                    "[SKIPPED] {}: bench_data/bpi2020_travel.xes not present in this environment",
+                    "[SKIPPED] {}: bench_data/bpi2020_domestic_declarations.xes not present in this environment",
                     $test_name
                 );
                 return;

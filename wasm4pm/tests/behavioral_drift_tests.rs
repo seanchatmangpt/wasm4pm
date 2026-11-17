@@ -14,7 +14,7 @@
 //! 6. Multi-rule detection priority (each rule fires on its own drift type)
 
 #[cfg(feature = "ml")]
-use wasm4pm::prediction_additions::ewma;
+use wasm4pm::prediction_drift::ewma_series as ewma;
 use wasm4pm::spc::{
     check_western_electric_rules, spc_mean, spc_std_dev, ChartData, ShiftDirection, SpecialCause,
     TrendDirection,

@@ -40,35 +40,12 @@ fn metaheuristic_case_counts() -> &'static [usize] {
     }
 }
 
-/// Load `bench_data/sepsis.xes`, truncate to `max_traces`, store it in global
-/// state and return (handle, total_events). Returns `None` if the fixture is
-/// absent so real-data benches skip cleanly instead of fabricating input.
-/// The bench cwd is the crate dir (`wasm4pm/`); the fixture lives at the repo
-/// root, hence the two candidate paths.
-fn setup_real_log(max_traces: usize) -> Option<(String, usize)> {
-    let content = ["../bench_data/sepsis.xes", "bench_data/sepsis.xes"]
-        .iter()
-        .find_map(|p| std::fs::read_to_string(p).ok())?;
-    let mut log: EventLog = validate_and_parse_xes(&content).ok()?;
-    if log.traces.len() > max_traces {
-        log.traces.truncate(max_traces);
-    }
-    let total_events = log.event_count();
-    if total_events == 0 {
-        return None;
-    }
-    let handle = get_or_init_state()
-        .store_object(StoredObject::EventLog(log))
-        .ok()?;
-    Some((handle, total_events))
-}
-
-/// Fixed real log (largest prefix) used for parameter sweeps. Returns the
-/// stored handle, or `None` if the fixture is absent.
-fn fixed_real_handle() -> Option<String> {
+/// Fixed real log (largest prefix) used for parameter sweeps. Panics if the
+/// fixture is absent (honest failure — no silent skip).
+fn fixed_real_handle() -> String {
     let counts = metaheuristic_case_counts();
     let max = *counts.last().unwrap();
-    setup_real_log(max).map(|(handle, _)| handle)
+    helpers::store_real_log_capped(max).0
 }
 
 /// Apply shared sampling config to a group, respecting fast/full mode.
@@ -99,7 +76,8 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
     configure(&mut group, 30, 3, 10);
 
     // Parameter sweep on a fixed real log: (population_size, generations)
-    if let Some(fixed_handle) = fixed_real_handle() {
+    {
+        let fixed_handle = fixed_real_handle();
         for (pop, gen) in [(5_usize, 3_usize), (10, 5), (20, 10)] {
             group.bench_with_input(
                 BenchmarkId::new(format!("params_pop{}_gen{}", pop, gen), pop),
@@ -123,9 +101,7 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
 
     // Size sweep at minimal parameters over real-log prefixes.
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| {
@@ -144,7 +120,8 @@ fn bench_pso(c: &mut Criterion) {
     let mut group = c.benchmark_group("tier2/pso");
     configure(&mut group, 30, 3, 10);
 
-    if let Some(fixed_handle) = fixed_real_handle() {
+    {
+        let fixed_handle = fixed_real_handle();
         // Parameter sweep: (swarm_size, iterations)
         for (swarm, iters) in [(5_usize, 5_usize), (10, 10), (15, 15)] {
             group.bench_with_input(
@@ -168,9 +145,7 @@ fn bench_pso(c: &mut Criterion) {
     }
 
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_pso_algorithm(black_box(h), ACTIVITY_KEY, 5, 5).unwrap()))
@@ -188,9 +163,7 @@ fn bench_ilp(c: &mut Criterion) {
     configure(&mut group, 20, 2, 15);
 
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_ilp_petri_net(black_box(h), ACTIVITY_KEY).unwrap()))
@@ -207,7 +180,8 @@ fn bench_aco(c: &mut Criterion) {
     let mut group = c.benchmark_group("tier2/aco");
     configure(&mut group, 30, 3, 10);
 
-    if let Some(fixed_handle) = fixed_real_handle() {
+    {
+        let fixed_handle = fixed_real_handle();
         // Parameter sweep: (num_ants, iterations)
         for (ants, iters) in [(5_usize, 5_usize), (10, 10), (15, 15)] {
             group.bench_with_input(
@@ -231,9 +205,7 @@ fn bench_aco(c: &mut Criterion) {
     }
 
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_ant_colony(black_box(h), ACTIVITY_KEY, 5, 5).unwrap()))
@@ -250,7 +222,8 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     let mut group = c.benchmark_group("tier2/simulated_annealing");
     configure(&mut group, 25, 2, 12);
 
-    if let Some(fixed_handle) = fixed_real_handle() {
+    {
+        let fixed_handle = fixed_real_handle();
         // Parameter sweep: (initial_temperature, cooling_rate)
         for (temp, cooling) in [(10.0_f64, 0.90_f64), (50.0, 0.95), (100.0, 0.99)] {
             group.bench_with_input(
@@ -281,9 +254,7 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     }
 
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| {
@@ -304,7 +275,8 @@ fn bench_astar(c: &mut Criterion) {
     let mut group = c.benchmark_group("tier2/astar");
     configure(&mut group, 20, 2, 15);
 
-    if let Some(fixed_handle) = fixed_real_handle() {
+    {
+        let fixed_handle = fixed_real_handle();
         // Parameter sweep: max_iterations
         for max_iter in [10_usize, 20, 50] {
             group.bench_with_input(
@@ -323,9 +295,7 @@ fn bench_astar(c: &mut Criterion) {
     }
 
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_astar(black_box(h), ACTIVITY_KEY, 20).unwrap()))
@@ -344,9 +314,7 @@ fn bench_hill_climbing(c: &mut Criterion) {
 
     // Hill climbing is greedy and fast - benchmark over real-log prefixes.
     for &n in metaheuristic_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_hill_climbing(black_box(h), ACTIVITY_KEY).unwrap()))

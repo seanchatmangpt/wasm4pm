@@ -64,7 +64,7 @@ fn assert_q_values_finite(qs: &[f32; N_ACTIONS], label: &str) {
 /// Mathematical basis: A^{-1} is positive-definite (A = λI + Σ xx^T, always
 /// PD), so x^T A^{-1} x > 0 for all x ≠ 0, and α > 0, giving bonus > 0.
 fn assert_ucb_bonus_positive(agent: &LinUCBAgent, features: &[f32; N_FEATURES], label: &str) {
-    let variance = agent.compute_ucb_variance(features);
+    let variance = agent.variance_for_action(0, features);
     let bonus = agent.alpha * variance.max(0.0).sqrt();
     assert!(
         bonus > 0.0,
@@ -131,7 +131,7 @@ fn test_iv_normalize_01() {
     }
 
     // Analytical UCB variance check: ||[0,1,0,1,0,1,0,1]||² = 4.0
-    let variance = agent.compute_ucb_variance(&features);
+    let variance = agent.variance_for_action(0, &features);
     assert!(
         (variance - 4.0).abs() < 1e-4,
         "[{label}] x^T A^{{-1}} x = {variance}, expected 4.0"
@@ -162,7 +162,7 @@ fn test_iv_normalize_02() {
     assert_ucb_bonus_positive(&agent, &features, label);
 
     // UCB variance = 8 * 0.25 = 2.0 for fresh agent (A_inv = I)
-    let variance = agent.compute_ucb_variance(&features);
+    let variance = agent.variance_for_action(0, &features);
     assert!(
         (variance - 2.0).abs() < 1e-5,
         "[{label}] x^T A^{{-1}} x = {variance}, expected 2.0"
@@ -201,7 +201,7 @@ fn test_iv_normalize_03() {
 
     // Exact representation check: 0.0 and 1.0 are exact in f32
     // x^T A_inv x = Σ x_i² (with A_inv = I for fresh agent) = 4 * 1.0² = 4.0
-    let variance = agent.compute_ucb_variance(&features);
+    let variance = agent.variance_for_action(0, &features);
     assert!(
         (variance - 4.0).abs() < 1e-4,
         "[{label}] x^T A^{{-1}} x = {variance}, expected 4.0 (exact f32 representation)"
@@ -235,7 +235,7 @@ fn test_iv_normalize_04() {
     assert_ucb_bonus_positive(&agent, &features, label);
 
     // UCB variance ≈ 4 * 1.0² + 4 * (1e-6)² ≈ 4.0  (tight tolerance)
-    let variance = agent.compute_ucb_variance(&features);
+    let variance = agent.variance_for_action(0, &features);
     assert!(
         variance > 3.999 && variance < 4.001,
         "[{label}] variance {variance} should be ≈ 4.0 (dominant 1.0 terms)"
@@ -311,8 +311,11 @@ fn test_oi_action_range_01() {
             }
         }
 
+        // Reward 10.0 (not 1.0): under the disjoint model the converged linear
+        // term θ_aᵀx → reward, and it must dominate the α√(xᵀA_a⁻¹x) bonus of
+        // never-tried actions (≈ √2·‖x‖ ≤ 2.83) for the target to win the argmax.
         for _ in 0..300 {
-            agent.update(&features, target as u32, 1.0);
+            agent.update(&features, target as u32, 10.0);
         }
 
         let (selected, _) = agent.select(&features);
@@ -507,7 +510,7 @@ fn test_oi_exploration_01() {
 
     let agent = LinUCBAgent::new();
     for (i, features) in non_zero.iter().enumerate() {
-        let variance = agent.compute_ucb_variance(features);
+        let variance = agent.variance_for_action(0, features);
         let bonus = agent.alpha * variance.max(0.0).sqrt();
         assert!(
             bonus > 0.0,
@@ -519,7 +522,7 @@ fn test_oi_exploration_01() {
 
     // Zero features → zero bonus
     let zero: [f32; N_FEATURES] = [0.0; N_FEATURES];
-    let var_zero = agent.compute_ucb_variance(&zero);
+    let var_zero = agent.variance_for_action(0, &zero);
     let bonus_zero = agent.alpha * var_zero.max(0.0).sqrt();
     assert!(
         bonus_zero.abs() < 1e-7,
@@ -554,8 +557,10 @@ fn test_oi_learning_01() {
     let action = 3_u32;
 
     let mut agent_pos = LinUCBAgent::new();
+    // Reward 10.0 so the converged linear term dominates the unobserved-action
+    // exploration bonus (disjoint model; see oi-action-range-01 note).
     for _ in 0..500 {
-        agent_pos.update(&features_a, action, 1.0);
+        agent_pos.update(&features_a, action, 10.0);
     }
     let (argmax, _q) = agent_pos.select(&features_a);
     assert_eq!(
@@ -564,7 +569,7 @@ fn test_oi_learning_01() {
     );
 
     // Confirm W[3] has grown significantly (positive gradient applied)
-    let w3_sum: f32 = agent_pos.weight_vector(action as usize).iter().sum();
+    let w3_sum: f32 = agent_pos.theta(action as usize).iter().sum();
     assert!(
         w3_sum > 0.0,
         "[{label}] Part A: W[3] must have positive sum after positive rewards, got {w3_sum}"
@@ -572,13 +577,13 @@ fn test_oi_learning_01() {
 
     // Part B: reward=0.0 must shrink UCB variance (A grows, A_inv shrinks).
     let features_b: [f32; N_FEATURES] = [0.5; N_FEATURES];
-    let var_fresh = LinUCBAgent::new().compute_ucb_variance(&features_b);
+    let var_fresh = LinUCBAgent::new().variance_for_action(0, &features_b);
 
     let mut agent_zero = LinUCBAgent::new();
     for _ in 0..50 {
         agent_zero.update(&features_b, 0, 0.0);
     }
-    let var_after_zero = agent_zero.compute_ucb_variance(&features_b);
+    let var_after_zero = agent_zero.variance_for_action(0, &features_b);
     assert!(
         var_after_zero < var_fresh,
         "[{label}] Part B: UCB variance after 50 zero-reward updates ({var_after_zero}) \
@@ -586,7 +591,7 @@ fn test_oi_learning_01() {
     );
 
     // W[0] must not have changed (δ=0, no gradient)
-    let w0_sum: f32 = agent_zero.weight_vector(0).iter().sum();
+    let w0_sum: f32 = agent_zero.theta(0).iter().sum();
     assert!(
         w0_sum.abs() < 1e-6,
         "[{label}] Part B: W[0] must remain 0 after zero-reward updates, got sum={w0_sum}"
@@ -664,7 +669,7 @@ fn test_ec_zero_features_02() {
     assert_q_values_finite(&agent.get_q_values(&nonzero_f), label);
 
     // Step 4: A_inv diagonal must be positive (PD invariant)
-    let a_inv = agent.inverse_covariance();
+    let a_inv = agent.inverse_covariance(0);
     for i in 0..N_FEATURES {
         assert!(
             a_inv[i][i] > 0.0,
@@ -702,11 +707,13 @@ fn test_ec_action_0_01() {
 
     // After 100 positive updates for action 0, W[0] must be non-trivial
     let mut agent = LinUCBAgent::new();
+    // Reward 10.0 so the converged linear term dominates the unobserved-action
+    // exploration bonus (disjoint model; see oi-action-range-01 note).
     for _ in 0..100 {
-        agent.update(&features, 0, 1.0);
+        agent.update(&features, 0, 10.0);
     }
 
-    let w0 = agent.weight_vector(0);
+    let w0 = agent.theta(0);
     let w0_sum: f32 = w0.iter().sum();
     assert!(
         w0_sum > 0.0,
@@ -745,8 +752,10 @@ fn test_ec_action_39_01() {
     let features: [f32; N_FEATURES] = [0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4];
 
     let mut agent = LinUCBAgent::new();
+    // Reward 10.0 so the converged linear term dominates the unobserved-action
+    // exploration bonus (disjoint model; see oi-action-range-01 note).
     for _ in 0..500 {
-        agent.update(&features, 4, 1.0);
+        agent.update(&features, 4, 10.0);
     }
 
     let (action, q) = agent.select(&features);
@@ -759,7 +768,7 @@ fn test_ec_action_39_01() {
 
     // W[4] must have positive components
     let w4_max = agent
-        .weight_vector(4)
+        .theta(4)
         .iter()
         .cloned()
         .fold(f32::NEG_INFINITY, f32::max);
@@ -819,28 +828,30 @@ fn test_ec_reward_zero_01() {
     let action = 0_u32;
 
     let mut agent = LinUCBAgent::new();
-    let w_before = agent.weight_vector(action as usize);
-    let intercept_before = agent.intercept(action as usize);
+    let w_before = agent.theta(action as usize);
+    let b_before = agent.reward_vector(action as usize);
 
     agent.update(&features, action, 0.0);
 
-    // Weights and intercept must be unchanged (δ = 0 → no gradient)
-    let w_after = agent.weight_vector(action as usize);
-    let intercept_after = agent.intercept(action as usize);
+    // Weights and reward vector must be unchanged (r = 0 → b_a += 0 · x)
+    let w_after = agent.theta(action as usize);
+    let b_after = agent.reward_vector(action as usize);
     for (j, (&wb, &wa)) in w_before.iter().zip(w_after.iter()).enumerate() {
         assert!(
             (wa - wb).abs() < 1e-7,
-            "[{label}] W[{action}][{j}] changed after zero-reward update: {wb} → {wa}"
+            "[{label}] theta[{action}][{j}] changed after zero-reward update: {wb} → {wa}"
         );
     }
-    assert!(
-        (intercept_after - intercept_before).abs() < 1e-7,
-        "[{label}] intercept changed after zero-reward update"
-    );
+    for (j, (&bb, &ba)) in b_before.iter().zip(b_after.iter()).enumerate() {
+        assert!(
+            (ba - bb).abs() < 1e-7,
+            "[{label}] b[{action}][{j}] changed after zero-reward update: {bb} → {ba}"
+        );
+    }
 
     // A_inv must have shrunk (Sherman-Morrison applied, UCB variance decreases)
-    let fresh_var = LinUCBAgent::new().compute_ucb_variance(&features);
-    let after_var = agent.compute_ucb_variance(&features);
+    let fresh_var = LinUCBAgent::new().variance_for_action(0, &features);
+    let after_var = agent.variance_for_action(0, &features);
     assert!(
         after_var < fresh_var,
         "[{label}] UCB variance must decrease after zero-reward update \
@@ -881,7 +892,7 @@ fn test_ec_reward_large_01() {
     );
 
     // W[20] must be finite and positive
-    for (j, &wj) in agent.weight_vector(action as usize).iter().enumerate() {
+    for (j, &wj) in agent.theta(action as usize).iter().enumerate() {
         assert!(
             wj.is_finite(),
             "[{label}] W[{action}][{j}] = {wj} is not finite"
@@ -935,14 +946,14 @@ fn test_ec_sequential_02() {
     let label = "ec-sequential-02";
     let features: [f32; N_FEATURES] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
-    let var_initial = LinUCBAgent::new().compute_ucb_variance(&features);
+    let var_initial = LinUCBAgent::new().variance_for_action(0, &features);
 
     let mut agent = LinUCBAgent::new();
     let mut prev_var = var_initial;
 
     for step in 0..10 {
         agent.update(&features, 0, 1.0);
-        let var_after = agent.compute_ucb_variance(&features);
+        let var_after = agent.variance_for_action(0, &features);
 
         assert!(
             var_after < prev_var,
@@ -954,7 +965,7 @@ fn test_ec_sequential_02() {
     }
 
     // After 10 updates: A[0][0] = 1 + 10 = 11 → A_inv[0][0] ≈ 1/11
-    let a_inv = agent.inverse_covariance();
+    let a_inv = agent.inverse_covariance(0);
     assert!(
         a_inv[0][0] < 0.5,
         "[{label}] A_inv[0][0] = {} should be ~1/11 ≈ 0.0909 after 10 updates",
@@ -981,9 +992,11 @@ fn test_ec_feature_switch_01() {
     let f2: [f32; N_FEATURES] = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
     let mut agent = LinUCBAgent::new();
+    // Reward 10.0 so the converged linear terms dominate the unobserved-action
+    // exploration bonus (disjoint model; see oi-action-range-01 note).
     for _ in 0..300 {
-        agent.update(&f1, 3, 1.0);
-        agent.update(&f2, 4, 1.0);
+        agent.update(&f1, 3, 10.0);
+        agent.update(&f2, 4, 10.0);
     }
 
     let (action1, _) = agent.select(&f1);
@@ -1032,8 +1045,8 @@ fn test_ec_matrix_inversion_01() {
         agent.update(&features, action, reward);
     }
 
-    let a = agent.covariance_matrix();
-    let a_inv = agent.inverse_covariance();
+    let a = agent.covariance_matrix(0);
+    let a_inv = agent.inverse_covariance(0);
 
     // Compute A * A_inv
     let mut product = [[0.0_f32; N_FEATURES]; N_FEATURES];
@@ -1088,7 +1101,7 @@ fn test_ec_float_precision_01() {
 
     let agent = LinUCBAgent::new();
     for (i, (features, expected)) in cases.iter().enumerate() {
-        let variance = agent.compute_ucb_variance(features);
+        let variance = agent.variance_for_action(0, features);
         assert!(
             (variance - expected).abs() < 1e-5,
             "[{label}] case {i}: x^T A^{{-1}} x = {variance}, expected {expected} \

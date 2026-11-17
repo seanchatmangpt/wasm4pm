@@ -2,6 +2,15 @@
 
 # Forward-Deployed Engineer Cognition Benchmark
 
+## Campaign note (2026-10-10)
+
+Re-verified 2026-10-10: `wasm4pm/bench_data/receipt.xes` exists on disk
+(4,285,624 bytes) and continues to seed the benchmark identity. This page
+makes no SIMD, LinUCB, or absolute-latency claims. Still resting on the
+2026-06 campaign evidence: the 20,000,000-episode / 160,000,000-transition
+constitution and all throughput figures — campaign receipts, not a fresh
+2026-10-10 run.
+
 This rail measures a deterministic simulation of bounded forward-deployed engineering cognition over deployed-enterprise incident and change envelopes.
 
 It does **not** claim to measure human thought, human engineer productivity, LLM inference, real customer incidents, or external system actuation.

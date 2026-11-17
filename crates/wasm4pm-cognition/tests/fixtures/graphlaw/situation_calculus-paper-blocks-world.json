@@ -1,0 +1,117 @@
+{
+  "vector_id": "situation_calculus-paper-blocks-world",
+  "breed": "situation_calculus",
+  "provenance": {
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "eyeron": "0.7.8",
+    "generator": "graphlaw:scripts/gen_wasm4pm_graphlaw_vectors.py@615dbfa \u2014 encodes successor-state progression / STRIPS replay as N3 Datalog over explicit situation constants s0..sN (holds(F,do(A,S)) :- causes(F,A); holds(F,do(A,S)) :- holds(F,S), keeps(F,A), keeps = closed-world completion of not causes_del), derives holds fluents with graphlaw-eyeron 0.7.8, emits SCHEMA.md v1 vectors",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "progress blocks world through pickup(a); putdown(a, table)",
+    "facts": [
+      {
+        "key": "fluent:clear_a",
+        "value": "true"
+      },
+      {
+        "key": "fluent:color_b_red",
+        "value": "true"
+      },
+      {
+        "key": "fluent:handempty",
+        "value": "true"
+      },
+      {
+        "key": "fluent:on_a_b",
+        "value": "true"
+      },
+      {
+        "key": "fluent:on_b_table",
+        "value": "true"
+      },
+      {
+        "key": "action:pickup_a:pre",
+        "value": "clear_a"
+      },
+      {
+        "key": "action:pickup_a:pre",
+        "value": "handempty"
+      },
+      {
+        "key": "action:pickup_a:pre",
+        "value": "on_a_b"
+      },
+      {
+        "key": "action:pickup_a:add",
+        "value": "clear_b"
+      },
+      {
+        "key": "action:pickup_a:add",
+        "value": "holding_a"
+      },
+      {
+        "key": "action:pickup_a:del",
+        "value": "clear_a"
+      },
+      {
+        "key": "action:pickup_a:del",
+        "value": "handempty"
+      },
+      {
+        "key": "action:pickup_a:del",
+        "value": "on_a_b"
+      },
+      {
+        "key": "action:putdown_a:pre",
+        "value": "holding_a"
+      },
+      {
+        "key": "action:putdown_a:add",
+        "value": "clear_a"
+      },
+      {
+        "key": "action:putdown_a:add",
+        "value": "handempty"
+      },
+      {
+        "key": "action:putdown_a:add",
+        "value": "on_a_table"
+      },
+      {
+        "key": "action:putdown_a:del",
+        "value": "holding_a"
+      },
+      {
+        "key": "do:0",
+        "value": "pickup_a"
+      },
+      {
+        "key": "do:1",
+        "value": "putdown_a"
+      }
+    ],
+    "rules": [],
+    "goals": [],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "holds:clear_a",
+      "holds:clear_b",
+      "holds:color_b_red",
+      "holds:handempty",
+      "holds:on_a_table",
+      "holds:on_b_table"
+    ],
+    "verdicts": {
+      "final_situation": "s2",
+      "frame_persist": "2 fluents persisted by frame inertia"
+    },
+    "notes": "Ground truth derived by eyeron N3 progression over explicit situation constants s0..s2. Frame-persist set ['color_b_red', 'on_b_table'] = initial fluents never mentioned in any executed action's add/del lists (hand-checked)."
+  }
+}

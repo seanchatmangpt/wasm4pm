@@ -1,0 +1,34 @@
+{
+  "vector_id": "description_logic-c-exists-pair",
+  "breed": "description_logic",
+  "provenance": {
+    "graphlaw_rev": "82814ac4f398274e64aeb47d2448d04f89cfefcd",
+    "graphlaw_version": "26.10.28",
+    "purrdf": "3.0.1",
+    "n3_engine": "purrdf-n3/3.0.1",
+    "generator": "graphlaw src/bin/dl_dualroute.rs (dual-route: purrdf::n3 DATALOG CR1-CR4 + purrdf OWL-RL; agreement required before emission)",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "classify",
+    "facts": [
+        { "key": "dl:subclass:Transfer", "value": "Event" },
+        { "key": "dl:exists_rhs:Transfer", "value": "involves.Account" },
+        { "key": "dl:exists_lhs:involves.Account", "value": "LedgerEntry" }
+    ],
+    "rules": [],
+    "goals": [{ "id": "g1", "predicate": "dl:subsumes", "value": "Transfer:LedgerEntry" }, { "id": "g2", "predicate": "dl:subsumes", "value": "LedgerEntry:Transfer" }, { "id": "g3", "predicate": "dl:subsumes", "value": "Transfer:Event" }],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "dl:verdict:LedgerEntry:Transfer=false",
+      "dl:verdict:Transfer:Event=true",
+      "dl:verdict:Transfer:LedgerEntry=true"
+    ],
+    "verdicts": { "g1": "Transfer⊑LedgerEntry=true", "g2": "LedgerEntry⊑Transfer=false", "g3": "Transfer⊑Event=true" },
+    "notes": "exists_rhs + exists_lhs (CR3 then CR4), plus asserted and negative verdicts — dual-route agreed (purrdf::n3 DATALOG fixpoint == purrdf OWL-RL closure) on 3 goals before emission."
+  }
+}

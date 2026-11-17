@@ -2,14 +2,49 @@
 
 use crate::ground::TemporalPlan;
 
-/// Maximum number of steps with overlapping `[start, end)` intervals at any instant.
-#[must_use]
-pub fn max_parallelism(plan: &TemporalPlan) -> usize {
+/// Typed failure for schedule analysis over a malformed (non-finite) plan.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ScheduleError {
+    /// A step carried a NaN or infinite timestamp.
+    NonFiniteTimestamp { action_name: String, value: f64 },
+}
+
+impl std::fmt::Display for ScheduleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ScheduleError::NonFiniteTimestamp { action_name, value } => write!(
+                f,
+                "plan step {action_name:?} has non-finite timestamp {value}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ScheduleError {}
+
+fn checked_event_times(plan: &TemporalPlan) -> Result<Vec<(f64, i32)>, ScheduleError> {
     let mut events: Vec<(f64, i32)> = Vec::new();
     for step in &plan.steps {
+        let end = step.start_time + step.duration;
+        if !step.start_time.is_finite() || !end.is_finite() {
+            return Err(ScheduleError::NonFiniteTimestamp {
+                action_name: step.action_name.clone(),
+                value: if step.start_time.is_finite() { end } else { step.start_time },
+            });
+        }
         events.push((step.start_time, 1));
-        events.push((step.start_time + step.duration, -1));
+        events.push((end, -1));
     }
+    Ok(events)
+}
+
+/// Maximum number of steps with overlapping `[start, end)` intervals at any instant.
+///
+/// # Errors
+/// [`ScheduleError::NonFiniteTimestamp`] when any step time is NaN or infinite,
+/// instead of silently collapsing the sort to `Ordering::Equal`.
+pub fn max_parallelism(plan: &TemporalPlan) -> Result<usize, ScheduleError> {
+    let mut events = checked_event_times(plan)?;
     // Ends before starts at the same instant, so a step ending at t does not
     // overlap a step starting at t.
     events.sort_by(|left, right| {
@@ -25,16 +60,16 @@ pub fn max_parallelism(plan: &TemporalPlan) -> usize {
         current += delta;
         max_seen = max_seen.max(current);
     }
-    usize::try_from(max_seen.max(0)).expect("non-negative parallelism fits usize")
+    Ok(usize::try_from(max_seen.max(0)).expect("non-negative parallelism fits usize"))
 }
 
 /// Convert a temporal plan into deterministic, transitively reduced POWL v2 geometry.
 ///
-/// Step `i` precedes step `j` exactly when `end(i) <= start(j)`. Overlapping
-/// intervals remain unordered. Only cover edges are emitted, preventing a long
-/// sequential plan from manufacturing a quadratic set of redundant precedence arcs.
-#[must_use]
-pub fn plan_to_powl_v2(plan: &TemporalPlan) -> String {
+/// # Errors
+/// [`ScheduleError::NonFiniteTimestamp`] when any step time is NaN or infinite.
+pub fn plan_to_powl_v2(plan: &TemporalPlan) -> Result<String, ScheduleError> {
+    // Validate timestamps up front so no silent Equal fallback survives.
+    checked_event_times(plan)?;
     let mut steps: Vec<&crate::ground::PlanStep> = plan.steps.iter().collect();
     steps.sort_by(|left, right| {
         left.start_time
@@ -55,11 +90,11 @@ pub fn plan_to_powl_v2(plan: &TemporalPlan) -> String {
         }
     }
 
-    format!(
+    Ok(format!(
         "PartialOrder(plan) {{ nodes: [{}], edges: [{}] }}",
         ids.join(", "),
         edges.join(", ")
-    )
+    ))
 }
 
 fn stable_step_ids(steps: &[&crate::ground::PlanStep]) -> Vec<String> {
@@ -134,7 +169,7 @@ mod tests {
             steps: vec![step("a", 0.0, 5.0), step("b", 5.0, 5.0)],
             makespan: 10.0,
         };
-        assert_eq!(max_parallelism(&plan), 1);
+        assert_eq!(max_parallelism(&plan).unwrap(), 1);
     }
 
     #[test]
@@ -143,7 +178,7 @@ mod tests {
             steps: vec![step("a", 0.0, 5.0), step("b", 0.0, 3.0)],
             makespan: 5.0,
         };
-        assert_eq!(max_parallelism(&plan), 2);
+        assert_eq!(max_parallelism(&plan).unwrap(), 2);
     }
 
     #[test]
@@ -158,7 +193,7 @@ mod tests {
             makespan: 5.0,
         };
         assert_eq!(
-            plan_to_powl_v2(&plan),
+            plan_to_powl_v2(&plan).unwrap(),
             "PartialOrder(plan) { nodes: [observe, human_review, iot_check, close], edges: [(observe, human_review), (observe, iot_check), (human_review, close), (iot_check, close)] }"
         );
     }
@@ -173,7 +208,7 @@ mod tests {
             ],
             makespan: 3.0,
         };
-        let projected = plan_to_powl_v2(&plan);
+        let projected = plan_to_powl_v2(&plan).unwrap();
         assert!(projected.contains("(a, b)"));
         assert!(projected.contains("(b, c)"));
         assert!(!projected.contains("(a, c)"));
@@ -186,7 +221,7 @@ mod tests {
             makespan: 2.0,
         };
         assert_eq!(
-            plan_to_powl_v2(&plan),
+            plan_to_powl_v2(&plan).unwrap(),
             "PartialOrder(plan) { nodes: [inspect, inspect_1], edges: [(inspect, inspect_1)] }"
         );
     }

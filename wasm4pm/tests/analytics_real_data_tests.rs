@@ -133,7 +133,14 @@ macro_rules! require_log {
     ($paths:expr, $label:expr) => {
         match load_xes($paths) {
             None => {
-                eprintln!("SKIP: {} not found", $label);
+                if std::env::var("WASM4PM_ALLOW_DATA_SKIP").as_deref() != Ok("1") {
+                    panic!(
+                        "MISSING DATASET for '{}': real-data tests must not silently skip. \
+                         Provide the XES or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping.",
+                        $label
+                    );
+                }
+                eprintln!("SKIP (WASM4PM_ALLOW_DATA_SKIP=1): {} not found", $label);
                 return;
             }
             Some(l) => l,

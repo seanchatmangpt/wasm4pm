@@ -1,4 +1,7 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/asp.md; source-sha256: 700b4096a71110cf8565250a80b70457e103d05fb3ee57ea0f5ac64a0ee1906a; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/asp.md; source-sha256: 9cd8dc221282f71709a02c3547d12991699f6ef3bd6ef4ff1be0f3f067242b6e; reason: path-local documentation retained pending domain-specific supersession -->
+
+contract updated 2026-10-10, GL pipeline trace (ground/guess-candidate/reduct/
+least-model/stable-accept|reject/answer-set), NAF-head refusal, asp:answer_set_count fact.
 
 # Answer Set Programming (ASP)
 
@@ -8,50 +11,75 @@
 - **Tradition:** Logic Programming, Stable Models Semantics, Negation as Failure (NAF)
 
 ## Algorithm
-The Answer Set Programming breed computes stable models of a logic program over a finite domain of atoms using the Gelfond-Lifschitz reduct.
-1. Gather all unique atoms appearing in the logic program rules, facts, and candidates.
-2. For each possible interpretation (subset of all atoms):
-   - Compute the Gelfond-Lifschitz reduct $P^I$ of the logic program with respect to the interpretation $I$:
-     - For each rule, if a premise has `"not atom"` and `atom` $\in I$, discard the rule.
-     - Otherwise, keep the rule with the remaining positive premises.
-   - Compute the unique least model of the positive reduct logic program $P^I$ by iterating to a fixpoint.
-   - If the least model is exactly equal to the interpretation $I$, then $I$ is a stable model (answer set).
+The Answer Set Programming breed computes stable models of a normal logic program
+using the Gelfond-Lifschitz reduct
+(`crates/wasm4pm-cognition/src/breeds/asp.rs`):
+1. Partition atoms: all fact atoms are forced-true (a fact is a zero-body rule, so it
+   is in the least model of every reduct); only rule-referenced atoms not already
+   forced are enumerated. Candidate ids are never derivable and never enumerated.
+2. Emit a `ground` step: `"N atoms, M rules"` over the rule-referenced atom set.
+3. For each interpretation mask over the enumerable atoms (≤16):
+   - `guess-candidate`: the mask as candidate model M (forced atoms included).
+   - `reduct`: discard rules whose NAF premise holds in M; report kept/dropped counts.
+   - `least-model`: fixpoint of the positive reduct P^M seeded with the forced facts,
+     reported as `LM(P^M)={...}`.
+   - If M equals LM(P^M): `stable-accept` (M is a stable model); else `stable-reject`
+     with both sets in the detail.
+4. Final `answer-set` step: `"<N> answer set(s)"`.
 
 ## Pseudocode
 ```
 function solve(input):
-    atoms = gather_atoms(input)
-    stable_models = []
-    
-    for each interpretation I in power_set(atoms):
-        reduct_rules = GelfondLifschitzReduct(input.rules, I)
-        least_model = ComputeLeastModel(reduct_rules, input.facts)
-        if I == least_model:
-            stable_models.push(I)
-            
+    forced = atoms of all facts (key or non-empty value, minus "relation" key)
+    enum   = rule-referenced atoms - forced
+    for mask in 0..2^|enum|:
+        M      = forced ∪ mask
+        reduct = rules whose NAF premises fail in M
+        LM     = fixpoint(reduct, seed=forced)
+        if M == LM: stable_models.push(M)
     return stable_models
 ```
 
 ## Input contract
 - `intent`: not used
-- `facts`: list of facts acting as ground atoms.
-- `rules`: rules containing a `conclusion` and a list of premises. Negation as failure (NAF) is supported using the `"not "` prefix in premises.
+- `facts`: each fact's key (except `relation`) and any non-empty value are
+  forced-true atoms of every stable model.
+- `rules`: `conclusion` + premise list; NAF uses the `"not "` prefix in premises.
+  A rule head starting with `not ` is refused (NAF heads are not normal rules).
 - `goals`: not used
-- `candidates`: candidate structures whose IDs are collected as atoms and scored if they are in the selected stable model.
+- `candidates`: ids are never derivable; any candidate in the first stable model
+  gets score 1.0, the first such is `selected`.
 
 ## Output contract
-- `selected`: ID of candidate that is included in the first stable model, if any.
-- `explanation`: `"ASP: found <N> stable model(s). Selected candidate: <id>"`
-- `inference_trace`: trace steps recording `"asp-load"`, `"asp-solve"`, and `"asp-model"`.
+- `selected`: first candidate id contained in the first stable model, if any.
+- `explanation`: `"ASP: found <N> stable model(s). Selected candidate: <id?>"`.
+- `facts`: `stable_models_count`, the mirror fact `asp:answer_set_count` (both = N),
+  and `model_0_<i>` atoms of the first stable model.
+- `inference_trace`: `ground` → per-mask `guess-candidate`/`reduct`/`least-model`/
+  `stable-accept`|`stable-reject` → final `answer-set`.
+
+## Refusal contract
+- No rules and no facts: refused (`ASP requires at least one rule or fact`).
+- Rule head starting with `not `: refused (`ASP rule head cannot contain
+  negation-as-failure: <rule id>`).
+- More than 16 enumerable atoms: refused (`Too many atoms for exact ASP solver`).
 
 ## Complexity
-- Time: Exponential $O(2^A \cdot R)$ in the number of unique atoms $A$ (max 16) and rules $R$.
-- Space: $O(A + R)$ to store interpretations and reduct rules.
+- Time: O(2^A · R) over rule-referenced non-fact atoms A (max 16) and rules R;
+  each mask runs a least-model fixpoint over the rules. Forcing fact atoms out of
+  the enumeration keeps unrelated admitted context facts from tripping the cap
+  without changing any stable model.
+- Space: O(A + R) for interpretations and the atom partition.
 
 ## Generalization examples
-- **Process Configuration Rules**: Check if a selected set of process variants satisfies negation-as-failure configuration constraints.
-- **Workflow Resource Constraints**: Enforce mutually exclusive role assignments via stable model rules.
+- **Process Configuration Rules**: check process variants against
+  negation-as-failure configuration constraints.
+- **Workflow Resource Constraints**: enforce mutually exclusive role assignments
+  via stable model rules.
 
 ## Adversarial coverage
-- Precondition rejects if rules and facts are both empty.
-- Limit of 16 atoms is enforced to prevent state explosion; more than 16 atoms returns a BreedError.
+- Precondition refuses the empty program, NAF rule heads, and >16 atoms.
+- Postcondition pins trace shape: non-empty trace, first step `ground`, last step
+  `answer-set`, and the `asp:answer_set_count` fact must be present.
+- Fact-as-premise regression: fact p + rule p→q yields exactly the stable model
+  {p, q} (a fact atom referenced by a rule premise is never flippable).

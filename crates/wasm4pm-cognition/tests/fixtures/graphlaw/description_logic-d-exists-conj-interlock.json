@@ -1,0 +1,41 @@
+{
+  "vector_id": "description_logic-d-exists-conj-interlock",
+  "breed": "description_logic",
+  "provenance": {
+    "graphlaw_rev": "82814ac4f398274e64aeb47d2448d04f89cfefcd",
+    "graphlaw_version": "26.10.28",
+    "purrdf": "3.0.1",
+    "n3_engine": "purrdf-n3/3.0.1",
+    "generator": "graphlaw src/bin/dl_dualroute.rs (dual-route: purrdf::n3 DATALOG CR1-CR4 + purrdf OWL-RL; agreement required before emission)",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "classify",
+    "facts": [
+        { "key": "dl:subclass:x_X", "value": "x_W" },
+        { "key": "dl:exists_rhs:x_X", "value": "r.Y" },
+        { "key": "dl:exists_lhs:r.Y", "value": "x_Z" },
+        { "key": "dl:conj:x_Z+x_W", "value": "x_V" },
+        { "key": "dl:exists_rhs:x_Z", "value": "s.Y2" },
+        { "key": "dl:exists_lhs:s.Y2", "value": "x_V2" },
+        { "key": "dl:conj:x_V2+x_W", "value": "x_V" }
+    ],
+    "rules": [],
+    "goals": [{ "id": "g1", "predicate": "dl:subsumes", "value": "x_X:x_V" }, { "id": "g2", "predicate": "dl:subsumes", "value": "x_V:x_X" }, { "id": "g3", "predicate": "dl:subsumes", "value": "x_Z:x_V" }, { "id": "g4", "predicate": "dl:subsumes", "value": "x_Z:x_V2" }, { "id": "g5", "predicate": "dl:subsumes", "value": "x_V2:x_Z" }, { "id": "g6", "predicate": "dl:subsumes", "value": "x_V2:x_W" }],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "dl:verdict:x_V2:x_W=false",
+      "dl:verdict:x_V2:x_Z=false",
+      "dl:verdict:x_V:x_X=false",
+      "dl:verdict:x_X:x_V=true",
+      "dl:verdict:x_Z:x_V2=true",
+      "dl:verdict:x_Z:x_V=false"
+    ],
+    "verdicts": { "g1": "x_X⊑x_V=true", "g2": "x_V⊑x_X=false", "g3": "x_Z⊑x_V=false", "g4": "x_Z⊑x_V2=true", "g5": "x_V2⊑x_Z=false", "g6": "x_V2⊑x_W=false" },
+    "notes": "adversarial: CR3->CR4->CR2 interlock run twice over two roles — dual-route agreed (purrdf::n3 DATALOG fixpoint == purrdf OWL-RL closure) on 6 goals before emission."
+  }
+}

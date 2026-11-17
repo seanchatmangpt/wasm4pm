@@ -266,6 +266,14 @@ impl NeuralNet {
 
     /// Forward pass through the network
     pub fn forward(&self, input: &[f64]) -> Vec<f64> {
+        let n_dense = self.dense_count();
+        if n_dense > 0 {
+            // Hidden layers apply the activation; the output activation is
+            // applied to the final (linear) pre-activation below.
+            let (_, activations) = self.forward_dense(input);
+            let z_last = &activations[activations.len() - 1];
+            return z_last.iter().map(|&x| self.activation.apply(x)).collect();
+        }
         let mut current = input.to_vec();
 
         for layer in &self.layers {
@@ -310,6 +318,59 @@ impl NeuralNet {
 
         // Apply activation function to final output
         current.iter().map(|&x| self.activation.apply(x)).collect()
+    }
+
+    /// Number of Dense layers in the network
+    fn dense_count(&self) -> usize {
+        self.layers
+            .iter()
+            .filter(|l| matches!(l, Layer::Dense { .. }))
+            .count()
+    }
+
+    /// Forward pass over the Dense layers only, storing pre-activations.
+    ///
+    /// Returns `(zs, activations)` where `zs[k]` is the pre-activation `z` of
+    /// the k-th Dense layer and `activations[k]` is the input to that layer
+    /// (`activations[0]` is the network input). Hidden-layer outputs have the
+    /// activation function applied; the final Dense layer's output is left
+    /// linear (the caller applies `self.activation` for the prediction), which
+    /// is what backpropagation expects.
+    fn forward_dense(&self, input: &[f64]) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+        let n_dense = self.dense_count();
+        let mut zs: Vec<Vec<f64>> = Vec::with_capacity(n_dense);
+        let mut activations: Vec<Vec<f64>> = Vec::with_capacity(n_dense + 1);
+        activations.push(input.to_vec());
+
+        let mut current = input.to_vec();
+        let mut dense_idx = 0usize;
+        for layer in &self.layers {
+            if let Layer::Dense {
+                weights, biases, ..
+            } = layer
+            {
+                let mut z = vec![0.0; weights.len()];
+                for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
+                    let mut sum = biases[neuron_idx];
+                    for (&w, &input_val) in neuron_weights.iter().zip(current.iter()) {
+                        sum += w * input_val;
+                    }
+                    z[neuron_idx] = sum;
+                }
+                // Hidden layers apply the activation; the output layer stays
+                // linear until the final activation is applied.
+                current = if dense_idx + 1 < n_dense {
+                    z.iter().map(|&v| self.activation.apply(v)).collect()
+                } else {
+                    z.clone()
+                };
+                zs.push(z);
+                activations.push(current.clone());
+                dense_idx += 1;
+            }
+        }
+
+        (zs, activations)
     }
 
     /// Train the network
@@ -372,82 +433,83 @@ impl NeuralNet {
             let input = &x[i * n_features..(i + 1) * n_features];
             let target = y[i];
 
-            // Forward pass (store intermediate values)
-            let mut activations = vec![input.to_vec()];
-            let mut current = input.to_vec();
+            // Forward pass over Dense layers, storing pre-activations per layer
+            let (zs, activations) = self.forward_dense(input);
+            let n_dense = zs.len();
 
-            for layer in &self.layers {
-                if let Layer::Dense {
-                    weights, biases, ..
-                } = layer
-                {
-                    let mut output = vec![0.0; weights.len()];
-                    for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
-                        let mut sum = biases[neuron_idx];
-                        for (&w, &input_val) in neuron_weights.iter().zip(current.iter()) {
-                            sum += w * input_val;
-                        }
-                        output[neuron_idx] = sum;
-                    }
-                    activations.push(output.clone());
-                    current = output;
-                }
-            }
+            // Prediction: activation applied to the last layer's pre-activation
+            let z_last = &zs[n_dense - 1];
+            let prediction: Vec<f64> =
+                z_last.iter().map(|&x| self.activation.apply(x)).collect();
 
-            // Apply activation to get prediction
-            let prediction: Vec<f64> = current.iter().map(|&x| self.activation.apply(x)).collect();
-
-            // Compute output error (MSE loss derivative)
-            let output_error: Vec<f64> = prediction
+            // Compute output error (MSE loss derivative): (p - y) * f'(z_L)
+            let mut current_error: Vec<f64> = prediction
                 .iter()
                 .enumerate()
-                .map(|(i, &p)| {
-                    let error = p - target;
-                    error * self.activation.derivative(current[i])
-                })
+                .map(|(j, &p)| (p - target) * self.activation.derivative(z_last[j]))
                 .collect();
 
-            // Backpropagate
-            let mut current_error = output_error;
-            for (layer_idx, layer) in self.layers.iter().enumerate().rev() {
-                if let Layer::Dense { weights, .. } = layer {
-                    let input = &activations[layer_idx];
-                    let mut layer_gradients = vec![vec![0.0; weights[0].len()]; weights.len()];
+            // Backpropagate over Dense layers in reverse
+            for k in (0..n_dense).rev() {
+                let layer_idx = self.dense_layer_index(k);
+                let layer_weights: &Vec<Vec<f64>> = match &self.layers[layer_idx] {
+                    Layer::Dense { weights, .. } => weights,
+                    _ => unreachable!("dense_layer_index returns Dense layers only"),
+                };
+                // Input to this layer
+                let layer_input = &activations[k];
+                let mut layer_gradients =
+                    vec![vec![0.0; layer_weights[0].len()]; layer_weights.len()];
 
-                    // Compute gradients for this layer
-                    for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
-                        let error = current_error[neuron_idx];
+                // Gradients for this layer: dE/dW = delta * input^T
+                for neuron_idx in 0..layer_weights.len() {
+                    let error = current_error[neuron_idx];
+                    for weight_idx in 0..layer_weights[neuron_idx].len() {
+                        layer_gradients[neuron_idx][weight_idx] += error * layer_input[weight_idx];
+                    }
+                }
 
-                        for (weight_idx, &_weight) in neuron_weights.iter().enumerate() {
-                            layer_gradients[neuron_idx][weight_idx] += error * input[weight_idx];
+                // Propagate error to previous layer:
+                // delta_prev = (W^T * delta) ⊙ f'(z_prev)
+                if k > 0 {
+                    let z_prev = &zs[k - 1];
+                    let mut prev_error = vec![0.0; layer_input.len()];
+                    for input_idx in 0..layer_input.len() {
+                        // transpose pass: sum over output neurons
+                        for neuron_idx in 0..layer_weights.len() {
+                            prev_error[input_idx] +=
+                                current_error[neuron_idx] * layer_weights[neuron_idx][input_idx];
                         }
                     }
-
-                    // Propagate error to previous layer
-                    if layer_idx > 0 {
-                        let mut prev_error = vec![0.0; input.len()];
-                        for (input_idx, &_input_val) in input.iter().enumerate() {
-                            for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
-                                prev_error[input_idx] +=
-                                    current_error[neuron_idx] * neuron_weights[input_idx];
-                            }
-                        }
-                        current_error = prev_error;
+                    for (idx, pe) in prev_error.iter_mut().enumerate() {
+                        *pe *= self.activation.derivative(z_prev[idx]);
                     }
+                    current_error = prev_error;
+                }
 
-                    // Accumulate gradients (flatten layer_gradients into gradients[layer_idx])
-                    let mut grad_idx = 0;
-                    for neuron_grads in layer_gradients.iter() {
-                        for &lg in neuron_grads.iter() {
-                            gradients[layer_idx][grad_idx] += lg / batch_size as f64;
-                            grad_idx += 1;
-                        }
+                // Accumulate gradients (flatten into gradients[layer_idx])
+                let mut grad_idx = 0;
+                for neuron_grads in layer_gradients.iter() {
+                    for &lg in neuron_grads.iter() {
+                        gradients[layer_idx][grad_idx] += lg / batch_size as f64;
+                        grad_idx += 1;
                     }
                 }
             }
         }
 
         gradients
+    }
+
+    /// Index into `self.layers` of the k-th Dense layer (0-based among Dense layers)
+    fn dense_layer_index(&self, k: usize) -> usize {
+        self.layers
+            .iter()
+            .enumerate()
+            .filter(|(_, l)| matches!(l, Layer::Dense { .. }))
+            .nth(k)
+            .map(|(i, _)| i)
+            .expect("k-th dense layer must exist")
     }
 }
 
@@ -549,5 +611,68 @@ mod tests {
         let val2 = rng.next();
 
         assert_ne!(val1, val2); // Should produce different values
+    }
+
+    /// Gradient check: analytic backprop gradients vs central finite
+    /// differences on a 2-hidden-layer tanh network. Hidden layers are
+    /// non-linear, so this fails if the hidden delta omits f'(z).
+    #[test]
+    fn test_gradient_check_two_hidden_layers_tanh() {
+        let net = NeuralNet::new(ActivationType::Tanh)
+            .add_layer(Layer::dense(2, 4))
+            .add_layer(Layer::dense(4, 3))
+            .add_layer(Layer::dense(3, 1));
+
+        let input = [0.7, -1.3];
+        let target = 0.5;
+        let n_features = 2usize;
+
+        // Analytic gradients (batch of one sample)
+        let analytic = net.compute_batch_gradients(&input, &[target], 0, 1, n_features);
+
+        // Loss for a single weight setting: L = 0.5 * (p - y)^2
+        let loss_at = |(li, ni, wi, val): (usize, usize, usize, f64)| -> f64 {
+            let mut net_m = net.clone();
+            if let Layer::Dense { weights, .. } = &mut net_m.layers[li] {
+                weights[ni][wi] = val;
+            }
+            let out = net_m.forward(&input);
+            0.5 * (out[0] - target).powi(2)
+        };
+
+        let epsilon = 1e-6f64;
+        let mut max_rel_err = 0.0f64;
+
+        for (li, layer_grads) in analytic.iter().enumerate() {
+            let layer = &net.layers[li];
+            if let Layer::Dense { weights, .. } = layer {
+                // Note: this implementation's flat gradient layout and
+                // optimizer cover weights only (biases stay zero), so the
+                // check covers every weight parameter.
+                let mut flat_params: Vec<(usize, usize, f64)> = Vec::new();
+                for (ni, nw) in weights.iter().enumerate() {
+                    for (wi, &w) in nw.iter().enumerate() {
+                        flat_params.push((ni, wi, w));
+                    }
+                }
+
+                for (grad_pos, &(ni, wi, val)) in flat_params.iter().enumerate() {
+                    let num = (loss_at((li, ni, wi, val + epsilon))
+                        - loss_at((li, ni, wi, val - epsilon)))
+                        / (2.0 * epsilon);
+                    let ana = layer_grads[grad_pos];
+                    if num.abs() > 1e-12 || ana.abs() > 1e-12 {
+                        let denom = num.abs().max(ana.abs()).max(1e-8);
+                        max_rel_err = max_rel_err.max(((num - ana).abs() / denom).min(1e9));
+                    }
+                }
+            }
+        }
+
+        println!("gradient check: max relative error = {max_rel_err:e} (threshold 1e-5)");
+        assert!(
+            max_rel_err < 1e-5,
+            "gradient check failed: max relative error {max_rel_err:e} (need < 1e-5)"
+        );
     }
 }

@@ -1,11 +1,13 @@
 {
   "breed": "eliza",
   "provenance": {
-    "paper": "/Users/sac/Documents/Papers/AI_LLM/Weizenbaum-1966-ELIZA-CACM.pdf",
-    "citation": "Weizenbaum, J. (1966). ELIZA\u2014A computer program for the study of natural language communication between man and machine. Communications of the ACM, 9(1), 36\u201345. https://doi.org/10.1145/365153.365168",
-    "locus": "Opening dialogue (p. 36), decomposition/reassembly mechanics (pp. 37\u201340), and Appendix \"An ELIZA Script\" (pp. 44\u201345) \u2014 DOCTOR script rules: ALIKE/DIT (rank 10), ALWAYS (rank 1), MY=YOUR (rank 2) with /FAMILY tag, I keyword (sad/unhappy/depressed pattern), REMEMBER (rank 5), DREAMT (rank 4), IF, MEMORY MY",
+    "paper": "Weizenbaum 1966, ELIZA (CACM 9(1):36-45) — local library PDF, untraceable from fresh clone",
+    "paper_trace": "unavailable-from-fresh-clone",
+    "citation": "Weizenbaum, J. (1966). ELIZA—A computer program for the study of natural language communication between man and machine. Communications of the ACM, 9(1), 36–45. https://doi.org/10.1145/365153.365168",
+    "locus": "Opening dialogue (p. 36), decomposition/reassembly mechanics (pp. 37–40), and Appendix \"An ELIZA Script\" (pp. 44–45) — DOCTOR script rules: ALIKE/DIT (rank 10), ALWAYS (rank 1), MY=YOUR (rank 2) with /FAMILY tag, I keyword (sad/unhappy/depressed pattern), REMEMBER (rank 5), DREAMT (rank 4), IF, MEMORY MY",
     "extraction": "verbatim",
-    "notes": "The existing realElizaInput() is a stub \u2014 intent-only with no rules, facts, goals, or state. The improved fixture encodes: (1) the six opening utterances from the verbatim dialogue on p. 36, as facts keyed by utterance index; (2) all keyword/decomposition/reassembly rules directly from the Appendix script (pp. 44\u201345) covering ALIKE\u2192DIT, ALWAYS, MY/FAMILY, I+depressed, I+want/need, REMEMBER, DREAMT, IF, MEMORY MY, NONE, YOU patterns; (3) goals capturing the two core ELIZA objectives: detect dominant theme and reflect back via keyword decomposition; (4) state atoms encoding the DOCTOR script name, the unconditional pronoun swap rule (I\u2194YOU, MY\u2194YOUR, ME\u2194YOU cited explicitly on p. 37), and the left-to-right highest-rank-wins scan rule. The decomposition notation (0 K 0) and reassembly slot numbering (component 3/4/5) are verbatim from the paper. The opening 3-turn dialogue exchange is the canonical worked example Weizenbaum presents on p. 36 to introduce the system."
+    "notes": "The existing realElizaInput() is a stub — intent-only with no rules, facts, goals, or state. The improved fixture encodes: (1) the six opening utterances from the verbatim dialogue on p. 36, as facts keyed by utterance index; (2) all keyword/decomposition/reassembly rules directly from the Appendix script (pp. 44–45) covering ALIKE→DIT, ALWAYS, MY/FAMILY, I+depressed, I+want/need, REMEMBER, DREAMT, IF, MEMORY MY, NONE, YOU patterns; (3) goals capturing the two core ELIZA objectives: detect dominant theme and reflect back via keyword decomposition; (4) state atoms encoding the DOCTOR script name, the unconditional pronoun swap rule (I↔YOU, MY↔YOUR, ME↔YOU cited explicitly on p. 37), and the left-to-right highest-rank-wins scan rule. The decomposition notation (0 K 0) and reassembly slot numbering (component 3/4/5) are verbatim from the paper. The opening 3-turn dialogue exchange is the canonical worked example Weizenbaum presents on p. 36 to introduce the system.",
+    "dialog_source": "Weizenbaum 1966 CACM 9(1):36-45, dialog 1 (the \"Men are all alike\" / \"IN WHAT WAY\" exchange)"
   },
   "input": {
     "intent": "Men are all alike.",
@@ -300,10 +302,11 @@
     "turn_3": {
       "user": "Well, my boyfriend made me come here.",
       "keyword_triggered": "MY (rank 2, MY substituted to YOUR during scan)",
-      "decomposition": "(0 YOUR 0) \u2014 no /FAMILY tag match, falls to general MY rule",
-      "reassembly": "YOUR 3 \u2192 YOUR boyfriend made YOU come here.",
+      "decomposition": "(0 YOUR 0) — no /FAMILY tag match, falls to general MY rule",
+      "reassembly": "YOUR 3 → YOUR boyfriend made YOU come here.",
       "eliza_response": "YOUR boyfriend made YOU come here.",
-      "note": "The real substitute_input() (frame.rs) only case-transforms the specific substituted words (MY->YOUR, ME->YOU); every other captured token, and the sentence's original punctuation, passes through verbatim -- confirmed against apply_reassembly/match_decomp, which do no case normalization of their own. An earlier version of this fixture asserted a fully-uppercase, period-stripped response ('YOUR BOYFRIEND MADE YOU COME HERE') that no code path in this breed actually produces."
+      "note": "The real substitute_input() (frame.rs) only case-transforms the specific substituted words (MY->YOUR, ME->YOU); every other captured token, and the sentence's original punctuation, passes through verbatim -- confirmed against apply_reassembly/match_decomp, which do no case normalization of their own. An earlier version of this fixture asserted a fully-uppercase, period-stripped response ('YOUR BOYFRIEND MADE YOU COME HERE') that no code path in this breed actually produces.",
+      "origin": "implementation-derived, not paper-documented"
     },
     "detected_theme": "family_relationships_and_emotional_distress",
     "dominant_keywords_by_rank": [

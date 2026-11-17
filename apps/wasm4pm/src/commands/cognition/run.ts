@@ -6,6 +6,7 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { runContract } from '@wasm4pm/cognition';
 import type { BreedInput, TraceStep } from '@wasm4pm/cognition';
 import { parseInputJson, saveReceipt, mapWasmError } from './_shared.js';
+import { blake3Hex } from '../../receipts/_shared.js';
 import { exitWithFlush } from '../../otel/exit.js';
 import { withSpanRaw } from '../_otel.js';
 import { getGlobalSpanSink } from '../../otel/sink.js';
@@ -121,6 +122,7 @@ export const run = defineCommand({
             savedPath = saveReceipt(
               {
                 run_id: cresult.run_id,
+                input_hash: blake3Hex(fs.readFileSync(ctx.args.input as string)),
                 output_hash: cresult.output_hash,
                 replay_pointer: cresult.replay_pointer,
                 breed: cresult.breed,

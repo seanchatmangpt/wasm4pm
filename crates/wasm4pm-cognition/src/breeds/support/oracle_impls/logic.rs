@@ -52,6 +52,10 @@ impl BreedOracle for SatCdcl {
         BreedId::SatCdcl
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-clause", "decide", "propagate", "conflict", "learn-clause", "backjump", "decision"]
+    }
+
     /// Novel 5-variable implication-chain clause structure (SAT).
     fn novel_input() -> BreedInput {
         let mut input = base("uo_sat_chain");
@@ -128,6 +132,10 @@ impl BreedOracle for Tableaux {
         BreedId::Tableaux
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["parse-formula", "sign-root", "alpha-expand", "beta-expand", "close-branch", "open-branch", "verdict"]
+    }
+
     /// K-axiom shape over fresh atoms — valid, alpha-only.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_tableaux_prove");
@@ -189,6 +197,10 @@ impl BreedOracle for Tableaux {
 impl BreedOracle for CtlCheck {
     fn breed_id() -> BreedId {
         BreedId::CtlCheck
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["parse-formula", "label-states", "fixpoint-iterate", "counterexample-step", "decision"]
     }
 
     /// Two-state total system where `A G uo_live` holds from the initial state.
@@ -264,6 +276,10 @@ impl BreedOracle for LtlMonitor {
         BreedId::LtlMonitor
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ltl-init", "ltl-progress", "ltl-verdict"]
+    }
+
     /// `G uo_ok` over a 3-event trace where uo_ok always holds — satisfied.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_ltl_monitor");
@@ -336,6 +352,10 @@ impl BreedOracle for LtlMonitor {
 impl BreedOracle for DescriptionLogic {
     fn breed_id() -> BreedId {
         BreedId::DescriptionLogic
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["normalize", "apply-cr1", "apply-cr2", "apply-cr3", "apply-cr4", "fixpoint", "classify-verdict"]
     }
 
     /// CR1 transitive chain: uo_Cat ⊑ uo_Mammal ⊑ uo_Animal, query uo_Cat:uo_Animal.
@@ -415,6 +435,10 @@ impl BreedOracle for Circumscription {
         BreedId::Circumscription
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-defaults", "enumerate-model", "minimize", "entail", "decision"]
+    }
+
     /// Default-flight pattern over fresh atoms: minimal model entails uo_glides.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_circ_entail");
@@ -490,6 +514,10 @@ impl BreedOracle for Circumscription {
 impl BreedOracle for BeliefMerging {
     fn breed_id() -> BreedId {
         BreedId::BeliefMerging
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["enumerate-worlds", "filter-ic", "distance", "aggregate", "select-min", "merged-belief"]
     }
 
     /// Σ-merging of the 2-vs-1 profile over fresh atoms.
@@ -571,6 +599,10 @@ impl BreedOracle for AbductiveLp {
         BreedId::AbductiveLp
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-abducibles", "candidate-delta", "derive", "explain-accept", "explain-reject", "minimal-set"]
+    }
+
     /// Single minimal explanation {uo_leak} of uo_alarm.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_alp_explain");
@@ -648,6 +680,10 @@ impl BreedOracle for AbductiveLp {
 impl BreedOracle for AbductiveIbe {
     fn breed_id() -> BreedId {
         BreedId::AbductiveIbe
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["collect-observations", "score-hypothesis", "compare", "best-explanation"]
     }
 
     /// Cheap partial hypothesis beats costly full-coverage one.
@@ -741,6 +777,10 @@ impl BreedOracle for Problog {
         BreedId::Problog
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-pfact", "enumerate-world", "sum-weight", "decision"]
+    }
+
     /// Noisy-or of two fresh probabilistic causes of uo_alarm.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_problog_query");
@@ -822,6 +862,10 @@ impl BreedOracle for Clp {
         BreedId::Clp
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["post-constraint", "propagate", "solution"]
+    }
+
     /// Chain uo_x < uo_y <= 2 over 1..4: propagation forces uo_x=1, uo_y=2.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_clp_solve");
@@ -901,6 +945,10 @@ impl BreedOracle for Clp {
 impl BreedOracle for AllenTemporal {
     fn breed_id() -> BreedId {
         BreedId::AllenTemporal
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["allen-load", "allen-compose", "allen-verdict"]
     }
 
     /// p∘p chain over fresh intervals: uo_a before uo_b before uo_c.

@@ -1,0 +1,51 @@
+{
+  "breed": "prolog",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "parent:x,y",
+        "value": "true"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "grandparent:x,y",
+        "value": "true"
+      }
+    ],
+    "intent": "rule present but no premise join is satisfiable — nothing derived",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "grandparent:?0,?2",
+        "id": "r_grandparent",
+        "premise": [
+          "parent:?0,?1",
+          "parent:?1,?2"
+        ]
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "parent:x,y"
+    ],
+    "notes": "No rule body ever matches: fixpoint = EDB unchanged, goal not derivable. The prolog deny path omits the query phase, so the lawful dispatch_breed_id OCEL gate REFUSES the run (typed refusal) — this vector asserts that refusal rather than an output verdict. CONFORMED to SCHEMA.md v1 by the FOUNDATION harness lane (compile-freeze unblock): required BreedInput fields added, rule certainty added, goal converted to compound key grandparent:x,y, verdicts converted to map with the refused semantics.",
+    "verdicts": {
+      "g1": "refused"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "breed_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "prolog_no_derivation"
+}

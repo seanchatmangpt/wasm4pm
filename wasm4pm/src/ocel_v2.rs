@@ -31,6 +31,53 @@ fn parse_ocel(json: &str) -> Result<OCEL, JsValue> {
     serde_json::from_str::<OCEL>(json).map_err(|e| js_val(&format!("Invalid OCEL-v2 JSON: {e}")))
 }
 
+/// SECURITY: input size guards (same 512 MB policy as io.rs MAX_INPUT_BYTES).
+const MAX_OCEL_JSON_BYTES: usize = 512 * 1024 * 1024;
+/// Cardinality specs are small keyed objects — 1 MB is generous.
+const MAX_CARDINALITY_BYTES: usize = 1024 * 1024;
+
+fn check_size(content: &str, what: &str, cap: usize) -> Result<(), JsValue> {
+    check_size_core(content, what, cap).map_err(|e| js_val(&e))
+}
+
+/// String-error core of [`check_size`] — natively testable (JsValue panics on
+/// non-wasm test targets).
+fn check_size_core(content: &str, what: &str, cap: usize) -> Result<(), String> {
+    if content.len() > cap {
+        return Err(format!(
+            "{} too large: {} bytes (max {} bytes)",
+            what,
+            content.len(),
+            cap
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod size_guard_tests {
+    use super::*;
+
+    #[test]
+    fn oversized_ocel_json_refused_small_cap() {
+        let big = "x".repeat(1024);
+        let err =
+            check_size_core(&big, "OCEL-v2 JSON input", 512).expect_err("must refuse >cap");
+        assert!(err.contains("too large"));
+    }
+
+    #[test]
+    fn exactly_at_cap_accepted() {
+        let buf = "x".repeat(512);
+        assert!(check_size_core(&buf, "OCEL-v2 JSON input", 512).is_ok());
+    }
+
+    #[test]
+    fn cardinality_cap_is_smaller_than_log_cap() {
+        assert!(MAX_CARDINALITY_BYTES < MAX_OCEL_JSON_BYTES);
+    }
+}
+
 fn parse_cardinality(json: &str) -> Result<HashMap<String, ObjectTypeCardinality>, JsValue> {
     if json.trim().is_empty() {
         return Ok(HashMap::new());
@@ -54,6 +101,7 @@ pub fn validate_ocel_v2_report(
 /// form. Errors (as a `JsValue` string) if the JSON is not a valid OCEL-v2 log.
 #[wasm_bindgen]
 pub fn load_ocel_v2(json: &str) -> Result<JsValue, JsValue> {
+    check_size(json, "OCEL-v2 JSON input", MAX_OCEL_JSON_BYTES)?;
     let ocel = parse_ocel(json)?;
     to_js_str(&ocel)
 }
@@ -68,6 +116,8 @@ pub fn load_ocel_v2(json: &str) -> Result<JsValue, JsValue> {
 /// Returns a `ValidationReport` `{ valid: bool, errors: [{code, message}] }`.
 #[wasm_bindgen]
 pub fn validate_ocel_v2(json: &str, cardinality_json: &str) -> Result<JsValue, JsValue> {
+    check_size(json, "OCEL-v2 JSON input", MAX_OCEL_JSON_BYTES)?;
+    check_size(cardinality_json, "cardinality JSON input", MAX_CARDINALITY_BYTES)?;
     let ocel = parse_ocel(json)?;
     let card = parse_cardinality(cardinality_json)?;
     let report = validate_ocel_v2_report(&ocel, &card);
@@ -80,6 +130,7 @@ pub fn validate_ocel_v2(json: &str, cardinality_json: &str) -> Result<JsValue, J
 /// Errors if `object_type` is not declared in the log.
 #[wasm_bindgen]
 pub fn flatten_ocel_v2(json: &str, object_type: &str) -> Result<JsValue, JsValue> {
+    check_size(json, "OCEL-v2 JSON input", MAX_OCEL_JSON_BYTES)?;
     let ocel = parse_ocel(json)?;
 
     let exists = ocel.object_types.iter().any(|ot| ot.name == object_type)

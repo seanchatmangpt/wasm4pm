@@ -7,6 +7,7 @@
 pub mod dialogue;
 pub mod learning;
 pub mod logic;
+pub mod p5;
 pub mod planning;
 pub mod rule_fact;
 

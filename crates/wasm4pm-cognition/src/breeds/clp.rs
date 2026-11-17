@@ -3,15 +3,49 @@
 //! Rank-1 (mathematical theorem): Incremental constraint store with pure
 //! propagation reaching fixed-point.
 
-use crate::breeds::support::csp::{CspStore, TraceEvent};
+use crate::breeds::support::csp::{CspError, CspStore};
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
+
+impl From<CspError> for BreedError {
+    fn from(e: CspError) -> Self {
+        BreedError {
+            breed: BreedId::Clp,
+            message: e.to_string(),
+        }
+    }
+}
 
 /// Constraint Logic Programming breed
 pub struct Clp;
 
 impl Clp {
+    /// Format a domain as a sorted `{v1,v2,...}` set.
+    fn fmt_domain(domain: &[String]) -> String {
+        let mut vals: Vec<&String> = domain.iter().collect();
+        vals.sort_by(|a, b| {
+            let (na, nb) = (a.parse::<i64>(), b.parse::<i64>());
+            match (na, nb) {
+                (Ok(x), Ok(y)) => x.cmp(&y),
+                _ => a.cmp(b),
+            }
+        });
+        format!("{{{}}}", vals.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(","))
+    }
+
+    /// Constraint step id: the key suffix for the colon encoding
+    /// (`clp:constraint:c0` -> `c0`); index-based (`c0`, `c1`, ...)
+    /// for the hyphen encoding, which carries no suffix.
+    fn constraint_step_id(key: &str, index: usize) -> String {
+        for prefix in ["clp:constraint:", "csp:constraint:"] {
+            if let Some(suffix) = key.strip_prefix(prefix) {
+                return suffix.trim().to_string();
+            }
+        }
+        format!("c{}", index)
+    }
+
     /// Extract a variable name from a variable-declaring fact, supporting two encodings:
     /// - hyphen contract: key `clp-var`/`csp-var`, value `name:domain` (name before `:`)
     /// - colon contract:  key `clp:var:<name>`/`csp:var:<name>`, value is the domain
@@ -83,7 +117,7 @@ impl Clp {
                         if let Some((rhs_var, konst)) = rest.split_once(sep) {
                             if konst.parse::<i64>().is_ok() {
                                 let op = format!("={}{}", sep, konst);
-                                store.add_constraint(lhs, rhs_var, &op);
+                                store.add_constraint(lhs, rhs_var, &op)?;
                                 return Ok(());
                             }
                         }
@@ -122,7 +156,7 @@ impl Clp {
     ) -> Result<(), BreedError> {
         let lhs = self.resolve_operand(store, lhs);
         let rhs = self.resolve_operand(store, rhs);
-        store.add_constraint(&lhs, &rhs, op);
+        store.add_constraint(&lhs, &rhs, op)?;
         Ok(())
     }
 
@@ -162,6 +196,7 @@ impl CognitionBreed for Clp {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut store = CspStore::new();
+        let mut trace: Vec<TraceStep> = Vec::new();
 
         // Pass 1: declare variables.
         for fact in &input.facts {
@@ -174,50 +209,74 @@ impl CognitionBreed for Clp {
             }
         }
 
-        // Pass 2: post constraints.
+        // Pass 2: post constraints, emitting post-constraint + propagate steps from
+        // before/after domain snapshots around each store fixpoint (no csp.rs change).
+        let mut constraint_index = 0usize;
         for fact in &input.facts {
             if Self::is_constraint_key(&fact.key) {
+                let step_id = Self::constraint_step_id(&fact.key, constraint_index);
+                let before = store.domains.clone();
                 self.post_constraint(&mut store, &fact.value)?;
+                let after = store.domains.clone();
+
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "post-constraint".to_string(),
+                    detail: format!("{}: {}", step_id, fact.value),
+                    depth: 0,
+                    objects: vec![],
+                });
+                for (var, new_domain) in &after {
+                    if var.starts_with("__const_") {
+                        continue;
+                    }
+                    match before.get(var) {
+                        Some(old_domain) if old_domain != new_domain => {
+                            trace.push(TraceStep {
+                                step: trace.len(),
+                                kind: "propagate".to_string(),
+                                detail: format!(
+                                    "{}: {} -> {}",
+                                    var,
+                                    Self::fmt_domain(old_domain),
+                                    Self::fmt_domain(new_domain)
+                                ),
+                                depth: 0,
+                                objects: vec![],
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+                constraint_index += 1;
             }
         }
 
-        let solution = store.solve();
+        let solution = store.solve().map_err(|e| BreedError {
+            breed: self.id(),
+            message: e.to_string(),
+        })?;
 
-        let mut trace = Vec::new();
-        for (i, event) in store.trace.iter().enumerate() {
-            let (kind, detail) = match event {
-                TraceEvent::Init { vars, constraints } => (
-                    "clp-init".to_string(),
-                    format!("vars={} constraints={}", vars, constraints),
-                ),
-                TraceEvent::Propagate { var, domain } => (
-                    "clp-propagate".to_string(),
-                    format!("var={} domain={:?}", var, domain),
-                ),
-                TraceEvent::Revise { x, y, pruned } => (
-                    "clp-revise".to_string(),
-                    format!("x={} y={} pruned={}", x, y, pruned),
-                ),
-                TraceEvent::Assign { var, val } => {
-                    ("clp-assign".to_string(), format!("var={} val={}", var, val))
-                }
-                TraceEvent::Backtrack { var } => {
-                    ("clp-backtrack".to_string(), format!("var={}", var))
-                }
-                TraceEvent::Verdict { satisfiable } => (
-                    "clp-verdict".to_string(),
-                    format!("satisfiable={}", satisfiable),
-                ),
-            };
-
-            trace.push(TraceStep {
-                step: i,
-                kind,
-                detail,
-                depth: 0,
-                objects: vec![],
-            });
-        }
+        // Final solution step: sorted `var=val` assignments (constants filtered).
+        let solution_detail = match solution.as_ref() {
+            Some(sol) => {
+                let mut parts: Vec<String> = sol
+                    .iter()
+                    .filter(|(k, _)| !k.starts_with("__const_"))
+                    .map(|(k, v)| format!("{}={}", k, v))
+                    .collect();
+                parts.sort();
+                parts.join(",")
+            }
+            None => "UNSAT".to_string(),
+        };
+        trace.push(TraceStep {
+            step: trace.len(),
+            kind: "solution".to_string(),
+            detail: solution_detail,
+            depth: 0,
+            objects: vec![],
+        });
 
         let explanation = if let Some(ref sol) = solution {
             let mut parts: Vec<_> = sol
@@ -246,6 +305,12 @@ impl CognitionBreed for Clp {
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("CLP must emit at least one trace step".to_string());
+        }
+        if output.inference_trace[0].kind != "post-constraint" {
+            return Err("CLP trace must start with a post-constraint step".to_string());
+        }
+        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("solution") {
+            return Err("CLP trace must end with a solution step".to_string());
         }
         Ok(())
     }
@@ -299,17 +364,33 @@ mod tests {
         let out = Clp.run(&input).expect("success");
         assert_eq!(out.explanation, "SAT: v3=3, x=1, y=2, z=3");
 
-        let backtrack_count = out
-            .inference_trace
+        let trace = &out.inference_trace;
+        // Trace contract: post-constraint first, solution last, real narrowing.
+        assert_eq!(
+            trace.first().map(|t| t.kind.as_str()),
+            Some("post-constraint")
+        );
+        assert_eq!(trace.last().map(|t| t.kind.as_str()), Some("solution"));
+        assert_eq!(trace.iter().filter(|t| t.kind == "post-constraint").count(), 3);
+        assert!(
+            trace.iter().any(|t| t.kind == "propagate"),
+            "must show propagation sequence"
+        );
+        // Zero backtracks: no narrowing regress and no backtrack vocab anywhere.
+        assert!(
+            !trace.iter().any(|t| t.kind.contains("backtrack")),
+            "must solve with zero backtracks"
+        );
+        let narrows: Vec<&TraceStep> = trace
             .iter()
-            .filter(|t| t.kind == "clp-backtrack")
-            .count();
-        assert_eq!(backtrack_count, 0, "must solve with zero backtracks");
-
-        let has_propagate = out
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "clp-propagate");
-        assert!(has_propagate, "must show propagation sequence");
+            .filter(|t| {
+                t.kind == "propagate"
+                    && !t.detail.contains("-> {}")
+            })
+            .collect();
+        assert!(
+            !narrows.is_empty(),
+            "propagation must actually narrow at least one domain"
+        );
     }
 }

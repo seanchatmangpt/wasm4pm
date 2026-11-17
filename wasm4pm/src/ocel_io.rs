@@ -31,6 +31,9 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
+    // SECURITY: same 512 MB guard as io.rs entry points.
+    crate::io::check_input_size(content, "OCEL 2.0 JSON input")
+        .map_err(|e| crate::error::js_val(&e))?;
     let ocel: OCEL = serde_json::from_str(content)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse OCEL 2.0 JSON: {}", e)))?;
 
@@ -534,6 +537,9 @@ fn is_valid_iso8601(s: &str) -> bool {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel2_from_ndjson(ndjson: &str) -> Result<String, JsValue> {
+    // SECURITY: same 512 MB guard as io.rs entry points.
+    crate::io::check_input_size(ndjson, "OCEL 2.0 NDJSON input")
+        .map_err(|e| crate::error::js_val(&e))?;
     let ocel_types_struct = wasm4pm_compat::import::ocel::import_ocel_ndjson(ndjson)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse NDJSON: {}", e)))?;
 
@@ -560,6 +566,7 @@ mod tests {
         OCEL {
             event_types: vec!["Create".to_string(), "Complete".to_string()],
             object_types: vec!["Order".to_string(), "Item".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![OCELEvent {
                 id: "e1".to_string(),
                 event_type: "Create".to_string(),
@@ -765,6 +772,7 @@ mod tests {
                 "DiagnosticSpecies".to_string(),
                 "Receipt".to_string(),
             ],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e_mod".to_string(),

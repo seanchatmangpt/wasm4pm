@@ -1,0 +1,63 @@
+{
+  "breed": "prolog",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "parent:alice,bob",
+        "value": "true"
+      },
+      {
+        "key": "parent:bob,carol",
+        "value": "true"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "ancestor:alice,carol",
+        "value": "true"
+      }
+    ],
+    "intent": "ancestor chain over parent facts",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "ancestor:?0,?1",
+        "id": "r_base",
+        "premise": [
+          "parent:?0,?1"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "ancestor:?0,?2",
+        "id": "r_trans",
+        "premise": [
+          "parent:?0,?1",
+          "ancestor:?1,?2"
+        ]
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "ancestor:alice,carol"
+    ],
+    "notes": "FOUNDATION-lane hand-derived self-test vector. Forward chaining over parent:alice,bob + parent:bob,carol with base and transitivity Horn clauses yields exactly ancestor:alice,bob, ancestor:bob,carol, ancestor:alice,carol; goal ancestor:alice,carol is provable, selected is its final argument carol, and the queried fact is evidenced via the infer trace ('derived ancestor:alice,carol') plus verdict 'admitted' in the explanation. The two unqueried closure facts are recorded here rather than asserted: the prolog output surface emits EDB verbatim and individually traces only the queried goal fact.",
+    "verdicts": {
+      "g1": "admitted"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "hand-derived ground truth (FOUNDATION lane self-test; no graphlaw execution); RE-DERIVED-AT 615dbfaf94d407cffe174af02804d0dbfb3f8f1d (26.10.21): breed_input replayed through the graphlaw datalog ABI (call_json op=datalog, breed_oracle_gen atom_to_triple translation) on 2026-10-22; expected surface re-confirmed (true twin derives ancestor:alice,carol + goal admitted; mutant twin fact does NOT derive). Original derivation was at 82c67c2b7e2ed71e7ca6bbd557e36fc7f446b1bd (26.10.13).",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": false
+  },
+  "vector_id": "selftest-prolog"
+}

@@ -347,7 +347,11 @@ fn dispatch_autoinstinct_semantics_routes() {
 #[test]
 fn dispatch_autoinstinct_learning_routes() {
     let mut input = minimal_input();
-    // 3 goals, no initial facts → planner flips 3 bits to reach goal
+    // HACKER curriculum path: rules empty, each goal atom is a unit
+    // skill-acquisition step identity-matched against facts. 3 goals, no
+    // matching facts → 3 acquisition steps.
+    input.rules = vec![];
+    input.facts = vec![];
     input.goals = vec![
         Goal {
             id: "g0".into(),

@@ -216,10 +216,8 @@ pub struct AutoProcessAgent {
     /// Discount factor (gamma)
     discount_factor: f32,
 
-    /// Precomputed sqrt values for LinUCB context selection (128 entries)
-    /// Index: quantized feature magnitude (0..127)
-    /// Value: sqrt of feature magnitude
-    sqrt_lut: [f32; 128],
+    /// Disjoint LinUCB bandit backing `linucb_ucb_estimate`.
+    linucb: crate::ml::LinUCBAgent,
 
     /// Deferred Bellman update queue (256 transitions max)
     deferred_queue: [BellmanTransition; 256],
@@ -296,7 +294,7 @@ impl AutoProcessAgent {
             circuit_open_at_step: 0,
             learning_rate,
             discount_factor,
-            sqrt_lut: [0.0_f32; 128],
+            linucb: crate::ml::LinUCBAgent::new(),
             deferred_queue: [BellmanTransition {
                 state_id: 0,
                 action_idx: 0,
@@ -316,16 +314,7 @@ impl AutoProcessAgent {
             last_health_level: 0,
         };
 
-        // Precompute sqrt LUT for LinUCB
-        agent.compute_sqrt_lut();
         agent
-    }
-
-    /// Precompute square roots for LinUCB context magnitudes
-    fn compute_sqrt_lut(&mut self) {
-        for i in 0..128 {
-            self.sqrt_lut[i] = (i as f32).sqrt();
-        }
     }
 
     /// Set the drain cadence for the deferred Bellman queue.
@@ -431,23 +420,15 @@ impl AutoProcessAgent {
         (action, q_val, selected_idx as u32, reason)
     }
 
-    /// Estimate agent confidence using the LinUCB upper confidence bound formula.
+    /// Estimate agent confidence using the real per-action LinUCB bonus.
     ///
-    /// Uses a precomputed square root lookup table for performance.
+    /// Delegates to the disjoint LinUCB bandit (Li et al. 2010):
+    /// bonus = α √(xᵀ A_action⁻¹ x) — per-action, context-dependent uncertainty
+    /// that shrinks as the taken action's history accumulates.
     #[inline(always)]
-    pub fn linucb_ucb_estimate(&self, q_value: f32, features: &[f32; 8]) -> f32 {
-        // Estimate feature magnitude: L2 norm quantized to [0..127]
-        let magnitude_sq: f32 = features.iter().map(|x| x * x).sum();
-        let magnitude = magnitude_sq.sqrt();
-        let mag_quantized = ((magnitude * 127.0).clamp(0.0, 127.0)) as usize;
-        let mag_sqrt = self.sqrt_lut[mag_quantized];
-
-        // Estimate visit count from Q-value magnitude (avoid division by zero)
-        let visit_count_est = 1.0 + q_value.abs().sqrt();
-
-        // UCB = Q + sqrt(mag) / sqrt(visits)
-        let exploration_bonus = mag_sqrt / visit_count_est.sqrt().max(1.0);
-        q_value + exploration_bonus
+    pub fn linucb_ucb_estimate(&self, q_value: f32, action: u32, features: &[f32; 8]) -> f32 {
+        let bonus = self.linucb.exploration_bonus(action as usize, features);
+        q_value + bonus
     }
 
     // =========================================================================
@@ -725,7 +706,7 @@ impl AutoProcessAgent {
 
         // Step 2: DECISION — Select action via epsilon-greedy, capturing
         // explore-vs-exploit so callers can observe the decision rationale.
-        let (action, q_value, _action_idx, base_reason) =
+        let (action, q_value, action_idx, base_reason) =
             self.select_action_epsilon_greedy_with_reason(state_id, None);
 
         // Step 3: PROTECTION
@@ -751,8 +732,11 @@ impl AutoProcessAgent {
             }
         }
 
-        // Estimate agent confidence using LinUCB
-        let agent_confidence = self.linucb_ucb_estimate(q_value, features);
+        // LinUCB: observe the reward for the taken action, then estimate
+        // confidence with the real per-action UCB bonus (disjoint model).
+        self.linucb
+            .update(features, action_idx, reward);
+        let agent_confidence = self.linucb_ucb_estimate(q_value, action_idx, features);
 
         // Update last_health_level for next cycle's Guard Rule 3
         self.last_health_level = state.health_level;
@@ -1030,14 +1014,29 @@ mod tests {
     #[test]
     #[ignore] // Skip in normal test runs; run separately with `cargo test -- --ignored`
     fn test_linucb_ucb_estimate() {
-        let agent = AutoProcessAgent::new();
+        let mut agent = AutoProcessAgent::new();
         let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
         let q_value = 0.5;
 
-        let ucb = agent.linucb_ucb_estimate(q_value, &features);
+        let ucb_0 = agent.linucb_ucb_estimate(q_value, 0, &features);
+        let ucb_1 = agent.linucb_ucb_estimate(q_value, 1, &features);
         assert!(
-            ucb >= q_value,
+            ucb_0 >= q_value,
             "UCB should be >= Q-value (includes exploration bonus)"
+        );
+        // Fresh bandit: identical A_a for all actions → identical bonuses.
+        assert!(
+            (ucb_0 - ucb_1).abs() < 1e-6,
+            "fresh bandit must give equal bonuses to equal-history actions"
+        );
+        // After observing action 0 only, its bonus must shrink below action 1's.
+        for _ in 0..20 {
+            agent.linucb.update(&features, 0, 1.0);
+        }
+        assert!(
+            agent.linucb_ucb_estimate(q_value, 0, &features)
+                < agent.linucb_ucb_estimate(q_value, 1, &features),
+            "observed action must carry less uncertainty than unobserved action"
         );
     }
 

@@ -18,10 +18,7 @@ use std::time::Duration;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner;
 use wasm4pm::algorithms::discover_alpha_plus_plus;
 use wasm4pm::discovery::discover_dfg;
-use wasm4pm::models::EventLog;
 use wasm4pm::more_discovery::{discover_inductive_miner, extract_process_skeleton};
-use wasm4pm::state::{get_or_init_state, StoredObject};
-use wasm4pm::xes_format::validate_and_parse_xes;
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -37,29 +34,6 @@ fn real_case_counts() -> &'static [usize] {
     }
 }
 
-/// Load `bench_data/sepsis.xes`, truncate to `max_traces`, store it in global
-/// state and return (handle, total_events). Returns `None` if the fixture is
-/// absent so real-data benches skip cleanly instead of fabricating input.
-/// The bench cwd is the crate dir (`wasm4pm/`); the fixture lives at the repo
-/// root, hence the two candidate paths.
-fn setup_real_log(max_traces: usize) -> Option<(String, usize)> {
-    let content = ["../bench_data/sepsis.xes", "bench_data/sepsis.xes"]
-        .iter()
-        .find_map(|p| std::fs::read_to_string(p).ok())?;
-    let mut log: EventLog = validate_and_parse_xes(&content).ok()?;
-    if log.traces.len() > max_traces {
-        log.traces.truncate(max_traces);
-    }
-    let total_events = log.event_count();
-    if total_events == 0 {
-        return None;
-    }
-    let handle = get_or_init_state()
-        .store_object(StoredObject::EventLog(log))
-        .ok()?;
-    Some((handle, total_events))
-}
-
 /// Benchmark DFG discovery - the foundational O(n) algorithm
 fn bench_dfg(c: &mut Criterion) {
     let mut group = c.benchmark_group("tier1/dfg");
@@ -73,9 +47,7 @@ fn bench_dfg(c: &mut Criterion) {
     }
 
     for &n in real_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_dfg(black_box(h), ACTIVITY_KEY).unwrap()))
@@ -97,9 +69,7 @@ fn bench_process_skeleton(c: &mut Criterion) {
     }
 
     for &n in real_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(extract_process_skeleton(black_box(h), ACTIVITY_KEY, 2).unwrap()))
@@ -121,9 +91,7 @@ fn bench_alpha_plus_plus(c: &mut Criterion) {
     }
 
     for &n in real_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_alpha_plus_plus(black_box(h), ACTIVITY_KEY, 0.1).unwrap()))
@@ -145,9 +113,7 @@ fn bench_heuristic_miner(c: &mut Criterion) {
     }
 
     for &n in real_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         // Benchmark with default threshold of 0.5
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
@@ -170,9 +136,7 @@ fn bench_inductive_miner(c: &mut Criterion) {
     }
 
     for &n in real_case_counts() {
-        let Some((handle, events)) = setup_real_log(n) else {
-            continue;
-        };
+        let (handle, events) = helpers::store_real_log_capped(n);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("cases", n), &handle, |b, h| {
             b.iter(|| black_box(discover_inductive_miner(black_box(h), ACTIVITY_KEY).unwrap()))

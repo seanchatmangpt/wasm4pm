@@ -1,0 +1,13 @@
+{
+  "event_id": "castle-0002-refused_observation",
+  "event_type": "refused_observation",
+  "event_time": "2026-10-13T00:00:00Z",
+  "attributes": {
+    "authority": "none",
+    "provenance": "observation_only",
+    "subject": "subj-1",
+    "effect_id": "eff-1",
+    "provider": "prov-1",
+    "outcome": "refused"
+  }
+}

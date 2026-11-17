@@ -19,7 +19,7 @@ use wasm4pm::state::{get_or_init_state, StoredObject};
 
 #[path = "helpers.rs"]
 mod helpers;
-use helpers::{generate_event_log, LogShape, ACTIVITY_KEY};
+use helpers::ACTIVITY_KEY;
 
 // Internal modules for benchmarking
 use wasm4pm::conformance;
@@ -210,20 +210,17 @@ fn bench_token_replay(c: &mut Criterion) {
         .expect("store PetriNet failed");
 
     for num_cases in [100, 500, 1_000, 5_000] {
-        let shape = LogShape {
-            num_cases,
-            avg_events_per_case: 12,
-            num_activities: 4,
-            noise_factor: 0.1,
+        // Real bpi2020_domestic_declarations log, truncated to a prefix of num_cases cases.
+        let Some(log) = load_real_log("bpi2020_domestic_declarations.xes", num_cases) else {
+            eprintln!("conformance/token_replay: skipping n={num_cases} — bench_data fixture not found");
+            continue;
         };
-        let log = generate_event_log(&shape);
+        let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
         let log_handle = get_or_init_state()
             .store_object(StoredObject::EventLog(log))
             .expect("store EventLog failed");
 
-        group.throughput(Throughput::Elements(
-            (num_cases * shape.avg_events_per_case) as u64,
-        ));
+        group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(BenchmarkId::new("cases", num_cases), &log_handle, |b, h| {
             b.iter(|| {
                 black_box(conformance::check_token_based_replay(
@@ -253,36 +250,18 @@ fn bench_simd_token_replay(c: &mut Criterion) {
     }
 
     for num_cases in [100, 500, 1_000, 5_000, 10_000] {
-        let shape = LogShape {
-            num_cases,
-            avg_events_per_case: 12,
-            num_activities: 4,
-            noise_factor: 0.1,
+        // Real bpi2020_domestic_declarations log, truncated to a prefix of num_cases cases.
+        let Some(log) = load_real_log("bpi2020_domestic_declarations.xes", num_cases) else {
+            eprintln!("conformance/simd_token_replay: skipping n={num_cases} — bench_data fixture not found");
+            continue;
         };
-        let log = generate_event_log(&shape);
 
-        // Build DFG-based Petri net
-        let mut dfg = DFG::new();
-        let activities = ["A", "B", "C", "D"];
-        for (i, &act) in activities.iter().enumerate() {
-            dfg.nodes.push(DFGNode {
-                id: act.to_string(),
-                label: act.to_string(),
-                frequency: num_cases * i + 1,
-            });
-        }
-        // Add sequential edges
-        for i in 0..activities.len() - 1 {
-            dfg.edges.push(DirectlyFollowsRelation {
-                from: activities[i].to_string(),
-                to: activities[i + 1].to_string(),
-                frequency: num_cases,
-            });
-        }
-
+        // Discover the DFG from the real log so the model is activity-agnostic
+        // and derived from observed behaviour, not synthetic structure.
+        let col = log.to_columnar(ACTIVITY_KEY);
+        let dfg = discover_dfg_from_columnar(&col);
         let net = SimdPetriNet::from_dfg(&dfg).expect("Failed to build SimdPetriNet");
 
-        let col = log.to_columnar(ACTIVITY_KEY);
         let total_events: usize = col.events.len();
         group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(BenchmarkId::new("cases", num_cases), &col, |b, col| {
@@ -317,17 +296,14 @@ fn bench_etconformance_precision(c: &mut Criterion) {
         net.final_markings.first().cloned().unwrap_or_default();
 
     for num_cases in [100, 500, 1_000, 5_000] {
-        let shape = LogShape {
-            num_cases,
-            avg_events_per_case: 12,
-            num_activities: 4,
-            noise_factor: 0.1,
+        // Real bpi2020_domestic_declarations log, truncated to a prefix of num_cases cases.
+        let Some(log) = load_real_log("bpi2020_domestic_declarations.xes", num_cases) else {
+            eprintln!("conformance/etconformance_precision: skipping n={num_cases} — bench_data fixture not found");
+            continue;
         };
-        let log = generate_event_log(&shape);
+        let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
 
-        group.throughput(Throughput::Elements(
-            (num_cases * shape.avg_events_per_case) as u64,
-        ));
+        group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(BenchmarkId::new("cases", num_cases), &log, |b, log| {
             b.iter(|| {
                 black_box(etconformance_precision::compute_precision(
@@ -362,13 +338,11 @@ fn bench_declare_conformance(c: &mut Criterion) {
     let constraints = declare_model.constraints;
 
     for num_cases in [100, 500, 1_000, 5_000, 10_000] {
-        let shape = LogShape {
-            num_cases,
-            avg_events_per_case: 12,
-            num_activities: 4,
-            noise_factor: 0.1,
+        // Real bpi2020_domestic_declarations log, truncated to a prefix of num_cases cases.
+        let Some(log) = load_real_log("bpi2020_domestic_declarations.xes", num_cases) else {
+            eprintln!("conformance/declare: skipping n={num_cases} — bench_data fixture not found");
+            continue;
         };
-        let log = generate_event_log(&shape);
 
         // Build trace activities once - collect owned strings, then convert to &str slices
         let traces_owned: Vec<Vec<String>> = log
@@ -393,9 +367,8 @@ fn bench_declare_conformance(c: &mut Criterion) {
             .map(|t| t.iter().map(|s| s.as_str()).collect())
             .collect();
 
-        group.throughput(Throughput::Elements(
-            (num_cases * shape.avg_events_per_case) as u64,
-        ));
+        let total_events: usize = traces_owned.iter().map(|t| t.len()).sum();
+        group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(
             BenchmarkId::new("cases", num_cases),
             &traces,
@@ -481,13 +454,11 @@ fn bench_temporal_profile(c: &mut Criterion) {
     }
 
     for num_cases in [100, 500, 1_000, 5_000] {
-        let shape = LogShape {
-            num_cases,
-            avg_events_per_case: 12,
-            num_activities: 4,
-            noise_factor: 0.1,
+        // Real bpi2020_domestic_declarations log, truncated to a prefix of num_cases cases.
+        let Some(log) = load_real_log("bpi2020_domestic_declarations.xes", num_cases) else {
+            eprintln!("conformance/temporal_profile: skipping n={num_cases} — bench_data fixture not found");
+            continue;
         };
-        let log = generate_event_log(&shape);
 
         // Build trace activities as string slices for temporal profile
         let traces_str: Vec<Vec<String>> = log
@@ -506,9 +477,8 @@ fn bench_temporal_profile(c: &mut Criterion) {
             })
             .collect();
 
-        group.throughput(Throughput::Elements(
-            (num_cases * shape.avg_events_per_case) as u64,
-        ));
+        let total_events: usize = traces_str.iter().map(|t| t.len()).sum();
+        group.throughput(Throughput::Elements(total_events as u64));
         group.bench_with_input(
             BenchmarkId::new("discovery/cases", num_cases),
             &traces_str,
@@ -536,14 +506,15 @@ fn bench_temporal_profile(c: &mut Criterion) {
         );
     }
 
-    // Benchmark temporal conformance checking
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 12,
-        num_activities: 4,
-        noise_factor: 0.1,
+    // Benchmark temporal conformance checking over a real 1,000-case prefix.
+    let Some(log) = load_real_log("bpi2020_domestic_declarations.xes", 1_000) else {
+        eprintln!(
+            "conformance/temporal_profile: bench_data/bpi2020_domestic_declarations.xes not found — \
+             skipping temporal checking case"
+        );
+        group.finish();
+        return;
     };
-    let log = generate_event_log(&shape);
 
     // Build traces with timestamps
     let traces_str: Vec<Vec<String>> = log
@@ -665,12 +636,16 @@ fn extract_attr(s: &str, attr: &str) -> Option<String> {
     Some(s[start..start + end].to_string())
 }
 
-/// Load the real Sepsis log, capping traces for reproducible runtime.
-/// Returns None if the dataset is absent (e.g. CI) so the bench degrades
-/// gracefully rather than panicking the whole binary.
-fn load_real_log(max_traces: usize) -> Option<EventLog> {
-    let candidates = ["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"];
-    for path in candidates {
+/// Load a real checked-in XES log from `bench_data/`, capping traces for
+/// reproducible runtime. Returns None if the dataset is absent (e.g. CI) so
+/// the bench degrades gracefully rather than panicking the whole binary.
+fn load_real_log(dataset: &str, max_traces: usize) -> Option<EventLog> {
+    let candidates = [
+        format!("../bench_data/{dataset}"),
+        format!("bench_data/{dataset}"),
+        format!("../../bench_data/{dataset}"),
+    ];
+    for path in candidates.iter().map(|p| p.as_str()) {
         if let Ok(content) = fs::read_to_string(path) {
             if content.len() < 200 {
                 continue;
@@ -727,7 +702,7 @@ fn discover_dfg_from_columnar(col: &ColumnarLog) -> DFG {
 }
 
 fn bench_real_conformance(c: &mut Criterion) {
-    let log = match load_real_log(1_050) {
+    let log = match load_real_log("sepsis.xes", 1_050) {
         Some(l) => l,
         None => {
             eprintln!(

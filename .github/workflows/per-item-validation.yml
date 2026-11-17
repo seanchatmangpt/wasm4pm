@@ -72,8 +72,8 @@ jobs:
           python-version: '3.13'
       - name: Generate exact files
         run: python3 scripts/generate_per_item_validation.py
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -94,7 +94,7 @@ jobs:
           python-version: '3.13'
       - name: Generate exact files
         run: python3 scripts/generate_per_item_validation.py
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # nightly-2026-08-04
         with:
           toolchain: nightly-2026-08-04
       - run: cargo test -p wasm4pm-cognition --test breed_contracts

@@ -5,7 +5,7 @@
   "description": "Adversarial van der Aalst algorithm audit system",
   "scripts": {
     "build": "tsc",
-    "audit": "npm run build && node dist/audit-runner-main.js",
+    "audit": "pnpm run build && node dist/audit-runner-main.js",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },

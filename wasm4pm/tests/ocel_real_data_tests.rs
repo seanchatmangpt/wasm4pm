@@ -50,7 +50,13 @@ mod ocel_tests {
         () => {
             match load_ocel() {
                 None => {
-                    eprintln!("SKIP: ocel20_example.jsonocel not found or parse failed");
+                    if std::env::var("WASM4PM_ALLOW_DATA_SKIP").as_deref() != Ok("1") {
+                        panic!(
+                            "MISSING DATASET for 'ocel20_example.jsonocel': real-data tests must not silently skip. \
+                             Provide the OCEL or set WASM4PM_ALLOW_DATA_SKIP=1 to explicitly allow skipping."
+                        );
+                    }
+                    eprintln!("SKIP (WASM4PM_ALLOW_DATA_SKIP=1): ocel20_example.jsonocel not found or parse failed");
                     return;
                 }
                 Some(o) => o,

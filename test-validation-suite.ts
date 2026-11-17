@@ -24,7 +24,7 @@ interface AlgorithmTestResult {
 // Test configuration
 const TEST_LOGS = {
   simple: '/Users/sac/wasm4pm/data/small-example.xes',
-  moderate: '/Users/sac/wasm4pm/bench_data/bpi2020_travel.xes',
+  moderate: '/Users/sac/wasm4pm/bench_data/bpi2020_domestic_declarations.xes',
   complex: '/Users/sac/wasm4pm/bench_data/bpi2012_loans.xes',
 };
 
@@ -270,7 +270,7 @@ function generateRegressionReport(
 ## Test Logs
 
 - **Simple:** 5-activity linear sequence (small-example.xes)
-- **Moderate:** 15+ activities with XOR/loops (bpi2020_travel.xes)
+- **Moderate:** 15+ activities with XOR/loops (bpi2020_domestic_declarations.xes)
 - **Complex:** 30+ activities, heavy rework (bpi2012_loans.xes)
 
 ## Results Table

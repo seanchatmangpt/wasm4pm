@@ -83,7 +83,7 @@ A 32-character hex string identifying an OTEL trace. Required field on all `Rece
 ## Cognition Layer Terms
 
 **Breed**
-A cognition algorithm implementing a specific historical or formal AI architecture. 52 breeds are PARTIAL_ALIVE, registered in `crates/wasm4pm-cognition/src/breeds/registration.rs`. Examples include `mycin`, `dempster_shafer`, `ebl`, `episodic_memory`, `script_sam`, `ltl_monitor`, `eliza`, `strips`, `prolog`, `cbr`, `dendral`, `gps`, `soar`, `hearsay`, and many others spanning symbolic AI, probabilistic reasoning, planning, and temporal logic. Full list: `wpm cognition breeds`.
+A cognition algorithm implementing a specific historical or formal AI architecture. 55 breeds are registered in `crates/wasm4pm-cognition/src/breeds/registration.rs` (`BreedId::ALL`), each admitted through the breed-oracle court (`breeds/support/oracle.rs`), which asserts per-breed properties including a mandatory `refusal_input()` case — every breed must return a typed `Err` refusal on malformed input rather than an empty success. Examples include `mycin`, `dempster_shafer`, `ebl`, `episodic_memory`, `script_sam`, `ltl_monitor`, `eliza`, `strips`, `prolog`, `cbr`, `dendral`, `gps`, `soar`, `hearsay`, and many others spanning symbolic AI, probabilistic reasoning, planning, and temporal logic. Full list: `wpm cognition breeds`.
 
 **Old AI**
 The symbolic AI systems from the 1960s–1990s implemented as native Rust breeds in `crates/wasm4pm-cognition/src/breeds/`. Each implements the `CognitionBreed` trait. Includes `eliza`, `mycin`, `strips`, `prolog`, `cbr`, `dendral`, `gps`, `soar`, `hearsay`, and extended symbolic breeds such as `asp`, `abductive_ibe`, `dempster_shafer`, `ebl`, `episodic_memory`, `script_sam`, `ltl_monitor`, and others.

@@ -358,6 +358,7 @@ mod tests {
         OCEL {
             event_types: vec!["A".to_string(), "B".to_string()],
             object_types: vec!["Order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e1".to_string(),
@@ -413,6 +414,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],

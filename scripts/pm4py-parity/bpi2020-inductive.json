@@ -1,0 +1,39 @@
+{
+  "alignment_fitness": {
+    "average_fitness": 1.0,
+    "log_fitness": 0.9997527210745741,
+    "percentage_fitting_traces": 100.0,
+    "total_log_moves": 139562,
+    "total_model_moves": 0
+  },
+  "etconformance_precision": {
+    "precision": 0.39080579250664294
+  },
+  "inputs": {
+    "activity_key": "concept:name",
+    "events": 56437,
+    "log": "bench_data/bpi2020_domestic_declarations.xes",
+    "net": {
+      "algorithm": "inductive",
+      "source": "discovered"
+    },
+    "traces": 10500
+  },
+  "oracle": {
+    "deterministic": true,
+    "network": false,
+    "tool": "pm4py",
+    "version": "2.7.22.1"
+  },
+  "token_based_replay": {
+    "average_fitness": 1.0,
+    "log_fitness": 1.0,
+    "percentage_fitting_traces": 100.0,
+    "tokens_consumed": 237714,
+    "tokens_missing": 0,
+    "tokens_produced": 237714,
+    "tokens_remaining": 0,
+    "traces_fitting": 10500,
+    "traces_total": 10500
+  }
+}

@@ -6,16 +6,21 @@ use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
-/// Discover a process model using A* informed search.
+/// Discover a process model using genuine A* search over DFG edge subsets.
 ///
-/// Iteratively expands DFG edge candidates using a fitness-minus-penalty heuristic.
-/// Returns `{handle, algorithm, nodes, edges, iterations_used: usize}`.
+/// State = (canonical ascending subset of DFG edge candidates), g(n) = real
+/// accumulated value in pair-coverage units (covered pair occurrences minus a
+/// fixed per-edge complexity penalty), h(n) = admissible optimistic bound on
+/// remaining improvement (see [`discover_astar_bounded_from_log`]). Searched with
+/// a `BinaryHeap` priority queue and deterministic (f, lexicographic-state) order.
 ///
-/// **IMPORTANT:** The `iterations_used` field in the result is a search step count,
+/// Returns `{handle, algorithm: "astar", nodes, edges, iterations: usize}`.
+///
+/// **IMPORTANT:** The `iterations` field in the result is a node-expansion count,
 /// **not a fitness score**. Do not interpret it as model quality.
 ///
 /// # Parameters
-/// * `max_iterations` — Maximum A* expansion steps. Use 500–2000 for real logs.
+/// * `max_iterations` — Maximum node expansions. Use 500–2000 for real logs.
 ///   Higher values allow more thorough search but take longer.
 #[wasm_bindgen]
 pub fn discover_astar(
@@ -66,6 +71,63 @@ pub fn discover_astar(
     to_js_str(&json!({
         "handle": handle,
         "algorithm": "astar",
+        "nodes": node_count,
+        "edges": edge_count,
+        "iterations": iterations,
+    }))
+}
+
+/// Bounded A* discovery (WASM surface). With `beam_width = Some(w)`, the open
+/// set is truncated to the `w` best nodes after every expansion, so optimality
+/// is lost and the search degenerates to beam search (bounded A*); the result
+/// JSON then reports `"algorithm": "beam"`. With `None`, genuine (optimal) A*.
+#[wasm_bindgen]
+pub fn discover_astar_bounded(
+    entrylog_handle: &str,
+    activity_key: &str,
+    max_iterations: wasm_bindgen::JsValue,
+    beam_width: Option<usize>,
+) -> Result<JsValue, JsValue> {
+    let max_iterations: usize = if max_iterations.is_null() || max_iterations.is_undefined() {
+        1000
+    } else {
+        max_iterations
+            .as_f64()
+            .map(|v| v as usize)
+            .unwrap_or(1000)
+    };
+    discover_astar_bounded_wasm(entrylog_handle, activity_key, max_iterations, beam_width)
+}
+
+fn discover_astar_bounded_wasm(
+    eventlog_handle: &str,
+    activity_key: &str,
+    max_iterations: usize,
+    beam_width: Option<usize>,
+) -> Result<JsValue, JsValue> {
+    let (best_dfg, iterations) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => Ok(discover_astar_bounded_from_log(
+                log,
+                activity_key,
+                max_iterations,
+                beam_width,
+            )),
+            Some(_) => Err(crate::error::js_val("Not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
+        })?;
+
+    let node_count = best_dfg.nodes.len();
+    let edge_count = best_dfg.edges.len();
+    let algorithm = if beam_width.is_some() { "beam" } else { "astar" };
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DFG(best_dfg.clone()))
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
+
+    to_js_str(&json!({
+        "handle": handle,
+        "algorithm": algorithm,
         "nodes": node_count,
         "edges": edge_count,
         "iterations": iterations,
@@ -202,9 +264,216 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DF
     dfg
 }
 
-/// Pure-Rust A* discovery: takes EventLog directly, returns (DFG, iterations_used).
-/// Testable without wasm-bindgen runtime — same logic as discover_astar.
+/// Per-edge complexity penalty λ (in pair-coverage units): 20% of the mean
+/// directly-follows pair frequency, mirroring the 20% simplicity weight of the
+/// legacy scoring. An edge is worth selecting iff its frequency exceeds λ.
+fn astar_lambda(total_pairs: usize, edge_count: usize) -> f64 {
+    if edge_count == 0 {
+        0.0
+    } else {
+        0.2 * total_pairs as f64 / edge_count as f64
+    }
+}
+
+/// Value of a selected edge subset in real cost units: covered directly-follows
+/// pair occurrences minus λ per selected edge. Maximizing this value is exactly
+/// minimizing cost = (P − covered) + λ·|E| (P = total pair occurrences).
+#[cfg_attr(not(test), allow(dead_code))]
+fn astar_value(covered: usize, selected: usize, lambda: f64) -> f64 {
+    covered as f64 - lambda * selected as f64
+}
+
+/// A search node: a canonical (ascending-index) subset of the sorted
+/// directly-follows edge candidates. Each subset is generated exactly once —
+/// only from its own prefix (the subset minus its largest index) — so the open
+/// set never contains duplicate states.
+struct AStarNode {
+    /// f = g + h: exact bound on the best value reachable through this node.
+    f: f64,
+    /// g: real accumulated value (covered − λ·|selected|), in pair units.
+    g: f64,
+    /// Covered pair occurrences so far (integer, no float drift).
+    covered: usize,
+    /// Σ max(freq_e − λ, 0) over selected edges (maintains h incrementally).
+    positive_sum: f64,
+    /// Ascending edge indices — canonical state key, used for tie-breaking.
+    key: Vec<usize>,
+}
+
+impl Eq for AStarNode {}
+impl PartialEq for AStarNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.f.total_cmp(&other.f) == std::cmp::Ordering::Equal && self.key == other.key
+    }
+}
+impl Ord for AStarNode {
+    // BinaryHeap is a max-heap: "greater" pops first. Pop order = ascending f
+    // (most promising bound first), ties broken by ascending canonical key —
+    // fully deterministic, no RNG.
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let by_f = other.f.total_cmp(&self.f);
+        if by_f == std::cmp::Ordering::Equal {
+            other.key.cmp(&self.key)
+        } else {
+            by_f
+        }
+    }
+}
+impl PartialOrd for AStarNode {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+/// Pure-Rust genuine A* discovery: takes EventLog directly, returns (DFG, expansions).
+///
+/// # Design
+///
+/// * **State**: an ascending-index subset of the deterministically sorted
+///   directly-follows candidates (`EventLog::get_directly_follows` returns
+///   (from, to, freq) aggregated per pair and sorted, so indexing is stable).
+/// * **g(n)**: real accumulated value in pair-coverage units,
+///   `g = covered − λ·|E|` with `λ = 0.2·P/D` (P = total pair occurrences,
+///   D = distinct DF edges; the 20% mirrors the legacy simplicity weight).
+///   Maximizing g == minimizing cost `(P − covered) + λ·|E|`.
+/// * **h(n)**: `Σ_{e ∉ E_n} max(freq_e − λ, 0)`.
+///   **Admissibility argument**: the objective is additive over edges — adding
+///   edge e changes the value by exactly `freq_e − λ` independently of the rest
+///   of the set, and each edge can be selected at most once, so the best
+///   remaining gain from n is at most the sum of positive individual gains of
+///   unselected edges. Because DF pairs are aggregated (a pair's occurrences are
+///   covered by that one candidate edge only), there is no overlap term, and the
+///   bound is in fact **exact** (h = h*): f(n) equals the optimal value
+///   achievable through n. A heuristic can never be more admissible than exact.
+/// * **Search**: `BinaryHeap` ordered by (f ascending, canonical key ascending)
+///   — fully deterministic. Every state is a goal candidate; the best g seen is
+///   tracked over all generated nodes, and a popped node with `f ≤ best_g`
+///   terminates the search early (branch-and-bound cut: every remaining heap
+///   entry has f ≥ the popped f, so no completion can beat best_g).
+/// * **Budget**: `max_iterations` bounds node expansions (pops).
 pub fn discover_astar_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    max_iterations: usize,
+) -> (DFG, usize) {
+    discover_astar_bounded_from_log(log, activity_key, max_iterations, None)
+}
+
+/// A* with an optional open-set width bound. `beam_width = None` runs genuine
+/// (optimal-with-budget) A*. `Some(w)` truncates the open set to the `w`
+/// best-ranked nodes after every expansion: optimality guarantees are lost and
+/// the algorithm **degenerates to beam search (bounded A*)** — the admissible
+/// ranking still orders what survives, but low-f bound branches are discarded.
+pub fn discover_astar_bounded_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    max_iterations: usize,
+    beam_width: Option<usize>,
+) -> (DFG, usize) {
+    let activities = log.get_activities(activity_key);
+    let directly_follows = log.get_directly_follows(activity_key);
+
+    let mut dfg = DFG::new();
+    dfg.nodes.extend(activities.iter().map(|activity| DFGNode {
+        id: activity.clone(),
+        label: activity.clone(),
+        frequency: 0,
+    }));
+    if directly_follows.is_empty() {
+        return (dfg, 0);
+    }
+
+    let total_pairs: usize = directly_follows.iter().map(|(_, _, freq)| freq).sum();
+    let lambda = astar_lambda(total_pairs, directly_follows.len());
+    // h(root) = Σ max(freq − λ, 0) over ALL edges: the optimistic (here exact)
+    // bound on total achievable improvement.
+    let h_total: f64 = directly_follows
+        .iter()
+        .map(|(_, _, freq)| (*freq as f64 - lambda).max(0.0))
+        .sum();
+
+    let mut open = std::collections::BinaryHeap::new();
+    open.push(AStarNode {
+        f: h_total,
+        g: 0.0,
+        covered: 0,
+        positive_sum: 0.0,
+        key: Vec::new(),
+    });
+    let mut best_g = 0.0f64;
+    let mut best_key: Vec<usize> = Vec::new();
+    let mut iterations = 0usize;
+
+    while iterations < max_iterations && !open.is_empty() {
+        let node = match open.pop() {
+            Some(n) => n,
+            None => break,
+        };
+        // Branch-and-bound cut: f is the exact best value reachable through
+        // this node; every remaining heap entry has f ≥ this f, so if this f
+        // cannot beat best_g, nothing can. The search ends optimal.
+        if node.f <= best_g {
+            break;
+        }
+        iterations += 1;
+
+        let start_from = node.key.last().map_or(0, |&l| l + 1);
+        let mut children: Vec<AStarNode> = Vec::with_capacity(directly_follows.len());
+        for j in start_from..directly_follows.len() {
+            let freq = directly_follows[j].2;
+            let gain = freq as f64 - lambda;
+            let mut key = node.key.clone();
+            key.push(j);
+            let child_positive = node.positive_sum + gain.max(0.0);
+            let child_covered = node.covered + freq;
+            let g = child_covered as f64 - lambda * key.len() as f64;
+            let h = h_total - child_positive;
+            children.push(AStarNode {
+                f: g + h,
+                g,
+                covered: child_covered,
+                positive_sum: child_positive,
+                key,
+            });
+        }
+
+        // Best tracking over GENERATED nodes (not just popped): expansion of
+        // the root already yields the best single edge even at budget 1.
+        for child in &children {
+            if child.g > best_g {
+                best_g = child.g;
+                best_key = child.key.clone();
+            }
+        }
+
+        if let Some(w) = beam_width {
+            if children.len() > w {
+                children.sort_by(|a, b| b.cmp(a));
+                children.truncate(w);
+            }
+        }
+        for child in children {
+            open.push(child);
+        }
+    }
+
+    let mut best_dfg = dfg;
+    best_dfg.edges.extend(best_key.into_iter().map(|idx| {
+        let (from, to, freq) = &directly_follows[idx];
+        DirectlyFollowsRelation {
+            from: from.clone(),
+            to: to.to_owned(),
+            frequency: *freq,
+        }
+    }));
+    (best_dfg, iterations)
+}
+
+/// Legacy bounded beam search preserved for callers that want the historical
+/// behavior (open set truncated to the top 128 by the old ad-hoc
+/// fitness-minus-penalty score). Not optimal; superseded by
+/// [`discover_astar_bounded_from_log`] for bounded runs. Returns (DFG, expansions).
+pub fn discover_beam_from_log(
     log: &EventLog,
     activity_key: &str,
     max_iterations: usize,
@@ -794,4 +1063,171 @@ pub fn fast_discovery_info() -> String {
         ]
     })
     .to_string()
+}
+
+/// Value in cost units of a returned DFG against a log: covered DF pair
+/// occurrences minus λ per selected edge. Test oracle shared with the search.
+#[cfg(test)]
+fn astar_value_of_dfg(dfg: &DFG, log: &EventLog, activity_key: &str) -> f64 {
+    let df = log.get_directly_follows(activity_key);
+    let total_pairs: usize = df.iter().map(|(_, _, freq)| freq).sum();
+    let lambda = astar_lambda(total_pairs, df.len());
+    let edge_set: HashSet<(&str, &str)> = dfg
+        .edges
+        .iter()
+        .map(|e| (e.from.as_str(), e.to.as_str()))
+        .collect();
+    let covered = df
+        .iter()
+        .filter(|(f, t, _)| edge_set.contains(&(f.as_str(), t.as_str())))
+        .map(|(_, _, freq)| freq)
+        .sum::<usize>();
+    astar_value(covered, dfg.edges.len(), lambda)
+}
+
+/// Exhaustive optimum over ALL edge subsets — the ground-truth oracle for
+/// admissibility spot-checks on tiny instances (|DF| ≤ 12).
+#[cfg(test)]
+fn astar_exhaustive_optimum(log: &EventLog, activity_key: &str) -> f64 {
+    let df = log.get_directly_follows(activity_key);
+    let total_pairs: usize = df.iter().map(|(_, _, freq)| freq).sum();
+    let lambda = astar_lambda(total_pairs, df.len());
+    let mut optimum = astar_value(0, 0, lambda);
+    for mask in 1..(1usize << df.len()) {
+        let mut covered = 0usize;
+        let mut selected = 0usize;
+        for j in 0..df.len() {
+            if mask & (1 << j) != 0 {
+                covered += df[j].2;
+                selected += 1;
+            }
+        }
+        optimum = optimum.max(astar_value(covered, selected, lambda));
+    }
+    optimum
+}
+
+#[cfg(test)]
+mod astar_tests {
+    use super::*;
+    use crate::models::{AttributeValue, Event, Trace};
+
+    /// Build an EventLog from activity-name traces.
+    fn make_log(traces: &[&[&str]]) -> EventLog {
+        let mut log = EventLog::default();
+        for acts in traces {
+            let events = acts
+                .iter()
+                .map(|a| {
+                    let mut attrs = std::collections::BTreeMap::new();
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String(a.to_string()),
+                    );
+                    Event { attributes: attrs }
+                })
+                .collect();
+            log.traces.push(Trace {
+                attributes: Default::default(),
+                events,
+            });
+        }
+        log
+    }
+
+    /// 6 DF edges: 5 freq-4 chain edges + 1 freq-1 edge (P,Q). λ = 0.7.
+    /// Value-optimal set = ALL 6 edges (value 16.8). The legacy beam's ad-hoc
+    /// score penalizes the (P,Q) edge's inclusion at every depth (Δscore < 0),
+    /// so its argmax-score best never contains it (value 16.5) even though the
+    /// search witnesses the full optimum within budget (64 subsets < 128 width).
+    fn discriminating_log() -> EventLog {
+        let mut traces: Vec<&[&str]> = Vec::new();
+        for _ in 0..4 {
+            traces.push(&["A", "B", "C", "D", "E", "F"][..]);
+        }
+        traces.push(&["P", "Q"][..]);
+        make_log(&traces)
+    }
+
+    #[test]
+    fn astar_matches_exhaustive_optimum_on_tiny_logs() {
+        let logs: Vec<EventLog> = vec![
+            make_log(&[&["A", "B", "C"]]),
+            make_log(&[&["A", "B", "C"], &["A", "C"]]),
+            make_log(&vec![&["A", "B", "C"][..]; 3]),
+            make_log(&vec![&["A", "B", "C", "D"][..]; 5]),
+            discriminating_log(),
+        ];
+        for log in &logs {
+            let (dfg, _iters) = discover_astar_from_log(log, "concept:name", 10_000);
+            let got = astar_value_of_dfg(&dfg, log, "concept:name");
+            let want = astar_exhaustive_optimum(log, "concept:name");
+            assert!(
+                (got - want).abs() < 1e-9,
+                "A* value {got} != exhaustive optimum {want}"
+            );
+        }
+    }
+
+    #[test]
+    fn astar_root_heuristic_is_admissible_upper_bound() {
+        // h(root) = Σ max(freq − λ, 0) must never underestimate the optimal
+        // achievable value (f(root) = h(root) is the exact optimum here, but
+        // the admissibility claim is checked against the exhaustive oracle).
+        let log = discriminating_log();
+        let df = log.get_directly_follows("concept:name");
+        let total_pairs: usize = df.iter().map(|(_, _, f)| f).sum();
+        let lambda = astar_lambda(total_pairs, df.len());
+        let h_root: f64 = df
+            .iter()
+            .map(|(_, _, f)| (*f as f64 - lambda).max(0.0))
+            .sum();
+        let optimum = astar_exhaustive_optimum(&log, "concept:name");
+        assert!(
+            h_root >= optimum - 1e-9,
+            "root heuristic {h_root} underestimates optimal value {optimum}"
+        );
+    }
+
+    #[test]
+    fn astar_finds_optimum_legacy_beam_misses_at_equal_budget() {
+        let log = discriminating_log();
+        let budget = 200; // legacy beam witnesses all 64 subsets well within this
+        let (astar_dfg, _) = discover_astar_from_log(&log, "concept:name", budget);
+        let (beam_dfg, _) = discover_beam_from_log(&log, "concept:name", budget);
+        let astar_v = astar_value_of_dfg(&astar_dfg, &log, "concept:name");
+        let beam_v = astar_value_of_dfg(&beam_dfg, &log, "concept:name");
+        let optimum = astar_exhaustive_optimum(&log, "concept:name");
+        assert!((astar_v - optimum).abs() < 1e-9, "A* missed optimum: {astar_v} != {optimum}");
+        assert!(
+            beam_v < astar_v - 1e-9,
+            "legacy beam unexpectedly matched optimal A* value: beam {beam_v} vs astar {astar_v}"
+        );
+    }
+
+    #[test]
+    fn astar_double_run_is_deterministic() {
+        let log = discriminating_log();
+        let (a, ia) = discover_astar_from_log(&log, "concept:name", 500);
+        let (b, ib) = discover_astar_from_log(&log, "concept:name", 500);
+        assert_eq!(ia, ib, "expansion counts differ between runs");
+        assert_eq!(a.edges.len(), b.edges.len());
+        for (ea, eb) in a.edges.iter().zip(b.edges.iter()) {
+            assert_eq!((ea.from.as_str(), ea.to.as_str()), (eb.from.as_str(), eb.to.as_str()));
+            assert_eq!(ea.frequency, eb.frequency);
+        }
+    }
+
+    #[test]
+    fn bounded_astar_beam_width_degenerates_but_stays_valid() {
+        // With an explicit width bound the search is beam search (bounded A*):
+        // no optimality guarantee, but the result must remain a feasible subset.
+        let log = discriminating_log();
+        let (dfg, iters) =
+            discover_astar_bounded_from_log(&log, "concept:name", 200, Some(1));
+        assert!(iters <= 200);
+        let v = astar_value_of_dfg(&dfg, &log, "concept:name");
+        let optimum = astar_exhaustive_optimum(&log, "concept:name");
+        assert!(v <= optimum + 1e-9);
+    }
 }

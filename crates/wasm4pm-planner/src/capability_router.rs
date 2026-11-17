@@ -260,7 +260,19 @@ pub fn route_capability_plan(
         }
     };
 
-    let parallelism = max_parallelism(&plan);
+    let parallelism = match max_parallelism(&plan) {
+        Ok(parallelism) => parallelism,
+        Err(error) => {
+            return Ok(CapabilityRouteReceipt {
+                admitted: false,
+                refusal_reason: Some(format!("schedule analysis failed: {error}")),
+                plan: TemporalPlan::default(),
+                max_parallelism: 0,
+                cost: CostVector::refused(),
+                route_chain: refused_chain(&problem_text),
+            });
+        }
+    };
     let cost = CostVector::from_plan(&plan);
     let route_chain = route_chain_hash(&problem_text, &plan, &cost);
 

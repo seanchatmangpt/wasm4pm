@@ -5,26 +5,39 @@
 //! 1. **Streaming architecture** -- incremental trace ingestion via `add_trace()` and
 //!    `add_events()`, with bounded memory proportional to unique edges (not total events).
 //!
-//! 2. **WASM SIMD intrinsics** -- on `wasm32` targets, uses `std::arch::wasm32` v128
-//!    operations to accelerate bulk node-frequency accumulation (4× u32 adds per op).
+//! 2. **WASM SIMD intrinsics** -- on `wasm32` targets *compiled with*
+//!    `target_feature = "simd128"`, uses `std::arch::wasm32` v128 operations for
+//!    node-frequency accumulation. NOTE: the current form (v128 load /
+//!    single-lane replace / store to add 1 to ONE lane) is a 16-byte
+//!    read-modify-write per event and is NOT a demonstrated vectorization win
+//!    over the scalar increment; a real win would require batching node updates
+//!    into whole-vector adds.
 //!
-//! 3. **Scalar fallback** -- on non-wasm32 targets or when SIMD is unavailable, uses
-//!    optimized scalar code with loop unrolling and branchless patterns.
+//! 3. **Scalar fallback** -- on non-wasm32 targets, on wasm32 without
+//!    `simd128`, or whenever SIMD is unavailable, uses optimized scalar code
+//!    with loop unrolling. The unsafe SIMD paths are gated on
+//!    `#[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]` so a
+//!    plain `wasm32-unknown-unknown` check compiles without enabling simd128.
 //!
 //! 4. **Zero-allocation hot path** -- `add_trace()` works entirely on pre-allocated
 //!    `FxHashMap<(u32,u32), usize>` with no intermediate allocations.
 //!
 //! # Performance
 //!
-//! - **Per-trace overhead**: ~50ns per event (SIMD-accelerated node counting)
 //! - **Memory**: O(unique_activities + unique_edges), not O(total_events)
 //! - **Parity**: 100% with batch DFG (exact equality on all counts)
+//! - **Throughput**: no benchmark currently backs the earlier "~50ns/event"
+//!   claim; the per-event v128 load/replace/store form is not a demonstrated
+//!   win over the scalar increment (see above).
 //!
 //! # WASM SIMD
 //!
 //! The SIMD path uses `std::arch::wasm32` intrinsics which are stable for the
-//! `wasm32-unknown-unknown` target. The key operation is `i32x4_add` which
-//! increments 4 node frequencies in a single vector instruction. For edge
+//! `wasm32-unknown-unknown` target but only available when compiled with
+//! `target_feature = "simd128"`. The current operation is a v128 load /
+//! single-lane extract / replace / store per event — this is honest 4-byte
+//! useful work wrapped in a 16-byte read-modify-write, and is NOT currently a
+//! vectorization win over the scalar `+= 1`. For edge
 //! counting (hash-map updates), SIMD doesn't help directly, so we use the
 //! existing `FxHashMap` with loop-unrolled access patterns.
 //!
@@ -58,20 +71,44 @@ use crate::utilities::to_js;
 use rustc_hash::FxHashMap;
 use wasm_bindgen::prelude::*;
 
+/// A 16-byte-aligned block of 4 node counts.
+///
+/// `#[repr(align(16))]` guarantees every `V128Block` value inside a `Vec` is
+/// 16-byte aligned, which is the alignment `v128_load`/`v128_store` require.
+/// (A bare `Vec<u32>` only guarantees 4-byte alignment of its base pointer, so
+/// the previous flat representation made the v128 access misaligned UB.)
+#[repr(C, align(16))]
+#[derive(Clone, Copy, Debug, Default)]
+struct V128Block([u32; 4]);
+
+impl V128Block {
+    #[inline(always)]
+    fn get(&self, lane: usize) -> u32 {
+        self.0[lane]
+    }
+
+    #[inline(always)]
+    fn add(&mut self, lane: usize, delta: u32) {
+        self.0[lane] = self.0[lane].wrapping_add(delta);
+    }
+}
+
 /// SIMD-accelerated streaming DFG builder.
 ///
 /// Maintains running edge/node/start/end counts that can be incrementally updated
 /// via `add_trace()` or `add_events()`. Memory is bounded by the number of unique
 /// activities and unique edges, not by total event count.
 ///
-/// On `wasm32` targets, node-frequency accumulation uses WASM SIMD `i32x4_add`
-/// to process 4 node counts in parallel. On other targets, a scalar fallback
-/// with loop unrolling is used.
+/// On `wasm32` targets compiled with `target_feature = "simd128"`,
+/// node-frequency accumulation uses WASM v128 load/replace/store per event.
+/// On other targets (and wasm32 without simd128), a scalar fallback with loop
+/// unrolling is used.
 #[derive(Debug, Clone)]
 pub struct SimdStreamingDfg {
-    /// Per-activity occurrence counts, indexed by u32 activity ID.
-    /// Grown on demand; padded to 4-element alignment for SIMD.
-    node_counts: Vec<u32>,
+    /// Per-activity occurrence counts in 16-byte-aligned 4-lane blocks,
+    /// indexed by activity ID (block = id/4, lane = id%4).
+    /// Grown on demand in whole blocks.
+    node_counts: Vec<V128Block>,
     /// Directed edge occurrence counts: (from_id, to_id) -> frequency.
     edge_counts: FxHashMap<(u32, u32), usize>,
     /// Start-activity counts: first event in each trace.
@@ -89,12 +126,12 @@ pub struct SimdStreamingDfg {
 impl SimdStreamingDfg {
     /// Create a new empty SIMD streaming DFG builder.
     ///
-    /// On `wasm32` targets, SIMD availability is assumed (stable feature).
-    /// On other targets, scalar fallback is used.
+    /// On `wasm32` targets compiled with `target_feature = "simd128"`, SIMD is
+    /// enabled; on any other configuration, scalar fallback is used.
     pub fn new() -> Self {
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
         let simd_available = true;
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
         let simd_available = false;
 
         SimdStreamingDfg {
@@ -108,85 +145,91 @@ impl SimdStreamingDfg {
         }
     }
 
-    /// Ensure `node_counts` has capacity for the given activity ID.
+    /// Ensure `node_counts` has a block for the given activity ID.
     #[inline(always)]
     fn ensure_capacity(&mut self, max_id: u32) {
-        let needed = (max_id as usize + 4) & !3; // Pad to 4-element alignment
-        if needed > self.node_counts.len() {
-            self.node_counts.resize(needed, 0);
+        let needed_blocks = (max_id as usize) / 4 + 1;
+        if needed_blocks > self.node_counts.len() {
+            self.node_counts
+                .resize(needed_blocks, V128Block::default());
         }
     }
 
-    /// Increment a single node count with SIMD when possible.
+    /// Scalar read of a node count by activity ID.
+    #[inline(always)]
+    fn node_count(&self, id: u32) -> u32 {
+        self.node_counts
+            .get((id as usize) / 4)
+            .map_or(0, |b| b.get((id as usize) % 4))
+    }
+
+    /// Scalar increment of a single node count by activity ID.
+    #[inline(always)]
+    fn add_node_count(&mut self, id: u32) {
+        let idx = id as usize;
+        self.ensure_capacity(id);
+        let (block, lane) = (idx / 4, idx % 4);
+        self.node_counts[block].add(lane, 1);
+    }
+
+    /// Increment a single node count using v128 load / lane replace / store.
     ///
-    /// On wasm32: uses `i32x4_add` to increment the target lane within a
-    /// 4-element vector, then stores back. This avoids a read-modify-write
-    /// cycle for the scalar case.
-    #[cfg(target_arch = "wasm32")]
+    /// This consolidates the previously duplicated `increment_node` /
+    /// `increment_node_simd` pair. It is kept for wasm SIMD parity coverage but
+    /// is NOT a demonstrated vectorization win: it is a 16-byte
+    /// read-modify-write to update one 4-byte lane.
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
     #[inline(always)]
     fn increment_node(&mut self, id: u32) {
         self.ensure_capacity(id);
         let idx = id as usize;
+        let (block, lane) = (idx / 4, idx % 4);
 
-        #[cfg(target_arch = "wasm32")]
-        if self.simd_available {
-            // SAFETY: ensure_capacity pads to 4-element alignment, so
-            // idx/4 * 4 + 4 <= node_counts.len() is guaranteed.
-            unsafe {
-                let base = (idx / 4) * 4;
-                let ptr = self.node_counts.as_mut_ptr().add(base) as *mut std::arch::wasm32::v128;
-                let vec_val = std::arch::wasm32::v128_load(ptr as *const std::arch::wasm32::v128);
+        // SAFETY: `ensure_capacity` guarantees `block < self.node_counts.len()`.
+        // `V128Block` is `#[repr(align(16))]`, so the address of every block in
+        // the `Vec` is 16-byte aligned, satisfying the v128_load/v128_store
+        // alignment requirement for the whole-block access at `block`.
+        unsafe {
+            let ptr = self.node_counts.as_mut_ptr().add(block) as *mut std::arch::wasm32::v128;
+            let vec_val = std::arch::wasm32::v128_load(ptr as *const std::arch::wasm32::v128);
 
-                // Use match to handle each lane case at compile time
-                let lane = idx % 4;
-                let new_val = match lane {
-                    0 => {
-                        let lane_val = std::arch::wasm32::i32x4_extract_lane::<0>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<0>(
-                            vec_val,
-                            lane_val.wrapping_add(1),
-                        )
-                    }
-                    1 => {
-                        let lane_val = std::arch::wasm32::i32x4_extract_lane::<1>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<1>(
-                            vec_val,
-                            lane_val.wrapping_add(1),
-                        )
-                    }
-                    2 => {
-                        let lane_val = std::arch::wasm32::i32x4_extract_lane::<2>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<2>(
-                            vec_val,
-                            lane_val.wrapping_add(1),
-                        )
-                    }
-                    3 => {
-                        let lane_val = std::arch::wasm32::i32x4_extract_lane::<3>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<3>(
-                            vec_val,
-                            lane_val.wrapping_add(1),
-                        )
-                    }
-                    _ => unreachable!(),
-                };
+            let new_val = match lane {
+                0 => {
+                    let v = std::arch::wasm32::i32x4_extract_lane::<0>(vec_val);
+                    std::arch::wasm32::i32x4_replace_lane::<0>(vec_val, v.wrapping_add(1))
+                }
+                1 => {
+                    let v = std::arch::wasm32::i32x4_extract_lane::<1>(vec_val);
+                    std::arch::wasm32::i32x4_replace_lane::<1>(vec_val, v.wrapping_add(1))
+                }
+                2 => {
+                    let v = std::arch::wasm32::i32x4_extract_lane::<2>(vec_val);
+                    std::arch::wasm32::i32x4_replace_lane::<2>(vec_val, v.wrapping_add(1))
+                }
+                3 => {
+                    let v = std::arch::wasm32::i32x4_extract_lane::<3>(vec_val);
+                    std::arch::wasm32::i32x4_replace_lane::<3>(vec_val, v.wrapping_add(1))
+                }
+                _ => unreachable!(),
+            };
 
-                std::arch::wasm32::v128_store(ptr, new_val);
-            }
-            return;
+            std::arch::wasm32::v128_store(ptr, new_val);
         }
+    }
 
-        // Scalar fallback
-        self.node_counts[idx] += 1;
+    /// Scalar-only variant for wasm32 builds without simd128.
+    #[cfg(all(target_arch = "wasm32", not(target_feature = "simd128")))]
+    #[inline(always)]
+    fn increment_node(&mut self, id: u32) {
+        self.add_node_count(id);
     }
 
     /// Increment node counts for a slice of activity IDs.
     ///
-    /// On wasm32: processes 4 IDs at a time using `i32x4_add` when the IDs
-    /// happen to be aligned. In practice, activity IDs are sparse (0, 5, 12, ...),
-    /// so we fall back to per-element SIMD increments. The real win comes from
-    /// the vectorized memory access pattern (single v128_load + v128_store
-    /// vs. 4 separate u32 loads/stores).
+    /// On wasm32+simd128 each ID is processed with the v128 lane-replace
+    /// increment (activity IDs are sparse, so per-element increments are used;
+    /// see the module docs for the honest performance assessment). Otherwise a
+    /// scalar fallback with loop unrolling is used.
     #[inline]
     fn increment_nodes(&mut self, ids: &[u32]) {
         if ids.is_empty() {
@@ -200,11 +243,11 @@ impl SimdStreamingDfg {
             .expect("invariant: has events → ids non-empty");
         self.ensure_capacity(max_id);
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
         if self.simd_available {
-            // Process each ID with SIMD increment
+            // Process each ID with the SIMD lane-replace increment
             for &id in ids {
-                self.increment_node_simd(id);
+                self.increment_node(id);
             }
             return;
         }
@@ -213,52 +256,15 @@ impl SimdStreamingDfg {
         let mut i = 0;
         let len = ids.len();
         while i + 4 <= len {
-            self.node_counts[ids[i] as usize] += 1;
-            self.node_counts[ids[i + 1] as usize] += 1;
-            self.node_counts[ids[i + 2] as usize] += 1;
-            self.node_counts[ids[i + 3] as usize] += 1;
+            self.add_node_count(ids[i]);
+            self.add_node_count(ids[i + 1]);
+            self.add_node_count(ids[i + 2]);
+            self.add_node_count(ids[i + 3]);
             i += 4;
         }
         while i < len {
-            self.node_counts[ids[i] as usize] += 1;
+            self.add_node_count(ids[i]);
             i += 1;
-        }
-    }
-
-    /// SIMD node increment for wasm32 (separate to avoid cfg duplication).
-    #[cfg(target_arch = "wasm32")]
-    #[inline(always)]
-    fn increment_node_simd(&mut self, id: u32) {
-        let idx = id as usize;
-        // SAFETY: ensure_capacity pads to 4-element alignment.
-        unsafe {
-            let base = (idx / 4) * 4;
-            let ptr = self.node_counts.as_mut_ptr().add(base) as *mut std::arch::wasm32::v128;
-            let vec_val = std::arch::wasm32::v128_load(ptr as *const std::arch::wasm32::v128);
-
-            // Use match to handle each lane case at compile time
-            let lane = idx % 4;
-            let new_val = match lane {
-                0 => {
-                    let lane_val = std::arch::wasm32::i32x4_extract_lane::<0>(vec_val);
-                    std::arch::wasm32::i32x4_replace_lane::<0>(vec_val, lane_val.wrapping_add(1))
-                }
-                1 => {
-                    let lane_val = std::arch::wasm32::i32x4_extract_lane::<1>(vec_val);
-                    std::arch::wasm32::i32x4_replace_lane::<1>(vec_val, lane_val.wrapping_add(1))
-                }
-                2 => {
-                    let lane_val = std::arch::wasm32::i32x4_extract_lane::<2>(vec_val);
-                    std::arch::wasm32::i32x4_replace_lane::<2>(vec_val, lane_val.wrapping_add(1))
-                }
-                3 => {
-                    let lane_val = std::arch::wasm32::i32x4_extract_lane::<3>(vec_val);
-                    std::arch::wasm32::i32x4_replace_lane::<3>(vec_val, lane_val.wrapping_add(1))
-                }
-                _ => unreachable!(),
-            };
-
-            std::arch::wasm32::v128_store(ptr, new_val);
         }
     }
 
@@ -318,10 +324,14 @@ impl SimdStreamingDfg {
     /// Equivalent to calling `add_trace()` for each trace, but with better
     /// cache locality since the data is already contiguous in memory.
     pub fn add_events(&mut self, events: &[u32], trace_offsets: &[usize]) {
+        let num_events = events.len();
         let num_traces = trace_offsets.len().saturating_sub(1);
         for t in 0..num_traces {
-            let start = trace_offsets[t];
-            let end = trace_offsets[t + 1];
+            // Clamp offsets to the events slice: malformed offsets (beyond
+            // events.len(), e.g. from a corrupted/stale columnar cache) must
+            // not panic the WASM boundary.
+            let start = trace_offsets[t].min(num_events);
+            let end = trace_offsets[t + 1].min(num_events);
             if start >= end {
                 continue;
             }
@@ -342,7 +352,7 @@ impl SimdStreamingDfg {
             .map(|(i, &name)| DFGNode {
                 id: name.to_owned(),
                 label: name.to_owned(),
-                frequency: self.node_counts.get(i).copied().unwrap_or(0) as usize,
+                frequency: self.node_count(i as u32) as usize,
             })
             .collect();
 
@@ -383,11 +393,18 @@ impl SimdStreamingDfg {
 
     /// Get the number of unique activities seen (based on node_counts length).
     pub fn activity_count(&self) -> usize {
-        // node_counts may be padded, find actual max used index
+        // node_counts is block-padded; find the last nonzero lane across blocks
         self.node_counts
             .iter()
-            .rposition(|&c| c > 0)
-            .map_or(0, |i| i + 1)
+            .rposition(|b| b.0.iter().any(|&c| c > 0))
+            .map_or(0, |bi| {
+                let last_nonzero_lane = self.node_counts[bi]
+                    .0
+                    .iter()
+                    .rposition(|&c| c > 0)
+                    .unwrap_or(0);
+                bi * 4 + last_nonzero_lane + 1
+            })
     }
 
     /// Get the number of traces processed.
@@ -407,8 +424,8 @@ impl SimdStreamingDfg {
 
     /// Reset all counts to zero, preserving allocated capacity.
     pub fn reset(&mut self) {
-        for c in self.node_counts.iter_mut() {
-            *c = 0;
+        for block in self.node_counts.iter_mut() {
+            *block = V128Block::default();
         }
         self.edge_counts.clear();
         self.start_counts.clear();
@@ -422,10 +439,19 @@ impl SimdStreamingDfg {
     /// Useful for parallel/aggregated processing where multiple builders
     /// are combined into a single result.
     pub fn merge(&mut self, other: &SimdStreamingDfg) {
-        // Merge node counts
-        self.ensure_capacity(other.node_counts.len() as u32 - 1);
-        for (i, &count) in other.node_counts.iter().enumerate() {
-            self.node_counts[i] += count;
+        // Merge node counts. Resize to at least other's block count; the
+        // previous implementation underflowed on empty `other`
+        // (`len as u32 - 1`) and could resize shorter than `other` when its
+        // length was already a multiple of 4, panicking in the fold loop.
+        if self.node_counts.len() < other.node_counts.len() {
+            self.node_counts
+                .resize(other.node_counts.len(), V128Block::default());
+        }
+        for (i, other_block) in other.node_counts.iter().enumerate() {
+            let block = &mut self.node_counts[i];
+            for lane in 0..4 {
+                block.add(lane, other_block.get(lane));
+            }
         }
 
         // Merge edge counts
@@ -456,10 +482,10 @@ impl Default for SimdStreamingDfg {
 // WASM bindings
 // ---------------------------------------------------------------------------
 
-/// Discover a DFG using the SIMD-accelerated streaming algorithm.
+/// Discover a DFG using the streaming algorithm with WASM v128 node-increment
+/// support (wasm32+simd128 builds only; all other builds use scalar kernels).
 ///
-/// Produces identical results to `discover_dfg` but uses WASM SIMD intrinsics
-/// for node-frequency accumulation and loop-unrolled edge counting.
+/// Produces identical results to `discover_dfg`.
 ///
 /// # Arguments
 ///
@@ -522,15 +548,15 @@ pub fn discover_dfg_simd_handle(
 /// Get info about the SIMD streaming DFG implementation.
 #[wasm_bindgen]
 pub fn simd_streaming_dfg_info() -> JsValue {
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", target_feature = "simd128"))]
     let simd_status = "enabled";
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
     let simd_status = "scalar_fallback";
 
     let info = serde_json::json!({
         "algorithm": "simd_streaming_dfg",
         "simd_status": simd_status,
-        "description": "SIMD-accelerated streaming DFG discovery with WASM v128 intrinsics",
+        "description": "Streaming DFG discovery (scalar kernels; wasm32+simd128 builds use a v128 lane-replace node increment)",
         "features": [
             "incremental trace ingestion",
             "zero-allocation hot path",
@@ -807,6 +833,80 @@ mod tests {
 
         assert_eq!(dfg.nodes.len(), 8);
         assert_eq!(dfg.edges.len(), 7);
+    }
+
+    #[test]
+    fn test_merge_empty_builder() {
+        // Regression: merge with an empty `other` previously underflowed
+        // (`other.node_counts.len() as u32 - 1`).
+        let mut a = SimdStreamingDfg::new();
+        a.add_trace(&[0, 1, 2]);
+        let empty = SimdStreamingDfg::new();
+        a.merge(&empty);
+
+        assert_eq!(a.trace_count(), 1);
+        assert_eq!(a.event_count(), 3);
+        let vocab = vec!["A", "B", "C"];
+        let dfg = a.finish(&vocab);
+        assert_eq!(dfg.edges.len(), 2);
+        assert_eq!(dfg.nodes[0].frequency, 1);
+    }
+
+    #[test]
+    fn test_merge_four_aligned_builder() {
+        // Regression: when other.node_counts had a multiple-of-4 length the
+        // old padded resize could shrink below other's length and panic on
+        // index out of bounds during the fold.
+        let mut a = SimdStreamingDfg::new();
+        a.add_trace(&[0, 1, 2, 3]); // counts span 4 ids
+        let mut b = SimdStreamingDfg::new();
+        b.add_trace(&[4, 5, 6, 7]); // counts span ids 4..8
+
+        a.merge(&b);
+
+        assert_eq!(a.trace_count(), 2);
+        assert_eq!(a.event_count(), 8);
+        let vocab: Vec<&str> = vec!["A", "B", "C", "D", "E", "F", "G", "H"];
+        let dfg = a.finish(&vocab);
+        assert_eq!(dfg.edges.len(), 6);
+        // All 8 node frequencies must be 1
+        for node in &dfg.nodes {
+            assert_eq!(node.frequency, 1, "node {}", node.id);
+        }
+    }
+
+    #[test]
+    fn test_merge_self_four_aligned() {
+        // merge where SELF has a multiple-of-4 block length and other is longer
+        let mut a = SimdStreamingDfg::new();
+        a.add_trace(&[0, 1, 2, 3]);
+        let mut b = SimdStreamingDfg::new();
+        b.add_trace(&[0, 1, 2, 3]);
+        a.merge(&b);
+        assert_eq!(a.event_count(), 8);
+        let vocab: Vec<&str> = vec!["A", "B", "C", "D"];
+        let dfg = a.finish(&vocab);
+        assert_eq!(dfg.nodes[0].frequency, 2);
+        assert_eq!(dfg.nodes[3].frequency, 2);
+    }
+
+    #[test]
+    fn test_add_events_malformed_offsets() {
+        // Offsets beyond events.len() must be clamped, not panic
+        // (WASM-reachable via discover_dfg_simd).
+        let mut builder = SimdStreamingDfg::new();
+        let events = vec![0u32, 1, 2];
+        let offsets = vec![0usize, 3, 999, 5000]; // malformed trailing offsets
+        builder.add_events(&events, &offsets);
+
+        assert_eq!(builder.trace_count(), 1); // only [0,3) is real
+        assert_eq!(builder.event_count(), 3);
+
+        // Non-monotonic offsets must also be skipped safely
+        let mut builder2 = SimdStreamingDfg::new();
+        builder2.add_events(&events, &[3, 0, 2]);
+        assert_eq!(builder2.trace_count(), 1); // only [0,2)
+        assert_eq!(builder2.event_count(), 2);
     }
 
     #[test]

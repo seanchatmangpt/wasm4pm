@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/INDEX.md; source-sha256: e5bdb3ec14be15d327bc69af70312e0a3a340427eb8944994a10bf5b65fdf5cc; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/INDEX.md; source-sha256: 7c8971154f66862e068dc2524c5d83b2efdb6a1b6303d3ed8fa78a342f926e72; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Reviews Index
 
@@ -16,8 +16,8 @@ Each link below points to a detailed review document that examines input/output 
 | [`heuristic_miner`](heuristic_miner.md) | Process Discovery | `discover_heuristic_miner_from_log` calls `log.to_columnar_owned(activity_key)` which copies the columnar structure. |
 | [`inductive_miner`](inductive_miner.md) | Process Discovery (Process Tree mining) | The cut detection functions (`find_xor_cut`, `find_sequence_cut`, etc.) iterate through all split index positions `1..activities.len()`. |
 | [`genetic_algorithm`](genetic_algorithm.md) | Process Discovery (Metaheuristic DFG optimization) | Crossover and mutation operations allocate new `EdgeSet` (HashSets) inside the hot loop. |
-| [`pso`](pso.md) | Process Discovery (Metaheuristic DFG optimization) | `blend_edges_seeded` creates fresh `HashSet` instances on every iteration. |
-| [`a_star`](a_star.md) | Process Discovery (Informed search for DFG edges) | Every edge candidate generation clones the entire DFG: `new_dfg = current_dfg.clone()`. |
+| [`pso`](pso.md) | Process Discovery (Canonical PSO velocity update, `227bd51ad`) | PSO constants (`w`, `c1`, `c2`, `vmax`) are hardcoded. |
+| [`a_star`](a_star.md) | Process Discovery (Genuine A* over DFG edge subsets, `c0d9283f4`) | Per-expansion cost is proportional to the expansion; the per-candidate full-log fitness pass is gone. |
 | [`hill_climbing`](hill_climbing.md) | Process Discovery (Greedy local DFG optimization) | Although set allocations are eliminated, the algorithm still calls `evaluate_edges_fitness` (which iterates over the entire log) for every edge deletion trial. |
 | [`aco`](aco.md) | Process Discovery (Metaheuristic DFG optimization) | The probability equation: `prob = tau.powf(alpha) * eta.powf(beta)` relies on slow float `powf`. |
 | [`simulated_annealing`](simulated_annealing.md) | Process Discovery (Metaheuristic DFG optimization) | Like other metaheuristics, simulated annealing calls `evaluate_edges_fitness` on every iteration. |

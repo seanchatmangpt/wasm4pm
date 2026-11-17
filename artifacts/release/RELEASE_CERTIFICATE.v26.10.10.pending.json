@@ -1,0 +1,13 @@
+{
+  "schema_version": "wasm4pm.release-certificate-actuation.v1",
+  "receipt_kind": "pending",
+  "run_id": "8d0c758898a1fcf9645f8e378c1cfc65",
+  "status": "PENDING",
+  "package": "wasm4pm@26.10.10",
+  "git_commit": "8323cba14c0cf60f80b29553a61591eb53e05983",
+  "intended_outputs": [
+    "artifacts/release/npm/wasm4pm-26.10.10.tgz",
+    "RELEASE_CERTIFICATE.v26.10.10.json"
+  ],
+  "timestamp": "2026-10-10T21:00:50-07:00"
+}

@@ -140,8 +140,8 @@ fn bench_detect_drift(c: &mut Criterion) {
         (
             "bpi2020",
             &[
-                "bench_data/bpi2020_travel.xes",
-                "../../bench_data/bpi2020_travel.xes",
+                "bench_data/bpi2020_domestic_declarations.xes",
+                "../../bench_data/bpi2020_domestic_declarations.xes",
             ],
         ),
     ];

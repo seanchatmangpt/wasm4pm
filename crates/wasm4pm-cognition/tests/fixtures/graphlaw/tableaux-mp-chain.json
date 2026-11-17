@@ -1,0 +1,32 @@
+{
+  "breed": "tableaux",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "tableaux:formula",
+        "value": "((a & (a -> b)) -> b)"
+      }
+    ],
+    "goals": [],
+    "intent": "propositional validity: ((a & (a -> b)) -> b)",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "tableaux:verdict=valid"
+    ],
+    "notes": "Modus ponens chain, VALID by brute force over {a,b}: no valuation falsifies (a & (a -> b)) -> b. Tableau closes on every branch (alpha-only).",
+    "verdicts": {}
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "asp_tableaux_vector_gen (brute-force valuation enumeration over all atoms; independent of both graphlaw and wasm4pm formula machinery)",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": false
+  },
+  "vector_id": "tableaux-mp-chain"
+}

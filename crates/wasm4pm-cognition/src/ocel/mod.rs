@@ -56,6 +56,9 @@ pub struct BreedLifecycleModel {
     pub breed_id: &'static str,
     /// Ordered phases (DFA states)
     pub phases: &'static [LifecyclePhase],
+    /// Debug/diagnostic kinds this breed may emit outside any phase without
+    /// breaking conformance. Empty by default: unknown kinds are refused.
+    pub allowed_unknown_kinds: &'static [&'static str],
 }
 
 /// A single phase in a breed's lifecycle model.
@@ -82,6 +85,9 @@ pub mod models_p2;
 pub mod models_p3;
 /// Static per-breed lifecycle models (P4 tier).
 pub mod models_p4;
+/// Static per-breed lifecycle models (P5 tier: triz, morphological,
+/// ocpm_route_discoverer).
+pub mod models_p5;
 
 /// Get the lifecycle model for a breed by id.
 pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
@@ -138,6 +144,9 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "pomdp" => Some(&models_p4::POMDP_MODEL),
         "contingent_plan" => Some(&models_p4::CONTINGENT_PLAN_MODEL),
         "meta_reasoning" => Some(&models_p4::META_REASONING_MODEL),
+        "triz" => Some(&models_p5::TRIZ_MODEL),
+        "morphological" => Some(&models_p5::MORPHOLOGICAL_MODEL),
+        "ocpm_route_discoverer" => Some(&models_p5::OCPM_ROUTE_DISCOVERER_MODEL),
         _ => None,
     }
 }
@@ -317,6 +326,15 @@ pub fn validate_ocel_alignment(log: &OcelLog, model: &BreedLifecycleModel) -> Co
 
     let mut phase_idx = 0usize;
     let mut phase_counts: Vec<usize> = vec![0; model.phases.len()];
+    let mut unknown_counts: std::collections::BTreeMap<String, usize> =
+        std::collections::BTreeMap::new();
+
+    // F6: a kind is "unknown" iff it appears in NO phase of the model.
+    let in_any_phase: std::collections::BTreeSet<&str> = model
+        .phases
+        .iter()
+        .flat_map(|p| p.kinds.iter().copied())
+        .collect();
 
     for event in &step_events {
         let kind = &event.activity;
@@ -348,7 +366,19 @@ pub fn validate_ocel_alignment(log: &OcelLog, model: &BreedLifecycleModel) -> Co
                 break;
             }
         }
-        let _ = matched; // unknown event kinds are allowed (debug events)
+        if !matched && !in_any_phase.contains(kind.as_str()) && !model.allowed_unknown_kinds.contains(&kind.as_str()) {
+            *unknown_counts.entry(kind.clone()).or_insert(0usize) += 1;
+        }
+        let _ = matched;
+    }
+
+    // F6 fail-closed: any unknown kind outside the per-breed allowlist is a
+    // refusal, aggregated with its observed count.
+    for (kind, count) in &unknown_counts {
+        refusals.push(format!(
+            "unknown event kind '{}' in phase replay (count={})",
+            kind, count
+        ));
     }
 
     // Check final phase min_occurrences
@@ -392,5 +422,68 @@ pub fn validate_ocel_alignment(log: &OcelLog, model: &BreedLifecycleModel) -> Co
         model_id: model.breed_id.to_string(),
         refusals: refusals.clone(),
         is_conforming: refusals.is_empty() && fitness >= 1.0,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    fn model(allow: &'static [&'static str]) -> BreedLifecycleModel {
+        BreedLifecycleModel {
+            breed_id: "test",
+            phases: &[LifecyclePhase {
+                name: "work",
+                kinds: &["step-a", "step-b"],
+                min_occurrences: 1,
+                max_occurrences: usize::MAX,
+            }],
+            allowed_unknown_kinds: allow,
+        }
+    }
+
+    fn log_with_kinds(kinds: &[&str]) -> OcelLog {
+        OcelLog {
+            object_types: vec![],
+            event_types: vec![],
+            objects: vec![],
+            events: kinds
+                .iter()
+                .enumerate()
+                .map(|(i, k)| OcelEvent {
+                    event_id: format!("e{}", i),
+                    activity: k.to_string(),
+                    timestamp: "1970-01-01T00:00:00Z".to_string(),
+                    attributes: BTreeMap::new(),
+                    o2o: vec![],
+                })
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn f6_unknown_kind_refused_with_empty_allowlist() {
+        let log = log_with_kinds(&["step-a", "debug-noise", "step-b"]);
+        let r = validate_ocel_alignment(&log, &model(&[]));
+        assert!(!r.is_conforming);
+        assert!(
+            r.refusals
+                .iter()
+                .any(|s| s.contains("unknown event kind 'debug-noise'") && s.contains("count=1")),
+            "refusals: {:?}",
+            r.refusals
+        );
+    }
+
+    #[test]
+    fn f6_allowlisted_kind_conforms() {
+        let log = log_with_kinds(&["step-a", "debug-noise", "step-b"]);
+        let r = validate_ocel_alignment(&log, &model(&["debug-noise"]));
+        assert!(
+            r.is_conforming,
+            "allowlisted debug kind must conform, refusals: {:?}",
+            r.refusals
+        );
     }
 }

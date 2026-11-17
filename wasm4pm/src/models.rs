@@ -207,6 +207,35 @@ where
     })
 }
 
+/// Custom deserializer for OCEL object-type definitions: accepts either the
+/// shorthand string form (`"Order"`) or the full object form with attributes.
+fn deserialize_ocel_object_type_defs<'de, D>(deserializer: D) -> Result<Vec<OCELObjectType>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum TypeDefEntry {
+        Name(String),
+        Full {
+            name: String,
+            #[serde(default)]
+            attributes: Vec<OCELTypeAttribute>,
+        },
+    }
+    Vec::<TypeDefEntry>::deserialize(deserializer).map(|v| {
+        v.into_iter()
+            .map(|e| match e {
+                TypeDefEntry::Name(s) => OCELObjectType {
+                    name: s,
+                    attributes: Vec::new(),
+                },
+                TypeDefEntry::Full { name, attributes } => OCELObjectType { name, attributes },
+            })
+            .collect()
+    })
+}
+
 /// Custom deserializer for OCEL attributes.
 fn deserialize_ocel_attributes<'de, D>(deserializer: D) -> Result<Attributes, D::Error>
 where
@@ -701,6 +730,8 @@ pub struct OCELEventObjectRef {
     #[serde(rename = "objectId", alias = "object_id")]
     pub object_id: String,
     /// Qualifier for the relationship (e.g., "item", "customer").
+    /// OCEL 2.0 qualifiers are optional on relationships.
+    #[serde(default)]
     pub qualifier: String,
 }
 
@@ -729,7 +760,10 @@ pub struct OCELObjectRelation {
 /// A single event in an Object-Centric Event Log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELEvent {
-    /// Unique identifier for the event.
+    /// Unique identifier for the event. Optional per OCEL 2.0: absent ids
+    /// default to "" ("unidentified event") — downstream code must not use it
+    /// as a key without a fallback (discovery uses positional idx, safe).
+    #[serde(default)]
     pub id: String,
     /// Type of the event (activity).
     #[serde(rename = "type", alias = "event_type")]
@@ -749,12 +783,27 @@ pub struct OCELEvent {
 }
 
 impl OCELEvent {
-    /// Extract all associated object IDs from both `object_ids` and `object_refs`.
-    pub fn all_object_ids(&self) -> impl Iterator<Item = &str> {
-        self.object_ids
+    /// Extract all associated object IDs from both `object_ids` and
+    /// `object_refs`, deduplicated in insertion order.
+    ///
+    /// Rationale: an OCEL 2.0 event that lists the same object in both the
+    /// OCEL 1.0 `object_ids` array and the 2.0 `relationships` array refers
+    /// to that object once, not twice. Returning it twice double-counted it
+    /// in OC-DFG frequencies, produced false self-loop DF edges, and
+    /// inflated `event_duplication_count` in flattening-loss measurement.
+    pub fn all_object_ids(&self) -> Vec<&str> {
+        let mut out: Vec<&str> = Vec::with_capacity(self.object_ids.len() + self.object_refs.len());
+        for id in self
+            .object_ids
             .iter()
             .map(|s| s.as_str())
             .chain(self.object_refs.iter().map(|r| r.object_id.as_str()))
+        {
+            if !out.contains(&id) {
+                out.push(id);
+            }
+        }
+        out
     }
 
     /// Extract object IDs from object_refs only (removed, use all_object_ids).
@@ -796,8 +845,90 @@ pub struct OCELObject {
     pub embedded_relations: Vec<OCELObjectRelRef>,
 }
 
+/// OCEL object-type attribute metadata (OCEL 2.0 `objectTypes[].attributes`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OCELTypeAttribute {
+    /// Attribute name.
+    pub name: String,
+    /// Declared type (e.g., "string").
+    #[serde(default)]
+    pub attribute_type: String,
+}
+
+/// OCEL object-type definition (OCEL 2.0 `objectTypes` entry).
+///
+/// Accepts both the shorthand string form (`"Order"`) and the full form
+/// (`{"name": "Order", "attributes": [...]}`), so per-type attribute
+/// metadata survives a parse/serialize round trip instead of being dropped.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OCELObjectType {
+    /// Type name.
+    pub name: String,
+    /// Declared attributes for this type.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attributes: Vec<OCELTypeAttribute>,
+}
+
+/// Deserialize shadow for [`OCEL`]: exists only so that [`OCEL::normalize`]
+/// (which reconciles the derived `object_types` name list with the full
+/// `object_type_defs`) runs on every deserialization path. Lane 11 (e87f6a252)
+/// moved the `objectTypes` JSON key to `object_type_defs` but left
+/// `object_types` bound to a key real logs never carry, so a plain
+/// `serde_json::from_str::<OCEL>` produced an empty `object_types` and OC-DFG
+/// discovery silently found zero DFGs. Routing Deserialize through this
+/// shadow + `From` restores the sync invariant without touching call sites.
+#[derive(Deserialize)]
+#[serde(default)]
+struct OCELRaw {
+    #[serde(
+        rename = "eventTypes",
+        alias = "event_types",
+        deserialize_with = "deserialize_ocel_type_names"
+    )]
+    event_types: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    object_types: Vec<String>,
+    #[serde(
+        rename = "objectTypes",
+        deserialize_with = "deserialize_ocel_object_type_defs"
+    )]
+    object_type_defs: Vec<OCELObjectType>,
+    events: Vec<OCELEvent>,
+    objects: Vec<OCELObject>,
+    object_relations: Vec<OCELObjectRelation>,
+}
+
+impl Default for OCELRaw {
+    fn default() -> Self {
+        OCELRaw {
+            event_types: Vec::new(),
+            object_types: Vec::new(),
+            object_type_defs: Vec::new(),
+            events: Vec::new(),
+            objects: Vec::new(),
+            object_relations: Vec::new(),
+        }
+    }
+}
+
+impl From<OCELRaw> for OCEL {
+    fn from(raw: OCELRaw) -> Self {
+        let mut ocel = OCEL {
+            event_types: raw.event_types,
+            object_types: raw.object_types,
+            object_type_defs: raw.object_type_defs,
+            events: raw.events,
+            objects: raw.objects,
+            object_relations: raw.object_relations,
+        };
+        ocel.normalize();
+        ocel
+    }
+}
+
 /// An Object-Centric Event Log (OCEL).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(from = "OCELRaw")]
 pub struct OCEL {
     /// List of all event types (activities) in the log.
     #[serde(
@@ -807,14 +938,17 @@ pub struct OCEL {
         deserialize_with = "deserialize_ocel_type_names"
     )]
     pub event_types: Vec<String>,
-    /// List of all object types in the log.
+    /// List of all object types in the log (names only).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub object_types: Vec<String>,
+    /// Full object-type definitions incl. attribute metadata (OCEL 2.0
+    /// `objectTypes`). Synced with `object_types` by [`OCEL::normalize`].
     #[serde(
         rename = "objectTypes",
-        alias = "object_types",
         default,
-        deserialize_with = "deserialize_ocel_type_names"
+        deserialize_with = "deserialize_ocel_object_type_defs"
     )]
-    pub object_types: Vec<String>,
+    pub object_type_defs: Vec<OCELObjectType>,
     /// All events in the log.
     #[serde(default)]
     pub events: Vec<OCELEvent>,
@@ -833,9 +967,34 @@ impl OCEL {
         OCEL {
             event_types: Vec::new(),
             object_types: Vec::new(),
+            object_type_defs: Vec::new(),
             events: Vec::new(),
             objects: Vec::new(),
             object_relations: Vec::new(),
+        }
+    }
+
+    /// Reconcile the derived name list (`object_types`) with the full
+    /// definitions (`object_type_defs`): names are rebuilt from defs when
+    /// defs are present, and defs are materialized from names when only the
+    /// shorthand was provided. Call after deserialization (or any manual
+    /// construction that touches only one side).
+    pub fn normalize(&mut self) {
+        if !self.object_type_defs.is_empty() {
+            self.object_types = self
+                .object_type_defs
+                .iter()
+                .map(|d| d.name.clone())
+                .collect();
+        } else if !self.object_types.is_empty() {
+            self.object_type_defs = self
+                .object_types
+                .iter()
+                .map(|n| OCELObjectType {
+                    name: n.clone(),
+                    attributes: Vec::new(),
+                })
+                .collect();
         }
     }
 
@@ -853,6 +1012,8 @@ impl OCEL {
     ///
     /// Call this after deserialization if the OCEL 2.0 JSON contained relations in objects.
     pub fn normalize_relations(&mut self) {
+        // Keep object_types / object_type_defs in sync (see `normalize`).
+        self.normalize();
         let mut all_relations = self.object_relations.clone();
         for obj in &self.objects {
             for rel in &obj.embedded_relations {

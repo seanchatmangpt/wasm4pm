@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_classify.md; source-sha256: c0bcb93e46ea25517c94800063b4ded89f0f4bd382d3c78e33774fc79c4e0c82; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_classify.md; source-sha256: e53ed213be01393fa0ec9ca20362efb685ea6c48fe3265fead2c5e9d8dc68892; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: ml_classify
 
@@ -28,3 +28,9 @@
 - **Rust Implementation**: `wasm4pm/src/ml/classification.rs` -> `discover_ml_classify`, `knn_internal_metrics`, `extract_features`
 - **TypeScript dispatch**: `packages/kernel/src/api.ts` -> `runRaw`
 - **Test file**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Input screening (2026-10-10, commit `0e3d81b38`)
+
+- Non-finite features (NaN/Inf) are refused up front with a typed error
+  naming the flat element index; NaN distances no longer silently corrupt
+  k-NN rankings.

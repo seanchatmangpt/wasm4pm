@@ -233,6 +233,21 @@ fn manufacture_world_inner(
         );
     }
 
+    let parallelism = match max_parallelism(&plan) {
+        Ok(parallelism) => parallelism,
+        Err(error) => {
+            return refused(
+                domain.name.clone(),
+                problem.name.clone(),
+                format!("schedule analysis failed: {error}"),
+                &domain_input,
+                &problem_input,
+                &domain_parsed,
+                &problem_parsed,
+            );
+        }
+    };
+
     let plan_witness = plan_chain(&plan);
     let chain = outcome_chain(
         &domain_input,
@@ -249,7 +264,7 @@ fn manufacture_world_inner(
         refusal_reason: None,
         plan_steps: plan.steps.iter().map(PlanStepView::from).collect(),
         makespan: plan.makespan,
-        max_parallelism: max_parallelism(&plan),
+        max_parallelism: parallelism,
         manufacture_chain: chain,
     }
 }

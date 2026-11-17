@@ -8,7 +8,7 @@
  * isolate per-algorithm, per-dataset results from the bench reporter output.
  *
  * Datasets
- *   bpi2020  — /Users/sac/wasm4pm/bench_data/bpi2020_travel.xes
+ *   bpi2020  — /Users/sac/wasm4pm/bench_data/bpi2020_domestic_declarations.xes
  *   rt100    — /Users/sac/wasm4pm/bench_data/roadtraffic100traces.xes
  *
  * 10 algorithms under test:
@@ -57,7 +57,7 @@ beforeAll(async () => {
   kernel = new Kernel(wasm);
   await kernel.init();
 
-  const bpi2020Xes = readXesFile('/Users/sac/wasm4pm/bench_data/bpi2020_travel.xes');
+  const bpi2020Xes = readXesFile('/Users/sac/wasm4pm/bench_data/bpi2020_domestic_declarations.xes');
   const rt100Xes = readXesFile('/Users/sac/wasm4pm/bench_data/roadtraffic100traces.xes');
 
   bpi2020Handle = await kernel.loadEventLog(bpi2020Xes);
@@ -70,7 +70,7 @@ beforeAll(async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/dfg/bpi2020', () => {
-  bench('dfg — bpi2020_travel', async () => {
+  bench('dfg — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('dfg', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -88,7 +88,7 @@ describe('kernel-dispatch/dfg/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/heuristic_miner/bpi2020', () => {
-  bench('heuristic_miner — bpi2020_travel', async () => {
+  bench('heuristic_miner — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('heuristic_miner', bpi2020Handle, {
       activity_key: 'concept:name',
@@ -112,7 +112,7 @@ describe('kernel-dispatch/heuristic_miner/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/inductive_miner/bpi2020', () => {
-  bench('inductive_miner — bpi2020_travel', async () => {
+  bench('inductive_miner — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('inductive_miner', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -130,7 +130,7 @@ describe('kernel-dispatch/inductive_miner/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/ilp/bpi2020', () => {
-  bench('ilp — bpi2020_travel', async () => {
+  bench('ilp — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('ilp', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -148,7 +148,7 @@ describe('kernel-dispatch/ilp/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/hill_climbing/bpi2020', () => {
-  bench('hill_climbing — bpi2020_travel', async () => {
+  bench('hill_climbing — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('hill_climbing', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -166,7 +166,7 @@ describe('kernel-dispatch/hill_climbing/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/simulated_annealing/bpi2020', () => {
-  bench('simulated_annealing — bpi2020_travel', async () => {
+  bench('simulated_annealing — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('simulated_annealing', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -184,7 +184,7 @@ describe('kernel-dispatch/simulated_annealing/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/transition_system/bpi2020', () => {
-  bench('transition_system — bpi2020_travel', async () => {
+  bench('transition_system — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('transition_system', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -202,7 +202,7 @@ describe('kernel-dispatch/transition_system/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/log_to_trie/bpi2020', () => {
-  bench('log_to_trie — bpi2020_travel', async () => {
+  bench('log_to_trie — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('log_to_trie', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -220,7 +220,7 @@ describe('kernel-dispatch/log_to_trie/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/batches/bpi2020', () => {
-  bench('batches — bpi2020_travel', async () => {
+  bench('batches — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('batches', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);
@@ -238,7 +238,7 @@ describe('kernel-dispatch/batches/rt100', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('kernel-dispatch/correlation_miner/bpi2020', () => {
-  bench('correlation_miner — bpi2020_travel', async () => {
+  bench('correlation_miner — bpi2020_domestic_declarations', async () => {
     if (!ready || !kernel || !bpi2020Handle) return;
     await kernel.run('correlation_miner', bpi2020Handle, { activity_key: 'concept:name' });
   }, FAST);

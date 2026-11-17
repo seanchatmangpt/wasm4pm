@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/ocel-conformance.md; source-sha256: e61519bc35644b09acf17da833ae114404c3bf9e9b00aada2dc168034963566d; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/ocel-conformance.md; source-sha256: 22e9ac8d119f735113ce5335ea8f10e902fdd6a6b17e502654671e95d2bbed06; reason: canonical Diátaxis or ADR surface -->
 
 # Reference: OCEL 2.0 Conformance Surface
 
@@ -114,7 +114,7 @@ layer (no code dependency in the other direction).
 
 Positive log fixtures — `fixtures/shared/`: `receipt.xes`, `running-example.xes`,
 `small-example.xes`, `PermitLog.xes`, `InternationalDeclarations.xes`,
-`bpi2020_travel.xes`, `roadtraffic100traces.xes`. Consumers:
+`bpi2020_domestic_declarations.xes`, `roadtraffic100traces.xes`. Consumers:
 
 - beam4pm RF2 conformance oracle court:
   `~/beam4pm/test/beam4pm_rf2_conformance_test.exs:15` runs a real conformance

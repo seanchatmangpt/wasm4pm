@@ -132,25 +132,18 @@ fn load_dataset(candidates: &[&str], label: &'static str, max_traces: usize) -> 
 /// adds bpi2020 (capped to 2K traces to bound runtime) and roadtraffic.
 fn real_datasets() -> Vec<Dataset> {
     let mut sets = vec![load_dataset(
-        &["bench_data/sepsis.xes", "../bench_data/sepsis.xes"],
+        helpers::SEPSIS_CANDIDATES,
         "sepsis",
         usize::MAX,
     )];
     if !helpers::is_fast_mode() {
         sets.push(load_dataset(
-            &[
-                "bench_data/bpi2020_travel.xes",
-                "../bench_data/bpi2020_travel.xes",
-            ],
+            helpers::BPI2020_DECL_CANDIDATES,
             "bpi2020",
             2_000, // cap: bpi2020 has 7K traces; 2K keeps DFG bench under a few s
         ));
         sets.push(load_dataset(
-            &[
-                "bench_data/roadtraffic100traces.xes",
-                "../bench_data/roadtraffic100traces.xes",
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
-            ],
+            helpers::ROADTRAFFIC_CANDIDATES,
             "roadtraffic",
             usize::MAX,
         ));

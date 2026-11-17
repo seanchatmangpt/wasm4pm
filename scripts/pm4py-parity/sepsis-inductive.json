@@ -1,0 +1,39 @@
+{
+  "alignment_fitness": {
+    "average_fitness": 1.0,
+    "log_fitness": 0.9998578695681426,
+    "percentage_fitting_traces": 100.0,
+    "total_log_moves": 24611,
+    "total_model_moves": 0
+  },
+  "etconformance_precision": {
+    "precision": 0.25762075419340746
+  },
+  "inputs": {
+    "activity_key": "concept:name",
+    "events": 15214,
+    "log": "bench_data/sepsis.xes",
+    "net": {
+      "algorithm": "inductive",
+      "source": "discovered"
+    },
+    "traces": 1050
+  },
+  "oracle": {
+    "deterministic": true,
+    "network": false,
+    "tool": "pm4py",
+    "version": "2.7.22.1"
+  },
+  "token_based_replay": {
+    "average_fitness": 1.0,
+    "log_fitness": 1.0,
+    "percentage_fitting_traces": 100.0,
+    "tokens_consumed": 49275,
+    "tokens_missing": 0,
+    "tokens_produced": 49275,
+    "tokens_remaining": 0,
+    "traces_fitting": 1050,
+    "traces_total": 1050
+  }
+}

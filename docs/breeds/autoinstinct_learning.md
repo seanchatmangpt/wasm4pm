@@ -1,27 +1,61 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/autoinstinct_learning.md; source-sha256: 1e7e531304fbc3bc007ab9888e14448f01af2b0e06a95aef0c5d70a0f79c6d7c; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/autoinstinct_learning.md; source-sha256: 17e7b12bbf3acf05ad1fd2fdb67a5f791763df52e5ab804e9007d5ec5eae7828; reason: path-local documentation retained pending domain-specific supersession -->
 
-# autoinstinct_learning — Autoinstinct Learning Engine
+# autoinstinct_learning — HACKER/STRIPS Means-Ends Planner
 
 ## 1. Identity & Lineage
-Adaptive autoinstinct: online gradient-free rule-weight update from feedback signals. BreedId `autoinstinct_learning`, module `src/breeds/autoinstinct_learning.rs`.
+Sussman 1973 (HACKER, MIT AI TR-297) / Winston 1975 skill acquisition with
+Fikes & Nilsson 1971 STRIPS operator semantics. BreedId
+`autoinstinct_learning`, module `src/breeds/autoinstinct_learning.rs`; planner
+core in `src/autoinstinct/learning.rs`.
 
 ## 2. Algorithm
-Reads `input.facts` for `feedback:rule:<id>:delta` (signed weight update). Updates rule certainties via additive rule: `w ← clamp(w + α·δ, -1, 1)`, α=0.1 default. Re-ranks rules by updated weight. Emits updated weights as output facts.
+Two lawful paths, chosen by input shape:
+
+- **Operator STRIPS** (`input.rules` non-empty): each rule is a STRIPS
+  operator — `premise` = preconditions, `conclusion` = semicolon-separated
+  effects where a `!` prefix deletes and a bare token adds. Rules without
+  `!` tokens are add-only (the grammar has no negated-conclusion form; this
+  is documented honestly). Search is backward-chaining means-ends IDDFS:
+  subgoal on the first unsatisfied goal atom, select an operator whose ADD
+  list covers it, check preconditions against the current state, apply
+  delete-then-add, recurse, depth-capped at 16. The plan is replay-verified;
+  facts (`key=value`) and `input.state` atoms (`predicate=value`) form the
+  initial state.
+- **HACKER curriculum** (`input.rules` empty): each unmastered goal atom is
+  its own unit skill-acquisition step (Sussman TR-297 curriculum encoding).
+  Goals match facts by identity (`predicate=value` string equality), never
+  by position. Bitmask-capped at 32 goals.
 
 ## 3. Input Contract
-`input.rules`: initial rule set with `certainty` weights. `input.facts[key="feedback:rule:<id>:delta"]`: numeric delta strings. Optional `facts[key="alpha"]` overrides learning rate.
+`input.goals` (>= 1 required): goal atoms `predicate=value`.
+`input.rules`: STRIPS operators as above. `input.facts`: initial state
+atoms `key=value`. Optional `input.state`: additional `predicate=value`
+atoms (operator path only).
 
 ## 4. Output Contract
-`selected` = highest-weight rule conclusion post-update. `confidence` = highest weight. Facts `learning:rule:<id>:weight` for all rules.
+`selected` = `"N steps to goal"` (N = plan states). `candidates` = one per
+plan step, score = fraction of goals satisfied. Operator path refuses
+unreachable goals with `no plan exists` (typed `BreedError`); curriculum
+path refuses >32 goals naming the cap.
 
 ## 5. Trace & OCEL Lifecycle
-`load-weights`(1,1) → `apply-feedback`(1,*) → `re-rank`(1,1). Report fitness 1.0.
+Curriculum path: `plan-step` per state (`state=0b.. distance=N`).
+Operator path: `plan-step` per state, `select-operator` per operator,
+`apply-operator` per application (state after delete+add), `goal-achieved`
+on success.
 
 ## 6. Oracles
-Weight clamp to [-1,1]. Positive feedback increases; negative decreases. Zero feedback is identity. Deterministic regardless of rule-set order.
+Universal anti-cheat (U1–U5) via `oracle_impls::dialogue::BreedOracle for
+AutoinstinctLearning`: value checks pin the curriculum descent
+(distance 2→1→0 for the 2-goal novel input). Paper fixture
+`tests/fixtures/papers/autoinstinct_learning.json` pins the 4-state HACKER
+curriculum plan for 5 goals with 2 identity-matched facts.
 
 ## 7. Determinism & Bounds
-BTreeMap rule weights; sorted output facts.
+`BTreeSet` state atoms; rule input order preserved for operator selection;
+lowest-missing-bit curriculum order. Depth cap 16 (operator path); 32-goal
+cap (curriculum path).
 
 ## 8. Provenance
-Fixture `tests/fixtures/papers/autoinstinct_learning.json` (synthetic feedback convergence test).
+Fixture `tests/fixtures/papers/autoinstinct_learning.json`
+(Sussman 1973 HACKER MIT AI TR-297, curriculum extraction).

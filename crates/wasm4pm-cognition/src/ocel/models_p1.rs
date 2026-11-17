@@ -23,6 +23,7 @@ pub static LTL_MONITOR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Allen Temporal lifecycle: allen-load* -> allen-compose* -> allen-verdict
@@ -48,6 +49,7 @@ pub static ALLEN_TEMPORAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Fuzzy Logic lifecycle: fuzzy-fuzzify* -> fuzzy-fire* -> fuzzy-aggregate* -> fuzzy-defuzz*
@@ -79,6 +81,7 @@ pub static FUZZY_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: usize::MAX,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Bayesian Network lifecycle: bn-load-cpt* -> bn-observe* -> bn-eliminate* -> bn-verdict
@@ -110,6 +113,7 @@ pub static BAYESIAN_NETWORK_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// HTN Planning lifecycle: decompose/apply/backtrack* -> plan
@@ -128,6 +132,7 @@ pub static HTN_PLANNING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// Dempster-Shafer lifecycle: ds-load-bpa -> ds-combine* -> ds-belief
@@ -153,6 +158,7 @@ pub static DEMPSTER_SHAFER_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// CSP AC-3 lifecycle: csp-init -> csp-revise/csp-assign/csp-backtrack* -> csp-verdict
@@ -167,7 +173,7 @@ pub static CSP_AC3_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         },
         LifecyclePhase {
             name: "propagation",
-            kinds: &["csp-revise", "csp-assign", "csp-backtrack"],
+            kinds: &["csp-revise", "csp-assign", "csp-propagate", "csp-backtrack"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
@@ -178,6 +184,7 @@ pub static CSP_AC3_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Default Logic lifecycle: default-load -> default-block/default-fire* -> default-extension
@@ -203,6 +210,7 @@ pub static DEFAULT_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Frames Inheritance lifecycle: frame-load -> frame-walk* -> frame-resolve
@@ -228,6 +236,7 @@ pub static FRAMES_INHERITANCE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// EBL lifecycle: ebl-explain+ -> ebl-generalize* -> ebl-operationalize
@@ -253,4 +262,5 @@ pub static EBL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };

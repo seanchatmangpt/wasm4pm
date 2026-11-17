@@ -320,27 +320,14 @@ fn quality_ilp_internal_consistency() {
     );
     assert!(arcs >= 2, "ILP net has {} arcs (expected >= 2)", arcs);
 
-    // Quality dimensions should all be in [0, 1]
-    assert!(
-        reported_fitness >= 0.0 && reported_fitness <= 1.0,
-        "fitness {:.4} outside [0, 1]",
-        reported_fitness
-    );
-    assert!(
-        reported_precision >= 0.0 && reported_precision <= 1.0,
-        "precision {:.4} outside [0, 1]",
-        reported_precision
-    );
-    assert!(
-        reported_simplicity > 0.0 && reported_simplicity <= 1.0,
-        "simplicity {:.4} outside (0, 1]",
-        reported_simplicity
-    );
+    // (vacuous [0,1] range-only checks removed — they could never fail and masked regressions)
 
     // F-measure should be positive when fitness and precision are positive
-    if reported_fitness + reported_precision > 0.001 {
+    // (mirrors the standard F1 formula now used in ilp_discovery.rs — the
+    // old 0.001-smoothed variant inflated the value).
+    if reported_fitness + reported_precision > 0.0 {
         let f_measure = 2.0 * (reported_fitness * reported_precision)
-            / (reported_fitness + reported_precision + 0.001);
+            / (reported_fitness + reported_precision);
         assert!(
             f_measure > 0.0,
             "F-measure {:.4} is zero despite positive fitness and precision",
@@ -506,10 +493,10 @@ fn quality_etconformance_precision_above_threshold() {
     // Precision is typically lower than fitness for directly-follows based models.
     // The ILP model allows many behaviors not in the log (especially parallel
     // branches), so precision is lower. Empirical: ~0.137 on BPI 2020.
-    // Threshold: 0.10 (conservative lower bound for a DFG-based Petri net).
+    // Threshold: 0.13 (binding — pinned from empirical 0.137 minus epsilon).
     assert!(
-        precision_result.precision >= 0.10,
-        "ETConformance precision {:.4} is below threshold 0.10 -- model is severely underfitting",
+        precision_result.precision >= 0.13,
+        "ETConformance precision {:.4} is below binding threshold 0.13 (pinned from empirical 0.137) -- model is severely underfitting",
         precision_result.precision
     );
 

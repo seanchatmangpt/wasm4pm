@@ -1,0 +1,37 @@
+{
+  "vector_id": "description_logic-b-chain3-conj",
+  "breed": "description_logic",
+  "provenance": {
+    "graphlaw_rev": "82814ac4f398274e64aeb47d2448d04f89cfefcd",
+    "graphlaw_version": "26.10.28",
+    "purrdf": "3.0.1",
+    "n3_engine": "purrdf-n3/3.0.1",
+    "generator": "graphlaw src/bin/dl_dualroute.rs (dual-route: purrdf::n3 DATALOG CR1-CR4 + purrdf OWL-RL; agreement required before emission)",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "classify",
+    "facts": [
+        { "key": "dl:subclass:Puppy", "value": "Dog" },
+        { "key": "dl:subclass:Dog", "value": "Mammal" },
+        { "key": "dl:subclass:Mammal", "value": "Animal" },
+        { "key": "dl:subclass:Dog", "value": "Pet" },
+        { "key": "dl:conj:Mammal+Pet", "value": "HousePet" }
+    ],
+    "rules": [],
+    "goals": [{ "id": "g1", "predicate": "dl:subsumes", "value": "Puppy:HousePet" }, { "id": "g2", "predicate": "dl:subsumes", "value": "Dog:HousePet" }, { "id": "g3", "predicate": "dl:subsumes", "value": "HousePet:Dog" }, { "id": "g4", "predicate": "dl:subsumes", "value": "Mammal:HousePet" }],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "dl:verdict:Dog:HousePet=true",
+      "dl:verdict:HousePet:Dog=false",
+      "dl:verdict:Mammal:HousePet=false",
+      "dl:verdict:Puppy:HousePet=true"
+    ],
+    "verdicts": { "g1": "Puppy⊑HousePet=true", "g2": "Dog⊑HousePet=true", "g3": "HousePet⊑Dog=false", "g4": "Mammal⊑HousePet=false" },
+    "notes": "3-level chain + CR2 conjunction — dual-route agreed (purrdf::n3 DATALOG fixpoint == purrdf OWL-RL closure) on 4 goals before emission."
+  }
+}

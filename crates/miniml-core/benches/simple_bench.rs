@@ -4,7 +4,8 @@
 //! Prevents dead-code elimination via std::hint::black_box.
 //! Reports mean, median, and coefficient of variation (CV%).
 //!
-//! Run: cargo run --bin bench_all --release
+//! Status: NOT invocable as-is — no `bench_all` bin exists; this file is a
+//! registered bench target but benches are disabled via autobenches=false.
 
 #![allow(unused_must_use)]
 #![allow(dead_code)]
@@ -13,7 +14,8 @@
 //! Prevents dead-code elimination via std::hint::black_box.
 //! Reports mean, median, and coefficient of variation (CV%).
 //!
-//! Run: cargo run --bin bench_all --release
+//! Status: NOT invocable as-is — no `bench_all` bin exists; this file is a
+//! registered bench target but benches are disabled via autobenches=false.
 
 use std::hint::black_box;
 use std::time::Instant;

@@ -20,12 +20,12 @@ async function analyzePrayerPipeline() {
 
   // For this example we use a mock log (in reality this would be ZOE LA event data exported to XES or JSONOCEL)
   // We use the bpi2020 dataset as a structural stand-in for process data
-  const logPath = resolve(__dirname, '../../bench_data/bpi2020_travel.xes');
+  const logPath = resolve(__dirname, '../../bench_data/bpi2020_domestic_declarations.xes');
   let xesContent = '';
   try {
     xesContent = readFileSync(logPath, 'utf8');
   } catch (e) {
-    console.error('Test log not found. To run this example, ensure bpi2020_travel.xes exists in bench_data.');
+    console.error('Test log not found. To run this example, ensure bpi2020_domestic_declarations.xes exists in bench_data.');
     process.exit(1);
   }
 

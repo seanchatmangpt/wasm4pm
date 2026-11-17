@@ -159,8 +159,8 @@ fn real_datasets() -> Vec<Dataset> {
     // stay reproducible within the configured measurement window.
     let mut bpi = load_dataset(
         &[
-            "bench_data/bpi2020_travel.xes",
-            "../bench_data/bpi2020_travel.xes",
+            "bench_data/bpi2020_domestic_declarations.xes",
+            "../bench_data/bpi2020_domestic_declarations.xes",
         ],
         "bpi2020",
     );

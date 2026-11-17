@@ -5,7 +5,7 @@
  * Synthetic fixtures prove structural correctness; real data proves generalization.
  *
  * Data sources (resolved in priority order):
- *   bench_data/bpi2020_travel.xes      — BPI 2020 Travel, 10K+ traces
+ *   bench_data/bpi2020_domestic_declarations.xes      — BPI 2020 Travel, 10K+ traces
  *   bench_data/ocel20_example.jsonocel — OCEL 2.0 order management
  *   ~/chatmangpt/pm4py/tests/input_data/running-example.xes
  *   ~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes
@@ -39,8 +39,8 @@ function resolveFile(candidates: string[]): string | null {
 
 const PATHS = {
   bpi2020: resolveFile([
-    `${REPO_BENCH}/bpi2020_travel.xes`,
-    `${HOME}/chatmangpt/wasm4pm/bench_data/bpi2020_travel.xes`,
+    `${REPO_BENCH}/bpi2020_domestic_declarations.xes`,
+    `${HOME}/chatmangpt/wasm4pm/bench_data/bpi2020_domestic_declarations.xes`,
   ]),
   runningExample: resolveFile([
     `${PM4PY_DATA}/running-example.xes`,
@@ -268,9 +268,9 @@ describe('Real data: receipt.xes', () => {
 // BPI 2020 Travel — large-scale (10K+ traces)
 // ---------------------------------------------------------------------------
 
-describe('Real data: bpi2020_travel.xes (large-scale)', () => {
+describe('Real data: bpi2020_domestic_declarations.xes (large-scale)', () => {
   it('DFG has ≥20 edges on a 10K-trace log', () => {
-    const p = skipIf(PATHS.bpi2020, 'bpi2020_travel.xes');
+    const p = skipIf(PATHS.bpi2020, 'bpi2020_domestic_declarations.xes');
     if (!p) return;
 
     const xes = fs.readFileSync(p, 'utf8');
@@ -287,7 +287,7 @@ describe('Real data: bpi2020_travel.xes (large-scale)', () => {
   });
 
   it('ML classify produces valid accuracy on large real log', () => {
-    const p = skipIf(PATHS.bpi2020, 'bpi2020_travel.xes');
+    const p = skipIf(PATHS.bpi2020, 'bpi2020_domestic_declarations.xes');
     if (!p) return;
 
     const xes = fs.readFileSync(p, 'utf8');
@@ -311,7 +311,7 @@ describe('Real data: bpi2020_travel.xes (large-scale)', () => {
   });
 
   it('ML PCA reduces dimensions without NaN on real high-variance data', () => {
-    const p = skipIf(PATHS.bpi2020, 'bpi2020_travel.xes');
+    const p = skipIf(PATHS.bpi2020, 'bpi2020_domestic_declarations.xes');
     if (!p) return;
 
     const xes = fs.readFileSync(p, 'utf8');
@@ -411,7 +411,7 @@ describe('Real data: WASM-only algorithms (handle-based)', () => {
   });
 
   it('hierarchical_dfg produces multi-chunk DFG on bpi2020', () => {
-    const p = skipIf(PATHS.bpi2020, 'bpi2020_travel.xes');
+    const p = skipIf(PATHS.bpi2020, 'bpi2020_domestic_declarations.xes');
     if (!p) return;
 
     const xes = fs.readFileSync(p, 'utf8');

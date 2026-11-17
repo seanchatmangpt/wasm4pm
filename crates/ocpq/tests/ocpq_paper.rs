@@ -620,3 +620,462 @@ fn ocpq_eval_json_surfaces_parse_errors() {
     let err = ocpq::ocpq_eval_json("{ not json", "{}").unwrap_err();
     assert!(err.contains("query parse error"), "got: {err}");
 }
+
+
+// ---------------------------------------------------------------------------
+// Predicate algebra — AND / OR / NOT composite constraints
+// ---------------------------------------------------------------------------
+
+use ocpq::ConstraintResult;
+
+/// The Fig. 6 story plus a `payment reminder` event for `o_b` (paid late but
+/// reminded once), so an OR over two CHILD SET edges is discriminating:
+/// o_a has the in-window payment, o_b only the reminder, o_c neither.
+fn order_to_cash_with_reminder() -> OCEL {
+    let mut log = order_to_cash_fig6();
+    log.events.push(wasm4pm_compat::ocel::OCELEvent {
+        id: "ev_rb".into(),
+        event_type: "payment reminder".into(),
+        time: "2024-03-10T09:00:00Z".parse().unwrap(),
+        attributes: vec![],
+        relationships: vec![wasm4pm_compat::ocel::OCELRelationship {
+            object_id: "o_b".into(),
+            qualifier: "order".into(),
+        }],
+    });
+    log
+}
+
+/// Root `{ o1:orders }` with two child edges: `A` → confirm+pay within 4
+/// weeks, `B` → confirm+reminder. `constr` is supplied by the test.
+fn two_edge_tree(constr: Vec<ConstraintPredicate>) -> QueryTree {
+    let order_var = VarDecl {
+        name: "o1".into(),
+        kind: VarKind::Object,
+        types: vec!["orders".into()],
+    };
+    let confirm_var = |name: &str| VarDecl {
+        name: name.into(),
+        kind: VarKind::Event,
+        types: vec!["confirm order".into()],
+    };
+    let v0 = Node {
+        id: "v0".into(),
+        bbox: BindingBox {
+            vars: vec![order_var.clone()],
+            preds: vec![],
+        },
+        children: vec![
+            Edge {
+                label: "A".into(),
+                child: "v_a".into(),
+            },
+            Edge {
+                label: "B".into(),
+                child: "v_b".into(),
+            },
+        ],
+        constr,
+    };
+    // v_a: {o1, ec:confirm order, ep:pay order} — E2O ×2 + TBE in [0, 4w].
+    let v_a = Node {
+        id: "v_a".into(),
+        bbox: BindingBox {
+            vars: vec![
+                order_var.clone(),
+                confirm_var("ec"),
+                VarDecl {
+                    name: "ep".into(),
+                    kind: VarKind::Event,
+                    types: vec!["pay order".into()],
+                },
+            ],
+            preds: vec![
+                BasicPredicate::E2O {
+                    event: "ec".into(),
+                    object: "o1".into(),
+                    qualifier: None,
+                },
+                BasicPredicate::E2O {
+                    event: "ep".into(),
+                    object: "o1".into(),
+                    qualifier: None,
+                },
+                BasicPredicate::Tbe {
+                    from: "ec".into(),
+                    to: "ep".into(),
+                    tmin_secs: 0,
+                    tmax_secs: FOUR_WEEKS_SECS,
+                },
+            ],
+        },
+        children: vec![],
+        constr: vec![],
+    };
+    // v_b: {o1, er:confirm order, er2:payment reminder} — E2O ×2.
+    let v_b = Node {
+        id: "v_b".into(),
+        bbox: BindingBox {
+            vars: vec![
+                order_var,
+                confirm_var("er"),
+                VarDecl {
+                    name: "er2".into(),
+                    kind: VarKind::Event,
+                    types: vec!["payment reminder".into()],
+                },
+            ],
+            preds: vec![
+                BasicPredicate::E2O {
+                    event: "er".into(),
+                    object: "o1".into(),
+                    qualifier: None,
+                },
+                BasicPredicate::E2O {
+                    event: "er2".into(),
+                    object: "o1".into(),
+                    qualifier: None,
+                },
+            ],
+        },
+        children: vec![],
+        constr: vec![],
+    };
+    QueryTree {
+        root: "v0".into(),
+        nodes: vec![v0, v_a, v_b],
+    }
+}
+
+#[test]
+fn algebra_or_over_child_sets() {
+    // Oracle: Any[ChildSet(A,1,1), ChildSet(B,1,None)]:
+    //   o_a paid-in-window exactly once ⇒ disjunct 1 holds ⇒ ✓
+    //   o_b paid 45d (misses window) but reminded ⇒ disjunct 2 holds ⇒ ✓
+    //   o_c neither paid nor reminded ⇒ ✗
+    let log = order_to_cash_with_reminder();
+    let tree = two_edge_tree(vec![ConstraintPredicate::Any {
+        any: vec![
+            ConstraintPredicate::ChildSet(ChildSet {
+                edge: "A".into(),
+                n_min: 1,
+                n_max: Some(1),
+            }),
+            ConstraintPredicate::ChildSet(ChildSet {
+                edge: "B".into(),
+                n_min: 1,
+                n_max: None,
+            }),
+        ],
+    }]);
+    let res = evaluate_constraint(&tree, &log);
+    assert_eq!(res.satisfied, 2, "o_a (paid) and o_b (reminded) satisfy");
+    assert_eq!(res.violated, 1, "o_c has neither payment nor reminder");
+    let violated_order = res
+        .verdicts
+        .iter()
+        .find(|v| !v.satisfied)
+        .map(|v| v.binding.get("o1").map(String::as_str))
+        .flatten();
+    assert_eq!(violated_order, Some("o_c"));
+}
+
+#[test]
+fn algebra_not_over_child_set_including_empty_match() {
+    // Oracle: NOT(ChildSet(A,1,None)) over the base Fig. 6 log.
+    //   o_a: 1 in-window pay child  ⇒ ChildSet true  ⇒ NOT false ⇒ ✗
+    //   o_b: 0 in-window pay children (45d payment) ⇒ ChildSet false ⇒ NOT true ⇒ ✓
+    //   o_c: 0 in-window pay children (never paid — the EMPTY MATCH) ⇒ NOT true ⇒ ✓
+    let log = order_to_cash_fig6();
+    let tree = two_edge_tree(vec![ConstraintPredicate::Not {
+        not: Box::new(ConstraintPredicate::ChildSet(ChildSet {
+            edge: "A".into(),
+            n_min: 1,
+            n_max: None,
+        })),
+    }]);
+    let res = evaluate_constraint(&tree, &log);
+    assert_eq!(res.satisfied, 2, "o_b and o_c (empty match) satisfy NOT");
+    assert_eq!(res.violated, 1, "only o_a negates a true child-set");
+    let orders: Vec<&str> = res
+        .verdicts
+        .iter()
+        .filter(|v| v.satisfied)
+        .filter_map(|v| v.binding.get("o1").map(String::as_str))
+        .collect();
+    assert_eq!(orders, vec!["o_b", "o_c"]);
+}
+
+#[test]
+fn algebra_not_over_always_false_basic_is_true_for_domain() {
+    // Closed-world-over-bindings: an E2O whose event variable is unbound is
+    // false for every binding of the domain, so its NOT is true for ALL root
+    // bindings. (The E2O references variable "eX" which is not in dom(o1).)
+    let log = order_to_cash_fig6();
+    let tree = two_edge_tree(vec![ConstraintPredicate::Not {
+        not: Box::new(ConstraintPredicate::Basic(BasicPredicate::E2O {
+            event: "eX".into(),
+            object: "o1".into(),
+            qualifier: None,
+        })),
+    }]);
+    let res = evaluate_constraint(&tree, &log);
+    assert_eq!(res.satisfied, 3, "NOT(false) = true for every domain binding");
+    assert_eq!(res.violated, 0);
+}
+
+#[test]
+fn algebra_de_morgan_not_any_equals_all_not() {
+    // Oracle: NOT(Any[cs_A(1,1), cs_B(1,None)]) ≡ All[NOT cs_A(1,1), NOT cs_B(1,None)].
+    // On the reminder log: only o_c has neither ⇒ exactly 1 satisfied either way.
+    let log = order_to_cash_with_reminder();
+    let left = two_edge_tree(vec![ConstraintPredicate::Not {
+        not: Box::new(ConstraintPredicate::Any {
+            any: vec![
+                ConstraintPredicate::ChildSet(ChildSet {
+                    edge: "A".into(),
+                    n_min: 1,
+                    n_max: Some(1),
+                }),
+                ConstraintPredicate::ChildSet(ChildSet {
+                    edge: "B".into(),
+                    n_min: 1,
+                    n_max: None,
+                }),
+            ],
+        }),
+    }]);
+    let right = two_edge_tree(vec![ConstraintPredicate::All {
+        all: vec![
+            ConstraintPredicate::Not {
+                not: Box::new(ConstraintPredicate::ChildSet(ChildSet {
+                    edge: "A".into(),
+                    n_min: 1,
+                    n_max: Some(1),
+                })),
+            },
+            ConstraintPredicate::Not {
+                not: Box::new(ConstraintPredicate::ChildSet(ChildSet {
+                    edge: "B".into(),
+                    n_min: 1,
+                    n_max: None,
+                })),
+            },
+        ],
+    }]);
+    let r1 = evaluate_constraint(&left, &log);
+    let r2 = evaluate_constraint(&right, &log);
+    assert_eq!(r1.satisfied, 1, "only o_c lacks both");
+    assert_eq!(
+        (r1.satisfied, r1.violated, r1.verdicts),
+        (r2.satisfied, r2.violated, r2.verdicts),
+        "De Morgan: NOT ANY ≡ ALL NOT"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// JSON surface — composite shapes parse additively
+// ---------------------------------------------------------------------------
+
+#[test]
+fn json_composite_shapes_parse_and_evaluate() {
+    // {"all":[P, {"any":[Q, {"not": R}]}]} — a nested composite via JSON,
+    // compared against the manually-constructed equivalent tree.
+    // Predicates over the base Fig. 6 root bindings {o1↦order}:
+    //   P = NOT ChildSet(A,1,None)  → true for o_b, o_c (empty in-window pay)
+    //   Q = E2O with unbound event var → always false
+    //   R = ChildSet(B,1,None)      → false for all (no reminders in base log)
+    // ⇒ all:[P, any:[Q, not:R]] = P ∧ (false ∨ true) = P ⇒ satisfied = {o_b, o_c}.
+    let log = order_to_cash_fig6();
+    let not_cs = serde_json::json!({
+        "not": {"edge": "A", "n_min": 1, "n_max": null}
+    });
+    let composite_json = serde_json::json!({
+        "all": [
+            {"not": {"edge": "A", "n_min": 1, "n_max": null}},
+            {"any": [
+                {"kind": "E2O", "event": "eX", "object": "o1", "qualifier": null},
+                {"not": {"edge": "B", "n_min": 1, "n_max": null}}
+            ]}
+        ]
+    });
+    let composite: ConstraintPredicate = serde_json::from_value(composite_json).expect("parses");
+    let manual: ConstraintPredicate = ConstraintPredicate::All {
+        all: vec![
+            ConstraintPredicate::Not {
+                not: Box::new(ConstraintPredicate::ChildSet(ChildSet {
+                    edge: "A".into(),
+                    n_min: 1,
+                    n_max: None,
+                })),
+            },
+            ConstraintPredicate::Any {
+                any: vec![
+                    ConstraintPredicate::Basic(BasicPredicate::E2O {
+                        event: "eX".into(),
+                        object: "o1".into(),
+                        qualifier: None,
+                    }),
+                    ConstraintPredicate::Not {
+                        not: Box::new(ConstraintPredicate::ChildSet(ChildSet {
+                            edge: "B".into(),
+                            n_min: 1,
+                            n_max: None,
+                        })),
+                    },
+                ],
+            },
+        ],
+    };
+    assert_eq!(
+        composite, manual,
+        "JSON composite shape deserializes to the manual algebra term"
+    );
+    let _ = not_cs; // (documentation anchor only)
+
+    // Both trees evaluate identically: satisfied = {o_b, o_c} = 2.
+    let tree = two_edge_tree(vec![composite]);
+    let res = evaluate_constraint(&tree, &log);
+    assert_eq!(res.satisfied, 2);
+    assert_eq!(res.violated, 1);
+}
+
+#[test]
+fn json_legacy_tagged_shapes_still_parse() {
+    // The pre-algebra shapes — bare BASIC `{"kind": ...}` and tagged
+    // `{"type": "ChildSet", ...}` / `{"type": "Basic", ...}` — must keep
+    // parsing unchanged (additive extension).
+    let cs: ConstraintPredicate = serde_json::from_str(
+        r#"{"type": "ChildSet", "edge": "A", "n_min": 1, "n_max": 1}"#,
+    )
+    .expect("tagged child-set still parses");
+    assert_eq!(
+        cs,
+        ConstraintPredicate::ChildSet(ChildSet {
+            edge: "A".into(),
+            n_min: 1,
+            n_max: Some(1),
+        })
+    );
+    let basic: ConstraintPredicate =
+        serde_json::from_str(r#"{"kind": "Tbe", "from": "e1", "to": "e2", "tmin_secs": 0, "tmax_secs": 60}"#)
+            .expect("bare BASIC still parses");
+    assert!(matches!(basic, ConstraintPredicate::Basic(BasicPredicate::Tbe { .. })));
+    let tagged_basic: ConstraintPredicate = serde_json::from_str(
+        r#"{"type": "Basic", "kind": "E2O", "event": "e1", "object": "o1", "qualifier": null}"#,
+    )
+    .expect("tagged BASIC still parses");
+    assert!(matches!(
+        tagged_basic,
+        ConstraintPredicate::Basic(BasicPredicate::E2O { .. })
+    ));
+}
+
+#[test]
+fn json_full_tree_with_nested_composite_roundtrips_through_ocpq_eval_json() {
+    // End-to-end: a QueryTree whose constr is the nested composite, serialized
+    // to JSON and evaluated through the reachable entry point ocpq_eval_json.
+    let log = order_to_cash_with_reminder();
+    let tree = two_edge_tree(vec![ConstraintPredicate::All {
+        all: vec![
+            ConstraintPredicate::ChildSet(ChildSet {
+                edge: "A".into(),
+                n_min: 1,
+                n_max: None,
+            }),
+            ConstraintPredicate::Any {
+                any: vec![
+                    ConstraintPredicate::ChildSet(ChildSet {
+                        edge: "B".into(),
+                        n_min: 1,
+                        n_max: None,
+                    }),
+                    ConstraintPredicate::Not {
+                        not: Box::new(ConstraintPredicate::ChildSet(ChildSet {
+                            edge: "B".into(),
+                            n_min: 1,
+                            n_max: None,
+                        })),
+                    },
+                ],
+            },
+        ],
+    }]);
+    // all:[paid-in-window ∧ (reminded ∨ NOT reminded)] ≡ paid-in-window.
+    // Only o_a pays within the 4-week window (o_b pays at 45 days) ⇒
+    // satisfied = {o_a} = 1.
+    let query_json = serde_json::to_string(&tree).unwrap();
+    let ocel_json = serde_json::to_string(&log).unwrap();
+    let out = ocpq::ocpq_eval_json(&query_json, &ocel_json).expect("eval ok");
+    let parsed: ConstraintResult = serde_json::from_str(&out).unwrap();
+    assert_eq!(parsed.satisfied, 1, "only o_a pays within the window");
+    assert_eq!(parsed.violated, 2, "o_b pays late; o_c never pays");
+}
+
+// ---------------------------------------------------------------------------
+// Performance smoke — memoized CHILD SET over a 10k-event log
+// ---------------------------------------------------------------------------
+
+#[test]
+fn perf_smoke_nested_child_set_over_10k_events() {
+    use std::time::Instant;
+
+    // 5000 orders × (1 confirm + 1 pay) = 10 000 events. Root {o1:orders}
+    // with constr All[ChildSet(A,1,1)] over child {o1, e1:pay order} with
+    // E2O(e1,o1,*) — a nested child set. Without memoization the child's
+    // output set would be re-enumerated once per parent binding (5000×);
+    // with it, once total.
+    let n = 5_000usize;
+    let (log, tree) = build_big_log(n);
+    let start = Instant::now();
+    let res = evaluate_constraint(&tree, &log);
+    let elapsed = start.elapsed();
+    assert_eq!(res.satisfied, n, "every order paid exactly once in-window");
+    assert_eq!(res.violated, 0);
+    // Generous debug-mode bound; the memoized path is well under this.
+    assert!(
+        elapsed.as_secs_f64() < 30.0,
+        "10k-event nested child-set took {elapsed:?}"
+    );
+}
+
+/// Build the 10k-event log + Fig. 6-shaped constraint tree used by
+/// [`perf_smoke_nested_child_set_over_10k_events`].
+fn build_big_log(n: usize) -> (OCEL, QueryTree) {
+    let mut log = OCEL {
+        event_types: vec![],
+        object_types: vec![],
+        events: Vec::with_capacity(2 * n),
+        objects: Vec::with_capacity(n),
+    };
+    for i in 0..n {
+        log.objects.push(wasm4pm_compat::ocel::OCELObject {
+            id: format!("o{i}"),
+            object_type: "orders".into(),
+            attributes: vec![],
+            relationships: vec![],
+        });
+        log.events.push(wasm4pm_compat::ocel::OCELEvent {
+            id: format!("c{i}"),
+            event_type: "confirm order".into(),
+            time: "2024-03-01T09:00:00Z".parse().unwrap(),
+            attributes: vec![],
+            relationships: vec![wasm4pm_compat::ocel::OCELRelationship {
+                object_id: format!("o{i}"),
+                qualifier: "order".into(),
+            }],
+        });
+        log.events.push(wasm4pm_compat::ocel::OCELEvent {
+            id: format!("p{i}"),
+            event_type: "pay order".into(),
+            time: "2024-03-08T09:00:00Z".parse().unwrap(),
+            attributes: vec![],
+            relationships: vec![wasm4pm_compat::ocel::OCELRelationship {
+                object_id: format!("o{i}"),
+                qualifier: "order".into(),
+            }],
+        });
+    }
+    let tree = fig6_constraint_tree();
+    (log, tree)
+}

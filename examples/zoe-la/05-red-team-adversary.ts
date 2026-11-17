@@ -19,7 +19,7 @@ async function runRedTeamAdversary() {
   console.log('===========================================================');
 
   // Load a known event log (acting as our process baseline)
-  const logPath = resolve(__dirname, '../../bench_data/bpi2020_travel.xes');
+  const logPath = resolve(__dirname, '../../bench_data/bpi2020_domestic_declarations.xes');
   let xesContent = '';
   try {
     xesContent = readFileSync(logPath, 'utf8');

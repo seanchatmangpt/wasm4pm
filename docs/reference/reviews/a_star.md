@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/a_star.md; source-sha256: ab978bc7df7bd7c88ecc5cf5386048c1d5e36be77cb9517b901c50818ed083c0; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/a_star.md; source-sha256: 1edaf79208400b61a95ea61ee01981eb999547f31e12f1f19c7920f3a3464031; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: a_star
 
@@ -12,23 +12,32 @@
   - Returns a DFG JSON model along with the number of iterations used.
 - **Boundary Checks**:
   - Division by zero guard: `directly_follows.len().max(1)` is used to normalize `edge_penalty`.
-  - To prevent memory exhaustion, the algorithm sorts the open set descending by score and truncates it to `128` items, executing a beam search.
+  - As of commit `c0d9283f4` the search is genuine A*: states are canonical
+    ascending-index DFG edge subsets, `g` = covered pair occurrences minus a fixed
+    per-edge complexity penalty (lambda = 0.2·P/D), `h` = sum of
+    `max(freq_e − lambda, 0)` over unselected edges (admissible; exact for the
+    additive objective), `f = g + h` with a `BinaryHeap` open set, deterministic
+    (f, lexicographic) tie-break, and branch-and-bound cuts at `f <= best_g`.
+    `max_iterations` bounds node expansions.
+  - The legacy beam-search open set (sorted vec, 128-wide truncate) is gone; the
+    old behavior is preserved as `discover_beam_from_log`. The bounded surface
+    `discover_astar_bounded` degenerates to beam search under a width bound and
+    reports `"algorithm": "beam"`; unbounded runs report `"algorithm": "astar"`.
+  - Verified: A\* matches exhaustive optimum on 5 tiny logs; A* finds an optimum
+    the legacy beam provably misses at equal budget.
 - **Crucial Bug Fix**:
-  - Fixed a prior bug where the best score was only compared against the popped parent's score (which is always 0 on the first iteration). The code now correctly compares candidates in the frontier:
-    ```rust
-    for (cand_dfg, cand_score) in &new_candidates {
-        if *cand_score > best_score {
-            best_score = *cand_score;
-            best_dfg = cand_dfg.clone();
-        }
-    }
-    ```
-    This ensures the returned DFG correctly reflects the best model found during search.
+  - The pre-`c0d9283f4` implementation was beam search under A* terminology. The
+    "best score compared against the popped parent" fix note is historical;
+    the current implementation returns the best-complete-goal state by `g`, with
+    `h(root) >= opt` proven in tests.
 
 ## Improvement Areas
 - **Performance Optimization**:
-  - **MAJOR BOTTLENECK**: Every edge candidate generation clones the entire DFG: `new_dfg = current_dfg.clone()`. It then runs `evaluate_dfg_partial_fitness` which performs a full pass over all events and trace windows in the log. For large logs, this makes A* search extremely slow.
-  - Recommendation: Implement incremental fitness calculation. Since only a single edge is added at a time, we can compute the change in fitness locally instead of re-iterating over the entire event log.
+  - Pre-`c0d9283f4` each candidate cloned the entire DFG and re-ran a full-log
+    fitness pass. The committed A* scores states from per-edge frequencies
+    (`g`/`h` are computed from edge-frequency sums, not per-candidate log
+    replays). The old note is historical; per-node cost is now proportional to
+    the expansion, not the log.
 
 ## Code References
 - **Rust Implementation**: `wasm4pm/src/fast_discovery.rs` -> `discover_astar`, `discover_astar_from_log`, `evaluate_dfg_partial_fitness`

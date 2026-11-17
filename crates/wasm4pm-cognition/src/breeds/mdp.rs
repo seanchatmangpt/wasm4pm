@@ -166,12 +166,7 @@ impl CognitionBreed for Mdp {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "mdp-init".to_string(),
-            detail: format!(
-                "MDP initialized: states={}, actions={}, gamma={}",
-                states.len(),
-                actions.len(),
-                gamma
-            ),
+            detail: format!("{} states, gamma={:.6}", states.len(), gamma),
             depth: 0,
             objects: vec![],
         });
@@ -230,7 +225,7 @@ impl CognitionBreed for Mdp {
                 }
             }
             policy.push(best_a);
-            policy_strs.push(format!("{}:{}", states[s], actions[best_a]));
+            policy_strs.push(format!("{} -> {}", states[s], actions[best_a]));
         }
 
         let explanation = format!(
@@ -242,7 +237,7 @@ impl CognitionBreed for Mdp {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "mdp-policy".to_string(),
-            detail: explanation.clone(),
+            detail: policy_strs.join(", "),
             depth: 0,
             objects: vec![],
         });

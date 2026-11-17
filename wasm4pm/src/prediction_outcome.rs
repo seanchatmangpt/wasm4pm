@@ -256,91 +256,195 @@ fn context_key(prefix: &[String], k: usize) -> String {
 /// Contexts are the last k activities (k = 2, backoff to k = 1, then to the
 /// global outcome prior); counts are Laplace-smoothed over the outcome
 /// vocabulary. Deterministic: BTreeMap counting, name-ordered tie-break.
+/// Trained outcome-model counts (context-keyed, Laplace-smoothed at predict
+/// time). Split out of [`predict_outcome_from_log`] so holdout evaluation can
+/// train once and score many prefixes.
+pub struct OutcomeModel {
+    prior: std::collections::BTreeMap<String, usize>,
+    by_context: std::collections::BTreeMap<String, std::collections::BTreeMap<String, usize>>,
+    trained_traces: usize,
+}
+
+/// Train the outcome model on a log (see [`predict_outcome_from_log`]).
+pub fn train_outcome_model(
+    log: &crate::models::EventLog,
+    activity_key: &str,
+) -> Result<OutcomeModel, String> {
+    let mut prior: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    let mut by_context: std::collections::BTreeMap<String, std::collections::BTreeMap<String, usize>> =
+        std::collections::BTreeMap::new();
+    let mut trained_traces = 0usize;
+
+    for trace in &log.traces {
+        let acts: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)
+            })
+            .collect();
+        let Some(outcome) = acts.last().cloned() else {
+            continue;
+        };
+        trained_traces += 1;
+        *prior.entry(outcome.clone()).or_default() += 1;
+        // Every proper prefix of the trace is a training context.
+        for i in 1..acts.len() {
+            let seen = &acts[..i];
+            for k in 1..=2usize.min(seen.len()) {
+                let key = format!("{k}\u{1e}{}", context_key(seen, k));
+                *by_context
+                    .entry(key)
+                    .or_default()
+                    .entry(outcome.clone())
+                    .or_default() += 1;
+            }
+        }
+    }
+
+    if trained_traces == 0 {
+        return Err("No traces with activities to train on".to_string());
+    }
+    Ok(OutcomeModel {
+        prior,
+        by_context,
+        trained_traces,
+    })
+}
+
+/// Predict the outcome distribution for a prefix from a trained
+/// [`OutcomeModel`]. Returns the ranked distribution (best first).
+pub fn predict_outcome_distribution(
+    model: &OutcomeModel,
+    prefix: &[String],
+) -> Vec<(String, f64)> {
+    // Backoff: k=2 context → k=1 context → global prior.
+    let mut counts: &std::collections::BTreeMap<String, usize> = &model.prior;
+    for k in [2usize, 1] {
+        if !prefix.is_empty() && k <= prefix.len() {
+            let key = format!("{k}\u{1e}{}", context_key(prefix, k));
+            if let Some(c) = model.by_context.get(&key) {
+                counts = c;
+                break;
+            }
+        }
+    }
+
+    // Laplace smoothing over the outcome vocabulary.
+    let total: usize = counts.values().sum();
+    let denom = (total + model.prior.len()) as f64;
+    let mut distribution: Vec<(String, f64)> = model
+        .prior
+        .keys()
+        .map(|o| {
+            let c = counts.get(o).copied().unwrap_or(0);
+            (o.clone(), (c + 1) as f64 / denom)
+        })
+        .collect();
+    distribution.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    distribution
+}
+
 pub fn predict_outcome_from_log(
     log: &crate::models::EventLog,
     activity_key: &str,
     prefix: &[String],
 ) -> Result<serde_json::Value, String> {
-    use std::collections::BTreeMap;
+    let model = train_outcome_model(log, activity_key)?;
 
-    {
-        let mut prior: BTreeMap<String, usize> = BTreeMap::new();
-        let mut by_context: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
-        let mut trained_traces = 0usize;
-
-        for trace in &log.traces {
-            let acts: Vec<String> = trace
-                .events
-                .iter()
-                .filter_map(|e| {
-                    e.attributes
-                        .get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(str::to_owned)
-                })
-                .collect();
-            let Some(outcome) = acts.last().cloned() else {
-                continue;
-            };
-            trained_traces += 1;
-            *prior.entry(outcome.clone()).or_default() += 1;
-            // Every proper prefix of the trace is a training context.
-            for i in 1..acts.len() {
-                let seen = &acts[..i];
-                for k in 1..=2usize.min(seen.len()) {
-                    let key = format!("{k}\u{1e}{}", context_key(seen, k));
-                    *by_context
-                        .entry(key)
-                        .or_default()
-                        .entry(outcome.clone())
-                        .or_default() += 1;
-                }
+    // Backoff: k=2 context → k=1 context → global prior.
+    let mut context_used = "prior";
+    for k in [2usize, 1] {
+        if !prefix.is_empty() && k <= prefix.len() {
+            let key = format!("{k}\u{1e}{}", context_key(prefix, k));
+            if model.by_context.contains_key(&key) {
+                context_used = if k == 2 { "last_2" } else { "last_1" };
+                break;
             }
         }
+    }
 
-        if trained_traces == 0 {
-            return Err("No traces with activities to train on".to_string());
-        }
+    let distribution = predict_outcome_distribution(&model, prefix);
+    let (outcome, probability) = distribution[0].clone();
+    Ok(json!({
+        "algorithm": "predict_outcome",
+        "outcome": outcome,
+        "probability": probability,
+        "context_used": context_used,
+        "distribution": distribution
+            .iter()
+            .map(|(o, p)| json!({"outcome": o, "p": p}))
+            .collect::<Vec<_>>(),
+        "trained_traces": model.trained_traces,
+    }))
+}
 
-        // Backoff: k=2 context → k=1 context → global prior.
-        let mut context_used = "prior";
-        let mut counts: &BTreeMap<String, usize> = &prior;
-        for k in [2usize, 1] {
-            if !prefix.is_empty() && k <= prefix.len() {
-                let key = format!("{k}\u{1e}{}", context_key(prefix, k));
-                if let Some(c) = by_context.get(&key) {
-                    counts = c;
-                    context_used = if k == 2 { "last_2" } else { "last_1" };
-                    break;
-                }
-            }
-        }
+/// Honest holdout evaluation of the outcome predictor: train on the first
+/// [`DEFAULT_TRAIN_RATIO`] of traces, score every proper prefix of every
+/// held-out trace (predict the trace's final outcome from the prefix, compare
+/// with the actual final activity). Top-1/2/3 accuracy + macro-F1 via
+/// [`classification_metrics_from_ranked`].
+///
+/// Returns `Ok(None)` when the held-out side has fewer than
+/// [`MIN_EVAL_SAMPLES`] scoring samples.
+pub fn evaluate_outcome_holdout(
+    log: &crate::models::EventLog,
+    activity_key: &str,
+) -> Result<Option<crate::ml::evaluation::HoldoutClassificationMetrics>, String> {
+    use crate::ml::evaluation::{
+        classification_metrics_from_ranked, DEFAULT_TRAIN_RATIO, MIN_EVAL_SAMPLES,
+    };
 
-        // Laplace smoothing over the outcome vocabulary.
-        let total: usize = counts.values().sum();
-        let denom = (total + prior.len()) as f64;
-        let mut distribution: Vec<(String, f64)> = prior
-            .keys()
-            .map(|o| {
-                let c = counts.get(o).copied().unwrap_or(0);
-                (o.clone(), (c + 1) as f64 / denom)
+    let (train_len, _) = prefix_split_traces(log.traces.len());
+    let model = train_outcome_model(
+        &crate::models::EventLog {
+            attributes: log.attributes.clone(),
+            traces: log.traces[..train_len].to_vec(),
+        },
+        activity_key,
+    )?;
+
+    let mut ranked: Vec<Vec<String>> = Vec::new();
+    let mut truth: Vec<String> = Vec::new();
+    for trace in &log.traces[train_len..] {
+        let acts: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)
             })
             .collect();
-        distribution.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-
-        let (outcome, probability) = distribution[0].clone();
-        Ok(json!({
-            "algorithm": "predict_outcome",
-            "outcome": outcome,
-            "probability": probability,
-            "context_used": context_used,
-            "distribution": distribution
-                .iter()
-                .map(|(o, p)| json!({"outcome": o, "p": p}))
-                .collect::<Vec<_>>(),
-            "trained_traces": trained_traces,
-        }))
+        if acts.len() < 2 {
+            continue;
+        }
+        let actual = acts.last().cloned().expect("len >= 2 checked");
+        for i in 1..acts.len() {
+            let dist = predict_outcome_distribution(&model, &acts[..i]);
+            ranked.push(dist.into_iter().map(|(o, _)| o).collect());
+            truth.push(actual.clone());
+        }
     }
+
+    if ranked.len() < MIN_EVAL_SAMPLES {
+        return Ok(None);
+    }
+    Ok(Some(classification_metrics_from_ranked(
+        &ranked,
+        &truth,
+        train_len,
+    )))
+}
+
+/// Prefix (chronological) trace split honoring
+/// [`crate::ml::evaluation::DEFAULT_TRAIN_RATIO`].
+fn prefix_split_traces(n: usize) -> (usize, usize) {
+    crate::ml::evaluation::prefix_split(n, crate::ml::evaluation::DEFAULT_TRAIN_RATIO)
 }
 
 /// WASM export: train on the referenced event log and predict the outcome of
@@ -363,9 +467,114 @@ pub fn predict_outcome_wasm(
     })
 }
 
+/// Twin export of [`predict_outcome_wasm`] with honest evaluation: when
+/// `evaluate` is true, the model is additionally trained on the first 80% of
+/// traces and scored on held-out prefixes (top-1/2/3 accuracy + macro-F1),
+/// reported under `"evaluation"`. With `evaluate: false` the output is
+/// identical to [`predict_outcome_wasm`]. When the log is too small for
+/// honest evaluation (`MIN_EVAL_SAMPLES`), `evaluation` is `null` and
+/// `insufficient_data` is true.
+#[wasm_bindgen]
+pub fn predict_outcome_evaluated_wasm(
+    eventlog_handle: &str,
+    activity_key: &str,
+    prefix_json: &str,
+    evaluate: bool,
+) -> Result<JsValue, JsValue> {
+    let prefix: Vec<String> = serde_json::from_str(prefix_json)
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
+
+    get_or_init_state().with_event_log(eventlog_handle, |log| {
+        let result = predict_outcome_from_log(log, activity_key, &prefix)
+            .map_err(|e| crate::error::js_val(&e))?;
+
+        let (evaluation, insufficient_data) = if evaluate {
+            match evaluate_outcome_holdout(log, activity_key) {
+                Ok(Some(m)) => (
+                    Some(serde_json::to_value(&m).map_err(|e| {
+                        crate::error::js_val(&e.to_string())
+                    })?),
+                    false,
+                ),
+                Ok(None) => (None, true),
+                Err(e) => return Err(crate::error::js_val(&e)),
+            }
+        } else {
+            (None, false)
+        };
+
+        let mut out = result;
+        if let Some(eval) = evaluation {
+            out["evaluation"] = eval;
+            out["insufficient_data"] = json!(false);
+        } else if insufficient_data {
+            out["evaluation"] = json!(null);
+            out["insufficient_data"] = json!(true);
+        }
+
+        Ok(crate::error::js_val(
+            &serde_json::to_string(&out).map_err(|e| crate::error::js_val(&e.to_string()))?,
+        ))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn act_trace(acts: &[&str]) -> crate::models::Trace {
+        let events = acts
+            .iter()
+            .map(|a| {
+                let mut ev = crate::models::Event::new();
+                ev.attributes.insert(
+                    "concept:name".to_string(),
+                    crate::models::AttributeValue::String(a.to_string()),
+                );
+                ev
+            })
+            .collect();
+        crate::models::Trace {
+            attributes: std::collections::BTreeMap::new(),
+            events,
+        }
+    }
+
+    /// Holdout evaluation on a learnable log: 20 traces ending in "End"
+    /// (16 train / 4 test, 4 scoring prefixes per held-out trace = 16 ≥
+    /// MIN_EVAL_SAMPLES — n_test = 16). Metrics must be well-formed; perfect
+    /// structure gives top1 = 1.0.
+    #[test]
+    fn evaluate_outcome_holdout_on_learnable_log() {
+        let traces: Vec<_> = (0..20)
+            .map(|_| act_trace(&["A", "B", "C", "D", "End"]))
+            .collect();
+        let log = crate::models::EventLog {
+            attributes: std::collections::BTreeMap::new(),
+            traces,
+        };
+        let m = evaluate_outcome_holdout(&log, "concept:name")
+            .expect("evaluation succeeds")
+            .expect("enough samples");
+        assert!((m.top1 - 1.0).abs() < 1e-9, "top1 = {}", m.top1);
+        assert!((m.top2 - 1.0).abs() < 1e-9);
+        assert!((m.macro_f1 - 1.0).abs() < 1e-9);
+        assert_eq!(m.n_test, 16);
+        assert_eq!(m.n_train, 16);
+    }
+
+    /// Honesty guard: below MIN_EVAL_SAMPLES scoring samples → None, not a
+    /// number fabricated from a handful of prefixes.
+    #[test]
+    fn evaluate_outcome_holdout_refuses_small_logs() {
+        let traces: Vec<_> = (0..4).map(|_| act_trace(&["A", "End"])).collect();
+        let log = crate::models::EventLog {
+            attributes: std::collections::BTreeMap::new(),
+            traces,
+        };
+        let m = evaluate_outcome_holdout(&log, "concept:name").expect("evaluation succeeds");
+        assert!(m.is_none(), "expected insufficient_data None");
+    }
 
     /// Rank-1: empty input → zero score, no missing edges.
     #[test]

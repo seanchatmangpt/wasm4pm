@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/API.md; source-sha256: 5755117690f99aeb8888d1f215f01597103c0cadb6bfb16f926e3b74cef24b42; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: wasm4pm/API.md; source-sha256: b4ca7b933baeaabed32ab8160af1db6c63607d1f3edf3c3da8daadeefbd2fcfa; reason: path-local documentation retained pending domain-specific supersession -->
 
 # wasm4pm API Reference
 

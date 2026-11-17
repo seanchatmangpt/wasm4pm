@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_regress.md; source-sha256: 11ee7a1dbfd8fc70e3e6fec481fcc201a88771a778d2f3339e8b0e129916efc7; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_regress.md; source-sha256: 2854a418fa03df9f394040cc9afb2d9522b13a09cffce2087bd119d75efd665f; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: ml_regress
 
@@ -31,3 +31,17 @@
 - **Rust Implementation**: `wasm4pm/src/ml/regression.rs` (method: `discover_ml_regress` / `regression_internal`)
 - **TypeScript Dispatch Wrapper**: `packages/kernel/src/api.ts` (method: `runRaw`, case `ml_regress`)
 - **Test File**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Evaluation semantics (2026-10-10, commit `0e3d81b38`)
+
+- `discover_ml_regress` output now includes an honest `holdout` object
+  (`mae`, `rmse`, `r_squared` — unclamped, `n_test`, `n_train`) fitted on the
+  first `prefix_split(n, 0.8)` slice and scored on the tail, plus
+  `insufficient_data: true` below `MIN_EVAL_SAMPLES = 10` samples.
+- `discover_ml_regress_automl(k_folds)` returns real k-fold cross-validated
+  OLS via `kfold_regression_native` (train on each fold's complement, score
+  the fold) and exposes `cv` plus `insufficient_data`. The `results` array is
+  the deprecated in-sample fit list, kept for back-compat only.
+- NaN/Inf lengths or durations are refused with a typed error naming the
+  flat element index (`input contains NaN/Inf at index i`). This is breaking
+  for callers that previously fed NaN in and received silent NaN metrics.

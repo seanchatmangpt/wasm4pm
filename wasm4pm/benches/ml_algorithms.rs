@@ -24,10 +24,13 @@ use wasm4pm::ml::classification::knn_internal;
 use wasm4pm::ml::forecasting::forecast_internal;
 use wasm4pm::ml::pca::pca_internal;
 use wasm4pm::ml::regression::regression_internal;
+use wasm4pm::models::EventLog;
+use wasm4pm::state::{get_or_init_state, StoredObject};
+use wasm4pm::xes_format::validate_and_parse_xes;
 
 #[path = "helpers.rs"]
 mod helpers;
-use helpers::{bench_sizes, bench_sizes_slow, make_handle, Lcg, LogShape, ACTIVITY_KEY};
+use helpers::{bench_sizes_slow, is_fast_mode, Lcg, ACTIVITY_KEY};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure-data generators (no APP_STATE required)
@@ -202,6 +205,17 @@ fn bench_ml_classify(c: &mut Criterion) {
     group.finish();
 }
 
+/// Trace-count prefixes swept over the real sepsis log (same grounding as the
+/// discovery benches). In fast mode only the smallest prefix is used.
+fn cluster_case_counts() -> &'static [usize] {
+    if is_fast_mode() {
+        &[100]
+    } else {
+        // sepsis.xes has ~1050 cases; mirror bench_sizes_slow magnitudes.
+        &[100, 500, 1000]
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ml_cluster — cluster_traces (handle-based; no standalone internal)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,12 +231,12 @@ fn bench_ml_cluster(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    for shape in bench_sizes_slow() {
-        let (handle, events) = make_handle(&shape);
+    for &n_cases in cluster_case_counts() {
+        let (handle, events) = helpers::store_real_log_capped(n_cases);
         group.throughput(Throughput::Elements(events as u64));
         for k in [3_usize, 5, 10] {
             group.bench_with_input(
-                BenchmarkId::new(format!("k{}_n{}", k, shape.num_cases), shape.num_cases),
+                BenchmarkId::new(format!("k{}_n{}", k, n_cases), n_cases),
                 &(&handle, k),
                 |b, (h, k)| b.iter(|| black_box(cluster_traces(h, ACTIVITY_KEY, *k).unwrap())),
             );

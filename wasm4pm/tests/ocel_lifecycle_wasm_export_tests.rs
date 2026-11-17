@@ -40,6 +40,7 @@ mod ocel_lifecycle_wasm_export_tests {
         OCEL {
             event_types: vec!["A".to_string(), "B".to_string()],
             object_types: vec![obj_type.to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e1".to_string(),

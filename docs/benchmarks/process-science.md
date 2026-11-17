@@ -2,6 +2,17 @@
 
 # Process Science Benchmark
 
+## Campaign note (2026-10-10)
+
+Re-verified 2026-10-10: `wasm4pm/bench_data/receipt.xes` exists on disk
+(4,285,624 bytes) and `wasm4pm/examples/process_science.rs`, the Chicago
+filesystem court `apps/wasm4pm/src/__tests__/process-science-cli.chicago-fs.test.ts`,
+and `.github/workflows/process-science-bench.yml` are all present. This page
+makes no SIMD, LinUCB, or absolute-latency claims. Still resting on the
+2026-06 campaign evidence: the 24,000,000-observation / 144,000,000-transition
+scale floor and all throughput figures — they describe the executed campaign,
+not a fresh 2026-10-10 run.
+
 ## Thesis under test
 
 This benchmark does **not** claim that data science is literally reducible to one implementation or that synthetic throughput proves real-world scientific validity. It tests a narrower architectural proposition:

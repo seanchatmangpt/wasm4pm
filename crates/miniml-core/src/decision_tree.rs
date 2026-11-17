@@ -214,11 +214,16 @@ fn label_counts(labels: &[f64]) -> Vec<(u32, usize)> {
 
 fn majority_class(labels: &[f64]) -> f64 {
     let counts = label_counts(labels);
-    let (cls, _) = counts.iter().max_by_key(|(_, v)| v).unwrap();
-    *cls as f64
+    match counts.iter().max_by_key(|(_, v)| v) {
+        Some((cls, _)) => *cls as f64,
+        None => 0.0, // empty label set: deterministic zero rather than panic
+    }
 }
 
 fn mean_value(targets: &[f64]) -> f64 {
+    if targets.is_empty() {
+        return 0.0; // zero-target guard: 0/0 would be NaN
+    }
     targets.iter().sum::<f64>() / targets.len() as f64
 }
 
@@ -370,7 +375,10 @@ impl<'a> TreeBuilder<'a> {
 
                     // Move sample from right to left
                     // Find the count entry for this label
-                    let count_idx = left_counts.iter().position(|&(k, _)| k == label).unwrap();
+                    let count_idx = left_counts
+                        .iter()
+                        .position(|&(k, _)| k == label)
+                        .expect("infallible: label derived via the same `as u32` cast used to build the counts table");
                     left_counts[count_idx].1 += 1;
                     right_counts[count_idx].1 -= 1;
                     left_n += 1;
@@ -567,5 +575,29 @@ mod tests {
         let labels = vec![0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0];
         let model = decision_tree_impl(&data, 1, &labels, 1, 2, true).unwrap();
         assert!(model.depth <= 1);
+    }
+}
+
+#[cfg(test)]
+mod panic_hardening_tests {
+    use super::*;
+
+    #[test]
+    fn mean_value_empty_targets_is_zero_not_nan() {
+        assert_eq!(mean_value(&[]), 0.0);
+        assert!(!mean_value(&[]).is_nan());
+    }
+
+    #[test]
+    fn majority_class_empty_labels_is_zero_not_panic() {
+        assert_eq!(majority_class(&[]), 0.0);
+    }
+
+    #[test]
+    fn nan_target_fits_without_panic_for_regression() {
+        // A NaN target must not panic anywhere in the builder.
+        let data = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0];
+        let targets = vec![0.0, 1.0, 2.0, f64::NAN];
+        let _ = decision_tree_impl(&data, 2, &targets, 10, 2, false);
     }
 }

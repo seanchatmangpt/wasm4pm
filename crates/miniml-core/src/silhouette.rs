@@ -41,14 +41,20 @@ pub fn silhouette_score_impl(
     // Precompute cluster assignments; O(log k) per sample vs former O(k) linear scan
     let mut cluster_indices: Vec<Vec<usize>> = vec![Vec::new(); clusters.len()];
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let c = *cluster_pos.get(&label.to_bits()).unwrap();
+        let c = *cluster_pos.get(&label.to_bits()).ok_or_else(|| {
+            MlError::new(format!(
+                "label at index {i} not among cluster labels (NaN or out-of-vocab)"
+            ))
+        })?;
         cluster_indices[c].push(i);
     }
 
     let mut total_silhouette = 0.0;
 
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let ci = *cluster_pos.get(&label.to_bits()).unwrap();
+        let ci = *cluster_pos
+            .get(&label.to_bits())
+            .expect("infallible: every label validated against cluster_pos above");
         let same_cluster = &cluster_indices[ci];
 
         // a(i) = mean distance to other points in same cluster
@@ -161,5 +167,27 @@ mod tests {
             "Expected high score for 3 well-separated clusters, got {}",
             score
         );
+    }
+}
+
+#[cfg(test)]
+mod panic_hardening_tests {
+    use super::*;
+
+    #[test]
+    fn out_of_vocab_label_does_not_panic() {
+        // 4 samples, 2 features. Note: the cluster table is derived from the
+        // labels themselves, so any label is trivially "in vocab" — the typed
+        // ok_or path is defense-in-depth, not reachable from this public API.
+        let data = vec![0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 5.0, 5.0];
+        let labels = vec![0.0, 0.0, 1.0, 7.0];
+        let _ = silhouette_score_impl(&data, 2, &labels).expect("must not panic");
+    }
+
+    #[test]
+    fn nan_label_does_not_panic() {
+        let data = vec![0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 5.0, 5.0];
+        let labels = vec![0.0, 0.0, 1.0, f64::NAN];
+        let _ = silhouette_score_impl(&data, 2, &labels).expect("must not panic");
     }
 }

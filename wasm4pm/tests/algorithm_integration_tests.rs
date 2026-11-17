@@ -632,49 +632,130 @@ fn ilp_transitions_cover_all_activities() {
 // GROUP 3 — DECLARE constraint discovery
 // ══════════════════════════════════════════════════════════════════════════════
 
+fn find_constraint<'m>(
+    model: &'m wasm4pm::models::DeclareModel,
+    template: &str,
+    activities: &[&str],
+) -> Option<&'m wasm4pm::models::DeclareConstraint> {
+    model.constraints.iter().find(|c| {
+        c.template == template && c.activities.iter().map(String::as_str).eq(activities.iter().copied())
+    })
+}
+
 #[test]
-fn declare_discovery_produces_constraints() {
-    use wasm4pm::models::{DeclareConstraint, DeclareModel};
+fn declare_response_deflated_below_threshold_on_partial_support() {
+    use wasm4pm::discovery::discover_declare_from_log;
 
-    // Build DECLARE model manually using the correct DeclareConstraint fields:
-    // template (String), activities (Vec<String>), support (f64), confidence (f64)
-    let log = standard_log();
-    let mut model = DeclareModel::new();
+    // 3 traces: [A,B], [A,B], [A] — A occurs in all 3, but B follows in only 2.
+    // Response(A,B) conf = 2/3 ≈ 0.667 < 0.8 → must be ABSENT.
+    // Precedence(A,B): numerator 2 (traces where a occurs before b),
+    // denominator activity_counts[b] = 2 → conf 1.0 → PRESENT.
+    let log = build_log(&[(2, &["A", "B"]), (1, &["A"])]);
+    let model = discover_declare_from_log(&log, "concept:name");
 
-    // Derive existence constraints: every activity that appears in ≥50% of traces
-    let total = log.traces.len();
-    let mut counts: HashMap<String, usize> = HashMap::new();
-    for trace in &log.traces {
-        let mut seen = std::collections::HashSet::new();
-        for ev in &trace.events {
-            if let Some(act) = ev
-                .attributes
-                .get("concept:name")
-                .and_then(|v| v.as_string())
-            {
-                if seen.insert(act.to_string()) {
-                    *counts.entry(act.to_string()).or_insert(0) += 1;
-                }
-            }
-        }
-    }
-    for (act, cnt) in &counts {
-        if *cnt * 2 >= total {
-            let support = *cnt as f64 / total as f64;
-            model.constraints.push(DeclareConstraint {
-                template: "existence".to_string(),
-                activities: vec![act.clone()],
-                support,
-                confidence: support, // existence: support == confidence
-            });
-        }
-    }
-
-    // Every mandatory activity should have produced an existence constraint
+    let response = find_constraint(&model, "Response", &["A", "B"]);
     assert!(
-        !model.constraints.is_empty(),
-        "DECLARE model must have at least one existence constraint for dominant activities"
+        response.is_none(),
+        "Response(A,B) must be absent (conf 2/3 < 0.8); got {response:?}"
     );
+
+    let precedence = find_constraint(&model, "Precedence", &["A", "B"])
+        .expect("Precedence(A,B) must be present with conf 1.0");
+    assert!((precedence.confidence - 1.0).abs() < 1e-9);
+}
+
+#[test]
+fn declare_response_any_occurrence_counts_late_a() {
+    use wasm4pm::discovery::discover_declare_from_log;
+
+    // Trace [B, A, B]: first_a = 1, first_b = 0 — the old first-vs-first
+    // ordering said "not before"; any-occurrence (first_a < last_b = 2) is a
+    // real Response-supporting trace → conf must be 1.0.
+    let log = build_log(&[(1, &["B", "A", "B"])]);
+    let model = discover_declare_from_log(&log, "concept:name");
+
+    let response = find_constraint(&model, "Response", &["A", "B"])
+        .expect("Response(A,B) must be present on [B,A,B] with any-occurrence ordering");
+    assert!((response.confidence - 1.0).abs() < 1e-9);
+}
+
+#[test]
+fn declare_chain_response_rejects_intervening_activity() {
+    use wasm4pm::discovery::discover_declare_from_log;
+
+    // [A,B] and [A,X,B]: only the first trace has every A immediately followed
+    // by B → ChainResponse conf = 1/2 = 0.5 < 0.8 → must be ABSENT.
+    // (Old code counted immediate-follows occurrences and inflated confidence.)
+    let log = build_log(&[(1, &["A", "B"]), (1, &["A", "X", "B"])]);
+    let model = discover_declare_from_log(&log, "concept:name");
+
+    let chain = find_constraint(&model, "ChainResponse", &["A", "B"]);
+    assert!(
+        chain.is_none(),
+        "ChainResponse(A,B) must be absent (conf 1/2 < 0.8); got {chain:?}"
+    );
+}
+
+#[test]
+fn declare_discovery_conformance_cross_check() {
+    use wasm4pm::declare_conformance::check_declare_conformance_pure;
+    use wasm4pm::discovery::discover_declare_from_log;
+
+    // A model discovered from a log that satisfies every template exactly
+    // ([A,B] × 3) must be violation-free on that same log.
+    let log = build_log(&[(3, &["A", "B"])]);
+    let model = discover_declare_from_log(&log, "concept:name");
+    assert!(!model.constraints.is_empty(), "model must have constraints");
+
+    let result = check_declare_conformance_pure(&log, &model.constraints, "concept:name")
+        .expect("conformance check must succeed");
+    let v: serde_json::Value = serde_json::from_str(&result).unwrap();
+
+    // Every non-vacuous constraint discovered from this log must be
+    // violation-free on it. Known exception: ChainResponse(B,A) /
+    // ChainPrecedence(B,A) are emitted vacuously (B is never followed by a
+    // non-A when B is always last) while the checker treats a trailing `a`
+    // with no successor as a violation — a discovery/checker asymmetry
+    // documented here rather than papered over.
+    let violating: Vec<String> = v["constraints"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c["violations"].as_u64().unwrap_or(0) > 0)
+        .filter(|c| {
+            !((c["template"] == "ChainResponse" || c["template"] == "ChainPrecedence")
+                && c["activities"][0] == "B"
+                && c["activities"][1] == "A")
+        })
+        .map(|c| {
+            format!(
+                "{}{:?}",
+                c["template"].as_str().unwrap_or("?"),
+                c["activities"]
+            )
+        })
+        .collect();
+    assert!(
+        violating.is_empty(),
+        "non-vacuous discovered constraints must not violate their own log: {violating:?}"
+    );
+
+    // And the expected non-vacuous templates were actually discovered.
+    for (template, acts) in [
+        ("Existence", vec!["A"]),
+        ("Existence", vec!["B"]),
+        ("CoExistence", vec!["A", "B"]),
+        ("Response", vec!["A", "B"]),
+        ("Precedence", vec!["A", "B"]),
+        ("Succession", vec!["A", "B"]),
+        ("ChainResponse", vec!["A", "B"]),
+        ("ChainPrecedence", vec!["A", "B"]),
+    ] {
+        assert!(
+            find_constraint(&model, template, &acts).is_some(),
+            "{template}{acts:?} must be discovered from [A,B]x3"
+        );
+    }
 }
 
 #[test]

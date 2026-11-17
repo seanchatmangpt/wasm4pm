@@ -33,6 +33,10 @@ impl BreedOracle for Mycin {
         BreedId::Mycin
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-fact", "fire-rule", "decision"]
+    }
+
     /// One fact (`uo_skin=uo_vrang`, CF 1.0) and one rule firing on it.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_mycin diagnose");
@@ -103,6 +107,10 @@ impl BreedOracle for Mycin {
 impl BreedOracle for Prolog {
     fn breed_id() -> BreedId {
         BreedId::Prolog
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["intern-fact", "load-fact", "load-rule", "kernel-query", "infer", "unify", "sld-step", "match-rule", "bind-var", "decision", "invalid"]
     }
 
     /// Kernel-path query: flat 1-arity facts and a ground Horn rule, solved
@@ -185,6 +193,10 @@ impl BreedOracle for FuzzyLogic {
         BreedId::FuzzyLogic
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["fuzzy-fuzzify", "fuzzy-fire", "fuzzy-aggregate", "fuzzy-defuzz"]
+    }
+
     /// Crisp uo_heat=4 fuzzifies into uo_low, fires uo_fr1, defuzzifies a
     /// fuzzy:output:uo_vent centroid.
     fn novel_input() -> BreedInput {
@@ -234,6 +246,10 @@ impl BreedOracle for FuzzyLogic {
 impl BreedOracle for DempsterShafer {
     fn breed_id() -> BreedId {
         BreedId::DempsterShafer
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ds-load-bpa", "ds-combine", "ds-belief"]
     }
 
     /// Two sources: m1({uo_hyp1})=0.6, m2({uo_hyp1,uo_hyp2})=0.5; query
@@ -296,6 +312,10 @@ impl BreedOracle for DempsterShafer {
 impl BreedOracle for CspAc3 {
     fn breed_id() -> BreedId {
         BreedId::CspAc3
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["csp-init", "csp-revise", "csp-assign", "csp-propagate", "csp-backtrack", "csp-verdict"]
     }
 
     /// Two 2-value variables with one != constraint — satisfiable.
@@ -365,6 +385,10 @@ impl BreedOracle for DefaultLogic {
         BreedId::DefaultLogic
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["default-load", "default-block", "default-fire", "default-extension"]
+    }
+
     /// bird-flies default: uo_bird : uo_brokenwing absent / uo_flies.
     fn novel_input() -> BreedInput {
         let mut input = base("uo_default extend");
@@ -425,6 +449,10 @@ impl BreedOracle for FramesInheritance {
         BreedId::FramesInheritance
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["frame-load", "frame-walk", "frame-resolve"]
+    }
+
     /// uo_tweetzy isa uo_birdkind; uo_birdkind has own slot uo_motion=uo_fly.
     fn novel_input() -> BreedInput {
         let mut input = base("resolve uo_tweetzy uo_motion");
@@ -482,6 +510,10 @@ impl BreedOracle for FramesInheritance {
 impl BreedOracle for Asp {
     fn breed_id() -> BreedId {
         BreedId::Asp
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ground", "guess-candidate", "reduct", "least-model", "stable-accept", "stable-reject", "answer-set"]
     }
 
     /// Program { uo_p. ; uo_q :- not uo_p. } — exactly one stable model {uo_p}.
@@ -567,6 +599,10 @@ impl BreedOracle for BayesianNetwork {
         BreedId::BayesianNetwork
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["bn-load-cpt", "bn-observe", "bn-eliminate", "bn-verdict"]
+    }
+
     /// Two-node chain uo_rain → uo_wet, query P(uo_wet).
     fn novel_input() -> BreedInput {
         bn_input("0.3")
@@ -627,6 +663,10 @@ impl BreedOracle for Mdp {
         BreedId::Mdp
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["mdp-init", "mdp-iterate", "mdp-policy"]
+    }
+
     /// Single self-loop state, R=1, γ=0.5 — closed form V(uo_s1)=2.
     fn novel_input() -> BreedInput {
         mdp_input("0.5")
@@ -685,7 +725,7 @@ impl BreedOracle for Mdp {
 // ---------------------------------------------------------------------------
 
 /// Build a plausible-looking but fraudulent BreedOutput from (kind, detail) pairs.
-fn cheat_output(breed: BreedId, steps: &[(&str, &str)]) -> BreedOutput {
+pub(crate) fn cheat_output(breed: BreedId, steps: &[(&str, &str)]) -> BreedOutput {
     BreedOutput {
         breed,
         candidates: vec![],

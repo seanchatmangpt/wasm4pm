@@ -2,6 +2,14 @@
 
 # Generalized Compiled Troubleshooting
 
+## Campaign note (2026-10-10)
+
+Re-verified 2026-10-10: this page references no dataset fixture and makes no
+SIMD, LinUCB, or absolute-latency claims (latency is discussed only as
+methodology). Still resting on the 2026-06 campaign evidence: the
+10,000,000-episode flagship scale and all throughput figures — campaign
+receipts, not a fresh 2026-10-10 run.
+
 This benchmark generalizes the SREGym-derived issue calculus into a domain-independent troubleshooting substrate.
 
 ## Calculus

@@ -1,61 +1,70 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/abductive_ibe.md; source-sha256: d76b6e25792dc9571dd202c027b82adb9fc3f99ad79343a616343f98dd8b02c1; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-10-10; original: docs/breeds/abductive_ibe.md; reason: path-local documentation retained pending domain-specific supersession -->
+
+contract updated 2026-10-10, Surface-3 `ibe:obs:`/`ibe:hyp:<H>:covers`/`:cost`
+grammar; score = |covered| − 0.1·cost; collect-observations -> score-hypothesis
+-> compare -> best-explanation trace pinned by postconditions.
 
 # Inference to the Best Explanation (IBE)
 
 ## Origin
 - **Paper:** "Explanatory Coherence" (Thagard, 1989)
 - **Authors:** Paul Thagard
-- **Tradition:** Philosophy of Science, Cognitive Science, Connectionist ECHO Model, Hypothesis Selection
+- **Tradition:** Philosophy of Science, Cognitive Science, Hypothesis Selection
 
 ## Algorithm
-IBE selects the most coherent hypothesis among competing ones using Thagard's ECHO connectionist network model.
-1. Build a network of evidence and hypothesis nodes from facts and rules.
-2. Construct connections:
-   - Coherence links (positive weights) between hypotheses and evidence they explain.
-   - Incoherence links (negative weights) between contradictory or competing hypotheses.
-   - External evidence links (positive weights) from evidence nodes to the external input.
-3. Run connectionist activation updates for 100 iterations:
-   - $a_i(t+1) = a_i(t)(1 - d) + \text{net}_i \cdot (\text{max} - a_i(t))$ if $\text{net}_i > 0$
-   - $a_i(t+1) = a_i(t)(1 - d) + \text{net}_i \cdot (a_i(t) - \text{min})$ otherwise
-   - Where $\text{net}_i = \sum w_{ij} a_j(t) + \text{external}_i$.
-4. Select the hypothesis node with the highest activation.
+IBE scores candidate hypothesis SETS and picks the best-scoring one.
+1. Parse `ibe:obs:<id>` facts (observations), `ibe:hyp:<H>:covers` facts
+   (observations a hypothesis covers), and `ibe:hyp:<H>:cost` facts
+   (assumption cost, must be >= 0).
+2. Enumerate non-empty hypothesis subsets in size-then-lex order
+   (singleton `H`, composite `{H1}+{H2}` sorted-joined with `+`).
+3. Score each subset: `score = |covered observations| - 0.1 * cost`
+   (coverage of the union of members' covers minus 0.1 per unit cost).
+4. Track the running best with strict improvement (`>`); ties keep the
+   earlier subset. Record a `compare` step only on improvement.
+5. The last standing best is the best explanation.
 
 ## Pseudocode
 ```
 function solve(input):
-    (evidence, hypotheses, explains, contradicts) = parse_network(input)
-    activations = initialize_activations(evidence, hypotheses)
-    
-    for 100 iterations:
-        for each node i:
-            net = sum(w_ij * activations[j]) + external_i
-            activations[i] = update_activation(activations[i], net)
-            
-    best_hypothesis = argmax(activations[h] for h in hypotheses)
-    return best_hypothesis
+    (obs, hyps) = parse(input)
+    best = None
+    for each non-empty subset S of hyps (size-then-lex):
+        score = |union(covers[S])| - 0.1 * sum(cost[S])
+        if best is None or score > best.score:
+            best = S
+    return best
 ```
 
 ## Input contract
 - `intent`: not used
-- `facts`: contains network nodes and links:
-  - `evidence`: `"node_name"` (node is evidence)
-  - `hypothesis`: `"node_name"` (node is hypothesis)
-  - `contradicts` or `competes`: `"node1,node2"` (nodes contradict each other)
-- `rules`: rules with conclusion and premises (premises explain conclusion; rules concluding `"false"` define contradiction links).
+- `facts`:
+  - `ibe:obs:<id>` = `"true"` — observation
+  - `ibe:hyp:<H>:covers` = comma-separated covered observation ids
+  - `ibe:hyp:<H>:cost` = numeric cost (>= 0; parse failure or negative value is a refusal)
 
 ## Output contract
-- `selected`: ID of the hypothesis with the highest activation.
-- `explanation`: `"IBE: Explanatory coherence (ECHO) finalized..."`
-- `inference_trace`: trace steps recording `"ibe-load"`, `"ibe-explain"`, and `"ibe-select"`.
+- `facts`: `ibe:best` = best subset name; `ibe:score` = score at 4 decimals.
+- `selected`: best subset name.
+- `explanation`: `"IBE over <k> candidate sets: best explanation '<best>' with score <s> (coverage - 0.1*cost)."`
+- `inference_trace`: `collect-observations` (first) -> `score-hypothesis`* -> `compare`* (only on improvement) -> `best-explanation` (last).
+
+## Refusals
+- Empty facts (precondition).
+- Zero observations or zero hypotheses.
+- Negative or unparseable assumption cost.
+- More than 16 hypotheses.
 
 ## Complexity
-- Time: $O(I \cdot (E + C))$ where $I$ is iteration count (100), $E$ is explain links, $C$ is contradiction links.
-- Space: $O(V + E + C)$ where $V$ is node count.
+- Time: $O(2^H \cdot O)$ in hypotheses $H$ (max 16) and observations $O$.
+- Space: $O(H + O)$.
 
 ## Generalization examples
 - **Competing Process Explanations**: Select the best explanation for a process delay among multiple competing hypotheses based on observed telemetry.
-- **Medical Diagnostics**: Select the most coherent disease diagnosis that explains symptoms and contradicts other diagnoses.
+- **Medical Diagnostics**: Select the cheapest hypothesis set that covers the most symptoms.
 
 ## Adversarial coverage
-- Precondition rejects if facts are empty.
-- Standardizes candidate scores by mapping activations from $[-1.0, 1.0]$ to $[0.0, 1.0]$.
+- Precondition rejects if facts are empty; run refuses zero observations/hypotheses.
+- `compare` steps are emitted only on strict improvement — a greedy first-scored
+  cheat (AC-GREEDY) that never compares is killed by the oracle's `require_kind("compare")`
+  plus the exact beats-detail assertion.

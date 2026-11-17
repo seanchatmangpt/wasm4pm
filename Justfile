@@ -17,6 +17,32 @@ build:
 bench:
     make bench-quick
 
+# One-command bootstrap of the benchmark governance surface: run the quick
+# benchmark profile, then write .wasm4pm/benchmarks/baselines/main-latest.json
+# and append to .wasm4pm/benchmarks/ledger.jsonl via `receipt`, then verify the
+# receipt's BLAKE3 integrity. This is the ONLY sanctioned way to create the
+# baseline + ledger (never hand-write them, and never point `regress` at a
+# determinism-suite report).
+bench-bootstrap:
+    make bench-quick
+    cargo run -q -p bench-tools -- receipt
+    cargo run -q -p bench-tools -- verify --allow-dirty
+
+# Full governance chain: bench → receipt → verify → regress → attest → budget →
+# report. `budget` exits 3 (skipped) when no calibration anchor ran — that is a
+# skip, not a pass and not a failure.
+bench-all: bench-bootstrap
+    cargo run -q -p bench-tools -- regress
+    cargo run -q -p bench-tools -- attest
+    cargo run -q -p bench-tools -- budget
+    cargo run -q -p bench-tools -- report
+    cargo run -q -p bench-tools -- index
+
+# Benchmark inventory: enumerate bench targets via `cargo metadata` into
+# docs/benchmarks/index.json and regenerate the COVERAGE.md inventory table.
+bench-index:
+    cargo run -q -p bench-tools -- index
+
 # Regression gate: compare current Criterion medians against the committed
 # baseline (.wasm4pm/benchmarks/baselines/main-latest.json) and FAIL if any
 # benchmark's median regresses beyond the threshold (default 10%, --threshold).
@@ -45,6 +71,8 @@ bench-attest:
 
 # Performance budgets as code: FAIL if any bench exceeds its machine-independent
 # SLO (median/calibration ratio) declared in docs/benchmarks/budgets.json.
+# SKIPS (exit 3, message on stderr) when no calibration anchor ran — a skip is
+# neither a pass nor a failure.
 bench-budget:
     cargo run -q -p bench-tools -- budget
 

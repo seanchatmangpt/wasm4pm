@@ -85,6 +85,10 @@ impl BreedOracle for Cbr {
         BreedId::Cbr
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["build-index", "retrieve-candidates", "score-case", "reuse-adapt", "revise-accept", "revise-reject", "retain-case", "decision"]
+    }
+
     fn novel_input() -> BreedInput {
         cbr_library_input("uo_loam")
     }
@@ -191,6 +195,10 @@ impl BreedOracle for Ilp {
         BreedId::Ilp
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-example", "propose-literal", "score-gain", "add-literal", "cover-remove", "emit-clause", "decision"]
+    }
+
     fn novel_input() -> BreedInput {
         ilp_input("uo_haze")
     }
@@ -275,6 +283,10 @@ impl BreedAdversary for CheatIlp {
 impl BreedOracle for Ebl {
     fn breed_id() -> BreedId {
         BreedId::Ebl
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ebl-explain", "ebl-generalize", "ebl-operationalize"]
     }
 
     fn novel_input() -> BreedInput {
@@ -378,6 +390,10 @@ impl BreedOracle for VersionSpace {
         BreedId::VersionSpace
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["vs-init", "vs-update", "vs-verdict"]
+    }
+
     fn novel_input() -> BreedInput {
         let mut input = base("uo_learn_berry_concept");
         input.facts = vec![
@@ -411,8 +427,10 @@ impl BreedOracle for VersionSpace {
     }
 
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
-        // Distinguishing assertion: BOTH boundaries moved — S generalized to
-        // the positive example AND G specialized against the negative one.
+        // Distinguishing assertion, in the breed's own vs-update vocabulary
+        // ("Update {n}: S={snapped S}, G={snapped G}" with Debug-formatted
+        // constraint vectors): BOTH boundaries moved — S generalized to the
+        // positive example AND G specialized against the negative one.
         let n = tq.count_of("vs-update");
         let mut s_updated = false;
         let mut g_specialized = false;
@@ -420,23 +438,25 @@ impl BreedOracle for VersionSpace {
             let d = tq
                 .detail_kth("vs-update", i)
                 .ok_or("uo: missing vs-update detail")?;
-            if d.contains("S := <uo_red,uo_big>") {
+            if d.contains("S=[[\"uo_red\", \"uo_big\"]]") {
                 s_updated = true;
             }
-            if d.contains("-> <uo_red,?>") {
+            if d.contains("G=[[\"uo_red\", \"?\"]]") {
                 g_specialized = true;
             }
         }
         if !s_updated {
-            return Err("uo: no S-boundary update 'S := <uo_red,uo_big>' recorded".to_string());
+            return Err(
+                "uo: no S-boundary update 'S=[[\"uo_red\", \"uo_big\"]]' recorded".to_string(),
+            );
         }
         if !g_specialized {
-            return Err("uo: no G-boundary specialization '-> <uo_red,?>' recorded".to_string());
+            return Err("uo: no G-boundary specialization 'G=[[\"uo_red\", \"?\"]]' recorded".to_string());
         }
         let v = tq
             .detail_of("vs-verdict")
             .ok_or("uo: missing vs-verdict step")?;
-        if !v.contains("<uo_red,uo_big>") || !v.contains("G={<uo_red,?>}") {
+        if !v.contains("S=uo_red,uo_big") || !v.contains("G=uo_red,?") {
             return Err(format!(
                 "uo: verdict does not carry final boundaries: '{}'",
                 v
@@ -454,12 +474,18 @@ impl BreedAdversary for CheatVersionSpace {
         uo_cheat_out(
             BreedId::VersionSpace,
             &[
-                ("vs-init", "S=<0,0>, G={<?,?>}"),
-                ("vs-update", "example 0 <uo_red,uo_big>"),
-                ("vs-update", "S := <uo_red,uo_big>"),
+                ("vs-init", "Version Space initialized: attributes=[\"uo_hue\", \"uo_bulk\"]"),
+                ("vs-update", "Update 1: S=[[\"uo_red\", \"uo_big\"]], G=[[\"?\"]]"),
                 // Partial: negative example is consumed but G never moves.
-                ("vs-update", "example 1 <uo_blue,uo_big>"),
-                ("vs-verdict", "S=<uo_red,uo_big>, G={<?,?>}"),
+                (
+                    "vs-update",
+                    "Update 2: S=[[\"uo_red\", \"uo_big\"]], G=[[\"?\"]]",
+                ),
+                (
+                    "vs-verdict",
+                    "Version Space boundaries: S_size=1, G_size=1. S=uo_red,uo_big; G=?; \
+                     intermediate_g_size=1; converged=false. Classification: unknown",
+                ),
             ],
         )
     }
@@ -492,6 +518,10 @@ fn sme_input(target_hub: &str) -> BreedInput {
 impl BreedOracle for AnalogySme {
     fn breed_id() -> BreedId {
         BreedId::AnalogySme
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["parse-expr", "local-match", "merge-gmap", "candidate-inference", "decision"]
     }
 
     fn novel_input() -> BreedInput {
@@ -610,6 +640,10 @@ fn episodic_input(cue_t: i64, dawn_scent: &str, dusk_scent: &str) -> BreedInput 
 impl BreedOracle for EpisodicMemory {
     fn breed_id() -> BreedId {
         BreedId::EpisodicMemory
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["encode-episode", "present-cue", "score-episode", "recall", "decision"]
     }
 
     fn novel_input() -> BreedInput {
@@ -731,6 +765,10 @@ impl BreedOracle for ScriptSam {
         BreedId::ScriptSam
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["select-script", "align-event", "bind-role", "infer-gap", "summary"]
+    }
+
     fn novel_input() -> BreedInput {
         // Built-in airport script vocabulary; the actor is the novel content.
         let mut input = base("uo_understand_trip_story");
@@ -850,6 +888,10 @@ impl BreedOracle for QualitativeReason {
         BreedId::QualitativeReason
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["limit-analysis", "branch-ambiguity", "envision-state", "load-model"]
+    }
+
     fn novel_input() -> BreedInput {
         // Ambiguous + ⊕ − confluence: envisionment branches into 3 states.
         let mut input = base("uo_qualitative_tank");
@@ -956,6 +998,10 @@ fn np_scene(remove_shelf: bool) -> BreedInput {
 impl BreedOracle for NaivePhysics {
     fn breed_id() -> BreedId {
         BreedId::NaivePhysics
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["load-scene", "apply-axiom", "predict", "decision"]
     }
 
     fn novel_input() -> BreedInput {
@@ -1069,6 +1115,10 @@ fn meta_input(alpha_conf: &str, beta_conf: &str) -> BreedInput {
 impl BreedOracle for MetaReasoning {
     fn breed_id() -> BreedId {
         BreedId::MetaReasoning
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["ingest-report", "conflict-detected", "vote", "resolve"]
     }
 
     fn novel_input() -> BreedInput {

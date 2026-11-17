@@ -232,10 +232,10 @@ describe('Adversarial WvdA Algorithm Audit — Vitest Suite', () => {
       expect(result1).toBe(1.0);  // Perfect fitness
 
       const result2 = correctFormula(10, 10, 100, 100);
-      expect(result2).toBe(0.8);  // 80% fitness
+      expect(result2).toBe(0.9);  // 1 - 20/200 = 90% fitness
 
       const result3 = correctFormula(50, 50, 100, 100);
-      expect(result3).toBe(0.0);  // 0% fitness
+      expect(result3).toBe(0.5);  // 1 - 100/200 = 50% fitness
     });
   });
 });

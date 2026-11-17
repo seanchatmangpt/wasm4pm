@@ -68,6 +68,7 @@ fn build_test_ocel(cycles: usize) -> OCEL {
             "Optimization".to_string(),
         ],
         object_types: vec!["cycle_run".to_string()],
+        object_type_defs: Vec::new(),
         events,
         objects,
         object_relations: Vec::new(),

@@ -68,6 +68,13 @@ pub enum TraceError {
         /// The kind actually found at the last position.
         found: String,
     },
+    /// A require_* assertion was given a zero/empty quantifier — a vacuous
+    /// pass is indistinguishable from a lie, so the harness refuses it.
+    #[error("vacuous assertion in {fn_name}: every require_* with a zero/empty quantifier is an error (assert absence with lacks_kind instead)")]
+    VacuousAssertion {
+        /// The require_* method that was called with an empty quantifier.
+        fn_name: &'static str,
+    },
 }
 
 impl From<TraceError> for String {
@@ -182,7 +189,15 @@ impl<'a> TraceQuery<'a> {
     }
 
     /// Fail unless ALL `kinds` appear at least once.
+    ///
+    /// `require_kinds(&[])` is a [`TraceError::VacuousAssertion`] — an empty
+    /// quantifier passes on every trace and therefore asserts nothing.
     pub fn require_kinds(&self, kinds: &[&str]) -> Result<(), TraceError> {
+        if kinds.is_empty() {
+            return Err(TraceError::VacuousAssertion {
+                fn_name: "require_kinds",
+            });
+        }
         for &kind in kinds {
             self.require_kind(kind)?;
         }
@@ -190,7 +205,16 @@ impl<'a> TraceQuery<'a> {
     }
 
     /// Fail unless `kind` appears exactly `expected` times.
+    ///
+    /// `require_count(kind, 0)` is a [`TraceError::VacuousAssertion`] — to
+    /// assert absence, use `lacks_kind` (a boolean check) or
+    /// `require_non_empty` + `lacks_kind` in a postcondition.
     pub fn require_count(&self, kind: &str, expected: usize) -> Result<(), TraceError> {
+        if expected == 0 {
+            return Err(TraceError::VacuousAssertion {
+                fn_name: "require_count",
+            });
+        }
         let found = self.count_of(kind);
         if found == expected {
             Ok(())
@@ -204,7 +228,15 @@ impl<'a> TraceQuery<'a> {
     }
 
     /// Fail unless `kind` appears at least `min` times.
+    ///
+    /// `require_at_least(kind, 0)` is a [`TraceError::VacuousAssertion`] —
+    /// "at least zero" is vacuously true on every trace.
     pub fn require_at_least(&self, kind: &str, min: usize) -> Result<(), TraceError> {
+        if min == 0 {
+            return Err(TraceError::VacuousAssertion {
+                fn_name: "require_at_least",
+            });
+        }
         let found = self.count_of(kind);
         if found >= min {
             Ok(())
@@ -218,7 +250,17 @@ impl<'a> TraceQuery<'a> {
     }
 
     /// Fail unless the given `kinds` appear as an ordered subsequence.
+    ///
+    /// `require_sequence(&[])` is a [`TraceError::VacuousAssertion`]. Note
+    /// that [`TraceQuery::sequence_contains(&[])`] remains vacuously `true`
+    /// (a mathematical fact used internally); do NOT use it in postconditions
+    /// — use `require_*` methods, which refuse empty quantifiers.
     pub fn require_sequence(&self, kinds: &[&str]) -> Result<(), TraceError> {
+        if kinds.is_empty() {
+            return Err(TraceError::VacuousAssertion {
+                fn_name: "require_sequence",
+            });
+        }
         if self.sequence_contains(kinds) {
             Ok(())
         } else {
@@ -335,6 +377,33 @@ mod tests {
         let steps = vec![step(0, "a")];
         assert!(tq(&steps).sequence_contains(&[]));
         assert!(tq(&[]).sequence_contains(&[]));
+    }
+
+    #[test]
+    fn vacuous_quantifiers_are_refused() {
+        let steps = vec![step(0, "a"), step(1, "b")];
+        let q = tq(&steps);
+        assert!(matches!(
+            q.require_sequence(&[]),
+            Err(TraceError::VacuousAssertion { .. })
+        ));
+        assert!(matches!(
+            q.require_kinds(&[]),
+            Err(TraceError::VacuousAssertion { .. })
+        ));
+        assert!(matches!(
+            q.require_count("a", 0),
+            Err(TraceError::VacuousAssertion { .. })
+        ));
+        assert!(matches!(
+            q.require_at_least("a", 0),
+            Err(TraceError::VacuousAssertion { .. })
+        ));
+        // Non-vacuous variants still work.
+        assert!(q.require_sequence(&["a"]).is_ok());
+        assert!(q.require_kinds(&["a", "b"]).is_ok());
+        assert!(q.require_count("a", 1).is_ok());
+        assert!(q.require_at_least("a", 1).is_ok());
     }
 
     #[test]
@@ -512,10 +581,47 @@ mod proptests {
         }
 
         #[test]
-        fn prop_sequence_empty_always_passes(kinds in prop::collection::vec("[a-z]{1,6}", 0..15)) {
+        fn prop_sequence_empty_always_fails(kinds in prop::collection::vec("[a-z]{1,6}", 0..15)) {
             let steps = arb_steps(kinds);
             let tq = TraceQuery::new(&steps);
-            prop_assert!(tq.sequence_contains(&[]));
+            let vacuous = matches!(
+                tq.require_sequence(&[]),
+                Err(TraceError::VacuousAssertion { .. })
+            );
+            prop_assert!(vacuous);
+        }
+
+        #[test]
+        fn prop_require_count_zero_always_fails(kinds in prop::collection::vec("[a-z]{1,6}", 0..15)) {
+            let steps = arb_steps(kinds);
+            let tq = TraceQuery::new(&steps);
+            let vacuous = matches!(
+                tq.require_count("x", 0),
+                Err(TraceError::VacuousAssertion { .. })
+            );
+            prop_assert!(vacuous);
+        }
+
+        #[test]
+        fn prop_require_at_least_zero_always_fails(kinds in prop::collection::vec("[a-z]{1,6}", 0..15)) {
+            let steps = arb_steps(kinds);
+            let tq = TraceQuery::new(&steps);
+            let vacuous = matches!(
+                tq.require_at_least("x", 0),
+                Err(TraceError::VacuousAssertion { .. })
+            );
+            prop_assert!(vacuous);
+        }
+
+        #[test]
+        fn prop_require_kinds_empty_always_fails(kinds in prop::collection::vec("[a-z]{1,6}", 0..15)) {
+            let steps = arb_steps(kinds);
+            let tq = TraceQuery::new(&steps);
+            let vacuous = matches!(
+                tq.require_kinds(&[]),
+                Err(TraceError::VacuousAssertion { .. })
+            );
+            prop_assert!(vacuous);
         }
     }
 }

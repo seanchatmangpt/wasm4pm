@@ -1,6 +1,12 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/performance/benchmark-paper-v26.6.9.md; source-sha256: f8caefff1e7f1d26fc07c540d2a1a0865488f2094beac015f8b273298f43b2f8; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/performance/benchmark-paper-v26.6.9.md; source-sha256: f9879bdad2dd11fa00b14bf00f457d84d52500fb47d124df5dae4329fec1b257; reason: path-local documentation retained pending domain-specific supersession -->
 
 # wasm4pm v26.6.9 — Performance Characterisation
+
+> **ARCHIVED / SUPERSEDED.** This is a v26.6.9 characterisation retained for
+> historical reference; the current release is v26.10.8. Current benchmark
+> results supersede this document:
+> `superseded-by: docs/reference/benchmarks.md`.
+> Numbers below are as-of v26.6.9 and must not be cited as current.
 
 **Platform:** darwin arm64, Node v25.9.0  
 **Version:** v26.6.9 (CalVer: June 9 2026)  

@@ -383,12 +383,12 @@ fn aurora_closed_autonomic_loop() {
     let plan = find_temporal_plan(&ground, &problem).expect("temporal plan found");
     assert_eq!(plan.steps.len(), 2, "both response tasks planned");
     assert!(
-        max_parallelism(&plan) >= 2,
+        max_parallelism(&plan).expect("parallelism computed") >= 2,
         "two nurses must allow parallel execution"
     );
 
     // ── Phase 4: THE PRESENT — POWL v2 executes the plan ─────────────────────
-    let powl = plan_to_powl_v2(&plan);
+    let powl = plan_to_powl_v2(&plan).expect("powl projection succeeds");
     assert!(powl.starts_with("PartialOrder(plan)"), "{powl}");
     let run1 = wasm4pm::powl_execution::execute_powl_string(&powl, 3)
         .expect("plan executes on the engine");

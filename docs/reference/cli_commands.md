@@ -9,8 +9,8 @@
 > registry `buildCli()` dispatches from — this doc, `--help`, and
 > `--introspect` can never drift from each other or from actual dispatch.
 >
-> Version: **v26.7.1** · **61** verbs across **8** nouns
-> (40 stable, 21 experimental under `wpm lab`).
+> Version: **v26.10.10** · **66** verbs across **8** nouns
+> (43 stable, 23 experimental under `wpm lab`).
 
 ## Noun tree
 
@@ -18,13 +18,13 @@
 
 | Noun | Verbs | Stability |
 |------|-------|-----------|
-| `log` | validate, stats, dedupe, query, convert, sample | stable |
+| `log` | validate, stats, dedupe, query, convert, sample, batch | stable |
 | `model` | discover, check, compare, diff, explain, simulate, predict | stable |
 | `pipeline` | run, plan, suggest, watch, resume | mixed |
-| `evidence` | show, verify, chain, keygen, report, replay | stable |
+| `evidence` | show, verify, chain, keygen, report, replay, session, live | stable |
 | `config` | show, get, set, reset, env, export, diff, check, init | stable |
 | `system` | doctor, status, cache, models, completions | stable |
-| `lab` | membrane, cell, adversary, cognition, agent, autoprocess, oracle, truex, prolog8, repl, claude, supabase, wasm-server, trace, benchmark, timeout, feedback, ml, temporal, social | experimental |
+| `lab` | membrane, cell, adversary, cognition, agent, autoprocess, oracle, truex, prolog8, repl, claude, supabase, wasm-server, trace, benchmark, process-science, timeout, feedback, ml, temporal, social, interview-assist | experimental |
 | `help` | algorithms, examples, exit-codes | stable |
 
 ## Output contract
@@ -112,7 +112,7 @@ removed invocation exits `1` and names its replacement — see
 | `wpm cache` | `wpm system cache` |
 | `wpm models` | `wpm system models` |
 | `wpm deduplicate` | `wpm log dedupe` |
-| `wpm batch` | `wpm pipeline run` |
+| `wpm batch` | `wpm log batch` |
 | `wpm supabase` | `wpm lab supabase` |
 | `wpm wasm-server` | `wpm lab wasm-server` |
 | `wpm trace` | `wpm lab trace` |
@@ -163,9 +163,9 @@ Run `wpm help exit-codes` for the live, generated version of this table.
 
 ### `wpm log`
 
-Validate, profile, deduplicate, query, convert, and sample event logs
+Validate, profile, deduplicate, query, convert, sample, and batch-discover event logs
 
-Verbs: `validate`, `stats`, `dedupe`, `query`, `convert`, `sample`
+Verbs: `validate`, `stats`, `dedupe`, `query`, `convert`, `sample`, `batch`
 
 #### `wpm log validate`
 
@@ -216,6 +216,17 @@ Sample N traces from an XES/CSV log
 | `<input>` | positional | yes | — | Path to the event log |
 | `--count` / `-n` | string | no | — | Number of traces to sample (default: 10) |
 | `--strategy` | string | no | — | first | random (default: first) |
+| `--activity-key` | string | no | — | Event attribute key for activity names (default: concept:name) |
+
+#### `wpm log batch`
+
+Discover process models for every XES log in a directory, in parallel (was: wpm batch). Ex: wpm log batch ./logs --algorithm dfg --workers 4
+
+| Arg | Type | Required | Default | Description |
+|-----|------|:--------:|---------|-------------|
+| `<directory>` | positional | yes | — | Directory containing XES event logs (searched recursively) |
+| `--algorithm` / `-a` | string | no | — | Discovery algorithm id or alias (default: heuristic_miner; run "wpm help algorithms") |
+| `--workers` | string | no | — | Number of parallel workers (default: CPU count) |
 | `--activity-key` | string | no | — | Event attribute key for activity names (default: concept:name) |
 
 ### `wpm model`
@@ -330,9 +341,9 @@ Show the last saved receipt so a previous pipeline run can be inspected/continue
 
 ### `wpm evidence`
 
-Inspect, verify, and generate keys for BLAKE3 receipt-chain evidence
+Inspect, verify, replay, and manufacture BLAKE3-bound process evidence and AAT-Live passports
 
-Verbs: `show`, `verify`, `chain`, `keygen`, `report`, `replay`
+Verbs: `show`, `verify`, `chain`, `keygen`, `report`, `replay`, `session`, `live`
 
 #### `wpm evidence show`
 
@@ -342,7 +353,7 @@ _No arguments._
 
 #### `wpm evidence verify`
 
-Re-hash and validate a saved receipt for tamper detection (was: wpm verify, wpm truex verify)
+Run the parity/determinism certification gate suite (was: wpm verify, wpm truex verify)
 
 _No arguments._
 
@@ -371,6 +382,37 @@ _No arguments._
 Verify a receipt by replaying its proof, detecting tampering (was: wpm prolog8 replay)
 
 _No arguments._
+
+#### `wpm evidence session`
+
+Manufacture or replay one exact OCEL-v2 → POWL → WASM evidence session with pre-actuation and outcome receipts
+
+| Arg | Type | Required | Default | Description |
+|-----|------|:--------:|---------|-------------|
+| `<input>` | positional | yes | — | Path to an OCEL-v2 JSON subject |
+| `--mode` | string | no | — | run | replay (default: run) |
+| `--session` | string | no | — | Expected session evidence path (required for --mode replay) |
+| `--object-type` | string | yes | — | OCEL object type used to manufacture process episodes |
+| `--variant` | string | no | — | POWL discovery variant (default: decision_graph_cyclic_strict) |
+| `--activity-key` | string | no | — | Activity attribute key (default: concept:name) |
+| `--min-trace-count` | string | no | — | Minimum trace count (default: 1) |
+| `--noise-threshold` | string | no | — | Noise threshold in [0,1] (default: 0) |
+| `--max-iters` | string | no | — | POWL execution loop bound in [0,255] (default: 3) |
+| `--no-save` | boolean | no | — | Do not persist session evidence; pending/outcome receipts remain mandatory |
+
+#### `wpm evidence live`
+
+Admit and replay the signed AAT-Live → Weaver → POWL → wasm4pm → MCP+ chain
+
+| Arg | Type | Required | Default | Description |
+|-----|------|:--------:|---------|-------------|
+| `--trace` | string | yes | — | AAT observation trace NDJSON |
+| `--session` | string | yes | — | OCEL→POWL→WASM session evidence |
+| `--weaver` | string | yes | — | Signed Weaver admission report |
+| `--proof` | string | yes | — | Signed MCP+ proof envelope |
+| `--mode` | string | no | — | run | replay (default: run) |
+| `--expected` | string | no | — | Expected AAT-Live verdict for replay mode |
+| `--no-save` | boolean | no | — | Do not persist verdict/passport/bundle artifacts; receipts remain mandatory |
 
 ### `wpm config`
 
@@ -446,7 +488,7 @@ Verbs: `doctor`, `status`, `cache`, `models`, `completions`
 
 #### `wpm system doctor`
 
-Diagnose environment, WASM, and config issues; JTBD hook verification (was: wpm doctor)
+Diagnose the environment, audit Vision 2030 capability standing, and execute receipt-gated structured repairs
 
 _No arguments._
 
@@ -478,9 +520,9 @@ Print shell completion script for bash, zsh, or fish (was: wpm completions)
 
 ### `wpm lab`
 
-Experimental and advanced command suites (legacy behavior, unchanged)
+Experimental and advanced command suites
 
-Verbs: `membrane`, `cell`, `adversary`, `cognition`, `agent`, `autoprocess`, `oracle`, `truex`, `prolog8`, `repl`, `claude`, `supabase`, `wasm-server`, `trace`, `benchmark`, `timeout`, `feedback`, `ml`, `temporal`, `social`
+Verbs: `membrane`, `cell`, `adversary`, `cognition`, `agent`, `autoprocess`, `oracle`, `truex`, `prolog8`, `repl`, `claude`, `supabase`, `wasm-server`, `trace`, `benchmark`, `process-science`, `timeout`, `feedback`, `ml`, `temporal`, `social`, `interview-assist`
 
 #### `wpm lab membrane` `[experimental]`
 
@@ -572,6 +614,15 @@ Benchmark corpus tooling: build | replay | verify | export (was: wpm benchmark, 
 
 _No arguments._
 
+#### `wpm lab process-science` `[experimental]`
+
+Admit an XES evidence file and manufacture a deterministic data-science -> process-science operator plan
+
+| Arg | Type | Required | Default | Description |
+|-----|------|:--------:|---------|-------------|
+| `--input` | string | yes | — | XES evidence file to admit. |
+| `--output` | string | no | — | Optional directory for deterministic process-science.json projection. |
+
 #### `wpm lab timeout` `[experimental]`
 
 Adaptive timeout inspection/tuning (was: wpm timeout)
@@ -601,6 +652,17 @@ _No arguments._
 Mine social networks: handover, working-together (was: wpm social)
 
 _No arguments._
+
+#### `wpm lab interview-assist` `[experimental]`
+
+Run the real InterviewAssist HTTP receipt chain and persist independently readable evidence
+
+| Arg | Type | Required | Default | Description |
+|-----|------|:--------:|---------|-------------|
+| `--workspace` | string | no | — | wasm4pm repository root (defaults to the current directory) |
+| `--output` | string | no | — | Evidence JSON path relative to the command working directory |
+| `--port` | string | no | — | Local Next server port (defaults to an available ephemeral port) |
+| `--timeout-ms` | string | no | — | Overall server/startup timeout in milliseconds |
 
 ### `wpm help`
 

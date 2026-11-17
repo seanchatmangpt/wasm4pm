@@ -21,7 +21,7 @@
 //! - [`ChildSet`]                — `CHILD SET_u^T (n_min, n_max)` (Sect. 4)
 //! - [`Constraint`] / [`evaluate_constraint`] — `constr(v)` → satisfied / violated (Fig. 6)
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 use wasm4pm_compat::ocel::OCEL;
@@ -78,7 +78,7 @@ impl VarDecl {
 /// `VarKind` of each name (from the box's `Var`) disambiguates events/objects,
 /// exactly as the paper's `b = b1 ∪ b2` symmetric union of two disjoint-domain
 /// partial functions.
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Binding {
     /// var-name → bound element id.
     pub map: BTreeMap<String, String>,
@@ -167,6 +167,160 @@ pub enum BasicPredicate {
     },
 }
 
+/// Per-evaluation **id index** over the OCED: id membership sets, event times,
+/// and qualified reference lists keyed by source id. Built once per
+/// [`evaluate_constraint`] call (and once per [`BindingBox::output`]
+/// enumeration) so predicate membership checks are hash lookups instead of
+/// linear scans over `E_L ∪ O_L`.
+pub(crate) struct IdIndex<'a> {
+    /// Event ids (`E_L`).
+    event_ids: HashSet<&'a str>,
+    /// Object ids (`O_L`).
+    object_ids: HashSet<&'a str>,
+    /// Event id → timestamp seconds.
+    event_time: HashMap<&'a str, i64>,
+    /// Event id → its qualified object refs (`(object_id, qualifier)`).
+    e2o: HashMap<&'a str, Vec<(&'a str, &'a str)>>,
+    /// Object id → the `(event_id, qualifier)` pairs of events referencing
+    /// it — the inverse E2O index, for object-side propagation.
+    e2o_inv: HashMap<&'a str, Vec<(&'a str, &'a str)>>,
+    /// Object id → its qualified O2O refs (`(object_id, qualifier)`).
+    o2o: HashMap<&'a str, Vec<(&'a str, &'a str)>>,
+    /// Event id → event type name.
+    event_type: HashMap<&'a str, &'a str>,
+    /// Object id → object type name.
+    object_type: HashMap<&'a str, &'a str>,
+}
+
+impl<'a> IdIndex<'a> {
+    /// Index the log once: `O(|E| + |O| + |e2o| + |o2o|)`.
+    pub(crate) fn new(log: &'a OCEL) -> Self {
+        let mut event_ids = HashSet::with_capacity(log.events.len());
+        let mut event_time = HashMap::with_capacity(log.events.len());
+        let mut e2o: HashMap<&'a str, Vec<(&'a str, &'a str)>> =
+            HashMap::with_capacity(log.events.len());
+        let mut e2o_inv: HashMap<&'a str, Vec<(&'a str, &'a str)>> =
+            HashMap::with_capacity(log.objects.len());
+        let mut event_type: HashMap<&'a str, &'a str> = HashMap::with_capacity(log.events.len());
+        for e in &log.events {
+            event_ids.insert(e.id.as_str());
+            event_time.insert(e.id.as_str(), e.time.timestamp());
+            event_type.insert(e.id.as_str(), e.event_type.as_str());
+            let refs = e
+                .relationships
+                .iter()
+                .map(|r| (r.object_id.as_str(), r.qualifier.as_str()))
+                .collect();
+            e2o.insert(e.id.as_str(), refs);
+            for r in &e.relationships {
+                e2o_inv
+                    .entry(r.object_id.as_str())
+                    .or_default()
+                    .push((e.id.as_str(), r.qualifier.as_str()));
+            }
+        }
+        let mut object_ids = HashSet::with_capacity(log.objects.len());
+        let mut o2o: HashMap<&'a str, Vec<(&'a str, &'a str)>> =
+            HashMap::with_capacity(log.objects.len());
+        let mut object_type: HashMap<&'a str, &'a str> = HashMap::with_capacity(log.objects.len());
+        for o in &log.objects {
+            object_ids.insert(o.id.as_str());
+            object_type.insert(o.id.as_str(), o.object_type.as_str());
+            let refs = o
+                .relationships
+                .iter()
+                .map(|r| (r.object_id.as_str(), r.qualifier.as_str()))
+                .collect();
+            o2o.insert(o.id.as_str(), refs);
+        }
+        Self {
+            event_ids,
+            object_ids,
+            event_time,
+            e2o,
+            e2o_inv,
+            o2o,
+            event_type,
+            object_type,
+        }
+    }
+}
+
+/// The engine-wide evaluation context threaded through constraint evaluation:
+/// the per-call [`IdIndex`], the memoized child-node outputs
+/// (child node id → `out_L(box(child))`, computed once per call instead of
+/// once per parent binding), and the projection count index that turns
+/// CHILD SET counting into hash lookups (see [`EvalContext::child_count`]).
+pub(crate) struct EvalContext<'a> {
+    /// The query tree under evaluation (for resolving CHILD SET edges).
+    pub(crate) tree: &'a QueryTree,
+    /// The OCED under evaluation.
+    pub(crate) log: &'a OCEL,
+    /// Per-call id index for membership checks.
+    pub(crate) index: IdIndex<'a>,
+    /// Memoized `out_L(box(node))` per node id.
+    child_outputs: HashMap<String, Vec<Binding>>,
+    /// `(child node id, parent var names)` → projection → count of child
+    /// bindings projecting to it.
+    count_index: HashMap<(String, Vec<String>), HashMap<Binding, usize>>,
+}
+
+impl<'a> EvalContext<'a> {
+    pub(crate) fn new(tree: &'a QueryTree, log: &'a OCEL) -> Self {
+        Self {
+            tree,
+            index: IdIndex::new(log),
+            log,
+            child_outputs: HashMap::new(),
+            count_index: HashMap::new(),
+        }
+    }
+
+    /// `out_L(box(node_id))`, computed once per evaluation call and memoized.
+    fn child_output(&mut self, node_id: &str) -> Option<&[Binding]> {
+        if !self.child_outputs.contains_key(node_id) {
+            let log: &'a OCEL = self.log; // `&'a OCEL` is `Copy` — compute before mutating.
+            if let Some(node) = self.tree.node(node_id) {
+                let out = node.bbox.output_indexed(log, &self.index);
+                self.child_outputs.insert(node_id.to_string(), out);
+            }
+        }
+        self.child_outputs.get(node_id).map(Vec::as_slice)
+    }
+
+    /// Count of child bindings `x ∈ out_L(box(child))` with `b ⊑_L x`, via a
+    /// projection count index: the index maps each child binding restricted to
+    /// the parent's variable domain to the number of child bindings sharing
+    /// that restriction, so `b ⊑ x` counting is one hash lookup per parent
+    /// binding (linear in output size, not `|out(parent)|·|out(child)|`).
+    fn child_count(&mut self, child_id: &str, parent_vars: &[&str], b: &Binding) -> usize {
+        let key = (
+            child_id.to_string(),
+            parent_vars.iter().map(|s| (*s).to_string()).collect::<Vec<_>>(),
+        );
+        if !self.count_index.contains_key(&key) {
+            let mut proj: HashMap<Binding, usize> = HashMap::new();
+            let outs: Vec<Binding> = self.child_output(child_id).unwrap_or_default().to_vec();
+            for x in outs {
+                let restricted: Binding = Binding {
+                    map: x
+                        .map
+                        .iter()
+                        .filter(|(k, _)| parent_vars.contains(&k.as_str()))
+                        .map(|(k, v)| (k.clone(), v.clone()))
+                        .collect(),
+                };
+                *proj.entry(restricted).or_insert(0) += 1;
+            }
+            self.count_index.insert(key.clone(), proj);
+        }
+        self.count_index[&key]
+            .get(b)
+            .copied()
+            .unwrap_or(0)
+    }
+}
+
 impl BasicPredicate {
     /// `b ⊨ p` — does binding `b` satisfy this BASIC predicate under `L`?
     ///
@@ -175,6 +329,12 @@ impl BasicPredicate {
     /// `b_5 ⊭ s_1` when `b_5` does not assign `o2`.
     #[must_use]
     pub fn holds(&self, b: &Binding, log: &OCEL) -> bool {
+        self.holds_indexed(b, &IdIndex::new(log))
+    }
+
+    /// Same satisfaction relation, evaluated against a prebuilt [`IdIndex`]
+    /// (membership via hash lookups, not linear scans).
+    pub(crate) fn holds_indexed(&self, b: &Binding, ix: &IdIndex<'_>) -> bool {
         match self {
             BasicPredicate::E2O {
                 event,
@@ -185,16 +345,14 @@ impl BasicPredicate {
                     return false;
                 };
                 // b(v) ∈ E_L  ∧  b(v') ∈ O_L
-                if !log.events.iter().any(|e| e.id == ev) {
-                    return false;
-                }
-                if !log.objects.iter().any(|o| o.id == ob) {
+                if !ix.event_ids.contains(ev) || !ix.object_ids.contains(ob) {
                     return false;
                 }
                 // b(v') ∈ obj_L^q(b(v)):  the event's qualified object refs.
-                log.e2o(ev)
-                    .iter()
-                    .any(|(oid, q)| *oid == ob && qual_matches(qualifier, q))
+                ix.e2o.get(ev).is_some_and(|refs| {
+                    refs.iter()
+                        .any(|(oid, q)| *oid == ob && qual_matches(qualifier, q))
+                })
             }
             BasicPredicate::O2O {
                 from,
@@ -204,15 +362,13 @@ impl BasicPredicate {
                 let (Some(src), Some(dst)) = (b.get(from), b.get(to)) else {
                     return false;
                 };
-                if !log.objects.iter().any(|o| o.id == src) {
+                if !ix.object_ids.contains(src) || !ix.object_ids.contains(dst) {
                     return false;
                 }
-                if !log.objects.iter().any(|o| o.id == dst) {
-                    return false;
-                }
-                log.o2o(src)
-                    .iter()
-                    .any(|(oid, q)| *oid == dst && qual_matches(qualifier, q))
+                ix.o2o.get(src).is_some_and(|refs| {
+                    refs.iter()
+                        .any(|(oid, q)| *oid == dst && qual_matches(qualifier, q))
+                })
             }
             BasicPredicate::Tbe {
                 from,
@@ -223,10 +379,10 @@ impl BasicPredicate {
                 let (Some(e1), Some(e2)) = (b.get(from), b.get(to)) else {
                     return false;
                 };
-                let (Some(t1), Some(t2)) = (event_time(log, e1), event_time(log, e2)) else {
+                let (Some(t1), Some(t2)) = (ix.event_time.get(e1), ix.event_time.get(e2)) else {
                     return false;
                 };
-                let gap = t2.timestamp() - t1.timestamp();
+                let gap = t2 - t1;
                 gap >= *tmin_secs && gap <= *tmax_secs
             }
         }
@@ -239,11 +395,6 @@ fn qual_matches(want: &Option<String>, have: &str) -> bool {
         None => true,
         Some(w) => w == have,
     }
-}
-
-/// `time_L(e)` — the timestamp of event `e` (by id), if it exists.
-fn event_time(log: &OCEL, event_id: &str) -> Option<chrono::DateTime<chrono::FixedOffset>> {
-    log.events.iter().find(|e| e.id == event_id).map(|e| e.time)
 }
 
 // ---------------------------------------------------------------------------
@@ -274,6 +425,13 @@ impl BindingBox {
     /// satisfaction relation is total and self-contained.
     #[must_use]
     pub fn satisfied_by(&self, b: &Binding, log: &OCEL) -> bool {
+        let ix = IdIndex::new(log);
+        self.satisfied_by_indexed(b, log, &ix)
+    }
+
+    /// [`Self::satisfied_by`] against a prebuilt [`IdIndex`] — the hot path
+    /// used by enumeration and constraint evaluation (no per-candidate scans).
+    pub(crate) fn satisfied_by_indexed(&self, b: &Binding, _log: &OCEL, ix: &IdIndex<'_>) -> bool {
         // dom(b) = dom(Var)
         if b.map.len() != self.vars.len() {
             return false;
@@ -284,37 +442,46 @@ impl BindingBox {
             };
             // b(v) ∈ E_L ∪ O_L  ∧  type_L(b(v)) ∈ Var(v)
             let ty_ok = match decl.kind {
-                VarKind::Event => log
-                    .events
-                    .iter()
-                    .find(|e| e.id == id)
-                    .is_some_and(|e| decl.admits_type(&e.event_type)),
-                VarKind::Object => log
-                    .objects
-                    .iter()
-                    .find(|o| o.id == id)
-                    .is_some_and(|o| decl.admits_type(&o.object_type)),
+                VarKind::Event => ix
+                    .event_type
+                    .get(id)
+                    .is_some_and(|t| decl.admits_type(t)),
+                VarKind::Object => ix
+                    .object_type
+                    .get(id)
+                    .is_some_and(|t| decl.admits_type(t)),
             };
             if !ty_ok {
                 return false;
             }
         }
         // b ⊨ Pred
-        self.preds.iter().all(|p| p.holds(b, log))
+        self.preds.iter().all(|p| p.holds_indexed(b, ix))
     }
 
     /// `out_L(b_L)` — the **output set** of the box (Def. 6): every binding over
     /// `dom(Var)` that satisfies the box.
     ///
-    /// Enumeration strategy: take the Cartesian product of each variable's
-    /// type-admissible domain (events of the declared event-types, objects of
-    /// the declared object-types), then filter by [`Self::satisfied_by`]. For
-    /// the small object-centric logs OCPQ targets this is exact and complete;
-    /// the recursive parallelizable refinement of the paper is an optimization
-    /// over the same set.
+    /// Enumeration strategy: a backtracking join with forward propagation
+    /// rather than a blind Cartesian product. Each E2O predicate
+    /// `E2O(e, o, q)` is a *choice-link*: once `e` is bound, `o`'s candidate
+    /// set is narrowed to exactly `e`'s qualified refs (intersected with the
+    /// declared types). Variables are bound in an order that binds linked
+    /// event variables first, so for connected boxes (the OCPQ norm: every
+    /// object var is E2O-linked to some event var) enumeration cost is
+    /// proportional to the size of the output set plus the indexed refs, not
+    /// the full cross product. The exact and complete semantics are
+    /// unchanged: the result is still every binding satisfying the box.
     #[must_use]
     pub fn output(&self, log: &OCEL) -> Vec<Binding> {
-        // Per-variable candidate id lists.
+        let ix = IdIndex::new(log);
+        self.output_indexed(log, &ix)
+    }
+
+    /// [`Self::output`] against a prebuilt [`IdIndex`] (shared across the
+    /// whole constraint evaluation — one index per `evaluate_constraint` call).
+    pub(crate) fn output_indexed(&self, log: &OCEL, ix: &IdIndex<'_>) -> Vec<Binding> {
+        // Per-variable candidate id lists (type-admissible domains).
         let domains: Vec<Vec<&str>> = self
             .vars
             .iter()
@@ -334,34 +501,180 @@ impl BindingBox {
             })
             .collect();
 
+        let order = self.join_order(&domains);
+        // Reorder the domain lists to match the join order: level `idx` of the
+        // enumeration binds variable `order[idx]` and draws from
+        // `ordered_domains[idx]`.
+        let ordered_domains: Vec<Vec<&str>> =
+            order.iter().map(|&i| domains[i].clone()).collect();
         let mut out = Vec::new();
         let mut current = Binding::empty();
-        self.product(0, &domains, &mut current, log, &mut out);
+        let active: Vec<(usize, Vec<&str>)> = Vec::new();
+        self.product(0, &ordered_domains, &order, &active, &mut current, log, ix, &mut out);
         out
     }
 
-    /// Recursive Cartesian-product enumerator over `domains[idx..]`, collecting
-    /// bindings that pass [`Self::satisfied_by`].
+    /// Variable binding order for the join: event-side-of-E2O variables first
+    /// (binding them enables forward propagation to their object partners),
+    /// then remaining variables by ascending domain size. Stable, so ties
+    /// keep declaration order.
+    fn join_order(&self, domains: &[Vec<&str>]) -> Vec<usize> {
+        let n = self.vars.len();
+        // E2O adjacency: name → partner names (both directions).
+        let mut links: HashMap<&str, Vec<&str>> = HashMap::new();
+        for p in &self.preds {
+            if let BasicPredicate::E2O { event, object, .. } = p {
+                links
+                    .entry(event.as_str())
+                    .or_default()
+                    .push(object.as_str());
+                links
+                    .entry(object.as_str())
+                    .or_default()
+                    .push(event.as_str());
+            }
+        }
+        let event_side = |i: usize| {
+            self.preds.iter().any(|p| {
+                matches!(p, BasicPredicate::E2O { event, .. } if *event == self.vars[i].name)
+            })
+        };
+        let mut order: Vec<usize> = Vec::with_capacity(n);
+        let mut placed = vec![false; n];
+        while order.len() < n {
+            // 1. an unbound E2O partner of the most recently placed var;
+            let mut next: Option<usize> = None;
+            if let Some(&last) = order.last() {
+                if let Some(partners) = links.get(self.vars[last].name.as_str()) {
+                    next = (0..n)
+                        .find(|&j| !placed[j] && partners.contains(&self.vars[j].name.as_str()));
+                }
+            }
+            // 2. otherwise an event-side var (propagation source),
+            if next.is_none() {
+                next = (0..n).find(|&j| !placed[j] && event_side(j));
+            }
+            // 3. otherwise the smallest unbound domain (stable).
+            if next.is_none() {
+                next = (0..n)
+                    .filter(|&j| !placed[j])
+                    .min_by_key(|&j| (domains[j].len(), j));
+            }
+            let j = next.unwrap_or(0);
+            placed[j] = true;
+            order.push(j);
+        }
+        order
+    }
+
+    /// Recursive join enumerator over the ordered base domains with E2O
+    /// forward propagation. `active` carries the propagations emitted by
+    /// already-bound event variables as `(future level, allowed ids)` pairs;
+    /// each level's effective candidate set is its base domain intersected
+    /// with every active propagation targeting it.
+    #[allow(clippy::too_many_arguments)]
     fn product(
         &self,
         idx: usize,
         domains: &[Vec<&str>],
+        order: &[usize],
+        active: &[(usize, Vec<&str>)],
         current: &mut Binding,
         log: &OCEL,
+        ix: &IdIndex<'_>,
         out: &mut Vec<Binding>,
     ) {
         if idx == self.vars.len() {
-            if self.satisfied_by(current, log) {
+            if self.satisfied_by_indexed(current, log, ix) {
                 out.push(current.clone());
             }
             return;
         }
-        let name = self.vars[idx].name.clone();
-        for &id in &domains[idx] {
-            current.map.insert(name.clone(), id.to_string());
-            self.product(idx + 1, domains, current, log, out);
+        let var_idx = order[idx];
+        let name = self.vars[var_idx].name.clone();
+
+        // Effective candidates: base domain ∩ all active propagations
+        // targeting this level. Sorted + deduped (an event may reference the
+        // same object under several qualifiers — the join emits it once).
+        let mut effective: Vec<&str> = domains[idx]
+            .iter()
+            .copied()
+            .filter(|id| {
+                active
+                    .iter()
+                    .filter(|(lvl, _)| *lvl == idx)
+                    .all(|(_, allowed)| allowed.contains(id))
+            })
+            .collect();
+        effective.sort_unstable();
+        effective.dedup();
+
+        // This level's propagation spec: for each E2O(e, o, q) pred touching
+        // this var — forward (this var is the event side, target `o` unbound)
+        // or inverse (this var is the object side, source `e` unbound) —
+        // `(future level, qualifier, target var decl, direction)`. The
+        // allowed-id list is computed per candidate, since it depends on the
+        // concrete element bound at this level.
+        let mut prop_spec: Vec<(usize, &Option<String>, &VarDecl, bool)> = Vec::new();
+        for p in &self.preds {
+            if let BasicPredicate::E2O {
+                event,
+                object,
+                qualifier,
+            } = p
+            {
+                let (this_side, other_var, kind_check) = if self.vars[var_idx].kind
+                    == VarKind::Event
+                {
+                    (event == &name, object, VarKind::Object)
+                } else {
+                    (object == &name, event, VarKind::Event)
+                };
+                if !this_side {
+                    continue;
+                }
+                let Some(off) = order[idx + 1..]
+                    .iter()
+                    .position(|&j| self.vars[j].name == *other_var)
+                else {
+                    continue; // partner already bound (leaf check covers it)
+                };
+                let lvl = idx + 1 + off;
+                debug_assert_eq!(self.vars[order[lvl]].kind, kind_check);
+                let inverse = self.vars[var_idx].kind == VarKind::Object;
+                prop_spec.push((lvl, qualifier, &self.vars[order[lvl]], inverse));
+            }
         }
-        current.map.remove(&name);
+
+        for &id in &effective {
+            current.map.insert(name.clone(), id.to_string());
+            let mut merged: Vec<(usize, Vec<&str>)> = active.to_vec();
+            for (lvl, qualifier, decl, inverse) in &prop_spec {
+                let refs = if *inverse {
+                    ix.e2o_inv.get(id)
+                } else {
+                    ix.e2o.get(id)
+                };
+                let Some(refs) = refs else {
+                    continue;
+                };
+                let allowed: Vec<&str> = refs
+                    .iter()
+                    .filter(|(rid, q)| {
+                        qual_matches(qualifier, q)
+                            && ix
+                                .event_type
+                                .get(*rid)
+                                .or_else(|| ix.object_type.get(*rid))
+                                .is_some_and(|t| decl.admits_type(t))
+                    })
+                    .map(|(rid, _)| *rid)
+                    .collect();
+                merged.push((*lvl, allowed));
+            }
+            self.product(idx + 1, domains, order, &merged, current, log, ix, out);
+            current.map.remove(&name);
+        }
     }
 
     /// **Def. 7** — `self ⪯_L other`: `self` refines `other` (is at least as
@@ -409,12 +722,49 @@ pub struct ChildSet {
     pub n_max: Option<usize>,
 }
 
-/// A predicate usable inside `constr(v)` (Fig. 6). `constr` may mix BASIC
-/// predicates and CHILD SET predicates; a binding is **satisfied** iff *all*
-/// of them hold, else **violated**.
+/// A predicate usable inside `constr(v)` (Fig. 6), extended to a full
+/// **predicate algebra**: `constr` may mix BASIC predicates, CHILD SET
+/// predicates, and the Boolean connectives AND (`All`), OR (`Any`), NOT
+/// (`Not`) — the connectives recurse over this same type, so arbitrarily
+/// nested composites like `all:[P, any:[Q, not: R]]` are legal.
+///
+/// # Semantics (per binding `b` of the node's domain)
+/// - `All(ps)`  ⇔ every `p ∈ ps` holds (`[]` ⇒ vacuously true);
+/// - `Any(ps)`  ⇔ some `p ∈ ps` holds (`[]` ⇒ false), evaluated with
+///   short-circuiting per-binding `any()`, which is set-equivalent to the
+///   union of the children's satisfied sets since the domain is fixed;
+/// - `Not(p)`   ⇔ `p` does **not** hold for `b`. *Closed-world over
+///   bindings*: `¬P` holds for `b` iff `b` is in the node's domain
+///   (guaranteed — `constr` is only evaluated over `out_L(box(v))`) and
+///   `P(b)` is false. There is no open-world third value: an unbound
+///   variable makes a BASIC predicate false, hence `¬P` true.
+///
+/// # Serde shapes (additive, all untagged)
+/// `{"all":[...]}`, `{"any":[...]}`, `{"not": ...}` are new; the previous
+/// shapes are unchanged and still parse — a bare BASIC predicate
+/// (`{"kind": "E2O", ...}`) and a CHILD SET object
+/// (`{"edge": "A", "n_min": .., "n_max": ..}`); the older
+/// `{"type": "Basic"|"ChildSet", ...}` tagged forms also still parse, the
+/// tag simply being ignored as an unknown field.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type")]
+#[serde(untagged)]
 pub enum ConstraintPredicate {
+    /// AND over child predicates — `constr` holds iff **all** hold.
+    All {
+        /// The conjuncts.
+        all: Vec<ConstraintPredicate>,
+    },
+    /// OR over child predicates — `constr` holds iff **some** holds.
+    Any {
+        /// The disjuncts.
+        any: Vec<ConstraintPredicate>,
+    },
+    /// Negation — `constr` holds iff the child does not (closed-world over
+    /// bindings; see the type-level docs).
+    Not {
+        /// The negated predicate.
+        not: Box<ConstraintPredicate>,
+    },
     /// A BASIC predicate (E2O / O2O / TBE) used as a constraint.
     Basic(BasicPredicate),
     /// A CHILD SET cardinality constraint.
@@ -479,36 +829,55 @@ impl QueryTree {
     /// `CHILD SET` evaluation for a single parent binding `b` of node `u`:
     /// counts child bindings `x ∈ out_L(box(child)) with b ⊑_L x`, then tests
     /// membership of that count in `[n_min, n_max]`.
-    fn child_set_holds(&self, u: &Node, b: &Binding, cs: &ChildSet, log: &OCEL) -> bool {
+    ///
+    /// Both `out_L(box(child))` and the counting itself are memoized in
+    /// `ctx`: the child's output set is computed once per evaluation call
+    /// (not once per parent binding), and the count is served from a
+    /// projection index keyed by the parent binding — linear in output size
+    /// overall instead of `|out(parent)|·|out(child)|·(|E|+|O|)`.
+    fn child_set_holds(
+        &self,
+        u: &Node,
+        b: &Binding,
+        cs: &ChildSet,
+        ctx: &mut EvalContext<'_>,
+    ) -> bool {
         let Some(edge) = u.children.iter().find(|e| e.label == cs.edge) else {
             // Edge label not found ⇒ predicate ill-formed for this node ⇒ false.
             return false;
         };
-        let Some(child) = self.node(&edge.child) else {
+        if self.node(&edge.child).is_none() {
+            // Child node missing ⇒ ill-formed ⇒ false (n_min = 0 must not
+            // accidentally succeed over a dangling edge).
             return false;
-        };
-        let count = child
-            .bbox
-            .output(log)
-            .iter()
-            .filter(|x| b.refines(x))
-            .count();
+        }
+        let parent_vars: Vec<&str> = b.map.keys().map(String::as_str).collect();
+        let count = ctx.child_count(&edge.child, &parent_vars, b);
         let above = count >= cs.n_min;
         let below = cs.n_max.is_none_or(|m| count <= m);
         above && below
     }
 
-    /// Evaluate one `constr` predicate against a parent binding `b` of node `u`.
+    /// Evaluate one `constr` predicate against a parent binding `b` of node
+    /// `u` — the recursion realizing the predicate algebra (AND / OR / NOT
+    /// over BASIC and CHILD SET leaves).
     fn constr_pred_holds(
         &self,
         u: &Node,
         b: &Binding,
         p: &ConstraintPredicate,
-        log: &OCEL,
+        ctx: &mut EvalContext<'_>,
     ) -> bool {
         match p {
-            ConstraintPredicate::Basic(bp) => bp.holds(b, log),
-            ConstraintPredicate::ChildSet(cs) => self.child_set_holds(u, b, cs, log),
+            ConstraintPredicate::All { all } => all
+                .iter()
+                .all(|q| self.constr_pred_holds(u, b, q, ctx)),
+            ConstraintPredicate::Any { any } => any
+                .iter()
+                .any(|q| self.constr_pred_holds(u, b, q, ctx)),
+            ConstraintPredicate::Not { not } => !self.constr_pred_holds(u, b, not, ctx),
+            ConstraintPredicate::Basic(bp) => bp.holds_indexed(b, &ctx.index),
+            ConstraintPredicate::ChildSet(cs) => self.child_set_holds(u, b, cs, ctx),
         }
     }
 }
@@ -559,8 +928,14 @@ pub fn evaluate_constraint(tree: &QueryTree, log: &OCEL) -> ConstraintResult {
     })
 }
 
-/// Evaluate `constr` of an arbitrary node `node_id` (Fig. 6 generalized).
+/// Evaluate `constr` of an arbitrary node `node_id` (Fig. 6 generalized,
+/// including the AND/OR/NOT algebra of [`ConstraintPredicate`]).
 /// Returns `None` if the node id is unknown.
+///
+/// One [`EvalContext`] (id index + child-output memoization + CHILD SET
+/// projection count index) is built per call and threaded through the whole
+/// evaluation, so each child node's `out_L(box(child))` is enumerated at most
+/// once and membership/count checks are hash lookups.
 #[must_use]
 pub fn evaluate_node_constraint(
     tree: &QueryTree,
@@ -568,7 +943,8 @@ pub fn evaluate_node_constraint(
     log: &OCEL,
 ) -> Option<ConstraintResult> {
     let u = tree.node(node_id)?;
-    let bindings = u.bbox.output(log);
+    let mut ctx = EvalContext::new(tree, log);
+    let bindings = u.bbox.output_indexed(log, &ctx.index);
     let mut satisfied = 0;
     let mut violated = 0;
     let mut verdicts = Vec::with_capacity(bindings.len());
@@ -577,7 +953,7 @@ pub fn evaluate_node_constraint(
         let ok = u
             .constr
             .iter()
-            .all(|p| tree.constr_pred_holds(u, b, p, log));
+            .all(|p| tree.constr_pred_holds(u, b, p, &mut ctx));
         if ok {
             satisfied += 1;
         } else {

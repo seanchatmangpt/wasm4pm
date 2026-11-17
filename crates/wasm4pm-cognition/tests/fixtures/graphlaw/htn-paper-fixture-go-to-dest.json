@@ -1,0 +1,54 @@
+{
+  "breed": "htn_planning",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "task",
+        "value": "go_to_dest"
+      }
+    ],
+    "intent": "plan",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "op:walk",
+        "id": "method:go_to_dest:walk",
+        "premise": [
+          "at=home"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "at=dest",
+        "id": "op:walk",
+        "premise": []
+      }
+    ],
+    "state": [
+      {
+        "predicate": "at",
+        "value": "home"
+      }
+    ]
+  },
+  "expected": {
+    "derived_facts_sorted": [],
+    "notes": "PLAN-REPLAY (htn_planning, paper fixture: Nau et al. 2003 SHOP2 JAIR 20:379-404 §2, papers/htn_planning.json): total-order decomposition method:go_to_dest:walk -> op:walk; expected is the PRIMITIVE-SEQUENCE EXECUTABILITY check only — the op: leaf is replayed in Datalog (at=dest@t1 :- at=home@t0, the op's only real applicability condition) and the final state contains at=dest@t1. Method expansion itself is checked by the breed's own postcondition audit, not by this vector. | CONFORMED to the breed output surface by the FOUNDATION harness court: at=dest@t1 (goal fluent) is not surfaced by the htn breed output (traces + selected only); goal achievement is asserted via the primitive_sequence verdict and the surviving at=home@t1 persistence fact. | CONFORMED to the breed output surface by the FOUNDATION harness court: the htn breed surfaces only htn-decompose/htn-apply/htn-plan traces and the selected plan (no state fluents); post-execution fluents at=home@t1 / at=dest@t1 are recorded here rather than asserted; goal achievement is asserted via the selected plan op:walk and the decomposition trace. | VERIFIER vector: the breed emits the plan via selected only (no state facts); final-state reachability is the generator replay court, not an output-surface assertion.",
+    "verdicts": {
+      "selected": "op:walk"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "htn-paper-fixture-go-to-dest"
+}

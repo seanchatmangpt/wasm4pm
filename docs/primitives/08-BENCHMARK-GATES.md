@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/08-BENCHMARK-GATES.md; source-sha256: d3d54fed5c156fe45816ee0c4c70e96d306baffbd153360cac2797cb146ae08a; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/primitives/08-BENCHMARK-GATES.md; source-sha256: d19b1368180cdf5f4663fc3116c2b32d2276e2a1469ab4be7c38395cec42f37d; reason: path-local documentation retained pending domain-specific supersession -->
 
 # Agent 9 — Benchmark / real-data gate agent
 
@@ -9,8 +9,9 @@ determinism, G2 receipt integrity, G3 quality-threshold truth, G4 synchrony
 
 ## Status
 Gate logic fully implemented (`wasm4pm/benches/closed_claw/gates.rs`). Real
-data usage is partially enforced — 32 APIs still have zero benchmark coverage
-(see `benchmark_audit.md`).
+data usage is partially enforced — 32 APIs had zero benchmark coverage as of
+v26.5.29 (archived; see
+`docs/archive/2026-06-09/root-stale/benchmark_audit.md`).
 
 ---
 
@@ -38,10 +39,13 @@ wasm4pm/benches/closed_claw/
 └── mod.rs          # Closed Claw bench module root
 
 bench_data/
-├── bpi2020_travel.xes          # Real BPI 2020 travel permits (10,500 traces)
+├── bpi2020_domestic_declarations.xes          # Real BPI 2020 travel permits (10,500 traces)
 ├── roadtraffic100traces.xes    # Real road traffic fine management (100 traces)
 ├── ocel20_example.jsonocel     # Real OCEL 2.0 example
-└── sepsis.xes                  # 14-byte stub — NOT real data (known gap)
+└── sepsis_stub_5traces.xes     # ~6.2 KB, 5-trace handcrafted stub — NOT the
+                                 #   real Sepsis log (formerly a 14-byte stub /
+                                 #   404 download leftover); known gap, see
+                                 #   docs/benchmarks/RESULTS-2026-10-10.md D1
 ```
 
 ---
@@ -49,11 +53,15 @@ bench_data/
 ## Real-data policy
 
 > "All benchmarks must use real, publicly sourced event logs. No synthetic, mock,
-> or generated data is permitted." — `benchmark_audit.md`
+> or generated data is permitted." — `benchmark_audit.md` (as of v26.5.29,
+> archived at `docs/archive/2026-06-09/root-stale/benchmark_audit.md`)
 
-Current state: 4 usable real datasets; 32 exported APIs have zero benchmark
-coverage; `sepsis.xes` is a 404 stub and must be replaced before G3 can run
-on sepsis-domain primitives.
+Current state: 4 usable real datasets; the v26.5.29 audit found 32 exported APIs
+with zero benchmark coverage (archived figure — see link above);
+`sepsis.xes` (on disk: `bench_data/sepsis_stub_5traces.xes`) is a ~6.2 KB,
+5-trace handcrafted stub (not the real Sepsis log; formerly a 14-byte 404
+download leftover) and must be replaced before G3 can run
+on sepsis-domain primitives (see `docs/benchmarks/RESULTS-2026-10-10.md` D1).
 
 ---
 

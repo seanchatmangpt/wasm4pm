@@ -1,0 +1,226 @@
+{
+  "breed": "bayesian_network",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "cpt:A|B,E",
+        "value": "0.001,0.29,0.94,0.95"
+      },
+      {
+        "key": "cpt:B",
+        "value": "0.001"
+      },
+      {
+        "key": "cpt:E",
+        "value": "0.002"
+      },
+      {
+        "key": "cpt:J|A",
+        "value": "0.05,0.90"
+      },
+      {
+        "key": "cpt:M|A",
+        "value": "0.01,0.70"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "query",
+        "value": "dsep:B,E|A"
+      }
+    ],
+    "intent": "d-separation B,E given {A}",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [],
+    "notes": "Pearl 1988 alarm network: B and E are d-connected given A — A is an OBSERVED COLLIDER on B->A<-E, and observing a collider activates the path (explaining-away). The classical discriminating case for the ancestor-of-obs seeding. Differential-checked vs the breed's Bayes-ball. Verifier, not deriver.",
+    "verdicts": {
+      "dsep_query": "dsep:B,E|A=false"
+    }
+  },
+  "provenance": {
+    "datalog_program": {
+      "fixpoint": [
+        "anc:A",
+        "anc:A,B",
+        "anc:A,E",
+        "ddiff:A,B",
+        "ddiff:A,E",
+        "ddiff:A,J",
+        "ddiff:A,M",
+        "ddiff:B,A",
+        "ddiff:B,E",
+        "ddiff:B,J",
+        "ddiff:B,M",
+        "ddiff:E,A",
+        "ddiff:E,B",
+        "ddiff:E,J",
+        "ddiff:E,M",
+        "ddiff:J,A",
+        "ddiff:J,B",
+        "ddiff:J,E",
+        "ddiff:J,M",
+        "ddiff:M,A",
+        "ddiff:M,B",
+        "ddiff:M,E",
+        "ddiff:M,J",
+        "down:A",
+        "end:E",
+        "marry:B,E",
+        "marry:E,B",
+        "node:A",
+        "node:B",
+        "node:E",
+        "node:J",
+        "node:M",
+        "obs:A",
+        "par:A,B",
+        "par:A,E",
+        "par:J,A",
+        "par:M,A",
+        "reach:A",
+        "reach:B",
+        "reach:E",
+        "start:B",
+        "unobs:B",
+        "unobs:E",
+        "unobs:J",
+        "unobs:M",
+        "up:B",
+        "up:E"
+      ],
+      "rules": [
+        {
+          "certainty": 1.0,
+          "conclusion": "anc:?0",
+          "id": "r_anc",
+          "premise": [
+            "obs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "anc:?0,?1",
+          "id": "r_anc",
+          "premise": [
+            "obs:?0",
+            "par:?0,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "anc:?0,?2",
+          "id": "r_anc",
+          "premise": [
+            "anc:?0,?1",
+            "par:?1,?2"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "unobs:?0",
+          "id": "r_unobs",
+          "premise": [
+            "node:?0",
+            "!obs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "marry:?0,?1",
+          "id": "r_marry",
+          "premise": [
+            "par:?2,?0",
+            "par:?2,?1",
+            "ddiff:?0,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "up:?0",
+          "id": "r_up",
+          "premise": [
+            "start:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "down:?1",
+          "id": "r_down",
+          "premise": [
+            "up:?0",
+            "par:?1,?0",
+            "unobs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "up:?1",
+          "id": "r_up",
+          "premise": [
+            "up:?0",
+            "par:?0,?1",
+            "unobs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "down:?1",
+          "id": "r_down",
+          "premise": [
+            "down:?0",
+            "par:?1,?0",
+            "unobs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "up:?1",
+          "id": "r_up",
+          "premise": [
+            "down:?0",
+            "par:?0,?1",
+            "anc:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "reach:?0",
+          "id": "r_reach",
+          "premise": [
+            "up:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "reach:?0",
+          "id": "r_reach",
+          "premise": [
+            "down:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "dsep_ok:?0",
+          "id": "r_dsep_ok",
+          "premise": [
+            "end:?0",
+            "!reach:?0"
+          ]
+        }
+      ]
+    },
+    "differential": "native Bayes-ball port of breeds/bayesian_network.rs dsep must agree with the Datalog court verdict and the hand-checked expectation at generation time",
+    "eyeron": "0.7.8",
+    "generator": "bayes_pop_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "bayesian_network-dsep-paper-b-e-a"
+}

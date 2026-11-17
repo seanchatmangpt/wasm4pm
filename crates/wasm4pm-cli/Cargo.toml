@@ -25,6 +25,8 @@ wasm4pm-cognition = { workspace = true }
 wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 blake3 = { workspace = true }
 chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 git2 = { workspace = true }
 affidavit = { workspace = true }
 
@@ -33,3 +35,7 @@ assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = { workspace = true }
 criterion = { workspace = true }
+
+[[bench]]
+name = "cli"
+harness = false

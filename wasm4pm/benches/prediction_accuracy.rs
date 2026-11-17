@@ -109,30 +109,11 @@ fn load_xes_log(path: &str) -> Result<EventLog, String> {
 /// Tries the road-traffic fine-management log (real activities + timestamps);
 /// falls back to a synthetic log if the file is absent so benches stay runnable.
 fn load_real_log(max_traces: usize) -> EventLog {
-    // Candidate real datasets, smallest/fastest first.
-    let candidates = [
-        "bench_data/roadtraffic100traces.xes",
-        "data/Sepsis Cases - Event Log.xes",
-        "data/RepairExample.xes",
-        "bench_data/bpi2020_travel.xes",
-    ];
-    for path in candidates {
-        if let Ok(mut log) = load_xes_log(path) {
-            if !log.traces.is_empty() {
-                if log.traces.len() > max_traces {
-                    log.traces.truncate(max_traces); // cap for bounded runtime
-                }
-                return log;
-            }
-        }
+    let mut log = helpers::load_real_log_from(helpers::ROADTRAFFIC_CANDIDATES);
+    if log.traces.len() > max_traces {
+        log.traces.truncate(max_traces); // cap for bounded runtime
     }
-    // Fallback: synthetic so the bench never silently breaks if data is missing.
-    generate_event_log(&LogShape {
-        num_cases: max_traces.min(1000),
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    })
+    log
 }
 
 /// Count predictable transitions in a log (the unit of measured work).
@@ -912,13 +893,9 @@ fn evaluate_resource(log: &EventLog) -> ResourceAccuracy {
 /// timestamps for the time-based perspectives.
 fn workloads() -> Vec<(&'static str, EventLog)> {
     let real = load_real_log(if is_fast_mode() { 300 } else { 1000 });
-    let synthetic = generate_event_log(&LogShape {
-        num_cases: if is_fast_mode() { 300 } else { 1000 },
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    });
-    vec![("real_roadtraffic", real), ("synthetic", synthetic)]
+    // Second perspective = full real log (largest cap), not a synthetic twin.
+    let full = load_real_log(usize::MAX);
+    vec![("real_roadtraffic", real), ("real_sepsis_full", full)]
 }
 
 fn bench_next_activity(c: &mut Criterion) {

@@ -155,7 +155,7 @@ is the fix safe* — are diagnostic, abductive, prescriptive, and verificational
 Server-side platforms answer them with a human, a meeting, and a follow-up query.
 
 wasm4pm answers them in the same frame, because the cognition layer runs in the
-same tab. The 52 measured breeds execute at a **19.1 µs median latency** (see
+same tab. The 55 registered breeds execute at breed-medians documented in docs/benchmarks/breed-latency (archived 2026-06-10 snapshot; current medians in docs/benchmarks/REPORT.md) (see
 `docs/explanation/benchmarks_thesis.md`); a 16 ms interactive frame has room for
 hundreds of verified reasoning steps. So a bottleneck the conformance overlay
 surfaces can be handed, live and client-side, down a pipeline of breeds:
@@ -222,7 +222,7 @@ shipped and intended is drawn plainly.
 
 **Real today.**
 - The cognition WASM builds for the browser: `crates/wasm4pm-cognition/pkg-web`
-  exists alongside the Node and bundler targets, and the 52 breeds run
+  exists alongside the Node and bundler targets, and the 55 registered breeds run
   **client-side** from it.
 - The breeds are paper-grounded, falsifiable, deterministic, and receipt-bearing,
   with the latency profile cited in §5 (`docs/explanation/benchmarks_thesis.md`).

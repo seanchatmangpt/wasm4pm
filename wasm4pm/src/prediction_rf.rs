@@ -29,6 +29,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+// Lane-19 compile-freeze unblock (disclosed): json! used below without import.
+use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::error::{codes, js_val, wasm_err};
@@ -528,7 +530,6 @@ pub fn predict_next_activity_rf(model_handle: &str, prefix_json: &str) -> Result
 // ---------------------------------------------------------------------------
 // Function 3: predict_next_activity_unified
 // ---------------------------------------------------------------------------
-
 /// Unified dispatcher: routes to n-gram or RF predictor based on handle type.
 ///
 /// * If the handle holds an `NGramPredictor` → delegates to `predict_next_activity`
@@ -577,8 +578,152 @@ pub fn predict_next_activity_unified(
             crate::prediction::predict_next_activity(model_handle, prefix_json)
         }
         "rf" => predict_next_activity_rf(model_handle, prefix_json),
-        _ => unreachable!("model_type can only be 'ngram' or 'rf'"),
+        // Typed error instead of `unreachable!()` — a panic here would abort
+        // the whole WASM instance; the classification above is exhaustive,
+        // but an exhaustive match already covers it, so this arm is a
+        // belt-and-braces typed refusal.
+        _ => Err(wasm_err(
+            codes::INTERNAL_ERROR,
+            format!("unroutable predictor model type: {model_type}"),
+        )),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Function 4: evaluate_rf_predictor — honest holdout evaluation
+// ---------------------------------------------------------------------------
+
+/// Honest holdout evaluation of a trained RF predictor: the stored snapshot's
+/// training samples are prefix-split (first 80% train, last 20% test), the RF
+/// is re-fit on the TRAIN split only, and every test sample is scored with
+/// top-k accuracy (the true next activity appearing among the top-k
+/// vote-ranked candidates) plus macro-F1 over top-1 predictions.
+///
+/// Returns a JSON object:
+/// ```json
+/// { "top1": 0.62, "top2": 0.81, "top3": 0.90, "macro_f1": 0.55,
+///   "n_test": 40, "n_train": 160, "insufficient_data": false }
+/// ```
+/// When fewer than `MIN_EVAL_SAMPLES` test samples exist, the metrics fields
+/// are `null` and `insufficient_data` is true — no number is fabricated.
+#[wasm_bindgen]
+pub fn evaluate_rf_predictor(model_handle: &str) -> Result<JsValue, JsValue> {
+    use crate::ml::evaluation::{
+        classification_metrics_from_ranked, prefix_split, DEFAULT_TRAIN_RATIO, MIN_EVAL_SAMPLES,
+    };
+    use miniml::random_forest_impl;
+
+    let state = get_or_init_state();
+
+    let result_json = state.with_object(model_handle, |obj| {
+        let json_str = match obj {
+            Some(StoredObject::JsonString(s)) => s,
+            Some(_) => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    "Handle is not an RF predictor (wrong type)",
+                ))
+            }
+            None => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    format!("No model at handle '{model_handle}'"),
+                ))
+            }
+        };
+
+        let snapshot: RfPredictorSnapshot = serde_json::from_str(json_str).map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Snapshot deserialisation failed: {}", e),
+            )
+        })?;
+
+        if snapshot.snapshot_type != RF_SNAPSHOT_TYPE {
+            return Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!(
+                    "Expected type '{}', got '{}'",
+                    RF_SNAPSHOT_TYPE, snapshot.snapshot_type
+                ),
+            ));
+        }
+
+        let n = snapshot.n_samples;
+        let feat = snapshot.n_features;
+        let (train_len, test_len) = prefix_split(n, DEFAULT_TRAIN_RATIO);
+        if test_len == 0 || n - test_len < 1 || test_len < MIN_EVAL_SAMPLES {
+            return serde_json::to_string(&json!({
+                "top1": serde_json::Value::Null,
+                "top2": serde_json::Value::Null,
+                "top3": serde_json::Value::Null,
+                "macro_f1": serde_json::Value::Null,
+                "n_test": test_len,
+                "n_train": train_len,
+                "insufficient_data": true,
+            }))
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, e.to_string()));
+        }
+
+        // Split rows (row-major, stride feat).
+        let row = |i: usize| &snapshot.training_data[i * feat..(i + 1) * feat];
+        let mut train_x: Vec<f64> = Vec::with_capacity(train_len * feat);
+        for i in 0..train_len {
+            train_x.extend_from_slice(row(i));
+        }
+        let train_y = &snapshot.training_labels[..train_len];
+
+        // Fit on the TRAIN split only.
+        let model = random_forest_impl(
+            &train_x,
+            feat,
+            train_y,
+            snapshot.n_trees,
+            snapshot.max_depth,
+            snapshot.min_samples_split,
+            true,
+        )
+        .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("RF fit failed: {}", e)))?;
+
+        // Score each held-out sample with its vote-ranked candidate list.
+        let mut ranked: Vec<Vec<String>> = Vec::with_capacity(test_len);
+        let mut truth: Vec<String> = Vec::with_capacity(test_len);
+        for i in train_len..n {
+            let proba = model.predict_proba_single(row(i));
+            let mut cands: Vec<(usize, f64)> = proba
+                .chunks_exact(2)
+                .map(|c| (c[0].round() as usize, c[1]))
+                .collect();
+            cands.sort_by(|a, b| b.1.total_cmp(&a.1));
+            ranked.push(
+                cands.iter()
+                    .filter_map(|(id, _)| snapshot.vocab.get(*id).cloned())
+                    .collect(),
+            );
+            let true_id = snapshot.training_labels[i].round() as usize;
+            truth.push(
+                snapshot
+                    .vocab
+                    .get(true_id)
+                    .cloned()
+                    .unwrap_or_else(|| format!("<id {true_id}>")),
+            );
+        }
+
+        let m = classification_metrics_from_ranked(&ranked, &truth, train_len);
+        serde_json::to_string(&json!({
+            "top1": m.top1,
+            "top2": m.top2,
+            "top3": m.top3,
+            "macro_f1": m.macro_f1,
+            "n_test": m.n_test,
+            "n_train": m.n_train,
+            "insufficient_data": false,
+        }))
+        .map_err(|e| wasm_err(codes::INTERNAL_ERROR, e.to_string()))
+    })?;
+
+    Ok(js_val(&result_json))
 }
 
 // ---------------------------------------------------------------------------

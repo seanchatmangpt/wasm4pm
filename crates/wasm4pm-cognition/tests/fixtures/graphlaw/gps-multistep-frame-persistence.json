@@ -1,0 +1,69 @@
+{
+  "breed": "gps",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "robot",
+        "value": "office"
+      },
+      {
+        "id": "g2",
+        "predicate": "box",
+        "value": "office"
+      }
+    ],
+    "intent": "move robot and box to the office",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "robot=office;!robot=home",
+        "id": "op:walk_office",
+        "premise": [
+          "robot=home"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "box=office;!box=home",
+        "id": "op:carry_box",
+        "premise": [
+          "robot=office",
+          "box=home"
+        ]
+      }
+    ],
+    "state": [
+      {
+        "predicate": "robot",
+        "value": "home"
+      },
+      {
+        "predicate": "box",
+        "value": "home"
+      }
+    ]
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "robot=office",
+      "box=office"
+    ],
+    "notes": "PLAN-REPLAY (gps, multi-step): two-gap plan where step 2's precondition robot=office is PRODUCED by step 1 and must survive step 2 via the frame rule robot=office@t2 :- robot=office@t1 — this is the delete/persistence semantics the time-indexed Datalog fragment encodes. Final state {robot=office@t2, box=office@t2}: both goals reachable. GPS gap order: robot=office first, then box=office (breed plan string op:walk_office,op:carry_box). | CONFORMED to the breed output surface by the FOUNDATION harness court: reduce-gap details robot=office and box=office are trace-evidenced; plan via selected.",
+    "verdicts": {
+      "plan": "op:walk_office,op:carry_box"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "gps-multistep-frame-persistence"
+}

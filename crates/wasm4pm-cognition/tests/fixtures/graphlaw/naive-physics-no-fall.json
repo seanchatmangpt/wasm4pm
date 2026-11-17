@@ -1,0 +1,237 @@
+{
+  "breed": "naive_physics",
+  "breed_input": {
+    "facts": [
+      {
+        "key": "np:ground:floor",
+        "value": "true"
+      },
+      {
+        "key": "np:on:table",
+        "value": "floor"
+      },
+      {
+        "key": "np:on:cup",
+        "value": "table"
+      },
+      {
+        "key": "np:in:water",
+        "value": "cup"
+      },
+      {
+        "key": "np:liquid:water",
+        "value": "cup"
+      }
+    ],
+    "intent": "naive physics scene naive-physics-no-fall"
+  },
+  "datalog": {
+    "facts": [
+      [
+        "https://np.graphlaw.dev/cup",
+        "https://np.graphlaw.dev/on",
+        "https://np.graphlaw.dev/table"
+      ],
+      [
+        "https://np.graphlaw.dev/floor",
+        "https://np.graphlaw.dev/ground",
+        "https://np.graphlaw.dev/true"
+      ],
+      [
+        "https://np.graphlaw.dev/table",
+        "https://np.graphlaw.dev/on",
+        "https://np.graphlaw.dev/floor"
+      ],
+      [
+        "https://np.graphlaw.dev/water",
+        "https://np.graphlaw.dev/in",
+        "https://np.graphlaw.dev/cup"
+      ],
+      [
+        "https://np.graphlaw.dev/water",
+        "https://np.graphlaw.dev/liquid",
+        "https://np.graphlaw.dev/cup"
+      ]
+    ],
+    "rules": [
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/on",
+            "?y"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/sup",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/in",
+            "?y"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/sup",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/sup",
+            "?y"
+          ],
+          [
+            "?y",
+            "https://np.graphlaw.dev/sup",
+            "?z"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/sup",
+          "?z"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/sup",
+            "?y"
+          ],
+          [
+            "?y",
+            "https://np.graphlaw.dev/remove",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/falls",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?x",
+            "https://np.graphlaw.dev/sup",
+            "?y"
+          ],
+          [
+            "?y",
+            "https://np.graphlaw.dev/falls",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?x",
+          "https://np.graphlaw.dev/falls",
+          "?y"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?l",
+            "https://np.graphlaw.dev/liquid",
+            "?c"
+          ],
+          [
+            "?c",
+            "https://np.graphlaw.dev/falls",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?l",
+          "https://np.graphlaw.dev/spills",
+          "?c"
+        ]
+      },
+      {
+        "body": [
+          [
+            "?l",
+            "https://np.graphlaw.dev/liquid",
+            "?c"
+          ],
+          [
+            "?c",
+            "https://np.graphlaw.dev/remove",
+            "?w"
+          ]
+        ],
+        "head": [
+          "?l",
+          "https://np.graphlaw.dev/spills",
+          "?c"
+        ]
+      }
+    ]
+  },
+  "engine": "graphlaw::abi op=datalog (PurRDF least fixpoint)",
+  "expected": {
+    "derived_facts_sorted": [],
+    "falls": [],
+    "not_falls": [
+      "floor",
+      "table"
+    ],
+    "notes": "Fully supported scene: no falls and no spills are derived (negative case).",
+    "spills": [],
+    "value": "verified",
+    "verdicts": {
+      "stability": "0 falls, 0 spills"
+    }
+  },
+  "input": {
+    "facts": [
+      {
+        "key": "np:ground:floor",
+        "value": "true"
+      },
+      {
+        "key": "np:on:table",
+        "value": "floor"
+      },
+      {
+        "key": "np:on:cup",
+        "value": "table"
+      },
+      {
+        "key": "np:in:water",
+        "value": "cup"
+      },
+      {
+        "key": "np:liquid:water",
+        "value": "cup"
+      }
+    ]
+  },
+  "provenance": {
+    "axioms": [
+      "ax-support (on/in are support; support transitivity)",
+      "ax-unsupported-falls (support removed -> falls)",
+      "ax-containment-transport (contents of a falling container fall)",
+      "ax-liquid-spill (liquid in a falling/removed container spills)"
+    ],
+    "eyeron": "0.7.8",
+    "generator": "naive_physics_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "note": "Fully supported scene: no falls and no spills are derived (negative case).",
+    "paper": "Hayes 1979 (Naive Physics Manifesto); Hayes 1985 (Naive physics I: ontology for liquids)",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "naive-physics-no-fall"
+}

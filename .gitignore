@@ -151,3 +151,33 @@ artifacts/validation/
 _build/
 _build-lane*/
 target-lane*/
+
+# fan-out lane build roots (cargo target dirs)
+_target-*/
+
+# Committed tsc emit in source dirs (D15): compiled from adjacent .ts sources;
+# coordinator to `git rm --cached` per docs/internal/untrack-build-outputs.txt
+benchmarks/**/*.js
+benchmarks/**/*.js.map
+benchmarks/**/*.d.ts
+benchmarks/**/*.d.ts.map
+playground/scenarios/**/*.js
+playground/scenarios/**/*.js.map
+playground/scenarios/**/*.d.ts
+playground/scenarios/**/*.d.ts.map
+wasm4pm/__tests__/**/*.js
+wasm4pm/__tests__/**/*.js.map
+wasm4pm/__tests__/**/*.d.ts
+wasm4pm/__tests__/**/*.d.ts.map
+packages/testing/**/*.js
+packages/testing/**/*.js.map
+packages/testing/**/*.d.ts
+packages/testing/**/*.d.ts.map
+packages/contracts/**/*.js
+packages/contracts/**/*.js.map
+packages/contracts/**/*.d.ts
+packages/contracts/**/*.d.ts.map
+apps/wasm4pm/**/*.js
+apps/wasm4pm/**/*.js.map
+apps/wasm4pm/**/*.d.ts
+apps/wasm4pm/**/*.d.ts.map

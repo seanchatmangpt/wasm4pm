@@ -45,6 +45,8 @@ pub mod digest;
 pub use digest::*;
 pub mod ocel;
 pub use ocel::*;
+pub mod ocel_castle;
+pub use ocel_castle::*;
 pub mod advice;
 pub use advice::*;
 pub mod policy;

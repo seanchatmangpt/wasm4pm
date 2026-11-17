@@ -1,0 +1,35 @@
+{
+  "vector_id": "description_logic-a-paper-baader-el",
+  "breed": "description_logic",
+  "provenance": {
+    "graphlaw_rev": "82814ac4f398274e64aeb47d2448d04f89cfefcd",
+    "graphlaw_version": "26.10.28",
+    "purrdf": "3.0.1",
+    "n3_engine": "purrdf-n3/3.0.1",
+    "generator": "graphlaw src/bin/dl_dualroute.rs (dual-route: purrdf::n3 DATALOG CR1-CR4 + purrdf OWL-RL; agreement required before emission)",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "classify",
+    "facts": [
+        { "key": "dl:subclass:Pericarditis", "value": "Inflammation" },
+        { "key": "dl:subclass:Inflammation", "value": "Disease" },
+        { "key": "dl:exists_rhs:Pericarditis", "value": "has_location.Heart" },
+        { "key": "dl:exists_lhs:has_location.Heart", "value": "HasLocationHeart" },
+        { "key": "dl:conj:Disease+HasLocationHeart", "value": "HeartDisease" }
+    ],
+    "rules": [],
+    "goals": [{ "id": "g1", "predicate": "dl:subsumes", "value": "Pericarditis:HeartDisease" }, { "id": "g2", "predicate": "dl:subsumes", "value": "HeartDisease:Pericarditis" }],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "dl:verdict:HeartDisease:Pericarditis=false",
+      "dl:verdict:Pericarditis:HeartDisease=true"
+    ],
+    "verdicts": { "g1": "Pericarditis⊑HeartDisease=true", "g2": "HeartDisease⊑Pericarditis=false" },
+    "notes": "the paper fixture (Baader/Brandt/Lutz EL example); all four CRs fire — dual-route agreed (purrdf::n3 DATALOG fixpoint == purrdf OWL-RL closure) on 2 goals before emission."
+  }
+}

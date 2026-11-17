@@ -92,7 +92,7 @@ breed must derive a certainty factor of **0.7** (Shortliffe & Buchanan 1975,
 p. 247). The Bayesian-network breed must derive **P(Burglary | Alarm) =
 0.373551228281836** by exact enumeration over Pearl's 1988 alarm network. The test
 loads a fixture carrying that published value with its citation, runs the breed,
-and asserts the number within tolerance — across all **52 breeds, 52/52 pass**.
+and asserts the number within tolerance — across the registered breeds (55 admitted; the TS parity corpus covers the enumerated 52, 52/52 pass).
 
 The loader refuses to lie by omission. A common failure mode is the *silent skip*:
 `if (fs.existsSync(fixture))` quietly turns a missing fixture into a green test. The

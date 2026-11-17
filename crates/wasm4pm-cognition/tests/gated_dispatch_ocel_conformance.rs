@@ -102,11 +102,10 @@ fn eliza_keyword_engine_path_gated_ok() {
     assert_gated_ok("eliza", &input);
 }
 
-/// description_logic's TS contract sends bare `subclass`/`class`/`disjoint`
-/// facts and an EMPTY goals list (the old `dl:subclass:*` fact grammar +
-/// explicit `dl:subsumes` goal is no longer what callers send).
+/// description_logic's Surface-3 contract sends `dl:subclass:*` axioms plus
+/// explicit `dl:subsumes` goals; both are required for gated success.
 #[test]
-fn description_logic_empty_goals_contract_gated_ok() {
+fn description_logic_surface3_contract_gated_ok() {
     let mut input = empty_input("dl reasoning");
     input.candidates = vec![Candidate {
         id: "x".into(),
@@ -115,12 +114,14 @@ fn description_logic_empty_goals_contract_gated_ok() {
         elimination_reason: None,
     }];
     input.facts = vec![
-        fact("subclass", "A,B"),
-        fact("subclass", "B,C"),
-        fact("class", "x,A"),
-        fact("disjoint", "C,D"),
+        fact("dl:subclass:A", "B"),
+        fact("dl:subclass:B", "C"),
     ];
-    // goals intentionally empty per current TS contract.
+    input.goals = vec![Goal {
+        id: "q0".into(),
+        predicate: "dl:subsumes".into(),
+        value: "A:C".into(),
+    }];
     assert_gated_ok("description_logic", &input);
 }
 
@@ -477,4 +478,29 @@ fn fixture_input(breed: &str) -> BreedInput {
     let json: serde_json::Value = serde_json::from_str(&content).unwrap();
     serde_json::from_value(json["input"].clone())
         .unwrap_or_else(|e| panic!("{} input: {}", path, e))
+}
+
+// ---------------------------------------------------------------------------
+// P5 tier: triz / morphological / ocpm_route_discoverer. These breeds were
+// previously ungated (lifecycle_model_for returned None). Registering
+// models_p5 makes them refusable; these tests assert their fixture-driven
+// runs conform via the new models (fail-closed coordination).
+// ---------------------------------------------------------------------------
+
+#[test]
+fn triz_gated_ok() {
+    let input = fixture_input("triz");
+    assert_gated_ok("triz", &input);
+}
+
+#[test]
+fn morphological_gated_ok() {
+    let input = fixture_input("morphological");
+    assert_gated_ok("morphological", &input);
+}
+
+#[test]
+fn ocpm_route_discoverer_gated_ok() {
+    let input = fixture_input("ocpm_route_discoverer");
+    assert_gated_ok("ocpm_route_discoverer", &input);
 }

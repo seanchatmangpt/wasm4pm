@@ -11,6 +11,27 @@ use wasm_bindgen::prelude::*;
 // adversarial inputs that would exhaust the WASM heap and crash the tab/process.
 const MAX_INPUT_BYTES: usize = 512 * 1024 * 1024; // 512 MB
 
+/// Shared size guard for WASM entry points: reject inputs over `MAX_INPUT_BYTES`
+/// (512 MB) before any parsing/allocation. `what` names the input in the error.
+/// Returns `String` so it is testable on native targets (JsValue panics there).
+pub(crate) fn check_input_size(content: &str, what: &str) -> Result<(), String> {
+    check_input_size_cap(content, what, MAX_INPUT_BYTES)
+}
+
+/// Cap-parameterized core of [`check_input_size`] (testable without a 512 MB
+/// allocation).
+pub(crate) fn check_input_size_cap(content: &str, what: &str, cap: usize) -> Result<(), String> {
+    if content.len() > cap {
+        return Err(format!(
+            "{} too large: {} bytes (max {} bytes)",
+            what,
+            content.len(),
+            cap
+        ));
+    }
+    Ok(())
+}
+
 /// Load an EventLog from JSON string
 #[wasm_bindgen]
 pub fn load_eventlog_from_json(content: &str) -> Result<String, JsValue> {

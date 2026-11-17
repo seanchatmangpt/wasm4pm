@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_forecast.md; source-sha256: 5e09716b8ff8554cd077850b8d9de4d1b350b0c5f257d1b2b4de2a70b1cb8afd; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_forecast.md; source-sha256: aa338130f54a584964d395464ef963df5f5a7281d5b9ef890f98b4fcf3737345; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: ml_forecast
 
@@ -30,3 +30,9 @@
 - **Rust Implementation**: `wasm4pm/src/ml/forecasting.rs` (method: `discover_ml_forecast`)
 - **TypeScript Dispatch Wrapper**: `packages/kernel/src/api.ts` (method: `runRaw`, case `ml_forecast`)
 - **Test File**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Input screening (2026-10-10, commit `0e3d81b38`)
+
+- Non-finite window values (NaN/Inf) are refused up front with a typed error
+  naming the flat element index (`input contains NaN/Inf at index i`);
+  previously one NaN window silently propagated NaN into RMSE/MAE/MAPE.

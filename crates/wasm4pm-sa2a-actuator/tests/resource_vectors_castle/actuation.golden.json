@@ -1,0 +1,14 @@
+{
+  "event_id": "castle-0001-activity_finished",
+  "event_type": "activity_finished",
+  "event_time": "2026-10-13T00:00:00Z",
+  "attributes": {
+    "authority": "none",
+    "provenance": "observation_only",
+    "allocation_id": "alloc-1",
+    "effect_digest": "digest-1",
+    "replay_key": "replay-1",
+    "generation": 3,
+    "actuator_state": "executed"
+  }
+}

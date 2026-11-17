@@ -71,6 +71,9 @@ pub enum RejectionCode {
     NegationRequiresFeature,
     /// Built-ins require `FeatureBit::Equality` or `TypedComparisons`.
     BuiltinRequiresFeature,
+    /// A negated body atom was evaluated with unbound variables (NAF floundering).
+    /// Floundering is a refusal, never a silent false.
+    NegationFloundering,
 }
 
 impl std::fmt::Display for RejectionCode {
@@ -106,6 +109,7 @@ impl std::fmt::Display for RejectionCode {
             RejectionCode::FeatureBitNotAdmitted => "feature_mask contains a reserved or unrecognised bit",
             RejectionCode::NegationRequiresFeature => "negation_mask is set but FeatureBit::StratifiedNegation is not in feature_mask",
             RejectionCode::BuiltinRequiresFeature => "builtin_mask is set but FeatureBit::Equality or TypedComparisons is not in feature_mask",
+            RejectionCode::NegationFloundering => "negated body atom contains unbound variables (negation floundering; bind all variables before negation)",
         };
         f.write_str(msg)
     }

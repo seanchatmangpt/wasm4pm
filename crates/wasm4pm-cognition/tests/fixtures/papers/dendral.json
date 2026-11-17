@@ -1,7 +1,8 @@
 {
   "breed": "dendral",
   "provenance": {
-    "paper": "/Users/sac/Documents/Papers/AI_LLM/Feigenbaum-Buchanan-Lederberg-1971-DENDRAL.pdf",
+    "paper": "Feigenbaum, Buchanan & Lederberg 1971, On generality and problem solving (DENDRAL) — local library PDF, untraceable from fresh clone",
+    "paper_trace": "unavailable-from-fresh-clone",
     "citation": "Feigenbaum, E. A., Buchanan, B. G., & Lederberg, J. (1971). On generality and problem solving: A case study using the DENDRAL program. Stanford Artificial Intelligence Project Memo AIM-131, Computer Science Department Report CS176. Stanford University.",
     "locus": "Section \"The General Problem Solvers of the DENDRAL World\" (pp. 9-16) and \"Heuristics Related to Problem Data: The Emergence of Specialists\" (pp. 14-16); Table 3 (pattern recognition rules, referenced p. 18); Tables 4-6 (ketone, ether, amine family results, pp. 21-26). No single figure presents a verbatim candidate-by-candidate elimination trace; the constraint-elimination methodology is described across these sections.",
     "extraction": "adapted",

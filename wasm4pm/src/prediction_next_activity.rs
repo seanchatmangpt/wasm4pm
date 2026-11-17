@@ -57,12 +57,30 @@ pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result
 
             let confidence = probabilities.first().copied().unwrap_or(0.0);
             let entropy_val = normalised_entropy(&probabilities);
+            // Full-vocabulary-normalised entropy: divides by ln(|vocab|) over
+            // the WHOLE model vocabulary, not just the returned top-k. The
+            // legacy `entropy` field normalises over the top-k slice only,
+            // which conflates "model is uncertain" with "we asked for a
+            // small k". Keep both one cycle.
+            let vocab_size = full_vocab_size(predictor);
+            let entropy_full_support = if vocab_size > 1 {
+                let ent: f64 = predictor
+                    .predict(&prefix)
+                    .iter()
+                    .filter(|&&(_, p)| p > 0.0)
+                    .map(|&(_, p)| -p * p.ln())
+                    .sum();
+                ent / (vocab_size as f64).ln()
+            } else {
+                0.0
+            };
 
             let result = json!({
                 "activities": activities,
                 "probabilities": probabilities,
                 "confidence": confidence,
                 "entropy": entropy_val,
+                "entropy_full_support": entropy_full_support,
             });
             serde_json::to_string(&result)
                 .map(|s| crate::error::js_val(&s))
@@ -132,6 +150,21 @@ fn normalised_entropy(probs: &[f64]) -> f64 {
     }
 }
 
+/// Size of the model's full activity vocabulary: every activity appearing as
+/// a context element or as a observed successor in the n-gram counts.
+fn full_vocab_size(predictor: &crate::models::NGramPredictor) -> usize {
+    let mut acts: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    for (ctx, nexts) in &predictor.counts {
+        for act in ctx {
+            acts.insert(act.as_str());
+        }
+        for act in nexts.keys() {
+            acts.insert(act.as_str());
+        }
+    }
+    acts.len()
+}
+
 /// Beam search over a string-keyed `NGramPredictor`.
 ///
 /// Each beam is a `(Vec<String>, f64)` — the full activity sequence (prefix +
@@ -170,7 +203,12 @@ fn beam_search_on_ngram(
         }
 
         next_beams.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
-        // Deduplicate beams that are identical (keep highest prob)
+        // Deduplicate identical beams (same predicted suffix): the list is
+        // sorted descending, and dedup_by keeps the first occurrence, so the
+        // highest-probability copy survives. Previously the comment claimed
+        // dedup happened but no dedup ran — identical beams wasted beam
+        // width and duplicated output rows.
+        next_beams.dedup_by(|a, b| a.0 == b.0);
         beams = next_beams.into_iter().take(beam_width).collect();
     }
 

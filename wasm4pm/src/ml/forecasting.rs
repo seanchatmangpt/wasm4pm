@@ -1,5 +1,6 @@
 //! Nanosecond Forecasting Family — branchless Exponential Smoothing for process mining.
 
+use crate::ml::utils::ensure_finite_1d;
 use crate::models::{parse_timestamp_ms, AttributeValue};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
@@ -18,6 +19,12 @@ pub struct ForecastResult {
     pub next_window: f64,
 }
 
+/// Simple exponential smoothing forecast.
+///
+/// # Caller contract (hot path)
+/// Performs NO finiteness validation — callers must pre-screen with
+/// [`ensure_finite_1d`](crate::ml::utils::ensure_finite_1d); one NaN poisons
+/// every subsequent smoothed value via the recurrence.
 #[inline(always)]
 pub fn forecast_internal(data: &[f64], alpha: f64) -> ForecastResult {
     let n = data.len();
@@ -78,6 +85,10 @@ pub fn forecast_internal(data: &[f64], alpha: f64) -> ForecastResult {
 /// `b_t = beta*(l_t - l_{t-1}) + (1-beta)*b_{t-1}`.
 /// Init: `l_0 = x_0`, `b_0 = x_1 - x_0` (0.0 when the series has < 2 points).
 /// Error metrics are one-step-ahead, identical in construction to SES.
+///
+/// # Caller contract (hot path)
+/// Performs NO finiteness validation — callers must pre-screen with
+/// [`ensure_finite_1d`](crate::ml::utils::ensure_finite_1d).
 pub fn holt_internal(series: &[f64], alpha: f64, beta: f64) -> ForecastResult {
     let n = series.len();
     if n == 0 {
@@ -189,6 +200,7 @@ pub fn discover_ml_forecast(
         }));
     }
 
+    ensure_finite_1d(&windows).map_err(|e| crate::error::js_val(&e))?;
     let res = forecast_internal(&windows, DEFAULT_ALPHA);
 
     let mean_density = count as f64 / NUM_WINDOWS as f64;

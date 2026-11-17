@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .github/IMPLEMENTATION_SUMMARY.md; source-sha256: a56c8d6e721980922f12a5b784746c2cfefe4e6e2de73b2f9d4c7e3ba2f8a2dd; reason: tooling or agent control surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: .github/IMPLEMENTATION_SUMMARY.md; source-sha256: d6634e3f2e5260a101654845f92d48a193ca623948b345905ca6355675e9e49b; reason: tooling or agent control surface -->
 
 # GitHub Actions + Release Pipeline - Implementation Summary
 
@@ -209,8 +209,7 @@ Added release-related scripts:
 │   ├── publish-npm.yml          (existing, )
 │   ├── wasm-build.yml           (existing, )
 │   ├── test.linux.yml           (existing, )
-│   ├── test.macos.yml           (existing, )
-│   └── test.windows.yml         (existing, )
+│   └── test.macos.yml           (existing, )
 ├── scripts/
 │   ├── verify-release.sh        ← NEW
 │   ├── verify-versions.sh       ← NEW
@@ -384,7 +383,7 @@ Current test suite:
 
 The new workflows coexist with existing workflows:
 - `publish-npm.yml` - , still works
-- `test.linux.yml`, `test.macos.yml`, `test.windows.yml` - , still work
+- `test.linux.yml`, `test.macos.yml` - , still work (test.windows.yml removed; Windows dropped from CI per the no-Windows CI decision)
 - `wasm-build.yml` - , still works
 
 New workflows are recommended:

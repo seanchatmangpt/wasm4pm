@@ -1,0 +1,59 @@
+{
+  "breed": "contingent_plan",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "cp:unknown",
+        "value": "A,B"
+      },
+      {
+        "key": "cp:goal:G",
+        "value": "true"
+      },
+      {
+        "key": "cp:act:gt:pre",
+        "value": "A"
+      },
+      {
+        "key": "cp:act:gt:add",
+        "value": "G"
+      },
+      {
+        "key": "cp:act:gf:pre",
+        "value": "!A"
+      },
+      {
+        "key": "cp:act:gf:add",
+        "value": "G"
+      },
+      {
+        "key": "cp:sense:check-A",
+        "value": "A"
+      }
+    ],
+    "goals": [],
+    "intent": "sense-split plan over 4 worlds",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "(sense check-A A (act gt (done)) (act gf (done)))"
+    ],
+    "notes": "PLAN-REPLAY (contingent_plan, 2 unknown atoms => 4 initial worlds): no linear plan exists (gt pre A fails in A=false worlds, gf pre !A fails in A=true worlds), so the AND-OR search MUST take the sense split on A and act differently per branch. Tree executed against all 4 worlds; every leaf reaches cp:goal:G=true; per-world verdicts in expected.verdicts. Negative control: the breed refuses when the same problem drops cp:sense:check-A. | CONFORMED to the breed output surface by the FOUNDATION harness court: plan tree string is trace-evidenced; and-join line asserts both branches reach the goal.",
+    "verdicts": {
+      "and-join": "and-join both branches of 'check-A' on 'A' reach the goal"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "contingent-plan-four-worlds-sense-split"
+}

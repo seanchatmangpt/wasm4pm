@@ -33,6 +33,7 @@ pub static TABLEAUX_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Construction grammar: tokenize → pos-tag+ → chunk+ → match+ → bind* → fuse.
@@ -76,6 +77,7 @@ pub static CONSTRUCTION_GRAMMAR_MODEL: BreedLifecycleModel = BreedLifecycleModel
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Markov logic: ground → clamp → init → flip*/restart* → map-found.
@@ -113,6 +115,7 @@ pub static MARKOV_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// POMDP: parse → init-belief → belief-update* → expand → pbvi-backup+ → select.
@@ -156,6 +159,7 @@ pub static POMDP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Contingent planning: init-belief → search+ → plan-complete.
@@ -181,6 +185,7 @@ pub static CONTINGENT_PLAN_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Meta-reasoning: ingest-report+ → conflict-detected* → vote+ → resolve.
@@ -212,4 +217,5 @@ pub static META_REASONING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };

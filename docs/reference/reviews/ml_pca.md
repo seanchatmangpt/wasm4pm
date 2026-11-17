@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_pca.md; source-sha256: 1af055b1c1d343933cfa0284bade28f173b467d26fa27c0aeee7cdbce1977375; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/ml_pca.md; source-sha256: bac8863a101fa91e8da9787df8182e564a81d514b382116c6e169ce5d0d1fb40; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: ml_pca
 
@@ -26,3 +26,9 @@
 - **Rust Implementation**: `wasm4pm/src/ml/pca.rs` (method: `discover_ml_pca` / `pca_internal`)
 - **TypeScript Dispatch Wrapper**: `packages/kernel/src/api.ts` (method: `runRaw`, case `ml_pca`)
 - **Test File**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Input screening (2026-10-10, commit `0e3d81b38`)
+
+- Non-finite feature rows (NaN/Inf) are refused up front with a typed error
+  naming the flat element index instead of silently poisoning the covariance
+  matrix and eigen-decomposition.

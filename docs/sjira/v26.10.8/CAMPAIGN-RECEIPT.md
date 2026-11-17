@@ -1,3 +1,5 @@
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/sjira/v26.10.8/CAMPAIGN-RECEIPT.md; source-sha256: 86842919bc9434b0c9a6b404bd1638d9790554c61f6c623ff33ff4a532d20b64; reason: path-local documentation retained pending domain-specific supersession -->
+
 # CAMPAIGN-RECEIPT — wasm4pm v26.10.8
 
 | Field | Value |

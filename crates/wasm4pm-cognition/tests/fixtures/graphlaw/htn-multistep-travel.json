@@ -1,0 +1,71 @@
+{
+  "breed": "htn_planning",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "task",
+        "value": "travel"
+      }
+    ],
+    "intent": "plan travel via booking then flight",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "op:book;op:fly",
+        "id": "method:travel:m1",
+        "premise": [
+          "at=home"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "booked=yes",
+        "id": "op:book",
+        "premise": [
+          "pay=ok"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "at=paris;!at=home",
+        "id": "op:fly",
+        "premise": [
+          "booked=yes"
+        ]
+      }
+    ],
+    "state": [
+      {
+        "predicate": "at",
+        "value": "home"
+      },
+      {
+        "predicate": "pay",
+        "value": "ok"
+      }
+    ]
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "op:book",
+      "op:fly"
+    ],
+    "notes": "PLAN-REPLAY (htn_planning, multi-step): travel decomposes to op:book;op:fly. Each op: leaf replayed in Datalog: op:book gated on pay=ok@t0 (derived booked=yes@t1); op:fly gated on booked=yes@t1 (a PRODUCED precondition — frame rule booked=yes@t2 :- booked=yes@t1) with at=home deleted (no frame rule at t2). Final state {at=paris@t2, booked=yes@t2, pay=ok@t2}: primitive sequence executable. | CONFORMED to the breed output surface by the FOUNDATION harness court: the htn breed surfaces decomposition via htn-decompose/htn-apply/htn-plan traces only (no state fluents); post-execution fluents booked=yes@t2, pay=ok@t2, at=paris@t2 are recorded here rather than asserted; decomposition validity asserted via the two primitive ops and the selected plan.",
+    "verdicts": {
+      "plan": "op:book,op:fly"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "htn-multistep-travel"
+}

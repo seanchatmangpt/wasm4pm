@@ -15,9 +15,9 @@
       "case_id": "aco.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
-      "result_hash": "77f3aace4ebf6fcba197ff317368a49f06edf5408b7c20babe3b9fefc9ca6e33",
-      "duration_ms": 8.19487499999991,
-      "receipt_hash": "df047e7decd1ca5df8cf8b9f20f2d575859ef44a3228274ad8f1b26a9a7af074"
+      "result_hash": "b27ba8538db9da3a15fa6520a3216f8b716b2dd4e945f221725f8350445f2c59",
+      "duration_ms": 14.95754199999999,
+      "receipt_hash": "0d0c705a7287d8f70b117574b8be4af15d049b65dba987a5620c6993120ab4f0"
     }
   ],
   "negative_cases": [
@@ -48,9 +48,9 @@
       "result_schema_valid": true,
       "fitness_within_expected_range": true,
       "stable": true,
-      "first_result_hash": "345823288c83a39fd6ef45ad312c1fee6236e1b81c4807e3d110cbbc599191b9",
-      "second_result_hash": "a6e2278763de629ca86d2cb9996960c1277d2c978465b5b583745c311bbf41f9"
+      "first_result_hash": "a98a1ca2793c185dae33c440c360fa34a0d75bbe9d868d949c1422a5975aa0c1",
+      "second_result_hash": "d4a72f57f1dcebb57723b613b1424bec21f3562a362981c27d32a433afdeea35"
     }
   ],
-  "algorithm_evidence_hash": "a13538e549d8bdfa167011d8a729e9871ccc4a6376aa142c6fd26a9d56e0a1d7"
+  "algorithm_evidence_hash": "820d6e895f5b2f3c59ce4df93314507b82dc44258e12ab95ccf2c004d31f3e74"
 }

@@ -1,10 +1,46 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Candidate, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
-/// Abduction by Inference to the Best Explanation (IBE) breed using Thagard's ECHO model.
+/// Abduction as Inference to the Best Explanation (Thagard IBE) breed.
+///
+/// Surface-3 contract: `ibe:obs:` / `ibe:hyp:<H>:covers` / `:cost` facts;
+/// score = |covered| − 0.1·cost; trace collect-observations → score-hypothesis
+/// → compare → best-explanation.
 pub struct AbductiveIbe;
+
+/// All `k`-subsets of `0..n` in lexicographic order of their index tuples.
+fn combinations(n: usize, k: usize) -> Vec<Vec<usize>> {
+    let mut out = Vec::new();
+    if k == 0 {
+        out.push(vec![]);
+        return out;
+    }
+    if k > n {
+        return out;
+    }
+    let mut cur: Vec<usize> = (0..k).collect();
+    loop {
+        out.push(cur.clone());
+        let mut i = k;
+        while i > 0 {
+            let idx = i - 1;
+            if cur[idx] < n - (k - idx) {
+                cur[idx] += 1;
+                for j in (idx + 1)..k {
+                    cur[j] = cur[j - 1] + 1;
+                }
+                break;
+            }
+            i -= 1;
+        }
+        if i == 0 {
+            break;
+        }
+    }
+    out
+}
 
 impl CognitionBreed for AbductiveIbe {
     fn id(&self) -> BreedId {
@@ -22,7 +58,9 @@ impl CognitionBreed for AbductiveIbe {
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         if input.facts.is_empty() {
-            return Err("AbductiveIbe requires facts to define evidence/hypotheses".to_string());
+            return Err(
+                "AbductiveIbe requires facts to define observations and hypotheses".to_string(),
+            );
         }
         Ok(())
     }
@@ -30,196 +68,195 @@ impl CognitionBreed for AbductiveIbe {
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace = Vec::new();
 
-        // 1. Extract evidence, hypotheses, explanations, and contradictions
-        let mut evidence = HashSet::new();
-        let mut hypotheses = HashSet::new();
-        let mut explains = HashSet::new(); // (hypothesis, explained_node)
-        let mut contradicts = HashSet::new(); // (node1, node2)
-
+        // ── Parse the ibe: grammar ─────────────────────────────────────
+        let mut observations: BTreeSet<String> = BTreeSet::new();
+        let mut hypotheses: BTreeMap<String, (BTreeSet<String>, f32)> = BTreeMap::new();
         for f in &input.facts {
-            if f.key == "evidence" {
-                evidence.insert(f.value.clone());
-            } else if f.key == "hypothesis" {
-                hypotheses.insert(f.value.clone());
-            } else if f.key == "contradicts" || f.key == "competes" {
-                let parts: Vec<&str> = f.value.split(',').collect();
-                if parts.len() == 2 {
-                    let h1 = parts[0].trim().to_string();
-                    let h2 = parts[1].trim().to_string();
-                    contradicts.insert((h1.clone(), h2.clone()));
-                    contradicts.insert((h2, h1));
-                }
-            }
-        }
-
-        // Candidates automatically act as hypotheses if not explicitly listed
-        for c in &input.candidates {
-            hypotheses.insert(c.id.clone());
-        }
-
-        // Explanations from rules: if premise derives conclusion, premise explains conclusion
-        for r in &input.rules {
-            if r.conclusion == "false" {
-                // Rules with conclusion "false" and 2 premises are treated as contradictions
-                if r.premise.len() == 2 {
-                    let h1 = r.premise[0].clone();
-                    let h2 = r.premise[1].clone();
-                    contradicts.insert((h1.clone(), h2.clone()));
-                    contradicts.insert((h2, h1));
-                }
-            } else {
-                for p in &r.premise {
-                    explains.insert((p.clone(), r.conclusion.clone()));
-                }
-            }
-        }
-
-        trace.push(TraceStep {
-            step: trace.len(),
-            kind: "ibe-load".to_string(),
-            detail: format!(
-                "Loaded {} evidence, {} hypotheses, {} explains, {} contradicts",
-                evidence.len(),
-                hypotheses.len(),
-                explains.len(),
-                contradicts.len() / 2
-            ),
-            depth: 0,
-            objects: vec![],
-        });
-
-        // 2. Initialize ECHO network
-        let all_nodes: BTreeSet<String> = evidence.union(&hypotheses).cloned().collect();
-        let nodes_list: Vec<String> = {
-            let mut list: Vec<String> = all_nodes.into_iter().collect();
-            list.sort();
-            list
-        };
-
-        let mut activations: BTreeMap<String, f32> = BTreeMap::new();
-        for node in &nodes_list {
-            activations.insert(
-                node.clone(),
-                if evidence.contains(node) { 1.0 } else { 0.01 },
-            );
-        }
-
-        trace.push(TraceStep {
-            step: trace.len(),
-            kind: "ibe-explain".to_string(),
-            detail: format!("Running ECHO network over {} nodes", nodes_list.len()),
-            depth: 0,
-            objects: vec![],
-        });
-
-        // ECHO Connectionist Update Parameters
-        let decay = 0.05;
-        let max_act = 1.0;
-        let min_act = -1.0;
-        let weight_coherence = 0.05;
-        let weight_incoherence = -0.2;
-        let weight_evidence_link = 0.1;
-
-        // Run activation updates for 100 iterations (converges deterministically)
-        for _iter in 0..100 {
-            let current = activations.clone();
-            for node in &nodes_list {
-                let mut net = 0.0;
-
-                // Coherence weights (explains)
-                for (h, e) in &explains {
-                    if h == node {
-                        net += weight_coherence * current.get(e).unwrap_or(&0.0);
-                    } else if e == node {
-                        net += weight_coherence * current.get(h).unwrap_or(&0.0);
+            if let Some(id) = f.key.strip_prefix("ibe:obs:") {
+                observations.insert(id.to_string());
+            } else if let Some(rest) = f.key.strip_prefix("ibe:hyp:") {
+                if let Some(h) = rest.strip_suffix(":covers") {
+                    let covered: BTreeSet<String> = f
+                        .value
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    hypotheses.insert(h.to_string(), (covered, 0.0));
+                } else if let Some(h) = rest.strip_suffix(":cost") {
+                    let cost: f32 = f
+                        .value
+                        .trim()
+                        .parse()
+                        .map_err(|_| BreedError {
+                            breed: self.id(),
+                            message: format!(
+                                "invalid assumption cost '{}' for hypothesis '{}'",
+                                f.value, h
+                            ),
+                        })?;
+                    if cost < 0.0 {
+                        return Err(BreedError {
+                            breed: self.id(),
+                            message: format!(
+                                "negative assumption cost {cost} for hypothesis '{h}'"
+                            ),
+                        });
                     }
-                }
-
-                // Incoherence weights (contradicts)
-                for (n1, n2) in &contradicts {
-                    if n1 == node {
-                        net += weight_incoherence * current.get(n2).unwrap_or(&0.0);
-                    }
-                }
-
-                // Evidence external link
-                if evidence.contains(node) {
-                    net += weight_evidence_link * 1.0;
-                }
-
-                let act = *current.get(node).unwrap_or(&0.0);
-                let new_act = if net > 0.0 {
-                    act * (1.0 - decay) + net * (max_act - act)
+                    hypotheses
+                        .entry(h.to_string())
+                        .or_insert_with(|| (BTreeSet::new(), 0.0))
+                        .1 = cost;
                 } else {
-                    act * (1.0 - decay) + net * (act - min_act)
-                };
-
-                // Clamp new activation
-                let clamped = new_act.clamp(min_act, max_act);
-                activations.insert(node.clone(), clamped);
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: format!("malformed hypothesis fact key '{key}'", key = f.key),
+                    });
+                }
             }
         }
 
-        // Trace the resulting activations
-        let mut sorted_activations: Vec<(String, f32)> =
-            activations.iter().map(|(k, v)| (k.clone(), *v)).collect();
-        sorted_activations.sort_unstable_by(|a, b| b.1.total_cmp(&a.1));
-
-        let mut out_facts = Vec::new();
-        for (node, act) in &sorted_activations {
-            out_facts.push(Fact {
-                key: format!("activation:{}", node),
-                value: format!("{:.4}", act),
+        if observations.is_empty() {
+            return Err(BreedError {
+                breed: self.id(),
+                message: "no observations defined (need at least one ibe:obs: fact)".to_string(),
+            });
+        }
+        if hypotheses.is_empty() {
+            return Err(BreedError {
+                breed: self.id(),
+                message: "no hypotheses defined (need at least one ibe:hyp:<H>:covers fact)"
+                    .to_string(),
+            });
+        }
+        if hypotheses.len() > 16 {
+            return Err(BreedError {
+                breed: self.id(),
+                message: format!(
+                    "too many hypotheses for exact IBE (max 16, got {})",
+                    hypotheses.len()
+                ),
             });
         }
 
-        // Select the hypothesis with the highest activation
-        let mut selected = None;
-        let mut best_act = -1.0;
-        for (node, act) in &sorted_activations {
-            if hypotheses.contains(node) && *act > best_act {
-                best_act = *act;
-                selected = Some(node.clone());
-            }
-        }
-
+        // ── collect-observations ───────────────────────────────────────
+        let obs_list: Vec<String> = observations.iter().cloned().collect();
         trace.push(TraceStep {
             step: trace.len(),
-            kind: "ibe-select".to_string(),
+            kind: "collect-observations".into(),
             detail: format!(
-                "Selected best explanation: {:?} with activation {:.4}",
-                selected, best_act
+                "{} observations [{}], {} hypotheses",
+                obs_list.len(),
+                obs_list.join(","),
+                hypotheses.len()
             ),
             depth: 0,
             objects: vec![],
         });
 
-        // Score candidates based on their activation mapped to [0.0, 1.0]
-        let mut candidates = input.candidates.clone();
-        for cand in &mut candidates {
-            if let Some(act) = activations.get(&cand.id) {
-                // Map [-1.0, 1.0] to [0.0, 1.0]
-                cand.score = (act + 1.0) / 2.0;
-                if Some(&cand.id) == selected.as_ref() && *act <= 0.0 {
-                    cand.eliminated = true;
-                    cand.elimination_reason =
-                        Some("Hypothesis rejected by explanatory coherence".to_string());
+        // ── Score non-empty hypothesis subsets, size-then-lex ─────────
+        let names: Vec<String> = hypotheses.keys().cloned().collect();
+        let mut best: Option<(String, f32)> = None;
+        let mut evaluated: Vec<(String, f32)> = Vec::new();
+
+        for size in 1..=names.len() {
+            for combo in combinations(names.len(), size) {
+                let members: Vec<&str> = combo.iter().map(|&i| names[i].as_str()).collect();
+                let name = {
+                    let mut ms: Vec<&str> = members.clone();
+                    ms.sort();
+                    ms.join("+")
+                };
+                let mut covered: BTreeSet<String> = BTreeSet::new();
+                let mut cost = 0.0f32;
+                for m in &members {
+                    let (cov, c) = &hypotheses[*m];
+                    covered.extend(cov.iter().cloned());
+                    cost += c;
                 }
+                let score = covered.len() as f32 - 0.1f32 * cost;
+
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "score-hypothesis".into(),
+                    detail: format!("{name} score={score:.4}"),
+                    depth: 1,
+                    objects: vec![],
+                });
+
+                let is_new_best = best.as_ref().map_or(true, |(_, s)| score > *s);
+                if is_new_best {
+                    let compare_detail = match &best {
+                        None => format!("new best {name} ({score:.4})"),
+                        Some((prev, prev_s)) => format!(
+                            "new best {name} ({score:.4} beats {prev} {prev_s:.4})"
+                        ),
+                    };
+                    trace.push(TraceStep {
+                        step: trace.len(),
+                        kind: "compare".into(),
+                        detail: compare_detail,
+                        depth: 1,
+                        objects: vec![],
+                    });
+                    best = Some((name.clone(), score));
+                }
+
+                evaluated.push((name, score));
             }
         }
 
-        let explanation = format!(
-            "IBE: Explanatory coherence (ECHO) finalized. Best hypothesis: {:?} (activation: {:.4})",
-            selected,
-            best_act
-        );
+        let (best_name, best_score) =
+            best.expect("non-empty hypothesis set guarantees a best subset");
+        trace.push(TraceStep {
+            step: trace.len(),
+            kind: "best-explanation".into(),
+            detail: format!("{best_name} score={best_score:.4}"),
+            depth: 0,
+            objects: vec![],
+        });
+
+        // ── Output ─────────────────────────────────────────────────────
+        let mut out_facts = vec![
+            Fact {
+                key: "ibe:best".to_string(),
+                value: best_name.clone(),
+            },
+            Fact {
+                key: "ibe:score".to_string(),
+                value: format!("{best_score:.4}"),
+            },
+        ];
+
+        // Upsert evaluated subsets into candidates, then sort score-desc.
+        let mut candidates: Vec<Candidate> = input.candidates.clone();
+        for cand in &mut candidates {
+            if let Some((_, score)) = evaluated.iter().find(|(n, _)| *n == cand.id) {
+                cand.score = *score;
+            }
+        }
+        for (name, score) in &evaluated {
+            if !candidates.iter().any(|c| &c.id == name) {
+                candidates.push(Candidate {
+                    id: name.clone(),
+                    score: *score,
+                    eliminated: false,
+                    elimination_reason: None,
+                });
+            }
+        }
+        candidates.sort_by(|a, b| b.score.total_cmp(&a.score).then_with(|| a.id.cmp(&b.id)));
 
         Ok(BreedOutput {
-            breed: BreedId::AbductiveIbe,
+            breed: self.id(),
             candidates,
             facts: out_facts,
-            selected,
-            explanation,
+            selected: Some(best_name.clone()),
+            explanation: format!(
+                "IBE over {} candidate sets: best explanation '{}' with score {best_score:.4} (coverage − 0.1·cost).",
+                evaluated.len(),
+                best_name
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
@@ -227,16 +264,240 @@ impl CognitionBreed for AbductiveIbe {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
+        let trace = &output.inference_trace;
+        if trace.is_empty() {
             return Err("AbductiveIbe must emit at least one trace step".to_string());
         }
-        let has_select = output
-            .inference_trace
+        if trace[0].kind != "collect-observations" {
+            return Err("first trace step must be 'collect-observations'".to_string());
+        }
+        if !trace.iter().any(|t| t.kind == "score-hypothesis") {
+            return Err("trace must contain at least one 'score-hypothesis' step".to_string());
+        }
+        let last = trace.last().unwrap();
+        if last.kind != "best-explanation" {
+            return Err("last trace step must be 'best-explanation'".to_string());
+        }
+        let best_fact = output
+            .facts
             .iter()
-            .any(|t| t.kind == "ibe-select");
-        if !has_select {
-            return Err("AbductiveIbe trace must contain an ibe-select step".to_string());
+            .find(|f| f.key == "ibe:best")
+            .ok_or("output must contain 'ibe:best'")?;
+        let score_fact = output
+            .facts
+            .iter()
+            .find(|f| f.key == "ibe:score")
+            .ok_or("output must contain 'ibe:score'")?;
+        let expected = format!("{} score={}", best_fact.value, score_fact.value);
+        if last.detail != expected {
+            return Err(format!(
+                "best-explanation detail '{}' inconsistent with ibe:best/ibe:score ({})",
+                last.detail, expected
+            ));
+        }
+        if output.selected.as_deref() != Some(best_fact.value.as_str()) {
+            return Err("selected must agree with ibe:best".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::Fact;
+
+    fn fact(key: &str, value: &str) -> Fact {
+        Fact {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
+    }
+
+    fn oracle_novel() -> BreedInput {
+        BreedInput {
+            intent: "coherence".into(),
+            candidates: vec![],
+            facts: vec![
+                fact("ibe:obs:t_o1", "true"),
+                fact("ibe:obs:t_o2", "true"),
+                fact("ibe:obs:t_o3", "true"),
+                fact("ibe:hyp:t_grand:covers", "t_o1,t_o2,t_o3"),
+                fact("ibe:hyp:t_grand:cost", "25"),
+                fact("ibe:hyp:t_lean:covers", "t_o1,t_o2"),
+                fact("ibe:hyp:t_lean:cost", "2"),
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    /// All six fitted data points of the score formula (plan risk #1):
+    /// score = |covered observations| − 0.1·cost, asserted at 4 decimals.
+    #[test]
+    fn score_formula_fits_all_six_points() {
+        // t_grand 3/25 -> 0.5000; t_lean 2/2 -> 1.8000;
+        // pair {t_grand,t_lean} 3/27 -> 0.3000.
+        let out = AbductiveIbe.run(&oracle_novel()).unwrap();
+        let scored: Vec<&str> = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "score-hypothesis")
+            .map(|t| t.detail.as_str())
+            .collect();
+        assert_eq!(scored, vec!["t_grand score=0.5000", "t_lean score=1.8000", "t_grand+t_lean score=0.3000"]);
+
+        // H1 2/1.0 -> 1.9000; H2 1/1.0 -> 0.9000; H1+H2 2/2.0 -> 1.8000.
+        let ex = BreedInput {
+            intent: "coherence".into(),
+            candidates: vec![
+                Candidate {
+                    id: "H1".into(),
+                    score: 0.5,
+                    eliminated: false,
+                    elimination_reason: None,
+                },
+                Candidate {
+                    id: "H2".into(),
+                    score: 0.5,
+                    eliminated: false,
+                    elimination_reason: None,
+                },
+            ],
+            facts: vec![
+                fact("ibe:obs:E1", "true"),
+                fact("ibe:obs:E2", "true"),
+                fact("ibe:hyp:H1:covers", "E1,E2"),
+                fact("ibe:hyp:H1:cost", "1.0"),
+                fact("ibe:hyp:H2:covers", "E1"),
+                fact("ibe:hyp:H2:cost", "1.0"),
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = AbductiveIbe.run(&ex).unwrap();
+        let scored: Vec<&str> = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "score-hypothesis")
+            .map(|t| t.detail.as_str())
+            .collect();
+        assert_eq!(
+            scored,
+            vec![
+                "H1 score=1.9000",
+                "H2 score=0.9000",
+                "H1+H2 score=1.8000"
+            ]
+        );
+        assert_eq!(out.selected.as_deref(), Some("H1"));
+        assert_eq!(
+            out.candidates.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
+            vec!["H1", "H1+H2", "H2"]
+        );
+        assert_eq!(
+            out.explanation,
+            "IBE over 3 candidate sets: best explanation 'H1' with score 1.9000 (coverage − 0.1·cost)."
+        );
+    }
+
+    #[test]
+    fn oracle_compare_and_best_details() {
+        let out = AbductiveIbe.run(&oracle_novel()).unwrap();
+        let cmp = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "compare")
+            .map(|t| t.detail.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(cmp.len(), 2);
+        assert_eq!(cmp[0], "new best t_grand (0.5000)");
+        assert_eq!(
+            cmp[1],
+            "new best t_lean (1.8000 beats t_grand 0.5000)"
+        );
+        let last = out.inference_trace.last().unwrap();
+        assert_eq!(last.kind, "best-explanation");
+        assert_eq!(last.detail, "t_lean score=1.8000");
+    }
+
+    #[test]
+    fn cost_flip_flips_best() {
+        let mut grand_wins = oracle_novel();
+        for f in &mut grand_wins.facts {
+            if f.key == "ibe:hyp:t_grand:cost" {
+                f.value = "1".to_string();
+            }
+        }
+        let out = AbductiveIbe.run(&grand_wins).unwrap();
+        // grand: 3-0.1=2.9 vs lean: 2-0.2=1.8 vs pair 3-0.3=2.7 -> grand best.
+        assert_eq!(out.selected.as_deref(), Some("t_grand"));
+        assert_eq!(
+            out.inference_trace.last().unwrap().detail,
+            "t_grand score=2.9000"
+        );
+    }
+
+    #[test]
+    fn refuses_negative_cost() {
+        let input = BreedInput {
+            intent: "coherence".into(),
+            candidates: vec![],
+            facts: vec![
+                fact("ibe:obs:t_o1", "true"),
+                fact("ibe:hyp:t_h1:covers", "t_o1"),
+                fact("ibe:hyp:t_h1:cost", "-3"),
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let err = AbductiveIbe.run(&input).unwrap_err();
+        assert!(err.message.contains("negative assumption cost"));
+    }
+
+    #[test]
+    fn refuses_invalid_cost_and_empties() {
+        let bad_cost = BreedInput {
+            intent: "coherence".into(),
+            candidates: vec![],
+            facts: vec![
+                fact("ibe:obs:t_o1", "true"),
+                fact("ibe:hyp:t_h1:covers", "t_o1"),
+                fact("ibe:hyp:t_h1:cost", "abc"),
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(AbductiveIbe.run(&bad_cost).is_err());
+
+        let no_obs = BreedInput {
+            intent: "coherence".into(),
+            candidates: vec![],
+            facts: vec![fact("ibe:hyp:t_h1:covers", "t_o1")],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(AbductiveIbe.run(&no_obs).is_err());
+
+        let no_hyp = BreedInput {
+            intent: "coherence".into(),
+            candidates: vec![],
+            facts: vec![fact("ibe:obs:t_o1", "true")],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(AbductiveIbe.run(&no_hyp).is_err());
     }
 }

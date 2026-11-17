@@ -44,7 +44,13 @@ fn load_real_log(label: &'static str, candidates: &[&str]) -> Option<RealLog> {
         };
         match validate_and_parse_xes(&content) {
             Ok(log) if !log.traces.is_empty() => return Some(RealLog { label, log }),
-            _ => continue,
+            // The strict parser rejects some real-world exports (e.g. the 4TU
+            // Sepsis log's nested classifier metadata); fall back to the same
+            // tolerant parser the shared helpers loader uses.
+            _ => match helpers::parse_xes_tolerant(&content) {
+                log if !log.traces.is_empty() => return Some(RealLog { label, log }),
+                _ => continue,
+            },
         }
     }
     None
@@ -64,8 +70,8 @@ fn real_logs() -> Vec<RealLog> {
         if let Some(ds) = load_real_log(
             "bpi2020",
             &[
-                "bench_data/bpi2020_travel.xes",
-                "../bench_data/bpi2020_travel.xes",
+                "bench_data/bpi2020_domestic_declarations.xes",
+                "../bench_data/bpi2020_domestic_declarations.xes",
             ],
         ) {
             sets.push(ds);

@@ -184,6 +184,7 @@ impl OcelBuilder {
         OCEL {
             event_types,
             object_types,
+            object_type_defs: Vec::new(),
             events,
             objects,
             object_relations,
@@ -242,7 +243,7 @@ fn flatten_ocel_native(ocel: &OCEL, object_type: &str) -> EventLog {
         let mut events_for_obj: Vec<&OCELEvent> = ocel
             .events
             .iter()
-            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .filter(|e| e.all_object_ids().iter().any(|oid| *oid == obj.id))
             .collect();
         events_for_obj.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 

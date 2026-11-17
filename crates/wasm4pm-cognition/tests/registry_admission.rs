@@ -145,7 +145,7 @@ fn uo_oracle_names_absent_from_breed_sources() {
     );
 }
 
-/// The crate vendors OCPN models (ocel-models/l1/) so include_str! works in
+/// The crate vendors OCPN models (ocel/models/l1/) so include_str! works in
 /// the published package. They must stay byte-identical to the canonical
 /// repo-root copies in ocel/models/l1/ (skipped when building outside the
 /// monorepo, e.g. from a crates.io tarball).
@@ -155,7 +155,7 @@ fn vendored_ocpn_models_match_canonical() {
     if !canonical.exists() {
         return;
     }
-    for entry in std::fs::read_dir("ocel-models/l1").expect("vendored models dir") {
+    for entry in std::fs::read_dir("ocel/models/l1").expect("vendored models dir") {
         let entry = entry.unwrap();
         let name = entry.file_name();
         let canon = canonical.join(&name);
@@ -195,5 +195,21 @@ fn consumer_ontology_never_asserts_breed_status() {
             "{} hand-asserts breedStatus — status must be CONSTRUCT-derived from fitness evidence only",
             path
         );
+    }
+}
+
+/// Lane 11 spot-check: the 3 P5 breeds must have enforceable model sources
+/// (receipts sign them via compute_model_hash; "model-not-yet-defined" was
+/// returned before model_sources gained the triz/morphological/
+/// ocpm_route_discoverer arms).
+#[test]
+fn p5_breeds_have_model_sources_with_non_placeholder_hashes() {
+    use blake3::Hash as _;
+    for breed in ["triz", "morphological", "ocpm_route_discoverer"] {
+        let src = wasm4pm_cognition::ocel::model_sources::model_source(breed)
+            .unwrap_or_else(|| panic!("{breed}: no model source"));
+        let hex = blake3::hash(src.as_bytes()).to_hex().to_string();
+        assert_ne!(hex, "model-not-yet-defined", "{breed} hash placeholder");
+        assert_eq!(hex.len(), 64, "{breed}: blake3 hex length");
     }
 }

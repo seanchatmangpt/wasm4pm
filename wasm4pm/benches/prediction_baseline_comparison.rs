@@ -20,7 +20,7 @@ use wasm4pm::xes_format::validate_and_parse_xes;
 
 #[path = "helpers.rs"]
 mod helpers;
-use helpers::{generate_event_log, Lcg, LogShape, ACTIVITY_KEY};
+use helpers::{Lcg, ACTIVITY_KEY};
 
 // ---------------------------------------------------------------------------
 // Real-data grounding
@@ -33,47 +33,13 @@ use helpers::{generate_event_log, Lcg, LogShape, ACTIVITY_KEY};
 // standard XES `concept:name`, which equals `ACTIVITY_KEY`.
 // ---------------------------------------------------------------------------
 
-/// Load the benchmark event log: real RoadTraffic XES if present, else synthetic.
+/// Load the benchmark event log: real RoadTraffic XES via the shared loader.
 fn bench_log() -> EventLog {
-    let home = std::env::var("HOME").unwrap_or_default();
-    let candidates = [
-        "bench_data/roadtraffic100traces.xes",
-        "../bench_data/roadtraffic100traces.xes",
-        "../../bench_data/roadtraffic100traces.xes",
-        "bench_data/sepsis.xes",
-        "../../bench_data/sepsis.xes",
-    ];
-    let real = candidates
-        .iter()
-        .filter_map(|p| {
-            let resolved = p.replace('~', &home);
-            let content = std::fs::read_to_string(&resolved).ok()?;
-            if content.len() < 200 {
-                return None;
-            }
-            let log = validate_and_parse_xes(&content).ok()?;
-            if log.traces.is_empty() {
-                return None;
-            }
-            Some(log)
-        })
-        .next();
-
-    match real {
-        Some(log) => log,
-        None => {
-            // Deterministic synthetic fallback (1K traces) — keeps the bench
-            // reproducible when real data is unavailable.
-            let shape = LogShape {
-                num_cases: 1_000,
-                avg_events_per_case: 15,
-                num_activities: 12,
-                noise_factor: 0.10,
-            };
-            generate_event_log(&shape)
-        }
-    }
+    helpers::load_real_log_from(helpers::ROADTRAFFIC_CANDIDATES)
 }
+
+
+
 
 // ---------------------------------------------------------------------------
 // Helper: build NGramPredictor from an EventLog (pure-Rust path, no wasm_bindgen)

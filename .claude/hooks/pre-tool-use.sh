@@ -91,6 +91,12 @@ case "$TOOL_NAME" in
     ;;
 esac
 
-# Wire cognition contract guard logic inline so PreToolUse has a single entry point.
-# (cognition-contract-guard.sh is also run directly for backward compat.)
+# Dispatch to the cognition guards so PreToolUse has a single entry point.
+# Each guard is also registered standalone in .claude/settings.json; the
+# explicit `|| exit $?` propagation matters because this parent runs under
+# `set -e` — a plain failing invocation would abort before the next guard.
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then
+  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/cognition-contract-guard.sh" <<< "$INPUT" || exit $?
+  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/cognition-wasm-gate.sh" <<< "$INPUT" || exit $?
+fi
 exit 0

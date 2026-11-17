@@ -1,25 +1,44 @@
-//! AutoinstinctLearning — STRIPS/HACKER bitwise heuristic planning (Winston 1975).
+//! AutoinstinctLearning — HACKER/STRIPS means-ends planning (Sussman 1973,
+//! Winston 1975; Fikes & Nilsson 1971 operator semantics).
 //!
-//! Algorithm:
-//! 1. Encode input.goals as a bitmask: bit i = 1 iff goal i must be satisfied.
-//! 2. Encode input.facts as an initial state bitmask: bit i = 1 iff fact i is true.
-//! 3. Build a `HeuristicPlanner` from crate::autoinstinct::learning.
-//! 4. Call `HeuristicPlanner::solve(initial_state)` (greedy monotone descent).
-//! 5. Emit one `TraceStep` per plan step with kind "plan-step".
-//! 6. If no goals exist or solve returns a trivial single-state plan, emit
-//!    kind "no-plan-found" with certainty 0.0 but still return Ok.
-//! 7. BreedOutput.selected = format!("{} steps to goal", plan.len()).
-//! 8. BreedOutput.candidates holds each plan-step state as a string.
+//! Two lawful paths, chosen by input shape:
+//!
+//! 1. **Operator STRIPS** (`input.rules` non-empty): rules are STRIPS
+//!    operators (`premise` = preconditions; `conclusion` = `add1;add2;!del1`
+//!    — `!` prefix deletes, bare tokens add; operators without `!` tokens are
+//!    add-only because the grammar has no negated conclusion form). The plan
+//!    is found by backward-chaining means-ends IDDFS
+//!    ([`crate::autoinstinct::learning::plan`]): subgoal on an unsatisfied
+//!    goal, select an operator whose ADD covers it, check preconditions,
+//!    apply delete-then-add, recurse. The plan is then replay-verified
+//!    against the initial state; an unreachable goal is refused with
+//!    `no plan exists`. Initial state = `input.facts` atoms (`key=value`)
+//!    plus `input.state` atoms (`predicate=value`); goals = `predicate=value`.
+//!
+//! 2. **HACKER curriculum** (`input.rules` empty): each unmastered goal atom
+//!    is its own unit skill-acquisition step (Sussman 1973 TR-297). Goals
+//!    match facts by identity (`predicate=value` string equality), never by
+//!    position. Capped at 32 goals (bitmask); beyond that the breed refuses.
+//!
+//! Trace: `plan-step` per plan state (`state=0b.. distance=N` in curriculum
+//! mode, `operator=.. distance=N` in operator mode), plus `subgoal` /
+//! `select-operator` / `apply-operator` / `goal-achieved` in operator mode.
+//! Refusal path: `no-plan-found` trace step, `selected = "0 steps to goal"`.
 
-use crate::autoinstinct::learning::{HeuristicPlanner, ProblemState};
+use crate::autoinstinct::learning::{
+    atoms_of_facts, goal_atoms, plan, HeuristicPlanner, ProblemState,
+};
 use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
+use std::collections::BTreeSet;
 use tracing;
 
-/// AutoinstinctLearning breed: STRIPS/HACKER heuristic planning via bitwise goal state search.
+/// AutoinstinctLearning breed: HACKER/STRIPS means-ends planning.
 pub struct AutoinstinctLearning;
+
+const MAX_CURRICULUM_GOALS: usize = 32;
 
 impl CognitionBreed for AutoinstinctLearning {
     fn id(&self) -> BreedId {
@@ -30,7 +49,7 @@ impl CognitionBreed for AutoinstinctLearning {
         vec![
             "strips_planning".to_string(),
             "hacker_heuristic".to_string(),
-            "bitwise_goal_search".to_string(),
+            "means_ends_search".to_string(),
             "monotone_distance_reduction".to_string(),
         ]
     }
@@ -50,20 +69,184 @@ impl CognitionBreed for AutoinstinctLearning {
             breed = "autoinstinct_learning",
             "L1 inference step"
         );
-        // Encode goals as bitmask: bit i = goal i must be satisfied.
-        let goal_mask: u32 = input
-            .goals
-            .iter()
-            .enumerate()
-            .map(|(i, _)| 1u32 << (i.min(31)))
-            .fold(0u32, |acc, b| acc | b);
+        if input.rules.is_empty() {
+            self.run_curriculum(input)
+        } else {
+            self.run_operator_strips(input)
+        }
+    }
 
-        // Encode facts as initial state bitmask: bit i = fact i is present.
-        let initial_features: u32 = input
-            .facts
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty()?;
+        Ok(())
+    }
+}
+
+impl AutoinstinctLearning {
+    /// Path 1: operator STRIPS over `input.rules`.
+    fn run_operator_strips(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
+        let mut initial = atoms_of_facts(&input.facts);
+        for a in &input.state {
+            initial.insert(format!("{}={}", a.predicate, a.value));
+        }
+        let goals = goal_atoms(&input.goals);
+        let mut trace: Vec<TraceStep> = Vec::new();
+
+        let plan = crate::autoinstinct::learning::plan(&initial, &goals, &input.rules)
+            .ok_or_else(|| BreedError {
+            breed: BreedId::AutoinstinctLearning,
+            message: format!(
+                "autoinstinct_learning: no plan exists within depth cap for goals {:?}",
+                goals
+            ),
+        })?;
+
+        // Replay-verify against the initial state using the same operator
+        // semantics the search used.
+        let ops: Vec<crate::autoinstinct::learning::StripsOperator> = input
+            .rules
+            .iter()
+            .map(crate::autoinstinct::learning::parse_operator)
+            .collect();
+        let mut state = initial.clone();
+        let total = goals.len();
+        let mut candidates: Vec<Candidate> = Vec::new();
+
+        let unsat_now = |state: &BTreeSet<String>, goals: &[String]| {
+            goals.iter().filter(|g| !state.contains(*g)).count()
+        };
+        trace.push(TraceStep {
+            step: trace.len(),
+            kind: "plan-step".to_string(),
+            detail: format!(
+                "state={} distance={} initial state before planning",
+                atoms_joined(&state),
+                unsat_now(&state, &goals)
+            ),
+            depth: 0,
+            objects: vec![],
+        });
+        for (n, op_id) in plan.iter().enumerate() {
+            let op = ops
+                .iter()
+                .find(|o| &o.id == op_id)
+                .ok_or_else(|| BreedError {
+                    breed: BreedId::AutoinstinctLearning,
+                    message: format!("plan references unknown operator {}", op_id),
+                })?;
+            if !op.preconds.iter().all(|p| state.contains(p)) {
+                return Err(BreedError {
+                    breed: BreedId::AutoinstinctLearning,
+                    message: format!("plan replay failed at operator {}", op.id),
+                });
+            }
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "select-operator".to_string(),
+                detail: op.id.clone(),
+                depth: (n + 1) as u32,
+                objects: vec![],
+            });
+            tracing::debug!(
+                breed.step = "operator_selected",
+                breed = "autoinstinct_learning",
+                "L1 inference step"
+            );
+            let mut next = state.clone();
+            for a in &op.dels {
+                next.remove(a);
+            }
+            for a in &op.adds {
+                next.insert(a.clone());
+            }
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "apply-operator".to_string(),
+                detail: format!("{} -> {}", op.id, atoms_joined(&next)),
+                depth: (n + 1) as u32,
+                objects: vec![],
+            });
+            state = next;
+            let distance = unsat_now(&state, &goals);
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "plan-step".to_string(),
+                detail: format!(
+                    "operator={} state={} distance={} action toward goal",
+                    op.id,
+                    atoms_joined(&state),
+                    distance
+                ),
+                depth: (n + 1) as u32,
+                objects: vec![],
+            });
+            candidates.push(Candidate {
+                id: format!("plan-step-{}", n),
+                score: if total == 0 {
+                    1.0
+                } else {
+                    1.0 - (distance as f32 / total as f32)
+                },
+                eliminated: false,
+                elimination_reason: None,
+            });
+        }
+        if !goals.iter().all(|g| state.contains(g)) {
+            return Err(BreedError {
+                breed: BreedId::AutoinstinctLearning,
+                message: "autoinstinct_learning: goal not reached after replay".to_string(),
+            });
+        }
+        trace.push(TraceStep {
+            step: trace.len(),
+            kind: "goal-achieved".to_string(),
+            detail: format!("{} goals satisfied", goals.len()),
+            depth: 0,
+            objects: vec![],
+        });
+
+        Ok(BreedOutput {
+            breed: BreedId::AutoinstinctLearning,
+            candidates,
+            facts: input.facts.clone(),
+            selected: Some(format!("{} steps to goal", plan.len())),
+            explanation: format!(
+                "AutoinstinctLearning: STRIPS means-ends plan ({} steps): {}",
+                plan.len(),
+                plan.join(" -> ")
+            ),
+            inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
+        })
+    }
+
+    /// Path 2: HACKER curriculum (no operators — each goal is a unit
+    /// skill-acquisition step, identity-matched against facts).
+    fn run_curriculum(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
+        if input.goals.len() > MAX_CURRICULUM_GOALS {
+            return Err(BreedError {
+                breed: BreedId::AutoinstinctLearning,
+                message: format!(
+                    "autoinstinct_learning: {} goals exceed the {}-goal curriculum bitmask cap",
+                    input.goals.len(),
+                    MAX_CURRICULUM_GOALS
+                ),
+            });
+        }
+        let state = atoms_of_facts(&input.facts);
+        let atoms = goal_atoms(&input.goals);
+        // Identity matching: bit i is set iff goal atom i is already true.
+        let goal_mask: u32 = atoms
             .iter()
             .enumerate()
-            .map(|(i, _)| 1u32 << (i.min(31)))
+            .map(|(i, _)| 1u32 << i)
+            .fold(0u32, |acc, b| acc | b);
+        let initial_features: u32 = atoms
+            .iter()
+            .enumerate()
+            .filter(|(_, a)| state.contains(*a))
+            .map(|(i, _)| 1u32 << i)
             .fold(0u32, |acc, b| acc | b);
 
         tracing::debug!(
@@ -75,46 +258,18 @@ impl CognitionBreed for AutoinstinctLearning {
         let initial_state = ProblemState {
             features: initial_features,
         };
-        let plan = planner.solve(initial_state);
+        let plan_states = planner.solve(initial_state);
 
         let mut trace: Vec<TraceStep> = Vec::new();
         let mut plan_candidates: Vec<Candidate> = Vec::new();
-
-        if plan.is_empty() || (plan.len() == 1 && planner.heuristic_distance(&plan[0]) > 0) {
-            // Solver stuck or degenerate: emit single "no-plan-found" step.
-            trace.push(TraceStep {
-                step: 0,
-                kind: "no-plan-found".to_string(),
-                detail: format!(
-                    "initial_features={:#010b} goal_mask={:#010b} distance={}",
-                    initial_features,
-                    goal_mask,
-                    planner.heuristic_distance(&plan[0])
-                ),
-                depth: 0,
-                objects: vec![],
-            });
-            return Ok(BreedOutput {
-                breed: BreedId::AutoinstinctLearning,
-                candidates: plan_candidates,
-                facts: input.facts.clone(),
-                selected: Some("0 steps to goal".to_string()),
-                explanation: "AutoinstinctLearning: no plan found — initial state already stuck or goal unreachable".to_string(),
-                inference_trace: trace,
-            ocel_log: None,
-            retained_cases: vec![],
-            });
-        }
-
-        // Emit a trace step and candidate for each plan state.
-        for (n, state) in plan.iter().enumerate() {
-            let distance = planner.heuristic_distance(state);
+        for (n, st) in plan_states.iter().enumerate() {
+            let distance = planner.heuristic_distance(st);
             trace.push(TraceStep {
                 step: n,
                 kind: "plan-step".to_string(),
                 detail: format!(
                     "state={:#010b} distance={} action toward goal: flip next missing bit",
-                    state.features, distance
+                    st.features, distance
                 ),
                 depth: 0,
                 objects: vec![],
@@ -135,17 +290,8 @@ impl CognitionBreed for AutoinstinctLearning {
                 elimination_reason: None,
             });
         }
-
-        tracing::debug!(
-            breed.step = "curriculum_emitted",
-            breed = "autoinstinct_learning",
-            "L1 inference step"
-        );
-        let final_state = plan.last().unwrap();
-        let final_distance = planner.heuristic_distance(final_state);
-        let goal_reached = final_distance == 0;
-
-        if !goal_reached {
+        let final_distance = planner.heuristic_distance(plan_states.last().expect("non-empty"));
+        if final_distance != 0 {
             return Err(BreedError {
                 breed: BreedId::AutoinstinctLearning,
                 message: format!(
@@ -156,35 +302,34 @@ impl CognitionBreed for AutoinstinctLearning {
         }
 
         let explanation = format!(
-            "AutoinstinctLearning: {} plan steps, goal_mask={:#010b}, final_state={:#010b}, goal_reached={}",
-            plan.len(),
+            "AutoinstinctLearning: {} plan steps, goal_mask={:#010b}, final_state={:#010b}, goal_reached=true",
+            plan_states.len(),
             goal_mask,
-            final_state.features,
-            goal_reached
+            plan_states.last().unwrap().features
         );
-
         Ok(BreedOutput {
             breed: BreedId::AutoinstinctLearning,
             candidates: plan_candidates,
             facts: input.facts.clone(),
-            selected: Some(format!("{} steps to goal", plan.len())),
+            selected: Some(format!("{} steps to goal", plan_states.len())),
             explanation,
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
         })
     }
+}
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        TraceQuery::from_output(output).require_non_empty()?;
-        Ok(())
-    }
+fn atoms_joined(state: &BTreeSet<String>) -> String {
+    let mut parts: Vec<String> = state.iter().cloned().collect();
+    parts.sort();
+    parts.join(",")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::{Fact, Goal};
+    use crate::breeds::{Fact, Goal, Rule};
 
     fn make_goals(n: usize) -> Vec<Goal> {
         (0..n)
@@ -197,10 +342,11 @@ mod tests {
     }
 
     fn make_facts(n: usize) -> Vec<Fact> {
+        // Identity-matched to make_goals facts: achieve=sub-goal-i.
         (0..n)
             .map(|i| Fact {
-                key: format!("fact{}", i),
-                value: "true".to_string(),
+                key: "achieve".to_string(),
+                value: format!("sub-goal-{}", i),
             })
             .collect()
     }
@@ -265,7 +411,6 @@ mod tests {
     #[test]
     fn run_selected_contains_steps_to_goal() {
         let breed = AutoinstinctLearning;
-        // 4 goals, 0 initial facts → need 4 plan steps to reach goal
         let input = empty_input(make_goals(4), vec![]);
         let output = breed.run(&input).expect("run ok");
         assert!(
@@ -276,14 +421,12 @@ mod tests {
     }
 
     /// Rank-1: plan trace steps must be monotonically non-increasing in distance.
-    /// Every step either holds or reduces the gap to the goal (never regresses).
     #[test]
     fn trace_distances_are_monotonically_nonincreasing() {
         let breed = AutoinstinctLearning;
         let input = empty_input(make_goals(4), vec![]);
         let output = breed.run(&input).expect("run ok");
 
-        // Extract distances from trace step details ("distance=N").
         let distances: Vec<u32> = output
             .inference_trace
             .iter()
@@ -303,18 +446,44 @@ mod tests {
         }
     }
 
-    /// Rank-2: when all goals are already satisfied by initial facts,
-    /// the plan has exactly 1 state and selected says "1 steps to goal".
+    /// Rank-2: when all goals are already satisfied by initial facts
+    /// (identity-matched), the plan has exactly 1 state and selected says
+    /// "1 steps to goal".
     #[test]
     fn presatisfied_goals_yield_single_state_plan() {
         let breed = AutoinstinctLearning;
-        // 4 goals, 4 initial facts → initial bitmask already satisfies goal mask
         let input = empty_input(make_goals(4), make_facts(4));
         let output = breed.run(&input).expect("run ok");
         assert_eq!(
             output.selected.as_deref(),
             Some("1 steps to goal"),
             "pre-satisfied plan must report 1 step"
+        );
+    }
+
+    /// Identity, not position: facts matching only goals 2 and 3 must leave
+    /// goals 0 and 1 unsatisfied (the old planner matched by index).
+    #[test]
+    fn goals_match_facts_by_identity_not_position() {
+        let breed = AutoinstinctLearning;
+        let facts = vec![
+            Fact { key: "achieve".into(), value: "sub-goal-2".into() },
+            Fact { key: "achieve".into(), value: "sub-goal-3".into() },
+        ];
+        let input = empty_input(make_goals(4), facts);
+        let output = breed.run(&input).expect("run ok");
+        // 2 goals remain -> 2 flips -> 3 states.
+        assert_eq!(
+            output.selected.as_deref(),
+            Some("3 steps to goal"),
+            "only the 2 unmatched goals may require steps, got: {:?}",
+            output.selected
+        );
+        let first = &output.inference_trace[0];
+        assert!(
+            first.detail.contains("distance=2"),
+            "initial distance must be 2 (identity-matched), got: {}",
+            first.detail
         );
     }
 
@@ -332,13 +501,11 @@ mod tests {
     #[test]
     fn test_learning_reaches_goal() {
         let breed = AutoinstinctLearning;
-        // 3 goals, 0 initial facts → planner must flip 3 bits
         let input = empty_input(make_goals(3), vec![]);
         let output = breed
             .run(&input)
             .expect("run must succeed for reachable goal");
         assert_eq!(output.breed, BreedId::AutoinstinctLearning);
-        // final plan-step trace entry must have distance=0
         let last_plan_step = output
             .inference_trace
             .iter()
@@ -355,31 +522,112 @@ mod tests {
         assert_eq!(dist, 0, "final plan step must reach distance 0");
     }
 
-    /// B4-2: goal not reached — the no-plan-found path fires when planner is stuck.
-    /// With the bitmask greedy planner, this occurs when the initial state already
-    /// satisfies the goal mask (plan.len()==1, distance==0) or when the initial plan
-    /// returns a single degenerate state. We test via the no-plan-found path which
-    /// occurs when goals are 0 (empty goal mask) — but preconditions prevent that.
-    /// Instead, verify the error message surface: when the breed returns Err, it
-    /// must contain "goal not reached".
+    /// Operator STRIPS: a real two-step plan through real operators with
+    /// preconditions and delete effects.
+    #[test]
+    fn operator_strips_finds_two_step_plan_with_deletes() {
+        let breed = AutoinstinctLearning;
+        let input = BreedInput {
+            intent: "move block".into(),
+            candidates: vec![],
+            facts: vec![Fact { key: "onTable".into(), value: "a".into() }],
+            cases: vec![],
+            rules: vec![
+                Rule {
+                    id: "pick".into(),
+                    premise: vec!["onTable=a".into()],
+                    conclusion: "inHand=a;!onTable=a".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "drop".into(),
+                    premise: vec!["inHand=a".into()],
+                    conclusion: "onTable=b;!inHand=a".into(),
+                    certainty: 1.0,
+                },
+            ],
+            goals: vec![Goal { id: "g".into(), predicate: "onTable".into(), value: "b".into() }],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert_eq!(
+            output.selected.as_deref(),
+            Some("2 steps to goal"),
+            "pick+drop plan must be 2 steps, got: {:?}",
+            output.selected
+        );
+        let selected_ops: Vec<&str> = output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "select-operator")
+            .map(|t| t.detail.as_str())
+            .collect();
+        assert_eq!(selected_ops, vec!["pick", "drop"]);
+        assert!(output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "goal-achieved"));
+        // Delete effect witnessed: onTable=a is gone after pick.
+        let apply_step = output
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "apply-operator")
+            .expect("apply-operator step");
+        assert!(
+            apply_step.detail.contains("inHand=a") && !apply_step.detail.contains("onTable=a"),
+            "delete effect must remove onTable=a, got: {}",
+            apply_step.detail
+        );
+    }
+
+    /// Operator STRIPS refusal: unreachable goal -> typed error, no silent Ok.
+    #[test]
+    fn operator_strips_refuses_unreachable_goal() {
+        let breed = AutoinstinctLearning;
+        let input = BreedInput {
+            intent: "impossible".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "noop".into(),
+                premise: vec![],
+                conclusion: "other=x".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![Goal { id: "g".into(), predicate: "wanted".into(), value: "y".into() }],
+            state: vec![],
+        };
+        let err = breed.run(&input).expect_err("must refuse");
+        assert!(
+            err.message.contains("no plan exists"),
+            "refusal must say no plan exists, got: {}",
+            err.message
+        );
+    }
+
+    /// Curriculum cap: >32 goals exceeds the bitmask and is refused, not
+    /// silently truncated by the old `min(31)` collapse.
+    #[test]
+    fn curriculum_refuses_more_than_32_goals() {
+        let breed = AutoinstinctLearning;
+        let input = empty_input(make_goals(33), vec![]);
+        let err = breed.run(&input).expect_err("must refuse >32 goals");
+        assert!(
+            err.message.contains("cap"),
+            "refusal must name the cap, got: {}",
+            err.message
+        );
+    }
+
     #[test]
     fn test_learning_goal_unreachable_error_message() {
-        // We cannot trigger the error path with the current bitwise planner (it always
-        // converges). This test documents the contract: if run() returns Err, the
-        // message must contain "goal not reached".
-        // Verify by constructing a BreedError directly.
         use crate::breeds::BreedError;
         let err = BreedError {
             breed: BreedId::AutoinstinctLearning,
             message: "autoinstinct_learning: goal not reached (distance=3)".into(),
         };
-        assert!(
-            err.message.contains("goal not reached"),
-            "error message must contain 'goal not reached'"
-        );
-        assert!(
-            err.message.contains("distance="),
-            "error message must contain 'distance='"
-        );
+        assert!(err.message.contains("goal not reached"));
+        assert!(err.message.contains("distance="));
     }
 }

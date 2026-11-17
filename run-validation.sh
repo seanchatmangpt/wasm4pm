@@ -10,7 +10,7 @@ cd /Users/sac/wasm4pm/apps/wasm4pm
 
 # Test logs
 TEST_SIMPLE="/Users/sac/wasm4pm/data/small-example.xes"
-TEST_MODERATE="/Users/sac/wasm4pm/bench_data/bpi2020_travel.xes"
+TEST_MODERATE="/Users/sac/wasm4pm/bench_data/bpi2020_domestic_declarations.xes"
 TEST_COMPLEX="/Users/sac/wasm4pm/bench_data/bpi2012_loans.xes"
 
 # Key algorithms to test

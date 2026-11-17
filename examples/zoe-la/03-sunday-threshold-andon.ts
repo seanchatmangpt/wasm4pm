@@ -17,7 +17,7 @@ async function analyzeSundayAndon() {
   console.log(' ZOE LA Route X-Ray: Sunday Live Andon');
   console.log('===========================================================');
 
-  const logPath = resolve(__dirname, '../../bench_data/bpi2020_travel.xes');
+  const logPath = resolve(__dirname, '../../bench_data/bpi2020_domestic_declarations.xes');
   let xesContent = '';
   try {
     xesContent = readFileSync(logPath, 'utf8');

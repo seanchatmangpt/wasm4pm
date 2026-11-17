@@ -14,6 +14,10 @@
 //! | `predict_case_duration` | Point estimate for a running case prefix |
 //! | `predict_hazard_rate` | Instantaneous hazard at elapsed time *t* |
 
+use crate::ml::evaluation::{
+    prefix_split, RegressionAccumulator, HoldoutRegressionMetrics, DEFAULT_TRAIN_RATIO,
+    MIN_EVAL_SAMPLES,
+};
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -55,6 +59,13 @@ pub struct RemainingTimeModel {
     pub weibull: WeibullParams,
     /// Median case duration in ms (used as fallback)
     pub median_duration_ms: f64,
+    /// Honest holdout evaluation, present only when the model was built via
+    /// [`build_remaining_time_model_with_eval_native`] / the
+    /// `build_remaining_time_model_with_eval` export. Absent from JSON for
+    /// models built without evaluation (byte-compatible with the pre-eval
+    /// export shape).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub holdout: Option<HoldoutRegressionMetrics>,
 }
 
 /// Point estimate of remaining case duration, returned by
@@ -269,7 +280,112 @@ pub fn build_remaining_time_model_native(
         global,
         weibull: WeibullParams { shape, scale },
         median_duration_ms,
+        holdout: None,
     })
+}
+
+/// Build a remaining-time model AND an honest holdout evaluation: the model
+/// is trained on the first [`DEFAULT_TRAIN_RATIO`] of traces (prefix split)
+/// and scored on prefixes of the held-out traces — every prediction compared
+/// against a remaining time the model never saw.
+///
+/// Returns `Err` as for [`build_remaining_time_model_native`], or when the
+/// held-out side has fewer than [`MIN_EVAL_SAMPLES`] usable prefix samples
+/// (`holdout` is then `None` with a valid model).
+pub fn build_remaining_time_model_with_eval_native(
+    log: &EventLog,
+    activity_key: &str,
+    timestamp_key: &str,
+) -> Result<(RemainingTimeModel, Option<HoldoutRegressionMetrics>), String> {
+    let (train_len, test_len) = prefix_split(log.traces.len(), DEFAULT_TRAIN_RATIO);
+    if test_len == 0 || log.traces.len() < MIN_EVAL_SAMPLES {
+        let model = build_remaining_time_model_native(log, activity_key, timestamp_key)?;
+        return Ok((model, None));
+    }
+
+    let mut train_log = EventLog {
+        attributes: BTreeMap::new(),
+        traces: log.traces[..train_len].to_vec(),
+    };
+    train_log.attributes = log.attributes.clone();
+
+    let model = build_remaining_time_model_native(&train_log, activity_key, timestamp_key)?;
+
+    // Score every prefix of every held-out trace.
+    let mut acc = RegressionAccumulator::new();
+    for trace in &log.traces[train_len..] {
+        let events: Vec<(String, i64)> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                let act = e.attributes.get(activity_key).and_then(|v| v.as_string())?;
+                let ts = match e.attributes.get(timestamp_key) {
+                    Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
+                    Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
+                    Some(AttributeValue::Int(ms)) => Some(*ms),
+                    _ => None,
+                }?;
+                Some((act.to_owned(), ts))
+            })
+            .collect();
+        if events.len() < 2 {
+            continue;
+        }
+        let trace_end = events.last().map(|(_, ts)| *ts).unwrap_or(0);
+        for (i, (act, ts)) in events.iter().enumerate() {
+            let prefix: Vec<String> = events[..=i].iter().map(|(a, _)| a.clone()).collect();
+            let prediction = predict_case_duration_native(&model, &prefix)?;
+            let actual_remaining = (trace_end - ts) as f64;
+            acc.push(prediction.remaining_ms, actual_remaining);
+            let _ = act;
+        }
+    }
+
+    let holdout = if acc.is_empty() || acc.len() < MIN_EVAL_SAMPLES {
+        None
+    } else {
+        Some(acc.finish(train_len))
+    };
+    Ok((model, holdout))
+}
+
+/// WASM export: train a remaining-time model with honest holdout evaluation.
+/// Same handle semantics as [`build_remaining_time_model`], but the stored
+/// model JSON additionally carries a `holdout` field (absent when the log is
+/// too small for honest evaluation).
+#[wasm_bindgen]
+pub fn build_remaining_time_model_with_eval(
+    log_handle: &str,
+    activity_key: &str,
+    timestamp_key: &str,
+) -> Result<JsValue, JsValue> {
+    let state = get_or_init_state();
+
+    let (model, holdout) = state.with_object(log_handle, |obj| {
+        match obj {
+            Some(StoredObject::EventLog(log)) => {
+                build_remaining_time_model_with_eval_native(log, activity_key, timestamp_key)
+                    .map_err(|e| wasm_err(codes::INVALID_INPUT, e))
+            }
+            Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("EventLog handle not found: {}", log_handle),
+            )),
+        }
+    })?;
+
+    let mut model = model;
+    model.holdout = holdout;
+
+    let json = serde_json::to_string(&model).map_err(|e| {
+        wasm_err(
+            codes::INTERNAL_ERROR,
+            format!("Serialization failed: {}", e),
+        )
+    })?;
+    let handle = state.store_object(StoredObject::JsonString(json))?;
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Build a remaining-time prediction model from a completed event log.
@@ -742,6 +858,99 @@ mod tests {
         assert!(prediction.method.starts_with("bucket("));
     }
 
+    /// Hand-computed oracle: 20 identical-shape traces (A,B,C at fixed
+    /// offsets) split 16 train / 4 test. Holdout scoring uses real held-out
+    /// prefixes; the in-sample MAE of the same bucket model on its own
+    /// training prefixes is 0 (every bucket mean reproduces its sample
+    /// exactly), so any noise pushing held-out errors above 0 is visible.
+    #[test]
+    fn with_eval_holdout_mae_exceeds_in_sample_on_noise_injected_log() {
+        // Deterministic "noise": the last 4 traces have inflated durations.
+        let mut traces = Vec::new();
+        for case in 0..20 {
+            let stretch = if case >= 16 { 3.0 } else { 1.0 };
+            traces.push(trace_with_timestamps(&[
+                ("A", 0),
+                ("B", (1000.0 * stretch) as i64),
+                ("C", (3000.0 * stretch) as i64),
+            ]));
+        }
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces,
+        };
+
+        let (model, holdout) = build_remaining_time_model_with_eval_native(
+            &log,
+            "concept:name",
+            "time:timestamp",
+        )
+        .expect("model builds");
+        let holdout = holdout.expect("holdout present for 12 traces");
+
+        // In-sample: score the training prefixes with the training-fit model.
+        let mut in_sample = RegressionAccumulator::new();
+        for trace in &log.traces[..16] {
+            let events: Vec<(String, i64)> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    let act = e.attributes.get("concept:name").and_then(|v| v.as_string())?;
+                    match e.attributes.get("time:timestamp") {
+                        Some(AttributeValue::Int(ms)) => Some((act.to_owned(), *ms)),
+                        _ => None,
+                    }
+                })
+                .collect();
+            let end = events.last().map(|(_, t)| *t).unwrap_or(0);
+            for i in 0..events.len() {
+                let prefix: Vec<String> =
+                    events[..=i].iter().map(|(a, _)| a.clone()).collect();
+                let pred = predict_case_duration_native(&model, &prefix).unwrap();
+                in_sample.push(pred.remaining_ms, (end - events[i].1) as f64);
+            }
+        }
+        let in_sample = in_sample.finish(0);
+
+        assert!(
+            holdout.mae > in_sample.mae,
+            "holdout MAE ({}) must exceed in-sample MAE ({}) on the noise-injected log",
+            holdout.mae,
+            in_sample.mae
+        );
+        assert!(holdout.n_test >= MIN_EVAL_SAMPLES);
+    }
+
+    /// Honesty guard: a log below MIN_EVAL_SAMPLES must report
+    /// `holdout = None`, not a number computed from a handful of prefixes.
+    #[test]
+    fn with_eval_below_min_eval_samples_reports_none() {
+        let traces: Vec<_> = (0..5)
+            .map(|i| {
+                trace_with_timestamps(&[("A", 0), ("B", 100 + i), ("C", 300 + i)])
+            })
+            .collect();
+        let log = EventLog {
+            attributes: BTreeMap::new(),
+            traces,
+        };
+        let (_, holdout) =
+            build_remaining_time_model_with_eval_native(&log, "concept:name", "time:timestamp")
+                .expect("model builds");
+        assert!(holdout.is_none(), "5 traces < MIN_EVAL_SAMPLES → None");
+    }
+
+    /// NaN/Inf guard: non-finite values in the sampled metrics path are
+    /// rejected by the shared ensure_finite helpers (typed Err, no silent
+    /// NaN propagation).
+    #[test]
+    fn ensure_finite_guards_typed_err() {
+        assert_eq!(
+            crate::ml::utils::ensure_finite_1d(&[1.0, f64::NAN]).unwrap_err(),
+            "input contains NaN/Inf at index 1"
+        );
+    }
+
     #[test]
     fn predict_case_duration_native_rejects_an_empty_prefix() {
         let model = RemainingTimeModel {
@@ -756,6 +965,7 @@ mod tests {
                 scale: 1.0,
             },
             median_duration_ms: 1.0,
+            holdout: None,
         };
         let err = predict_case_duration_native(&model, &[]).expect_err("empty prefix must refuse");
         assert_eq!(err, "Cannot predict on empty prefix");

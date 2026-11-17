@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/predict_next_activity.md; source-sha256: f19a41cea3f628cfcfffc544918146795900bad7d53365694f847abb142bd1b5; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/predict_next_activity.md; source-sha256: f5feb40a5c395d29b814498371ab1ab3a8a624c941a4dcb2a441b61bf1b7a778; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: predict_next_activity
 
@@ -28,3 +28,14 @@
 - **Rust Implementation**: `wasm4pm/src/prediction.rs` -> `predict_next_activity`, `build_ngram_predictor`
 - **TypeScript dispatch**: `packages/kernel/src/api.ts` -> `runRaw`
 - **Test file**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Evaluation semantics (2026-10-10, commit `0e3d81b38`)
+
+- Prediction results now include `entropy_full_support`: Shannon entropy
+  normalised over the WHOLE model vocabulary (`ln(|vocab|)`), not the top-k
+  slice. The legacy `entropy` field (top-k normalisation) is kept for one
+  release cycle; prefer `entropy_full_support` — the legacy field conflates
+  "model is uncertain" with "we asked for a small `k`".
+- Beam-search path prediction applies real duplicate detection: identical
+  paths reached via different search branches are deduplicated instead of
+  double-counting probability mass.

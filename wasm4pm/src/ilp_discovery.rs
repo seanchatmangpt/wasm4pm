@@ -517,7 +517,14 @@ pub fn discover_ilp_petri_net(
         "fitness": fitness,
         "precision": precision,
         "simplicity": simplicity,
-        "f_measure": 2.0 * (fitness * precision) / (fitness + precision + 0.001),
+        // Standard F1 (harmonic mean of fitness=recall and precision), with a
+        // zero guard. Previously used a 0.001 smoothing term that inflated the
+        // reported value for small fitness+precision.
+        "f_measure": if fitness + precision > 0.0 {
+            2.0 * (fitness * precision) / (fitness + precision)
+        } else {
+            0.0
+        },
     }))
 }
 

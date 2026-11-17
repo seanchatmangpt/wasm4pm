@@ -22,7 +22,7 @@ use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{bench_sizes_slow, generate_event_log, ACTIVITY_KEY, TIMESTAMP_KEY};
+use helpers::{bench_sizes_slow, ACTIVITY_KEY, TIMESTAMP_KEY};
 
 // ---------------------------------------------------------------------------
 // Temporal Profile (inline, mirrors temporal_profile.rs logic)
@@ -157,7 +157,7 @@ fn bench_temporal_profile_discovery(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
 
     for shape in bench_sizes_slow() {
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let total_events = log.event_count();
 
         group.throughput(Throughput::Elements(total_events as u64));
@@ -186,7 +186,7 @@ fn bench_temporal_conformance_check(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
 
     for shape in bench_sizes_slow() {
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let total_events = log.event_count();
         let profile = build_temporal_profile(&log, ACTIVITY_KEY, TIMESTAMP_KEY);
 
@@ -221,7 +221,7 @@ fn bench_monte_carlo(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
 
     for shape in bench_sizes_slow() {
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let total_events = log.event_count();
 
         let config = MonteCarloConfig {
@@ -260,7 +260,7 @@ fn bench_manufacturing_truth_e2e(c: &mut Criterion) {
     group.sample_size(10);
 
     for shape in bench_sizes_slow() {
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let total_events = log.event_count();
 
         group.throughput(Throughput::Elements(total_events as u64));
@@ -269,7 +269,7 @@ fn bench_manufacturing_truth_e2e(c: &mut Criterion) {
             &shape,
             |b, shape| {
                 b.iter(|| {
-                    let log = generate_event_log(black_box(shape));
+                    let log = helpers::load_real_log_capped(black_box(shape).num_cases);
                     let input_json = serde_json::to_string(&log).unwrap_or_default();
                     let input_hash = blake3::hash(input_json.as_bytes());
 

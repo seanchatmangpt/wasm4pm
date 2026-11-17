@@ -91,6 +91,13 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "meta_reasoning" => Some(include_str!(
             "../../ocel/models/l1/meta_reasoning.ocpn.json"
         )),
+        "triz" => Some(include_str!("../../ocel/models/l1/triz.ocpn.json")),
+        "morphological" => Some(include_str!(
+            "../../ocel/models/l1/morphological.ocpn.json"
+        )),
+        "ocpm_route_discoverer" => Some(include_str!(
+            "../../ocel/models/l1/ocpm_route_discoverer.ocpn.json"
+        )),
         _ => None,
     }
 }

@@ -32,6 +32,7 @@ pub fn discover_from_dfg(
 
     let cut_filter = CutFilter::for_variant(config.variant);
     super::inductive_miner(&traces, arena, config, &cut_filter)
+        .map(|(root, _fall_through_fired)| root)
 }
 
 /// Build traces from DFG by following edges
@@ -57,7 +58,7 @@ fn build_traces_from_dfg(
 
     // If DFG is empty, fall back to log traces
     if adjacency.is_empty() {
-        return super::group_traces_by_activity_sequence(log, activity_key);
+        return super::group_traces_by_activity_sequence(log, activity_key).0;
     }
 
     // Build traces by following DFG edges from each start activity
@@ -87,7 +88,7 @@ fn build_traces_from_dfg(
 
     // If no traces found, fall back to log traces
     if traces.is_empty() {
-        super::group_traces_by_activity_sequence(log, activity_key)
+        super::group_traces_by_activity_sequence(log, activity_key).0
     } else {
         traces
     }

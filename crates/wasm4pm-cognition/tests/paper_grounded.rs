@@ -630,14 +630,16 @@ fn soar_paper_grounded() {
 
             // Paper-expected: op-move-blank-up selected via "best" preference
             let exp = &json["expected"];
-            if let Some(expected_op) = exp.get("selected_operator").and_then(|v| v.as_str()) {
-                assert_eq!(
-                    output.selected.as_deref(),
-                    Some(expected_op),
-                    "SOAR must select '{}' per Laird et al. 1987 Section 2.3 preference resolution",
-                    expected_op
-                );
-            }
+            let expected_op = exp
+                .get("selected_operator")
+                .and_then(|v| v.as_str())
+                .expect("soar.json expected.selected_operator is mandatory — a fixture without it cannot ground the test");
+            assert_eq!(
+                output.selected.as_deref(),
+                Some(expected_op),
+                "SOAR must select '{}' per Laird et al. 1987 Section 2.3 preference resolution",
+                expected_op
+            );
         }
     }
 }
@@ -903,18 +905,20 @@ fn hearsay_paper_grounded() {
     // KSARs actually pop-and-fire for this exact fact/rule set), not the
     // original paper's own hand-walked narrative step numbering (which the
     // fixture's `note` field states separately and does not assert here).
-    if let Some(expected_step_count) = exp.get("step_count").and_then(|v| v.as_u64()) {
+    let expected_step_count = exp
+        .get("step_count")
+        .and_then(|v| v.as_u64())
+        .expect("hearsay.json expected.step_count is mandatory — a fixture without it cannot ground the test");
         let step_count = output
             .facts
             .iter()
             .find(|f| f.key == "step_count")
             .and_then(|f| f.value.parse::<u64>().ok())
             .expect("Hearsay output must surface a real, parseable step_count fact");
-        assert_eq!(
-            step_count, expected_step_count,
-            "Hearsay's real firing count must match the fixture's expected.step_count"
-        );
-    }
+    assert_eq!(
+        step_count, expected_step_count,
+        "Hearsay's real firing count must match the fixture's expected.step_count"
+    );
 }
 
 // ============================================================================
@@ -1895,8 +1899,8 @@ fn allen_temporal_paper_grounded() {
             let rel = output
                 .facts
                 .iter()
-                .find(|f| f.key == "relation:A:C")
-                .expect("relation exists");
+                .find(|f| f.key == "derived:A:C")
+                .expect("derived relation fact exists");
             assert_eq!(rel.value, "p");
         }
     }
@@ -2496,13 +2500,23 @@ fn description_logic_paper_grounded() {
                     });
                 }
             }
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    goals.push(Goal {
+                        id: g["id"].as_str().unwrap().to_string(),
+                        predicate: g["predicate"].as_str().unwrap().to_string(),
+                        value: g["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
             let input = BreedInput {
                 intent: inp["intent"].as_str().unwrap_or("classify").to_string(),
                 candidates,
                 facts,
                 cases: vec![],
                 rules: vec![],
-                goals: vec![],
+                goals,
                 state: vec![],
             };
             let breed = description_logic::DescriptionLogic;
@@ -2511,13 +2525,29 @@ fn description_logic_paper_grounded() {
                 .run(&input)
                 .expect("DescriptionLogic run must succeed");
             assert_eq!(output.breed, BreedId::DescriptionLogic);
-            let consistent_fact = output.facts.iter().find(|f| f.key == "consistent").unwrap();
-            assert_eq!(
-                consistent_fact.value,
-                json["expected"]["consistent"].as_str().unwrap()
-            );
-            let member_xc = output.facts.iter().find(|f| f.key == "member:x:C");
-            assert!(member_xc.is_some());
+            // Paper-grounded: forward subsumption entailed, reverse not.
+            for (key, expected_value) in
+                json["expected"]["verdicts"].as_object().expect("verdicts object")
+            {
+                let fact = output
+                    .facts
+                    .iter()
+                    .find(|f| &f.key == key)
+                    .unwrap_or_else(|| panic!("missing verdict fact {key}"));
+                assert_eq!(
+                    fact.value,
+                    expected_value.as_str().unwrap(),
+                    "verdict {key}"
+                );
+            }
+            // Completion rules CR1-CR4 must all have fired on the fixture.
+            for kind in json["expected"]["trace_kinds"].as_array().unwrap() {
+                let kind = kind.as_str().unwrap();
+                assert!(
+                    output.inference_trace.iter().any(|t| t.kind == kind),
+                    "fixture requires trace kind {kind}"
+                );
+            }
         }
     }
 }
@@ -2595,7 +2625,7 @@ fn abductive_lp_paper_grounded() {
             let count_fact = output
                 .facts
                 .iter()
-                .find(|f| f.key == "explanations_count")
+                .find(|f| f.key == "alp:explanation_count")
                 .unwrap();
             assert_eq!(
                 count_fact.value,
@@ -3037,14 +3067,15 @@ fn clp_paper_grounded() {
                 output.explanation
             );
 
-            // Verify zero-backtrack behavior: propagation alone solves the constraints.
-            let backtrack_count = output
+            // Verify zero-backtrack behavior: propagation alone solves the constraints
+            // (no backtrack vocab anywhere in the new trace contract).
+            let backtrack_kinds = output
                 .inference_trace
                 .iter()
-                .filter(|t| t.kind == "clp-backtrack")
+                .filter(|t| t.kind.contains("backtrack"))
                 .count();
             assert_eq!(
-                backtrack_count, 0,
+                backtrack_kinds, 0,
                 "clp must solve with zero backtracks (Jaffar & Lassez 1987, p.113)"
             );
         }
@@ -3430,6 +3461,30 @@ fn event_calculus_paper_grounded() {
             query_id, verdict_str, computed
         );
     }
+
+    // Clipping-check enrichment: each initiating ec-infer step must carry the
+    // explicit Clipped(t,f,qt) check and the HoldsAt(f,qt) conclusion. For the
+    // paper's narrative: lecturer holds at t=4 unclipped; the promote event at
+    // t=5 clips the lecturer period over (2,7].
+    let clip_details: Vec<&str> = output
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ec-infer")
+        .map(|t| t.detail.as_str())
+        .collect();
+    let has = |needle: &str| clip_details.iter().any(|d| d.contains(needle));
+    assert!(
+        has("HoldsAt(lecturer,4) = true"),
+        "ec-infer must conclude HoldsAt(lecturer,4) = true (inertia from hire@2)"
+    );
+    assert!(
+        has("Clipped(2,lecturer,7) = true"),
+        "ec-infer must record Clipped(2,lecturer,7) = true (promote@5 clips lecturer)"
+    );
+    assert!(
+        has("HoldsAt(lecturer,7) = false"),
+        "ec-infer must conclude HoldsAt(lecturer,7) = false (clipped by promote@5)"
+    );
 }
 
 #[test]
@@ -3699,7 +3754,7 @@ fn mdp_paper_grounded() {
             .expect("policy action must be string");
         let policy_contains = policy_step
             .detail
-            .contains(&format!("{}:{}", state_name, expected_action_str));
+            .contains(&format!("{} -> {}", state_name, expected_action_str));
         assert!(
             policy_contains,
             "MDP policy must include action '{}' for state '{}' (Bellman optimal policy extraction)",
@@ -4579,13 +4634,13 @@ fn script_sam_paper_grounded() {
         assert_eq!(&fact.value, v.as_str().unwrap());
     }
 
-    // Verify gap-inference trace step exists
+    // Verify infer-gap trace step exists
     assert!(
         output
             .inference_trace
             .iter()
-            .any(|t| t.kind == "gap-inference"),
-        "script_sam must emit gap-inference trace steps \
+            .any(|t| t.kind == "infer-gap"),
+        "script_sam must emit infer-gap trace steps \
          per Schank & Abelson 1977 bounded inference principle"
     );
 }

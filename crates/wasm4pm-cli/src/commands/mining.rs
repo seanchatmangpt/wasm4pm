@@ -29,7 +29,7 @@ use crate::commands::aco_bridge::discover_aco_real;
 use crate::commands::conformance_bridge::check_conformance_real;
 use crate::commands::genetic_bridge::discover_genetic_real;
 use crate::commands::ilp_bridge::discover_ilp_real;
-use crate::commands::inductive_bridge::discover_inductive;
+use crate::commands::inductive_bridge::discover_inductive_with_fallback;
 use crate::commands::ocdfg_bridge::discover_ocdfg;
 use crate::commands::ocel_envelope::parse_ocel_tolerant;
 use crate::commands::pso_bridge::discover_pso_real;
@@ -202,14 +202,23 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                     }
                 }
                 "inductive" => {
-                    let tree = discover_inductive(&log, activity_key)
-                        .context("Inductive Miner discovery failed")?;
+                    let (tree, flower_fallback) =
+                        discover_inductive_with_fallback(&log, activity_key)
+                            .context("Inductive Miner discovery failed")?;
                     println!(
                         "\n{}",
                         "Discovered Process Tree (Inductive Miner)"
                             .bold()
                             .bright_cyan()
                     );
+                    if flower_fallback {
+                        io.warning(
+                            "APPROXIMATE MODEL: the inductive miner hit the flower \
+                             fall-through (no cut applied); the tree below allows ANY \
+                             behavior over the log's activities and is not a \
+                             cut-derived model.",
+                        );
+                    }
                     println!("{tree:#?}");
                 }
                 "ilp" => {

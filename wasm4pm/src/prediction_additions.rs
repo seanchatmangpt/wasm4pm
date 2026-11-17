@@ -220,22 +220,6 @@ pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionG
     TransitionGraph { edges, activities }
 }
 
-/// Exponential moving average for trend detection.
-pub fn ewma(values: &[f64], alpha: f64) -> Vec<f64> {
-    if values.is_empty() {
-        return vec![];
-    }
-
-    let mut result = Vec::with_capacity(values.len());
-    result.push(values[0]);
-
-    for i in 1..values.len() {
-        let ema = alpha * values[i] + (1.0 - alpha) * result[i - 1];
-        result.push(ema);
-    }
-    result
-}
-
 /// Simple M/M/1 queue delay estimator.
 pub fn estimate_queue_delay(
     arrival_rate: f64, // events per time unit
@@ -386,14 +370,6 @@ mod tests {
             .collect::<Vec<_>>();
         let rework = calculate_rework_score(&trace);
         assert_eq!(rework, 1); // only B→B is a repeat
-    }
-
-    #[test]
-    fn test_ewma() {
-        let values = vec![1.0, 2.0, 3.0, 4.0];
-        let ema = ewma(&values, 0.3);
-        assert_eq!(ema.len(), 4);
-        assert!(ema[3] > ema[0]);
     }
 
     #[test]

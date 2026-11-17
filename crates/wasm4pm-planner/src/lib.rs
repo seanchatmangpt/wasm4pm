@@ -25,7 +25,8 @@ pub use constitutional_objective::{
     SelectionReceipt, SelectionRefusal, CANONICAL_OBJECTIVE_ID,
 };
 pub use ground::{
-    find_temporal_plan, ground_domain, GroundAction, PlanError, PlanStep, TemporalPlan,
+    find_temporal_plan, ground_domain, validate_temporal_plan, GroundAction, PlanError, PlanStep,
+    TemporalPlan,
 };
 pub use mfw_interop::{
     admit_mfw_candidate_json, MfwInteropAdmission, MFW_INTEROP_RECEIPT_SCHEMA, MFW_INTEROP_SCHEMA,
@@ -36,4 +37,4 @@ pub use receipt::{
     manufacture_world, manufacture_world_with_policy, ManufactureReceipt, PlanStepView,
 };
 pub use sa2a::*;
-pub use schedule::{max_parallelism, plan_to_powl_v2};
+pub use schedule::{max_parallelism, plan_to_powl_v2, ScheduleError};

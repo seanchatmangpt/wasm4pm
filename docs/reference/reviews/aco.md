@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/aco.md; source-sha256: c10793bebae2d7f49c1c29e2795e5c673abaea8dbc634d2da1592433834b7c35; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/aco.md; source-sha256: c6e2ac825402d5f054d19f5032a359c1de8d52336071755182b119b4d3796994; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: aco (Ant Colony Optimization)
 
@@ -12,8 +12,15 @@
   - Returns the best DFG JSON and its final fitness.
 - **Boundary Checks**:
   - Validates inputs: returns `None` if `ant_count < 1` or `iterations == 0`.
-  - Safely handles cases with no directly-follows relationships by returning `None` early.
+  - As of commit `227bd51ad`, empty construction results are NOT laundered: when
+    no ant constructs a non-empty solution the caller receives an honest empty
+    model with fitness `0.0`. The pre-`227bd51ad` full-vocabulary fallback is
+    deleted.
 - **Crucial Correctness Fixes**:
+  - **Per-decision-point normalization** (`227bd51ad`): edge probabilities are
+    normalized per decision point (sum to 1, NaN-sanitized) and sampled by
+    roulette wheel, replacing per-edge Bernoulli sampling with structurally tiny
+    probabilities.
   - **Pheromone MMAS Bounds**: Implements MMAS-style pheromone clamping `[tau_min, tau_max]`:
     ```rust
     for val in pheromone.values_mut() {

@@ -49,6 +49,10 @@ impl BreedOracle for Eliza {
         BreedId::Eliza
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["keyword-found", "equivalence", "decomp-match", "try-pattern", "match-pattern", "bind-slot"]
+    }
+
     fn novel_input() -> BreedInput {
         // Matches the built-in "i am * because *" frame with fresh slot fillers.
         base("i am uo_flustrated because uo_grindle hums at me")
@@ -156,6 +160,10 @@ impl BreedOracle for Dendral {
         BreedId::Dendral
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["eliminate", "survive", "generate-hypothesis", "enumerate", "test-hypothesis", "decision"]
+    }
+
     fn novel_input() -> BreedInput {
         let mut input = base("uo_enumerate_compounds");
         input.candidates = vec![candidate("uo_pylor", 0.9), candidate("uo_quenz", 0.4)];
@@ -253,6 +261,10 @@ impl BreedAdversary for CheatDendral {
 impl BreedOracle for Hearsay {
     fn breed_id() -> BreedId {
         BreedId::Hearsay
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["seed", "post-hypothesis", "enqueue-ksar", "stale-ksar", "decision"]
     }
 
     fn novel_input() -> BreedInput {
@@ -374,6 +386,10 @@ fn cxg_lexicon(input: &mut BreedInput) {
 impl BreedOracle for ConstructionGrammar {
     fn breed_id() -> BreedId {
         BreedId::ConstructionGrammar
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["tokenize", "pos-tag", "chunk", "match-construction", "bind-slot", "fuse-meaning"]
     }
 
     fn novel_input() -> BreedInput {
@@ -530,6 +546,10 @@ impl BreedOracle for AutoinstinctLearning {
         BreedId::AutoinstinctLearning
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["plan-step", "no-plan-found", "update-distance", "expand-frontier", "goal-reached", "decision"]
+    }
+
     fn novel_input() -> BreedInput {
         let mut input = base("uo_plan_to_summit");
         input.goals = vec![
@@ -650,6 +670,10 @@ impl BreedOracle for AutoinstinctSemantics {
         BreedId::AutoinstinctSemantics
     }
 
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["init-parser", "no-act-found", "extract-act", "extract-recipient", "extract-source", "parse", "frame-bind", "atrans", "ptrans", "decision"]
+    }
+
     fn novel_input() -> BreedInput {
         // "actor verb object to recipient" — the verb must be in the built-in
         // lexicon (give → Atrans); all names are fresh uo_ tokens.
@@ -744,6 +768,22 @@ impl BreedAdversary for CheatAutoinstinctSemantics {
 impl BreedOracle for AutoinstinctNeurosis {
     fn breed_id() -> BreedId {
         BreedId::AutoinstinctNeurosis
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &[
+            "seed-beliefs",
+            "affect-snapshot",
+            "analyze",
+            "detect-pattern",
+            "belief-update",
+            "decision",
+            // NeuroticSystem response labels surface as trace step kinds
+            // (one TraceStep per process_input call, kind = response label).
+            "defensive",
+            "accepting",
+            "curious",
+        ]
     }
 
     fn novel_input() -> BreedInput {
@@ -859,6 +899,10 @@ impl BreedAdversary for CheatAutoinstinctNeurosis {
 impl BreedOracle for AutoinstinctVision {
     fn breed_id() -> BreedId {
         BreedId::AutoinstinctVision
+    }
+
+    fn kind_vocabulary() -> &'static [&'static str] {
+        &["observe-object", "find-clear-object", "perceive", "segment", "classify", "decision"]
     }
 
     fn novel_input() -> BreedInput {

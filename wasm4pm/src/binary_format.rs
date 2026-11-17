@@ -188,6 +188,84 @@ impl BinaryHeader {
         }
         Ok(())
     }
+
+    /// Validate declared section geometry against a buffer length, entirely in
+    /// u64 math (no truncating casts). Checks that all six section offsets are
+    /// within `len` and non-decreasing, and that each section is large enough
+    /// for the element counts the header declares.
+    pub fn validate_geometry(&self, len: u64) -> Result<(), Wasm4pmError> {
+        let off = &self.section_offsets;
+        for (i, &o) in off.iter().enumerate() {
+            if o > len {
+                return Err(Wasm4pmError::BinaryFormat(format!(
+                    "Section offset {i} ({o}) exceeds buffer length {len}"
+                )));
+            }
+        }
+        for i in 0..5 {
+            if off[i] > off[i + 1] {
+                return Err(Wasm4pmError::BinaryFormat(format!(
+                    "Section offsets not monotone: offset {i} ({}) > offset {} ({})",
+                    off[i],
+                    i + 1,
+                    off[i + 1]
+                )));
+            }
+        }
+        // First section must start after the 128-byte header.
+        let header_size = size_of::<BinaryHeader>() as u64;
+        if off[0] < header_size {
+            return Err(Wasm4pmError::BinaryFormat(format!(
+                "Vocab section offset ({}) overlaps header ({} bytes)",
+                off[0], header_size
+            )));
+        }
+        // Offsets section: (num_traces + 1) u64 entries, checked in u64.
+        let trace_table_len = self
+            .num_traces
+            .checked_add(1)
+            .and_then(|n| n.checked_mul(8))
+            .ok_or_else(|| {
+                Wasm4pmError::BinaryFormat("Trace count overflows u64 geometry".to_string())
+            })?;
+        if off[2] - off[1] < trace_table_len {
+            return Err(Wasm4pmError::BinaryFormat(format!(
+                "Trace offset section too small: {} bytes, need {trace_table_len}",
+                off[2] - off[1]
+            )));
+        }
+        // Events section: num_events u32 entries.
+        let events_len = self
+            .num_events
+            .checked_mul(4)
+            .ok_or_else(|| {
+                Wasm4pmError::BinaryFormat("Event count overflows u64 geometry".to_string())
+            })?;
+        if off[3] - off[2] < events_len {
+            return Err(Wasm4pmError::BinaryFormat(format!(
+                "Event section too small: {} bytes, need {events_len}",
+                off[3] - off[2]
+            )));
+        }
+        // Timestamps section (when flagged): num_events i64 entries.
+        if (self.flags & FLAG_HAS_TIMESTAMPS) != 0 {
+            let ts_len = self
+                .num_events
+                .checked_mul(8)
+                .ok_or_else(|| {
+                    Wasm4pmError::BinaryFormat(
+                        "Timestamp count overflows u64 geometry".to_string(),
+                    )
+                })?;
+            if off[4] - off[3] < ts_len {
+                return Err(Wasm4pmError::BinaryFormat(format!(
+                    "Timestamp section too small: {} bytes, need {ts_len}",
+                    off[4] - off[3]
+                )));
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Default for BinaryHeader {
@@ -416,9 +494,12 @@ impl<'a> BinaryLogView<'a> {
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Wasm4pmError> {
         let header = BinaryHeader::from_bytes(bytes)?;
         header.validate()?;
+        header.validate_geometry(bytes.len() as u64)?;
 
         // Verify we have enough data for the declared sections
-        let end = header.section_offsets[5] as usize;
+        let end = usize::try_from(header.section_offsets[5]).map_err(|_| {
+            Wasm4pmError::BinaryFormat("Section end exceeds addressable range".to_string())
+        })?;
         if bytes.len() < end {
             return Err(Wasm4pmError::BinaryFormat(format!(
                 "Buffer truncated: expected {} bytes, got {}",
@@ -466,23 +547,25 @@ impl<'a> BinaryLogView<'a> {
 
     /// Read the entire vocabulary into a Vec.
     fn read_all_vocab(&self) -> Result<Vec<String>, String> {
-        let mut vocab = Vec::with_capacity(self.header.vocab_count as usize);
-        let vocab_start = self.header.section_offsets[0] as usize;
-        let vocab_end = self.header.section_offsets[1] as usize;
+        let vocab_count = usize::try_from(self.header.vocab_count)
+            .map_err(|_| "corrupt binary: vocab count exceeds addressable range".to_string())?;
+        let vocab_start = usize::try_from(self.header.section_offsets[0])
+            .map_err(|_| "corrupt binary: vocab offset exceeds addressable range".to_string())?;
+        let vocab_end = usize::try_from(self.header.section_offsets[1])
+            .map_err(|_| "corrupt binary: vocab end exceeds addressable range".to_string())?;
+        let mut vocab = Vec::with_capacity(vocab_count.min(1024));
         let mut offset = vocab_start;
 
-        while offset < vocab_end && vocab.len() < self.header.vocab_count as usize {
-            if offset + 4 > self.data.len() {
+        while offset < vocab_end && vocab.len() < vocab_count {
+            if offset.checked_add(4).map_or(true, |e| e > self.data.len()) {
                 return Err("Vocab section truncated".to_string());
             }
-            let len = u32::from_le_bytes(
-                self.data[offset..offset + 4]
-                    .try_into()
-                    .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
-            ) as usize;
+            let len = u32::from_le_bytes(self.data[offset..offset + 4].try_into().expect(
+                "invariant: bounds checked via offset.checked_add(4) above",
+            )) as usize;
             offset += 4;
 
-            if offset + len > self.data.len() {
+            if offset.checked_add(len).map_or(true, |e| e > self.data.len()) {
                 return Err("Vocab string truncated".to_string());
             }
 
@@ -498,32 +581,64 @@ impl<'a> BinaryLogView<'a> {
     /// Get a reference to a trace by index. Returns a `BinaryTrace` that
     /// borrows from this view.
     pub fn trace(&self, index: usize) -> Result<BinaryTrace<'a>, String> {
-        if index >= self.header.num_traces as usize {
+        if index as u64 >= self.header.num_traces {
             return Err(format!(
                 "Trace index out of bounds: {} >= {}",
                 index, self.header.num_traces
             ));
         }
 
-        let offsets_start = self.header.section_offsets[1] as usize;
-        let offset_a = self.read_u64_at(offsets_start + index * 8)? as usize;
-        let offset_b = self.read_u64_at(offsets_start + (index + 1) * 8)? as usize;
+        let offsets_start = usize::try_from(self.header.section_offsets[1])
+            .map_err(|_| "corrupt binary: offsets section exceeds addressable range".to_string())?;
+        let index8 = (index as u64)
+            .checked_mul(8)
+            .and_then(|n| usize::try_from(n).ok())
+            .ok_or_else(|| "corrupt binary: trace index too large".to_string())?;
+        let offset_a = usize::try_from(self.read_u64_at(offsets_start.checked_add(index8).ok_or(
+            "corrupt binary: trace offset table read overflows",
+        )?)?)
+        .map_err(|_| "corrupt binary: trace offset exceeds addressable range".to_string())?;
+        let offset_b = usize::try_from(
+            self.read_u64_at(
+                offsets_start
+                    .checked_add(index8)
+                    .and_then(|base| base.checked_add(8))
+                    .ok_or("corrupt binary: trace offset table read overflows")?,
+            )?,
+        )
+        .map_err(|_| "corrupt binary: trace offset exceeds addressable range".to_string())?;
+        if offset_b < offset_a {
+            return Err("corrupt binary: trace offsets not monotone".to_string());
+        }
 
-        let events_start = self.header.section_offsets[2] as usize;
-        let e_end = events_start + offset_b * 4;
+        let events_start = usize::try_from(self.header.section_offsets[2])
+            .map_err(|_| "corrupt binary: events section exceeds addressable range".to_string())?;
+        let e_begin = events_start
+            .checked_add(offset_a.checked_mul(4).ok_or("corrupt binary: event offset overflow")?)
+            .ok_or("corrupt binary: event offset overflow")?;
+        let e_end = events_start
+            .checked_add(offset_b.checked_mul(4).ok_or("corrupt binary: event offset overflow")?)
+            .ok_or("corrupt binary: event offset overflow")?;
         if e_end > self.data.len() {
             return Err("Events data out of bounds".to_string());
         }
-        let event_ids = &self.data[events_start + offset_a * 4..e_end];
+        let event_ids = &self.data[e_begin..e_end];
 
         let has_timestamps = (self.header.flags & FLAG_HAS_TIMESTAMPS) != 0;
         let timestamps = if has_timestamps {
-            let ts_start = self.header.section_offsets[3] as usize;
-            let ts_end = ts_start + offset_b * 8;
+            let ts_start = usize::try_from(self.header.section_offsets[3]).map_err(|_| {
+                "corrupt binary: timestamps section exceeds addressable range".to_string()
+            })?;
+            let ts_end = ts_start
+                .checked_add(offset_b.checked_mul(8).ok_or("corrupt binary: ts offset overflow")?)
+                .ok_or("corrupt binary: ts offset overflow")?;
             if ts_end > self.data.len() {
                 return Err("Timestamps data out of bounds".to_string());
             }
-            Some(&self.data[ts_start + offset_a * 8..ts_end])
+            let ts_begin = ts_start
+                .checked_add(offset_a.checked_mul(8).ok_or("corrupt binary: ts offset overflow")?)
+                .ok_or("corrupt binary: ts offset overflow")?;
+            Some(&self.data[ts_begin..ts_end])
         } else {
             None
         };
@@ -536,13 +651,13 @@ impl<'a> BinaryLogView<'a> {
 
     /// Read a u64 LE value at a given byte offset.
     fn read_u64_at(&self, offset: usize) -> Result<u64, String> {
-        if offset + 8 > self.data.len() {
+        if offset.checked_add(8).map_or(true, |e| e > self.data.len()) {
             return Err("Out of bounds read".to_string());
         }
         Ok(u64::from_le_bytes(
             self.data[offset..offset + 8]
                 .try_into()
-                .expect("invariant: buffer length >= size_of::<BinaryHeader>() checked above"),
+                .expect("invariant: bounds checked via offset.checked_add(8) above"),
         ))
     }
 
@@ -551,9 +666,14 @@ impl<'a> BinaryLogView<'a> {
         let vocab = self.read_all_vocab()?;
 
         // Read all event IDs
-        let events_start = self.header.section_offsets[2] as usize;
-        let num_events = self.header.num_events as usize;
-        if events_start.saturating_add(num_events * 4) > self.data.len() {
+        let events_start = usize::try_from(self.header.section_offsets[2])
+            .map_err(|_| "corrupt binary: events section exceeds addressable range".to_string())?;
+        let num_events = usize::try_from(self.header.num_events)
+            .map_err(|_| "corrupt binary: event count exceeds addressable range".to_string())?;
+        let events_bytes = num_events
+            .checked_mul(4)
+            .ok_or("corrupt binary: event section size overflows".to_string())?;
+        if events_start.checked_add(events_bytes).map_or(true, |e| e > self.data.len()) {
             return Err("corrupt binary: event section exceeds buffer".to_string());
         }
         let mut events = Vec::with_capacity(num_events);
@@ -569,19 +689,25 @@ impl<'a> BinaryLogView<'a> {
         }
 
         // Read trace offsets
-        let offsets_start = self.header.section_offsets[1] as usize;
-        let num_traces = self.header.num_traces as usize;
-        if offsets_start.saturating_add((num_traces + 1) * 8) > self.data.len() {
+        let offsets_start = usize::try_from(self.header.section_offsets[1])
+            .map_err(|_| "corrupt binary: offsets section exceeds addressable range".to_string())?;
+        let num_traces = usize::try_from(self.header.num_traces)
+            .map_err(|_| "corrupt binary: trace count exceeds addressable range".to_string())?;
+        let offsets_bytes = (num_traces + 1)
+            .checked_mul(8)
+            .ok_or("corrupt binary: trace offset section size overflows".to_string())?;
+        if offsets_start.checked_add(offsets_bytes).map_or(true, |e| e > self.data.len()) {
             return Err("corrupt binary: trace offset section exceeds buffer".to_string());
         }
         let mut trace_offsets = Vec::with_capacity(num_traces + 1);
         offset = offsets_start;
         for _ in 0..=num_traces {
-            let off = u64::from_le_bytes(
+            let off = usize::try_from(u64::from_le_bytes(
                 self.data[offset..offset + 8]
                     .try_into()
                     .expect("8-byte slice, bounds checked above"),
-            ) as usize;
+            ))
+            .map_err(|_| "corrupt binary: trace offset exceeds addressable range".to_string())?;
             trace_offsets.push(off);
             offset += 8;
         }
@@ -602,10 +728,11 @@ impl<'a> BinaryLogView<'a> {
     ) -> Result<EventLog, String> {
         let vocab = self.read_all_vocab()?;
         let has_timestamps = (self.header.flags & FLAG_HAS_TIMESTAMPS) != 0;
-        let num_traces = self.header.num_traces as usize;
+        let num_traces = usize::try_from(self.header.num_traces)
+            .map_err(|_| "corrupt binary: trace count exceeds addressable range".to_string())?;
 
         let mut log = EventLog::new();
-        log.traces.reserve(num_traces);
+        log.traces.reserve(num_traces.min(self.data.len()));
 
         for t in 0..num_traces {
             let binary_trace = self.trace(t)?;
@@ -1359,5 +1486,87 @@ mod tests {
         assert_eq!(view.num_traces(), 0);
         assert_eq!(view.num_events(), 0);
         assert_eq!(view.vocab_count(), 0);
+    }
+}
+
+#[cfg(test)]
+mod geometry_tests {
+    use super::*;
+
+    /// Build a valid minimal buffer, then patch a header u64 field.
+    fn valid_buffer() -> Vec<u8> {
+        let mut b = BinaryLogBuilder::new();
+        b.add_trace(
+            &crate::models::Trace {
+                attributes: Default::default(),
+                events: vec![crate::models::Event { attributes: Default::default() }],
+            },
+            "concept:name",
+            "time:timestamp",
+        );
+        b.finish()
+    }
+
+    fn patch_u64(buf: &mut [u8], byte_offset: usize, value: u64) {
+        buf[byte_offset..byte_offset + 8].copy_from_slice(&value.to_le_bytes());
+    }
+
+    const NUM_EVENTS: usize = 24;
+    const OFF0: usize = 40;
+    const OFF1: usize = 48;
+
+    #[test]
+    fn valid_buffer_roundtrips() {
+        let buf = valid_buffer();
+        let view = BinaryLogView::from_bytes(&buf);
+        assert!(view.is_ok(), "valid buffer must parse: {:?}", view.err());
+    }
+
+    #[test]
+    fn truncated_buffer_refused() {
+        let buf = valid_buffer();
+        let header = size_of::<BinaryHeader>();
+        let mut cuts: Vec<usize> = vec![0, header - 1, header];
+        cuts.extend([buf.len() / 2, buf.len().saturating_sub(1)]);
+        for cut in cuts {
+            let cut = cut.min(buf.len());
+            let err = BinaryLogView::from_bytes(&buf[..cut])
+                .err()
+                .expect("truncated buffer must be refused");
+            assert!(matches!(err, Wasm4pmError::BinaryFormat(_)), "got {err:?}");
+        }
+    }
+
+    #[test]
+    fn section_offset_beyond_len_refused() {
+        let mut buf = valid_buffer();
+        patch_u64(&mut buf, OFF1, u64::MAX);
+        let err = BinaryLogView::from_bytes(&buf).err().unwrap();
+        assert!(matches!(err, Wasm4pmError::BinaryFormat(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn non_monotone_offsets_refused() {
+        let mut buf = valid_buffer();
+        // lower offset 1 below offset 0
+        patch_u64(&mut buf, OFF1, 0);
+        let err = BinaryLogView::from_bytes(&buf).err().unwrap();
+        assert!(matches!(err, Wasm4pmError::BinaryFormat(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn vocab_offset_overlapping_header_refused() {
+        let mut buf = valid_buffer();
+        patch_u64(&mut buf, OFF0, 64);
+        let err = BinaryLogView::from_bytes(&buf).err().unwrap();
+        assert!(matches!(err, Wasm4pmError::BinaryFormat(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn huge_num_events_refused_before_allocation() {
+        let mut buf = valid_buffer();
+        patch_u64(&mut buf, NUM_EVENTS, u64::MAX);
+        let err = BinaryLogView::from_bytes(&buf).err().unwrap();
+        assert!(matches!(err, Wasm4pmError::BinaryFormat(_)), "got {err:?}");
     }
 }

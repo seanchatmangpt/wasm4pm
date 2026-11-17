@@ -1,152 +1,172 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: README.md; source-sha256: 1a81394bdf1c4e82b8cf7e6b5cc9850ccbb506cb03541f1769dba2d0be48c34d; reason: path-local authority or entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-10-11; original: README.md; reason: path-local authority or entrypoint -->
 
 # wasm4pm
 
-wasm4pm is an evidence-oriented process-mining platform implemented in Rust, WebAssembly, and TypeScript. The public `wpm` CLI discovers and validates process models, operates on XES and object-centric event data, executes POWL routes, and manufactures replayable evidence.
+High-performance, evidence-bounded process mining platform in Rust, WebAssembly, and TypeScript.
 
-The platform law is simple:
+`wasm4pm` combines high-throughput branchless Rust and WebAssembly core engines with a composable TypeScript monorepo and published CLI tools (`wpm` / `wasm4pm-cli`). It operates across traditional event logs (XES, CSV), object-centric event logs (OCEL-v2), and declarative / procedural process models (Petri nets, Process Trees, POWL 2.0).
 
-> Claims may not exceed the exact subject, runtime, authority, receipt, and replay evidence that supports them.
+The foundational law of the platform:
 
-## Current standing
+> **Claims may not exceed the exact subject, runtime, authority, receipt, and replay evidence that supports them.**
 
-The Vision 2030 implementation graph is present, but global standing is `PARTIAL_ALIVE` until the complete workspace, real Node-target WASM session, exact release certificate, signed AAT-Live bundle, and required exact-head CI all execute and replay against one immutable commit.
+---
 
-Use the executable capability report instead of a prose status claim:
+## Architecture & Foundational Principles
 
-```bash
-wpm system doctor capabilities --format json
+```text
+Event Data / Observations (XES / CSV / OCEL-v2)
+  │
+  ▼
+Parser & Router (branchless validation, typed admission or refusal)
+  │
+  ▼
+Core Mining & Conformance Engines (Rust / WASM / SIMD)
+  │
+  ├── Process Discovery: Alpha++, Inductive Miner, Heuristics Miner, DFG, Streaming DFG
+  ├── Conformance Checking: Token Replay, Alignments (Rozinat & van der Aalst), ETConformance
+  ├── Object-Centric Process Mining: OCEL-v2 normalization, OCPN, OC-Declare, OCLA
+  ├── Executable Workflows: POWL 2.0 compilation, scheduling, cryptographically verifiable replay
+  └── Cognition & ML: MiniML, Prolog8 proof engine, Markov Logic, Concept Drift Detection
+  │
+  ▼
+Deterministic Actuation & Receipts (BRCE / BLAKE3 hashing)
+  │
+  ▼
+Replayable Evidence & Certified Standing
 ```
 
-## Repository setup
+1. **Evidence-Bounded Execution**: Every analytical finding, conformance score, or repair operation produces a verifiable cryptographic receipt (`receipt.json`) binding input data, algorithmic invariants, and outcome hashes.
+2. **Deterministic Computation**: All runtime state and collection traversal use deterministic collections (`BTreeMap`, sorted structures) and seeded PRNGs to guarantee identical byte-level replay across host platforms and WebAssembly targets.
+3. **Lawful Refusal**: Invalid event data, unsupported schema versions, or unsatisfiable alignments produce typed domain refusals rather than panics or silent fallbacks.
 
-The public TypeScript CLI lives in `apps/wasm4pm`. The Rust CLI under `crates/wasm4pm-cli` is a smaller development surface and may install another binary named `wpm`.
+---
+
+## Workspace Layout & Published Packages
+
+### Rust Crates (crates.io)
+
+| Crate | Directory | Purpose |
+|---|---|---|
+| [`wasm4pm`](https://crates.io/crates/wasm4pm) | `wasm4pm/` | Core process mining algorithms, WASM bridge, and data structures |
+| [`wasm4pm-conform`](https://crates.io/crates/wasm4pm-conform) | `crates/wasm4pm-conform/` | High-assurance trajectory-based IEEE OCEL 2.0 conformance checking |
+| [`prolog8`](https://crates.io/crates/prolog8) | `crates/prolog8/` | High-efficiency byte-capped Prolog proof engine for policy & action admission |
+| [`miniml`](https://crates.io/crates/miniml) | `crates/miniml-core/` | WASM-optimized SIMD-accelerated machine learning primitives |
+| [`ocpq`](https://crates.io/crates/ocpq) | `crates/ocpq/` | Object-centric process querying & relational constraint engine |
+| [`wasm4pm-cognition`](https://crates.io/crates/wasm4pm-cognition) | `crates/wasm4pm-cognition/` | Classical AI cognition kernels (STRIPS, Markov logic, concept drift) |
+| [`wasm4pm-planner`](https://crates.io/crates/wasm4pm-planner) | `crates/wasm4pm-planner/` | Temporal PDDL planner with Prolog8 admission and MCP server |
+| [`wasm4pm-cli`](https://crates.io/crates/wasm4pm-cli) | `crates/wasm4pm-cli/` | Official Rust developer CLI for the wasm4pm suite |
+
+### TypeScript Packages (npm)
+
+| Package | Directory | Description |
+|---|---|---|
+| `@wasm4pm/cli` / `wpm` | `apps/wasm4pm/` | Public TypeScript command-line interface |
+| `@wasm4pm/core` | `wasm4pm/pkg/` | Generated WebAssembly bindings and type definitions |
+| `@wasm4pm/engine` | `packages/engine/` | High-level execution engine & pipeline orchestration |
+| `@wasm4pm/kernel` | `packages/kernel/` | Core domain interfaces and lifecycle contracts |
+| `@wasm4pm/cognition` | `packages/cognition/` | Cognition breeds and reasoning integration |
+| `@wasm4pm/planner` | `packages/planner/` | Declarative planning bindings |
+| `@wasm4pm/contracts` | `packages/contracts/` | Typed schemas and validation contracts |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js $\ge$ 20.x & `pnpm` $\ge$ 9.x
+- Rust toolchain $\ge$ 1.80 with `wasm32-unknown-unknown` target
+- `wasm-pack` $\ge$ 0.13
+
+### Building the Workspace
 
 ```bash
+# Clone the repository
+git clone https://github.com/seanchatmangpt/wasm4pm.git
+cd wasm4pm
+
+# Enable corepack and install npm dependencies
 corepack enable
 pnpm install --frozen-lockfile
+
+# Build the WebAssembly core module
 pnpm run build:wasm
+
+# Build the TypeScript CLI and packages
 pnpm run build:cli
-pnpm --filter @wasm4pm/cli exec wpm --help
+
+# Verify Rust workspace compilation
+cargo check --workspace
 ```
 
-Build commands and package names can change. Treat the current manifests, `Justfile`, and `Makefile` as command authority.
+---
 
-## Core workflows
+## Core Workflows with `wpm`
 
-### Diagnose and repair
+### 1. System Capability Inspection & Diagnosis
+
+Inspect verified runtime capabilities or apply deterministic, receipt-backed repairs:
 
 ```bash
+# Query executable capability report
 wpm system doctor capabilities --format json
+
+# Dry-run diagnostic repairs
 wpm system doctor fix --dry-run
-wpm system doctor fix --only ensure-results-directory --yes
 ```
 
-Doctor diagnosis is inspection-only. Repairs are selected from a structured registry, require explicit authority, write a pending receipt before DO, and write an outcome receipt afterward.
+### 2. Process Discovery
 
-### Discover from an event log
+Discover process models from XES, CSV, or parquet event logs:
 
 ```bash
-wpm run data/small-example.xes -a dfg
-wpm algorithms
+# Discover a directly-follows graph (DFG) or Petri net from an event log
+wpm model discover data/small-example.xes
+
+# List all registered algorithms and paper references
+wpm help algorithms
 ```
 
-Do not infer the number or standing of algorithms from this README. Query the current CLI and inspect the versioned reachability and behavior evidence for release claims.
+### 3. Object-Centric Event Execution & Replay
 
-### Execute and replay an object-centric session
+Process multi-entity event logs (OCEL-v2) and execute proof-carrying POWL workflows:
 
 ```bash
-wpm evidence session data/example-ocel-v2.json --object-type Order
+# Discover and validate an object-centric model
+wpm evidence session log.ocel.json --object-type Order
 
-wpm evidence session data/example-ocel-v2.json \
+# Replay an execution session against previously captured receipts
+wpm evidence session log.ocel.json \
   --object-type Order \
   --mode replay \
   --session .wasm4pm/sessions/<run-id>.json
 ```
 
-This route requires the exact OCEL-v2 WASM normalization and flattening exports, compares them with the independent TypeScript reader, discovers and validates a POWL model, executes it in WASM, and hashes every transition. OCEL-v1 and OCEL NDJSON remain typed unsupported on this composition root until equivalent WASM routes exist.
+---
 
-### Manufacture signed AAT-Live standing
+## Testing & Verification
 
-```bash
-wpm evidence live \
-  --trace trace.ndjson \
-  --session session.json \
-  --weaver weaver-admission.json \
-  --proof mcp-plus-proof.json
-```
-
-An `Accepted` passport requires ordered observations, a signed zero-violation Weaver report, a signed MCP+ proof, exact session/route/WASM/manifest identities, release-certificate identity, and replay. A refusal produces no passport.
-
-### Manufacture release evidence
+Run the owning test boundaries:
 
 ```bash
-pnpm run release:algorithm-reachability
-pnpm run release:algorithm-behavior
-pnpm run release:verify-algorithm-behavior
-pnpm run examples:gate
-pnpm run prepublish:pack-smoke
-pnpm run release:certificate
-pnpm run release:cert-auth
-```
-
-The release certificate binds package identity, exact Git commit, algorithm evidence, executed examples, npm tarball contents and integrity, WASM bytes, and its own canonical hash. The certificate is not closure unless the independent verifier recomputes all of those edges.
-
-## Architecture
-
-```text
-observations
-  → parser and router
-  → admission or typed refusal
-  → construction
-  → BRCE actuation
-  → receipt
-  → replay
-  → bounded standing
-```
-
-See [`docs/explanation/architecture_overview.md`](docs/explanation/architecture_overview.md) and [`docs/VISION_2030.md`](docs/VISION_2030.md).
-
-## Programmatic boundary
-
-The generated WASM package and TypeScript declarations are the exact export inventory for a build. Begin with [`WASM_API.md`](WASM_API.md); verify required exports in `wasm4pm/pkg/wasm4pm.d.ts` and the owning Rust source before depending on them.
-
-## Testing
-
-```bash
-pnpm build
+# TypeScript integration suite
 pnpm test
-cargo check
+
+# Rust workspace test suite
 cargo test --workspace
+
+# Documentation lint & link validation
 pnpm run docs:check
 ```
 
-These are baseline gates, not universal proof. Run the owning package, real WASM target, clean package install, or signed evidence boundary required by the claim. See [`TESTING.md`](TESTING.md).
+---
 
-## Documentation
+## Governance & Engineering Standards
 
-The active documentation map is [`docs/README.md`](docs/README.md). Documentation classification and archival rules are defined in [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md).
-
-```bash
-pnpm run docs:inventory
-pnpm run docs:migrate
-pnpm run docs:governance
-pnpm run docs:check
-```
-
-Historical audits, status reports, completion summaries, and superseded narratives are retained under `docs/archive/` or `docs_quarantine/`; they are lineage evidence, not current product truth.
-
-## Telemetry and data
-
-Telemetry is disabled unless explicitly configured. Review the current observability implementation and deployment configuration before making network or retention claims. Do not place credentials, private keys, PII, or sensitive local paths in receipts or traces.
-
-## Security and contribution
-
-- Security reporting: [`SECURITY.md`](SECURITY.md)
-- Contribution workflow: [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- Agent contract: [`AGENTS.md`](AGENTS.md)
-- Commercial terms: [`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md)
-
-## License
-
-The repository license and change-date terms are defined by [`LICENSE`](LICENSE). Do not infer use rights from this README.
+- **Agent Contract & Rules of Engagement**: [`AGENTS.md`](AGENTS.md)
+- **Architecture Overview**: [`docs/explanation/architecture_overview.md`](docs/explanation/architecture_overview.md)
+- **Testing Standards**: [`TESTING.md`](TESTING.md)
+- **WASM API Specification**: [`WASM_API.md`](WASM_API.md)
+- **Security Policy**: [`SECURITY.md`](SECURITY.md)
+- **License**: BUSL-1.1 (Business Source License 1.1)

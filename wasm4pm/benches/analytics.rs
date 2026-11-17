@@ -8,7 +8,7 @@
 //!
 //! Datasets:
 //!   - sepsis.xes          (ICU patient flow)
-//!   - bpi2020_travel.xes  (travel permits — larger)
+//!   - bpi2020_domestic_declarations.xes  (travel permits — larger)
 //!   - roadtraffic100traces.xes (road traffic fines, when present)
 //!
 //! Every measured input and every returned result is wrapped in `black_box` so
@@ -79,8 +79,8 @@ fn real_datasets() -> Vec<RealDataset> {
     if let Some(ds) = load_real_dataset(
         "bpi2020",
         &[
-            "bench_data/bpi2020_travel.xes",
-            "../bench_data/bpi2020_travel.xes",
+            "bench_data/bpi2020_domestic_declarations.xes",
+            "../bench_data/bpi2020_domestic_declarations.xes",
         ],
     ) {
         sets.push(ds);

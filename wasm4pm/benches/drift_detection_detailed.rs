@@ -24,16 +24,16 @@
 //! 6. **Determinism Verification** — Reproducibility across runs with seeded RNG
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::collections::{BTreeMap, HashSet};
-use std::fs;
+use std::collections::HashSet;
 use std::time::Duration;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use std::collections::BTreeMap;
 use wasm4pm::prediction_drift::{classify_trend, ewma_series, jaccard_distance};
 use wasm4pm::state::{get_or_init_state, StoredObject};
 
 #[path = "helpers.rs"]
 mod helpers;
-use helpers::{make_handle, LogShape, ACTIVITY_KEY, TIMESTAMP_KEY};
+use helpers::{ACTIVITY_KEY, TIMESTAMP_KEY};
 
 // ---------------------------------------------------------------------------
 // Synthetic drift scenario generation
@@ -286,112 +286,13 @@ fn generate_stable_log(num_cases: usize, events_per_case: usize) -> EventLog {
 // Real-data XES loading (grounds drift detection on a genuine event log)
 // ---------------------------------------------------------------------------
 
-fn extract_attr(s: &str, attr: &str) -> Option<String> {
-    let needle = format!("{}=\"", attr);
-    let start = s.find(&needle)? + needle.len();
-    let end = s[start..].find('"')?;
-    Some(s[start..start + end].to_string())
-}
-
-/// Minimal streaming XES parser (matches `real_data_bench.rs`).
-fn parse_xes(content: &str) -> EventLog {
-    let mut log = EventLog::new();
-    let mut current_trace: Option<Trace> = None;
-    let mut current_event: Option<Event> = None;
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace {
-                attributes: BTreeMap::new(),
-                events: Vec::new(),
-            });
-        }
-        if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() {
-                log.traces.push(t);
-            }
-        }
-        if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event {
-                attributes: BTreeMap::new(),
-            });
-        }
-        if trimmed.starts_with("</event>") {
-            if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace {
-                    t.events.push(ev);
-                }
-            }
-        }
-        if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) =
-                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
-            {
-                if let Some(ref mut ev) = current_event {
-                    ev.attributes.insert(k, AttributeValue::String(v));
-                } else if let Some(ref mut t) = current_trace {
-                    t.attributes.insert(k, AttributeValue::String(v));
-                }
-            }
-        }
-        if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) =
-                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
-            {
-                if let Some(ref mut ev) = current_event {
-                    ev.attributes.insert(k, AttributeValue::Date(v));
-                }
-            }
-        }
-    }
-    log
-}
-
-/// Load the real Sepsis event log (1,050 cases, ~15K events).
-/// Returns `None` when the dataset is absent so synthetic benches still run.
-fn load_real_log() -> Option<EventLog> {
-    let home = std::env::var("HOME").unwrap_or_default();
-    let candidates = [
-        "bench_data/sepsis.xes",
-        "../bench_data/sepsis.xes",
-        "../../bench_data/sepsis.xes",
-        "~/chatmangpt/pm4py/tests/input_data/sepsis.xes",
-    ];
-    candidates.iter().find_map(|p| {
-        let resolved = p.replace('~', &home);
-        let content = fs::read_to_string(&resolved).ok()?;
-        if content.len() < 200 {
-            return None;
-        }
-        let log = parse_xes(&content);
-        if log.traces.is_empty() {
-            None
-        } else {
-            Some(log)
-        }
-    })
-}
-
 // ---------------------------------------------------------------------------
 // Real-data drift detection (grounded on Sepsis ICU patient flow)
 // ---------------------------------------------------------------------------
 
 fn bench_real_data_drift(c: &mut Criterion) {
-    let log = match load_real_log() {
-        Some(l) => l,
-        None => {
-            eprintln!(
-                "drift/real_data: sepsis.xes not found in bench_data/ — skipping real-data bench"
-            );
-            return;
-        }
-    };
-
-    let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
-    let handle = get_or_init_state()
-        .store_object(StoredObject::EventLog(log))
-        .expect("Failed to store real log");
+    // Real ICU-patient log (TPS rule); panics honestly if the fixture is absent.
+    let (handle, total_events) = helpers::store_real_log();
 
     let mut group = c.benchmark_group("drift/real_data");
     group.measurement_time(Duration::from_secs(5));
@@ -405,7 +306,7 @@ fn bench_real_data_drift(c: &mut Criterion) {
 
     for window_size in [10usize, 50, 100, 500] {
         group.throughput(Throughput::Elements(
-            (total_events / window_size.max(1)) as u64,
+            total_events as u64 / window_size.max(1) as u64,
         ));
         group.bench_with_input(
             BenchmarkId::new("sepsis_window", window_size),
@@ -440,13 +341,8 @@ fn bench_window_sizes(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 10,
-        num_activities: 8,
-        noise_factor: 0.05,
-    };
-    let (handle, events) = make_handle(&shape);
+    // Real ICU-patient log (TPS rule): 1,000-case prefix of bench_data/sepsis.xes.
+    let (handle, events) = helpers::store_real_log_capped(1_000);
 
     for window_size in [5usize, 10, 50, 100, 500] {
         group.throughput(Throughput::Elements(events as u64 / window_size as u64));

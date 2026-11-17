@@ -247,12 +247,12 @@ impl CognitionBreed for AllenTemporal {
             if state.predicate == "interval" {
                 let parts: Vec<&str> = state.value.split(',').collect();
                 if parts.len() == 3 {
-                    if let (Ok(_s), Ok(_e)) = (parts[1].parse::<i32>(), parts[2].parse::<i32>()) {
+                    if let (Ok(s), Ok(e)) = (parts[1].parse::<i32>(), parts[2].parse::<i32>()) {
                         let id = get_id!(parts[0]);
                         trace.push(TraceStep {
                             step: trace.len(),
                             kind: "allen-load".into(),
-                            detail: format!("interval {}", parts[0]),
+                            detail: format!("interval {} [{},{}]", parts[0], s, e),
                             depth: 0,
                             objects: vec![("interval".into(), parts[0].to_string())],
                         });
@@ -299,32 +299,41 @@ impl CognitionBreed for AllenTemporal {
                         parsed = Some((parts_space[0], parts_space[2], parts_space[1]));
                     }
                 }
-                if let Some((node1, node2, rel_str)) = parsed {
-                    let id1 = get_id!(node1);
-                    let id2 = get_id!(node2);
-                    let rels: Vec<&str> = rel_str.split('|').collect();
-                    let mut mask = 0;
-                    for r in rels {
-                        let normalized = parse_rel_name(r);
-                        if let Some(r_idx) = parse_rel(normalized) {
-                            mask |= 1 << r_idx;
-                        }
-                    }
-                    if mask > 0 {
-                        matrix[id1][id2] &= mask;
-                        matrix[id2][id1] = inverse_mask(matrix[id1][id2]);
-                        trace.push(TraceStep {
-                            step: trace.len(),
-                            kind: "allen-load".into(),
-                            detail: format!("rel {},{},{}", node1, node2, rel_str),
-                            depth: 0,
-                            objects: vec![
-                                ("interval".into(), node1.to_string()),
-                                ("interval".into(), node2.to_string()),
-                            ],
-                        });
+                let (node1, node2, rel_str) = parsed.ok_or_else(|| BreedError {
+                    breed: self.id(),
+                    message: format!("malformed relation fact '{}'", fact.value),
+                })?;
+                let id1 = get_id!(node1);
+                let id2 = get_id!(node2);
+                let rels: Vec<&str> = rel_str.split('|').collect();
+                let mut mask = 0;
+                for r in rels {
+                    let normalized = parse_rel_name(r);
+                    if let Some(r_idx) = parse_rel(normalized) {
+                        mask |= 1 << r_idx;
                     }
                 }
+                if mask == 0 {
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: format!(
+                            "relation fact '{}' has no valid relations",
+                            fact.value
+                        ),
+                    });
+                }
+                matrix[id1][id2] &= mask;
+                matrix[id2][id1] = inverse_mask(matrix[id1][id2]);
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "allen-load".into(),
+                    detail: format!("rel {},{},{}", node1, node2, rel_str),
+                    depth: 0,
+                    objects: vec![
+                        ("interval".into(), node1.to_string()),
+                        ("interval".into(), node2.to_string()),
+                    ],
+                });
             }
         }
 
@@ -378,8 +387,11 @@ impl CognitionBreed for AllenTemporal {
                             step: trace.len(),
                             kind: "allen-compose".into(),
                             detail: format!(
-                                "{},{},{}",
-                                node_names[k], node_names[i], node_names[j]
+                                "{} via {} -> {}: {}",
+                                node_names[k],
+                                node_names[i],
+                                node_names[j],
+                                mask_to_str(t)
                             ),
                             depth: 0,
                             objects: vec![
@@ -416,7 +428,7 @@ impl CognitionBreed for AllenTemporal {
                     let mask = matrix[i][j];
                     let val = mask_to_str(mask);
                     out_facts.push(crate::breeds::Fact {
-                        key: format!("relation:{}:{}", node_names[i], node_names[j]),
+                        key: format!("derived:{}:{}", node_names[i], node_names[j]),
                         value: val,
                     });
                 }
@@ -436,15 +448,25 @@ impl CognitionBreed for AllenTemporal {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
+        let trace = &output.inference_trace;
+        if trace.is_empty() {
             return Err("Trace must not be empty".into());
         }
-        if !output
-            .inference_trace
+        if !trace.iter().any(|s| s.kind == "allen-load") {
+            return Err("Trace must contain at least one 'allen-load' step".into());
+        }
+        let verdicts: Vec<&TraceStep> = trace
             .iter()
-            .any(|s| s.kind == "allen-verdict")
-        {
-            return Err("Trace must contain an 'allen-verdict' step".into());
+            .filter(|s| s.kind == "allen-verdict")
+            .collect();
+        if verdicts.len() != 1 {
+            return Err("Trace must contain exactly one 'allen-verdict' step".into());
+        }
+        if trace.last().map(|s| s.kind.as_str()) != Some("allen-verdict") {
+            return Err("'allen-verdict' must be the last trace step".into());
+        }
+        if !output.facts.iter().any(|f| f.key.starts_with("derived:")) {
+            return Err("Output must contain at least one 'derived:' fact".into());
         }
         Ok(())
     }
@@ -576,6 +598,80 @@ mod tests {
     }
 
     #[test]
+    fn refuses_mask_zero_relation_fact() {
+        let input = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![Fact {
+                key: "relation".into(),
+                value: "ra,rb,rn".into(),
+            }],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let err = AllenTemporal.run(&input).unwrap_err();
+        assert!(
+            err.message
+                .contains("has no valid relations"),
+            "got: {}",
+            err.message
+        );
+    }
+
+    #[test]
+    fn refuses_malformed_relation_fact() {
+        let input = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![Fact {
+                key: "relation".into(),
+                value: "ra,rb".into(),
+            }],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let err = AllenTemporal.run(&input).unwrap_err();
+        assert!(
+            err.message.contains("malformed relation fact"),
+            "got: {}",
+            err.message
+        );
+    }
+
+    #[test]
+    fn compose_detail_names_the_narrowed_mask() {
+        let input = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "relation".into(),
+                    value: "ra,rb,p".into(),
+                },
+                Fact {
+                    key: "relation".into(),
+                    value: "rb,rc,p".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = AllenTemporal.run(&input).unwrap();
+        let compose = out
+            .inference_trace
+            .iter()
+            .find(|s| s.kind == "allen-compose")
+            .unwrap();
+        assert_eq!(compose.detail, "rc via rb -> ra: pi");
+    }
+
+    #[test]
     fn falsification_gate_path_consistency() {
         // A before B, B meets C => A must be before C
         let input = BreedInput {
@@ -597,7 +693,7 @@ mod tests {
             state: vec![],
         };
         let out = AllenTemporal.run(&input).unwrap();
-        let ac_rel = out.facts.iter().find(|f| f.key == "relation:A:C").unwrap();
+        let ac_rel = out.facts.iter().find(|f| f.key == "derived:A:C").unwrap();
         assert_eq!(ac_rel.value, "p");
     }
 

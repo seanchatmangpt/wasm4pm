@@ -918,6 +918,10 @@ pub fn reset_drift_thresholds() -> String {
 /// Discovers a DFG from the log, builds a SimdPetriNet, then replays
 /// every trace and returns a JSON string with `overall_fitness`, `precision`,
 /// and per-case diagnostics (each trace has a `fitness` field).
+///
+/// Approximation cap: at most the first 8 candidate transitions per activity
+/// label are tried when firing; labels with >8 same-label transitions are
+/// replayed approximately (`"cap_applied": true` reports when that bound a search).
 #[cfg(feature = "conformance_basic")]
 #[wasm_bindgen]
 pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {

@@ -1,7 +1,14 @@
-//! Alignment-based ETConformance precision.
+//! Label-coverage precision (honesty rename).
 //!
-//! Computes precision by counting escaping edges in the model
-//! relative to the behavior seen in the log via alignments.
+//! This module does NOT compute alignment-based ETConformance precision.
+//! It counts visible transitions whose label never appears in the log
+//! ("escaping" transitions) — a label-coverage heuristic. No alignments are
+//! computed; alignment costs (sync/log/model move) accepted via
+//! [`AlignETConformanceConfig`] are ignored. The WASM export name
+//! `align_etconformance_precision` is kept for API compatibility; the report
+//! payload carries `"method": "label_coverage"` and an `"ignored_config"`
+//! list so downstream consumers can tell heuristic from real alignments.
+//! A real alignment-based implementation remains future work.
 
 use crate::models::{EventLog, PetriNet};
 use crate::state::{get_or_init_state, StoredObject};
@@ -10,6 +17,11 @@ use std::collections::HashSet;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for Align-ETConformance precision computation.
+///
+/// DEPRECATED semantics: this heuristic only reads `max_iterations` (as a
+/// trace cap). `sync_cost` / `log_move_cost` / `model_move_cost` are accepted
+/// for wire compatibility and IGNORED — reported in the payload's
+/// `"ignored_config"` list.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AlignETConformanceConfig {
     pub max_iterations: usize,
@@ -29,20 +41,28 @@ impl Default for AlignETConformanceConfig {
     }
 }
 
-/// Result of Align-ETConformance precision computation.
+/// Result of label-coverage precision computation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ETConformanceReport {
     pub precision: f64,
     pub total_escaping_edges: usize,
     pub total_edges: usize,
     pub processed_prefixes: usize,
+    /// Always "label_coverage": identifies the heuristic actually executed.
+    #[serde(default)]
+    pub method: String,
+    /// Config fields accepted but not used by this heuristic.
+    #[serde(default)]
+    pub ignored_config: Vec<String>,
 }
 
-/// Compute alignment-based ETConformance precision.
+/// Compute label-coverage precision (the heuristic previously — and
+/// misleadingly — named alignment-based ETConformance precision).
 ///
-/// Precision is computed as 1 - (escaping_edges / total_edges)
-/// where escaping edges are model transitions never used in alignments.
-pub fn compute_align_etconformance_precision(
+/// Precision = 1 - (escaping_edges / total_edges), where "escaping edges" are
+/// visible model transitions whose label never appears in the log. No
+/// alignments are computed.
+pub fn compute_label_coverage_precision(
     log: &EventLog,
     petri_net: &PetriNet,
     config: &AlignETConformanceConfig,
@@ -125,7 +145,24 @@ pub fn compute_align_etconformance_precision(
         total_escaping_edges: escaping_edges,
         total_edges,
         processed_prefixes: processed_count,
+        method: "label_coverage".to_string(),
+        ignored_config: vec![
+            "sync_cost".to_string(),
+            "log_move_cost".to_string(),
+            "model_move_cost".to_string(),
+        ],
     })
+}
+
+/// Back-compat alias for [`compute_label_coverage_precision`] under the old
+/// (misleading) name. The heuristic is unchanged; the report payload now
+/// identifies itself via `"method": "label_coverage"`.
+pub fn compute_align_etconformance_precision(
+    log: &EventLog,
+    petri_net: &PetriNet,
+    config: &AlignETConformanceConfig,
+) -> Result<ETConformanceReport, String> {
+    compute_label_coverage_precision(log, petri_net, config)
 }
 
 #[wasm_bindgen]
@@ -187,6 +224,8 @@ mod tests {
             total_escaping_edges: 3,
             total_edges: 20,
             processed_prefixes: 100,
+            method: "label_coverage".to_string(),
+            ignored_config: vec![],
         };
 
         assert!(report.precision >= 0.0 && report.precision <= 1.0);
@@ -204,6 +243,11 @@ mod tests {
         let report = result.unwrap();
         assert_eq!(report.total_edges, 0);
         assert_eq!(report.precision, 1.0); // No edges = perfect precision
+        assert_eq!(report.method, "label_coverage");
+        assert_eq!(
+            report.ignored_config,
+            vec!["sync_cost", "log_move_cost", "model_move_cost"]
+        );
     }
 
     /// Iter-10 Rank-1: Range invariant. Old code clamped only at the

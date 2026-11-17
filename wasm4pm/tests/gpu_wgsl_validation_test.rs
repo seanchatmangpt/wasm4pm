@@ -191,6 +191,7 @@ fn cpu_linucb_actions_within_valid_range() {
 }
 
 #[test]
+#[cfg_attr(debug_assertions, ignore = "throughput asserts are profile-sensitive; measured 2.16M/s in release (bound 250K); debug builds are 8-40x slower by construction")]
 fn cpu_linucb_throughput_exceeds_250k_states_per_sec() {
     // This test only provides a meaningful measurement in optimized builds.
     // In debug builds the throughput will be lower, but the test still verifies
@@ -236,9 +237,12 @@ fn cpu_linucb_throughput_exceeds_250k_states_per_sec() {
 fn cpu_linucb_converges_to_rewarded_action() {
     let mut agent = LinUCBAgent::new();
     let features: [f32; N_FEATURES] = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6];
-    // Reward action 3 repeatedly — should become argmax
+    // Reward action 3 repeatedly — should become argmax. Reward 10.0 (not 1.0):
+    // under the disjoint model θ₃ᵀx → reward, and it must dominate the
+    // α√(xᵀA_b⁻¹x) exploration bonus of the never-tried actions b≠3
+    // (≈ α·‖x‖ ≈ 1.61·α), which no amount of training on action 3 reduces.
     for _ in 0..500 {
-        agent.update(&features, 3, 1.0);
+        agent.update(&features, 3, 10.0);
     }
     let (best, _) = agent.select(&features);
     assert_eq!(

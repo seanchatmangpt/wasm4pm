@@ -1,0 +1,94 @@
+{
+  "breed": "event_calculus",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "ec:happens:2",
+        "value": "hire"
+      },
+      {
+        "key": "ec:happens:5",
+        "value": "promote"
+      },
+      {
+        "key": "ec:initiates:hire",
+        "value": "employed"
+      },
+      {
+        "key": "ec:initiates:hire",
+        "value": "lecturer"
+      },
+      {
+        "key": "ec:initiates:promote",
+        "value": "professor"
+      },
+      {
+        "key": "ec:terminates:promote",
+        "value": "lecturer"
+      }
+    ],
+    "goals": [
+      {
+        "id": "q1",
+        "predicate": "ec:holdsat",
+        "value": "lecturer@4"
+      },
+      {
+        "id": "q2",
+        "predicate": "ec:holdsat",
+        "value": "lecturer@7"
+      },
+      {
+        "id": "q3",
+        "predicate": "ec:holdsat",
+        "value": "professor@7"
+      },
+      {
+        "id": "q4",
+        "predicate": "ec:holdsat",
+        "value": "employed@7"
+      },
+      {
+        "id": "q5",
+        "predicate": "ec:holdsat",
+        "value": "professor@4"
+      }
+    ],
+    "intent": "evaluate HoldsAt over the Kowalski-Sergot hired/promoted narrative",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "ec:verdict:employed@7=true",
+      "ec:verdict:lecturer@4=true",
+      "ec:verdict:lecturer@7=false",
+      "ec:verdict:professor@4=false",
+      "ec:verdict:professor@7=true",
+      "q1: HoldsAt(lecturer@4) = true",
+      "q2: HoldsAt(lecturer@7) = false",
+      "q3: HoldsAt(professor@7) = true",
+      "q4: HoldsAt(employed@7) = true",
+      "q5: HoldsAt(professor@4) = false"
+    ],
+    "notes": "Kowalski & Sergot 1986 hired/promoted narrative (integer times 2 and 5 per the paper fixture adaptation). Expected verdicts match tests/fixtures/papers/event_calculus.json exactly: lecturer holds between hire and promote (clipped by promotion); professor and employed persist by inertia. Hand timeline: holds[0..2]={}; holds[3..6]={employed,lecturer}; holds[6..8]={employed,professor}. Route: stratified negation (purrdf-datalog negated atoms driven directly via graphlaw::datalog; NOT the positive-only JSON-ABI shim), cross-checked against an explicit-complement positive program — the holds-projections agree.",
+    "verdicts": {
+      "q1: HoldsAt(lecturer@4)": "true",
+      "q2: HoldsAt(lecturer@7)": "false",
+      "q3: HoldsAt(professor@7)": "true",
+      "q4: HoldsAt(employed@7)": "true",
+      "q5: HoldsAt(professor@4)": "false"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "event_calculus_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "event_calculus-paper-narrative"
+}

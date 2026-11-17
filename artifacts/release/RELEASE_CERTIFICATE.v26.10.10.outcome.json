@@ -1,0 +1,13 @@
+{
+  "schema_version": "wasm4pm.release-certificate-actuation.v1",
+  "receipt_kind": "outcome",
+  "run_id": "8d0c758898a1fcf9645f8e378c1cfc65",
+  "status": "ALIVE",
+  "package": "wasm4pm@26.10.10",
+  "git_commit": "8323cba14c0cf60f80b29553a61591eb53e05983",
+  "tarball_path": "artifacts/release/npm/wasm4pm-26.10.10.tgz",
+  "tarball_sha256": "0e1b9505546f5a97a731ce3c8182326cf9c4eb705962e9726b0c96e6e636fa6f",
+  "certificate_path": "RELEASE_CERTIFICATE.v26.10.10.json",
+  "certificate_hash": "314445474ba71c5cd29125945f6c808939ff83742e8012e5eddef2bf5f2820d1",
+  "timestamp": "2026-10-10T21:00:50-07:00"
+}

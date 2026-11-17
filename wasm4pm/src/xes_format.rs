@@ -88,6 +88,12 @@ fn insert_attr(
     }
 }
 
+// SECURITY: Maximum byte length for raw XES input (plain or decompressed).
+// Mirrors io.rs MAX_INPUT_BYTES. The gz path enforces this on the
+// DECOMPRESSED stream via `Read::take(cap + 1)` so a gzip bomb fails with a
+// typed error instead of exhausting the WASM heap.
+const MAX_XES_BYTES: usize = 512 * 1024 * 1024; // 512 MB
+
 // ---------------------------------------------------------------------------
 // Public parse entry point
 // ---------------------------------------------------------------------------
@@ -98,7 +104,6 @@ fn insert_attr(
 pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
     // SECURITY: Reject inputs larger than 512 MB to prevent WASM heap exhaustion.
     // See io.rs MAX_INPUT_BYTES for rationale.
-    const MAX_XES_BYTES: usize = 512 * 1024 * 1024;
     if content.len() > MAX_XES_BYTES {
         return Err(crate::error::js_val(&format!(
             "XES input too large: {} bytes (max {} bytes / 512 MB)",
@@ -109,7 +114,8 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
     #[cfg(feature = "import")]
     {
         use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
-        let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
+        // Borrowed cursor — zero-copy; no full-buffer duplicate.
+        let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes()));
         match import_xes(reader, XESImportOptions::default()) {
             Ok(types_log) => {
                 let log: EventLog = types_log.into();
@@ -267,6 +273,35 @@ struct TagStackEntry {
 
 /// Parse and strictly validate XES content
 /// Returns detailed error messages with line numbers on validation failure
+/// Strip one optional namespace prefix from an XML tag name
+/// (`"xes:trace"` → `"trace"`, `"trace"` → `"trace"`). Namespace-prefixed XES
+/// is valid per the XES standard, so the fallback parser matches on local names.
+#[inline]
+fn strip_ns(tag: &str) -> &str {
+    match tag.find(':') {
+        Some(pos) if pos > 0 && pos < tag.len() - 1 => &tag[pos + 1..],
+        _ => tag,
+    }
+}
+
+/// Parse an XES `<boolean value="...">` literal.
+///
+/// Accepts `true`/`1`/`false`/`0` case-insensitively; anything else is an
+/// error (never a silent `false`).
+#[inline]
+fn parse_xes_bool(value_str: &str) -> Result<bool, String> {
+    match value_str.to_ascii_lowercase().as_str() {
+        "true" | "1" => Ok(true),
+        "false" | "0" => Ok(false),
+        other => Err(format!(
+            "<boolean> has invalid value '{}' (expected true/false/1/0)",
+            other
+        )),
+    }
+}
+
+/// Parse and strictly validate XES content
+/// Returns detailed error messages with line numbers on validation failure
 pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
     // Estimate trace count from file size to pre-allocate (heuristic: ~500 bytes per trace)
     let estimated_traces = (content.len() / 500).max(16);
@@ -316,15 +351,36 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
 
         let second = tag_bytes[1];
 
+        // Local tag name (optional `prefix:` stripped), e.g. "trace" for both
+        // `<trace>` and `<xes:trace>`. Namespace-prefixed XES is valid per the
+        // XES standard, so all matching below is on local names.
+        let local: &str = if second == b'/' {
+            "" // closing tag — handled by extract_closing_tag_name
+        } else {
+            let name = &tag[1..];
+            let end = name
+                .find(|c: char| c == ' ' || c == '>' || c == '/')
+                .unwrap_or(name.len());
+            strip_ns(&name[..end])
+        };
+
         // Check for self-closing tags (e.g., <string .../>, <date .../>)
         let is_self_closing = tag_bytes.len() > 2 && tag_bytes[tag_bytes.len() - 2] == b'/';
 
-        match second {
+        // Dispatch on the first byte of the LOCAL tag name so namespace-
+        // prefixed tags (`<xes:trace>`) hit the same arms as plain ones.
+        let match_key: u8 = if second == b'/' {
+            b'/'
+        } else {
+            *local.as_bytes().first().unwrap_or(&second)
+        };
+
+        match match_key {
             b'?' | b'!' => {
                 // XML declaration or comment — skip
                 continue;
             }
-            b't' if (tag.starts_with("<trace>") || tag.starts_with("<trace ")) => {
+            b't' if local == "trace" => {
                 if is_self_closing {
                     return Err(format!(
                         "Line {}: Invalid self-closing <trace .../> tag. Must use <trace>...</trace>",
@@ -340,7 +396,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     line_number,
                 });
             }
-            b'e' if (tag.starts_with("<event>") || tag.starts_with("<event ")) => {
+            b'e' if local == "event" => {
                 if is_self_closing {
                     return Err(format!(
                         "Line {}: Invalid self-closing <event .../> tag. Must use <event>...</event>",
@@ -355,7 +411,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     line_number,
                 });
             }
-            b's' if tag_bytes.len() > 8 && &tag_bytes[..8] == b"<string " => {
+            b's' if local == "string" => {
                 let is_self_closing = tag.ends_with("/>");
                 if let (Some(key), Some(value)) =
                     (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
@@ -379,7 +435,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
             }
-            b'd' if tag_bytes.len() > 6 && &tag_bytes[..6] == b"<date " => {
+            b'd' if local == "date" => {
                 let is_self_closing = tag.ends_with("/>");
                 if let (Some(key), Some(value)) =
                     (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
@@ -403,7 +459,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
             }
-            b'i' if tag_bytes.len() > 5 && &tag_bytes[..5] == b"<int " => {
+            b'i' if local == "int" => {
                 if let (Some(key), Some(value_str)) =
                     (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
                 {
@@ -427,7 +483,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
             }
-            b'f' if tag_bytes.len() > 7 && &tag_bytes[..7] == b"<float " => {
+            b'f' if local == "float" => {
                 if let (Some(key), Some(value_str)) =
                     (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
                 {
@@ -451,11 +507,13 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
             }
-            b'b' if tag_bytes.len() > 9 && &tag_bytes[..9] == b"<boolean " => {
+            b'b' if local == "boolean" => {
                 if let (Some(key), Some(value_str)) =
                     (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
                 {
-                    let value = value_str == "true";
+                    let value = parse_xes_bool(value_str).map_err(|e| {
+                        format!("Line {}: {} (found: {})", line_number, e, tag)
+                    })?;
                     insert_attr(
                         &mut current_event,
                         &mut current_trace,
@@ -469,7 +527,7 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                     ));
                 }
             }
-            b'l' if tag.starts_with("<log") => {
+            b'l' if local == "log" => {
                 // <log> opening tag
                 tag_stack.push(TagStackEntry {
                     tag_name: "log".to_string(),
@@ -535,6 +593,13 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
         ));
     }
 
+    if log.traces.is_empty() {
+        return Err(
+            "XES parsed 0 traces; input is not a usable event log (metadata-only or empty <log>)"
+                .to_string(),
+        );
+    }
+
     Ok(log)
 }
 
@@ -554,7 +619,8 @@ fn extract_closing_tag_name(tag: &str) -> String {
     let name_start = 2; // Skip "</"
     if end > name_start {
         if let Ok(name) = std::str::from_utf8(&tag_bytes[name_start..end]) {
-            return name.to_string();
+            // Local name only — `</xes:trace>` closes `<trace>`/`<xes:trace>`
+            return strip_ns(name).to_string();
         }
     }
     String::new()
@@ -587,19 +653,33 @@ pub fn xes_format_info() -> String {
 /// without knowing ahead of time which format it is.
 #[wasm_bindgen]
 pub fn load_eventlog_from_xes_gz(bytes: &[u8]) -> Result<String, JsValue> {
+    decompress_gz_bounded(bytes, MAX_XES_BYTES)
+        .map_err(|e| crate::error::js_val(&e))
+}
+
+/// Shared bounded-decompression core. `take(cap + 1)` bounds BOTH time and
+/// peak memory, so a gzip bomb fails with a typed error instead of exhausting
+/// the WASM heap. cap+1 distinguishes "exceeds cap" from "exactly at cap".
+fn decompress_gz_bounded(bytes: &[u8], cap: usize) -> Result<String, String> {
     use std::io::Read;
-    let content = if bytes.len() >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b {
-        let mut decoder = flate2::read::GzDecoder::new(bytes);
-        let mut s = String::new();
+    if bytes.len() >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b {
+        let mut decoder = flate2::read::GzDecoder::new(bytes).take(cap as u64 + 1);
+        let mut s = String::with_capacity(1024 * 1024);
         decoder
             .read_to_string(&mut s)
-            .map_err(|e| crate::error::js_val(&format!("gz decompress failed: {}", e)))?;
-        s
+            .map_err(|e| format!("gz decompress failed: {}", e))?;
+        if s.len() > cap {
+            return Err(format!(
+                "XES input too large (decompressed): {}+ bytes (max {} bytes / 512 MB)",
+                s.len(),
+                cap
+            ));
+        }
+        Ok(s)
     } else {
         // Plain UTF-8 XES — no decompression needed
-        String::from_utf8_lossy(bytes).into_owned()
-    };
-    load_eventlog_from_xes(&content)
+        Ok(String::from_utf8_lossy(bytes).into_owned())
+    }
 }
 
 // ============================================================================
@@ -852,5 +932,161 @@ mod tests {
 
         let log = result.unwrap();
         assert_eq!(log.traces.len(), 2, "Expected 2 traces");
+    }
+
+    // ---- Namespace prefixes ----
+
+    #[test]
+    fn test_namespace_prefixed_xes_parses() {
+        let content = r#"<?xml version="1.0" encoding="UTF-8"?>
+<xes:log xmlns:xes="http://www.xes-standard.org/">
+  <xes:trace>
+    <xes:string key="concept:name" value="case1"/>
+    <xes:event>
+      <xes:string key="concept:name" value="A"/>
+      <xes:int key="cost" value="5"/>
+      <xes:boolean key="ok" value="true"/>
+    </xes:event>
+  </xes:trace>
+</xes:log>"#;
+
+        let log = validate_and_parse_xes(content).expect("prefixed XES should parse");
+        assert_eq!(log.traces.len(), 1);
+        assert_eq!(log.traces[0].events.len(), 1);
+    }
+
+    #[test]
+    fn test_mixed_default_and_prefixed_tags_parse() {
+        let content = r#"<log xmlns:xes="http://www.xes-standard.org/">
+  <xes:trace>
+    <string key="concept:name" value="case1"/>
+    <xes:event>
+      <xes:string key="concept:name" value="A"/>
+    </xes:event>
+  </xes:trace>
+</log>"#;
+
+        let log = validate_and_parse_xes(content).expect("mixed ns XES should parse");
+        assert_eq!(log.traces.len(), 1);
+        assert_eq!(log.traces[0].events.len(), 1);
+    }
+
+    #[test]
+    fn test_prefixed_closing_tag_matches() {
+        let content = r#"<xes:log>
+  <xes:trace>
+    <xes:event>
+      <xes:string key="k" value="v"/>
+    </xes:event>
+  </xes:trace>
+</xes:log>"#;
+
+        let log = validate_and_parse_xes(content).expect("prefixed closers should match");
+        assert_eq!(log.traces.len(), 1);
+    }
+
+    #[test]
+    fn test_zero_traces_rejected() {
+        let content = r#"<log>
+  <string key="creator" value="someone"/>
+</log>"#;
+        let result = validate_and_parse_xes(content);
+        assert!(result.is_err(), "metadata-only <log> should be rejected");
+        assert!(
+            result.unwrap_err().contains("0 traces"),
+            "Error should mention 0 traces"
+        );
+    }
+
+    // ---- Boolean strictness ----
+
+    #[test]
+    fn test_boolean_values_parse_case_insensitive() {
+        let mk = |v: &str| {
+            format!(
+                r#"<log><trace><event><boolean key="b" value="{}"/></event></trace></log>"#,
+                v
+            )
+        };
+        for (raw, expected) in [
+            ("true", true),
+            ("TRUE", true),
+            ("True", true),
+            ("1", true),
+            ("false", false),
+            ("FALSE", false),
+            ("0", false),
+        ] {
+            let log = validate_and_parse_xes(&mk(raw))
+                .unwrap_or_else(|e| panic!("'{}' should parse: {}", raw, e));
+            let ev = &log.traces[0].events[0];
+            assert_eq!(
+                ev.attributes.get("b"),
+                Some(&AttributeValue::Boolean(expected)),
+                "value '{}' mismatch",
+                raw
+            );
+        }
+    }
+
+    #[test]
+    fn test_boolean_invalid_value_rejected() {
+        let content = r#"<log><trace><event><boolean key="b" value="maybe"/></event></trace></log>"#;
+        let result = validate_and_parse_xes(content);
+        assert!(result.is_err(), "'maybe' must not silently become false");
+        assert!(
+            result.unwrap_err().contains("boolean"),
+            "Error should mention boolean"
+        );
+    }
+
+    // ---- Bounded gz decompression ----
+
+    fn gz_compress(data: &[u8]) -> Vec<u8> {
+        use std::io::Write;
+        let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::best());
+        enc.write_all(data).expect("gz write");
+        enc.finish().expect("gz finish")
+    }
+
+    const VALID_SMALL_XES: &str =
+        r#"<log><trace><event><string key="k" value="v"/></event></trace></log>"#;
+
+    #[test]
+    fn test_valid_gz_round_trips() {
+        let gz = gz_compress(VALID_SMALL_XES.as_bytes());
+        let out = decompress_gz_bounded(&gz, MAX_XES_BYTES).expect("small valid gz should parse");
+        assert_eq!(out, VALID_SMALL_XES);
+    }
+
+    #[test]
+    fn test_plain_bytes_passthrough() {
+        let out = decompress_gz_bounded(VALID_SMALL_XES.as_bytes(), MAX_XES_BYTES)
+            .expect("plain XES bytes should pass through");
+        assert_eq!(out, VALID_SMALL_XES);
+    }
+
+    #[test]
+    fn test_gz_bomb_bounded_abort() {
+        // Small .gz whose decompressed stream vastly exceeds a tiny test cap.
+        // Exercises the same take(cap+1) bound as the 512MB production cap
+        // without allocating 512MB in the test.
+        let bomb = "A".repeat(4 * 1024 * 1024); // 4 MB of 'A' -> tiny .gz
+        let gz = gz_compress(bomb.as_bytes());
+        let small_cap = 1024 * 1024; // 1 MB cap
+        let result = decompress_gz_bounded(&gz, small_cap);
+        assert!(result.is_err(), "4MB expansion vs 1MB cap must abort");
+        assert!(
+            result.unwrap_err().contains("too large"),
+            "Error should be the typed 'too large' abort, not a heap trap"
+        );
+    }
+
+    #[test]
+    fn test_gz_exactly_at_cap_accepted() {
+        let data = "B".repeat(64 * 1024);
+        let gz = gz_compress(data.as_bytes());
+        let result = decompress_gz_bounded(&gz, 64 * 1024);
+        assert!(result.is_ok(), "decompressed size == cap must be accepted");
     }
 }

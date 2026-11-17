@@ -1434,8 +1434,8 @@ fn allen_temporal_hidden_transitivity() {
     let rel_ac = output
         .facts
         .iter()
-        .find(|f| f.key == "relation:A:C")
-        .expect("relation:A:C exists");
+        .find(|f| f.key == "derived:A:C")
+        .expect("derived:A:C exists");
     // A meets B and B meets C => A precedes C (i.e. 'p')
     assert_eq!(rel_ac.value, "p");
 }
@@ -1667,12 +1667,11 @@ fn asp_hidden_stable_models() {
 
 #[test]
 fn description_logic_hidden_subsumption_and_consistency() {
-    let mut input = base("Description Logic: subclass chain and consistency");
-    input.facts = vec![
-        fact("subclass", "A,B"),
-        fact("subclass", "B,C"),
-        fact("class", "x,A"),
-        fact("disjoint", "C,D"),
+    let mut input = base("Description Logic: subclass chain classification");
+    input.facts = vec![fact("dl:subclass:A", "B"), fact("dl:subclass:B", "C")];
+    input.goals = vec![
+        goal("q1", "dl:subsumes", "A:C"),
+        goal("q2", "dl:subsumes", "C:A"),
     ];
     input.candidates = vec![Candidate {
         id: "x".into(),
@@ -1684,54 +1683,64 @@ fn description_logic_hidden_subsumption_and_consistency() {
     let output = dispatch_breed_test("description_logic", &input)
         .expect("DescriptionLogic run must succeed");
 
-    let consistent_fact = output
+    // A ⊑ B ⊑ C propagates through CR1; the reverse direction is false.
+    let v_ac = output
         .facts
         .iter()
-        .find(|f| f.key == "consistent")
-        .expect("consistent fact exists");
-    assert_eq!(consistent_fact.value, "true");
-    assert_eq!(output.selected.as_deref(), Some("consistent"));
+        .find(|f| f.key == "dl:verdict:A:C")
+        .expect("verdict fact for A:C exists");
+    assert_eq!(v_ac.value, "true");
+    let v_ca = output
+        .facts
+        .iter()
+        .find(|f| f.key == "dl:verdict:C:A")
+        .expect("verdict fact for C:A exists");
+    assert_eq!(v_ca.value, "false");
+    assert_eq!(output.selected.as_deref(), Some("A⊑C=true"));
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "apply-cr1"),
+        "trace must contain CR1 applications"
+    );
+    assert!(
+        !output.candidates[0].eliminated,
+        "Candidate x passes through the classification unchanged"
+    );
 
-    // Check that x is member of C by propagation
-    let member_xc = output.facts.iter().find(|f| f.key == "member:x:C");
-    assert!(member_xc.is_some(), "x must be derived as a member of C");
+    // Extended TBox: asserting C ⊑ A closes the cycle, flipping the C ⊑ A verdict.
+    let mut input_cyc = input.clone();
+    input_cyc.facts.push(fact("dl:subclass:C", "A"));
 
-    // Negative case: add class assertion to trigger inconsistency
-    let mut input_inc = input.clone();
-    input_inc.facts.push(fact("class", "x,D"));
-
-    let output_inc = dispatch_breed_test("description_logic", &input_inc)
+    let output_cyc = dispatch_breed_test("description_logic", &input_cyc)
         .expect("DescriptionLogic run must succeed");
 
-    let consistent_inc = output_inc
+    let v_ca_cyc = output_cyc
         .facts
         .iter()
-        .find(|f| f.key == "consistent")
-        .expect("consistent fact exists");
-    assert_eq!(consistent_inc.value, "false");
-    assert_eq!(output_inc.selected.as_deref(), Some("inconsistent"));
-    assert!(
-        output_inc.candidates[0].eliminated,
-        "Candidate x must be eliminated due to inconsistency"
-    );
+        .find(|f| f.key == "dl:verdict:C:A")
+        .expect("verdict fact for C:A exists");
+    assert_eq!(v_ca_cyc.value, "true");
+    assert_eq!(output_cyc.selected.as_deref(), Some("A⊑C=true"));
 }
 
 #[test]
 fn abductive_lp_hidden_explanation() {
-    let mut input = base("ALP test: g :- a, b. g :- c. false :- a, d.");
+    let mut input = base("ALP test: g :- a, b. g :- c. IC: a, d -> false.");
     input.rules = vec![
         rule("r1", vec!["a", "b"], "g", 1.0),
         rule("r2", vec!["c"], "g", 1.0),
-        rule("r_ic", vec!["a", "d"], "false", 1.0),
     ];
     input.facts = vec![
-        fact("abducible", "a"),
-        fact("abducible", "b"),
-        fact("abducible", "c"),
-        fact("abducible", "d"),
+        fact("alp:abducible:a", "true"),
+        fact("alp:abducible:b", "true"),
+        fact("alp:abducible:c", "true"),
+        fact("alp:abducible:d", "true"),
         fact("context", "d"), // d is true in the context
+        fact("alp:ic:r_ic", "a,d"),
     ];
-    input.goals = vec![goal("g1", "goal", "g")];
+    input.goals = vec![goal("g1", "alp:observe", "g")];
     input.candidates = vec![Candidate {
         id: "c".into(),
         score: 0.5,
@@ -1748,27 +1757,24 @@ fn abductive_lp_hidden_explanation() {
     let count_fact = output
         .facts
         .iter()
-        .find(|f| f.key == "explanations_count")
-        .expect("explanations_count exists");
-    // [a, b] is blocked because d is true, so only [c] is a valid explanation.
+        .find(|f| f.key == "alp:explanation_count")
+        .expect("alp:explanation_count exists");
+    // {a} is IC-rejected because d is in the context, so {c} is the only
+    // minimal explanation.
     assert_eq!(count_fact.value, "1");
-    assert_eq!(output.selected.as_deref(), Some("c"));
+    assert_eq!(output.selected.as_deref(), Some("{c}"));
 }
 
 #[test]
 fn abductive_ibe_hidden_coherence() {
     let mut input = base("IBE test: Thagard ECHO model selection");
     input.facts = vec![
-        fact("evidence", "E1"),
-        fact("evidence", "E2"),
-        fact("hypothesis", "H1"),
-        fact("hypothesis", "H2"),
-        fact("contradicts", "H1,H2"),
-    ];
-    input.rules = vec![
-        rule("expl1", vec!["H1"], "E1", 1.0),
-        rule("expl2", vec!["H1"], "E2", 1.0),
-        rule("expl3", vec!["H2"], "E1", 1.0),
+        fact("ibe:obs:E1", "true"),
+        fact("ibe:obs:E2", "true"),
+        fact("ibe:hyp:H1:covers", "E1,E2"),
+        fact("ibe:hyp:H1:cost", "1.0"),
+        fact("ibe:hyp:H2:covers", "E1"),
+        fact("ibe:hyp:H2:cost", "1.0"),
     ];
     input.candidates = vec![
         Candidate {

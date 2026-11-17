@@ -908,6 +908,7 @@ fn minimal_ocel_one_type() -> wasm4pm::models::OCEL {
     OCEL {
         event_types: vec!["A".to_string(), "B".to_string()],
         object_types: vec!["order".to_string()],
+        object_type_defs: Vec::new(),
         events: vec![
             OCELEvent {
                 id: "e1".to_string(),
@@ -2158,9 +2159,15 @@ fn token_replay_paper_grounded() {
         .as_str()
         .expect("expected.value must be string");
     assert_eq!(expected, "fitness=1.0", "fixture expected.value mismatch");
+    // pm4py-convention derivation (post 6ba0feea5): the ILP net is discovered
+    // from this exact log, so every trace replays without deviations:
+    // missing=0, consumed=4 (a,b,c,d), produced=4, remaining=0 (final-marking
+    // tokens no longer counted as remaining). trace fitness =
+    // 0.5*(1-0/4) + 0.5*(1-0/4) = 1.0. The old 0.875 pin encoded the retired
+    // semantics where final-marking tokens counted as remaining.
     assert!(
-        (result.avg_fitness - 0.875_f64).abs() < 0.01,
-        "Token replay on running-example log must yield fitness≈0.875; got {}",
+        (result.avg_fitness - 1.0_f64).abs() < 0.01,
+        "Token replay on perfectly-fitting log must yield fitness=1.0 (pm4py convention); got {}",
         result.avg_fitness
     );
 }
@@ -2374,9 +2381,17 @@ fn fitness_token_replay_paper_grounded() {
     let log = build_log(&[(5, &["a", "b", "c", "d"])]);
     let (net, _, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
     let result = token_replay_pure(&log, &net, "concept:name");
+    // pm4py-convention derivation (post 6ba0feea5): perfectly-fitting replay
+    // on the ILP net discovered from the same log => missing=0, remaining=0,
+    // consumed=produced=4; fitness = 0.5*(1-0/4) + 0.5*(1-0/4) = 1.0. The old
+    // 0.875 pin encoded the retired final-marking-tokens-as-remaining
+    // semantics and was missed when ground_truth_conformance_tests was
+    // re-pinned in 6ba0feea5. Fixture expected.value ("fitness=1.0") already
+    // states 1.0.
+    assert_eq!(expected, "fitness=1.0", "fixture expected.value mismatch");
     assert!(
-        (result.avg_fitness - 0.875).abs() < 1e-6,
-        "Token replay fitness must be 0.875 on perfectly-fitting log; got {} (van der Aalst et al. 2012 §3.1)",
+        (result.avg_fitness - 1.0).abs() < 1e-6,
+        "Token replay fitness must be 1.0 on perfectly-fitting log (pm4py convention); got {} (van der Aalst et al. 2012 §3.1)",
         result.avg_fitness
     );
 }

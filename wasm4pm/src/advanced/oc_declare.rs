@@ -258,6 +258,7 @@ mod tests {
         OCEL {
             event_types: vec!["a".into(), "b".into(), "x".into()],
             object_types: vec!["T".into(), "U".into()],
+            object_type_defs: Vec::new(),
             events: vec![
                 ev("e1", "a", "2024-01-01T10:00:00Z", &["t1"]),
                 ev("e2", "b", "2024-01-01T11:00:00Z", &["t1"]),
@@ -301,6 +302,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec!["a".into(), "b".into()],
             object_types: vec!["T".into()],
+            object_type_defs: Vec::new(),
             events: vec![
                 ev("e1", "b", "2024-01-01T10:00:00Z", &["t1"]),
                 ev("e2", "a", "2024-01-01T11:00:00Z", &["t1"]),

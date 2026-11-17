@@ -63,6 +63,7 @@ fn build_one_to_one_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
     OCEL {
         event_types: activities.iter().map(|s| s.to_string()).collect(),
         object_types: vec!["order".to_string()],
+        object_type_defs: Vec::new(),
         events,
         objects,
         object_relations: vec![],
@@ -113,6 +114,7 @@ fn build_one_to_many_ocel(num_events: usize, objects_per_event: usize) -> OCEL {
     OCEL {
         event_types: activities.iter().map(|s| s.to_string()).collect(),
         object_types: vec!["item".to_string()],
+        object_type_defs: Vec::new(),
         events,
         objects,
         object_relations: vec![],
@@ -164,6 +166,7 @@ fn build_many_to_many_ocel(num_objects: usize, num_events: usize, fanout: usize)
     OCEL {
         event_types: activities.iter().map(|s| s.to_string()).collect(),
         object_types: vec!["process".to_string()],
+        object_type_defs: Vec::new(),
         events,
         objects,
         object_relations: vec![],

@@ -30,6 +30,7 @@ pub static SITUATION_CALCULUS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// circumscription: load-defaults → (enumerate-model | minimize)+ → entail+ → decision
@@ -61,6 +62,7 @@ pub static CIRCUMSCRIPTION_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// analogy_sme: parse-expr+ → (local-match | merge-gmap)+ → candidate-inference* → decision
@@ -92,6 +94,7 @@ pub static ANALOGY_SME_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// act_r: load-chunk* → interleaved production/retrieval cycle+ → decision
@@ -123,6 +126,7 @@ pub static ACT_R_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// problog: load-pfact+ → (enumerate-world | sum-weight)+ → decision
@@ -148,6 +152,7 @@ pub static PROBLOG_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// sat_cdcl: load-clause+ → interleaved search cycle+ → decision
@@ -179,6 +184,7 @@ pub static SAT_CDCL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// episodic_memory: encode-episode+ → present-cue → score-episode+ → recall → decision
@@ -216,6 +222,7 @@ pub static EPISODIC_MEMORY_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// rl_symbolic: load-mdp → interleaved episode loop+ → extract-policy+ → decision
@@ -247,6 +254,7 @@ pub static RL_SYMBOLIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// ctl_check: parse-formula → (label-states | fixpoint-iterate)+ → counterexample-step* → decision
@@ -278,6 +286,7 @@ pub static CTL_CHECK_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// ilp: load-example+ → FOIL loop+ → decision
@@ -309,6 +318,7 @@ pub static ILP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// naive_physics: load-scene → apply-axiom+ → predict* → decision
@@ -340,4 +350,5 @@ pub static NAIVE_PHYSICS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };

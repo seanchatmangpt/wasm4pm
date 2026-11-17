@@ -16,7 +16,7 @@ use std::time::Duration;
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{make_handle, BenchShape, ACTIVITY_KEY};
+use helpers::{BenchShape, ACTIVITY_KEY};
 
 use wasm4pm::advanced_algorithms::discover_heuristic_miner;
 use wasm4pm::algorithms::discover_alpha_plus_plus;
@@ -47,7 +47,9 @@ fn enterprise_shapes() -> [BenchShape; 3] {
 }
 
 fn hash_js(value: wasm_bindgen::JsValue) -> blake3::Hash {
-    blake3::hash(value.as_string().unwrap_or_default().as_bytes())
+    // Debug-format instead of JsValue::as_string(): that panics on non-wasm32
+    // targets ("function not implemented"), aborting the native bench run.
+    blake3::hash(format!("{value:?}").as_bytes())
 }
 
 /// Manufacture six different process hypotheses for the same observation before
@@ -60,7 +62,7 @@ fn bench_hypothesis_portfolio(c: &mut Criterion) {
     group.sample_size(20);
 
     for shape in enterprise_shapes() {
-        let (handle, _) = make_handle(&shape);
+        let (handle, _) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(PORTFOLIO_ALTERNATIVES));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
@@ -104,7 +106,7 @@ fn bench_policy_space_sweep(c: &mut Criterion) {
     group.sample_size(20);
 
     for shape in enterprise_shapes() {
-        let (handle, _) = make_handle(&shape);
+        let (handle, _) = helpers::store_real_log_capped(shape.num_cases);
         group.throughput(Throughput::Elements(POLICY_ALTERNATIVES));
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
@@ -135,7 +137,7 @@ fn bench_receipt_tax(c: &mut Criterion) {
     group.sample_size(50);
 
     for shape in enterprise_shapes() {
-        let (handle, _) = make_handle(&shape);
+        let (handle, _) = helpers::store_real_log_capped(shape.num_cases);
         let candidates = [
             hash_js(discover_dfg(&handle, ACTIVITY_KEY).expect("DFG discovery")),
             hash_js(
@@ -186,7 +188,7 @@ fn bench_optionality_density(c: &mut Criterion) {
     group.sample_size(20);
 
     for shape in enterprise_shapes() {
-        let (handle, _) = make_handle(&shape);
+        let (handle, _) = helpers::store_real_log_capped(shape.num_cases);
         let candidates = PORTFOLIO_ALTERNATIVES + POLICY_ALTERNATIVES;
         group.throughput(Throughput::Elements(candidates));
         group.bench_with_input(

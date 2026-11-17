@@ -1,0 +1,86 @@
+{
+  "breed": "event_calculus",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "ec:happens:1",
+        "value": "start"
+      },
+      {
+        "key": "ec:happens:3",
+        "value": "stop"
+      },
+      {
+        "key": "ec:initiates:start",
+        "value": "on"
+      },
+      {
+        "key": "ec:terminates:stop",
+        "value": "on"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "ec:holdsat",
+        "value": "on@0"
+      },
+      {
+        "id": "g2",
+        "predicate": "ec:holdsat",
+        "value": "on@1"
+      },
+      {
+        "id": "g3",
+        "predicate": "ec:holdsat",
+        "value": "on@2"
+      },
+      {
+        "id": "g4",
+        "predicate": "ec:holdsat",
+        "value": "on@3"
+      },
+      {
+        "id": "g5",
+        "predicate": "ec:holdsat",
+        "value": "on@4"
+      }
+    ],
+    "intent": "a single fluent initiated then later terminated by named events",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "ec:verdict:on@0=false",
+      "ec:verdict:on@1=false",
+      "ec:verdict:on@2=true",
+      "ec:verdict:on@3=true",
+      "ec:verdict:on@4=false",
+      "g1: HoldsAt(on@0) = false",
+      "g2: HoldsAt(on@1) = false",
+      "g3: HoldsAt(on@2) = true",
+      "g4: HoldsAt(on@3) = true",
+      "g5: HoldsAt(on@4) = false"
+    ],
+    "notes": "Initiation at t=1 makes on hold from t=2; termination at t=3 clips it from t=4. Hand timeline: holds[0..2]={}; holds[2..4]={on}; holds[4]={}. Route: stratified negation (purrdf-datalog negated atoms driven directly via graphlaw::datalog; NOT the positive-only JSON-ABI shim), cross-checked against an explicit-complement positive program — the holds-projections agree.",
+    "verdicts": {
+      "g1: HoldsAt(on@0)": "false",
+      "g2: HoldsAt(on@1)": "false",
+      "g3: HoldsAt(on@2)": "true",
+      "g4: HoldsAt(on@3)": "true",
+      "g5: HoldsAt(on@4)": "false"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "event_calculus_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "event_calculus-initiate-then-terminate"
+}

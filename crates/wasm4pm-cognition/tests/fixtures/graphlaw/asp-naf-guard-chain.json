@@ -1,0 +1,52 @@
+{
+  "breed": "asp",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "p",
+        "value": ""
+      }
+    ],
+    "goals": [],
+    "intent": "NAF as a guard: r fires only if p is absent",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "q",
+        "id": "r1",
+        "premise": [
+          "p"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "r",
+        "id": "r2",
+        "premise": [
+          "not p"
+        ]
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "asp:answer_set_count=1",
+      "model_0_0=p",
+      "model_0_1=q",
+      "stable_models_count=1"
+    ],
+    "notes": "Stratified NAF guard chain (q :- p, p fact, r :- not p). Stratified least model = {p, q}: p derives q; r's NAF guard blocks because p holds. Unique stable model.",
+    "verdicts": {}
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "asp_tableaux_vector_gen (purrdf-datalog stratified least model; stratifiability enforced via graphlaw::datalog::plan::stratify)",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "asp-naf-guard-chain"
+}

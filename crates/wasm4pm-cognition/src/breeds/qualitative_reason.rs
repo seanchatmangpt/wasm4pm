@@ -174,6 +174,19 @@ impl CognitionBreed for QualitativeReason {
 
         trace.push(TraceStep {
             step: trace.len(),
+            kind: "load-model".to_string(),
+            detail: format!(
+                "Loaded {} variables, {} confluences, {} known signs",
+                var_list.len(),
+                confluences.len(),
+                initial_signs.len()
+            ),
+            depth: 0,
+            objects: vec![],
+        });
+
+        trace.push(TraceStep {
+            step: trace.len(),
             kind: "limit-analysis".to_string(),
             detail: format!(
                 "Loaded {} variables and {} confluences",
@@ -247,16 +260,64 @@ impl CognitionBreed for QualitativeReason {
             }
         }
 
-        trace.push(TraceStep {
-            step: trace.len(),
-            kind: "branch-ambiguity".to_string(),
-            detail: format!(
-                "Envisionment produced {} valid qualitative states",
-                valid_states.len()
-            ),
-            depth: 0,
-            objects: vec![],
-        });
+        if valid_states.is_empty() {
+            return Err(BreedError {
+                breed: BreedId::QualitativeReason,
+                message:
+                    "no consistent qualitative state: the confluences are over-constrained"
+                        .to_string(),
+            });
+        }
+
+        // Attribute branch ambiguity to the confluences that caused it: a
+        // confluence is ambiguous iff one of its variables takes more than
+        // one sign across the valid states (de Kleer & Brown 1984: ambiguous
+        // confluences force branching envisionment).
+        let mut ambiguous_confluences: Vec<&Confluence> = Vec::new();
+        for conf in &confluences {
+            let mut varying: BTreeSet<&str> = BTreeSet::new();
+            for term in &conf.left {
+                let var = &term.0;
+                let mut signs: BTreeSet<Sign> = BTreeSet::new();
+                for state in &valid_states {
+                    signs.insert(state.get(var).copied().unwrap_or(Sign::Zero));
+                }
+                if signs.len() > 1 {
+                    varying.insert(var.as_str());
+                }
+            }
+            if !varying.is_empty() {
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "branch-ambiguity".to_string(),
+                    detail: format!(
+                        "confluence {} ambiguous: variable(s) {} take multiple signs \
+                         across {} valid states",
+                        conf.id,
+                        varying
+                            .into_iter()
+                            .collect::<Vec<_>>()
+                            .join(","),
+                        valid_states.len()
+                    ),
+                    depth: 0,
+                    objects: vec![("confluence".to_string(), conf.id.clone())],
+                });
+                ambiguous_confluences.push(conf);
+            }
+        }
+        if ambiguous_confluences.is_empty() {
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "branch-ambiguity".to_string(),
+                detail: format!(
+                    "no ambiguous confluences: {} valid state(s) without branching",
+                    valid_states.len()
+                ),
+                depth: 0,
+                objects: vec![],
+            });
+        }
 
         // 3. Prepare output
         let mut out_facts = Vec::new();

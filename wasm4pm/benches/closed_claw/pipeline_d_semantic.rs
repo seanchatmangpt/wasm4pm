@@ -25,7 +25,7 @@ use wasm4pm::state::{get_or_init_state, StoredObject};
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{bench_sizes_slow, generate_event_log, store_log, ACTIVITY_KEY};
+use helpers::{bench_sizes_slow, store_log, ACTIVITY_KEY};
 
 /// Build a simple sequential Petri net matching the synthetic log structure.
 fn build_synthetic_net() -> PetriNet {
@@ -184,7 +184,7 @@ fn bench_discovery_to_pnml(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
 
     for shape in bench_sizes_slow() {
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let total_events = log.event_count();
         let handle = store_log(log);
 
@@ -195,7 +195,7 @@ fn bench_discovery_to_pnml(c: &mut Criterion) {
             |b, h| {
                 b.iter(|| {
                     let result = discover_alpha_plus_plus(h, ACTIVITY_KEY, 0.5).unwrap();
-                    let result_str = result.as_string().unwrap_or_default();
+                    let result_str = format!("{result:?}");
                     let discovery_hash = blake3::hash(result_str.as_bytes());
                     black_box(discovery_hash)
                 })
@@ -212,7 +212,7 @@ fn bench_semantic_proof_e2e(c: &mut Criterion) {
     group.sample_size(10);
 
     for shape in bench_sizes_slow() {
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let total_events = log.event_count();
 
         group.throughput(Throughput::Elements(total_events as u64));
@@ -221,7 +221,7 @@ fn bench_semantic_proof_e2e(c: &mut Criterion) {
             &shape,
             |b, shape| {
                 b.iter(|| {
-                    let log = generate_event_log(black_box(shape));
+                    let log = helpers::load_real_log_capped(black_box(shape).num_cases);
                     let input_hash =
                         blake3::hash(serde_json::to_string(&log).unwrap_or_default().as_bytes());
 
@@ -231,7 +231,7 @@ fn bench_semantic_proof_e2e(c: &mut Criterion) {
                     let discovery_result =
                         discover_alpha_plus_plus(&handle, ACTIVITY_KEY, 0.5).unwrap();
                     let plan_hash =
-                        blake3::hash(discovery_result.as_string().unwrap_or_default().as_bytes());
+                        blake3::hash(format!("{discovery_result:?}").as_bytes());
 
                     let net = build_synthetic_net();
                     let net_handle = get_or_init_state()

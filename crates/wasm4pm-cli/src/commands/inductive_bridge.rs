@@ -32,6 +32,16 @@ use wasm4pm_compat::process_tree::ProcessTree;
 /// operators over leaf activities, which is what callers (e.g. a future
 /// `mining.rs` integration) should print/serialize directly.
 pub fn discover_inductive(log: &CompatEventLog, activity_key: &str) -> anyhow::Result<ProcessTree> {
+    discover_inductive_with_fallback(log, activity_key).map(|(tree, _)| tree)
+}
+
+/// [`discover_inductive`] plus the flower-fallback signal: `true` when the
+/// recursive miner fell through to a flower model (tree is approximate — the
+/// CLI surfaces this so a vacuous/approximate model is never printed silently).
+pub fn discover_inductive_with_fallback(
+    log: &CompatEventLog,
+    activity_key: &str,
+) -> anyhow::Result<(ProcessTree, bool)> {
     // wasm4pm::models::EventLog has a `From<wasm4pm_compat::event_log::EventLog>`
     // impl already (see wasm4pm/src/models.rs), so this is a real structural
     // conversion (attributes + traces + events), not a stub.
@@ -47,7 +57,25 @@ pub fn discover_inductive(log: &CompatEventLog, activity_key: &str) -> anyhow::R
         .map_err(|e| anyhow::anyhow!(e))
         .context("Inductive Miner discovery failed")?;
 
-    Ok(typed_tree.value)
+    let flower_fallback = flower_fallback_detected(&typed_tree.value);
+    Ok((typed_tree.value, flower_fallback))
+}
+
+/// Fallback detector: a loop operator whose redo branch is a silent (empty
+/// label) leaf — the exact shape `flower_over` emits.
+fn flower_fallback_detected(tree: &ProcessTree) -> bool {
+    use wasm4pm_compat::process_tree::ProcessTreeNode;
+    tree.nodes.iter().any(|n| match n {
+        ProcessTreeNode::Operator { operator, children } => {
+            operator == &wasm4pm_compat::process_tree::ProcessTreeOperator::Loop
+                && children.len() == 2
+                && matches!(
+                    tree.nodes.get(children[1].0),
+                    Some(ProcessTreeNode::Activity(label)) if label.is_empty()
+                )
+        }
+        _ => false,
+    })
 }
 
 #[cfg(test)]

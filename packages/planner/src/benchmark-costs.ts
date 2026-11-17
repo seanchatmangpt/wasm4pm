@@ -7,9 +7,9 @@
  *
  * Data provenance:
  *   dispatchUs      — vitest bench, packages/kernel/src/__benchmarks__/kernel-dispatch.bench.ts
- *                     dataset: bpi2020_travel.xes (56,437 events), 2026-06-10
+ *                     dataset: bpi2020_domestic_declarations.xes (56,437 events), 2026-06-10
  *   nativeEventsPerSec — criterion bench, wasm4pm/benches/native_api_bench.rs
- *                        dataset: bpi2020_travel.xes (56,437 events), 2026-06-10
+ *                        dataset: bpi2020_domestic_declarations.xes (56,437 events), 2026-06-10
  */
 
 export interface AlgoBenchCost {

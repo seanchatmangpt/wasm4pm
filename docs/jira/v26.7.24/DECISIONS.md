@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.7.24/DECISIONS.md; source-sha256: 79552ea1772c8578476293d7346972fd0116b829428554a0044d08afcae87b6c; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/jira/v26.7.24/DECISIONS.md; source-sha256: d0e2b60a067823719d3f134d391d8187724eccec83512963581198d5d99c10f1; reason: path-local documentation retained pending domain-specific supersession -->
 
 # ADR-001: Rank in TypeScript, eliminate in Dendral, question with Eliza
 

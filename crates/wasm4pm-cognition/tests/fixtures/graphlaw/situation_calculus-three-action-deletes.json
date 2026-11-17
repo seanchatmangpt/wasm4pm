@@ -1,0 +1,102 @@
+{
+  "vector_id": "situation_calculus-three-action-deletes",
+  "breed": "situation_calculus",
+  "provenance": {
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "eyeron": "0.7.8",
+    "generator": "graphlaw:scripts/gen_wasm4pm_graphlaw_vectors.py@615dbfa \u2014 encodes successor-state progression / STRIPS replay as N3 Datalog over explicit situation constants s0..sN (holds(F,do(A,S)) :- causes(F,A); holds(F,do(A,S)) :- holds(F,S), keeps(F,A), keeps = closed-world completion of not causes_del), derives holds fluents with graphlaw-eyeron 0.7.8, emits SCHEMA.md v1 vectors",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "3-action package delivery with deletes: load;go;unload",
+    "facts": [
+      {
+        "key": "fluent:at_home",
+        "value": "true"
+      },
+      {
+        "key": "fluent:has_key",
+        "value": "true"
+      },
+      {
+        "key": "fluent:package_at_home",
+        "value": "true"
+      },
+      {
+        "key": "action:load:pre",
+        "value": "at_home"
+      },
+      {
+        "key": "action:load:pre",
+        "value": "package_at_home"
+      },
+      {
+        "key": "action:load:add",
+        "value": "in_car"
+      },
+      {
+        "key": "action:load:del",
+        "value": "package_at_home"
+      },
+      {
+        "key": "action:go:pre",
+        "value": "at_home"
+      },
+      {
+        "key": "action:go:pre",
+        "value": "has_key"
+      },
+      {
+        "key": "action:go:add",
+        "value": "at_office"
+      },
+      {
+        "key": "action:go:del",
+        "value": "at_home"
+      },
+      {
+        "key": "action:unload:pre",
+        "value": "in_car"
+      },
+      {
+        "key": "action:unload:add",
+        "value": "package_at_office"
+      },
+      {
+        "key": "action:unload:del",
+        "value": "in_car"
+      },
+      {
+        "key": "do:0",
+        "value": "load"
+      },
+      {
+        "key": "do:1",
+        "value": "go"
+      },
+      {
+        "key": "do:2",
+        "value": "unload"
+      }
+    ],
+    "rules": [],
+    "goals": [],
+    "candidates": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "holds:at_office",
+      "holds:has_key",
+      "holds:package_at_office"
+    ],
+    "verdicts": {
+      "final_situation": "s3",
+      "frame_persist": "1 fluents persisted by frame inertia"
+    },
+    "notes": "Ground truth derived by eyeron N3 progression over explicit situation constants s0..s3. Frame-persist set ['has_key'] = initial fluents never mentioned in any executed action's add/del lists (hand-checked)."
+  }
+}

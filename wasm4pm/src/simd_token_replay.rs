@@ -13,6 +13,19 @@
 //! - **u32 integer IDs** for places and transitions (no string hashing)
 //! - **[u32; 64] fixed array** for markings (zero allocation per trace)
 //! - **Branchless fire** for preset/postset batch updates
+//!
+//! # Approximation cap (honesty note)
+//!
+//! For each activity label, the firing search tries at most `min(8, |candidates|)`
+//! transitions. Labels with more than 8 same-label transitions are replayed
+//! approximately (only the first 8 candidates are considered per event). When the
+//! cap bound a firing search, the log-level result reports `"cap_applied": true`.
+//!
+//! # Removed metric
+//!
+//! The previous `overall_generalization` field (1 − distinct-fitness-strings /
+//! trace-count) was a fitness-string-diversity proxy, not a generalization
+//! measure. It has been removed rather than left as an overclaimed metric.
 
 use crate::models::{ColumnarLog, DFGNode, DFG};
 use rustc_hash::FxHashMap;
@@ -54,9 +67,10 @@ pub struct LogReplayResult {
     pub overall_fitness: f64,
     /// ETC precision across all traces: 1 - (Σescaping / Σenabled).
     pub overall_precision: f64,
-    /// Generalization proxy: 1 - (unique_fitness_paths / total_traces), clamped [0,1].
-    /// Measures diversity of execution paths observed in the log.
-    pub overall_generalization: f64,
+    /// True when the min(8) per-label transition cap bound a firing search
+    /// (i.e. some label has more than `max_transitions` candidate transitions).
+    /// Nets with >8 same-label transitions are replayed approximately.
+    pub cap_applied: bool,
     pub total_enabled: u32,
     pub total_escaping: u32,
 }
@@ -244,18 +258,23 @@ impl SimdPetriNet {
                             let idx = p as usize;
                             let is_zero = (marking[idx] == 0) as u32;
                             marking[idx] += is_zero;
-                            produced += is_zero;
+                            // pm4py convention: injected tokens count toward
+                            // `missing` ONLY — never toward `produced`.
                             missing += is_zero;
                         }
 
-                        consumed += pre.len() as u32;
-                        produced += post.len() as u32;
-
+                        // Count only tokens actually removed from the marking.
+                        let mut removed = 0u32;
                         for &p in pre.iter() {
                             let idx = p as usize;
                             let current = marking[idx];
-                            marking[idx] = current - ((current > 0) as u32);
+                            let did_remove = (current > 0) as u32;
+                            marking[idx] = current - did_remove;
+                            removed += did_remove;
                         }
+                        consumed += removed;
+
+                        produced += post.len() as u32;
 
                         for &p in post.iter() {
                             let idx = p as usize;
@@ -319,18 +338,10 @@ impl SimdPetriNet {
             (1.0 - (total_escaping as f64 / total_enabled as f64)).clamp(0.0, 1.0)
         };
 
-        let total_traces = trace_results.len() as f64;
-        // Generalization proxy: diverse fitness values indicate diverse execution paths.
-        // unique_paths approximated by distinct fitness values (same fitness ≈ same path shape).
-        let unique_paths: std::collections::HashSet<String> = trace_results
-            .iter()
-            .map(|t| format!("{:.6}", t.fitness))
-            .collect();
-        let overall_generalization = if total_traces == 0.0 {
-            0.0_f64
-        } else {
-            (1.0_f64 - (unique_paths.len() as f64 / total_traces)).clamp(0.0, 1.0)
-        };
+        // Honest cap reporting: the per-label firing search is bounded by
+        // min(8) candidate transitions. `cap_applied` is true when any label
+        // has more than 8 candidates, i.e. the cap bound a firing search.
+        let cap_applied = self.label_to_transitions.values().any(|v| v.len() > 8);
 
         LogReplayResult {
             trace_results,
@@ -340,7 +351,7 @@ impl SimdPetriNet {
             total_remaining,
             overall_fitness,
             overall_precision,
-            overall_generalization,
+            cap_applied,
             total_enabled,
             total_escaping,
         }
@@ -447,7 +458,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
             Ok(serde_json::json!({
                 "overall_fitness": result.overall_fitness,
                 "overall_precision": result.overall_precision,
-                "overall_generalization": result.overall_generalization,
+                "cap_applied": result.cap_applied,
                 "total_consumed": result.total_consumed,
                 "total_produced": result.total_produced,
                 "total_missing": result.total_missing,

@@ -13,9 +13,10 @@ pub fn apply_variant(
     config: &DiscoveryConfig,
     arena: &mut PowlArena,
 ) -> Result<u32, String> {
-    let traces = super::group_traces_by_activity_sequence(log, &config.activity_key);
+    let (traces, _counts) = super::group_traces_by_activity_sequence(log, &config.activity_key);
     let cut_filter = CutFilter::for_variant(config.variant);
     super::inductive_miner(&traces, arena, config, &cut_filter)
+        .map(|(root, _fall_through_fired)| root)
 }
 
 #[cfg(test)]

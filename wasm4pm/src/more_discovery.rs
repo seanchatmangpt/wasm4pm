@@ -318,7 +318,16 @@ impl PowerMiner {
             from_dfg: false,
             fall_through_fired: false,
         };
-        let (arena, root) = crate::powl::discovery::discover_powl(&log.value, &config)?;
+        let (arena, root, fall_through_fired) =
+            crate::powl::discovery::discover_powl(&log.value, &config)?;
+        if fall_through_fired {
+            tracing::warn!(
+                target: "wasm4pm.discovery.powl",
+                fall_through_fired = true,
+                "POWL discovery used an approximate fall-through (decision graph/flower); \
+                 result is not cut-derived"
+            );
+        }
         let compat_powl = convert_to_compat_powl(&arena, root);
         compat_powl.validate().map_err(|e| e.to_string())?;
         Ok(
@@ -342,11 +351,20 @@ impl InductiveMiner {
         let activities = log.value.get_activities(activity_key);
         let mut sorted_acts: Vec<_> = activities.to_vec();
         sorted_acts.sort_unstable(); // Deterministic ordering
-        let recursive_tree = inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0)
-            .map_err(|e| {
-            e.as_string()
-                .unwrap_or_else(|| "Inductive miner discovery failed".to_string())
-        })?;
+        let fallback = std::cell::Cell::new(false);
+        let recursive_tree =
+            inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0, &fallback)
+                .map_err(|e| {
+                    e.as_string()
+                        .unwrap_or_else(|| "Inductive miner discovery failed".to_string())
+                })?;
+        if fallback.get() {
+            tracing::warn!(
+                target: "wasm4pm.discovery.inductive_miner",
+                fallback = "flower",
+                "Inductive miner fell through to a flower model; tree is approximate"
+            );
+        }
 
         let compat_tree = convert_to_compat_tree(&recursive_tree);
         Ok(wasm4pm_compat::admission::Admission::<_, wasm4pm_compat::witness::InductiveMiner>::new(compat_tree)
@@ -363,13 +381,15 @@ pub fn discover_inductive_miner_from_log<W>(
     let activities = log.value.get_activities(activity_key);
     let mut sorted_acts: Vec<_> = activities.to_vec();
     sorted_acts.sort_unstable();
-    match inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0) {
+    let fallback = std::cell::Cell::new(false);
+    match inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0, &fallback) {
         Ok(tree) => {
             let nodes = tree.count_nodes();
             serde_json::to_string(&json!({
                 "algorithm": "inductive_miner",
                 "root": tree,
                 "nodes": nodes,
+                "fallback": if fallback.get() { "flower" } else { "none" },
             }))
             .unwrap_or_else(|_| r#"{"error":"serialize"}"#.to_string())
         }
@@ -429,9 +449,12 @@ pub fn discover_inductive_miner(
 
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
-        inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0)
+        let fallback = std::cell::Cell::new(false);
+        let tree = inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0, &fallback)?;
+        Ok((tree, fallback))
     })?;
 
+    let (tree, fallback) = tree;
     let nodes = tree.count_nodes();
 
     tracing::info!(
@@ -445,6 +468,7 @@ pub fn discover_inductive_miner(
         "algorithm": "inductive_miner",
         "root": tree,
         "nodes": nodes,
+        "fallback": if fallback.get() { "flower" } else { "none" },
     });
     to_js_str(&result)
 }
@@ -454,6 +478,7 @@ fn inductive_miner_recursive(
     activities: &[String],
     activity_key: &str,
     depth: usize,
+    fallback: &std::cell::Cell<bool>,
 ) -> Result<ProcessTreeNode, JsValue> {
     // Base case: single activity
     if activities.len() == 1 {
@@ -462,7 +487,8 @@ fn inductive_miner_recursive(
 
     // Depth limit: prevent stack overflow on cyclic logs
     if depth > 100 {
-        return Ok(ProcessTreeNode::flower());
+        fallback.set(true);
+        return Ok(flower_over(activities));
     }
 
     // Build directly-follows on this subset
@@ -481,6 +507,7 @@ fn inductive_miner_recursive(
                 &group,
                 activity_key,
                 depth + 1,
+                fallback,
             )?);
         }
         return Ok(ProcessTreeNode::xor(trees));
@@ -495,6 +522,7 @@ fn inductive_miner_recursive(
                 &group,
                 activity_key,
                 depth + 1,
+                fallback,
             )?);
         }
         return Ok(ProcessTreeNode::sequence(trees));
@@ -510,6 +538,7 @@ fn inductive_miner_recursive(
                 &group,
                 activity_key,
                 depth + 1,
+                fallback,
             )?);
         }
         return Ok(ProcessTreeNode::parallel(trees));
@@ -520,9 +549,9 @@ fn inductive_miner_recursive(
     if let Some(groups) = find_loop_cut(activities.len(), &edges, &starts, &ends) {
         let mut parts = materialize_groups(activities, groups);
         let redo_groups = parts.split_off(1);
-        let body = inductive_miner_recursive(log, &parts[0], activity_key, depth + 1)?;
+        let body = inductive_miner_recursive(log, &parts[0], activity_key, depth + 1, fallback)?;
         let redo = if redo_groups.len() == 1 {
-            inductive_miner_recursive(log, &redo_groups[0], activity_key, depth + 1)?
+            inductive_miner_recursive(log, &redo_groups[0], activity_key, depth + 1, fallback)?
         } else {
             let mut redo_trees = Vec::new();
             for group in &redo_groups {
@@ -531,6 +560,7 @@ fn inductive_miner_recursive(
                     group,
                     activity_key,
                     depth + 1,
+                    fallback,
                 )?);
             }
             ProcessTreeNode::xor(redo_trees)
@@ -539,7 +569,24 @@ fn inductive_miner_recursive(
     }
 
     // 5. Fallback: flower model (all activities in loop)
-    Ok(ProcessTreeNode::flower())
+    fallback.set(true);
+    Ok(flower_over(activities))
+}
+
+/// Flower-model fall-through that actually contains the subset's activities:
+/// loop(xor(all activities), tau). The previous `flower()` constructor emitted
+/// a single empty silent node — a vacuous model that silently discarded every
+/// activity (the sepsis "single silent root, no children" degenerate output).
+fn flower_over(activities: &[String]) -> ProcessTreeNode {
+    ProcessTreeNode::loop_node(
+        ProcessTreeNode::xor(
+            activities
+                .iter()
+                .map(|a| ProcessTreeNode::leaf(a.clone()))
+                .collect(),
+        ),
+        ProcessTreeNode::leaf(String::new()), // tau redo
+    )
 }
 
 /// Convert index groups back to activity-name groups. Group ORDER is preserved
@@ -1576,4 +1623,43 @@ pub fn more_discovery_info() -> String {
         ]
     })
     .to_string()
+}
+
+#[cfg(test)]
+mod parity_debug_tests {
+    use super::*;
+
+    /// pm4py-parity guard: the flower fall-through must NEVER emit the old
+    /// vacuous single-silent-node tree (sepsis degenerate output). The flower
+    /// must contain the subset's activities: loop(xor(acts), tau).
+    #[test]
+    fn flower_fallback_contains_activities_not_vacuous_single_node() {
+        let content = std::fs::read_to_string(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../bench_data/sepsis.xes"),
+        )
+        .expect("xes");
+        let reader = std::io::BufReader::new(content.as_bytes());
+        let log: wasm4pm_compat::event_log::EventLog =
+            crate::data_types::import::xes::import_xes(reader, Default::default()).expect("parse");
+        let log: crate::models::EventLog = log.into();
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+        let json = discover_inductive_miner_from_log(&admitted, "concept:name");
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(v["fallback"], "flower");
+        // Not the vacuous 1-node tree: every activity must appear as a leaf.
+        let root_str = serde_json::to_string(&v["root"]).unwrap();
+        for act in [
+            "ER Registration", "ER Triage", "LacticAcid", "Leucocytes", "Release A", "CRP",
+        ] {
+            assert!(
+                root_str.contains(act),
+                "flower model must contain activity {act}"
+            );
+        }
+        assert!(
+            v["nodes"].as_u64().unwrap() > 1,
+            "flower tree must not be the single vacuous node"
+        );
+    }
 }

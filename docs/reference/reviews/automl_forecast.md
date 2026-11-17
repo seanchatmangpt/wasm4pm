@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/automl_forecast.md; source-sha256: 448d1c92ead69f8b52ece138a1d76e3376c491341f917c023c55e0587833100f; reason: canonical Diátaxis or ADR surface -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/reference/reviews/automl_forecast.md; source-sha256: 3bf9996a2583491cb9b81873c392577a938e0aa76dc6a39e5683060e7b1420c5; reason: canonical Diátaxis or ADR surface -->
 
 # Algorithm Review: automl_forecast
 
@@ -27,3 +27,14 @@
 - **Rust Implementation**: `wasm4pm/src/ml/automl.rs` -> `discover_automl_forecast`, `discover_automl_forecast_internal`, `eval_fold`
 - **TypeScript dispatch**: `packages/kernel/src/api.ts` -> `runRaw`
 - **Test file**: `packages/kernel/src/__tests__/algorithm-parity.test.ts`
+
+## Honesty notes (2026-10-10, commit `0e3d81b38`)
+
+- The k-fold sweep now truly fits each fold on the training complement and
+  scores the held-out fold (`cv_method: "kfold_train_complement_test_holdout"`).
+  Earlier releases fit each fold on the data it scored (in-sample metrics).
+- `avg_rmse` is a back-compat field equal to `cv_rmse` for the best alpha;
+  prefer the explicit `cv_rmse`/`cv_mae`/`cv_folds` fields.
+- Below 10 windows the export refuses with an explicit insufficient-data
+  error; below `FOLDS + 1` windows the internal search returns infinity
+  sentinels rather than a fake optimum.

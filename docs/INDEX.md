@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/INDEX.md; source-sha256: 3f7018cbc3e942f9776847204a4db337470bde74d5262a13805f57ffd3c9fd9a; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/INDEX.md; source-sha256: 82ab793cb64c35c9e870076ce54eb3e212a547bc38b70568c1ea9731a581844c; reason: path-local documentation retained pending domain-specific supersession -->
 
 # wasm4pm Documentation
 
@@ -13,7 +13,7 @@ Start here if you are new to wasm4pm. Tutorials take you through concrete steps 
 - [Getting Started](tutorials/getting_started.md) — install, run your first discovery, verify with `wpm doctor`
 - [Truex Receipt Verification](tutorials/truex_receipts.md) — OCEL 2.0 canonicalization and BLAKE3 integrity checking
 - [Predictive Monitoring](tutorials/predictive_monitoring.md) — next-activity prediction and concept drift detection
-- [Cognition Contracts](tutorials/cognition_contracts.md) — all 52 breeds, exact field names, working examples
+- [Cognition Contracts](tutorials/cognition_contracts.md) — all 55 breeds, exact field names, working examples
 
 ---
 
@@ -34,6 +34,7 @@ Solving specific, concrete problems. Assumes you know what you want to achieve.
 Accurate, complete descriptions of the system. Use these to look things up, not to learn.
 
 - [Algorithms](reference/algorithms.md) — all 60 registered algorithms, domains, admission status, input types
+- [Benchmarks](reference/benchmarks.md) — every benchmark surface: runners, Criterion targets, datasets, governance, gaps
 - [CLI Commands](reference/cli_commands.md) — every command, flag, and exit code
 - [Configuration Schema](reference/configuration_schema.md) — `wasm4pm.toml` / `wasm4pm.json` / ENV vars
 - [Deployment Profiles](reference/deployment_profiles.md) — mobile / iot / edge / fog / browser build targets
@@ -72,7 +73,7 @@ These sections are not part of the four Diátaxis quadrants but complement them.
 Runnable code demonstrating the platform end-to-end.
 
 - [examples/README.md](../examples/README.md) — ML, RL, prediction, Truex, and full-workflow examples
-- [examples/cognition/README.md](../examples/cognition/README.md) — all 52 breeds with intent.json + run.sh
+- [examples/cognition/README.md](../examples/cognition/README.md) — all 55 breeds with intent.json + run.sh
 
 ---
 

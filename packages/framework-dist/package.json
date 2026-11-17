@@ -1,0 +1,82 @@
+{
+  "name": "@seanchatmangpt/wasm4pm",
+  "version": "0.0.1",
+  "description": "High-performance process mining algorithms, cognition kernel, and contracts optimized for Next.js, Web, and Node.js with zero CLI dependencies",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./wasm": {
+      "types": "./wasm/wasm4pm.d.ts",
+      "import": "./wasm/index.js",
+      "require": "./wasm/wasm4pm.cjs"
+    },
+    "./cognition": {
+      "types": "./cognition/wasm4pm_cognition.d.ts",
+      "import": "./cognition/wasm4pm_cognition.web.js",
+      "require": "./cognition/wasm4pm_cognition.cjs"
+    },
+    "./contracts": {
+      "types": "./contracts/index.d.ts",
+      "import": "./contracts/index.js",
+      "default": "./contracts/index.js"
+    },
+    "./planner": {
+      "types": "./planner/index.d.ts",
+      "import": "./planner/index.js",
+      "default": "./planner/index.js"
+    },
+    "./ml": {
+      "types": "./ml/index.d.ts",
+      "import": "./ml/index.js",
+      "default": "./ml/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm",
+    "cognition",
+    "contracts",
+    "planner",
+    "ml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "process-mining",
+    "webassembly",
+    "wasm",
+    "nextjs",
+    "petri-net",
+    "ocel",
+    "alpha-miner",
+    "heuristics-miner",
+    "inductive-miner",
+    "conformance-checking",
+    "token-replay"
+  ],
+  "author": "Sean Chatman",
+  "license": "BUSL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git"
+  },
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm#readme",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+  },
+  "dependencies": {
+    "blake3": "^2.1.4",
+    "uuid": "^11.1.1",
+    "zod": "^3.22.0"
+  }
+}

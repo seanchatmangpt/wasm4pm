@@ -23,6 +23,7 @@ pub static MYCIN_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// Hearsay lifecycle: seed + post-hypothesis+
@@ -40,6 +41,7 @@ pub static HEARSAY_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// CBR lifecycle: build-index → retrieve-candidates → score-case+ → decision?
@@ -77,6 +79,7 @@ pub static CBR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// GPS lifecycle: reduce-gap / apply-operator
@@ -98,6 +101,7 @@ pub static GPS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// STRIPS lifecycle: subgoal/try-action/execute/iterate-depth+
@@ -121,9 +125,14 @@ pub static STRIPS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
-/// Prolog lifecycle: intern-fact/load-rule* → kernel-query+ → decision?
+/// Prolog lifecycle: intern-fact/load-rule* → kernel-query/infer+ → decision?
+/// plus an optional terminal `invalid` phase (emitted only on admission
+/// rejection right before Err, prolog.rs:628 — order-constrained, terminal).
+/// Decision is unbounded: a run with multiple goals may legitimately emit
+/// multiple decisions.
 pub static PROLOG_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "prolog",
     phases: &[
@@ -137,6 +146,7 @@ pub static PROLOG_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             name: "query",
             kinds: &[
                 "kernel-query",
+                "infer",
                 "unify",
                 "sld-step",
                 "match-rule",
@@ -149,9 +159,16 @@ pub static PROLOG_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             name: "decision",
             kinds: &["decision"],
             min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "invalid",
+            kinds: &["invalid"],
+            min_occurrences: 0,
             max_occurrences: 1,
         },
     ],
+    allowed_unknown_kinds: &[],
 };
 
 /// SOAR lifecycle: evaluate-single/prohibit/veto/dominate/impasse (preference evaluation)
@@ -176,6 +193,7 @@ pub static SOAR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// ELIZA lifecycle: try-pattern* → match-pattern/bind-slot+
@@ -198,6 +216,7 @@ pub static ELIZA_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &["decomp-pattern", "turn-start"],
 };
 
 /// DENDRAL lifecycle: eliminate/survive+ (constraint-test then prune)
@@ -216,6 +235,7 @@ pub static DENDRAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &["generate-isomers", "select-solution", "test-constraints"],
 };
 
 /// Autoinstinct Neurosis lifecycle: seed-beliefs + affect-snapshot
@@ -234,6 +254,7 @@ pub static AUTOINSTINCT_NEUROSIS_MODEL: BreedLifecycleModel = BreedLifecycleMode
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &["defensive", "accepting", "curious"],
 };
 
 /// Autoinstinct Vision lifecycle: observe-object / find-clear-object
@@ -252,6 +273,7 @@ pub static AUTOINSTINCT_VISION_MODEL: BreedLifecycleModel = BreedLifecycleModel 
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// Autoinstinct Semantics lifecycle: init-parser + extract-act/no-act-found
@@ -274,6 +296,7 @@ pub static AUTOINSTINCT_SEMANTICS_MODEL: BreedLifecycleModel = BreedLifecycleMod
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };
 
 /// Autoinstinct Learning lifecycle: no-plan-found | plan-step+
@@ -292,4 +315,5 @@ pub static AUTOINSTINCT_LEARNING_MODEL: BreedLifecycleModel = BreedLifecycleMode
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],
+    allowed_unknown_kinds: &[],
 };

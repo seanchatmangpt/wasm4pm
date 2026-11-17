@@ -61,15 +61,26 @@ pub(crate) enum OcelType {
 
 /// Infer the value type and produce an [`AttributeValue`] from a raw CSV cell string.
 ///
-/// Priority order: bool → i64 → f64 → DateTime → String (fallback).
+/// Priority order (numbers-first): i64 → f64 → bool → DateTime → String (fallback).
+/// Bool is ONLY the literal tokens `true`/`yes`/`false`/`no` (case-insensitive);
+/// `"1"`/`"0"` are integers so a numeric column containing a lone `1` cannot
+/// flip to Bool.
 #[cfg(feature = "ocel")]
 pub fn infer_value(s: &str) -> AttributeValue {
     let trimmed = s.trim();
 
-    // Bool
+    // Numbers first — "1"/"0" are Int, never Bool.
+    if let Ok(i) = trimmed.parse::<i64>() {
+        return AttributeValue::Int(i);
+    }
+    if let Ok(f) = trimmed.parse::<f64>() {
+        return AttributeValue::Float(f);
+    }
+
+    // Bool: only the literal tokens (case-insensitive)
     match trimmed.to_ascii_lowercase().as_str() {
-        "true" | "yes" | "1" => return AttributeValue::Boolean(true),
-        "false" | "no" | "0" => return AttributeValue::Boolean(false),
+        "true" | "yes" => return AttributeValue::Boolean(true),
+        "false" | "no" => return AttributeValue::Boolean(false),
         _ => {}
     }
 
@@ -139,18 +150,20 @@ fn normalise_timestamp(s: &str) -> String {
 }
 
 /// Infer the [`OcelType`] bucket for a raw string (used for schema coalescing).
+///
+/// Numbers-first, matching [`infer_value`]: bool is only `true`/`yes`/`false`/`no`.
 #[cfg(feature = "ocel")]
 fn infer_type(s: &str) -> OcelType {
     let trimmed = s.trim();
-    match trimmed.to_ascii_lowercase().as_str() {
-        "true" | "yes" | "false" | "no" => return OcelType::Bool,
-        _ => {}
-    }
     if trimmed.parse::<i64>().is_ok() {
         return OcelType::Int;
     }
     if trimmed.parse::<f64>().is_ok() {
         return OcelType::Float;
+    }
+    match trimmed.to_ascii_lowercase().as_str() {
+        "true" | "yes" | "false" | "no" => return OcelType::Bool,
+        _ => {}
     }
     if parse_timestamp_ms_local(trimmed).is_some() {
         return OcelType::Timestamp;
@@ -174,15 +187,43 @@ pub(crate) fn coalesce(a: OcelType, b: OcelType) -> OcelType {
     }
 }
 
+/// Parse statistics for [`parse_ocel_csv_with_stats`].
+#[cfg(feature = "ocel")]
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ParseStats {
+    /// Total data rows read (malformed + accepted, excluding headers).
+    pub total_rows: usize,
+    /// Rows dropped because the CSV reader failed to parse them.
+    pub skipped_malformed: usize,
+    /// Rows dropped because the activity column was empty.
+    pub skipped_empty_activity: usize,
+}
+
 /// Parse a CSV string into an [`OCEL`] struct.
+///
+/// All cell values are trimmed (`csv::Trim::All`); string values are stored
+/// trimmed.
 ///
 /// # Errors
 /// Returns a descriptive `String` on parse failure.
 #[cfg(feature = "ocel")]
 pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
+    parse_ocel_csv_with_stats(csv_string).map(|(ocel, _stats)| ocel)
+}
+
+/// Like [`parse_ocel_csv`], but also reports per-row skip accounting.
+///
+/// All cell values are trimmed (`csv::Trim::All`); string values are stored
+/// trimmed.
+#[cfg(feature = "ocel")]
+pub fn parse_ocel_csv_with_stats(csv_string: &str) -> Result<(OCEL, ParseStats), String> {
+    let mut stats = ParseStats::default();
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
         .flexible(true)
+        // NOTE: csv::Trim::All is unconditional — every cell is trimmed before
+        // inference/storage. Making it configurable is an API change with no
+        // current consumer need.
         .trim(csv::Trim::All)
         .from_reader(csv_string.as_bytes());
 
@@ -211,9 +252,12 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
     // (We will do a single pass — store records for reuse.)
     let mut records: Vec<csv::StringRecord> = Vec::new();
     for result in rdr.records() {
+        stats.total_rows += 1;
         match result {
             Ok(rec) => records.push(rec),
-            Err(_) => continue, // skip malformed rows
+            Err(_) => {
+                stats.skipped_malformed += 1;
+            } // skip malformed rows (counted)
         }
     }
 
@@ -257,7 +301,8 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
         // Activity
         let activity = rec.get(activity_col).unwrap_or("").trim().to_string();
         if activity.is_empty() {
-            continue; // skip rows without activity
+            stats.skipped_empty_activity += 1;
+            continue; // skip rows without activity (counted)
         }
         event_types_set.insert(activity.clone());
 
@@ -350,13 +395,27 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
     let object_types: Vec<String> = object_types_set.into_iter().collect();
     let objects: Vec<OCELObject> = objects_map.into_values().collect();
 
-    Ok(OCEL {
-        event_types,
-        object_types,
-        events,
-        objects,
-        object_relations: vec![],
-    })
+    // Refuse logs where the majority of rows were dropped — that is data
+    // corruption, not a usable event log.
+    let skipped = stats.skipped_malformed + stats.skipped_empty_activity;
+    if stats.total_rows > 0 && skipped > stats.total_rows / 2 {
+        return Err(format!(
+            "OCEL CSV mostly malformed: {} of {} rows skipped ({} malformed, {} empty activity)",
+            skipped, stats.total_rows, stats.skipped_malformed, stats.skipped_empty_activity
+        ));
+    }
+
+    Ok((
+        OCEL {
+            event_types,
+            object_types,
+            object_type_defs: Vec::new(),
+            events,
+            objects,
+            object_relations: vec![],
+        },
+        stats,
+    ))
 }
 
 /// Classify a CSV header string into a [`Column`] variant.
@@ -386,8 +445,9 @@ fn classify_header(h: &str) -> Column {
 fn cast_value(s: &str, dominant: &OcelType) -> AttributeValue {
     match dominant {
         OcelType::Bool => match s.to_ascii_lowercase().as_str() {
-            "true" | "yes" | "1" => AttributeValue::Boolean(true),
-            "false" | "no" | "0" => AttributeValue::Boolean(false),
+            // Same vocabulary as infer_value/infer_type: no "1"/"0".
+            "true" | "yes" => AttributeValue::Boolean(true),
+            "false" | "no" => AttributeValue::Boolean(false),
             _ => AttributeValue::String(s.to_string()),
         },
         OcelType::Int => s
@@ -413,9 +473,12 @@ fn cast_value(s: &str, dominant: &OcelType) -> AttributeValue {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel_from_csv(csv_string: &str) -> Result<String, JsValue> {
-    let ocel = parse_ocel_csv(csv_string)
-        .map_err(|e| crate::error::js_val(&format!("Failed to parse OCEL CSV: {}", e)))?;
+    // SECURITY: same 512 MB guard as io.rs entry points.
+    crate::io::check_input_size(csv_string, "OCEL CSV input")
+        .map_err(|e| crate::error::js_val(&e))?;
 
+    let (ocel, _stats) = parse_ocel_csv_with_stats(csv_string)
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse OCEL CSV: {}", e)))?;
     let handle = get_or_init_state()
         .store_object(StoredObject::OCEL(ocel))
         .map_err(|_e| crate::error::js_val("Failed to store OCEL from CSV"))?;
@@ -511,5 +574,92 @@ e3,Place Order,2024-01-03T09:00:00Z,o2,,10,yes
         // e1 has empty activity → skipped; only e2 (activity "Act") survives
         assert_eq!(ocel.events.len(), 1);
         assert_eq!(ocel.events[0].id, "e2");
+    }
+
+    // ---- Type inference unification (numbers-first) ----
+
+    #[test]
+    fn test_one_and_zero_are_int_not_bool() {
+        assert_eq!(infer_value("1"), AttributeValue::Int(1));
+        assert_eq!(infer_value("0"), AttributeValue::Int(0));
+        assert_eq!(infer_type("1"), OcelType::Int);
+        assert_eq!(infer_type("0"), OcelType::Int);
+        assert_eq!(infer_type("true"), OcelType::Bool);
+        assert_eq!(infer_type("yes"), OcelType::Bool);
+        // cast_value agrees
+        assert_eq!(
+            cast_value("1", &OcelType::Bool),
+            AttributeValue::String("1".to_string())
+        );
+        assert_eq!(
+            cast_value("true", &OcelType::Bool),
+            AttributeValue::Boolean(true)
+        );
+    }
+
+    #[test]
+    fn test_numeric_column_with_single_one_stays_int() {
+        // 99.99, 0.0, 1 → column coalesces to Float; "1" casts to Float(1.0),
+        // never Bool (pre-fix it flipped the column to Bool).
+        let csv = "ocel:eid,ocel:activity,ocel:timestamp,price\ne1,A,2024-01-01T10:00:00Z,99.99\ne2,B,2024-01-02T10:00:00Z,1\n";
+        let ocel = parse_ocel_csv(csv).expect("parse failed");
+        let e2 = ocel.events.iter().find(|e| e.id == "e2").unwrap();
+        assert!(matches!(
+            e2.attributes.get("price"),
+            Some(AttributeValue::Float(_)) | Some(AttributeValue::Int(_))
+        ));
+        assert_ne!(
+            e2.attributes.get("price"),
+            Some(&AttributeValue::Boolean(true))
+        );
+    }
+
+    // ---- ParseStats / skip accounting ----
+
+    #[test]
+    fn test_parse_stats_counts_skips() {
+        // 1 empty-activity row of 3 → counted, not skipped silently
+        let csv = "ocel:eid,ocel:activity,ocel:timestamp\ne1,,2024-01-01T10:00:00Z\ne2,Act,2024-01-01T11:00:00Z\ne3,Act,2024-01-01T12:00:00Z\n";
+        let (ocel, stats) =
+            parse_ocel_csv_with_stats(csv).expect("parse should succeed with skips");
+        assert_eq!(ocel.events.len(), 2);
+        assert_eq!(stats.total_rows, 3);
+        assert_eq!(stats.skipped_malformed, 0);
+        assert_eq!(stats.skipped_empty_activity, 1);
+    }
+
+    #[test]
+    fn test_majority_malformed_csv_rejected() {
+        // 2 of 3 rows with empty activity → >50% skipped → parse must Err
+        let csv = "ocel:eid,ocel:activity,ocel:timestamp\ne1,,t\ne2,,t\ne3,Act,2024-01-01T10:00:00Z\n";
+        let err =
+            parse_ocel_csv_with_stats(csv).expect_err("majority-skipped CSV must be rejected");
+        assert!(
+            err.contains("mostly malformed"),
+            "error should report skip counts: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn test_exactly_half_skipped_accepted() {
+        // 1 of 2 skipped = 50%, not >50% → accepted (boundary)
+        let csv = "ocel:eid,ocel:activity,ocel:timestamp\ne1,,t\ne2,Act,t\n";
+        let (ocel, stats) =
+            parse_ocel_csv_with_stats(csv).expect("50% skipped must still be accepted");
+        assert_eq!(ocel.events.len(), 1);
+        assert_eq!(stats.total_rows, 2);
+    }
+
+    #[test]
+    fn test_size_guard_rejects_oversized_csv() {
+        // Can't allocate 512MB; the guard is the shared cap-parameterized
+        // check_input_size core — same policy, small cap.
+        let big = "x".repeat(600);
+        let err = crate::io::check_input_size_cap(&big, "test input", 512)
+            .expect_err("oversized input must be refused");
+        assert!(err.contains("too large"));
+        // Exactly at cap is accepted.
+        assert!(crate::io::check_input_size_cap(&big, "test input", 600).is_ok());
     }
 }

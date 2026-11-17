@@ -58,11 +58,20 @@ impl CognitionBreed for EventCalculus {
             // ec:terminates:<event> -> value=<fluent>
             // ec:initially -> value=<fluent>
             if let Some(time_str) = fact.key.strip_prefix("ec:happens:") {
-                if let Ok(time) = time_str.trim().parse::<usize>() {
-                    happens
+                match time_str.trim().parse::<usize>() {
+                    Ok(time) => happens
                         .entry(time)
                         .or_default()
-                        .push(fact.value.trim().to_string());
+                        .push(fact.value.trim().to_string()),
+                    Err(_) => {
+                        return Err(BreedError {
+                            breed: self.id(),
+                            message: format!(
+                                "non-numeric event time in fact key '{}': must be ec:happens:<usize>",
+                                fact.key
+                            ),
+                        });
+                    }
                 }
             } else if let Some(event) = fact.key.strip_prefix("ec:initiates:") {
                 let fluent = fact.value.trim().to_string();
@@ -150,6 +159,14 @@ impl CognitionBreed for EventCalculus {
         let mut holds = vec![BTreeSet::new(); max_time + 1];
         holds[0] = initially.clone();
 
+        // Per-time terminated fluents and initiation times per fluent, kept
+        // so the ec-infer steps can be enriched per query with the explicit
+        // clipping check `Clipped(t,f,qt)` and conclusion `HoldsAt(f,qt)`
+        // (Kowalski & Sergot 1986 Sections 2-5).
+        let mut terminated_by_time: BTreeMap<usize, BTreeSet<String>> = BTreeMap::new();
+        let mut init_times: Vec<(usize, String)> = Vec::new(); // (t, fluent)
+        let mut infer_step_for_time: BTreeMap<usize, usize> = BTreeMap::new(); // t -> trace idx
+
         // 2. ec-infer phase
         for t in 0..max_time {
             let events_at_t = happens.get(&t).cloned().unwrap_or_default();
@@ -207,23 +224,66 @@ impl CognitionBreed for EventCalculus {
             }
             holds[t + 1] = next_holds;
 
-            // Holds set rendered as a `;`-separated list so consumers can parse the full
+            // Holds set rendered as a `;`-separated state string so consumers can parse the full
             // (possibly multi-fluent) state without ambiguity against the `,` field separator.
             let holds_list = holds[t]
                 .iter()
                 .map(String::as_str)
                 .collect::<Vec<_>>()
                 .join(";");
+            infer_step_for_time.insert(t, trace.len());
+            let detail = format!(
+                "t={}: holds=[{}], happens={:?}, initiates={:?}, terminates={:?}",
+                t, holds_list, events_at_t, initiated_at_t, terminated_at_t
+            );
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "ec-infer".to_string(),
-                detail: format!(
-                    "t={}: holds=[{}], happens={:?}, initiates={:?}, terminates={:?}",
-                    t, holds_list, events_at_t, initiated_at_t, terminated_at_t
-                ),
+                detail,
                 depth: 0,
                 objects: vec![],
             });
+
+            if !terminated_at_t.is_empty() {
+                terminated_by_time.insert(t, terminated_at_t.clone());
+            }
+            for f in &initiated_at_t {
+                init_times.push((t, f.clone()));
+            }
+        }
+
+        // 2a. Enrich each initiating ec-infer step with the per-query clipping
+        // check and conclusion: `Clipped(t,f,qt) = b, HoldsAt(f,qt) = b`.
+        // Clipped(t,f,qt) = some terminates(e,f) event fires at t' with
+        // t < t' <= qt; the conclusion holds by inertia unless clipped.
+        if !queries.is_empty() {
+            for (_goal_id, fluent, qt) in &queries {
+                for (t, f) in &init_times {
+                    if f != fluent || t > qt {
+                        continue;
+                    }
+                    let clipped = (t + 1..=*qt).any(|t2| {
+                        terminated_by_time
+                            .get(&t2)
+                            .is_some_and(|s| s.contains(fluent))
+                    });
+                    let holds_at = holds
+                        .get(*qt)
+                        .map(|s| s.contains(fluent))
+                        .unwrap_or(false);
+                    let idx = match infer_step_for_time.get(t) {
+                        Some(i) => *i,
+                        None => continue,
+                    };
+                    let step = &mut trace[idx];
+                    step.detail.push_str(
+                        &format!(
+                            ", Clipped({},{},{}) = {}, HoldsAt({},{}) = {}",
+                            t, f, qt, clipped, f, qt, holds_at
+                        ),
+                    );
+                }
+            }
         }
 
         // 2b. ec-verdict phase: answer each HoldsAt(fluent@time) query against the

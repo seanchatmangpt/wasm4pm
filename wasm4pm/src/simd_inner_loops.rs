@@ -1,51 +1,37 @@
-//! SIMD Vectorization for Inner Loops (DFG, Conformance, Variant Dedup, Token Replay)
+//! Unrolled scalar accumulation kernels (DFG, Conformance, Variant Dedup, Token Replay).
 //!
-//! This module provides vectorized implementations using SSE4.2, AVX2, and AVX-512 intrinsics
-//! (with target_feature guards and portable fallbacks).
+//! # Honesty note (doc-truth rewrite)
 //!
-//! # Hotspots Vectorized
+//! Despite historical naming, this module contains **no platform SIMD
+//! intrinsics** — no `_mm*`, AVX-2, AVX-512, or SSE4.2 code exists or ever
+//! existed here. Every kernel is a scalar loop with manual unrolling (4×/8×)
+//! for instruction-level parallelism; the LLVM autovectorizer may or may not
+//! vectorize these loops, and no claim is made either way. The
+//! `Simd*`-prefixed public type names are kept stable for API compatibility.
+//! Previously this header claimed "vectorized implementations using SSE4.2,
+//! AVX2, and AVX-512 intrinsics" and guarded dead scalar duplicates with fake
+//! `#[cfg(target_feature = ...)]` branches; both have been removed.
 //!
-//! 1. **DFG Activity Counting** — 8x parallelism via SIMD i32/u32 adds
-//! 2. **DFG Edge Aggregation** — 4x parallelism via SIMD u64 adds (frequency counts)
-//! 3. **Conformance Marking Updates** — 8x parallelism via SIMD u32 loads + stores
-//! 4. **Conformance Transition Checks** — 4x parallelism via SIMD bitwise ops
-//! 5. **Variant Hash Computation** — 8x parallelism via vectorized hash rounds
-//! 6. **Variant Dedup Comparison** — 8-byte chunks via SIMD equality tests
-//! 7. **Token Production/Consumption** — 8x parallelism via SIMD u32 adds
+//! # Kernels
 //!
-//! # Target Feature Guards
-//!
-//! - `#[cfg(target_feature = "avx2")]` — 256-bit vectors (8× u32 or 4× u64)
-//! - `#[cfg(target_feature = "avx512f")]` — 512-bit vectors (16× u32 or 8× u64)
-//! - `#[cfg(target_feature = "sse4_2")]` — 128-bit vectors (4× u32 or 2× u64)
-//! - Fallback to scalar with loop unrolling
+//! 1. **DFG Activity Counting** — scalar u32 adds, 4× unrolled
+//! 2. **DFG Edge Aggregation** — scalar hash-map increments, 4× unrolled
+//! 3. **Conformance Marking Updates** — scalar u32 add/sub with bounds checks
+//! 4. **Variant Hash Computation** — FNV-1a polynomial hash, 8× unrolled
+//! 5. **Variant Dedup Comparison** — hash-table counting
+//! 6. **Token Production/Consumption** — scalar u64 adds
 //!
 //! # Determinism Guarantee
 //!
-//! All SIMD operations preserve bit-exact equality with scalar equivalents:
-//! - Associativity: `(a + b) + c == a + (b + c)` for all paths (verified)
-//! - No floating-point: all u32/u64 arithmetic (no IEEE 754 variations)
+//! All operations preserve bit-exact equality across platforms:
+//! - Integer-only arithmetic (no IEEE 754 variation)
 //! - Hash functions use deterministic polynomial expansion (fixed seed)
 
 use rustc_hash::FxHashMap;
-/// Maximum safe SIMD vector width for portable intrinsics
-#[cfg(target_feature = "avx512f")]
-const VECTOR_WIDTH: usize = 16; // AVX-512: 16 × u32
-#[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-const VECTOR_WIDTH: usize = 8; // AVX-2: 8 × u32
-#[cfg(all(target_feature = "sse4.2", not(target_feature = "avx2")))]
-const VECTOR_WIDTH: usize = 4; // SSE4.2: 4 × u32
-#[cfg(not(any(
-    target_feature = "sse4.2",
-    target_feature = "avx2",
-    target_feature = "avx512f"
-)))]
-const VECTOR_WIDTH: usize = 1; // Scalar fallback
 
-/// SIMD-vectorized activity counter for DFG discovery.
+/// Unrolled activity counter for DFG discovery.
 ///
-/// Accumulates u32 counts for activities in parallel. On AVX-512, processes 16 activities
-/// per vector operation. On AVX-2, 8. On SSE4.2, 4. Scalar fallback: 1.
+/// Accumulates u32 counts for activities with a scalar 4×-unrolled loop.
 ///
 /// **Determinism:** Associative addition (tested with multiple permutations).
 pub struct SimdActivityCounter {
@@ -56,138 +42,21 @@ impl SimdActivityCounter {
     /// Create a new activity counter with capacity for `num_activities`.
     pub fn new(num_activities: usize) -> Self {
         SimdActivityCounter {
-            counts: vec![
-                0u32;
-                (num_activities + VECTOR_WIDTH - 1) & !VECTOR_WIDTH.saturating_sub(1)
-            ],
+            counts: vec![0u32; num_activities],
         }
     }
 
-    /// Increment activity counts from a slice. Uses SIMD to process multiple counts per instruction.
+    /// Increment activity counts from a slice of activity IDs.
     ///
-    /// # Safety
-    /// Assumes activity IDs fit within `self.counts.len()`. Out-of-bounds IDs are silently ignored.
+    /// IDs outside `self.counts.len()` are silently ignored.
     #[inline]
     pub fn increment_batch(&mut self, activity_ids: &[u32]) {
         if activity_ids.is_empty() {
             return;
         }
 
-        #[cfg(target_feature = "avx512f")]
-        {
-            self.increment_batch_avx512(activity_ids);
-            return;
-        }
-
-        #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-        {
-            self.increment_batch_avx2(activity_ids);
-            return;
-        }
-
-        #[cfg(all(target_feature = "sse4.2", not(target_feature = "avx2")))]
-        {
-            self.increment_batch_sse4_2(activity_ids);
-            return;
-        }
-
-        // Scalar fallback
-        self.increment_batch_scalar(activity_ids);
-    }
-
-    #[cfg(target_feature = "avx512f")]
-    #[inline]
-    fn increment_batch_avx512(&mut self, activity_ids: &[u32]) {
-        // SAFETY: AVX-512 intrinsics are stable and checked at compile time
-        unsafe {
-            let ptr = self.counts.as_mut_ptr() as *mut u32;
-            for &id in activity_ids {
-                let idx = id as usize;
-                if idx < self.counts.len() {
-                    let current = std::ptr::read(ptr.add(idx));
-                    std::ptr::write(ptr.add(idx), current.wrapping_add(1));
-                }
-            }
-        }
-    }
-
-    #[cfg(all(target_feature = "avx2", not(target_feature = "avx512f")))]
-    #[inline]
-    fn increment_batch_avx2(&mut self, activity_ids: &[u32]) {
-        // On AVX2, process groups of 8 u32 at a time
-        let mut i = 0;
-        let len = activity_ids.len();
-
-        while i + 8 <= len {
-            unsafe {
-                let ids = [
-                    activity_ids[i],
-                    activity_ids[i + 1],
-                    activity_ids[i + 2],
-                    activity_ids[i + 3],
-                    activity_ids[i + 4],
-                    activity_ids[i + 5],
-                    activity_ids[i + 6],
-                    activity_ids[i + 7],
-                ];
-
-                let ptr = self.counts.as_mut_ptr() as *mut u32;
-                for &id in &ids {
-                    let idx = id as usize;
-                    if idx < self.counts.len() {
-                        let current = std::ptr::read(ptr.add(idx));
-                        std::ptr::write(ptr.add(idx), current.wrapping_add(1));
-                    }
-                }
-            }
-            i += 8;
-        }
-
-        // Scalar cleanup for remaining elements
-        while i < len {
-            let idx = activity_ids[i] as usize;
-            if idx < self.counts.len() {
-                self.counts[idx] = self.counts[idx].wrapping_add(1);
-            }
-            i += 1;
-        }
-    }
-
-    #[cfg(all(target_feature = "sse4.2", not(target_feature = "avx2")))]
-    #[inline]
-    fn increment_batch_sse4_2(&mut self, activity_ids: &[u32]) {
-        // On SSE4.2, process groups of 4 u32 at a time
-        let mut i = 0;
-        let len = activity_ids.len();
-
-        while i + 4 <= len {
-            unsafe {
-                let ptr = self.counts.as_mut_ptr() as *mut u32;
-                for j in 0..4 {
-                    let id = activity_ids[i + j];
-                    let idx = id as usize;
-                    if idx < self.counts.len() {
-                        let current = std::ptr::read(ptr.add(idx));
-                        std::ptr::write(ptr.add(idx), current.wrapping_add(1));
-                    }
-                }
-            }
-            i += 4;
-        }
-
-        // Scalar cleanup
-        while i < len {
-            let idx = activity_ids[i] as usize;
-            if idx < self.counts.len() {
-                self.counts[idx] = self.counts[idx].wrapping_add(1);
-            }
-            i += 1;
-        }
-    }
-
-    #[inline]
-    fn increment_batch_scalar(&mut self, activity_ids: &[u32]) {
-        // 4× loop unrolling for better ILP
+        // Scalar 4× unrolling for better ILP (no SIMD intrinsics are used;
+        // indirect per-element increments do not vectorize).
         let mut i = 0;
         let len = activity_ids.len();
 
@@ -221,9 +90,10 @@ impl SimdActivityCounter {
     }
 }
 
-/// SIMD-vectorized edge aggregator for DFG discovery.
+/// Unrolled edge aggregator for DFG discovery.
 ///
-/// Accumulates u64 frequency counts for edges. Uses SIMD for batch hashing and aggregation.
+/// Accumulates u64 frequency counts for edges in a hash map. Hash-map
+/// aggregation does not vectorize; the loop is scalar 4×-unrolled.
 pub struct SimdEdgeAggregator {
     edges: FxHashMap<(u32, u32), u64>,
 }
@@ -237,16 +107,13 @@ impl SimdEdgeAggregator {
     }
 
     /// Increment edge frequencies from a batch of (from, to) pairs.
-    ///
-    /// Processes 4 edges at a time via SIMD on SSE4.2+ (on appropriate platforms).
     #[inline]
     pub fn increment_batch(&mut self, edge_pairs: &[(u32, u32)]) {
         if edge_pairs.is_empty() {
             return;
         }
 
-        // Simple scalar loop with 4× unrolling for all platforms
-        // (SIMD hash aggregation is complex and hash maps don't vectorize well)
+        // Scalar loop with 4× unrolling
         let mut i = 0;
         let len = edge_pairs.len();
 
@@ -275,10 +142,9 @@ impl SimdEdgeAggregator {
     }
 }
 
-/// SIMD-vectorized marking updater for token replay conformance.
+/// Unrolled marking updater for token replay conformance.
 ///
-/// Updates Petri net place markings. On AVX-2, processes 8 place updates per vector.
-/// On SSE4.2, 4. Scalar fallback: 1.
+/// Updates Petri net place markings with bounds-checked scalar add/sub.
 pub struct SimdMarkingUpdater {
     marking: Vec<u32>,
 }
@@ -310,186 +176,25 @@ impl SimdMarkingUpdater {
             return (0, 0, false);
         }
 
-        // Consume from preset
+        // Consume from preset (scalar, bounds-checked)
         let consumed = preset.len() as u32;
-        #[cfg(target_feature = "avx2")]
-        {
-            self.consume_batch_avx2(preset);
-        }
-        #[cfg(all(not(target_feature = "avx2"), target_feature = "sse4.2"))]
-        {
-            self.consume_batch_sse4_2(preset);
-        }
-        #[cfg(not(any(target_feature = "avx2", target_feature = "sse4.2")))]
-        {
-            self.consume_batch_scalar(preset);
+        for &place_id in preset {
+            let idx = place_id as usize;
+            if idx < self.marking.len() {
+                self.marking[idx] = self.marking[idx].saturating_sub(1);
+            }
         }
 
-        // Produce to postset
+        // Produce to postset (scalar, bounds-checked)
         let produced = postset.len() as u32;
-        #[cfg(target_feature = "avx2")]
-        {
-            self.produce_batch_avx2(postset);
-        }
-        #[cfg(all(not(target_feature = "avx2"), target_feature = "sse4.2"))]
-        {
-            self.produce_batch_sse4_2(postset);
-        }
-        #[cfg(not(any(target_feature = "avx2", target_feature = "sse4.2")))]
-        {
-            self.produce_batch_scalar(postset);
+        for &place_id in postset {
+            let idx = place_id as usize;
+            if idx < self.marking.len() {
+                self.marking[idx] = self.marking[idx].wrapping_add(1);
+            }
         }
 
         (consumed, produced, true)
-    }
-
-    #[cfg(target_feature = "avx2")]
-    #[inline]
-    fn consume_batch_avx2(&mut self, places: &[u32]) {
-        // 8× unrolled scalar loop (SIMD doesn't help much with indirect indexing)
-        let mut i = 0;
-        let len = places.len();
-
-        while i + 8 <= len {
-            for j in 0..8 {
-                let place_id = places[i + j] as usize;
-                if place_id < self.marking.len() {
-                    self.marking[place_id] = self.marking[place_id].saturating_sub(1);
-                }
-            }
-            i += 8;
-        }
-
-        while i < len {
-            let place_id = places[i] as usize;
-            if place_id < self.marking.len() {
-                self.marking[place_id] = self.marking[place_id].saturating_sub(1);
-            }
-            i += 1;
-        }
-    }
-
-    #[cfg(all(not(target_feature = "avx2"), target_feature = "sse4.2"))]
-    #[inline]
-    fn consume_batch_sse4_2(&mut self, places: &[u32]) {
-        // 4× unrolled scalar loop
-        let mut i = 0;
-        let len = places.len();
-
-        while i + 4 <= len {
-            for j in 0..4 {
-                let place_id = places[i + j] as usize;
-                if place_id < self.marking.len() {
-                    self.marking[place_id] = self.marking[place_id].saturating_sub(1);
-                }
-            }
-            i += 4;
-        }
-
-        while i < len {
-            let place_id = places[i] as usize;
-            if place_id < self.marking.len() {
-                self.marking[place_id] = self.marking[place_id].saturating_sub(1);
-            }
-            i += 1;
-        }
-    }
-
-    #[cfg(not(any(target_feature = "avx2", target_feature = "sse4.2")))]
-    #[inline]
-    fn consume_batch_scalar(&mut self, places: &[u32]) {
-        // 4× unrolled scalar loop
-        let mut i = 0;
-        let len = places.len();
-
-        while i + 4 <= len {
-            self.marking[places[i] as usize] = self.marking[places[i] as usize].saturating_sub(1);
-            self.marking[places[i + 1] as usize] =
-                self.marking[places[i + 1] as usize].saturating_sub(1);
-            self.marking[places[i + 2] as usize] =
-                self.marking[places[i + 2] as usize].saturating_sub(1);
-            self.marking[places[i + 3] as usize] =
-                self.marking[places[i + 3] as usize].saturating_sub(1);
-            i += 4;
-        }
-
-        while i < len {
-            self.marking[places[i] as usize] = self.marking[places[i] as usize].saturating_sub(1);
-            i += 1;
-        }
-    }
-
-    #[cfg(target_feature = "avx2")]
-    #[inline]
-    fn produce_batch_avx2(&mut self, places: &[u32]) {
-        let mut i = 0;
-        let len = places.len();
-
-        while i + 8 <= len {
-            for j in 0..8 {
-                let place_id = places[i + j] as usize;
-                if place_id < self.marking.len() {
-                    self.marking[place_id] = self.marking[place_id].wrapping_add(1);
-                }
-            }
-            i += 8;
-        }
-
-        while i < len {
-            let place_id = places[i] as usize;
-            if place_id < self.marking.len() {
-                self.marking[place_id] = self.marking[place_id].wrapping_add(1);
-            }
-            i += 1;
-        }
-    }
-
-    #[cfg(all(not(target_feature = "avx2"), target_feature = "sse4.2"))]
-    #[inline]
-    fn produce_batch_sse4_2(&mut self, places: &[u32]) {
-        let mut i = 0;
-        let len = places.len();
-
-        while i + 4 <= len {
-            for j in 0..4 {
-                let place_id = places[i + j] as usize;
-                if place_id < self.marking.len() {
-                    self.marking[place_id] = self.marking[place_id].wrapping_add(1);
-                }
-            }
-            i += 4;
-        }
-
-        while i < len {
-            let place_id = places[i] as usize;
-            if place_id < self.marking.len() {
-                self.marking[place_id] = self.marking[place_id].wrapping_add(1);
-            }
-            i += 1;
-        }
-    }
-
-    #[cfg(not(any(target_feature = "avx2", target_feature = "sse4.2")))]
-    #[inline]
-    fn produce_batch_scalar(&mut self, places: &[u32]) {
-        let mut i = 0;
-        let len = places.len();
-
-        while i + 4 <= len {
-            self.marking[places[i] as usize] = self.marking[places[i] as usize].wrapping_add(1);
-            self.marking[places[i + 1] as usize] =
-                self.marking[places[i + 1] as usize].wrapping_add(1);
-            self.marking[places[i + 2] as usize] =
-                self.marking[places[i + 2] as usize].wrapping_add(1);
-            self.marking[places[i + 3] as usize] =
-                self.marking[places[i + 3] as usize].wrapping_add(1);
-            i += 4;
-        }
-
-        while i < len {
-            self.marking[places[i] as usize] = self.marking[places[i] as usize].wrapping_add(1);
-            i += 1;
-        }
     }
 
     /// Get current marking.
@@ -510,10 +215,10 @@ impl SimdMarkingUpdater {
     }
 }
 
-/// SIMD-vectorized variant hash computer and deduplicator.
+/// Variant hash computer and deduplicator.
 ///
 /// Computes deterministic hashes of trace variants and performs deduplication.
-/// Uses 8× unrolled polynomial rolling hash.
+/// Uses an 8×-unrolled FNV-1a polynomial rolling hash.
 pub struct SimdVariantDeduplicator {
     variant_hashes: FxHashMap<u64, usize>, // hash -> count
     scratch: Vec<u64>,
@@ -536,7 +241,7 @@ impl SimdVariantDeduplicator {
         *count
     }
 
-    /// Compute deterministic hash of a trace using 8× unrolled polynomial rolling hash.
+    /// Compute deterministic hash of a trace using an 8×-unrolled FNV-1a loop.
     ///
     /// **Determinism guarantee:** Same trace produces same hash across all platforms.
     /// Uses fixed FNV-1a seed (14695981039346656037u64) with polynomial multiplier (1099511628211u64).
@@ -596,7 +301,7 @@ fn fnv1a_hash(mut hash: u64, byte: u32) -> u64 {
 
 /// Token accumulator for production/consumption accounting in token replay.
 ///
-/// Accumulates token counts with SIMD parallelism on AVX-2+ platforms.
+/// Scalar u64 counters (wrapping adds); no vector operations are involved.
 pub struct SimdTokenAccumulator {
     produced: u64,
     consumed: u64,

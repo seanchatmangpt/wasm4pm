@@ -1,0 +1,32 @@
+{
+  "breed": "tableaux",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "tableaux:formula",
+        "value": "((parent_tom_bob & (parent_tom_bob -> parent_bob_ann)) -> parent_bob_ann)"
+      }
+    ],
+    "goals": [],
+    "intent": "propositional validity: ((parent_tom_bob & (parent_tom_bob -> parent_bob_ann)) -> parent_bob_ann)",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "tableaux:verdict=valid"
+    ],
+    "notes": "Paper fixture (Kowalski 1974) as a propositional modus-ponens instance over the family facts: VALID by brute force over {parent_tom_bob, parent_bob_ann}.",
+    "verdicts": {}
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "asp_tableaux_vector_gen (brute-force valuation enumeration over all atoms; independent of both graphlaw and wasm4pm formula machinery)",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": false
+  },
+  "vector_id": "tableaux-paper-fixture"
+}

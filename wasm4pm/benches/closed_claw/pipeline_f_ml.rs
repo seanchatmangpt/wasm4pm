@@ -10,7 +10,7 @@ use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{generate_event_log, LogShape, ACTIVITY_KEY};
+use helpers::{LogShape, ACTIVITY_KEY};
 
 struct Lcg(u64);
 impl Lcg {
@@ -194,7 +194,7 @@ fn bench_anomaly_detection(c: &mut Criterion) {
             num_activities: 14,
             noise_factor: 0.1,
         };
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let mut edge_freq: HashMap<(String, String), usize> = HashMap::new();
         let mut total_edges: usize = 0;
         for trace in &log.traces {
@@ -274,7 +274,7 @@ fn bench_drift_detection(c: &mut Criterion) {
             num_activities: 14,
             noise_factor: 0.1,
         };
-        let log = generate_event_log(&shape);
+        let log = helpers::load_real_log_capped(shape.num_cases);
         let window_size: usize = 50;
         let trace_activity_sets: Vec<HashSet<String>> = log
             .traces

@@ -243,7 +243,7 @@ pub fn flatten_ocel_to_eventlog_for_type_pure(
         let mut events_for_obj: Vec<&crate::models::OCELEvent> = ocel
             .events
             .iter()
-            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .filter(|e| e.all_object_ids().iter().any(|oid| *oid == obj.id))
             .collect();
 
         // Sort events by timestamp
@@ -336,6 +336,7 @@ mod tests {
         OCEL {
             event_types: vec!["A".to_string(), "B".to_string()],
             object_types: vec!["Order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 OCELEvent {
                     id: "e1".to_string(),
@@ -393,6 +394,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec!["pack".to_string(), "ship".to_string()],
             object_types: vec!["item".to_string(), "order".to_string()],
+            object_type_defs: Vec::new(),
             events: vec![
                 make_ev("e1", "pack", "2024-01-01T09:00:00Z", &["item1"]),
                 make_ev(
@@ -468,6 +470,7 @@ mod tests {
         let ocel = OCEL {
             event_types: vec![],
             object_types: vec![],
+            object_type_defs: Vec::new(),
             events: vec![],
             objects: vec![],
             object_relations: vec![],

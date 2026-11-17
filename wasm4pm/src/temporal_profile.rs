@@ -17,6 +17,7 @@ pub fn discover_temporal_profile_from_log(
 ) -> TemporalProfile {
     let mut acc: std::collections::HashMap<(String, String), (f64, f64, usize)> =
         std::collections::HashMap::new();
+    let mut skipped_negative = 0usize;
 
     for trace in &log.traces {
         let pairs: Vec<(String, Option<i64>)> = trace
@@ -48,9 +49,19 @@ pub fn discover_temporal_profile_from_log(
                     e.0 += dur;
                     e.1 += dur * dur;
                     e.2 += 1;
+                } else {
+                    skipped_negative += 1;
                 }
             }
         }
+    }
+
+    if skipped_negative > 0 {
+        tracing::warn!(
+            target: "wasm4pm.temporal_profile",
+            count = skipped_negative,
+            "negative duration skipped in temporal profile discovery"
+        );
     }
 
     let pairs_map: std::collections::BTreeMap<(String, String), (f64, f64, usize)> = acc
@@ -165,7 +176,14 @@ pub fn check_temporal_conformance(
                         } else {
                             0.0
                         };
-                        let is_deviation = z > zeta;
+                        // stdev == 0 means every observed duration was identical,
+                        // so mean is exact: any duration != mean is a deviation
+                        // (zeta is meaningless with zero spread).
+                        let is_deviation = if stdev > 0.0 {
+                            z > zeta
+                        } else {
+                            (dur - mean).abs() > 0.0
+                        };
                         if is_deviation {
                             total_deviations += 1;
                         }

@@ -1,0 +1,189 @@
+{
+  "breed": "bayesian_network",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "cpt:b|a",
+        "value": "0.5,0.9"
+      },
+      {
+        "key": "cpt:c|b",
+        "value": "0.5,0.9"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "query",
+        "value": "dsep:a,c|"
+      }
+    ],
+    "intent": "d-separation a,c given {}",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [],
+    "notes": "Chain a->b->c with no observations: influence flows along the chain, a and c are d-connected. Verifier, not deriver.",
+    "verdicts": {
+      "dsep_query": "dsep:a,c|=false"
+    }
+  },
+  "provenance": {
+    "datalog_program": {
+      "fixpoint": [
+        "ddiff:a,b",
+        "ddiff:a,c",
+        "ddiff:b,a",
+        "ddiff:b,c",
+        "ddiff:c,a",
+        "ddiff:c,b",
+        "down:b",
+        "down:c",
+        "end:c",
+        "node:a",
+        "node:b",
+        "node:c",
+        "par:b,a",
+        "par:c,b",
+        "reach:a",
+        "reach:b",
+        "reach:c",
+        "start:a",
+        "unobs:a",
+        "unobs:b",
+        "unobs:c",
+        "up:a"
+      ],
+      "rules": [
+        {
+          "certainty": 1.0,
+          "conclusion": "anc:?0",
+          "id": "r_anc",
+          "premise": [
+            "obs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "anc:?0,?1",
+          "id": "r_anc",
+          "premise": [
+            "obs:?0",
+            "par:?0,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "anc:?0,?2",
+          "id": "r_anc",
+          "premise": [
+            "anc:?0,?1",
+            "par:?1,?2"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "unobs:?0",
+          "id": "r_unobs",
+          "premise": [
+            "node:?0",
+            "!obs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "marry:?0,?1",
+          "id": "r_marry",
+          "premise": [
+            "par:?2,?0",
+            "par:?2,?1",
+            "ddiff:?0,?1"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "up:?0",
+          "id": "r_up",
+          "premise": [
+            "start:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "down:?1",
+          "id": "r_down",
+          "premise": [
+            "up:?0",
+            "par:?1,?0",
+            "unobs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "up:?1",
+          "id": "r_up",
+          "premise": [
+            "up:?0",
+            "par:?0,?1",
+            "unobs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "down:?1",
+          "id": "r_down",
+          "premise": [
+            "down:?0",
+            "par:?1,?0",
+            "unobs:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "up:?1",
+          "id": "r_up",
+          "premise": [
+            "down:?0",
+            "par:?0,?1",
+            "anc:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "reach:?0",
+          "id": "r_reach",
+          "premise": [
+            "up:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "reach:?0",
+          "id": "r_reach",
+          "premise": [
+            "down:?0"
+          ]
+        },
+        {
+          "certainty": 1.0,
+          "conclusion": "dsep_ok:?0",
+          "id": "r_dsep_ok",
+          "premise": [
+            "end:?0",
+            "!reach:?0"
+          ]
+        }
+      ]
+    },
+    "differential": "native Bayes-ball port of breeds/bayesian_network.rs dsep must agree with the Datalog court verdict and the hand-checked expectation at generation time",
+    "eyeron": "0.7.8",
+    "generator": "bayes_pop_vectors",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "bayesian_network-dsep-chain-empty"
+}

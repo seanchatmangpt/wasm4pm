@@ -1,0 +1,63 @@
+{
+  "breed": "prolog",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "parent:alice,bob",
+        "value": "true"
+      },
+      {
+        "key": "parent:bob,carol",
+        "value": "true"
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "ancestor:alice,carol",
+        "value": "true"
+      }
+    ],
+    "intent": "ancestor chain over parent facts (mutated twin)",
+    "rules": [
+      {
+        "certainty": 1.0,
+        "conclusion": "ancestor:?0,?1",
+        "id": "r_base",
+        "premise": [
+          "parent:?0,?1"
+        ]
+      },
+      {
+        "certainty": 1.0,
+        "conclusion": "ancestor:?0,?2",
+        "id": "r_trans",
+        "premise": [
+          "parent:?0,?1",
+          "ancestor:?1,?2"
+        ]
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "ancestor:alice,corrupt"
+    ],
+    "notes": "Falsification twin of selftest-prolog: identical input, but derived_facts_sorted replaces the true ancestor:alice,carol with the corrupt ancestor:alice,corrupt. The harness must FAIL confirmation of this vector, proving the confirm machinery is non-vacuous.",
+    "verdicts": {
+      "g1": "admitted"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "hand-mutated twin of selftest-prolog (FOUNDATION lane falsification self-test); RE-DERIVED-AT 615dbfaf94d407cffe174af02804d0dbfb3f8f1d (26.10.21): breed_input replayed through the graphlaw datalog ABI (call_json op=datalog, breed_oracle_gen atom_to_triple translation) on 2026-10-22; expected surface re-confirmed (true twin derives ancestor:alice,carol + goal admitted; mutant twin fact does NOT derive). Original derivation was at 82c67c2b7e2ed71e7ca6bbd557e36fc7f446b1bd (26.10.13).",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": false
+  },
+  "vector_id": "selftest-prolog-mutant"
+}

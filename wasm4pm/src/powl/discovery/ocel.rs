@@ -52,7 +52,7 @@ fn discover_flattening(
 ) -> Result<u32, String> {
     // For now, use the log as-is
     // Full flattening requires OCEL-specific event structure
-    super::discover_from_traces(ocel_log, config, arena)
+    super::discover_from_traces(ocel_log, config, arena).map(|(root, _ft)| root)
 }
 
 /// OC-POWL variant: Native object-centric POWL discovery

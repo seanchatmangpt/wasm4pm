@@ -15,7 +15,18 @@
 //! [`run_adversary_check`] additionally executes U6 (meta-oracle): the
 //! oracle must reject an intentionally wrong [`BreedAdversary`].
 
-use crate::breeds::dispatch::dispatch_breed_id;
+use crate::breeds::dispatch::{dispatch_breed_id, provenance_lookup, provenance_now};
+
+/// F1: verify the output hash was registered by a dispatch issued after
+/// `window_start` — "trace provenance unbound" is the post-hoc fabrication
+/// signal.
+#[cfg(not(target_arch = "wasm32"))]
+fn provenance_bound(window_start: u64, out: &BreedOutput) -> bool {
+    let h = blake3::hash(serde_json::to_string(out).unwrap_or_default().as_bytes())
+        .to_hex()
+        .to_string();
+    provenance_lookup(&h, window_start)
+}
 use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedId, BreedInput, BreedOutput};
 
@@ -38,7 +49,21 @@ pub trait BreedOracle: Sized {
 
     /// Assert that the k-th step of the expected kind is correct for the
     /// `novel_input()` run (defeats A4 — hollow trace).
+    ///
+    /// `k` indexes the k-th step of the expected kind within the expected
+    /// kind's subsequence. The harness calls k=0 and — for traces with
+    /// len >= 2 — k=len/2 so a breed cannot emit one real step followed by
+    /// filler. Oracles must handle arbitrary k.
     fn assert_intermediate(k: usize, trace: &TraceQuery<'_>) -> Result<(), String>;
+
+    /// The step kinds this breed's oracle covers, drawn from the breed's
+    /// documented vocabulary (its OCEL lifecycle model kinds plus any
+    /// allowlisted debug kinds). Must be non-empty: an oracle that documents
+    /// no vocabulary fails [`run_cross_oracle_check`]. Used by the
+    /// cross-oracle invariants (F2) to check that every kind in a real
+    /// dispatch trace is one the oracle claims to understand — the
+    /// compensating control for oracles being self-graded.
+    fn kind_vocabulary() -> &'static [&'static str];
 
     /// Surface-3 content check: assert the VALUES inside trace steps for the
     /// novel input — not just step kinds. Default Ok(()) until a breed opts in.
@@ -109,10 +134,19 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
     let id = B::breed_id();
     let novel = B::novel_input();
 
-    // U1: novel input runs without error
+    // U1: novel input runs without error, and the returned output's hash was
+    // registered by THIS dispatch (F1 provenance binding).
+    let window_start = provenance_now();
     let novel_output = match dispatch_breed_id(id, &novel) {
         Ok(out) => {
-            results.push(AntiCheatResult::Pass { test_id: "U1" });
+            if provenance_bound(window_start, &out) {
+                results.push(AntiCheatResult::Pass { test_id: "U1" });
+            } else {
+                results.push(AntiCheatResult::Fail {
+                    test_id: "U1",
+                    detail: "trace provenance unbound (post-hoc fabrication signal)".to_string(),
+                });
+            }
             Some(out)
         }
         Err(e) => {
@@ -124,13 +158,22 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
         }
     };
 
-    // U2: assert_intermediate passes on the novel trace
+    // U2: assert_intermediate passes on the novel trace at k=0 and — for
+    // traces with len >= 2 — at the mid-trace index k=len/2 (F3: one real
+    // step followed by filler must fail).
     match &novel_output {
         Some(out) => {
             let tq = TraceQuery::new(&out.inference_trace);
-            match B::assert_intermediate(0, &tq) {
-                Ok(()) => results.push(AntiCheatResult::Pass { test_id: "U2" }),
-                Err(e) => results.push(AntiCheatResult::Fail {
+            let mid = out.inference_trace.len() / 2;
+            let r0 = B::assert_intermediate(0, &tq);
+            let rmid = if out.inference_trace.len() >= 2 {
+                B::assert_intermediate(mid, &tq)
+            } else {
+                Ok(())
+            };
+            match (r0, rmid) {
+                (Ok(()), Ok(())) => results.push(AntiCheatResult::Pass { test_id: "U2" }),
+                (Err(e), _) | (_, Err(e)) => results.push(AntiCheatResult::Fail {
                     test_id: "U2",
                     detail: e,
                 }),
@@ -160,20 +203,30 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
         }),
     }
 
-    // U3: boundary_pair outputs differ
+    // U3: boundary_pair outputs differ (both runs provenance-bound)
     {
         let (a, b) = B::boundary_pair();
+        let window3 = provenance_now();
         match (dispatch_breed_id(id, &a), dispatch_breed_id(id, &b)) {
             (Ok(oa), Ok(ob)) => {
-                let sa = serde_json::to_string(&oa).unwrap_or_default();
-                let sb = serde_json::to_string(&ob).unwrap_or_default();
-                if sa != sb {
-                    results.push(AntiCheatResult::Pass { test_id: "U3" });
-                } else {
+                if !provenance_bound(window3, &oa) || !provenance_bound(window3, &ob) {
                     results.push(AntiCheatResult::Fail {
                         test_id: "U3",
-                        detail: "boundary_pair() produced identical serialized outputs".to_string(),
+                        detail: "trace provenance unbound (post-hoc fabrication signal)"
+                            .to_string(),
                     });
+                } else {
+                    let sa = serde_json::to_string(&oa).unwrap_or_default();
+                    let sb = serde_json::to_string(&ob).unwrap_or_default();
+                    if sa != sb {
+                        results.push(AntiCheatResult::Pass { test_id: "U3" });
+                    } else {
+                        results.push(AntiCheatResult::Fail {
+                            test_id: "U3",
+                            detail: "boundary_pair() produced identical serialized outputs"
+                                .to_string(),
+                        });
+                    }
                 }
             }
             (Err(e), _) | (_, Err(e)) => results.push(AntiCheatResult::Fail {
@@ -192,12 +245,20 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
         }),
     }
 
-    // U5: bit-exact determinism on novel_input
+    // U5: bit-exact determinism on novel_input (runs provenance-bound)
     {
+        let window5 = provenance_now();
         let r1 = dispatch_breed_id(id, &novel);
         let r2 = dispatch_breed_id(id, &novel);
         match (r1, r2) {
             (Ok(o1), Ok(o2)) => {
+                if !provenance_bound(window5, &o1) || !provenance_bound(window5, &o2) {
+                    results.push(AntiCheatResult::Fail {
+                        test_id: "U5",
+                        detail: "trace provenance unbound (post-hoc fabrication signal)"
+                            .to_string(),
+                    });
+                }
                 let s1 = serde_json::to_string(&o1).unwrap_or_default();
                 let s2 = serde_json::to_string(&o2).unwrap_or_default();
                 if s1 == s2 {
@@ -224,13 +285,17 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
 }
 
 /// U6: the oracle must FAIL the adversary. Returns Pass only when
-/// `assert_intermediate` rejects the cheat's trace.
+/// `assert_intermediate` rejects the cheat's trace. Mid-trace k=len/2 is also
+/// checked when the cheat trace has len >= 2 (F3, same as U2).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn run_adversary_check<A: BreedAdversary>() -> AntiCheatResult {
     let input = A::Target::novel_input();
     let output = A::run_cheat(&input);
     let tq = TraceQuery::new(&output.inference_trace);
-    let intermediate_rejects = A::Target::assert_intermediate(0, &tq).is_err();
+    let mut intermediate_rejects = A::Target::assert_intermediate(0, &tq).is_err();
+    if output.inference_trace.len() >= 2 {
+        intermediate_rejects |= A::Target::assert_intermediate(output.inference_trace.len() / 2, &tq).is_err();
+    }
     let values_reject = A::Target::assert_trace_values(&tq).is_err();
     if intermediate_rejects || values_reject {
         AntiCheatResult::Pass { test_id: "U6" }
@@ -240,6 +305,92 @@ pub fn run_adversary_check<A: BreedAdversary>() -> AntiCheatResult {
             detail: format!("oracle did not reject {} cheat", A::cheat_code()),
         }
     }
+}
+
+/// F2 cross-oracle invariants, shared across all 54 oracle impls.
+///
+/// Asserts, for a REAL dispatch of `B::novel_input()`:
+/// (a) the trace is non-empty (Fm-5),
+/// (b) every step kind is in the oracle's documented vocabulary, and
+/// (c) determinism: two dispatches produce byte-identical output.
+///
+/// Oracles are self-graded; these shared invariants plus the U6 meta-oracle
+/// are the compensating controls. Third-party oracles are out of scope this
+/// lane.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn run_cross_oracle_check<B: BreedOracle>() -> Vec<AntiCheatResult> {
+    let mut results = Vec::with_capacity(3);
+    let id = B::breed_id();
+
+    // X1: vocabulary must be non-empty (an undocumented oracle fails here).
+    if B::kind_vocabulary().is_empty() {
+        results.push(AntiCheatResult::Fail {
+            test_id: "X1",
+            detail: "kind_vocabulary() is empty — oracle documents no vocabulary".to_string(),
+        });
+        return results;
+    }
+    results.push(AntiCheatResult::Pass { test_id: "X1" });
+
+    // X2: real dispatch — non-empty trace, all kinds within vocabulary.
+    match dispatch_breed_id(id, &B::novel_input()) {
+        Ok(out) => {
+            if out.inference_trace.is_empty() {
+                results.push(AntiCheatResult::Fail {
+                    test_id: "X2",
+                    detail: "trace is empty (fraud signal)".to_string(),
+                });
+            } else {
+                let vocab = B::kind_vocabulary();
+                let unknown: Vec<&str> = out
+                    .inference_trace
+                    .iter()
+                    .map(|s| s.kind.as_str())
+                    .filter(|k| !vocab.contains(k))
+                    .collect();
+                if unknown.is_empty() {
+                    results.push(AntiCheatResult::Pass { test_id: "X2" });
+                } else {
+                    results.push(AntiCheatResult::Fail {
+                        test_id: "X2",
+                        detail: format!(
+                            "trace kinds outside documented vocabulary: {:?}",
+                            unknown
+                        ),
+                    });
+                }
+            }
+        }
+        Err(e) => results.push(AntiCheatResult::Fail {
+            test_id: "X2",
+            detail: format!("novel_input() dispatch failed: {}", e),
+        }),
+    }
+
+    // X3: determinism (re-runs U5's property in the cross-oracle surface).
+    match (
+        dispatch_breed_id(id, &B::novel_input()),
+        dispatch_breed_id(id, &B::novel_input()),
+    ) {
+        (Ok(o1), Ok(o2)) => {
+            let s1 = serde_json::to_string(&o1).unwrap_or_default();
+            let s2 = serde_json::to_string(&o2).unwrap_or_default();
+            if s1 == s2 {
+                results.push(AntiCheatResult::Pass { test_id: "X3" });
+            } else {
+                results.push(AntiCheatResult::Fail {
+                    test_id: "X3",
+                    detail: "double-run produced different bytes".to_string(),
+                });
+            }
+        }
+        (Err(e), _) | (_, Err(e)) => results.push(AntiCheatResult::Fail {
+            test_id: "X3",
+            detail: format!("determinism run failed: {}", e),
+        }),
+    }
+
+    results
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
@@ -278,6 +429,9 @@ mod tests {
         fn assert_intermediate(_k: usize, _trace: &TraceQuery<'_>) -> Result<(), String> {
             Ok(())
         }
+        fn kind_vocabulary() -> &'static [&'static str] {
+            &["fire-rule"]
+        }
     }
 
     /// Oracle whose assert_intermediate demands a specific step kind (strong).
@@ -301,6 +455,9 @@ mod tests {
             } else {
                 Err("missing fire-rule step".to_string())
             }
+        }
+        fn kind_vocabulary() -> &'static [&'static str] {
+            &["fire-rule"]
         }
     }
 
@@ -343,5 +500,77 @@ mod tests {
         let r = run_adversary_check::<HollowAdversary<StrongOracle>>();
         assert!(r.is_pass(), "strong oracle should reject the hollow trace");
         assert_eq!(r.test_id(), "U6");
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod cross_oracle_tests {
+    use super::*;
+
+    struct EmptyVocabOracle;
+    impl BreedOracle for EmptyVocabOracle {
+        fn breed_id() -> BreedId {
+            BreedId::Eliza
+        }
+        fn novel_input() -> BreedInput {
+            BreedInput::default()
+        }
+        fn boundary_pair() -> (BreedInput, BreedInput) {
+            (BreedInput::default(), BreedInput::default())
+        }
+        fn refusal_input() -> BreedInput {
+            BreedInput::default()
+        }
+        fn assert_intermediate(_k: usize, _trace: &TraceQuery<'_>) -> Result<(), String> {
+            Ok(())
+        }
+        fn kind_vocabulary() -> &'static [&'static str] {
+            &[]
+        }
+    }
+
+    #[test]
+    fn x1_empty_vocabulary_fails_cross_oracle_check() {
+        let results = run_cross_oracle_check::<EmptyVocabOracle>();
+        assert!(
+            results.iter().any(|r| r.test_id() == "X1" && r.is_fail()),
+            "an oracle with an empty vocabulary must fail X1, got {results:?}"
+        );
+    }
+
+    #[test]
+    fn x2_kind_outside_vocabulary_fails() {
+        // Eliza's real trace kinds are not all in this 1-entry vocabulary...
+        // Actually exercise the negative directly: an oracle whose vocabulary
+        // excludes the kinds the real dispatch emits must fail X2.
+        struct NarrowVocabOracle;
+        impl BreedOracle for NarrowVocabOracle {
+            fn breed_id() -> BreedId {
+                BreedId::Eliza
+            }
+            fn novel_input() -> BreedInput {
+                BreedInput {
+                    intent: "i am uo_flustrated because uo_grindle hums at me".to_string(),
+                    ..Default::default()
+                }
+            }
+            fn boundary_pair() -> (BreedInput, BreedInput) {
+                (Self::novel_input(), Self::novel_input())
+            }
+            fn refusal_input() -> BreedInput {
+                BreedInput::default()
+            }
+            fn assert_intermediate(_k: usize, _trace: &TraceQuery<'_>) -> Result<(), String> {
+                Ok(())
+            }
+            fn kind_vocabulary() -> &'static [&'static str] {
+                &["kind-that-never-occurs"]
+            }
+        }
+        let results = run_cross_oracle_check::<NarrowVocabOracle>();
+        assert!(
+            results.iter().any(|r| r.test_id() == "X2" && r.is_fail()),
+            "a vocabulary that excludes real trace kinds must fail X2, got {results:?}"
+        );
     }
 }

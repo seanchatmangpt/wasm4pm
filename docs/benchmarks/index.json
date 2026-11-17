@@ -1,0 +1,554 @@
+{
+  "schema": "wasm4pm.benchmark-index.v1",
+  "generated_at": "2026-10-11T02:49:58.330Z",
+  "manifest": "/Users/sac/wasm4pm/Cargo.toml",
+  "bench_count": 50,
+  "benches": [
+    {
+      "name": "predicates",
+      "crate": "ocpq",
+      "registered": true,
+      "path": "benches/predicates.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": false,
+      "datasets": []
+    },
+    {
+      "name": "inference",
+      "crate": "prolog8",
+      "registered": true,
+      "path": "benches/inference.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "agentic_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/agentic_bench.rs",
+      "harness": false,
+      "uses_throughput": false,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "analytics",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/analytics.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "anti_fake",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/anti_fake.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "automl_profiling",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/automl_profiling.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "autonomic_real_data_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/autonomic_real_data_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "autonomy_jtbd_validation",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/autonomy_jtbd_validation.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "autoprocess_criterion",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/autoprocess_criterion.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "autoprocess_latency",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/autoprocess_latency.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "cache_efficiency_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/cache_efficiency_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "closed_claw",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/closed_claw/mod.rs",
+      "harness": false,
+      "uses_throughput": false,
+      "uses_black_box": false,
+      "datasets": []
+    },
+    {
+      "name": "conformance_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/conformance_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "constant_latency_loops",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/constant_latency_loops.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "drift_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/drift_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "drift_detection_detailed",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/drift_detection_detailed.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "extended_discovery",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/extended_discovery.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "fast_algorithms",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/fast_algorithms.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "gall_process_portability",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/gall_process_portability.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "hot_kernels",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/hot_kernels.rs",
+      "harness": false,
+      "uses_throughput": false,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "jtbd_benchmark",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/jtbd_benchmark.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "medium_algorithms",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/medium_algorithms.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "ml_algorithms",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/ml_algorithms.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "ml_latency",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/ml_latency.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "ml_streaming_sim_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/ml_streaming_sim_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "mttr_recovery",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/mttr_recovery.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "native_api_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/native_api_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": false,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "ocel_export",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/ocel_export.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": false,
+      "datasets": []
+    },
+    {
+      "name": "ocel_flattening",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/ocel_flattening.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "oracle_rank_validation",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/oracle_rank_validation.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "parser_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/parser_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "powl_discovery",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/powl_discovery.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "prediction_accuracy",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/prediction_accuracy.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "prediction_baseline_comparison",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/prediction_baseline_comparison.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "prediction_latency",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/prediction_latency.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "rdtsc_validation",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/rdtsc_validation.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "real_data_bench",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/real_data_bench.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "rl_convergence",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/rl_convergence.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "route_driven_tdd",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/route_driven_tdd.rs",
+      "harness": false,
+      "uses_throughput": false,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "scalability_benchmark",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/scalability_benchmark.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "self_conformance",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/self_conformance.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "simd_inner_loops",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/simd_inner_loops.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "slow_algorithms",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/slow_algorithms.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "streaming_algorithms",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/streaming_algorithms.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "streaming_vs_batch",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/streaming_vs_batch.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "tier1_discovery",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/tier1_discovery.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "tier2_metaheuristic",
+      "crate": "wasm4pm",
+      "registered": true,
+      "path": "benches/tier2_metaheuristic.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": [
+        "bench_data/"
+      ]
+    },
+    {
+      "name": "cli",
+      "crate": "wasm4pm-cli",
+      "registered": true,
+      "path": "benches/cli.rs",
+      "harness": false,
+      "uses_throughput": true,
+      "uses_black_box": true,
+      "datasets": []
+    },
+    {
+      "name": "breed_latency",
+      "crate": "wasm4pm-cognition",
+      "registered": true,
+      "path": "benches/breed_latency.rs",
+      "harness": false,
+      "uses_throughput": false,
+      "uses_black_box": true,
+      "datasets": [
+        "tests/fixtures/papers/"
+      ]
+    },
+    {
+      "name": "cognition_divan",
+      "crate": "wasm4pm-cognition",
+      "registered": true,
+      "path": "benches/cognition_divan.rs",
+      "harness": false,
+      "uses_throughput": false,
+      "uses_black_box": true,
+      "datasets": []
+    }
+  ]
+}

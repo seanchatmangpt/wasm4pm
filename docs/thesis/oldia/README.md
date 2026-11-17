@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/thesis/oldia/README.md; source-sha256: 09baacb65ca176650f3c339ab7ec57c8b9ff5bc8f4283a861414837a6d059926; reason: path-local authority or entrypoint -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/thesis/oldia/README.md; source-sha256: e0e38a1e535013a9b8fdf522d862a6910b88d2cd10ad38f732b942c5f6d77a90; reason: path-local authority or entrypoint -->
 
 # OLDIA Thesis — arXiv Submission Notes
 

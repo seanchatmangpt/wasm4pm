@@ -360,6 +360,17 @@ fn pattern_sequence(ctx: &PatternContext) -> PatternResult {
     }
 }
 
+/// Full mask of the low `n` bits, defined for all `n` (0 -> 0, >= 64 -> all ones).
+#[inline(always)]
+fn low_bits_mask(n: u32) -> u64 {
+    let n = n.min(64);
+    if n == 0 {
+        0
+    } else {
+        u64::MAX >> (64 - n)
+    }
+}
+
 #[inline(always)]
 fn pattern_parallel_split(ctx: &PatternContext) -> PatternResult {
     // Parallel Split: A -> (B || C || D)
@@ -375,7 +386,7 @@ fn pattern_parallel_split(ctx: &PatternContext) -> PatternResult {
     }
 
     // Split to all branches (set multiple bits)
-    let output = !0u64 >> (64 - ctx.config.max_instances.min(64));
+    let output = low_bits_mask(ctx.config.max_instances);
 
     PatternResult {
         success: true,
@@ -391,7 +402,7 @@ fn pattern_synchronization(ctx: &PatternContext) -> PatternResult {
     let timer = tick_start();
 
     // Check if all required inputs are ready
-    let required_mask = !0u64 >> (64 - ctx.config.join_threshold.min(64));
+    let required_mask = low_bits_mask(ctx.config.join_threshold);
     let ready = (ctx.input_mask & required_mask) == required_mask;
 
     if !ready {
@@ -474,7 +485,7 @@ fn pattern_multi_choice(ctx: &PatternContext) -> PatternResult {
     }
 
     // Select multiple branches based on input pattern
-    let output = ctx.input_mask & ((1 << ctx.config.max_instances) - 1);
+    let output = ctx.input_mask & low_bits_mask(ctx.config.max_instances);
 
     PatternResult {
         success: true,
@@ -590,7 +601,7 @@ fn pattern_multi_instance_known_design_time(ctx: &PatternContext) -> PatternResu
             next_pattern: None,
         };
     }
-    let output = !0u64 >> (64 - ctx.config.max_instances.min(64));
+    let output = low_bits_mask(ctx.config.max_instances);
     PatternResult {
         success: true,
         output_mask: output,
@@ -612,7 +623,7 @@ fn pattern_multi_instance_known_runtime(ctx: &PatternContext) -> PatternResult {
         };
     }
     let count = ctx.input_mask.count_ones();
-    let output = !0u64 >> (64 - count.min(64));
+    let output = low_bits_mask(count);
     PatternResult {
         success: true,
         output_mask: output,
@@ -1063,7 +1074,7 @@ fn pattern_thread_split(ctx: &PatternContext) -> PatternResult {
             next_pattern: None,
         };
     }
-    let output = !0u64 >> (64 - ctx.config.max_instances.min(64));
+    let output = low_bits_mask(ctx.config.max_instances);
     PatternResult {
         success: true,
         output_mask: output,
@@ -1118,7 +1129,7 @@ fn pattern_blocking_discriminator(ctx: &PatternContext) -> PatternResult {
 fn pattern_generalized_and_join(ctx: &PatternContext) -> PatternResult {
     // Generalized AND-Join: synchronizing merge with threshold
     let timer = tick_start();
-    let required_mask = !0u64 >> (64 - ctx.config.join_threshold.min(64));
+    let required_mask = low_bits_mask(ctx.config.join_threshold);
     let ready = (ctx.input_mask & required_mask) == required_mask;
     if !ready {
         return PatternResult {
@@ -1183,7 +1194,7 @@ fn pattern_generalized_or_join(ctx: &PatternContext) -> PatternResult {
 fn pattern_acyclic_sync_merge(ctx: &PatternContext) -> PatternResult {
     // Acyclic Synchronizing Merge: sync merge without cycles
     let timer = tick_start();
-    let required_mask = !0u64 >> (64 - ctx.config.join_threshold.min(64));
+    let required_mask = low_bits_mask(ctx.config.join_threshold);
     let ready = (ctx.input_mask & required_mask) == required_mask;
     if !ready {
         return PatternResult {
@@ -1280,3 +1291,81 @@ impl PatternValidator {
 
 // ---------------------------------------------------------------------------
 // Tests consolidated in tests/autonomic_tests.rs (pattern_dispatch_tests module)
+
+// ---------------------------------------------------------------------------
+// Panic-hardening tests (lane 13)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod panic_hardening_tests {
+    use super::*;
+
+    fn ctx_of(pattern_type: PatternType, config: PatternConfig) -> PatternContext {
+        let mut ctx = PatternFactory::create(pattern_type, 1, config);
+        ctx.input_mask = 0b1011;
+        ctx
+    }
+
+    #[test]
+    fn low_bits_mask_defined_for_all_n() {
+        assert_eq!(low_bits_mask(0), 0);
+        assert_eq!(low_bits_mask(1), 1);
+        assert_eq!(low_bits_mask(64), u64::MAX);
+        assert_eq!(low_bits_mask(65), u64::MAX);
+        assert_eq!(low_bits_mask(u32::MAX), u64::MAX);
+    }
+
+    fn extremes() -> [u32; 3] {
+        [0, 64, u32::MAX]
+    }
+
+    #[test]
+    fn parallel_split_extreme_max_instances() {
+        let d = PatternDispatcher::new();
+        for n in extremes() {
+            let ctx = ctx_of(PatternType::ParallelSplit, PatternConfig { max_instances: n, ..Default::default() });
+            let r = d.dispatch(&ctx);
+            assert!(r.success);
+            assert_eq!(r.output_mask, low_bits_mask(n));
+        }
+    }
+
+    #[test]
+    fn multi_instance_no_sync_extreme_max_instances() {
+        let d = PatternDispatcher::new();
+        for n in extremes() {
+            let ctx = ctx_of(
+                PatternType::MultiInstanceNoSync,
+                PatternConfig { max_instances: n, ..Default::default() },
+            );
+            // No panic for any max_instances; exact mask is pattern-specific.
+            let _ = d.dispatch(&ctx);
+        }
+    }
+
+    #[test]
+    fn synchronization_extreme_join_threshold() {
+        let d = PatternDispatcher::new();
+        for n in extremes() {
+            let ctx = ctx_of(
+                PatternType::DeferredChoice,
+                PatternConfig { join_threshold: n, ..Default::default() },
+            );
+            // Must not panic for any join_threshold value.
+            let _ = d.dispatch(&ctx);
+        }
+    }
+
+    #[test]
+    fn multi_instance_known_runtime_extreme_max_instances() {
+        let d = PatternDispatcher::new();
+        for n in extremes() {
+            let ctx = ctx_of(
+                PatternType::MultiInstanceKnownRuntime,
+                PatternConfig { max_instances: n, ..Default::default() },
+            );
+            // No panic for any max_instances; exact mask is pattern-specific.
+            let _ = d.dispatch(&ctx);
+        }
+    }
+}

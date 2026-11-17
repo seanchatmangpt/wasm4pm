@@ -1,4 +1,4 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: WASM_API.md; source-sha256: 63ec5406bdc4eb144b27810acb5406e8eea80e0806a1262bde755f54599a9fee; reason: root governance or canonical reference -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: WASM_API.md; source-sha256: 4a9db5f719be17df61779f0546772bad4cb174ac1c95231516db76493746aff6; reason: root governance or canonical reference -->
 
 # WASM API boundary
 
@@ -51,6 +51,18 @@ The OCEL-v2 → POWL → WASM composition root requires these exact build-time e
 | `powl_execute(model, configJson)` | Execute the admitted model with bounded configuration. |
 
 A missing export is `UNSUPPORTED` or `BUILD_BROKEN` for that exact build. It is not evidence that a similarly named host function executed.
+
+## A* discovery exports (`wasm4pm::fast_discovery`)
+
+| Export | Contract |
+|---|---|
+| `discover_astar(handle, activityKey, maxIterations)` | Genuine A* over DFG edge subsets; returns `{handle, algorithm: "astar", nodes, edges, iterations}`. `iterations` is a node-expansion count, not a fitness score. |
+| `discover_astar_bounded(handle, activityKey, maxIterations, beamWidth)` | Bounded A*. With `beamWidth = Some(w)` the open set is truncated to the `w` best nodes after each expansion, optimality is lost, and the JSON reports `"algorithm": "beam"`. With `beamWidth = null` it is genuine A* (`"algorithm": "astar"`). `maxIterations` defaults to 1000 when null/undefined. |
+
+Since commit `c0d9283f4` the unbounded search is genuine A* (BinaryHeap open set,
+admissible heuristic, branch-and-bound cuts); the pre-commit beam implementation
+remains available as `discover_beam_from_log`. Bounded runs are named honestly
+via the `algorithm` field rather than labeled `astar`.
 
 ## ex4pm host bindings crate (`crates/wasm4pm-ex4pm-bindings`)
 
@@ -111,6 +123,35 @@ pub fn causal_footprint_pure(traces: &[Trace], activity_key: &str) -> CausalFoot
 The `#[wasm_bindgen]` export `causal_footprint(log_handle, activity_key)` is
 a thin wrapper that delegates to `causal_footprint_pure` and serializes the
 result.
+
+## ML/prediction evaluation exports (added 2026-10-10, `0e3d81b38`)
+
+These exports add honest hold-out/cross-validated evaluation to the
+prediction surface. The pre-existing exports (`build_remaining_time_model`,
+`predict_outcome_wasm`, `detect_drift`, `build_rf_predictor`) remain
+byte-compatible; the exports below are additive. Evaluation below
+`MIN_EVAL_SAMPLES = 10` samples does not fabricate a score: it returns
+`insufficient_data: true` (and null metrics) instead. Non-finite (NaN/Inf)
+numeric inputs are refused with a typed error naming the flat element index
+(`input contains NaN/Inf at index i`), not silently propagated into metrics.
+
+- `build_remaining_time_model_with_eval(log_handle, activity_key, timestamp_key)` —
+  trains on the first `prefix_split(n, 0.8)` slice, scores every prefix of
+  every held-out trace; the stored model JSON carries an optional `holdout`
+  object (`mae`, `rmse`, `r_squared`, `n_test`, `n_train`; `r_squared` can be
+  negative) or omits it when the log is too small.
+- `predict_outcome_evaluated_wasm(eventlog_handle, activity_key, prefix_json, evaluate)` —
+  when `evaluate` is true, appends `evaluation` (held-out accuracy metrics)
+  and `insufficient_data` to the prediction result; `evaluation` is `null`
+  with `insufficient_data: true` below 10 scoring samples.
+- `evaluate_rf_predictor(model_handle)` — re-scores a stored RF predictor
+  snapshot on an 80/20 prefix split of its own training data; returns
+  `top1`/`top2`/`top3`/`macro_f1`/`n_test`/`n_train`/`insufficient_data`
+  (metrics null when `insufficient_data`).
+- `detect_drift_with_threshold(log_handle, activity_key, window_size, threshold)` —
+  parameterized variant of `detect_drift`; `threshold` replaces the
+  hard-coded `DEFAULT_DRIFT_THRESHOLD = 0.3` (the default export is
+  unchanged) and is clamped to `[0.0, 1.0]`.
 
 ## Session behavior
 

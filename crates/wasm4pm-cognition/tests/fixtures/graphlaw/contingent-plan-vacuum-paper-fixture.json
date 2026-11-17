@@ -1,0 +1,51 @@
+{
+  "breed": "contingent_plan",
+  "breed_input": {
+    "candidates": [],
+    "cases": [],
+    "facts": [
+      {
+        "key": "cp:unknown",
+        "value": "dirt"
+      },
+      {
+        "key": "cp:goal:dirt",
+        "value": "false"
+      },
+      {
+        "key": "cp:act:suck:pre",
+        "value": "dirt"
+      },
+      {
+        "key": "cp:act:suck:del",
+        "value": "dirt"
+      },
+      {
+        "key": "cp:sense:check-dirt",
+        "value": "dirt"
+      }
+    ],
+    "goals": [],
+    "intent": "vacuum world contingent plan",
+    "rules": [],
+    "state": []
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "(sense check-dirt dirt (act suck (done)) (done))"
+    ],
+    "notes": "PLAN-REPLAY (contingent_plan, paper fixture: Russell & Norvig 2010 §4.3.2, papers/contingent_plan.json): emitted tree (sense check-dirt dirt (act suck (done)) (done)) executed against ALL 2 initial worlds (dirt ∈ {true,false}); every leaf branch reaches goal cp:goal:dirt=false — then-branch via act suck (pre dirt holds in the dirt=true world, delete closes it), else-branch already at goal. Per-branch verdicts in expected. plan:tree entry is the breed's emitted fact (haystack-evidenced). | CONFORMED to the breed output surface by the FOUNDATION harness court: plan tree string is trace-evidenced (plan-complete/init-belief details); and-join line asserts both branches reach the goal.",
+    "verdicts": {
+      "and-join": "and-join both branches of 'check-dirt' on 'dirt' reach the goal"
+    }
+  },
+  "provenance": {
+    "eyeron": "0.7.8",
+    "generator": "plan_replay_oracle_gen",
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "stratified": true
+  },
+  "vector_id": "contingent-plan-vacuum-paper-fixture"
+}

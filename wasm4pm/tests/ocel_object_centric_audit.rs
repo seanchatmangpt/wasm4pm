@@ -30,6 +30,7 @@ fn create_order_invoice_ocel() -> OCEL {
             "Ship Order".to_string(),
         ],
         object_types: vec!["Order".to_string(), "Invoice".to_string()],
+        object_type_defs: Vec::new(),
         events: vec![
             // Order 1: Create → Check Payment → Approve → Create Invoice → Ship
             OCELEvent {
@@ -432,6 +433,7 @@ fn test_object_lifecycle_creation_violation() {
     let ocel = OCEL {
         event_types: vec!["Create Item".to_string(), "Update Item".to_string()],
         object_types: vec!["Item".to_string()],
+        object_type_defs: Vec::new(),
         events: vec![
             // Event 1: Update item1 at 10:05
             OCELEvent {
@@ -493,6 +495,7 @@ fn test_object_lifecycle_multiple_violations() {
     let ocel = OCEL {
         event_types: vec!["A".to_string(), "B".to_string(), "C".to_string()],
         object_types: vec!["Type1".to_string(), "Type2".to_string()],
+        object_type_defs: Vec::new(),
         events: vec![
             // Object 1: B before A (violation)
             OCELEvent {
@@ -567,6 +570,7 @@ fn test_object_lifecycle_concurrent_events() {
     let ocel = OCEL {
         event_types: vec!["A".to_string(), "B".to_string()],
         object_types: vec!["Order".to_string()],
+        object_type_defs: Vec::new(),
         events: vec![
             OCELEvent {
                 id: "e1".to_string(),

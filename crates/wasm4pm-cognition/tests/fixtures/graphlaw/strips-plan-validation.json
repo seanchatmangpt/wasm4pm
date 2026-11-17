@@ -1,0 +1,92 @@
+{
+  "vector_id": "strips-plan-validation",
+  "breed": "strips",
+  "provenance": {
+    "graphlaw_rev": "615dbfaf94d407cffe174af02804d0dbfb3f8f1d",
+    "graphlaw_version": "26.10.21",
+    "purrdf": "2.0.2",
+    "eyeron": "0.7.8",
+    "generator": "graphlaw:scripts/gen_wasm4pm_graphlaw_vectors.py@615dbfa \u2014 encodes successor-state progression / STRIPS replay as N3 Datalog over explicit situation constants s0..sN (holds(F,do(A,S)) :- causes(F,A); holds(F,do(A,S)) :- holds(F,S), keeps(F,A), keeps = closed-world completion of not causes_del), derives holds fluents with graphlaw-eyeron 0.7.8, emits SCHEMA.md v1 vectors",
+    "stratified": false
+  },
+  "breed_input": {
+    "intent": "plan validation: given plan close-door1,turn-on-light validated step-by-step (pre/add/del + goal reach) against the eyeron oracle",
+    "facts": [
+      {
+        "key": "frame",
+        "value": "window=shut,close-door1,turn-on-light"
+      }
+    ],
+    "rules": [
+      {
+        "id": "close-door1",
+        "premise": [
+          "door1=open"
+        ],
+        "conclusion": "door1=closed;!door1=open",
+        "certainty": 1.0
+      },
+      {
+        "id": "smash-door",
+        "premise": [
+          "door1=open"
+        ],
+        "conclusion": "door1=closed,!door1=closed_alt;!door1=open",
+        "certainty": 1.0
+      },
+      {
+        "id": "turn-on-light",
+        "premise": [
+          "light=off"
+        ],
+        "conclusion": "light=on;!light=off",
+        "certainty": 1.0
+      },
+      {
+        "id": "open-window",
+        "premise": [
+          "window=shut"
+        ],
+        "conclusion": "window=open;!window=shut",
+        "certainty": 1.0
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "door1",
+        "value": "closed"
+      },
+      {
+        "id": "g2",
+        "predicate": "light",
+        "value": "on"
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "state": [
+      {
+        "predicate": "door1",
+        "value": "open"
+      },
+      {
+        "predicate": "light",
+        "value": "off"
+      },
+      {
+        "predicate": "window",
+        "value": "shut"
+      }
+    ]
+  },
+  "expected": {
+    "derived_facts_sorted": [
+      "frame=window=shut,close-door1,turn-on-light"
+    ],
+    "verdicts": {
+      "plan": "close-door1,turn-on-light"
+    },
+    "notes": "Ground truth derived by eyeron N3 replay of the given plan over explicit time constants t0..tN; each step's pre/add/del encoded as adds/keeps Datalog, goal reach asserted at tN."
+  }
+}

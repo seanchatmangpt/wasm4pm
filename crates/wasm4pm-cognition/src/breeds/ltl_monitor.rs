@@ -158,7 +158,10 @@ impl LtlMonitor {
             Ltl::And(p, q) => Self::evaluate_end(p) && Self::evaluate_end(q),
             Ltl::Or(p, q) => Self::evaluate_end(p) || Self::evaluate_end(q),
             Ltl::Next(_) => false,
-            Ltl::Always(p) => Self::evaluate_end(p),
+            // A G that survived every event of the (finite) trace without
+            // progressing to False is satisfied at the end of the trace:
+            // the monitor's verdict over the observed prefix is true.
+            Ltl::Always(_) => true,
             Ltl::Eventual(_) => false,
             Ltl::Until(_, _) => false,
         }
@@ -216,6 +219,12 @@ impl CognitionBreed for LtlMonitor {
 
         if trace_count > 1000 {
             return Err(format!("Trace exceeds 1000 events (len={})", trace_count));
+        }
+
+        if trace_count == 0 {
+            return Err(
+                "LtlMonitor requires at least one trace event (trace:N facts or cases)".to_string(),
+            );
         }
 
         Ok(())
@@ -479,6 +488,48 @@ mod tests {
             .filter(|t| t.kind == "ltl-progress")
             .count();
         assert_eq!(t_progress, 3); // 0, 1, 2 (satisfied at 2)
+    }
+
+    #[test]
+    fn test_hidden_oracle_always_satisfied_at_end() {
+        let breed = LtlMonitor;
+
+        fn g_input(events: &[&str]) -> BreedInput {
+            let mut facts = vec![Fact {
+                key: "ltl:formula".into(),
+                value: "G zorp".into(),
+            }];
+            for (i, e) in events.iter().enumerate() {
+                facts.push(Fact {
+                    key: format!("trace:{}", i),
+                    value: (*e).to_string(),
+                });
+            }
+            BreedInput {
+                intent: "".into(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            }
+        }
+
+        // G satisfied over the entire observed trace -> verdict true.
+        let satisfied = breed.run(&g_input(&["zorp", "zorp", "zorp"])).unwrap();
+        assert_eq!(satisfied.selected.as_deref(), Some("true"));
+        assert!(
+            satisfied
+                .inference_trace
+                .iter()
+                .any(|t| t.kind == "ltl-verdict" && t.detail == "true"),
+            "G-satisfied-at-end must record a true ltl-verdict"
+        );
+
+        // G violated by a single event -> verdict false.
+        let violated = breed.run(&g_input(&["zorp", "blee"])).unwrap();
+        assert_eq!(violated.selected.as_deref(), Some("false"));
     }
 
     #[test]

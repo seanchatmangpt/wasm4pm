@@ -4,9 +4,11 @@
 //! pure algorithm cost: no handle lookup, no JSON serialization, no JS interop.
 //!
 //! Datasets (bench_data/ relative to workspace root):
-//!   bpi2020_travel.xes       — 7,065 cases, ~87K events (travel permits)
+//!   bpi2020_domestic_declarations.xes       — 7,065 cases, ~87K events (travel permits)
 //!   roadtraffic100traces.xes — 100 cases,   ~1.3K events (road traffic fines)
 
+#[path = "helpers.rs"]
+mod helpers;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::{collections::BTreeMap, fs, path::Path, time::Duration};
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
@@ -128,19 +130,14 @@ fn available_datasets() -> Vec<Dataset> {
     let specs: &[(&[&str], &'static str)] = &[
         (
             &[
-                "bench_data/bpi2020_travel.xes",
-                "../../bench_data/bpi2020_travel.xes",
-                "/Users/sac/wasm4pm/bench_data/bpi2020_travel.xes",
+                "bench_data/bpi2020_domestic_declarations.xes",
+                "../../bench_data/bpi2020_domestic_declarations.xes",
+                "/Users/sac/wasm4pm/bench_data/bpi2020_domestic_declarations.xes",
             ],
             "bpi2020",
         ),
         (
-            &[
-                "bench_data/roadtraffic100traces.xes",
-                "../../bench_data/roadtraffic100traces.xes",
-                "/Users/sac/wasm4pm/bench_data/roadtraffic100traces.xes",
-                "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
-            ],
+            helpers::ROADTRAFFIC_CANDIDATES,
             "roadtraffic",
         ),
         (
@@ -163,7 +160,7 @@ fn available_datasets() -> Vec<Dataset> {
         }
     }
     if out.is_empty() {
-        panic!("No datasets in bench_data/. Need bpi2020_travel.xes or roadtraffic100traces.xes");
+        panic!("No datasets in bench_data/. Need bpi2020_domestic_declarations.xes or roadtraffic100traces.xes");
     }
     out
 }

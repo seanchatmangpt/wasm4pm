@@ -20,8 +20,14 @@ pub fn confusion_matrix_impl(y_true: &[f64], y_pred: &[f64]) -> Result<Vec<f64>,
     // Build confusion matrix
     let mut matrix = vec![0.0f64; n_classes * n_classes];
     for (&t, &p) in y_true.iter().zip(y_pred) {
-        let true_idx = classes.iter().position(|&c| (c - t).abs() < 1e-10).unwrap();
-        let pred_idx = classes.iter().position(|&c| (c - p).abs() < 1e-10).unwrap();
+        let true_idx = classes
+            .iter()
+            .position(|&c| (c - t).abs() < 1e-10)
+            .ok_or_else(|| MlError::new("label not found in class table (NaN or out-of-table label)"))?;
+        let pred_idx = classes
+            .iter()
+            .position(|&c| (c - p).abs() < 1e-10)
+            .ok_or_else(|| MlError::new("label not found in class table (NaN or out-of-table label)"))?;
         matrix[true_idx * n_classes + pred_idx] += 1.0;
     }
 
@@ -233,5 +239,18 @@ mod tests {
     #[test]
     fn test_length_mismatch() {
         assert!(confusion_matrix_impl(&[0.0, 1.0], &[0.0]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod panic_hardening_tests {
+    use super::*;
+
+    #[test]
+    fn nan_label_is_typed_error_not_panic() {
+        let y_true = vec![0.0, 1.0, f64::NAN];
+        let y_pred = vec![0.0, 1.0, 1.0];
+        let err = confusion_matrix_impl(&y_true, &y_pred).err().expect("NaN label must be refused");
+        assert!(err.message.contains("label not found"), "got: {}", err.message);
     }
 }

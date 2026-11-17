@@ -1,66 +1,89 @@
-<!-- wasm4pm-doc-status: active; reviewed: 2026-08-02; original: docs/breeds/description_logic.md; source-sha256: ffcc606d46e40ad565a0aa126ed48c03e74039dc0360fa412210ff065cb80ee3; reason: path-local documentation retained pending domain-specific supersession -->
+<!-- wasm4pm-doc-status: active; reviewed: 2026-10-10; original: docs/breeds/description_logic.md; reason: path-local documentation retained pending domain-specific supersession -->
+
+contract updated 2026-10-10, DL rewritten to Surface-3: `dl:subclass:`/`dl:conj:`/
+`dl:exists_rhs:`/`dl:exists_lhs:` axioms + `dl:subsumes` goals; EL completion rules
+CR1-CR4 to fixpoint with via-clause attribution; per-goal `classify-verdict`.
 
 # Description Logic (DL)
 
 ## Origin
-- **Paper:** "The Description Logic Handbook" (Baader, Calvanese, McGuinness, Nardi, Patel-Schneider, 2003)
+- **Paper:** "The Description Logic Handbook" (Baader et al., 2003)
 - **Authors:** Franz Baader et al.
-- **Tradition:** Ontological Reasoning, Semantic Web, ABox/TBox Subsumption
+- **Tradition:** Ontological Reasoning, Semantic Web, TBox Subsumption (EL)
 
 ## Algorithm
-Description Logic reasoning propagates class subsumptions and checks consistency of individual class assertions.
-1. Parse the TBox (subsumption relations) and ABox (class assertions) from `input.facts`.
-2. Compute the transitive closure of the subsumes relation:
-   - If class $A$ subsumes $B$ and class $B$ subsumes $C$, then $A$ subsumes $C$.
-3. Propagate ABox individual class membership:
-   - If individual $x$ is a member of class $C$, and class $D$ subsumes class $C$, then $x$ is a member of class $D$.
-4. Check ABox/TBox consistency against disjointness assertions:
-   - If individual $x$ is derived to belong to both classes $C_1$ and $C_2$, and $C_1$ is disjoint from $C_2$, then the ontology is inconsistent.
+EL description-logic classification over the TBox, via the standard completion
+rules CR1-CR4 (Baader et al. 2003, EL section).
+1. Parse `dl:` axioms from facts: `dl:subclass:A` = `B` (A ⊑ B),
+   `dl:conj:<A1>+<A2>` = `B` (A1 ⊓ A2 ⊑ B), `dl:exists_rhs:A` = `r.B`
+   (A ⊑ ∃r.B), `dl:exists_lhs:r.A` = `B` (∃r.A ⊑ B).
+2. `normalize` opens the trace with concept/axiom counts.
+3. Initialize subsumer sets S(A) reflexive-closed ({A} ⊆ S(A)).
+4. Applied subclass axioms emit `apply-cr1` steps in input order.
+5. To fixpoint, apply:
+   - CR1: A ⊑ B, B ⊑ C ⇒ A ⊑ C — detail names the premise: `{A} ⊑ {C} (via {B} ⊑ {C})`.
+   - CR2: A1,A2 ∈ S(C), A1⊓A2 ⊑ B ⇒ C ⊑ B — detail `(via {A1} ⊓ {A2})`.
+   - CR3: A ⊑ ∃r.B ⇒ ({A},{B}) ∈ R(r) — detail `({A},{B}) ∈ R({r})`.
+   - CR4: ∃r.A ⊑ B, ({C},{A}) ∈ R(r) ⇒ C ⊑ B — detail `(via ∃{r}.{A})`.
+   Each rule batch is sorted+deduped before emission (deterministic order).
+6. `fixpoint` reports saturated subsumption/role-edge totals.
+7. Per goal (`dl:subsumes`, value `"A:B"`, sorted), a `classify-verdict` step
+   emits `dl:verdict:A:B` = `true`/`false` (B ∈ S(A)).
 
 ## Pseudocode
 ```
 function solve(input):
-    (subsumes, member, disjoint) = parse_kb(input.facts)
-    
-    // TBox reasoning
-    repeat until no changes:
-        if A subsumes B and B subsumes C:
-            subsumes.insert(A subsumes C)
-            
-    // ABox reasoning
-    repeat until no changes:
-        if x is member of C and D subsumes C:
-            member.insert(x is member of D)
-            
-    // Consistency Check
-    for each (x, C1) and (x, C2) in member:
-        if disjoint(C1, C2):
-            return INCONSISTENT
-            
-    return CONSISTENT
+    axioms = parse(input.facts)          // dl:* grammar
+    S = {C: {C} for each concept C}      // reflexive
+    repeat until no change:
+        CR1: A in S(B), C in S(B), C not in S(A) -> S(A) += C
+        CR2: A1,A2 in S(C), conj(A1,A2,B) -> S(C) += B
+        CR3: exists_rhs(A,r,B) and edge absent -> edges += (A,r,B)
+        CR4: exists_lhs(r,A,B), (C,r,A) in edges, B not in S(C) -> S(C) += B
+    for each query A:B: verdict = B in S(A)
 ```
 
 ## Input contract
 - `intent`: not used
-- `facts`: contains TBox and ABox statements:
-  - `subsumes`: `"ClassA,ClassB"` (ClassA subsumes ClassB)
-  - `subclass`: `"ClassB,ClassA"` (ClassB is a subclass of ClassA)
-  - `class`, `class_assertion`, or `type`: `"individual,Class"` (individual belongs to Class)
-  - `disjoint` or `disjoint_classes`: `"Class1,Class2"` (Class1 and Class2 are disjoint)
+- `facts` (all `dl:`-prefixed keys; non-`dl:` facts are ignored):
+  - `dl:subclass:<A>` = `<B>` — A ⊑ B
+  - `dl:conj:<A1>+<A2>` = `<B>` — A1 ⊓ A2 ⊑ B (malformed key without `+` is a refusal)
+  - `dl:exists_rhs:<A>` = `<r>.<B>` — A ⊑ ∃r.B (value without `.` is a refusal)
+  - `dl:exists_lhs:<r>.<A>` = `<B>` — ∃r.A ⊑ B (key without `.` is a refusal)
+- `goals`: `{predicate: "dl:subsumes", value: "<A>:<B>"}` — at least one required;
+  goal value without `:` is a refusal.
 
 ## Output contract
-- `selected`: `"consistent"` or `"inconsistent"`
-- `explanation`: `"Description Logic: KB is consistent..."` or error details on disjointness clashes.
-- `inference_trace`: trace steps recording `"dl-load"`, `"dl-subsume"`, and `"dl-consistent"`.
+- `facts`: one `dl:verdict:<A>:<B>` = `"true"|"false"` per goal (goals sorted).
+- `selected`: first goal rendered `"{A}⊑{B}={verdict}"`.
+- `explanation`: `"EL completion (CR1–CR4) to fixpoint over <N> concepts; verdicts: ..."`
+- `inference_trace`: `normalize` (first) -> `apply-cr1`/`apply-cr2`/`apply-cr3`/
+  `apply-cr4`* -> `fixpoint` -> `classify-verdict`* (fixpoint precedes verdicts).
+
+## Refusals
+- Empty facts (precondition).
+- Zero `dl:*` axioms (only unrelated facts).
+- No `dl:subsumes` goals (or goals exist but none are `dl:subsumes`).
+- Malformed keys/values: `dl:conj` without `+`, `dl:exists_rhs` value without
+  `.`, `dl:exists_lhs` key without `.`, goal value without `:`.
+- More than 32 distinct concepts.
 
 ## Complexity
-- Time: Polynomial $O(C^3 + I \cdot C^2)$ in class count $C$ and individual count $I$.
-- Space: $O(C^2 + I \cdot C)$ to store relations.
+- Time: polynomial in concept count C (capped at 32): each fixpoint pass is
+  bounded by |S| x axioms; passes are monotone (sets only grow), so termination
+  in O(C) passes worst case.
+- Space: $O(C^2)$ for subsumer sets + $O(C^2)$ role edges.
 
 ## Generalization examples
-- **Workflow Compliance Auditing**: Match process instances (ABox individuals) to compliance types (TBox classes) and verify disjoint risk categories (e.g. `Maker` disjoint from `Checker`).
-- **Data Model Ontologies**: Check consistency of complex database schema mappings.
+- **Workflow Compliance Auditing**: classify activity types against a compliance
+  TBox (subclass + existential role axioms) and query subsumption verdicts.
+- **Data Model Ontologies**: classify schema concepts through conjunction and
+  role-restriction axioms to a saturated completion.
 
 ## Adversarial coverage
-- Precondition rejects if facts (knowledge base) is empty.
-- Detects disjoint clashes and eliminates all candidates with score 0.0.
+- Precondition rejects an empty knowledge base; zero-`dl:`-axiom and zero-goal
+  inputs are typed refusals.
+- Per-goal verdicts are pinned exactly by the oracle (`t_Cat ⊑ t_Animal : true`
+  and reverse `false`), killing a cheat that answers "true" unconditionally.
+- Reflexive-counted fixpoint (S includes self) is asserted in the `fixpoint`
+  detail; malformed-key refusals are the documented U4 refusal corpus.

@@ -482,6 +482,16 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
 
     for p in places {
         let label = p.label.unwrap_or_else(|| p.id.clone());
+        // pm4py's exporter (and most tools) write the initial marking INSIDE
+        // `<place><initialMarking>`; the standalone top-level `<initialMarking>`
+        // variant is rarer. Merge place-internal markings into the net-level
+        // map so replay/precision actually start from the parsed marking
+        // (previously this field was parsed but silently dropped here).
+        if let Some(tokens) = p.marking {
+            if tokens > 0 {
+                initial_marking.entry(p.id.clone()).or_insert(tokens);
+            }
+        }
         net.places.push(PetriNetPlace {
             id: p.id,
             label,
@@ -1003,5 +1013,86 @@ mod tests {
         assert_eq!(net.final_markings.len(), 2);
         assert_eq!(net.final_markings[0].get("p2"), Some(&1));
         assert_eq!(net.final_markings[1].get("p3"), Some(&1));
+    }
+
+    // -----------------------------------------------------------------------
+    // pm4py-parity regression guards (2026-10-10, wasm-parity-notes.md).
+    //
+    // Divergence: identical PNML replayed at fitness 1.0 by pm4py scored
+    // 0.0045 in wasm4pm. Root causes fixed:
+    //   1. from_pnml parsed place-internal <initialMarking> into
+    //      PetriNetPlace.marking but never merged it into
+    //      PetriNet.initial_marking — CLI replay started from an EMPTY
+    //      marking (missing_tokens on every first event).
+    //   2. Blanket greedy invisible-transition fixpoint fired taus that were
+    //      not needed, consuming tokens a visible transition needed (sepsis).
+    //   3. remaining tokens counted final-marking tokens as deviations;
+    //      pm4py counts only tokens in places OUTSIDE the final marking.
+    // Guard (a): the 2-transition reproducer (source→A→B→sink, 1 initial
+    // token, final marking on sink) through the PUBLIC import path the CLI
+    // uses (from_pnml → token_replay_pure) must score fitness 1.0, 2/2
+    // conforming.
+    // -----------------------------------------------------------------------
+    #[test]
+    fn pm4py_parity_two_transition_reproducer_fitness_is_1_0() {
+        use crate::conformance::token_replay_pure;
+        use crate::models::{AttributeValue, Event, EventLog, Trace};
+
+        let pnml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<pnml>
+  <net id="ab" type="http://www.pnml.org/version-2009/grammar/pnmlcoremodel">
+    <page id="page1">
+      <place id="source"><name><text>source</text></name><initialMarking><text>1</text></initialMarking></place>
+      <place id="p1"/>
+      <place id="sink"><name><text>sink</text></name></place>
+      <transition id="A"><name><text>A</text></name></transition>
+      <transition id="B"><name><text>B</text></name></transition>
+      <arc id="a1" source="source" target="A"/>
+      <arc id="a2" source="A" target="p1"/>
+      <arc id="a3" source="p1" target="B"/>
+      <arc id="a4" source="B" target="sink"/>
+    </page>
+    <finalmarkings>
+      <marking><place idref="sink"><text>1</text></place></marking>
+    </finalmarkings>
+  </net>
+</pnml>"#;
+
+        let net = from_pnml(pnml).unwrap();
+        // Marking threading: the initial marking must survive the import.
+        assert_eq!(net.initial_marking.get("source"), Some(&1));
+        assert_eq!(net.final_markings.len(), 1);
+
+        let mk = |acts: &[&str]| -> EventLog {
+            EventLog {
+                attributes: BTreeMap::new(),
+                traces: vec![Trace {
+                    attributes: BTreeMap::new(),
+                    events: acts
+                        .iter()
+                        .map(|&a| {
+                            let mut attrs = BTreeMap::new();
+                            attrs.insert(
+                                "concept:name".to_string(),
+                                AttributeValue::String(a.to_string()),
+                            );
+                            Event { attributes: attrs }
+                        })
+                        .collect(),
+                }],
+            }
+        };
+
+        // Perfect traces: fitness must be 1.0 (pm4py parity).
+        let log = mk(&["A", "B"]);
+        let r = token_replay_pure(&log, &net, "concept:name");
+        assert!(
+            (r.case_fitness[0].trace_fitness - 1.0).abs() < 1e-10,
+            "expected fitness 1.0, got {}",
+            r.case_fitness[0].trace_fitness
+        );
+        assert_eq!(r.conforming_cases, 1);
+        assert_eq!(r.case_fitness[0].tokens_missing, 0);
+        assert_eq!(r.case_fitness[0].tokens_remaining, 0);
     }
 }
