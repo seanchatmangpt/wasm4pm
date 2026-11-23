@@ -47,17 +47,17 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
-    "@nuxt/test-utils": "^4.3.2",
-    "@playwright/test": "^1.63.0",
-    "@vitejs/plugin-vue": "^6.0.9",
-    "@vue/test-utils": "^2.5.1",
+    "@nuxt/test-utils": "^4.4.0",
+    "@playwright/test": "^1.65.1",
+    "@vitejs/plugin-vue": "^6.0.11",
+    "@vue/test-utils": "^2.6.0",
     "eslint": "^10.4.1",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^20.14.6",
     "typescript": "^6.0.3",
     "unplugin-auto-import": "^21.1.0",
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^4.1.8",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.14"
   },
   "packageManager": "pnpm@11.5.2"
 }
